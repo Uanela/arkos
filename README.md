@@ -1,17 +1,17 @@
-To use your package, `omni`, with the provided example, let's break it down into understandable steps.
+To use your package, `arkos`, with the provided example, let's break it down into understandable steps.
 
 ### 1. **Install the Package**
 
-Before running the code, make sure your package (`omni`) is installed in your project. You can do this by running:
+Before running the code, make sure your package (`arkos`) is installed in your project. You can do this by running:
 
 ```bash
-npm install omni
+npm install arkos
 ```
 
 or if you are using `pnpm`:
 
 ```bash
-pnpm install omni
+pnpm install arkos
 ```
 
 ### 2. **Setup Prisma Client**
@@ -43,13 +43,13 @@ In the code snippet, you're passing the `prisma` instance to the `initApp` funct
    export const prisma = new PrismaClient();
    ```
 
-### 3. **Using `initApp` from `omni`**
+### 3. **Using `initApp` from `arkos`**
 
-The `initApp` function from your `omni` package is used to initialize the app with required configurations. Here's how you can structure it:
+The `initApp` function from your `arkos` package is used to initialize the app with required configurations. Here's how you can structure it:
 
 ```typescript
 // src/app.ts
-import { initApp } from "omni"; // Import initApp from omni package
+import { initApp } from "arkos"; // Import initApp from arkos package
 import express from "express"; // Import express
 import { prisma } from "./utils/prisma"; // Import the prisma client
 
@@ -73,7 +73,7 @@ initApp(app, { prisma });
 
 ### 5. **Additional Configuration (Optional)**
 
-You can customize additional settings such as routes for file uploads, email handling, and more, based on what your `omni` package offers. The `initApp` function may have additional configuration options, depending on how flexible and customizable the package is.
+You can customize additional settings such as routes for file uploads, email handling, and more, based on what your `arkos` package offers. The `initApp` function may have additional configuration options, depending on how flexible and customizable the package is.
 
 ---
 
@@ -142,7 +142,7 @@ After all there will be routes for
 
 - You need `prisma` properly set up and the `prisma` client instance passed into `initApp`.
 - Once `initApp` is invoked with your `express` app and Prisma client, the package will handle routing, authentication, file uploads, etc., automatically.
-- Ensure you have all dependencies installed (`omni`, `prisma`, `express`, etc.) before running the app.
+- Ensure you have all dependencies installed (`arkos`, `prisma`, `express`, etc.) before running the app.
 
 ---
 

@@ -1,5 +1,5 @@
 {
-  "name": "omni",
+  "name": "arkos",
   "version": "0.0.1",
   "description": "A super customizable TypeScript package for auto-generating API routes with built-in authentication, email service, error handling, file upload routes, image upload optimization, and seamless Prisma integration.",
   "main": "dist/index.js",
@@ -39,12 +39,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/uanela/omni.git"
+    "url": "https://github.com/uanela/arkos.git"
   },
   "bugs": {
-    "url": "https://github.com/uanela/omni/issues"
+    "url": "https://github.com/uanela/arkos/issues"
   },
-  "homepage": "https://github.com/uanela/omni#readme",
+  "homepage": "https://github.com/uanela/arkos#readme",
   "files": [
     "dist",
     "README.md"
