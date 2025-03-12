@@ -56,7 +56,7 @@ import express from "express"; // Import express
 // Initialize the Express app
 const app = express();
 
-// Call init and pass the Express app and prisma instance for configuration, app will listen in 8000 by default or set PORT in .env.developement or .env.production
+// Call init and pass the Express app for configuration, app will listen in 8000 by default or set PORT in .env.developement or .env.production
 arkos.init(app);
 ```
 
@@ -68,7 +68,7 @@ arkos.init(app);
 - **What happens under the hood**:
   - **Authentication Setup**: The package will set (read further to learn how to prepare the environment) up authentication routes, middleware, and necessary handlers for managing user sessions and JWT tokens.
   - **Error Handling**: Automatic error handling middleware could be added.
-  - **File Upload**: Omin will configure necessary middleware to handle file uploads, image upload optimization, and route generation.
+  - **File Upload**: Arkos will configure necessary middleware to handle file uploads, image upload optimization, and route generation.
   - **Prisma Integration**: The prisma instance must be export as default or prisma under scr/utils/prisma.ts.
 
 ### 5. **Additional Configuration (Optional)**
