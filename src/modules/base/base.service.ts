@@ -1,17 +1,14 @@
 import { camelCase, pascalCase } from "change-case-all";
 import {
+  getModels,
   getPrismaModelRelations,
-  models,
   RelationFields,
 } from "../../utils/helpers/models.helpers";
 import deepmerge from "deepmerge";
-// import { prisma } from "../../../../../src/utils/prisma";
 import AppError from "../error-handler/utils/app-error";
 import pluralize from "pluralize";
 import { handleRelationFieldsInBody } from "./utils/base.helpers";
-import { initConfigs } from "../../app";
-
-const baseServices: Record<string, BaseService> = {};
+import { loadPrismaModule } from "../../utils/helpers/prisma.helpers";
 
 export class BaseService {
   modelName: string;
@@ -38,13 +35,13 @@ export class BaseService {
       },
       {}
     );
-    this.prisma = initConfigs.prisma;
   }
 
   async createOne(
     body: Record<string, any>,
     queryOptions?: string
   ): Promise<any> {
+    const prisma = await loadPrismaModule();
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(
       body,
       {
@@ -53,7 +50,7 @@ export class BaseService {
       ["delete", "disconnect", "update"]
     );
 
-    return await this.prisma[this.modelName].create(
+    return await prisma[this.modelName].create(
       deepmerge(
         {
           data: bodyWithRelationFieldsHandled,
@@ -69,6 +66,8 @@ export class BaseService {
   async createMany(
     body: Record<string, any>[]
   ): Promise<{ total: number; data: any }> {
+    const prisma = await loadPrismaModule();
+
     if (!Array.isArray(body) || body.length === 0) {
       throw new AppError(
         "Invalid or empty data array provided for creation.",
@@ -76,17 +75,19 @@ export class BaseService {
       );
     }
 
-    const data = await this.prisma[this.modelName].createMany({
+    const data = await prisma[this.modelName].createMany({
       data: body,
     });
 
-    const total = await this.prisma[this.modelName].count();
+    const total = await prisma[this.modelName].count();
     return { total, data };
   }
   async findMany(
     filters: Record<string, any>
   ): Promise<{ total: number; data: any }> {
-    const data = await this.prisma[this.modelName].findMany(
+    const prisma = await loadPrismaModule();
+
+    const data = await prisma[this.modelName].findMany(
       "select" in filters
         ? deepmerge(
             { ...filters },
@@ -102,7 +103,7 @@ export class BaseService {
           )
     );
 
-    const total = await this.prisma[this.modelName].count({
+    const total = await prisma[this.modelName].count({
       where: filters.where,
     });
 
@@ -113,7 +114,9 @@ export class BaseService {
     params: Record<string, any>,
     queryOptions?: string
   ): Promise<any> {
-    const data = await this.prisma[this.modelName].findUnique(
+    const prisma = await loadPrismaModule();
+
+    const data = await prisma[this.modelName].findUnique(
       deepmerge(
         {
           where: { ...params, id: String(params.id) },
@@ -150,11 +153,13 @@ export class BaseService {
     body: Record<string, any>,
     queryOptions?: string
   ): Promise<any> {
+    const prisma = await loadPrismaModule();
+
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(body, {
       ...this.relationFields,
     });
 
-    const data = await this.prisma[this.modelName].update(
+    const data = await prisma[this.modelName].update(
       deepmerge(
         {
           where: { ...params, id: String(params.id) },
@@ -182,11 +187,13 @@ export class BaseService {
     filter: Record<string, any>,
     body: Record<string, any>
   ): Promise<{ total: number; data: any }> {
+    const prisma = await loadPrismaModule();
+
     if (!filter || typeof filter !== "object") {
       throw new AppError("Invalid filter provided for udpate many.", 400);
     }
 
-    const data = await this.prisma[this.modelName].updateMany({
+    const data = await prisma[this.modelName].updateMany({
       ...filter,
       data: body,
     });
@@ -198,12 +205,14 @@ export class BaseService {
       );
     }
 
-    const total = await this.prisma[this.modelName].count();
+    const total = await prisma[this.modelName].count();
     return { total, data };
   }
 
   async deleteOne(params: Record<string, any>): Promise<any> {
-    return await this.prisma[this.modelName].delete({
+    const prisma = await loadPrismaModule();
+
+    return await prisma[this.modelName].delete({
       where: {
         ...params,
         id: String(params.id),
@@ -214,23 +223,28 @@ export class BaseService {
   async deleteMany(
     filter: Record<string, any>
   ): Promise<{ total: number; data: any }> {
+    const prisma = await loadPrismaModule();
+
     if (!filter || typeof filter !== "object") {
       throw new AppError("Invalid filter provided for deletion.", 400);
     }
 
-    const data = await this.prisma[this.modelName].deleteMany(filter);
+    const data = await prisma[this.modelName].deleteMany(filter);
 
     if (!data || data.count === 0) {
       throw new AppError(`No records found to delete`, 404);
     }
 
-    const total = await this.prisma[this.modelName].count();
+    const total = await prisma[this.modelName].count();
     return { total, data };
   }
 }
 
-models.forEach((model) => {
-  baseServices[`${camelCase(model)}`] = new BaseService(model);
-});
-
-export default baseServices;
+export function getBaseServices() {
+  const models = getModels();
+  const baseServices: Record<string, BaseService> = {};
+  models.forEach((model) => {
+    baseServices[`${camelCase(model)}`] = new BaseService(model);
+  });
+  return baseServices;
+}

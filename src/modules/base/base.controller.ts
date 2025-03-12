@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import catchAsync from "../error-handler/utils/catch-async";
 import APIFeatures from "../../utils/features/api.features";
-import baseServices, { BaseService } from "./base.service";
+import { BaseService, getBaseServices } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import {
   documentUploaderService,
@@ -15,16 +15,15 @@ import path from "path";
 import fs from "fs";
 import { promisify } from "util";
 import sharp from "sharp";
-import { app } from "../..";
-import { models } from "../../utils/helpers/models.helpers";
 import { kebabCase } from "change-case-all";
+import { getExpressApp } from "../../server";
 
 const stat = promisify(fs.stat);
 const unlink = promisify(fs.unlink);
 const access = promisify(fs.access);
 
 export async function handlerFactory(modelName: string, middlewares: any) {
-  const baseService: BaseService = baseServices[modelName];
+  const baseService = new BaseService(modelName);
 
   return {
     createOne: catchAsync(
@@ -63,7 +62,7 @@ export async function handlerFactory(modelName: string, middlewares: any) {
         const features = new APIFeatures(
           req,
           modelName,
-          baseService.relationFields.singular.reduce(
+          baseService.relationFields?.singular.reduce(
             (acc: Record<string, boolean>, curr) => {
               acc[curr.name] = true;
               return acc;
@@ -203,6 +202,7 @@ export function getAvalibleRoutes(
 ) {
   const routes: { method: string; path: string }[] = [];
   req.params;
+  const app = getExpressApp();
 
   app._router.stack.forEach((middleware: any) => {
     if (middleware.route) {
@@ -406,5 +406,6 @@ export const streamFile = catchAsync(
 );
 
 export const getDatabaseModels = catchAsync(async (req, res, next) => {
+  const models = ["test"];
   res.status(200).json({ data: models.map((model) => kebabCase(model)) });
 });

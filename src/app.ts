@@ -11,30 +11,39 @@ import path from "path";
 import * as dotenv from "dotenv";
 import compression from "compression";
 import { handleRequestLogs } from "./modules/base/base.middlewares";
-import { checkDatabaseConnection } from "./utils/features/prisma.helpers";
+import {
+  checkDatabaseConnection,
+  loadPrismaModule,
+} from "./utils/helpers/prisma.helpers";
 
-const ENV = process.env.NODE_ENV || "development";
+const ENV = process.env.NODE_ENV;
 let envPath = ".env";
 
 if (ENV === "production") {
   envPath = path.resolve(process.cwd(), ".env.production");
 } else if (ENV === "staging") {
   envPath = path.resolve(process.cwd(), ".env.staging");
-} else {
+} else if (ENV === "development") {
   envPath = path.resolve(process.cwd(), ".env.development");
 }
 
 dotenv.config({ path: envPath });
 
 export type InitConfigs = {
-  prisma: any;
   port?: number;
   authentication?: boolean;
 };
 
 let initConfigs: InitConfigs;
+let prisma: any;
 
-export function bootstrap(app: express.Express, configs: InitConfigs) {
+(async () => {
+  prisma = await loadPrismaModule();
+})();
+
+export async function bootstrap(app: express.Express, configs: InitConfigs) {
+  prisma = await loadPrismaModule();
+
   initConfigs = configs;
 
   app.use(compression());
@@ -86,9 +95,7 @@ export function bootstrap(app: express.Express, configs: InitConfigs) {
     })
   );
 
-  app.use(checkDatabaseConnection(initConfigs.prisma));
-
-  // const specs = swaggerJsdoc(options)
+  app.use(checkDatabaseConnection(prisma));
 
   app.use(handleRequestLogs);
 
@@ -99,4 +106,4 @@ export function bootstrap(app: express.Express, configs: InitConfigs) {
   return app;
 }
 
-export { initConfigs };
+export { prisma };

@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import {
   AuthConfigs,
   AuthJwtPayload,
@@ -11,7 +11,8 @@ import catchAsync from "../error-handler/utils/catch-async";
 import { NextFunction, Request, Response } from "express";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
-import { initConfigs } from "../../app";
+import { prisma } from "../../app";
+import { getInitConfigs } from "../../server";
 
 class AuthService {
   signJwtToken(
@@ -69,14 +70,12 @@ class AuthService {
     action: ControllerActions,
     modelName: string
   ) {
-    const prisma = initConfigs.prisma;
-
     return catchAsync(
       async (req: Request, res: Response, next: NextFunction) => {
         if (req.user) {
           const user = req.user as any;
 
-          const permissions = await prisma.authPermission.count({
+          const permissions = await (prisma as any).authPermission.count({
             where: {
               resource: modelName,
               action,
@@ -101,8 +100,10 @@ class AuthService {
 
   authenticate = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
+      const initConfigs = getInitConfigs();
+      if (initConfigs?.authentication === false) return next();
+
       let token: string | undefined;
-      const prisma = initConfigs.prisma;
 
       if (
         req?.headers?.authorization &&
@@ -135,7 +136,7 @@ class AuthService {
           new AppError("Your auth token is invalid, please login again.", 401)
         );
 
-      const user: any | null = await prisma.user.findUnique({
+      const user: any | null = await (prisma as any).user.findUnique({
         where: { id: String(decoded.id) },
         include: {
           roles: true,
@@ -183,8 +184,6 @@ class AuthService {
     modelName: string
   ) {
     const authenticationControl = authConfigs?.authenticationControl;
-
-    if (initConfigs?.authentication === false) return callNext;
 
     if (authenticationControl && typeof authenticationControl === "object") {
       if (authenticationControl[action] === false) return callNext;

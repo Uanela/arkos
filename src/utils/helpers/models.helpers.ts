@@ -2,7 +2,6 @@ import { ROOT_DIR } from "../../paths";
 import path from "path";
 import fs from "fs";
 import { camelCase, kebabCase, pascalCase } from "change-case-all";
-import { initConfigs } from "../../app";
 
 export async function importPrismaModelModules(modelName: string) {
   const kebabModelName = kebabCase(modelName);
@@ -97,24 +96,6 @@ export async function getAppWidthEjectedMiddlewares(app: any) {
   }
 }
 
-const models: string[] = [];
-
-(() => {
-  const prisma = initConfigs.prisma;
-
-  Object.keys(prisma || {}).forEach((key) => {
-    const value = (prisma as any)[key];
-    if (
-      value &&
-      typeof value === "object" &&
-      typeof value.findUnique === "function"
-    ) {
-      models.push(key);
-    }
-  });
-})();
-// return models
-
 export type RelationFields = {
   singular: { name: string; type: string }[];
   list: { name: string; type: string }[];
@@ -125,9 +106,29 @@ const schemaFolderPath = `./prisma/schema`;
 // Read and process the schema files once
 const prismaModelRelationFields: Record<string, RelationFields> = {};
 
+const prismaContent = [];
+
 const files = fs
   .readdirSync(schemaFolderPath)
   .filter((file) => file.endsWith(".prisma"));
+
+for (const file of files) {
+  const filePath = path.join(schemaFolderPath, file);
+  const stats = fs.statSync(filePath);
+
+  if (stats.isFile()) {
+    const content = fs.readFileSync(filePath, "utf-8");
+    prismaContent.push(content);
+  }
+}
+
+const modelRegex = /model\s+(\w+)\s*{/g;
+const models: string[] = [];
+
+prismaContent.join("\n").replace(modelRegex, (_, modelName) => {
+  if (!models.includes(modelName)) models.push(camelCase(modelName.trim()));
+  return modelName;
+});
 
 for (const model of models) {
   const modelName = pascalCase(model);
@@ -139,6 +140,7 @@ for (const model of models) {
 
     if (stats.isFile()) {
       const content = fs.readFileSync(filePath, "utf-8");
+      prismaContent.push(content);
       if (content.includes(`model ${modelName} {`)) {
         modelFile = file;
         break;
@@ -215,4 +217,8 @@ export function getPrismaModelRelations(modelName: string) {
   return prismaModelRelationFields[modelName];
 }
 
-export { models, prismaModelRelationFields };
+function getModels() {
+  return models;
+}
+
+export { models, getModels, prismaModelRelationFields };

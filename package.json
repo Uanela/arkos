@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "0.0.1",
+  "version": "0.0.20",
   "description": "A super customizable TypeScript package for auto-generating API routes with built-in authentication, email service, error handling, file upload routes, image upload optimization, and seamless Prisma integration.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,7 +15,8 @@
     "dev": "ts-node --watch",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint src --ext .ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "pnpm run build",
+    "prelinkOnly": "npm run build"
   },
   "keywords": [
     "auto API routes",
@@ -59,7 +60,7 @@
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "^1.4.12",
-    "@types/node": "^22.13.5",
+    "@types/node": "^22.13.10",
     "@types/nodemailer": "^6.4.17",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
@@ -68,8 +69,10 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@types/cross-spawn": "^6.0.6",
     "@types/pluralize": "^0.0.33",
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.3",
     "change-case-all": "^2.1.0",
     "class-transformer": "^0.5.1",
@@ -77,6 +80,7 @@
     "compression": "^1.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "cross-spawn": "^7.0.6",
     "deepmerge": "^4.3.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -87,5 +91,16 @@
     "nodemailer": "^6.10.0",
     "pluralize": "^8.0.0",
     "sharp": "^0.33.5"
+  },
+  "pnpm": {
+    "overrides": {},
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "esbuild",
+      "prisma",
+      "sharp"
+    ]
   }
 }

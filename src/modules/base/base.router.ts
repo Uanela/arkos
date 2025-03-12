@@ -9,8 +9,8 @@ import {
   getDatabaseModels,
 } from "./base.controller";
 import {
+  getModels,
   importPrismaModelModules,
-  models,
 } from "../../utils/helpers/models.helpers";
 import {
   addPrismaQueryOptionsToRequestQuery,
@@ -19,6 +19,8 @@ import {
 import { PrismaQueryOptions } from "../../types";
 import { permissions } from "../../utils/permissions";
 import authService from "../auth/auth.service";
+
+const models = getModels();
 
 const router: Router = Router();
 
@@ -243,37 +245,39 @@ models.forEach(async (model) => {
     );
 });
 
-router.get("/available-routes", getAvalibleRoutes);
+(() => {
+  router.get("/available-routes", getAvalibleRoutes);
 
-router.get("/database-models", authService.authenticate, getDatabaseModels);
+  router.get("/database-models", authService.authenticate, getDatabaseModels);
 
-router.post(
-  "/uploads/:fileType",
-  authService.handleAuthenticationControl(
-    permissions.uploads,
-    "create",
-    "file-upload"
-  ),
-  authService.handleActionAccessControl(
-    permissions.uploads,
-    "create",
-    "file-upload"
-  ),
-  uploadFile
-);
-router.delete(
-  "/uploads/:fileType/:fileName",
-  authService.handleAuthenticationControl(
-    permissions.uploads,
-    "create",
-    "file-upload"
-  ),
-  authService.handleActionAccessControl(
-    permissions.uploads,
-    "create",
-    "file-upload"
-  ),
-  deleteFile
-);
+  router.post(
+    "/uploads/:fileType",
+    authService.handleAuthenticationControl(
+      permissions.uploads,
+      "create",
+      "file-upload"
+    ),
+    authService.handleActionAccessControl(
+      permissions.uploads,
+      "create",
+      "file-upload"
+    ),
+    uploadFile
+  );
+  router.delete(
+    "/uploads/:fileType/:fileName",
+    authService.handleAuthenticationControl(
+      permissions.uploads,
+      "create",
+      "file-upload"
+    ),
+    authService.handleActionAccessControl(
+      permissions.uploads,
+      "create",
+      "file-upload"
+    ),
+    deleteFile
+  );
+})();
 
 export default router;

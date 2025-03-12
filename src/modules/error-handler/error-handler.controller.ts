@@ -1,7 +1,8 @@
+import fs from "fs";
 import { NextFunction, Request, Response } from "express";
 import AppError from "./utils/app-error";
 import * as errorControllerHelper from "./utils/error-handler.helpers";
-import { server } from "../..";
+import { server } from "../../server";
 
 // const handleCastErrorDB = (err:) => {
 //   const message = `Invalid ${err.path}: ${err.value}`
@@ -169,9 +170,22 @@ export default function errorHandler(
   sendProductionError(error, req, res);
 }
 
+import spawn from "cross-spawn";
+import path from "path";
+
 process.on("SIGTERM", () => {
-  console.error("👋🏽 SIGTERM RECEIVED. Shutting down gracefully!");
-  server.close(() => {
-    console.error("🔥 Process terminated");
-  });
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.NODE_ENV !== "staging"
+  ) {
+    process.exit();
+  } else {
+    console.error(
+      "👋🏽 SIGTERM RECEIVED in Production. Shutting down gracefully!"
+    );
+
+    server.close(() => {
+      console.error("🔥 Process terminated");
+    });
+  }
 });
