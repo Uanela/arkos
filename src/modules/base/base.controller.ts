@@ -15,15 +15,17 @@ import path from "path";
 import fs from "fs";
 import { promisify } from "util";
 import sharp from "sharp";
-import { kebabCase } from "change-case-all";
+import { pascalCase } from "change-case-all";
 import { getExpressApp } from "../../server";
+import { getModels } from "../../utils/helpers/models.helpers";
 
 const stat = promisify(fs.stat);
 const unlink = promisify(fs.unlink);
 const access = promisify(fs.access);
 
-export async function handlerFactory(modelName: string, middlewares: any) {
+export async function handlerFactory(modelName: string, modelModules: any) {
   const baseService = new BaseService(modelName);
+  const { middlewares } = modelModules;
 
   return {
     createOne: catchAsync(
@@ -406,6 +408,6 @@ export const streamFile = catchAsync(
 );
 
 export const getDatabaseModels = catchAsync(async (req, res, next) => {
-  const models = ["test"];
-  res.status(200).json({ data: models.map((model) => kebabCase(model)) });
+  const models = getModels();
+  res.status(200).json({ data: models.map((model) => pascalCase(model)) });
 });

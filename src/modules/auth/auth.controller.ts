@@ -24,12 +24,16 @@ export const authControllerFactory = (middlewares: any = {}) => {
   return {
     getMe: catchAsync(
       async (req: Request, res: Response, next: NextFunction) => {
+        const user = await baseServices["user"].findOne({
+          where: { id: req.user!.id },
+        });
+
         Object.keys(excludedUserFields).forEach((key) => {
           if (req.user) delete req.user[key as keyof User];
         });
 
         if (middlewares?.afterGetMe) {
-          (req as any).responseData = req.user;
+          (req as any).responseData = user;
           (req as any).responseStatus = 200;
           return next();
         }
@@ -40,7 +44,7 @@ export const authControllerFactory = (middlewares: any = {}) => {
 
     logout: catchAsync(
       async (req: Request, res: Response, next: NextFunction) => {
-        res.cookie("jwt", "no-token", {
+        res.cookie("arkos_access_token", "no-token", {
           expires: new Date(Date.now() + 10 * 1000),
           httpOnly: true,
         });
@@ -96,9 +100,13 @@ export const authControllerFactory = (middlewares: any = {}) => {
           sameSite: process.env.JWT_SECURE != "false" ? "lax" : "none",
         };
 
-        if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+        if (
+          process.env.NODE_ENV === "production" &&
+          process.env.JWT_SECURE != "false"
+        )
+          cookieOptions.secure = true;
 
-        res.cookie("jwt", token, cookieOptions);
+        res.cookie("arkos_access_token", token, cookieOptions);
 
         if (middlewares?.afterLogin) {
           (req as any).responseData = { token };
@@ -115,13 +123,6 @@ export const authControllerFactory = (middlewares: any = {}) => {
         const userService = baseServices["user"];
 
         const user = await userService.createOne(req.body);
-
-        // const user = await (prisma as any).user.create({
-        //   data: {
-        //     ...req.body,
-        //     password: await authService.hashPassword(req.body.password),
-        //   } as any,
-        // })
 
         if (middlewares?.afterSignup) {
           (req as any).responseData = { data: user };
