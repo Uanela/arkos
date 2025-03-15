@@ -26,8 +26,8 @@ const router: Router = Router();
 
 models.forEach(async (model) => {
   const modelNameInKebab = kebabCase(model);
-  const { middlewares, authConfigs, prismaQueryOptions } =
-    await importPrismaModelModules(modelNameInKebab);
+  const modelModules = await importPrismaModelModules(modelNameInKebab);
+  const { middlewares, authConfigs, prismaQueryOptions } = modelModules;
 
   const routeName = pluralize.plural(modelNameInKebab);
   const {
@@ -39,9 +39,7 @@ models.forEach(async (model) => {
     createMany,
     updateMany,
     deleteMany,
-  } = await handlerFactory(model, middlewares);
-  // const ModelType =
-  //   typeof PrismaClient[pascalCase(model) as keyof typeof PrismaClient]
+  } = await handlerFactory(model, modelModules);
 
   router
     .route(`/${routeName}`)
