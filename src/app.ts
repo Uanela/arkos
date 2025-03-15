@@ -15,16 +15,28 @@ import {
   checkDatabaseConnection,
   loadPrismaModule,
 } from "./utils/helpers/prisma.helpers";
+import { ClassValidatorInitConfigsOptions } from "./utils/validate-dto";
 
 const ENV = process.env.NODE_ENV;
 let envPath = ".env";
 
+// Default to `.env.local` if available in any environment
 if (ENV === "production") {
   envPath = path.resolve(process.cwd(), ".env.production");
 } else if (ENV === "staging") {
   envPath = path.resolve(process.cwd(), ".env.staging");
 } else if (ENV === "development") {
   envPath = path.resolve(process.cwd(), ".env.development");
+} else if (ENV === "local") {
+  // For local development, .env.local can be used
+  envPath = path.resolve(process.cwd(), ".env.local");
+}
+
+// Optionally, add support for `.env.test`, `.env.qa`, or other environments if required
+else if (ENV === "test") {
+  envPath = path.resolve(process.cwd(), ".env.test");
+} else if (ENV === "qa") {
+  envPath = path.resolve(process.cwd(), ".env.qa");
 }
 
 dotenv.config({ path: envPath });
@@ -32,6 +44,13 @@ dotenv.config({ path: envPath });
 export type InitConfigs = {
   port?: number;
   authentication?: boolean;
+  validation?:
+    | ClassValidatorInitConfigsOptions
+    | {
+        resolver?: "zod";
+        validationOptions?: Record<string, any>;
+      }
+    | boolean;
 };
 
 let initConfigs: InitConfigs;

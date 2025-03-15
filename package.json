@@ -1,21 +1,49 @@
 {
   "name": "arkos",
-  "version": "0.0.22",
+  "version": "0.1.23-beta.1",
   "description": "A super customizable TypeScript package for auto-generating API routes with built-in authentication, email service, error handling, file upload routes, image upload optimization, and seamless Prisma integration.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "module": "dist/index.mjs",
+  "type": "module",
+  "main": "dist/cjs/exports/index.js",
+  "module": "dist/es2020/exports/index.js",
+  "types": "dist/types/exports/index.d.ts",
   "exports": {
-    "import": "./dist/index.mjs",
-    "require": "./dist/index.js"
+    ".": {
+      "import": "./dist/es2020/exports/index.js",
+      "require": "./dist/cjs/exports/index.js",
+      "types": "./dist/types/exports/index.d.ts"
+    },
+    "./services": {
+      "import": "./dist/es2020/exports/services/index.js",
+      "require": "./dist/cjs/exports/services/index.js",
+      "types": "./dist/types/exports/services/index.d.ts"
+    },
+    "./validation": {
+      "import": "./dist/es2020/exports/validation/index.js",
+      "require": "./dist/cjs/exports/services/index.js",
+      "types": "./dist/types/exports/validation/index.d.ts"
+    },
+    "./error-handler": {
+      "import": "./dist/es2020/exports/error-handler/index.js",
+      "require": "./dist/cjs/exports/error-handler/index.js",
+      "types": "./dist/types/exports/error-handler/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/es2020/exports/utils/index.js",
+      "require": "./dist/cjs/exports/utils/index.js",
+      "types": "./dist/types/exports/utils/index.d.ts"
+    }
   },
   "scripts": {
-    "build": "tsc",
+    "build:es2020": "tsc -p tsconfig.es2020.json",
+    "build:types": "tsc -p tsconfig.types.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "postbuild": "echo {\"type\":\"commonjs\"} > dist/cjs/package.json",
+    "build": "pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run postbuild",
+    "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite",
     "clean": "rm -rf dist",
     "dev": "ts-node --watch",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint src --ext .ts",
-    "prepublishOnly": "pnpm run build",
     "prelinkOnly": "npm run build"
   },
   "keywords": [
@@ -64,6 +92,7 @@
     "@types/nodemailer": "^6.4.17",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "esbuild": "^0.25.1",
     "prisma": "^6.4.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
@@ -91,6 +120,9 @@
     "nodemailer": "^6.10.0",
     "pluralize": "^8.0.0",
     "sharp": "^0.33.5"
+  },
+  "engines": {
+    "node": ">=14.16"
   },
   "pnpm": {
     "overrides": {},

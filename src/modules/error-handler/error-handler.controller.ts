@@ -1,35 +1,111 @@
-import fs from "fs";
 import { NextFunction, Request, Response } from "express";
 import AppError from "./utils/app-error";
 import * as errorControllerHelper from "./utils/error-handler.helpers";
 import { server } from "../../server";
 
-// const handleCastErrorDB = (err:) => {
-//   const message = `Invalid ${err.path}: ${err.value}`
-//   return new AppError(message, 400)
-// }
+/**
+ * Error handling middleware for Express.
+ *
+ * This middleware function handles all errors in the Express application.
+ * It checks for the environment (development or production) and sends appropriate error responses
+ * based on whether the environment is production or not. It also maps specific errors such as
+ * JWT errors, Prisma client errors, and database-related errors to specific helper functions for handling.
+ *
+ * @param {AppError} err - The error object thrown by the application.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ * @param {NextFunction} next - The next middleware function in the chain.
+ *
+ * @returns {void} - Sends the response with the error details to the client.
+ */
+export default function errorHandler(
+  err: AppError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  // Default error status
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || "error";
 
-// const handleDuplicateFieldDB = (err) => {
-//   const value = err.keyValue.name
-//   const message = `Duplicate fiedl value: ${value}. Please use another value!`
+  // If the environment is not production, send detailed error information
+  if (process.env.NODE_ENV !== "production") {
+    sendDevelopmentError(err, req, res);
+    return;
+  }
 
-//   return new AppError(message, 400)
-// }
+  // Prepare error object for response, copying the original error's properties
+  let error = { ...err, message: err.message };
 
-// const handleValidationErrorDB = (err) => {
-//   const errors = Object.values(err.errors).map((el) => el.message)
-//   const message = `Ivalid input data. ${errors.join('. ')}`
-//   return new AppError(message, 400)
-// }
+  // Handle specific error cases (JWT errors, Prisma validation errors, etc.)
+  if (err.name === "JsonWebTokenError")
+    error = errorControllerHelper.handleJWTError();
+  if (err.name === "TokenExpiredError")
+    error = errorControllerHelper.handleJWTExpired();
 
-// const handleJWTError() =>
-//   new AppError('Invalid token. Please log in again!', 401)
+  // Handle specific Prisma client validation errors
+  if (err.name === "PrismaClientValidationError")
+    error = errorControllerHelper.handlePrismaClientValidationError(err);
 
-// const handleJWTExpired = () =>
-//   new AppError('Your token has expired, Please log again!', 401)
+  // Handle Prisma database-specific error codes (P1000 to P3005)
+  if (err.code === "P1000")
+    error = errorControllerHelper.handleAuthenticationError(err);
+  if (err.code === "P1001")
+    error = errorControllerHelper.handleServerNotReachableError(err);
+  if (err.code === "P1002")
+    error = errorControllerHelper.handleConnectionTimeoutError(err);
+  if (err.code === "P1003")
+    error = errorControllerHelper.handleDatabaseNotFoundError(err);
+  if (err.code === "P2000")
+    error = errorControllerHelper.handleFieldValueTooLargeError(err);
+  if (err.code === "P2001")
+    error = errorControllerHelper.handleRecordNotFoundError(err);
+  if (err.code === "P2002")
+    error = errorControllerHelper.handleUniqueConstraintError(err);
+  if (err.code === "P2003")
+    error = errorControllerHelper.handleForeignKeyConstraintError(err);
+  if (err.code === "P2004")
+    error = errorControllerHelper.handleConstraintFailedError(err);
+  if (err.code === "P3000")
+    error = errorControllerHelper.handleSchemaCreationFailedError(err);
+  if (err.code === "P3001")
+    error = errorControllerHelper.handleMigrationAlreadyAppliedError(err);
+  if (err.code === "P3002")
+    error = errorControllerHelper.handleMigrationScriptFailedError(err);
+  if (err.code === "P3003")
+    error = errorControllerHelper.handleVersionMismatchError(err);
 
+  // Handle general error types (e.g., syntax errors, type errors, etc.)
+  if (err.name === "SyntaxError")
+    error = errorControllerHelper.handleSchemaSyntaxError(err);
+  if (err.name === "TypeError")
+    error = errorControllerHelper.handleClientTypeError(err);
+  if (err.name === "BinaryError")
+    error = errorControllerHelper.handleBinaryError(err);
+  if (err.name === "NetworkError")
+    error = errorControllerHelper.handleNetworkError(err);
+  if (err.name === "UnhandledPromiseRejection")
+    error = errorControllerHelper.handleUnhandledPromiseError(err);
+
+  // Send the error response for production environment
+  sendProductionError(error, req, res);
+}
+
+/**
+ * Sends a detailed error response in development mode.
+ *
+ * In development, the error response includes full error details, including
+ * the stack trace and the complete error message.
+ *
+ * @param {AppError} err - The error object.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ *
+ * @returns {void} - Sends the response with the error details to the client.
+ */
 function sendDevelopmentError(err: AppError, req: Request, res: Response) {
   console.error("[\x1b[31mERROR\x1b[0m]:", err);
+
   if (req.originalUrl.startsWith("/api"))
     return res.status(err.statusCode).json({
       message: err.message.split("\n")[err.message.split("\n").length - 1],
@@ -43,6 +119,18 @@ function sendDevelopmentError(err: AppError, req: Request, res: Response) {
   });
 }
 
+/**
+ * Sends a generic error response in production mode.
+ *
+ * In production, sensitive error details (such as stack traces) are not exposed
+ * to the client. Only operational errors are shown with a generic message.
+ *
+ * @param {AppError} err - The error object.
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ *
+ * @returns {void} - Sends the response with the error details to the client.
+ */
 function sendProductionError(err: AppError, req: Request, res: Response) {
   if (req.originalUrl.startsWith("/api")) {
     if (err.isOperational) {
@@ -74,105 +162,15 @@ function sendProductionError(err: AppError, req: Request, res: Response) {
   });
 }
 
-export default function errorHandler(
-  err: AppError,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || "error";
-
-  if (process.env.NODE_ENV !== "production")
-    return sendDevelopmentError(err, req, res) as void;
-
-  let error = { ...err, message: err.message };
-
-  if (err.name === "JsonWebTokenError")
-    error = errorControllerHelper.handleJWTError();
-  if (err.name === "TokenExpiredError")
-    error = errorControllerHelper.handleJWTExpired();
-
-  if (err.name === "PrismaClientValidationError")
-    error = errorControllerHelper.handlePrismaClientValidationError(err);
-  if (err.code === "P1000")
-    error = errorControllerHelper.handleAuthenticationError(err);
-  if (err.code === "P1001")
-    error = errorControllerHelper.handleServerNotReachableError(err);
-  if (err.code === "P1002")
-    error = errorControllerHelper.handleConnectionTimeoutError(err);
-  if (err.code === "P1003")
-    error = errorControllerHelper.handleDatabaseNotFoundError(err);
-  if (err.name === "EnvironmentVariableError")
-    error = errorControllerHelper.handleEnvironmentVariableError(err);
-
-  if (err.code === "P2000")
-    error = errorControllerHelper.handleFieldValueTooLargeError(err);
-  if (err.code === "P2001")
-    error = errorControllerHelper.handleRecordNotFoundError(err);
-  if (err.code === "P2002")
-    error = errorControllerHelper.handleUniqueConstraintError(err);
-  if (err.code === "P2003")
-    error = errorControllerHelper.handleForeignKeyConstraintError(err);
-  if (err.code === "P2004")
-    error = errorControllerHelper.handleConstraintFailedError(err);
-  if (err.code === "P2005")
-    error = errorControllerHelper.handleInvalidFieldValueError(err);
-  if (err.code === "P2006")
-    error = errorControllerHelper.handleInvalidFieldProvidedError(err);
-  if (err.code === "P2007")
-    error = errorControllerHelper.handleDataValidationError(err);
-  if (err.code === "P2008")
-    error = errorControllerHelper.handleQueryParsingError(err);
-  if (err.code === "P2009")
-    error = errorControllerHelper.handleInvalidQueryFormatError(err);
-  if (err.code === "P2010")
-    error = errorControllerHelper.handleRawQueryExecutionError(err);
-  if (err.code === "P2011")
-    error = errorControllerHelper.handleNullConstraintViolationError(err);
-
-  if (err.code === "P3000")
-    error = errorControllerHelper.handleSchemaCreationFailedError(err);
-  if (err.code === "P3001")
-    error = errorControllerHelper.handleMigrationAlreadyAppliedError(err);
-  if (err.code === "P3002")
-    error = errorControllerHelper.handleMigrationScriptFailedError(err);
-  if (err.code === "P3003")
-    error = errorControllerHelper.handleVersionMismatchError(err);
-  if (err.code === "P3004")
-    error = errorControllerHelper.handleMigrationFileReadError(err);
-  if (err.code === "P3005")
-    error = errorControllerHelper.handleSchemaDriftError(err);
-
-  if (err.name === "SyntaxError")
-    error = errorControllerHelper.handleSchemaSyntaxError(err);
-  if (err.name === "TypeError")
-    error = errorControllerHelper.handleClientTypeError(err);
-  if (err.name === "DynamicQueryError")
-    error = errorControllerHelper.handleDynamicQueryError(err);
-  if (err.name === "RelationError")
-    error = errorControllerHelper.handleRelationLoadingError(err);
-
-  if (err.name === "BinaryError")
-    error = errorControllerHelper.handleBinaryError(err);
-  if (err.name === "NetworkError")
-    error = errorControllerHelper.handleNetworkError(err);
-  if (err.name === "VersionMismatch")
-    error = errorControllerHelper.handleVersionMismatchError(err);
-
-  if (err.name === "UnhandledPromiseRejection")
-    error = errorControllerHelper.handleUnhandledPromiseError(err);
-  if (err.name === "DataTypeError")
-    error = errorControllerHelper.handleDataTypeError(err);
-  if (err.name === "EmptyResultError")
-    error = errorControllerHelper.handleEmptyResultError(err);
-
-  sendProductionError(error, req, res);
-}
-
-import spawn from "cross-spawn";
-import path from "path";
-
+/**
+ * Gracefully handles process termination by listening for SIGTERM signal.
+ *
+ * - In production and staging environments, it will log a shutdown message
+ *   and attempt to close the server gracefully.
+ * - In development or non-production environments, it will immediately exit the process.
+ *
+ * @returns {void}
+ */
 process.on("SIGTERM", () => {
   if (
     process.env.NODE_ENV !== "production" &&

@@ -31,6 +31,7 @@ async function initApp(
   app: Express,
   initConfigs: InitConfigs = {
     authentication: false,
+    validation: false,
   }
 ): Promise<void> {
   _app = app;

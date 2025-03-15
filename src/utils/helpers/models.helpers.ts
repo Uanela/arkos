@@ -2,15 +2,30 @@ import { ROOT_DIR } from "../../paths";
 import path from "path";
 import fs from "fs";
 import { camelCase, kebabCase, pascalCase } from "change-case-all";
+import arkosEnv from "../arkos-env";
+import { extension } from "./fs.helpers";
 
+const globalPrismaModelsModules: Record<string, any> = {};
+
+export function getModelModules(modelName: string, caller: string) {
+  console.log(globalPrismaModelsModules, "getModelModules", caller);
+  return globalPrismaModelsModules[kebabCase(modelName)];
+}
+
+/**
+ * Dynamically imports model-specific modules like middlewares, auth configurations,
+ * prisma query options, and DTOs for a given model.
+ *
+ * @param {string} modelName - The name of the model (e.g., "User", "Post").
+ * @returns {Promise<Object>} An object containing the imported modules: `middlewares`, `authConfigs`, `prismaQueryOptions`, and `dtos`.
+ */
 export async function importPrismaModelModules(modelName: string) {
   const kebabModelName = kebabCase(modelName);
+  const lowerModelName = modelName.toLowerCase();
 
-  const moduleDir = path.resolve(ROOT_DIR, "src", "modules", modelName);
+  const moduleDir = path.resolve(process.cwd(), "src", "modules", modelName);
+  const dtosDir = path.join(moduleDir, "dtos");
 
-  const extension = process.env.NODE_ENV === "production" ? "js" : "ts";
-
-  // Define the expected file paths
   const middlewaresFile = path.join(
     moduleDir,
     `${kebabModelName}.middlewares.${extension}`
@@ -24,14 +39,35 @@ export async function importPrismaModelModules(modelName: string) {
     `${kebabModelName}.prisma-query-options.${extension}`
   );
 
-  // Initialize result object
+  // Define DTO file paths
+  const modelDtoFile = path.join(dtosDir, `${lowerModelName}.dto.${extension}`);
+  const createDtoFile = path.join(
+    dtosDir,
+    `create-${lowerModelName}.dto.${extension}`
+  );
+  const updateDtoFile = path.join(
+    dtosDir,
+    `update-${lowerModelName}.dto.${extension}`
+  );
+  const queryDtoFile = path.join(
+    dtosDir,
+    `query-${lowerModelName}.dto.${extension}`
+  );
+
   const result: {
     middlewares?: any;
     authConfigs?: any;
     prismaQueryOptions?: any;
-  } = {};
+    dtos: {
+      create?: any;
+      update?: any;
+      query?: any;
+      model?: any;
+    };
+  } = {
+    dtos: {},
+  };
 
-  // Try to import middlewares
   try {
     if (fs.existsSync(middlewaresFile)) {
       const middlewareModule = await import(middlewaresFile);
@@ -44,7 +80,6 @@ export async function importPrismaModelModules(modelName: string) {
     );
   }
 
-  // Try to import auth configs
   try {
     if (fs.existsSync(authConfigsFile)) {
       const authConfigsModule = await import(authConfigsFile);
@@ -57,7 +92,6 @@ export async function importPrismaModelModules(modelName: string) {
     );
   }
 
-  // Try to import prisma query options
   try {
     if (fs.existsSync(prismaQueryOptionsFile)) {
       const prismaQueryOptionsModule = await import(prismaQueryOptionsFile);
@@ -71,39 +105,84 @@ export async function importPrismaModelModules(modelName: string) {
     );
   }
 
+  // Import DTOs
+  const pascalModelName = pascalCase(modelName);
+  try {
+    if (fs.existsSync(modelDtoFile)) {
+      const modelDtoModule = await import(modelDtoFile);
+      result.dtos.model =
+        modelDtoModule.default || modelDtoModule[`${pascalModelName}Dto`];
+    }
+  } catch (error) {
+    console.error(
+      `Error importing model main DTO for model "${modelName}":`,
+      error
+    );
+  }
+
+  try {
+    if (fs.existsSync(createDtoFile)) {
+      const createDtoModule = await import(createDtoFile);
+      result.dtos.create =
+        createDtoModule.default ||
+        createDtoModule[`Create${pascalModelName}Dto`];
+    }
+  } catch (error) {
+    console.error(
+      `Error importing create DTO for model "${modelName}":`,
+      error
+    );
+  }
+
+  try {
+    if (fs.existsSync(updateDtoFile)) {
+      const updateDtoModule = await import(updateDtoFile);
+      result.dtos.update =
+        updateDtoModule.default ||
+        updateDtoModule[`Update${pascalModelName}Dto`];
+    }
+  } catch (error) {
+    console.error(
+      `Error importing update DTO for model "${modelName}":`,
+      error
+    );
+  }
+
+  try {
+    if (fs.existsSync(queryDtoFile)) {
+      const queryDtoModule = await import(queryDtoFile);
+      result.dtos.query =
+        queryDtoModule.default || queryDtoModule[`Query${pascalModelName}Dto`];
+    }
+  } catch (error) {
+    console.error(`Error importing query DTO for model "${modelName}":`, error);
+  }
+
+  globalPrismaModelsModules[modelName] = result;
+  console.log("importPrismaModules", result);
   return result;
 }
 
-export async function getAppWidthEjectedMiddlewares(app: any) {
-  const extension = process.env.NODE_ENV === "production" ? "js" : "ts";
-  const appWithEjectedMiddlewaresPath = path.resolve(
-    ROOT_DIR,
-    "src",
-    `app.${extension}`
-  );
-
-  if (!appWithEjectedMiddlewaresPath) {
-    return null;
-  }
-
-  // const middlewarePath = path.join(middlewaresDir, matchingFile)
-
-  try {
-    const appEjected = await import(appWithEjectedMiddlewaresPath);
-    return appEjected;
-  } catch (error) {
-    return null;
-  }
-}
-
+/**
+ * Represents the structure of relation fields for Prisma models.
+ * It includes both singular (one-to-one) and list (one-to-many) relationships.
+ *
+ * @typedef {Object} RelationFields
+ * @property {Array<{name: string, type: string}>} singular - List of singular relationships.
+ * @property {Array<{name: string, type: string}>} list - List of list relationships.
+ */
 export type RelationFields = {
   singular: { name: string; type: string }[];
   list: { name: string; type: string }[];
 };
 
-const schemaFolderPath = `./prisma/schema`;
+const schemaFolderPath =
+  process.env.PRISMA_SCHEMA_PATH || arkosEnv.PRISMA_SCHEMA_PATH;
 
-// Read and process the schema files once
+/**
+ * Reads the Prisma schema files and extracts all model definitions,
+ * identifying their relations (one-to-one and one-to-many).
+ */
 const prismaModelRelationFields: Record<string, RelationFields> = {};
 
 const prismaContent = [];
@@ -172,14 +251,12 @@ for (const model of models) {
 
     if (!trimmedLine || trimmedLine.startsWith("model")) continue;
 
-    // Check for relations
     const [fieldName, type] = trimmedLine.split(/\s+/);
     const cleanType = type?.replace("[]", "").replace("?", "");
     if (
       trimmedLine.includes("@relation") ||
       trimmedLine.match(/\s+\w+(\[\])?(\s+@|$)/) ||
       models.includes(camelCase(cleanType || ""))
-      // content.includes(`model ${cleanType} {`)
     ) {
       const modelStart = content.indexOf(`enum ${cleanType} {`);
 
@@ -210,13 +287,23 @@ for (const model of models) {
   }
 }
 
-// Function to get relations from the cache
+/**
+ * Retrieves the relations for a given Prisma model.
+ *
+ * @param {string} modelName - The name of the model (e.g., "User").
+ * @returns {RelationFields|undefined} The relation fields for the model, or `undefined` if no relations are found.
+ */
 export function getPrismaModelRelations(modelName: string) {
   modelName = pascalCase(modelName);
   if (!(modelName in prismaModelRelationFields)) return;
   return prismaModelRelationFields[modelName];
 }
 
+/**
+ * Retrieves all the model names from the Prisma schema.
+ *
+ * @returns {string[]} An array of model names (e.g., ["User", "Post"]).
+ */
 function getModels() {
   return models;
 }

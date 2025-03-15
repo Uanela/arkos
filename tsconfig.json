@@ -1,21 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "CommonJS",
-    "lib": ["ESNext", "DOM"],
-    "moduleResolution": "Node",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "target": "ES2020",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "removeComments": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "emitDeclarationOnly": false,
-    "sourceMap": true
+    "baseUrl": ".",
+    "paths": {
+      "arkos": ["node_modules/arkos"],
+      "arkos/*": ["node_modules/arkos/dist/esm/exports/*"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
