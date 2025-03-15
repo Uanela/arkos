@@ -96,7 +96,7 @@ export const authControllerFactory = (middlewares: any = {}) => {
           sameSite: process.env.JWT_SECURE != "false" ? "lax" : "none",
         };
 
-        if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+        if (process.env.NODE_ENV === 'production' && process.env.JWT_SECURE !== 'false') cookieOptions.secure = true
 
         res.cookie("jwt", token, cookieOptions);
 
