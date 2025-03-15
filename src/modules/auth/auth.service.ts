@@ -8,32 +8,67 @@ import {
   UserRole,
 } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
 import { prisma } from "../../app";
 import { getInitConfigs } from "../../server";
+import arkosEnv from "../../utils/arkos-env";
 
+/**
+ * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
+ */
 class AuthService {
+  /**
+   * Signs a JWT token for the user.
+   *
+   * @param {number | string} id - The unique identifier of the user to generate the token for.
+   * @param {string | number} [expiresIn] - The expiration time for the token. Defaults to environment variable `JWT_EXPIRES_IN`.
+   * @param {string} [secret] - The secret key used to sign the token. Defaults to environment variable `JWT_SECRET`.
+   * @returns {string} The signed JWT token.
+   */
   signJwtToken(
     id: number | string,
-    expiresIn: string | number = process.env.JWT_EXPIRES_IN || "1h",
-    secret: string = process.env.JWT_SECRET || "your_default_secret"
+    expiresIn: string | number = process.env.JWT_EXPIRES_IN ||
+      arkosEnv.JWT_EXPIRES_IN,
+    secret: string = process.env.JWT_SECRET || arkosEnv.JWT_SECRET
   ): string {
     return jwt.sign({ id }, secret, {
       expiresIn: expiresIn as any,
     });
   }
 
-  async isCorrectPassword(candidatePassword: string, userPassword: string) {
+  /**
+   * Compares a candidate password with the stored user password to check if they match.
+   *
+   * @param {string} candidatePassword - The password provided by the user during login.
+   * @param {string} userPassword - The password stored in the database.
+   * @returns {Promise<boolean>} Returns true if the passwords match, otherwise false.
+   */
+  async isCorrectPassword(
+    candidatePassword: string,
+    userPassword: string
+  ): Promise<boolean> {
     return await bcrypt.compare(candidatePassword, userPassword);
   }
 
-  async hashPassword(password: string) {
+  /**
+   * Hashes a plain text password using bcrypt.
+   *
+   * @param {string} password - The password to be hashed.
+   * @returns {Promise<string>} Returns the hashed password.
+   */
+  async hashPassword(password: string): Promise<string> {
     return await bcrypt.hash(password, 12);
   }
 
-  isPasswordStrong(password: string) {
+  /**
+   * Checks if a password is strong, requiring uppercase, lowercase, and numeric characters.
+   *
+   * @param {string} password - The password to check.
+   * @returns {boolean} Returns true if the password meets the strength criteria, otherwise false.
+   */
+  isPasswordStrong(password: string): boolean {
     const hasUppercase = /[A-Z]/.test(password);
     const hasLowercase = /[a-z]/.test(password);
     const hasNumber = /\d/.test(password);
@@ -41,7 +76,14 @@ class AuthService {
     return hasUppercase && hasLowercase && hasNumber;
   }
 
-  userChangedPasswordAfter(user: User, JWTTimestamp: number) {
+  /**
+   * Checks if a user has changed their password after the JWT was issued.
+   *
+   * @param {User} user - The user object containing the passwordChangedAt field.
+   * @param {number} JWTTimestamp - The timestamp when the JWT was issued.
+   * @returns {boolean} Returns true if the user changed their password after the JWT was issued, otherwise false.
+   */
+  userChangedPasswordAfter(user: User, JWTTimestamp: number): boolean {
     if (user.passwordChangedAt) {
       const convertedTimestamp = parseInt(
         String(user.passwordChangedAt.getTime() / 1000),
@@ -53,6 +95,14 @@ class AuthService {
     return false;
   }
 
+  /**
+   * Verifies the authenticity of a JWT token.
+   *
+   * @param {string} token - The JWT token to verify.
+   * @param {string} [secret] - The secret key used to verify the token. Defaults to environment variable `JWT_SECRET`.
+   * @returns {Promise<AuthJwtPayload>} Returns the decoded JWT payload if the token is valid.
+   * @throws {Error} Throws an error if the token is invalid or expired.
+   */
   async verifyJwtToken(
     token: string,
     secret: string = process.env.JWT_SECRET!
@@ -65,11 +115,19 @@ class AuthService {
     });
   }
 
+  /**
+   * Middleware function to handle access control based on user roles and permissions.
+   *
+   * @param {AuthConfigs} authConfigs - The configuration object for authentication and access control.
+   * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
+   * @param {string} modelName - The model name that the action is being performed on (e.g., "User", "Post").
+   * @returns {RequestHandler} The middleware function that checks if the user has permission to perform the action.
+   */
   handleActionAccessControl(
     authConfigs: AuthConfigs,
     action: ControllerActions,
     modelName: string
-  ) {
+  ): RequestHandler {
     return catchAsync(
       async (req: Request, res: Response, next: NextFunction) => {
         if (req.user) {
@@ -98,6 +156,15 @@ class AuthService {
     );
   }
 
+  /**
+   * Middleware function to authenticate the user based on the JWT token.
+   *
+   * @param {Request} req - The request object.
+   * @param {Response} res - The response object.
+   * @param {NextFunction} next - The next middleware function to be called.
+   * @returns {void}
+   * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
+   */
   authenticate = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
       const initConfigs = getInitConfigs();
@@ -110,8 +177,11 @@ class AuthService {
         req?.headers?.authorization.startsWith("Bearer")
       ) {
         token = req?.headers?.authorization.split(" ")[1];
-      } else if (req?.cookies?.jwt !== "no-token" && req.cookies) {
-        token = req?.cookies?.jwt;
+      } else if (
+        req?.cookies?.arkos_access_token !== "no-token" &&
+        req.cookies
+      ) {
+        token = req?.cookies?.arkos_access_token;
       }
 
       if (!token)
@@ -178,11 +248,19 @@ class AuthService {
     }
   );
 
+  /**
+   * Handles authentication control by checking the `authenticationControl` configuration in the `authConfigs`.
+   *
+   * @param {AuthConfigs | undefined} authConfigs - The authentication configuration object.
+   * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
+   * @param {string} modelName - The model name being affected by the action.
+   * @returns {RequestHandler} The middleware function that checks if authentication is required.
+   */
   handleAuthenticationControl(
     authConfigs: AuthConfigs | undefined,
     action: ControllerActions,
     modelName: string
-  ) {
+  ): RequestHandler {
     const authenticationControl = authConfigs?.authenticationControl;
 
     if (authenticationControl && typeof authenticationControl === "object") {
@@ -194,6 +272,9 @@ class AuthService {
   }
 }
 
+/**
+ * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
+ */
 const authService = new AuthService();
 
 export default authService;
