@@ -157,93 +157,96 @@ class AuthService {
   }
 
   /**
+   * Processes the cookies or authoriation token and returns the user.
+   * @param req
+   * @returns {Promise<User | null>} - if authentication is turned off in initConfigs it returns null
+   * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
+   */
+  async getAuthenticatedUser(req: Request): Promise<User | null> {
+    const initConfigs = getInitConfigs();
+    if (initConfigs?.authentication === false) return null;
+
+    let token: string | undefined;
+
+    if (
+      req?.headers?.authorization &&
+      req?.headers?.authorization.startsWith("Bearer")
+    ) {
+      token = req?.headers?.authorization.split(" ")[1];
+    } else if (req?.cookies?.arkos_access_token !== "no-token" && req.cookies) {
+      token = req?.cookies?.arkos_access_token;
+    }
+
+    if (!token)
+      throw new AppError(
+        "You are not logged in! please log in to get access",
+        401
+      );
+
+    let decoded: AuthJwtPayload | undefined;
+    try {
+      decoded = await this.verifyJwtToken(token);
+    } catch (err) {
+      throw new AppError(
+        "Your auth token is invalid, please login again.",
+        401
+      );
+    }
+
+    if (!decoded?.id)
+      throw new AppError(
+        "Your auth token is invalid, please login again.",
+        401
+      );
+
+    const user: any | null = await (prisma as any).user.findUnique({
+      where: { id: String(decoded.id) },
+      include: {
+        roles: true,
+      },
+    });
+
+    if (!user)
+      throw new AppError(
+        "The user belonging to this token does no longer exists",
+        401
+      );
+
+    if (
+      this.userChangedPasswordAfter(user, decoded.iat!) &&
+      !req.path.includes("logout")
+    )
+      throw new AppError(
+        "User recently changed password! Please log in again.",
+        401
+      );
+
+    if (!user.isVerified && !req.path.includes("logout"))
+      throw new AppError(
+        "You must verifiy your email in order to proceed!",
+        423,
+        {
+          error: "email_verification_required",
+        }
+      );
+
+    return user;
+  }
+
+  /**
    * Middleware function to authenticate the user based on the JWT token.
    *
    * @param {Request} req - The request object.
    * @param {Response} res - The response object.
    * @param {NextFunction} next - The next middleware function to be called.
    * @returns {void}
-   * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
    */
   authenticate = catchAsync(
     async (req: Request, res: Response, next: NextFunction) => {
       const initConfigs = getInitConfigs();
       if (initConfigs?.authentication === false) return next();
 
-      let token: string | undefined;
-
-      if (
-        req?.headers?.authorization &&
-        req?.headers?.authorization.startsWith("Bearer")
-      ) {
-        token = req?.headers?.authorization.split(" ")[1];
-      } else if (
-        req?.cookies?.arkos_access_token !== "no-token" &&
-        req.cookies
-      ) {
-        token = req?.cookies?.arkos_access_token;
-      }
-
-      if (!token)
-        return next(
-          new AppError(
-            "You are not logged in! please log in to get access",
-            401
-          )
-        );
-
-      let decoded: AuthJwtPayload | undefined;
-      try {
-        decoded = await this.verifyJwtToken(token);
-      } catch (err) {
-        return next(
-          new AppError("Your auth token is invalid, please login again.", 401)
-        );
-      }
-
-      if (!decoded?.id)
-        return next(
-          new AppError("Your auth token is invalid, please login again.", 401)
-        );
-
-      const user: any | null = await (prisma as any).user.findUnique({
-        where: { id: String(decoded.id) },
-        include: {
-          roles: true,
-        },
-      });
-
-      if (!user)
-        return next(
-          new AppError(
-            "The user belonging to this token does no longer exists",
-            401
-          )
-        );
-
-      if (
-        this.userChangedPasswordAfter(user, decoded.iat!) &&
-        !req.path.includes("logout")
-      )
-        return next(
-          new AppError(
-            "User recently changed password! Please log in again.",
-            401
-          )
-        );
-
-      if (!user.isVerified && !req.path.includes("logout"))
-        return next(
-          new AppError(
-            "You must verifiy your email in order to proceed!",
-            423,
-            {
-              error: "email_verification_required",
-            }
-          )
-        );
-
-      req.user = user;
+      req.user = (await this.getAuthenticatedUser(req)) as User;
       next();
     }
   );

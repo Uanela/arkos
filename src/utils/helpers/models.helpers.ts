@@ -5,10 +5,12 @@ import { camelCase, kebabCase, pascalCase } from "change-case-all";
 import arkosEnv from "../arkos-env";
 import { extension } from "./fs.helpers";
 
-const globalPrismaModelsModules: Record<string, any> = {};
+const globalPrismaModelsModules: Record<
+  string,
+  Awaited<ReturnType<typeof importPrismaModelModules>>
+> = {};
 
-export function getModelModules(modelName: string, caller: string) {
-  console.log(globalPrismaModelsModules, "getModelModules", caller);
+export function getModelModules(modelName: string) {
   return globalPrismaModelsModules[kebabCase(modelName)];
 }
 

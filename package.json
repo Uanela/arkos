@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "0.1.23-beta.1",
+  "version": "0.1.26-beta.1",
   "description": "A super customizable TypeScript package for auto-generating API routes with built-in authentication, email service, error handling, file upload routes, image upload optimization, and seamless Prisma integration.",
   "type": "module",
   "main": "dist/cjs/exports/index.js",
@@ -37,7 +37,7 @@
     "build:es2020": "tsc -p tsconfig.es2020.json",
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "postbuild": "echo {\"type\":\"commonjs\"} > dist/cjs/package.json",
+    "postbuild": "echo {\\\"type\":\"commonjs\\\"} > dist/cjs/package.json",
     "build": "pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run postbuild",
     "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite",
     "clean": "rm -rf dist",

@@ -48,7 +48,7 @@ export class BaseService {
       },
       {}
     );
-    this.modelModules = getModelModules(kebabCase(modelName), "BaseService");
+    this.modelModules = getModelModules(kebabCase(modelName));
     this.shouldValidate =
       getInitConfigs()?.validation === true || "validation" in getInitConfigs();
   }
