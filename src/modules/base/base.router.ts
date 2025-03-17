@@ -15,7 +15,6 @@ import {
   sendResponse,
 } from "./base.middlewares";
 import { PrismaQueryOptions } from "../../types";
-import { permissions } from "../../utils/permissions";
 import authService from "../auth/auth.service";
 
 const models = getModels();
