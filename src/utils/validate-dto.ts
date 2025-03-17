@@ -31,7 +31,7 @@ export type ClassValidatorInitConfigsOptions = {
  *   const data = { name: "Uanela Como", email: "invalid-email" };
  *   try {
  *     const validatedUser = await validateData(CreateUserDto, data);
- *     console.log(validatedUser);
+ *     // do something
  *   } catch (error) {
  *     console.error(error.message);
  *   }

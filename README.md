@@ -14,7 +14,7 @@
 
 - ⚡ **Express Middlewares** – Pre-configured security, request parsing, and error handling.
 
-- 🛡️ **Built-in Data Validation** – using class-validator and class-transformer, just drop a create-post.dto.ts.
+- 🛡️ **Built-in Data Validation** – using class-validator and class-transformer or zod, just drop a create-post.dto.ts or create-user.schema.ts.
 
 - ⬆️ **File Upload & Optimization** – Efficient image, video, docs, raw-file handling.
 

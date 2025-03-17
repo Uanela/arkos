@@ -9,7 +9,7 @@ const router: Router = Router();
 
 (async function () {
   const { middlewares } = await importPrismaModelModules("auth");
-  const authController = authControllerFactory(middlewares);
+  const authController = await authControllerFactory(middlewares);
 
   router.get(
     "/users/me",

@@ -1,14 +1,15 @@
-import { ROOT_DIR } from "../../paths";
 import path from "path";
 import fs from "fs";
 import { camelCase, kebabCase, pascalCase } from "change-case-all";
 import arkosEnv from "../arkos-env";
-import { extension } from "./fs.helpers";
+import { userFileExtension } from "./fs.helpers";
 
-const globalPrismaModelsModules: Record<string, any> = {};
+const globalPrismaModelsModules: Record<
+  string,
+  Awaited<ReturnType<typeof importPrismaModelModules>>
+> = {};
 
-export function getModelModules(modelName: string, caller: string) {
-  console.log(globalPrismaModelsModules, "getModelModules", caller);
+export function getModelModules(modelName: string) {
   return globalPrismaModelsModules[kebabCase(modelName)];
 }
 
@@ -28,30 +29,33 @@ export async function importPrismaModelModules(modelName: string) {
 
   const middlewaresFile = path.join(
     moduleDir,
-    `${kebabModelName}.middlewares.${extension}`
+    `${kebabModelName}.middlewares.${userFileExtension}`
   );
   const authConfigsFile = path.join(
     moduleDir,
-    `${kebabModelName}.auth-configs.${extension}`
+    `${kebabModelName}.auth-configs.${userFileExtension}`
   );
   const prismaQueryOptionsFile = path.join(
     moduleDir,
-    `${kebabModelName}.prisma-query-options.${extension}`
+    `${kebabModelName}.prisma-query-options.${userFileExtension}`
   );
 
   // Define DTO file paths
-  const modelDtoFile = path.join(dtosDir, `${lowerModelName}.dto.${extension}`);
+  const modelDtoFile = path.join(
+    dtosDir,
+    `${lowerModelName}.dto.${userFileExtension}`
+  );
   const createDtoFile = path.join(
     dtosDir,
-    `create-${lowerModelName}.dto.${extension}`
+    `create-${lowerModelName}.dto.${userFileExtension}`
   );
   const updateDtoFile = path.join(
     dtosDir,
-    `update-${lowerModelName}.dto.${extension}`
+    `update-${lowerModelName}.dto.${userFileExtension}`
   );
   const queryDtoFile = path.join(
     dtosDir,
-    `query-${lowerModelName}.dto.${extension}`
+    `query-${lowerModelName}.dto.${userFileExtension}`
   );
 
   const result: {
@@ -159,7 +163,6 @@ export async function importPrismaModelModules(modelName: string) {
   }
 
   globalPrismaModelsModules[modelName] = result;
-  console.log("importPrismaModules", result);
   return result;
 }
 
