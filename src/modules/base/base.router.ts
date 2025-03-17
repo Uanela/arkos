@@ -4,8 +4,6 @@ import pluralize from "pluralize";
 import {
   getAvalibleRoutes,
   handlerFactory,
-  uploadFile,
-  deleteFile,
   getDatabaseModels,
 } from "./base.controller";
 import {
@@ -244,38 +242,9 @@ models.forEach(async (model) => {
 });
 
 (() => {
-  router.get("/available-routes", getAvalibleRoutes);
+  router.get("/available-routes", authService.authenticate, getAvalibleRoutes);
 
   router.get("/database-models", authService.authenticate, getDatabaseModels);
-
-  router.post(
-    "/uploads/:fileType",
-    authService.handleAuthenticationControl(
-      permissions.uploads,
-      "create",
-      "file-upload"
-    ),
-    authService.handleActionAccessControl(
-      permissions.uploads,
-      "create",
-      "file-upload"
-    ),
-    uploadFile
-  );
-  router.delete(
-    "/uploads/:fileType/:fileName",
-    authService.handleAuthenticationControl(
-      permissions.uploads,
-      "create",
-      "file-upload"
-    ),
-    authService.handleActionAccessControl(
-      permissions.uploads,
-      "create",
-      "file-upload"
-    ),
-    deleteFile
-  );
 })();
 
 export default router;

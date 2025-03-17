@@ -13,10 +13,10 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": "./dist",
+    "baseUrl": ".",
     "paths": {
-      "arkos": ["node_modules/arkos"],
-      "arkos/*": ["node_modules/arkos/dist/esm/exports/*"]
+      "arkos": ["src/exports/index.js"],
+      "arkos/*": ["src/exports/*"]
     }
   },
   "include": ["src"],

@@ -11,9 +11,9 @@ import catchAsync from "../error-handler/utils/catch-async";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
-import { prisma } from "../../app";
 import { getInitConfigs } from "../../server";
 import arkosEnv from "../../utils/arkos-env";
+import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -132,6 +132,7 @@ class AuthService {
       async (req: Request, res: Response, next: NextFunction) => {
         if (req.user) {
           const user = req.user as any;
+          const prisma = getPrismaInstance();
 
           const permissions = await (prisma as any).authPermission.count({
             where: {
@@ -165,6 +166,8 @@ class AuthService {
   async getAuthenticatedUser(req: Request): Promise<User | null> {
     const initConfigs = getInitConfigs();
     if (initConfigs?.authentication === false) return null;
+
+    const prisma = getPrismaInstance();
 
     let token: string | undefined;
 
@@ -202,7 +205,15 @@ class AuthService {
     const user: any | null = await (prisma as any).user.findUnique({
       where: { id: String(decoded.id) },
       include: {
-        roles: true,
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: true,
+              },
+            },
+          },
+        },
       },
     });
 

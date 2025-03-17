@@ -3,14 +3,13 @@ import {
   getModelModules,
   getModels,
   getPrismaModelRelations,
-  importPrismaModelModules,
   RelationFields,
 } from "../../utils/helpers/models.helpers";
 import deepmerge from "deepmerge";
 import AppError from "../error-handler/utils/app-error";
 import pluralize from "pluralize";
 import { handleRelationFieldsInBody } from "./utils/base.helpers";
-import { loadPrismaModule } from "../../utils/helpers/prisma.helpers";
+import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import validateDto from "../../utils/validate-dto";
 import { getInitConfigs } from "../../server";
 
@@ -22,9 +21,7 @@ export class BaseService {
   relationFields: RelationFields;
   singularRelationFieldToInclude: Record<string, boolean>;
   listRelationFieldToInclude: Record<string, boolean>;
-  modelModules: Awaited<ReturnType<typeof importPrismaModelModules>>;
   prisma: any;
-  shouldValidate: boolean;
 
   /**
    * Creates an instance of BaseService.
@@ -48,9 +45,6 @@ export class BaseService {
       },
       {}
     );
-    this.modelModules = getModelModules(kebabCase(modelName));
-    this.shouldValidate =
-      getInitConfigs()?.validation === true || "validation" in getInitConfigs();
   }
 
   /**
@@ -62,15 +56,17 @@ export class BaseService {
    */
   async createOne(
     body: Record<string, any>,
-    queryOptions: string = JSON.stringify(
-      this.modelModules.prismaQueryOptions || {}
-    )
+    // queryOptions: string = JSON.stringify(
+    //   getModelModules(kebabCase(this.modelName)).prismaQueryOptions || {}
+    // )
+    queryOptions: string = "{}"
   ): Promise<any> {
-    if (this.modelModules.dtos.create && this.shouldValidate) {
-      body = await validateDto(this.modelModules.dtos.create, body);
+    const modelModules = getModelModules(kebabCase(this.modelName));
+    if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+      body = await validateDto(modelModules.dtos.create, body);
     }
 
-    const prisma = await loadPrismaModule();
+    const prisma = getPrismaInstance();
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(
       body,
       {
@@ -103,11 +99,12 @@ export class BaseService {
   async createMany(
     body: Record<string, any>[]
   ): Promise<{ total: number; data: any }> {
-    if (this.modelModules.dtos.create && this.shouldValidate) {
-      body = await validateDto(this.modelModules.dtos.create, body);
+    const modelModules = getModelModules(kebabCase(this.modelName));
+    if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+      body = await validateDto(modelModules.dtos.create, body);
     }
 
-    const prisma = await loadPrismaModule();
+    const prisma = getPrismaInstance();
 
     if (!Array.isArray(body) || body.length === 0) {
       throw new AppError(
@@ -133,11 +130,12 @@ export class BaseService {
   async findMany(
     filters: Record<string, any>
   ): Promise<{ total: number; data: any }> {
-    // if (this.modelModules.dtos.query && this.shouldValidate) {
-    //   filters = await validateDto(this.modelModules.dtos.query, filters);
+    const modelModules = getModelModules(kebabCase(this.modelName));
+    // if (modelModules.dtos.query && getInitConfigs()?.validation !== false) {
+    //   filters = await validateDto(modelModules.dtos.query, filters);
     // }
 
-    const prisma = await loadPrismaModule();
+    const prisma = getPrismaInstance();
 
     const data = await prisma[this.modelName].findMany(
       "select" in filters
@@ -172,15 +170,17 @@ export class BaseService {
    */
   async findOne(
     filters: Record<string, any>,
-    queryOptions: string = JSON.stringify(
-      this.modelModules.prismaQueryOptions || {}
-    )
+    // queryOptions: string = JSON.stringify(
+    //   getModelModules(kebabCase(this.modelName)).prismaQueryOptions || {}
+    // )
+    queryOptions: string = "{}"
   ): Promise<any> {
-    // if (this.modelModules.dtos.create && this.shouldValidate) {
-    //   filters = await validateDto(this.modelModules.dtos.create, filters);
+    const modelModules = getModelModules(kebabCase(this.modelName));
+    // if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    //   filters = await validateDto(modelModules.dtos.create, filters);
     // }
 
-    const prisma = await loadPrismaModule();
+    const prisma = getPrismaInstance();
 
     const data = await prisma[this.modelName].findUnique(
       deepmerge(
@@ -226,15 +226,17 @@ export class BaseService {
   async updateOne(
     filters: Record<string, any>,
     body: Record<string, any>,
-    queryOptions: string = JSON.stringify(
-      this.modelModules.prismaQueryOptions || {}
-    )
+    // queryOptions: string = JSON.stringify(
+    //   getModelModules(kebabCase(this.modelName)).prismaQueryOptions || {}
+    // )
+    queryOptions: string = "{}"
   ): Promise<any> {
-    if (this.modelModules.dtos.update && this.shouldValidate) {
-      body = await validateDto(this.modelModules.dtos.update, body);
+    const modelModules = getModelModules(kebabCase(this.modelName));
+    if (modelModules.dtos.update && getInitConfigs()?.validation !== false) {
+      body = await validateDto(modelModules.dtos.update, body);
     }
 
-    const prisma = await loadPrismaModule();
+    const prisma = getPrismaInstance();
 
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(body, {
       ...this.relationFields,
@@ -276,11 +278,12 @@ export class BaseService {
     filters: Record<string, any>,
     body: Record<string, any>
   ): Promise<{ total: number; data: any }> {
-    // if (this.modelModules.dtos.create && this.shouldValidate) {
-    //   body = await validateDto(this.modelModules.dtos.create, body);
+    const modelModules = getModelModules(kebabCase(this.modelName));
+    // if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    //   body = await validateDto(modelModules.dtos.create, body);
     // }
 
-    const prisma = await loadPrismaModule();
+    const prisma = getPrismaInstance();
 
     if (!filters || typeof filters !== "object") {
       throw new AppError("Invalid filters provided for udpate many.", 400);
@@ -309,11 +312,12 @@ export class BaseService {
    * @returns {Promise<any>} The deleted record.
    */
   async deleteOne(params: Record<string, any>): Promise<any> {
-    // if (this.modelModules.dtos.create && this.shouldValidate) {
-    //   body = await validateDto(this.modelModules.dtos.create, body);
+    const modelModules = getModelModules(kebabCase(this.modelName));
+    // if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    //   body = await validateDto(modelModules.dtos.create, body);
     // }
 
-    const prisma = await loadPrismaModule();
+    const prisma = getPrismaInstance();
 
     return await prisma[this.modelName].delete({
       where: {
@@ -333,11 +337,12 @@ export class BaseService {
   async deleteMany(
     filters: Record<string, any>
   ): Promise<{ total: number; data: any }> {
-    // if (this.modelModules.dtos.create && this.shouldValidate) {
-    //   body = await validateDto(this.modelModules.dtos.create, body);
+    const modelModules = getModelModules(kebabCase(this.modelName));
+    // if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    //   body = await validateDto(modelModules.dtos.create, body);
     // }
 
-    const prisma = await loadPrismaModule();
+    const prisma = getPrismaInstance();
 
     if (!filters || typeof filters !== "object") {
       throw new AppError("Invalid filters provided for deletion.", 400);

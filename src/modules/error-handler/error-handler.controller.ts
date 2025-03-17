@@ -133,13 +133,14 @@ function sendDevelopmentError(err: AppError, req: Request, res: Response) {
  */
 function sendProductionError(err: AppError, req: Request, res: Response) {
   if (req.originalUrl.startsWith("/api")) {
+    console.error("[\x1b[31mERROR\x1b[0m]:", err);
+
     if (err.isOperational) {
       return res.status(err.statusCode).json({
         status: err.status,
         message: err.message,
       });
     }
-    console.error("[\x1b[31mERROR\x1b[0m]:", err);
 
     return res.status(500).json({
       status: "error",

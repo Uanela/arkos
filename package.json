@@ -1,16 +1,25 @@
 {
   "name": "arkos",
-  "version": "0.1.26-beta.1",
+  "version": "0.2.0-beta.1",
   "description": "A super customizable TypeScript package for auto-generating API routes with built-in authentication, email service, error handling, file upload routes, image upload optimization, and seamless Prisma integration.",
-  "type": "module",
   "main": "dist/cjs/exports/index.js",
-  "module": "dist/es2020/exports/index.js",
+  "module": "dist/cjs/exports/index.js",
   "types": "dist/types/exports/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/es2020/exports/index.js",
       "require": "./dist/cjs/exports/index.js",
       "types": "./dist/types/exports/index.d.ts"
+    },
+    "./prisma": {
+      "import": "./dist/es2020/exports/prisma/index.js",
+      "require": "./dist/cjs/exports/prisma/index.js",
+      "types": "./dist/types/exports/prisma/index.d.ts"
+    },
+    "./auth": {
+      "import": "./dist/es2020/exports/auth/index.js",
+      "require": "./dist/cjs/exports/auth/index.js",
+      "types": "./dist/types/exports/auth/index.d.ts"
     },
     "./services": {
       "import": "./dist/es2020/exports/services/index.js",
@@ -31,16 +40,40 @@
       "import": "./dist/es2020/exports/utils/index.js",
       "require": "./dist/cjs/exports/utils/index.js",
       "types": "./dist/types/exports/utils/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/es2020/exports/*.js",
+      "require": "./dist/cjs/exports/*.js",
+      "types": "./dist/types/exports/*.d.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/types/exports/*/index.d.ts"
+      ],
+      "services": [
+        "./dist/types/exports/services/index.d.ts"
+      ],
+      "validation": [
+        "./dist/types/exports/validation/index.d.ts"
+      ],
+      "error-handler": [
+        "./dist/types/exports/error-handler/index.d.ts"
+      ],
+      "utils": [
+        "./dist/types/exports/utils/index.d.ts"
+      ]
     }
   },
   "scripts": {
     "build:es2020": "tsc -p tsconfig.es2020.json",
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "postbuild": "echo {\\\"type\":\"commonjs\\\"} > dist/cjs/package.json",
-    "build": "pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run postbuild",
-    "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite",
-    "clean": "rm -rf dist",
+    "postbuilda": "echo {\\\"type\":\"commonjs\\\"} > dist/cjs/package.json",
+    "build": "pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run minify",
+    "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
+    "clean": "rm -r dist",
     "dev": "ts-node --watch",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint src --ext .ts",

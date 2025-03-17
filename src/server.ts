@@ -45,6 +45,9 @@ async function initApp(
     console.info(
       `[\x1b[32mREADY\x1b[0m] \x1b[90m${time}\x1b[0m App running on port \x1b[33m${port}\x1b[0m, server waiting on http://localhost:${port}`
     );
+    console.log(
+      `${!!process.env.NODE_ENV && `Environment is ${process.env.NODE_ENV}`}`
+    );
   });
 }
 
