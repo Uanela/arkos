@@ -2,7 +2,7 @@ import { Request } from "express";
 import deepmerge from "deepmerge";
 import { parseQueryParamsWithModifiers } from "../helpers/api.features.helpers";
 import AppError from "../../modules/error-handler/utils/app-error";
-import { prisma } from "../../app";
+import { getPrismaInstance } from "../helpers/prisma.helpers";
 
 type ModelName = string;
 
@@ -66,6 +66,8 @@ export default class APIFeatures {
         : {};
 
     if (!!this.searchParams.search) {
+      const prisma = getPrismaInstance();
+
       Object.keys((prisma as any)[this.modelName].fields).forEach((key) => {
         const field = ((prisma as any)[this.modelName].fields as any)[key];
         if (
@@ -217,6 +219,7 @@ export default class APIFeatures {
   }
 
   async exec() {
+    const prisma = getPrismaInstance();
     return await (prisma as any)[this.modelName].findMany(this.filters);
   }
 }

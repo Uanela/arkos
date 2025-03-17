@@ -15,9 +15,9 @@ const arkos = {
  *
  * @module arkos
  */
+export default arkos;
+
 // export * from "./services";
 // export * from "./utils";
 // export * from "./validation";
 // export * from "./error-handler";
-
-export default arkos;

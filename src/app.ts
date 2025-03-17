@@ -16,6 +16,7 @@ import {
   loadPrismaModule,
 } from "./utils/helpers/prisma.helpers";
 import { ClassValidatorInitConfigsOptions } from "./utils/validate-dto";
+import { fileUploaderRouter } from "./modules/file-uploader/file-uploader.router";
 
 const ENV = process.env.NODE_ENV;
 let envPath = ".env";
@@ -55,10 +56,6 @@ export type InitConfigs = {
 
 let initConfigs: InitConfigs;
 let prisma: any;
-
-(async () => {
-  prisma = await loadPrismaModule();
-})();
 
 export async function bootstrap(app: express.Express, configs: InitConfigs) {
   prisma = await loadPrismaModule();
@@ -114,15 +111,14 @@ export async function bootstrap(app: express.Express, configs: InitConfigs) {
     })
   );
 
-  app.use(checkDatabaseConnection(prisma));
+  app.use(checkDatabaseConnection);
 
   app.use(handleRequestLogs);
 
   if (configs.authentication) app.use("/api", authRouter);
   app.use("/api", baseRouter);
+  app.use("/api", fileUploaderRouter);
   app.use(errorHandler);
 
   return app;
 }
-
-export { prisma };

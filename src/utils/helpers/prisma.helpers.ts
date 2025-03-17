@@ -17,9 +17,13 @@ export const loadPrismaModule = async () => {
   return prismaInstance;
 };
 
-export const checkDatabaseConnection = (prisma: any) =>
-  catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    prisma = await loadPrismaModule();
+export function getPrismaInstance() {
+  return prismaInstance;
+}
+
+export const checkDatabaseConnection = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const prisma = await loadPrismaModule();
     try {
       await prisma.$connect();
       next();
@@ -27,4 +31,5 @@ export const checkDatabaseConnection = (prisma: any) =>
       console.error("Database connection error", error.message);
       next(new AppError(error.message, 503));
     }
-  });
+  }
+);

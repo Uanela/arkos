@@ -56,3 +56,47 @@ export const extension = (() => {
 
   return "js";
 })();
+
+/**
+ * Immediately detects if the user's project uses TypeScript or JavaScript
+ * @returns 'ts' | 'js'
+ */
+export const userFileExtension = ((): "ts" | "js" => {
+  try {
+    // Only works in Node.js environment
+    const fs = require("fs");
+    const path = require("path");
+
+    // Get the project root
+    const projectRoot = process.cwd();
+
+    // Check for tsconfig.json in project root as the fastest check
+    if (fs.existsSync(path.join(projectRoot, "tsconfig.json"))) {
+      return "ts";
+    }
+
+    // Check common src directories
+    const srcDirs = ["src", "source", "app", "lib"]
+      .map((dir) => path.join(projectRoot, dir))
+      .filter((dir) => fs.existsSync(dir) && fs.statSync(dir).isDirectory());
+
+    // Add project root to directories to check
+    srcDirs.push(projectRoot);
+
+    // Check each directory for .ts files
+    for (const dir of srcDirs) {
+      const files = fs.readdirSync(dir);
+      if (
+        files.some((file: any) => file.endsWith(".ts") || file.endsWith(".tsx"))
+      ) {
+        return "ts";
+      }
+    }
+
+    // Default to js if no TypeScript indicators found
+    return "js";
+  } catch (e) {
+    // Fallback to js if any errors occur
+    return "js";
+  }
+})();

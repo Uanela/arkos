@@ -4,9 +4,11 @@ import { CookieOptions, NextFunction, Request, Response } from "express";
 import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
-import { prisma } from "../../app";
+import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
+import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
+import deepmerge from "deepmerge";
 
-export const excludedUserFields = {
+export const defaultExcludedUserFields = {
   password: false,
   passwordChangedAt: false,
   passwordResetOtp: false,
@@ -18,17 +20,31 @@ export const excludedUserFields = {
   active: false,
 };
 
-export const authControllerFactory = (middlewares: any = {}) => {
+export const authControllerFactory = async (middlewares: any = {}) => {
   const baseServices = getBaseServices();
+  let prismaQueryOptions: Record<string, any> = {};
+
+  const userModules = await importPrismaModelModules("user");
+  if (userModules) prismaQueryOptions = userModules?.prismaQueryOptions || {};
+
+  const prisma = getPrismaInstance();
+
+  const stringifiedQueryOptions = JSON.stringify(
+    deepmerge(
+      prismaQueryOptions?.queryOptions || {},
+      prismaQueryOptions?.findOne || {}
+    ) || {}
+  );
 
   return {
     getMe: catchAsync(
       async (req: Request, res: Response, next: NextFunction) => {
-        const user = await baseServices["user"].findOne({
-          where: { id: req.user!.id },
-        });
+        const user = await baseServices["user"].findOne(
+          { id: req.user!.id },
+          stringifiedQueryOptions
+        );
 
-        Object.keys(excludedUserFields).forEach((key) => {
+        Object.keys(defaultExcludedUserFields).forEach((key) => {
           if (req.user) delete req.user[key as keyof User];
         });
 
@@ -130,7 +146,7 @@ export const authControllerFactory = (middlewares: any = {}) => {
           return next();
         }
 
-        Object.keys(excludedUserFields).forEach((key) => {
+        Object.keys(defaultExcludedUserFields).forEach((key) => {
           delete user[key as keyof User];
         });
 
