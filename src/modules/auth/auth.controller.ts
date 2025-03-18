@@ -103,7 +103,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         if (
           !user.isVerified &&
-          initConfigs.signup?.requireEmailVerification === true
+          initConfigs?.signup?.requireEmailVerification === true
         )
           return next(
             new AppError(
