@@ -138,21 +138,21 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           cookieOptions.secure = true;
 
         if (middlewares?.afterLogin) {
-          (req as any).responseData = { acessToken: token };
+          (req as any).responseData = { accessToken: token };
           (req as any).responseStatus = 200;
           return next();
         }
 
-        if (initConfigs?.login?.sendAcessTokenThrough === "response-only") {
-          res.status(200).json({ acessToken: token });
+        if (initConfigs?.login?.sendAccessTokenThrough === "response-only") {
+          res.status(200).json({ accessToken: token });
         } else if (
-          initConfigs?.login?.sendAcessTokenThrough === "cookie-only"
+          initConfigs?.login?.sendAccessTokenThrough === "cookie-only"
         ) {
           res.cookie("arkos_access_token", token, cookieOptions);
           res.status(200).send();
         } else {
           res.cookie("arkos_access_token", token, cookieOptions);
-          res.status(200).json({ acessToken: token });
+          res.status(200).json({ accessToken: token });
         }
       }
     ),
