@@ -12,10 +12,7 @@ process.on("uncaughtException", (err) => {
 
 let server: Server<typeof IncomingMessage, typeof ServerResponse>;
 let _app: Express;
-let _initConfigs: InitConfigs = {
-  authentication: false,
-  validation: false,
-};
+let _initConfigs: InitConfigs;
 
 /**
  * Initializes the application server.
@@ -30,7 +27,13 @@ let _initConfigs: InitConfigs = {
  * @param {InitConfigs} initConfigs - initial configs for the api ( authentication, port).
  * @returns {Promise<void>} This function does not return a value.
  */
-async function initApp(app: Express, initConfigs: InitConfigs): Promise<void> {
+async function initApp(
+  app: Express,
+  initConfigs: InitConfigs = {
+    authentication: false,
+    validation: false,
+  }
+): Promise<void> {
   _app = app;
   _initConfigs = initConfigs;
 
@@ -43,7 +46,9 @@ async function initApp(app: Express, initConfigs: InitConfigs): Promise<void> {
       `[\x1b[32mREADY\x1b[0m] \x1b[90m${time}\x1b[0m App running on port \x1b[33m${port}\x1b[0m, server waiting on http://localhost:${port}`
     );
     console.log(
-      `${!!process.env.NODE_ENV && `Environment is ${process.env.NODE_ENV}`}`
+      `${
+        !!process.env.NODE_ENV && `Environment set to ${process.env.NODE_ENV}`
+      }`
     );
   });
 }

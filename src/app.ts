@@ -43,13 +43,13 @@ else if (ENV === "test") {
 dotenv.config({ path: envPath });
 
 export type InitConfigsAuthenticationOptions = {
-  signup: {
+  signup?: {
     /** Defines wether the api will look for isVerified = true in order to login or make an operation that authentication is required. */
-    requireEmailVerification: boolean;
+    requireEmailVerification?: boolean;
   };
-  login: {
+  login?: {
     /** Defines wether to send the access token in response after login or only send as cookie, defeault is both.*/
-    sendAcessTokenThrough: "cookie-only" | "response-only" | "both";
+    sendAcessTokenThrough?: "cookie-only" | "response-only" | "both";
   };
 };
 
