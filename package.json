@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.0.4-rc.1",
+  "version": "1.0.5-rc.1",
   "description": "A super customizable TypeScript package for auto-generating API routes with built-in authentication, email service, error handling, file upload routes, image upload optimization, and seamless Prisma integration.",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/cjs/exports/index.js",
