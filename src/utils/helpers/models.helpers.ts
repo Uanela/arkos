@@ -163,6 +163,7 @@ export async function importPrismaModelModules(modelName: string) {
   }
 
   globalPrismaModelsModules[modelName] = result;
+
   return result;
 }
 

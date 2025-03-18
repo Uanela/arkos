@@ -12,6 +12,7 @@ import { handleRelationFieldsInBody } from "./utils/base.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import validateDto from "../../utils/validate-dto";
 import { getInitConfigs } from "../../server";
+import authService from "../auth/auth.service";
 
 /**
  * Base service class for handling CRUD operations on a specific model.
@@ -66,7 +67,11 @@ export class BaseService {
       body = await validateDto(modelModules.dtos.create, body);
     }
 
+    if (kebabCase(this.modelName) === "user" && body.password)
+      body.password = await authService.hashPassword(body.password);
+
     const prisma = getPrismaInstance();
+
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(
       body,
       {
@@ -237,6 +242,9 @@ export class BaseService {
     }
 
     const prisma = getPrismaInstance();
+
+    if (kebabCase(this.modelName) === "user" && body.password)
+      body.password = await authService.hashPassword(body.password);
 
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(body, {
       ...this.relationFields,
