@@ -105,7 +105,7 @@ class AuthService {
    */
   async verifyJwtToken(
     token: string,
-    secret: string = process.env.JWT_SECRET!
+    secret: string = process.env.JWT_SECRET || arkosEnv.JWT_SECRET
   ): Promise<AuthJwtPayload> {
     return new Promise((resolve, reject) => {
       jwt.verify(token, secret, (err, decoded) => {
