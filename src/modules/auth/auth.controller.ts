@@ -8,7 +8,7 @@ import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import deepmerge from "deepmerge";
 import arkosEnv from "../../utils/arkos-env";
-import { getInitConfigs } from "src/server";
+import { getInitConfigs } from "../../server";
 import { InitConfigsAuthenticationOptions } from "../../app";
 
 export const defaultExcludedUserFields = {
