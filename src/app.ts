@@ -49,7 +49,7 @@ export type InitConfigsAuthenticationOptions = {
   };
   login: {
     /** Defines wether to send the access token in response after login or only send as cookie, defeault is both.*/
-    sendAcessTokenIn: "cookie-only" | "response-only" | "both";
+    sendAcessTokenThrough: "cookie-only" | "response-only" | "both";
   };
 };
 

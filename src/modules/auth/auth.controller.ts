@@ -143,9 +143,11 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           return next();
         }
 
-        if (initConfigs.login?.sendAcessTokenThrough === "response-only") {
+        if (initConfigs?.login?.sendAcessTokenThrough === "response-only") {
           res.status(200).json({ acessToken: token });
-        } else if (initConfigs.login?.sendAcessTokenThrough === "cookie-only") {
+        } else if (
+          initConfigs?.login?.sendAcessTokenThrough === "cookie-only"
+        ) {
           res.cookie("arkos_access_token", token, cookieOptions);
           res.status(200).send();
         } else {
