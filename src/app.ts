@@ -47,6 +47,10 @@ export type InitConfigsAuthenticationOptions = {
     /** Defines wether the api will look for isVerified = true in order to login or make an operation that authentication is required. */
     requireEmailVerification: boolean;
   };
+  login: {
+    /** Defines wether to send the access token in response after login or only send as cookie, defeault is both.*/
+    sendAcessTokenIn: "cookie-only" | "response-only" | "both";
+  };
 };
 
 export type InitConfigs = {

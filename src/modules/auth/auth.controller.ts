@@ -87,6 +87,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         }
 
         const prisma = getPrismaInstance();
+        const initConfigs = getInitConfigs()
+          ?.authentication as InitConfigsAuthenticationOptions;
 
         const user = await (prisma as any).user.findUnique({
           where: { email },
@@ -101,8 +103,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         if (
           !user.isVerified &&
-          (getInitConfigs()?.authentication as InitConfigsAuthenticationOptions)
-            .signup?.requireEmailVerification === true
+          initConfigs.signup?.requireEmailVerification === true
         )
           return next(
             new AppError(
@@ -136,15 +137,21 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         )
           cookieOptions.secure = true;
 
-        res.cookie("arkos_access_token", token, cookieOptions);
-
         if (middlewares?.afterLogin) {
-          (req as any).responseData = { token };
+          (req as any).responseData = { acessToken: token };
           (req as any).responseStatus = 200;
           return next();
         }
 
-        res.status(200).send();
+        if (initConfigs.login?.sendAcessTokenThrough === "response-only") {
+          res.status(200).json({ acessToken: token });
+        } else if (initConfigs.login?.sendAcessTokenThrough === "cookie-only") {
+          res.cookie("arkos_access_token", token, cookieOptions);
+          res.status(200).send();
+        } else {
+          res.cookie("arkos_access_token", token, cookieOptions);
+          res.status(200).json({ acessToken: token });
+        }
       }
     ),
 
