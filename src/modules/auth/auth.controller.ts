@@ -7,6 +7,9 @@ import { User } from "../../types";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import deepmerge from "deepmerge";
+import arkosEnv from "../../utils/arkos-env";
+import { getInitConfigs } from "src/server";
+import { InitConfigsAuthenticationOptions } from "../../app";
 
 export const defaultExcludedUserFields = {
   password: false,
@@ -26,8 +29,6 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
   const userModules = await importPrismaModelModules("user");
   if (userModules) prismaQueryOptions = userModules?.prismaQueryOptions || {};
-
-  const prisma = getPrismaInstance();
 
   const stringifiedQueryOptions = JSON.stringify(
     deepmerge(
@@ -85,6 +86,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           );
         }
 
+        const prisma = getPrismaInstance();
+
         const user = await (prisma as any).user.findUnique({
           where: { email },
         });
@@ -96,7 +99,11 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           return next(new AppError("Incorrect email or password", 401));
         }
 
-        if (!user.isVerified)
+        if (
+          !user.isVerified &&
+          (getInitConfigs()?.authentication as InitConfigsAuthenticationOptions)
+            .signup?.requireEmailVerification === true
+        )
           return next(
             new AppError(
               "You must verifiy your email in order to proceed!",
@@ -109,16 +116,23 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         const cookieOptions: CookieOptions = {
           expires: new Date(
             Date.now() +
-              Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000
+              Number(
+                process.env.JWT_COOKIE_EXPIRES_IN ||
+                  arkosEnv.JWT_COOKIE_EXPIRES_IN
+              ) *
+                24 *
+                60 *
+                60 *
+                1000
           ),
           httpOnly: true,
           secure: req.secure || req.headers["x-forwarded-proto"] === "https",
-          sameSite: process.env.JWT_SECURE != "false" ? "lax" : "none",
+          sameSite: process.env.JWT_SECURE !== "false" ? "lax" : "none",
         };
 
         if (
           process.env.NODE_ENV === "production" &&
-          process.env.JWT_SECURE != "false"
+          process.env.JWT_SECURE !== "false"
         )
           cookieOptions.secure = true;
 
@@ -166,6 +180,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             })
           );
         }
+
+        const prisma = getPrismaInstance();
 
         const user = await (prisma as any).user.findUnique({
           where: { email },
@@ -242,6 +258,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
               400
             )
           );
+
+        const prisma = getPrismaInstance();
 
         const user = await (prisma as any).user.findUnique({
           where: {
@@ -339,6 +357,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
               400
             )
           );
+
+        const prisma = getPrismaInstance();
 
         const user = await (prisma as any).user.findUnique({
           where: { email },
@@ -463,6 +483,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
               400
             )
           );
+
+        const prisma = getPrismaInstance();
 
         // Update the password
         await (prisma as any).user.update({

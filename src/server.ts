@@ -12,7 +12,10 @@ process.on("uncaughtException", (err) => {
 
 let server: Server<typeof IncomingMessage, typeof ServerResponse>;
 let _app: Express;
-let _initConfigs: InitConfigs;
+let _initConfigs: InitConfigs = {
+  authentication: false,
+  validation: false,
+};
 
 /**
  * Initializes the application server.
@@ -27,13 +30,7 @@ let _initConfigs: InitConfigs;
  * @param {InitConfigs} initConfigs - initial configs for the api ( authentication, port).
  * @returns {Promise<void>} This function does not return a value.
  */
-async function initApp(
-  app: Express,
-  initConfigs: InitConfigs = {
-    authentication: false,
-    validation: false,
-  }
-): Promise<void> {
+async function initApp(app: Express, initConfigs: InitConfigs): Promise<void> {
   _app = app;
   _initConfigs = initConfigs;
 

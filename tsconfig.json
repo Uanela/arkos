@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "module": "ES2020",
+    "module": "ESNext",
     "moduleResolution": "node",
-    "target": "ES2020",
+    "target": "ES2016",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -13,11 +13,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "arkos": ["src/exports/index.js"],
-      "arkos/*": ["src/exports/*"]
-    }
+    "baseUrl": "."
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

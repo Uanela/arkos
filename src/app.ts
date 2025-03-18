@@ -42,9 +42,16 @@ else if (ENV === "test") {
 
 dotenv.config({ path: envPath });
 
+export type InitConfigsAuthenticationOptions = {
+  signup: {
+    /** Defines wether the api will look for isVerified = true in order to login or make an operation that authentication is required. */
+    requireEmailVerification: boolean;
+  };
+};
+
 export type InitConfigs = {
   port?: number;
-  authentication?: boolean;
+  authentication?: InitConfigsAuthenticationOptions | boolean;
   validation?:
     | ClassValidatorInitConfigsOptions
     | {
@@ -56,6 +63,10 @@ export type InitConfigs = {
 
 let initConfigs: InitConfigs;
 let prisma: any;
+
+(async () => {
+  prisma = await loadPrismaModule();
+})();
 
 export async function bootstrap(app: express.Express, configs: InitConfigs) {
   prisma = await loadPrismaModule();
