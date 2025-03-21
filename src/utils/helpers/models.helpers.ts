@@ -176,8 +176,8 @@ export async function importPrismaModelModules(modelName: string) {
  * @property {Array<{name: string, type: string}>} list - List of list relationships.
  */
 export type RelationFields = {
-  singular: { name: string; type: string }[];
-  list: { name: string; type: string }[];
+  singular: { name: string; type: string; isUnique: boolean }[];
+  list: { name: string; type: string; isUnique: boolean }[];
 };
 
 const schemaFolderPath =
@@ -253,10 +253,18 @@ for (const model of models) {
   for (const line of lines) {
     const trimmedLine = line.trim();
 
-    if (!trimmedLine || trimmedLine.startsWith("model")) continue;
+    if (
+      !trimmedLine ||
+      trimmedLine.startsWith("model") ||
+      trimmedLine.startsWith("//")
+    )
+      continue;
 
     const [fieldName, type] = trimmedLine.split(/\s+/);
+    const isUnique = trimmedLine.includes("@unique");
+
     const cleanType = type?.replace("[]", "").replace("?", "");
+
     if (
       trimmedLine.includes("@relation") ||
       trimmedLine.match(/\s+\w+(\[\])?(\s+@|$)/) ||
@@ -281,9 +289,17 @@ for (const model of models) {
       }
 
       if (!type?.includes("[]")) {
-        relations.singular.push({ name: fieldName, type: cleanType });
+        relations.singular.push({
+          name: fieldName,
+          type: cleanType,
+          isUnique,
+        });
       } else {
-        relations.list.push({ name: fieldName, type: cleanType });
+        relations.list.push({
+          name: fieldName,
+          type: cleanType,
+          isUnique,
+        });
       }
     }
 
