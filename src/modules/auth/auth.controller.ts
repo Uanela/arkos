@@ -1,6 +1,7 @@
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
-import { CookieOptions, NextFunction, Request, Response } from "express";
+import { CookieOptions, NextFunction, Response } from "express";
+import { ArkosRequest } from "../../types";
 import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
@@ -14,10 +15,10 @@ import { InitConfigsAuthenticationOptions } from "../../app";
 export const defaultExcludedUserFields = {
   password: false,
   passwordChangedAt: false,
-  passwordResetOtp: false,
-  passwordResetOtpExpiresAt: false,
-  verificationOtp: false,
-  verificationOptExpiresAt: false,
+  passwordResetToken: false,
+  passwordResetTokenExpiresAt: false,
+  verificationToken: false,
+  verificationTokenExpiresAt: false,
   isVerified: false,
   deletedSelfAccount: false,
   active: false,
@@ -39,7 +40,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
   return {
     getMe: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (req: ArkosRequest, res: Response, next: NextFunction) => {
         const user = await baseServices["user"].findOne(
           { id: req.user!.id },
           stringifiedQueryOptions
@@ -60,7 +61,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     ),
 
     logout: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (req: ArkosRequest, res: Response, next: NextFunction) => {
         res.cookie("arkos_access_token", "no-token", {
           expires: new Date(Date.now() + 10 * 1000),
           httpOnly: true,
@@ -77,7 +78,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     ),
 
     login: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (req: ArkosRequest, res: Response, next: NextFunction) => {
         const { email, password } = req.body;
 
         if (!email || !password) {
@@ -158,7 +159,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     ),
 
     signup: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (req: ArkosRequest, res: Response, next: NextFunction) => {
         const userService = baseServices["user"];
 
         const user = await userService.createOne(req.body);
@@ -178,13 +179,13 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     ),
 
     verifyEmail: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
-        const { otp, email } = req.body;
+      async (req: ArkosRequest, res: Response, next: NextFunction) => {
+        const { token, email } = req.body;
 
-        // Check if email and OTP are provided
-        if (!email || !otp) {
+        // Check if email and Token are provided
+        if (!email || !token) {
           return next(
-            new AppError("Email and otp are required", 400, {
+            new AppError("Email and token are required", 400, {
               error: "Missing parameters",
             })
           );
@@ -211,23 +212,23 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             })
           );
 
-        if (user.verificationOtp !== otp)
+        if (user.verificationToken !== token)
           return next(
-            new AppError("The OTP is incorrect.", 400, {
-              error: "invalid_otp",
+            new AppError("The Token is incorrect.", 400, {
+              error: "invalid_token",
             })
           );
 
         if (
-          user.verificationOptExpiresAt &&
-          new Date() > user.verificationOptExpiresAt
+          user.verificationTokenExpiresAt &&
+          new Date() > user.verificationTokenExpiresAt
         )
           return next(
             new AppError(
-              "The OTP has expired. Please request a new one.",
+              "The Token has expired. Please arkosRequest a new one.",
               400,
               {
-                error: "expired_otp",
+                error: "expired_token",
               }
             )
           );
@@ -236,8 +237,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           where: { email },
           data: {
             isVerified: true,
-            verificationOtp: null,
-            verificationOptExpiresAt: null,
+            verificationToken: null,
+            verificationTokenExpiresAt: null,
           },
         });
 
@@ -259,7 +260,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     ),
 
     forgotPassword: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (req: ArkosRequest, res: Response, next: NextFunction) => {
         if (!req.body.email)
           return next(
             new AppError(
@@ -290,14 +291,15 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             })
           );
 
-        // Verifica se um OTP foi solicitado recentemente
-        if (user.passwordResetOtpExpiresAt) {
+        // Verifica se um Token foi solicitado recentemente
+        if (user.passwordResetTokenExpiresAt) {
           const now = new Date();
-          const lastOtpRequestedAt = new Date(
-            new Date(user.passwordResetOtpExpiresAt).getTime() - 15 * 60 * 1000
+          const lastTokenArkosRequestedAt = new Date(
+            new Date(user.passwordResetTokenExpiresAt).getTime() -
+              15 * 60 * 1000
           );
           const timeElapsed =
-            (now.getTime() - lastOtpRequestedAt.getTime()) / 1000;
+            (now.getTime() - lastTokenArkosRequestedAt.getTime()) / 1000;
           const minInterval = 2 * 60; // 2 minutos em segundos
 
           if (timeElapsed < minInterval)
@@ -305,7 +307,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
               new AppError(
                 `Please wait ${Math.ceil(
                   minInterval - timeElapsed
-                )} seconds before requesting a new OTP.`,
+                )} seconds before arkosRequesting a new Token.`,
                 429,
                 {
                   remainingTime: Math.ceil(minInterval - timeElapsed),
@@ -314,27 +316,29 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             );
         }
 
-        const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        const resetOtpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        const resetToken = Math.floor(
+          100000 + Math.random() * 900000
+        ).toString();
+        const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
         await (prisma as any).user.update({
           where: {
             id: user.id,
           },
           data: {
-            passwordResetOtp: resetOtp,
-            passwordResetOtpExpiresAt: resetOtpExpiresAt,
+            passwordResetToken: resetToken,
+            passwordResetTokenExpiresAt: resetTokenExpiresAt,
           },
         });
 
         if (middlewares?.afterForgotPassword) {
           (req as any).additionalData = {
             user,
-            resetOtp,
+            resetToken,
           };
           (req as any).responseData = {
             status: "success",
-            message: "OTP code sent successfully!",
+            message: "Token code sent successfully!",
           };
           (req as any).responseStatus = 200;
           return next();
@@ -342,19 +346,19 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         res.status(200).json({
           status: "success",
-          message: "OTP code sent successfully!",
+          message: "Token code sent successfully!",
         });
       }
     ),
 
     resetPassword: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
-        const { email, otp, newPassword } = req.body;
+      async (req: ArkosRequest, res: Response, next: NextFunction) => {
+        const { email, token, newPassword } = req.body;
 
-        if (!otp || !email || !newPassword)
+        if (!token || !email || !newPassword)
           return next(
             new AppError(
-              "email, otp and newPassword are required to reset password",
+              "email, token and newPassword are required to reset password",
               400
             )
           );
@@ -373,13 +377,13 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           where: { email },
         });
 
-        if (!user?.passwordResetOtp)
+        if (!user?.passwordResetToken)
           return next(
             new AppError(
-              "You must request an otp in order to reset password!",
+              "You must arkosRequest an token in order to reset password!",
               400,
               {
-                error: "no_requested_otp",
+                error: "no_arkosRequested_token",
               }
             )
           );
@@ -409,24 +413,24 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             })
           );
 
-        if (!user.passwordResetOtp || !user.passwordResetOtpExpiresAt)
-          return next(new AppError("Invalid or expired OTP.", 400));
+        if (!user.passwordResetToken || !user.passwordResetTokenExpiresAt)
+          return next(new AppError("Invalid or expired Token.", 400));
 
         const now = new Date();
-        if (now > new Date(user.passwordResetOtpExpiresAt))
+        if (now > new Date(user.passwordResetTokenExpiresAt))
           return next(
-            new AppError("OTP expired. Please request a new one.", 400)
+            new AppError("Token expired. Please arkosRequest a new one.", 400)
           );
 
-        if (user.passwordResetOtp != otp)
-          return next(new AppError("Invalid OTP. Please try again.", 400));
+        if (user.passwordResetToken != token)
+          return next(new AppError("Invalid Token. Please try again.", 400));
 
         await (prisma as any).user.update({
           where: { id: user.id },
           data: {
             password: await authService.hashPassword(newPassword),
-            passwordResetOtp: null,
-            passwordResetOtpExpiresAt: null,
+            passwordResetToken: null,
+            passwordResetTokenExpiresAt: null,
             passwordChangedAt: new Date(),
           },
         });
@@ -451,7 +455,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     ),
 
     updatePassword: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (req: ArkosRequest, res: Response, next: NextFunction) => {
         const { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword)

@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import APIFeatures from "../../utils/features/api.features";
 import { BaseService } from "./base.service";
