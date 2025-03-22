@@ -8,7 +8,7 @@ import {
 import deepmerge from "deepmerge";
 import AppError from "../error-handler/utils/app-error";
 import pluralize from "pluralize";
-import { handleRelationFieldsInBody } from "./utils/base.helpers";
+import { handleRelationFieldsInBody } from "./utils/helpers/base.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import validateDto from "../../utils/validate-dto";
 import { getInitConfigs } from "../../server";

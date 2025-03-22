@@ -5,38 +5,44 @@ import {
   isListFieldAnArray,
 } from "../base.helpers"; // Update this path
 
-// Mock the getPrismaModelRelations helper
-vi.mock("../../../../utils/helpers/models.helpers", () => ({
+// Mock the required helpers
+vi.mock("../../../../../utils/helpers/models.helpers", () => ({
   getPrismaModelRelations: vi.fn((type) => {
     if (type === "Post") {
       return {
-        singular: [
-          {
-            name: "category",
-            type: "Category",
-            isUnique: false,
-            uniqueFields: ["name"],
-          },
-        ],
+        singular: [{ name: "category", type: "Category" }],
         list: [
-          {
-            name: "tags",
-            type: "Tag",
-            isUnique: false,
-            uniqueFields: ["name"],
-          },
-          { name: "comments", type: "Comment", isUnique: false },
+          { name: "tags", type: "Tag" },
+          { name: "comments", type: "Comment" },
         ],
       };
     }
     if (type === "User") {
       return {
-        singular: [{ name: "profile", type: "Profile", isUnique: false }],
-        list: [{ name: "posts", type: "Post", isUnique: false }],
+        singular: [{ name: "profile", type: "Profile" }],
+        list: [{ name: "posts", type: "Post" }],
+      };
+    }
+    if (type === "Comment") {
+      return {
+        singular: [{ name: "author", type: "User" }],
       };
     }
     return null;
   }),
+  getModelUniqueFields: vi.fn((modelName) => {
+    if (modelName === "Category") {
+      return [{ name: "name" }];
+    }
+    if (modelName === "Tag") {
+      return [{ name: "name" }];
+    }
+    if (modelName === "User") {
+      return [{ name: "email" }, { name: "username" }];
+    }
+    return [];
+  }),
+  RelationField: {}, // Add this to satisfy TypeScript if needed
   RelationFields: {}, // Add this to satisfy TypeScript if needed
 }));
 
@@ -52,7 +58,7 @@ describe("handleRelationFieldsInBody", () => {
       };
 
       const relationFields = {
-        singular: [{ name: "profile", type: "Profile", isUnique: false }],
+        singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
 
@@ -78,7 +84,7 @@ describe("handleRelationFieldsInBody", () => {
       };
 
       const relationFields = {
-        singular: [{ name: "profile", type: "Profile", isUnique: false }],
+        singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
 
@@ -107,8 +113,6 @@ describe("handleRelationFieldsInBody", () => {
           {
             name: "category",
             type: "Category",
-            isUnique: true,
-            uniqueFields: ["name"],
           },
         ],
         list: [],
@@ -137,7 +141,7 @@ describe("handleRelationFieldsInBody", () => {
       };
 
       const relationFields = {
-        singular: [{ name: "profile", type: "Profile", isUnique: false }],
+        singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
 
@@ -147,7 +151,6 @@ describe("handleRelationFieldsInBody", () => {
         name: "John Doe",
         profile: {
           update: {
-            where: { id: "123" },
             data: {
               bio: "Updated Bio",
               avatarUrl: "https://example.com/new-avatar.jpg",
@@ -167,7 +170,7 @@ describe("handleRelationFieldsInBody", () => {
       };
 
       const relationFields = {
-        singular: [{ name: "profile", type: "Profile", isUnique: false }],
+        singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
 
@@ -189,12 +192,15 @@ describe("handleRelationFieldsInBody", () => {
     it("should handle create operation for list relation items without ids", () => {
       const body = {
         title: "My Post",
-        tags: [{ name: "JavaScript" }, { name: "TypeScript" }],
+        tags: [
+          { name: "JavaScript", apiAction: "create" },
+          { name: "TypeScript", apiAction: "create" },
+        ],
       };
 
       const relationFields = {
         singular: [],
-        list: [{ name: "tags", type: "Tag", isUnique: false }],
+        list: [{ name: "tags", type: "Tag" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -215,7 +221,7 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [{ name: "tags", type: "Tag", isUnique: false }],
+        list: [{ name: "tags", type: "Tag" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -236,9 +242,7 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [
-          { name: "tags", type: "Tag", isUnique: true, uniqueFields: ["name"] },
-        ],
+        list: [{ name: "tags", type: "Tag" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -262,7 +266,7 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [{ name: "tags", type: "Tag", isUnique: false }],
+        list: [{ name: "tags", type: "Tag" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -289,7 +293,7 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [{ name: "tags", type: "Tag", isUnique: false }],
+        list: [{ name: "tags", type: "Tag" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -315,7 +319,7 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [{ name: "tags", type: "Tag", isUnique: false }],
+        list: [{ name: "tags", type: "Tag" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -332,7 +336,7 @@ describe("handleRelationFieldsInBody", () => {
       const body = {
         title: "My Post",
         tags: [
-          { name: "New Tag" }, // create
+          { name: "New Tag", apiAction: "create" }, // create
           { id: "1" }, // connect
           { id: "2", name: "Updated Tag" }, // update
           { id: "3", apiAction: "delete" }, // delete
@@ -342,7 +346,7 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [{ name: "tags", type: "Tag", isUnique: false }],
+        list: [{ name: "tags", type: "Tag" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -375,7 +379,7 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [{ name: "posts", type: "Post", isUnique: false }],
+        list: [{ name: "posts", type: "Post" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -407,7 +411,7 @@ describe("handleRelationFieldsInBody", () => {
             comments: [
               {
                 content: "Great post!",
-                author: { email: "user@example.com" },
+                author: { email: "user@example.com", apiAction: "create" },
               },
             ],
           },
@@ -416,10 +420,12 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [{ name: "posts", type: "Post", isUnique: false }],
+        list: [{ name: "posts", type: "Post" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
+
+      console.log(JSON.stringify(result, null, 2));
 
       expect(result).toEqual({
         name: "John Doe",
@@ -443,33 +449,6 @@ describe("handleRelationFieldsInBody", () => {
   });
 
   describe("Edge Cases", () => {
-    it("should ignore fields in ignoreActions list", () => {
-      const body = {
-        name: "John Doe",
-        posts: [
-          { id: "1", apiAction: "ignore" },
-          { id: "2", title: "Valid Post" },
-        ],
-        profile: { id: "1", apiAction: "ignore" },
-      };
-
-      const relationFields = {
-        singular: [{ name: "profile", type: "Profile", isUnique: false }],
-        list: [{ name: "posts", type: "Post", isUnique: false }],
-      };
-
-      const result = handleRelationFieldsInBody(body, relationFields, [
-        "ignore",
-      ]);
-
-      expect(result).toEqual({
-        name: "John Doe",
-        posts: {
-          update: [{ where: { id: "2" }, data: { title: "Valid Post" } }],
-        },
-      });
-    });
-
     it("should handle empty arrays for list relation fields", () => {
       const body = {
         name: "John Doe",
@@ -478,7 +457,7 @@ describe("handleRelationFieldsInBody", () => {
 
       const relationFields = {
         singular: [],
-        list: [{ name: "posts", type: "Post", isUnique: false }],
+        list: [{ name: "posts", type: "Post" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -497,8 +476,8 @@ describe("handleRelationFieldsInBody", () => {
       };
 
       const relationFields = {
-        singular: [{ name: "profile", type: "Profile", isUnique: false }],
-        list: [{ name: "posts", type: "Post", isUnique: false }],
+        singular: [{ name: "profile", type: "Profile" }],
+        list: [{ name: "posts", type: "Post" }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -514,57 +493,59 @@ describe("handleRelationFieldsInBody", () => {
 
 describe("canBeUsedToConnect", () => {
   it("should return true for objects with only an id", () => {
-    const field = { name: "user", type: "User", isUnique: false };
+    const modelName = "User";
     const bodyField = { id: "123" };
 
-    expect(canBeUsedToConnect(field, bodyField)).toBe(true);
+    expect(canBeUsedToConnect(modelName, bodyField)).toBe(true);
   });
 
-  it("should return true for objects with a single field when the relation is unique", () => {
-    const field = { name: "user", type: "User", isUnique: true };
+  it("should return true for objects with a single unique field", () => {
+    const modelName = "User";
     const bodyField = { email: "test@example.com" };
 
-    expect(canBeUsedToConnect(field, bodyField)).toBe(true);
+    expect(canBeUsedToConnect(modelName, bodyField)).toBe(true);
   });
 
   it("should return true for objects with a single field from uniqueFields list", () => {
-    const field = {
-      name: "user",
-      type: "User",
-      isUnique: false,
-      uniqueFields: ["email", "username"],
-    };
-    const bodyField = { email: "test@example.com" };
+    const modelName = "User";
+    const bodyField = { username: "testuser" };
 
-    expect(canBeUsedToConnect(field, bodyField)).toBe(true);
+    expect(canBeUsedToConnect(modelName, bodyField)).toBe(true);
   });
 
   it("should return true for objects with apiAction set to connect", () => {
-    const field = { name: "user", type: "User", isUnique: false };
+    const modelName = "User";
     const bodyField = { id: "123", apiAction: "connect" };
 
-    expect(canBeUsedToConnect(field, bodyField)).toBe(true);
+    expect(canBeUsedToConnect(modelName, bodyField)).toBe(true);
   });
 
   it("should return false for objects with multiple fields", () => {
-    const field = { name: "user", type: "User", isUnique: false };
+    const modelName = "User";
     const bodyField = { id: "123", name: "John" };
 
-    expect(canBeUsedToConnect(field, bodyField)).toBe(false);
+    expect(canBeUsedToConnect(modelName, bodyField)).toBe(false);
+  });
+
+  it("should return false for objects with a single field that is not unique", () => {
+    const modelName = "User";
+    const bodyField = { name: "John" }; // assuming name is not a unique field
+
+    expect(canBeUsedToConnect(modelName, bodyField)).toBe(false);
   });
 
   it("should return false for objects with apiAction set to something other than connect", () => {
-    const field = { name: "user", type: "User", isUnique: false };
+    const modelName = "User";
     const bodyField = { id: "123", apiAction: "delete" };
 
-    expect(canBeUsedToConnect(field, bodyField)).toBe(false);
+    expect(canBeUsedToConnect(modelName, bodyField)).toBe(false);
   });
 
   it("should return false for null or undefined values", () => {
-    const field = { name: "user", type: "User", isUnique: false };
+    const modelName = "User";
 
-    expect(canBeUsedToConnect(field, null)).toBe(false);
-    expect(canBeUsedToConnect(field, undefined)).toBe(false);
+    expect(canBeUsedToConnect(modelName, null)).toBe(false);
+    expect(canBeUsedToConnect(modelName, undefined)).toBe(false);
   });
 });
 

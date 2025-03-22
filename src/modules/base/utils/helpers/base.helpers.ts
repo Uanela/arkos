@@ -1,7 +1,8 @@
 import {
   getPrismaModelRelations,
   RelationFields,
-} from "../../../utils/helpers/models.helpers";
+  getModelUniqueFields,
+} from "../../../../utils/helpers/models.helpers";
 
 /**
  * Determines the appropriate Prisma operation (`create`, `connect`, `update`, `delete`, or `disconnect`)
@@ -35,7 +36,7 @@ export function handleRelationFieldsInBody(
 ) {
   let mutableBody = { ...body };
 
-  relationFields.list.forEach((field) => {
+  relationFields?.list?.forEach((field) => {
     if (!body[field.name]) return;
 
     const createData: any[] = [];
@@ -51,19 +52,31 @@ export function handleRelationFieldsInBody(
         deleteManyIds.push(bodyField.id);
       } else if (bodyField?.apiAction === "disconnect") {
         disconnectData.push({ id: bodyField.id });
-      } else if (canBeUsedToConnect(field, bodyField)) {
+      } else if (canBeUsedToConnect(field.type, bodyField)) {
         // Handle connection with unique fields or ID
+        if (bodyField.apiAction) delete bodyField.apiAction;
+
         connectData.push(bodyField);
       } else if (!bodyField?.id) {
         // If no ID, assume create operation
         let nestedRelations = getPrismaModelRelations(field.type);
-        const dataToPush = nestedRelations
-          ? handleRelationFieldsInBody(
-              bodyField,
-              nestedRelations,
-              ignoreActions
-            )
-          : bodyField;
+
+        let dataToPush = bodyField;
+
+        if (nestedRelations)
+          dataToPush = handleRelationFieldsInBody(
+            bodyField,
+            nestedRelations,
+            ignoreActions
+          );
+
+        console.log(dataToPush);
+        console.log(JSON.stringify(dataToPush, null, 2));
+
+        if (dataToPush.apiAction) {
+          const { apiAction, ...rest } = dataToPush;
+          dataToPush = rest;
+        }
         createData.push(dataToPush);
       } else {
         // If ID and other fields, assume update operation
@@ -92,14 +105,14 @@ export function handleRelationFieldsInBody(
     };
   });
 
-  relationFields.singular.forEach((field) => {
+  relationFields?.singular?.forEach((field) => {
     if (!body[field.name]) return;
     if (ignoreActions.includes(body[field.name]?.apiAction)) return;
 
     const relationData = body[field.name];
     let nestedRelations = getPrismaModelRelations(field.type);
 
-    if (canBeUsedToConnect(field, relationData)) {
+    if (canBeUsedToConnect(field.type, relationData)) {
       // Handle connection with unique fields or ID
       mutableBody[field.name] = { connect: relationData };
     } else if (!relationData?.id) {
@@ -118,7 +131,6 @@ export function handleRelationFieldsInBody(
       const { id, ...data } = relationData;
       mutableBody[field.name] = {
         update: {
-          where: { id },
           data: nestedRelations
             ? handleRelationFieldsInBody(data, nestedRelations, ignoreActions)
             : data,
@@ -134,12 +146,12 @@ export function handleRelationFieldsInBody(
  * Checks if a field value can be used to connect to a model
  * This happens when the field contains only an ID or a single unique field
  *
- * @param {RelationFields} field - The field definition with type and uniqueness info
+ * @param {string} modelName - The model name to get unique fields for
  * @param {Record<string, any>} bodyField - The field value from the body
  * @returns {boolean} True if the field can be used for a connect operation
  */
 export function canBeUsedToConnect(
-  field: any,
+  modelName: string,
   bodyField: Record<string, any> | undefined | null
 ): boolean {
   // If the field is null or undefined, it can't be used to connect
@@ -156,23 +168,17 @@ export function canBeUsedToConnect(
   }
 
   // If only ID is present, it can be used to connect
-  if (Object.keys(bodyField).length === 1 && bodyField.id) {
+  if (Object.keys(bodyField).length === 1 && bodyField?.id) {
     return true;
   }
 
-  // If the field has a unique property and only one property is provided
-  if (field.isUnique && Object.keys(bodyField).length === 1) {
-    return true;
-  }
+  // Get unique fields for the model
+  const uniqueFields = getModelUniqueFields(modelName);
 
-  // If the model has unique fields and one of them is the only property
-  const uniqueFields = field.uniqueFields || [];
-  if (uniqueFields.length > 0) {
-    const bodyKeys = Object.keys(bodyField);
-    // If only one field is provided and it's in the unique fields list
-    if (bodyKeys.length === 1 && uniqueFields.includes(bodyKeys[0])) {
-      return true;
-    }
+  // If the field has exactly one property and it's a unique field, it can be used to connect
+  if (Object.keys(bodyField).length === 1) {
+    const fieldName = Object.keys(bodyField)[0];
+    return uniqueFields.some((field) => field.name === fieldName);
   }
 
   return false;

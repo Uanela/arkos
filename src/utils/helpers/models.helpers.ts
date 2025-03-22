@@ -167,6 +167,12 @@ export async function importPrismaModelModules(modelName: string) {
   return result;
 }
 
+export type ModelFieldDefition = {
+  name: string;
+  type: string;
+  isUnique: boolean;
+};
+
 /**
  * Represents the structure of relation fields for Prisma models.
  * It includes both singular (one-to-one) and list (one-to-many) relationships.
@@ -176,8 +182,8 @@ export async function importPrismaModelModules(modelName: string) {
  * @property {Array<{name: string, type: string}>} list - List of list relationships.
  */
 export type RelationFields = {
-  singular: { name: string; type: string; isUnique: boolean }[];
-  list: { name: string; type: string; isUnique: boolean }[];
+  singular: Omit<ModelFieldDefition, "isUnique">[];
+  list: Omit<ModelFieldDefition, "isUnique">[];
 };
 
 const schemaFolderPath =
@@ -207,6 +213,8 @@ for (const file of files) {
 
 const modelRegex = /model\s+(\w+)\s*{/g;
 const models: string[] = [];
+const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
+  [] as any;
 
 prismaContent.join("\n").replace(modelRegex, (_, modelName) => {
   if (!models.includes(modelName)) models.push(camelCase(modelName.trim()));
@@ -263,6 +271,9 @@ for (const model of models) {
     const [fieldName, type] = trimmedLine.split(/\s+/);
     const isUnique = trimmedLine.includes("@unique");
 
+    if (isUnique)
+      prismaModelsUniqueFields[model].push({ name: fieldName, type, isUnique });
+
     const cleanType = type?.replace("[]", "").replace("?", "");
 
     if (
@@ -292,13 +303,11 @@ for (const model of models) {
         relations.singular.push({
           name: fieldName,
           type: cleanType,
-          isUnique,
         });
       } else {
         relations.list.push({
           name: fieldName,
           type: cleanType,
-          isUnique,
         });
       }
     }
@@ -328,4 +337,12 @@ function getModels() {
   return models;
 }
 
-export { models, getModels, prismaModelRelationFields };
+/** Retuns a given model unique fields
+ * @param {string} modelName - The name of model in PascalCase
+ * @returns {string[]} An array of all unique fields,
+ */
+function getModelUniqueFields(modelName: string) {
+  return prismaModelsUniqueFields[modelName];
+}
+
+export { models, getModels, getModelUniqueFields, prismaModelRelationFields };
