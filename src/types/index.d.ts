@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 
 export type PrismaOperations = "findMany";
 
@@ -78,10 +78,11 @@ export interface ArkosRequest extends Request {
   user?: User & Record<string, any>;
   relationFields?: Record<string, boolean>;
   include?: Record<string, any>;
-  responseData?: Record<string, any>;
-  additionalData?: Record<string, any>;
-  responseStatus?: number | string;
+  responseData?: Record<string, any> | null | undefined;
+  additionalData?: Record<string, any> | null | undefined;
+  responseStatus?: number | string | null | undefined;
 }
 
 export interface ArkosResponse extends Response {}
 export interface ArkosNextFunction extends NextFunction {}
+export interface ArkosRequestHandler extends RequestHandler {}
