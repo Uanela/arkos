@@ -181,7 +181,6 @@ describe("handleRelationFieldsInBody", () => {
         profile: {
           connect: {
             id: "123",
-            apiAction: "connect",
           },
         },
       });

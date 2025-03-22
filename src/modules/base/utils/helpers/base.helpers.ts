@@ -5,6 +5,34 @@ import {
 } from "../../../../utils/helpers/models.helpers";
 
 /**
+ * Removes apiAction field from an object and all nested objects
+ *
+ * @param {Record<string, any>} obj - The object to clean
+ * @returns {Record<string, any>} - The cleaned object
+ */
+function removeApiAction(obj: Record<string, any>): Record<string, any> {
+  if (!obj || typeof obj !== "object") return obj;
+
+  const result: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === "apiAction") continue;
+
+    if (Array.isArray(value)) {
+      result[key] = value.map((item) =>
+        typeof item === "object" && item !== null ? removeApiAction(item) : item
+      );
+    } else if (typeof value === "object" && value !== null) {
+      result[key] = removeApiAction(value);
+    } else {
+      result[key] = value;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Determines the appropriate Prisma operation (`create`, `connect`, `update`, `delete`, or `disconnect`)
  * for each relation field in the provided body based on its nested data and recursively does the same for each relation field.
  *
@@ -48,45 +76,52 @@ export function handleRelationFieldsInBody(
     body[field.name]?.forEach((bodyField: any) => {
       if (ignoreActions.includes(bodyField?.apiAction)) return;
 
-      if (bodyField?.apiAction === "delete") {
+      const apiAction = bodyField?.apiAction;
+
+      if (apiAction === "delete") {
         deleteManyIds.push(bodyField.id);
-      } else if (bodyField?.apiAction === "disconnect") {
+      } else if (apiAction === "disconnect") {
         disconnectData.push({ id: bodyField.id });
       } else if (canBeUsedToConnect(field.type, bodyField)) {
         // Handle connection with unique fields or ID
-        if (bodyField.apiAction) delete bodyField.apiAction;
-
-        connectData.push(bodyField);
+        const { apiAction: _, ...cleanedData } = bodyField;
+        connectData.push(cleanedData);
       } else if (!bodyField?.id) {
         // If no ID, assume create operation
         let nestedRelations = getPrismaModelRelations(field.type);
 
-        let dataToPush = bodyField;
+        let dataToPush = { ...bodyField };
 
-        if (nestedRelations)
+        if (nestedRelations) {
           dataToPush = handleRelationFieldsInBody(
-            bodyField,
+            dataToPush,
             nestedRelations,
             ignoreActions
           );
+        }
 
-        console.log(dataToPush);
-        console.log(JSON.stringify(dataToPush, null, 2));
-
-        if (dataToPush.apiAction) {
-          const { apiAction, ...rest } = dataToPush;
+        // Ensure apiAction is removed
+        if ("apiAction" in dataToPush) {
+          const { apiAction: _, ...rest } = dataToPush;
           dataToPush = rest;
         }
+
         createData.push(dataToPush);
       } else {
         // If ID and other fields, assume update operation
-        const { id, ...data } = bodyField;
+        const { id, apiAction: _, ...data } = bodyField;
 
         let nestedRelations = getPrismaModelRelations(field.type);
 
-        const dataToPush = nestedRelations
-          ? handleRelationFieldsInBody(data, nestedRelations, ignoreActions)
-          : data;
+        let dataToPush = data;
+        if (nestedRelations) {
+          dataToPush = handleRelationFieldsInBody(
+            data,
+            nestedRelations,
+            ignoreActions
+          );
+        }
+
         updateData.push({
           where: { id },
           data: dataToPush,
@@ -114,32 +149,55 @@ export function handleRelationFieldsInBody(
 
     if (canBeUsedToConnect(field.type, relationData)) {
       // Handle connection with unique fields or ID
-      mutableBody[field.name] = { connect: relationData };
+      const { apiAction: _, ...cleanedData } = relationData;
+      mutableBody[field.name] = { connect: cleanedData };
     } else if (!relationData?.id) {
       // If no ID, assume create operation
-      mutableBody[field.name] = {
-        create: nestedRelations
-          ? handleRelationFieldsInBody(
-              relationData,
-              nestedRelations,
-              ignoreActions
-            )
-          : relationData,
-      };
+      let dataToCreate = { ...relationData };
+
+      if ("apiAction" in dataToCreate) {
+        const { apiAction: _, ...rest } = dataToCreate;
+        dataToCreate = rest;
+      }
+
+      if (nestedRelations) {
+        dataToCreate = handleRelationFieldsInBody(
+          dataToCreate,
+          nestedRelations,
+          ignoreActions
+        );
+      }
+
+      mutableBody[field.name] = { create: dataToCreate };
     } else {
       // If ID and other fields, assume update operation
-      const { id, ...data } = relationData;
+      const { id, apiAction: _, ...data } = relationData;
+
+      let dataToUpdate = data;
+      if (nestedRelations) {
+        dataToUpdate = handleRelationFieldsInBody(
+          data,
+          nestedRelations,
+          ignoreActions
+        );
+      }
+
       mutableBody[field.name] = {
         update: {
-          data: nestedRelations
-            ? handleRelationFieldsInBody(data, nestedRelations, ignoreActions)
-            : data,
+          data: dataToUpdate,
         },
       };
     }
   });
 
-  return mutableBody;
+  // Remove any remaining apiAction fields from the top level
+  if ("apiAction" in mutableBody) {
+    const { apiAction, ...rest } = mutableBody;
+    mutableBody = rest;
+  }
+
+  // As a final step, recursively remove any remaining apiAction fields
+  return removeApiAction(mutableBody);
 }
 
 /**
