@@ -43,14 +43,37 @@ else if (ENV === "test") {
 dotenv.config({ path: envPath });
 
 export type InitConfigsAuthenticationOptions = {
-  signup?: {
-    /** Defines wether the api will look for isVerified = true in order to login or make an operation that authentication is required. */
-    requireEmailVerification?: boolean;
-  };
   login?: {
     /** Defines wether to send the access token in response after login or only send as cookie, defeault is both.*/
     sendAccessTokenThrough?: "cookie-only" | "response-only" | "both";
   };
+  /** Defines the field that will be used as username by the built-in auth system, by default arkos will look for the field "username" in your model User, hence when making login for example you must send:
+   *
+   * ```json
+   *  {
+   *    "username": "johndoe",
+   *    "password": "somePassword123"
+   *  }
+   * ```
+   *
+   * **Note:** You can also modify the usernameField on the fly by passing it to the request query parameters. example:
+   *
+   * ```curl
+   * POST /api/auth/login?usernameField=email
+   * ```
+   *
+   * By specifing here another field for username, for example passing "email", "companyCode" or something else your json will be like:
+   *
+   * **Example with email**
+   *
+   * ```json
+   *  {
+   *    "email": "john.doe@example.com",
+   *    "password": "somePassword123"
+   *  }
+   * ```
+   */
+  usernameField?: string;
 };
 
 export type InitConfigs = {
