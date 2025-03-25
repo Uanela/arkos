@@ -49,7 +49,7 @@ export class EmailService extends BaseService {
    */
   private verifyConnection(): void {
     this.transporter.verify((error) => {
-      if (error) throw new AppError("Email Server Connection Failed", 500);
+      if (error) console.error("Email Server Connection Failed", 500);
     });
   }
 
