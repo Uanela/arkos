@@ -67,8 +67,9 @@ export class BaseService {
       body = await validateDto(modelModules.dtos.create, body);
     }
 
-    if (kebabCase(this.modelName) === "user" && body.password)
+    if (kebabCase(this.modelName) === "user" && body.password) {
       body.password = await authService.hashPassword(body.password);
+    }
 
     const prisma = getPrismaInstance();
 
@@ -243,8 +244,9 @@ export class BaseService {
 
     const prisma = getPrismaInstance();
 
-    if (kebabCase(this.modelName) === "user" && body.password)
+    if (kebabCase(this.modelName) === "user" && body.password) {
       body.password = await authService.hashPassword(body.password);
+    }
 
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(body, {
       ...this.relationFields,

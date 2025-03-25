@@ -18,6 +18,7 @@ import {
   AuthJwtPayload,
   ControllerActions,
 } from "../../types/auth";
+import { InitConfigsAuthenticationOptions } from "../../types/app";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -67,17 +68,27 @@ class AuthService {
   }
 
   /**
-   * Checks if a password is strong, requiring uppercase, lowercase, and numeric characters.
+   * Checks if a password is strong, requiring uppercase, lowercase, and numeric characters as the default.
+   *
+   * **Note**: You can define it when calling arkos.init()
+   * ```ts
+   * arkos.init(app, {
+   *  authentication: {
+   *    passwordRegex: /your-desired-regex/
+   *  }
+   * })
+   * ```
    *
    * @param {string} password - The password to check.
    * @returns {boolean} Returns true if the password meets the strength criteria, otherwise false.
    */
   isPasswordStrong(password: string): boolean {
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
+    const initAuthConfigs = getInitConfigs()
+      ?.authentication as InitConfigsAuthenticationOptions;
 
-    return hasUppercase && hasLowercase && hasNumber;
+    const strongPasswordRegex =
+      initAuthConfigs.passwordRegex || /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/;
+    return strongPasswordRegex.test(password);
   }
 
   /**

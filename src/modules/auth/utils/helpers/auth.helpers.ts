@@ -10,9 +10,8 @@ import { ArkosRequest } from "../../../../types";
  * @returns The field name to use for username identification
  */
 export const determineUsernameField = (req: ArkosRequest): string => {
-  if (req.query.usernameField && typeof req.query.usernameField === "string") {
+  if (req.query?.usernameField && typeof req.query?.usernameField === "string")
     return req.query.usernameField;
-  }
 
   const initAuthConfigs = getInitConfigs()
     ?.authentication as InitConfigsAuthenticationOptions;

@@ -241,9 +241,9 @@ models.forEach(async (model) => {
 });
 
 (() => {
-  router.get("/available-routes", authService.authenticate, getAvalibleRoutes);
+  router.get("/available-routes", authService?.authenticate, getAvalibleRoutes);
 
-  router.get("/database-models", authService.authenticate, getDatabaseModels);
+  router.get("/database-models", authService?.authenticate, getDatabaseModels);
 })();
 
 export default router;

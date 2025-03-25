@@ -424,8 +424,6 @@ describe("handleRelationFieldsInBody", () => {
 
       const result = handleRelationFieldsInBody(body, relationFields);
 
-      console.log(JSON.stringify(result, null, 2));
-
       expect(result).toEqual({
         name: "John Doe",
         posts: {
