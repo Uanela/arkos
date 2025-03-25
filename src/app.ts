@@ -15,8 +15,8 @@ import {
   checkDatabaseConnection,
   loadPrismaModule,
 } from "./utils/helpers/prisma.helpers";
-import { ClassValidatorInitConfigsOptions } from "./utils/validate-dto";
 import { fileUploaderRouter } from "./modules/file-uploader/file-uploader.router";
+import { InitConfigs } from "./types/app";
 
 const ENV = process.env.NODE_ENV;
 let envPath = ".env";
@@ -41,52 +41,6 @@ else if (ENV === "test") {
 }
 
 dotenv.config({ path: envPath });
-
-export type InitConfigsAuthenticationOptions = {
-  login?: {
-    /** Defines wether to send the access token in response after login or only send as cookie, defeault is both.*/
-    sendAccessTokenThrough?: "cookie-only" | "response-only" | "both";
-  };
-  /** Defines the field that will be used as username by the built-in auth system, by default arkos will look for the field "username" in your model User, hence when making login for example you must send:
-   *
-   * ```json
-   *  {
-   *    "username": "johndoe",
-   *    "password": "somePassword123"
-   *  }
-   * ```
-   *
-   * **Note:** You can also modify the usernameField on the fly by passing it to the request query parameters. example:
-   *
-   * ```curl
-   * POST /api/auth/login?usernameField=email
-   * ```
-   *
-   * By specifing here another field for username, for example passing "email", "companyCode" or something else your json will be like:
-   *
-   * **Example with email**
-   *
-   * ```json
-   *  {
-   *    "email": "john.doe@example.com",
-   *    "password": "somePassword123"
-   *  }
-   * ```
-   */
-  usernameField?: string;
-};
-
-export type InitConfigs = {
-  port?: number;
-  authentication?: InitConfigsAuthenticationOptions | boolean;
-  validation?:
-    | ClassValidatorInitConfigsOptions
-    | {
-        resolver?: "zod";
-        validationOptions?: Record<string, any>;
-      }
-    | boolean;
-};
 
 let initConfigs: InitConfigs;
 let prisma: any;

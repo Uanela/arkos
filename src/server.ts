@@ -1,7 +1,8 @@
 import { IncomingMessage, Server, ServerResponse } from "http";
 import AppError from "./modules/error-handler/utils/app-error";
 import { Express } from "express";
-import { bootstrap, InitConfigs } from "./app";
+import { bootstrap } from "./app";
+import { InitConfigs } from "./types/app";
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION! SHUTTING DOWN...");
@@ -37,7 +38,7 @@ async function initApp(
   _app = app;
   _initConfigs = initConfigs;
 
-  const port = initConfigs.port || Number(process.env.PORT) || 8000;
+  const port = Number(process.env.PORT) || initConfigs.port || 8000;
   const application = await bootstrap(app, initConfigs);
 
   server = application.listen(port, () => {
@@ -47,7 +48,8 @@ async function initApp(
     );
     console.log(
       `${
-        !!process.env.NODE_ENV && `Environment set to ${process.env.NODE_ENV}`
+        !!process.env.NODE_ENV &&
+        `[\x1b[32mENVIRONMENT\x1b[0m]: ${process.env.NODE_ENV}`
       }`
     );
   });

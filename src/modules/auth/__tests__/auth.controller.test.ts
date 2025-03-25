@@ -8,7 +8,6 @@ import { getBaseServices } from "../../base/base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
 import { getInitConfigs } from "../../../server";
-import bcrypt from "bcryptjs";
 
 vi.mock("bcrypt", () => ({
   default: {
@@ -42,7 +41,6 @@ vi.mock("../../../utils/helpers/prisma.helpers", () => ({
 
 vi.mock("../../../utils/helpers/models.helpers", () => ({
   importPrismaModelModules: vi.fn(),
-  // Mock these additional functions that are being used:
   getPrismaModelRelations: vi.fn(),
   getModels: vi.fn(() => []),
   getModelUniqueFields: vi.fn(() => []),
@@ -137,7 +135,7 @@ describe("Auth Controller Factory", () => {
   describe("getMe", () => {
     it("should get the current user and return it", async () => {
       // Setup
-      userService.findOne.mockResolvedValue({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         email: "test@example.com",
@@ -167,7 +165,7 @@ describe("Auth Controller Factory", () => {
       };
 
       req.user = { ...fullUser };
-      userService.findOne.mockResolvedValue(fullUser);
+      userService.findOne.mockResolvedValueOnce(fullUser);
 
       // Execute
       await authController.getMe(req, res, next);
@@ -184,7 +182,7 @@ describe("Auth Controller Factory", () => {
         afterGetMe: true,
       });
 
-      userService.findOne.mockResolvedValue({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         email: "test@example.com",
@@ -256,13 +254,13 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
 
       // Execute
@@ -279,13 +277,13 @@ describe("Auth Controller Factory", () => {
       req.query.usernameField = "email";
       req.body = { email: "test@example.com", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
         id: "user-id-123",
         email: "test@example.com",
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
 
       // Execute
@@ -300,7 +298,7 @@ describe("Auth Controller Factory", () => {
     it("should return 401 if user is not found", async () => {
       // Setup
       req.body = { username: "nonexistentuser", password: "Password123" };
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
 
       // Execute
       await authController.login(req, res, next);
@@ -318,14 +316,13 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "WrongPassword123" };
 
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
       });
 
-      (bcrypt.compare as any).mockReturnValue(false);
-      (authService.isCorrectPassword as any).mockResolvedValue(false);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(false);
 
       // Execute
       await authController.login(req, res, next);
@@ -343,13 +340,13 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
 
       (getInitConfigs as any).mockReturnValue({
@@ -380,13 +377,13 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
 
       (getInitConfigs as any).mockReturnValue({
@@ -416,13 +413,13 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
 
       (getInitConfigs as any).mockReturnValue({
@@ -453,13 +450,13 @@ describe("Auth Controller Factory", () => {
 
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValue({
+      mockPrisma.user.findUnique.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
 
       // Execute
@@ -490,7 +487,7 @@ describe("Auth Controller Factory", () => {
         active: true,
       };
 
-      userService.createOne.mockResolvedValue({ ...createdUser });
+      userService.createOne.mockResolvedValueOnce({ ...createdUser });
 
       // Execute
       await authController.signup(req, res, next);
@@ -525,7 +522,7 @@ describe("Auth Controller Factory", () => {
         password: "hashedPassword",
       };
 
-      userService.createOne.mockResolvedValue({ ...createdUser });
+      userService.createOne.mockResolvedValueOnce({ ...createdUser });
 
       // Execute
       await controllerWithMiddleware.signup(req, res, next);
@@ -617,7 +614,7 @@ describe("Auth Controller Factory", () => {
         newPassword: "NewPassword123",
       };
 
-      (authService.isCorrectPassword as any).mockResolvedValue(false);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(false);
 
       // Execute
       await authController.updatePassword(req, res, next);
@@ -645,7 +642,7 @@ describe("Auth Controller Factory", () => {
         newPassword: "weakpassword",
       };
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.isPasswordStrong as any).mockReturnValue(false);
 
       // Execute
@@ -674,9 +671,11 @@ describe("Auth Controller Factory", () => {
         newPassword: "NewPassword123",
       };
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.isPasswordStrong as any).mockReturnValue(true);
-      (authService.hashPassword as any).mockResolvedValue("newHashedPassword");
+      (authService.hashPassword as any).mockResolvedValueOnce(
+        "newHashedPassword"
+      );
 
       // Execute
       await authController.updatePassword(req, res, next);
@@ -715,16 +714,14 @@ describe("Auth Controller Factory", () => {
         newPassword: "NewPassword123",
       };
 
-      (authService.isCorrectPassword as any).mockResolvedValue(true);
+      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
       (authService.isPasswordStrong as any).mockReturnValue(true);
-      (authService.hashPassword as any).mockResolvedValue(
+      (authService.hashPassword as any).mockResolvedValueOnce(
         "newHashedPassword123"
       );
 
       // Execute
       await controllerWithMiddleware.updatePassword(req, res, next);
-
-      console.log(req);
 
       // Verify
       expect(req.responseData).toEqual({

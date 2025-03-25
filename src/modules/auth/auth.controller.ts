@@ -10,8 +10,8 @@ import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import deepmerge from "deepmerge";
 import arkosEnv from "../../utils/arkos-env";
 import { getInitConfigs } from "../../server";
-import { InitConfigsAuthenticationOptions } from "../../app";
 import { determineUsernameField } from "./utils/helpers/auth.helpers";
+import { InitConfigsAuthenticationOptions } from "../../types/app";
 
 /**
  * Default fields to exclude from user object when returning to client
@@ -134,12 +134,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           where: whereClause,
         });
 
-        const isCorrectPassword = await authService.isCorrectPassword(
-          password,
-          user.password
-        );
-
-        if (!user || !isCorrectPassword) {
+        if (
+          !user ||
+          !(await authService.isCorrectPassword(password, user.password))
+        ) {
           return next(
             new AppError(`Incorrect ${usernameField} or password`, 401)
           );
