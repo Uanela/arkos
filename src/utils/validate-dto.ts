@@ -46,9 +46,9 @@ export default async function validateDto<T extends object = any>(
     whitelist: true,
   }
 ): Promise<T> {
-  const globalValidationOptions = (
-    getInitConfigs().validation as ClassValidatorInitConfigsOptions
-  ).validationOptions;
+  const globalValidationOptions =
+    (getInitConfigs().validation as ClassValidatorInitConfigsOptions)
+      ?.validationOptions || {};
 
   const dataDto = plainToInstance(DtoClass, data);
   const errors = await validate(dataDto, {
