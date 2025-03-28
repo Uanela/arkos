@@ -11,18 +11,43 @@ const router: Router = Router();
   const { middlewares } = await importPrismaModelModules("auth");
   const authController = await authControllerFactory(middlewares);
 
-  router.get(
-    "/users/me",
-    authService.authenticate,
-    middlewares?.beforeGetMe ?? authController.getMe,
-    middlewares?.beforeGetMe
-      ? authController.getMe
-      : middlewares?.afterGetMe ?? sendResponse,
-    middlewares?.beforeGetMe && middlewares?.afterGetMe
-      ? middlewares?.afterGetMe
-      : sendResponse,
-    sendResponse
-  );
+  router
+    .get(
+      "/users/me",
+      authService.authenticate,
+      middlewares?.beforeGetMe ?? authController.getMe,
+      middlewares?.beforeGetMe
+        ? authController.getMe
+        : middlewares?.afterGetMe ?? sendResponse,
+      middlewares?.beforeGetMe && middlewares?.afterGetMe
+        ? middlewares?.afterGetMe
+        : sendResponse,
+      sendResponse
+    )
+    .patch(
+      "/users/me",
+      authService.authenticate,
+      middlewares?.beforeGetMe ?? authController.getMe,
+      middlewares?.beforeGetMe
+        ? authController.getMe
+        : middlewares?.afterGetMe ?? sendResponse,
+      middlewares?.beforeGetMe && middlewares?.afterGetMe
+        ? middlewares?.afterGetMe
+        : sendResponse,
+      sendResponse
+    )
+    .delete(
+      "/users/me",
+      authService.authenticate,
+      middlewares?.beforeGetMe ?? authController.getMe,
+      middlewares?.beforeGetMe
+        ? authController.getMe
+        : middlewares?.afterGetMe ?? sendResponse,
+      middlewares?.beforeGetMe && middlewares?.afterGetMe
+        ? middlewares?.afterGetMe
+        : sendResponse,
+      sendResponse
+    );
 
   router.use(
     rateLimit({

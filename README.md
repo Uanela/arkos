@@ -76,21 +76,15 @@ The `init` function from your `arkos` package is used to initialize the app with
 
 ```typescript
 // src/app.ts
-import arkos from "arkos"; // Import arkos.init() from arkos package
-import express from "express"; // Import express
+import arkos from "arkos";
 
-// Initialize the Express app
-const app = express();
-
-// Call init and pass the Express app for configuration, app will listen in 8000 by default or set PORT in .env.developement or .env.production
-arkos.init(app);
+arkos.init({ port: 3000 });
 ```
 
 ### 4. **How `arkos.init()` Works:**
 
 - **Initialization**: The `arkos.init()` function is called with two arguments, the second being optional:
-  - `app`: The Express application instance.
-  - `options`: An object containing configurations for toggle `authentication` and pass the desired `port`.
+  - `options`: An object containing configurations for customizing things lilke `authentication`, `validation`, `port` and others.
 - **What happens under the hood**:
   - **Authentication Setup**: The package will set (read further to learn how to prepare the environment) up authentication routes, middleware, and necessary handlers for managing user sessions and JWT tokens.
   - **Error Handling**: Automatic error handling middleware could be added.

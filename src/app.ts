@@ -1,8 +1,6 @@
 import express from "express";
-import bodyParser from "body-parser";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { queryParser } from "express-query-parser";
 import authRouter from "./modules/auth/auth.router";
 import baseRouter from "./modules/base/base.router";
 import errorHandler from "./modules/error-handler/error-handler.controller";
@@ -16,7 +14,8 @@ import {
   loadPrismaModule,
 } from "./utils/helpers/prisma.helpers";
 import { fileUploaderRouter } from "./modules/file-uploader/file-uploader.router";
-import { InitConfigs } from "./types/app";
+import { InitConfigs } from "./types/init-configs";
+import { queryParser } from "./utils/helpers/query-parser.helpers";
 
 const ENV = process.env.NODE_ENV;
 let envPath = ".env";
@@ -42,17 +41,16 @@ else if (ENV === "test") {
 
 dotenv.config({ path: envPath });
 
-let initConfigs: InitConfigs;
-let prisma: any;
+const app = express();
 
 (async () => {
-  prisma = await loadPrismaModule();
+  await loadPrismaModule();
 })();
 
-export async function bootstrap(app: express.Express, configs: InitConfigs) {
-  prisma = await loadPrismaModule();
-
-  initConfigs = configs;
+export async function bootstrap(
+  initConfigs: InitConfigs
+): Promise<express.Express> {
+  await loadPrismaModule();
 
   app.use(compression());
 
@@ -92,14 +90,12 @@ export async function bootstrap(app: express.Express, configs: InitConfigs) {
   );
 
   app.use(express.json());
-  app.use(bodyParser.json());
   app.use(cookieParser());
   app.use(
     queryParser({
       parseNull: true,
       parseUndefined: true,
       parseBoolean: true,
-      parseNumber: true,
     })
   );
 
@@ -107,7 +103,11 @@ export async function bootstrap(app: express.Express, configs: InitConfigs) {
 
   app.use(handleRequestLogs);
 
-  if (configs.authentication) app.use("/api", authRouter);
+  app.get("/api", (req, res, next) => {
+    res.status(200).json({ message: initConfigs.welcomeMessage });
+  });
+
+  if (initConfigs.authentication) app.use("/api", authRouter);
   app.use("/api", baseRouter);
   app.use("/api", fileUploaderRouter);
   app.use(errorHandler);
