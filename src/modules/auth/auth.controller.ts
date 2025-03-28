@@ -7,11 +7,11 @@ import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
-import deepmerge from "deepmerge";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
 import { getInitConfigs } from "../../server";
 import { determineUsernameField } from "./utils/helpers/auth.helpers";
-import { InitConfigsAuthenticationOptions } from "../../types/app";
+import { InitConfigsAuthenticationOptions } from "../../types/init-configs";
 
 /**
  * Default fields to exclude from user object when returning to client
@@ -73,7 +73,36 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           return next();
         }
 
-        res.status(200).json(req.user);
+        res.status(200).json({ data: req.user });
+      }
+    ),
+
+    /**
+     * Updates the current authenticated user's information
+     */
+    updateMe: catchAsync(
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
+        const user = await baseServices["user"].updateOne(
+          { id: req.user!.id },
+          req.body,
+          stringifiedQueryOptions
+        );
+
+        Object.keys(defaultExcludedUserFields).forEach((key) => {
+          if (req.user) delete req.user[key as keyof User];
+        });
+
+        if (middlewares?.afterGetMe) {
+          req.responseData = user;
+          req.responseStatus = 200;
+          return next();
+        }
+
+        res.status(200).json({ data: req.user });
       }
     ),
 
@@ -201,7 +230,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
       ) => {
         const userService = baseServices["user"];
 
-        const user = await userService.createOne(req.body);
+        const user = await userService.createOne(
+          req.body,
+          stringifiedQueryOptions
+        );
 
         if (middlewares?.afterSignup) {
           req.responseData = { data: user };
@@ -259,13 +291,18 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           return next(new AppError("Current password is incorrect.", 400));
 
         // Check password strength (optional but recommended)
-        if (!authService.isPasswordStrong(String(newPassword)))
+        if (!authService.isPasswordStrong(String(newPassword))) {
+          const initAuthConfigs = getInitConfigs()
+            ?.authentication as InitConfigsAuthenticationOptions;
+
           return next(
             new AppError(
-              "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+              initAuthConfigs.passwordValidation?.message ||
+                "Password must contain at least one uppercase letter, one lowercase letter, and one number",
               400
             )
           );
+        }
 
         const prisma = getPrismaInstance();
 

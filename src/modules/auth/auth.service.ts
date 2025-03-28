@@ -18,7 +18,9 @@ import {
   AuthJwtPayload,
   ControllerActions,
 } from "../../types/auth";
-import { InitConfigsAuthenticationOptions } from "../../types/app";
+import { InitConfigsAuthenticationOptions } from "../../types/init-configs";
+import { kebabCase } from "../../utils/helpers/change-case.helpers";
+import { singular } from "pluralize";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -87,7 +89,8 @@ class AuthService {
       ?.authentication as InitConfigsAuthenticationOptions;
 
     const strongPasswordRegex =
-      initAuthConfigs.passwordRegex || /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/;
+      initAuthConfigs.passwordValidation?.regex ||
+      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/;
     return strongPasswordRegex.test(password);
   }
 
@@ -155,7 +158,10 @@ class AuthService {
 
           const permissions = await (prisma as any).authPermission.count({
             where: {
-              resource: modelName,
+              resource: {
+                equals: kebabCase(singular(modelName)),
+                mode: "insensitive",
+              },
               action,
               roleId: { in: user.roles.map((role: UserRole) => role.roleId) },
             },
@@ -249,15 +255,6 @@ class AuthService {
       throw new AppError(
         "User recently changed password! Please log in again.",
         401
-      );
-
-    if (!user.isVerified && !req.path.includes("logout"))
-      throw new AppError(
-        "You must verifiy your email in order to proceed!",
-        423,
-        {
-          error: "email_verification_required",
-        }
       );
 
     return user;

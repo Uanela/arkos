@@ -1,3 +1,1 @@
-import { getModels } from "../../utils/helpers/models.helpers";
-
-export { getModels as getPrismaModels };
+export * from "../../utils/features/change-case.features";
