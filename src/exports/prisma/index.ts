@@ -1,3 +1,4 @@
-import { PrismaQueryOptions } from "./../../types/index.d";
+import { PrismaQueryOptions } from "../../types";
+import { getModels } from "../../utils/helpers/models.helpers";
 
-export { PrismaQueryOptions };
+export { PrismaQueryOptions, getModels as getPrismaModels };

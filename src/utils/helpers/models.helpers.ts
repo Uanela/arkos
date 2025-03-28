@@ -1,6 +1,10 @@
 import path from "path";
 import fs from "fs";
-import { camelCase, kebabCase, pascalCase } from "change-case-all";
+import {
+  camelCase,
+  kebabCase,
+  pascalCase,
+} from "../../utils/helpers/change-case.helpers";
 import arkosEnv from "../arkos-env";
 import { userFileExtension } from "./fs.helpers";
 
@@ -26,6 +30,7 @@ export async function importPrismaModelModules(modelName: string) {
 
   const moduleDir = path.resolve(process.cwd(), "src", "modules", modelName);
   const dtosDir = path.join(moduleDir, "dtos");
+  const schemasDir = path.join(moduleDir, "schemas");
 
   const middlewaresFile = path.join(
     moduleDir,
@@ -58,6 +63,23 @@ export async function importPrismaModelModules(modelName: string) {
     `query-${lowerModelName}.dto.${userFileExtension}`
   );
 
+  const modelSchemaFile = path.join(
+    schemasDir,
+    `${lowerModelName}.schema.${userFileExtension}`
+  );
+  const createSchemaFile = path.join(
+    schemasDir,
+    `create-${lowerModelName}.schema.${userFileExtension}`
+  );
+  const updateSchemaFile = path.join(
+    schemasDir,
+    `update-${lowerModelName}.schema.${userFileExtension}`
+  );
+  const querySchemaFile = path.join(
+    schemasDir,
+    `query-${lowerModelName}.schema.${userFileExtension}`
+  );
+
   const result: {
     middlewares?: any;
     authConfigs?: any;
@@ -68,8 +90,15 @@ export async function importPrismaModelModules(modelName: string) {
       query?: any;
       model?: any;
     };
+    schemas: {
+      create?: any;
+      update?: any;
+      query?: any;
+      model?: any;
+    };
   } = {
     dtos: {},
+    schemas: {},
   };
 
   try {
@@ -162,6 +191,48 @@ export async function importPrismaModelModules(modelName: string) {
     console.error(`Error importing query DTO for model "${modelName}":`, error);
   }
 
+  try {
+    if (fs.existsSync(createSchemaFile)) {
+      const createSchemaModule = await import(createSchemaFile);
+      result.dtos.create =
+        createSchemaModule.default ||
+        createSchemaModule[`Create${pascalModelName}Schema`];
+    }
+  } catch (error) {
+    console.error(
+      `Error importing create Schema for model "${modelName}":`,
+      error
+    );
+  }
+
+  try {
+    if (fs.existsSync(updateSchemaFile)) {
+      const updateSchemaModule = await import(updateSchemaFile);
+      result.dtos.update =
+        updateSchemaModule.default ||
+        updateSchemaModule[`Update${pascalModelName}Schema`];
+    }
+  } catch (error) {
+    console.error(
+      `Error importing update Schema for model "${modelName}":`,
+      error
+    );
+  }
+
+  try {
+    if (fs.existsSync(querySchemaFile)) {
+      const querySchemaModule = await import(querySchemaFile);
+      result.dtos.query =
+        querySchemaModule.default ||
+        querySchemaModule[`Query${pascalModelName}Schema`];
+    }
+  } catch (error) {
+    console.error(
+      `Error importing query Schema for model "${modelName}":`,
+      error
+    );
+  }
+
   globalPrismaModelsModules[modelName] = result;
 
   return result;
@@ -195,7 +266,7 @@ const schemaFolderPath =
  */
 const prismaModelRelationFields: Record<string, RelationFields> = {};
 
-const prismaContent = [];
+const prismaContent: string[] = [];
 
 const files = fs
   .readdirSync(schemaFolderPath)
@@ -272,7 +343,10 @@ for (const model of models) {
     const isUnique = trimmedLine.includes("@unique");
 
     if (isUnique)
-      prismaModelsUniqueFields[model].push({ name: fieldName, type, isUnique });
+      prismaModelsUniqueFields[model] = [
+        ...(prismaModelsUniqueFields[model] || []),
+        { name: fieldName, type, isUnique },
+      ];
 
     const cleanType = type?.replace("[]", "").replace("?", "");
 

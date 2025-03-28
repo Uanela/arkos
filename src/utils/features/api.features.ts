@@ -1,5 +1,5 @@
 import { Request } from "express";
-import deepmerge from "deepmerge";
+import deepmerge from "../helpers/deepmerge.helper";
 import { parseQueryParamsWithModifiers } from "../helpers/api.features.helpers";
 import AppError from "../../modules/error-handler/utils/app-error";
 import { getPrismaInstance } from "../helpers/prisma.helpers";
@@ -7,7 +7,7 @@ import { getPrismaInstance } from "../helpers/prisma.helpers";
 type ModelName = string;
 
 export default class APIFeatures {
-  req: Request; // The Prisma query
+  req: Request;
   searchParams: any; // The query string parameters from the request
   searchParamsWithModifiers: any; // The query string parameters from the request
   filters: any = {};
