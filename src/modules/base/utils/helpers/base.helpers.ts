@@ -226,7 +226,7 @@ export function canBeUsedToConnect(
   }
 
   // If only ID is present, it can be used to connect
-  if (Object.keys(bodyField).length === 1 && bodyField?.id) {
+  if (Object.keys(bodyField)?.length === 1 && bodyField?.id) {
     return true;
   }
 
@@ -236,7 +236,7 @@ export function canBeUsedToConnect(
   // If the field has exactly one property and it's a unique field, it can be used to connect
   if (Object.keys(bodyField).length === 1) {
     const fieldName = Object.keys(bodyField)[0];
-    return uniqueFields.some((field) => field.name === fieldName);
+    return uniqueFields?.some((field) => field.name === fieldName);
   }
 
   return false;
