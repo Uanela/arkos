@@ -1,17 +1,22 @@
-import { camelCase, kebabCase, pascalCase } from "change-case-all";
+import {
+  camelCase,
+  kebabCase,
+  pascalCase,
+} from "../../utils/helpers/change-case.helpers";
 import {
   getModelModules,
   getModels,
   getPrismaModelRelations,
   RelationFields,
 } from "../../utils/helpers/models.helpers";
-import deepmerge from "deepmerge";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
 import AppError from "../error-handler/utils/app-error";
 import pluralize from "pluralize";
-import { handleRelationFieldsInBody } from "./utils/base.helpers";
+import { handleRelationFieldsInBody } from "./utils/helpers/base.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import validateDto from "../../utils/validate-dto";
 import { getInitConfigs } from "../../server";
+import authService from "../auth/auth.service";
 
 /**
  * Base service class for handling CRUD operations on a specific model.
@@ -56,17 +61,14 @@ export class BaseService {
    */
   async createOne(
     body: Record<string, any>,
-    // queryOptions: string = JSON.stringify(
-    //   getModelModules(kebabCase(this.modelName)).prismaQueryOptions || {}
-    // )
     queryOptions: string = "{}"
   ): Promise<any> {
-    const modelModules = getModelModules(kebabCase(this.modelName));
-    if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
-      body = await validateDto(modelModules.dtos.create, body);
+    if (kebabCase(this.modelName) === "user" && body.password) {
+      body.password = await authService.hashPassword(body.password);
     }
 
     const prisma = getPrismaInstance();
+
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(
       body,
       {
@@ -100,7 +102,7 @@ export class BaseService {
     body: Record<string, any>[]
   ): Promise<{ total: number; data: any }> {
     const modelModules = getModelModules(kebabCase(this.modelName));
-    if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    if (modelModules.dtos.create && getInitConfigs()?.validation) {
       body = await validateDto(modelModules.dtos.create, body);
     }
 
@@ -190,13 +192,13 @@ export class BaseService {
             ? {
                 select: {
                   ...this.singularRelationFieldToInclude,
-                  ...this.singularRelationFieldToInclude,
+                  ...this.listRelationFieldToInclude,
                 },
               }
             : {
                 include: {
                   ...this.singularRelationFieldToInclude,
-                  ...this.singularRelationFieldToInclude,
+                  ...this.listRelationFieldToInclude,
                 },
               }),
         },
@@ -232,11 +234,15 @@ export class BaseService {
     queryOptions: string = "{}"
   ): Promise<any> {
     const modelModules = getModelModules(kebabCase(this.modelName));
-    if (modelModules.dtos.update && getInitConfigs()?.validation !== false) {
+    if (modelModules.dtos.update && getInitConfigs()?.validation) {
       body = await validateDto(modelModules.dtos.update, body);
     }
 
     const prisma = getPrismaInstance();
+
+    if (kebabCase(this.modelName) === "user" && body.password) {
+      body.password = await authService.hashPassword(body.password);
+    }
 
     const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(body, {
       ...this.relationFields,

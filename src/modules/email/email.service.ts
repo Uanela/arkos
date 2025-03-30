@@ -1,6 +1,5 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { BaseService } from "../base/base.service";
-import AppError from "../error-handler/utils/app-error";
 
 /**
  * Defines the options for sending an email.
@@ -45,11 +44,11 @@ export class EmailService extends BaseService {
 
   /**
    * Verifies the connection to the email server.
-   * throws an AppError("Email Server Connection Failed", 500).
+   * logs an AppError("Email Server Connection Failed", 500).
    */
   private verifyConnection(): void {
     this.transporter.verify((error) => {
-      if (error) throw new AppError("Email Server Connection Failed", 500);
+      if (error) console.error("Email Server Connection Failed", 500);
     });
   }
 

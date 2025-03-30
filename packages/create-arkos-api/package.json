@@ -1,0 +1,22 @@
+{
+  "name": "create-arkos-api",
+  "version": "0.1.0",
+  "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
+  "type": "module",
+  "bin": {
+    "create-arkos-api": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^8.1.0",
+    "@types/node": "^16.18.126",
+    "fs-extra": "^10.1.0",
+    "inquirer": "^8.2.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^4.9.5"
+  }
+}

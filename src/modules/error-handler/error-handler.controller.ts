@@ -76,16 +76,17 @@ export default function errorHandler(
     error = errorControllerHelper.handleVersionMismatchError(err);
 
   // Handle general error types (e.g., syntax errors, type errors, etc.)
-  if (err.name === "SyntaxError")
-    error = errorControllerHelper.handleSchemaSyntaxError(err);
-  if (err.name === "TypeError")
-    error = errorControllerHelper.handleClientTypeError(err);
-  if (err.name === "BinaryError")
-    error = errorControllerHelper.handleBinaryError(err);
+  // if (err.name === "SyntaxError")
+  //   error = errorControllerHelper.handleSchemaSyntaxError(err);
+  // if (err.name === "TypeError")
+  //   error = errorControllerHelper.handleClientTypeError(err);
+  // if (err.name === "BinaryError")
+  //   error = errorControllerHelper.handleBinaryError(err);
   if (err.name === "NetworkError")
     error = errorControllerHelper.handleNetworkError(err);
-  if (err.name === "UnhandledPromiseRejection")
-    error = errorControllerHelper.handleUnhandledPromiseError(err);
+  // if (err.name === "UnhandledPromiseRejection")
+  //   error = errorControllerHelper.handleUnhandledPromiseError(err);
+  error = new AppError("Something Went Wrong!", 500);
 
   // Send the error response for production environment
   sendProductionError(error, req, res);

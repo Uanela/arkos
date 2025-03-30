@@ -1,9 +1,9 @@
-import { NextFunction, Request, Response } from "express";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import APIFeatures from "../../utils/features/api.features";
 import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
-import { pascalCase } from "change-case-all";
+import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
 import { getExpressApp } from "../../server";
 import { getModels } from "../../utils/helpers/models.helpers";
 
@@ -13,15 +13,19 @@ export async function handlerFactory(modelName: string, modelModules: any) {
 
   return {
     createOne: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         const data = await baseService.createOne(
           req.body,
           req.query?.prismaQueryOptions as string
         );
 
         if (middlewares?.afterCreateOne) {
-          (req as any).responseData = { data };
-          (req as any).responseStatus = 201;
+          req.responseData = { data };
+          req.responseStatus = 201;
           return next();
         }
 
@@ -30,12 +34,16 @@ export async function handlerFactory(modelName: string, modelModules: any) {
     ),
 
     createMany: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         const { data, total } = await baseService.createMany(req.body);
 
         if (middlewares?.afterCreateMany) {
-          (req as any).responseData = { total, results: data.length, data };
-          (req as any).responseStatus = 201;
+          req.responseData = { total, results: data.length, data };
+          req.responseStatus = 201;
           return next();
         }
 
@@ -44,7 +52,11 @@ export async function handlerFactory(modelName: string, modelModules: any) {
     ),
 
     findMany: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         const features = new APIFeatures(
           req,
           modelName,
@@ -64,8 +76,8 @@ export async function handlerFactory(modelName: string, modelModules: any) {
         const { data, total } = await baseService.findMany(features.filters);
 
         if (middlewares?.afterFindMany) {
-          (req as any).responseData = { total, results: data.length, data };
-          (req as any).responseStatus = 200;
+          req.responseData = { total, results: data.length, data };
+          req.responseStatus = 200;
           return next();
         }
 
@@ -74,15 +86,19 @@ export async function handlerFactory(modelName: string, modelModules: any) {
     ),
 
     findOne: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         const data = await baseService.findOne(
           req.params,
           req.query?.prismaQueryOptions as string
         );
 
         if (middlewares?.afterFindOne) {
-          (req as any).responseData = { data };
-          (req as any).responseStatus = 200;
+          req.responseData = { data };
+          req.responseStatus = 200;
           return next();
         }
 
@@ -91,7 +107,11 @@ export async function handlerFactory(modelName: string, modelModules: any) {
     ),
 
     updateOne: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         const data = await baseService.updateOne(
           req.params,
           req.body,
@@ -99,8 +119,8 @@ export async function handlerFactory(modelName: string, modelModules: any) {
         );
 
         if (middlewares?.afterUpdateOne) {
-          (req as any).responseData = { data };
-          (req as any).responseStatus = 200;
+          req.responseData = { data };
+          req.responseStatus = 200;
           return next();
         }
 
@@ -109,7 +129,11 @@ export async function handlerFactory(modelName: string, modelModules: any) {
     ),
 
     updateMany: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         if (
           !Object.keys(req.query).some(
             (value) => value !== "prismaQueryOptions"
@@ -129,8 +153,8 @@ export async function handlerFactory(modelName: string, modelModules: any) {
         );
 
         if (middlewares?.afterUpdateMany) {
-          (req as any).responseData = { total, results: data.length, data };
-          (req as any).responseStatus = 200;
+          req.responseData = { total, results: data.length, data };
+          req.responseStatus = 200;
           return next();
         }
 
@@ -139,12 +163,16 @@ export async function handlerFactory(modelName: string, modelModules: any) {
     ),
 
     deleteOne: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         await baseService.deleteOne(req.params);
 
         if (middlewares?.afterDeleteOne) {
-          (req as any).responseData = { id: String(req.params.id) };
-          (req as any).responseStatus = 204;
+          req.responseData = { id: String(req.params.id) };
+          req.responseStatus = 204;
           return next();
         }
 
@@ -153,7 +181,11 @@ export async function handlerFactory(modelName: string, modelModules: any) {
     ),
 
     deleteMany: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         if (
           !Object.keys(req.query).some(
             (value) => value !== "prismaQueryOptions"
@@ -170,8 +202,8 @@ export async function handlerFactory(modelName: string, modelModules: any) {
         const { data, total } = await baseService.deleteMany(features.filters);
 
         if (middlewares?.afterDeleteMany) {
-          (req as any).responseData = { total, results: data.length, data };
-          (req as any).responseStatus = 200;
+          req.responseData = { total, results: data.length, data };
+          req.responseStatus = 200;
           return next();
         }
 
@@ -182,9 +214,9 @@ export async function handlerFactory(modelName: string, modelModules: any) {
 }
 
 export function getAvalibleRoutes(
-  req: Request,
-  res: Response,
-  next: NextFunction
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
 ) {
   const routes: { method: string; path: string }[] = [];
   req.params;
@@ -219,7 +251,9 @@ export function getAvalibleRoutes(
   res.json(routes);
 }
 
-export const getDatabaseModels = catchAsync(async (req, res, next) => {
+export const getAvailableResources = catchAsync(async (req, res, next) => {
   const models = getModels();
-  res.status(200).json({ data: models.map((model) => pascalCase(model)) });
+  res.status(200).json({
+    data: [...models.map((model) => kebabCase(model)), "file-upload"],
+  });
 });
