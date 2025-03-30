@@ -74,9 +74,9 @@ class AuthService {
    *
    * **Note**: You can define it when calling arkos.init()
    * ```ts
-   * arkos.init(app, {
+   * arkos.init({
    *  authentication: {
-   *    passwordRegex: /your-desired-regex/
+   *    passwordValidation:{ regex: /your-desired-regex/, message: 'password must contain...'}
    *  }
    * })
    * ```
@@ -158,10 +158,7 @@ class AuthService {
 
           const permissions = await (prisma as any).authPermission.count({
             where: {
-              resource: {
-                equals: kebabCase(singular(modelName)),
-                mode: "insensitive",
-              },
+              resource: kebabCase(singular(modelName)),
               action,
               roleId: { in: user.roles.map((role: UserRole) => role.roleId) },
             },
