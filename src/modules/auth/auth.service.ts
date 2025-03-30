@@ -1,19 +1,26 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import {
-  AuthConfigs,
-  AuthJwtPayload,
-  ControllerActions,
-  User,
-  UserRole,
-} from "../../types";
+import { User, UserRole } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
-import { NextFunction, Request, RequestHandler, Response } from "express";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
 import { getInitConfigs } from "../../server";
 import arkosEnv from "../../utils/arkos-env";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
+import {
+  ArkosRequest,
+  ArkosResponse,
+  ArkosNextFunction,
+  ArkosRequestHandler,
+} from "../../types";
+import {
+  AuthConfigs,
+  AuthJwtPayload,
+  ControllerActions,
+} from "../../types/auth";
+import { InitConfigsAuthenticationOptions } from "../../types/init-configs";
+import { kebabCase } from "../../utils/helpers/change-case.helpers";
+import { singular } from "pluralize";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -63,17 +70,28 @@ class AuthService {
   }
 
   /**
-   * Checks if a password is strong, requiring uppercase, lowercase, and numeric characters.
+   * Checks if a password is strong, requiring uppercase, lowercase, and numeric characters as the default.
+   *
+   * **Note**: You can define it when calling arkos.init()
+   * ```ts
+   * arkos.init({
+   *  authentication: {
+   *    passwordValidation:{ regex: /your-desired-regex/, message: 'password must contain...'}
+   *  }
+   * })
+   * ```
    *
    * @param {string} password - The password to check.
    * @returns {boolean} Returns true if the password meets the strength criteria, otherwise false.
    */
   isPasswordStrong(password: string): boolean {
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
+    const initAuthConfigs = getInitConfigs()
+      ?.authentication as InitConfigsAuthenticationOptions;
 
-    return hasUppercase && hasLowercase && hasNumber;
+    const strongPasswordRegex =
+      initAuthConfigs.passwordValidation?.regex ||
+      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/;
+    return strongPasswordRegex.test(password);
   }
 
   /**
@@ -105,7 +123,7 @@ class AuthService {
    */
   async verifyJwtToken(
     token: string,
-    secret: string = process.env.JWT_SECRET!
+    secret: string = process.env.JWT_SECRET || arkosEnv.JWT_SECRET
   ): Promise<AuthJwtPayload> {
     return new Promise((resolve, reject) => {
       jwt.verify(token, secret, (err, decoded) => {
@@ -121,22 +139,26 @@ class AuthService {
    * @param {AuthConfigs} authConfigs - The configuration object for authentication and access control.
    * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
    * @param {string} modelName - The model name that the action is being performed on (e.g., "User", "Post").
-   * @returns {RequestHandler} The middleware function that checks if the user has permission to perform the action.
+   * @returns {ArkosRequestHandler} The middleware function that checks if the user has permission to perform the action.
    */
   handleActionAccessControl(
     authConfigs: AuthConfigs,
     action: ControllerActions,
     modelName: string
-  ): RequestHandler {
+  ): ArkosRequestHandler {
     return catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         if (req.user) {
           const user = req.user as any;
           const prisma = getPrismaInstance();
 
           const permissions = await (prisma as any).authPermission.count({
             where: {
-              resource: modelName,
+              resource: kebabCase(singular(modelName)),
               action,
               roleId: { in: user.roles.map((role: UserRole) => role.roleId) },
             },
@@ -163,7 +185,7 @@ class AuthService {
    * @returns {Promise<User | null>} - if authentication is turned off in initConfigs it returns null
    * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
    */
-  async getAuthenticatedUser(req: Request): Promise<User | null> {
+  async getAuthenticatedUser(req: ArkosRequest): Promise<User | null> {
     const initConfigs = getInitConfigs();
     if (initConfigs?.authentication === false) return null;
 
@@ -232,28 +254,19 @@ class AuthService {
         401
       );
 
-    if (!user.isVerified && !req.path.includes("logout"))
-      throw new AppError(
-        "You must verifiy your email in order to proceed!",
-        423,
-        {
-          error: "email_verification_required",
-        }
-      );
-
     return user;
   }
 
   /**
    * Middleware function to authenticate the user based on the JWT token.
    *
-   * @param {Request} req - The request object.
-   * @param {Response} res - The response object.
-   * @param {NextFunction} next - The next middleware function to be called.
+   * @param {ArkosRequest} req - The request object.
+   * @param {ArkosResponse} res - The response object.
+   * @param {ArkosNextFunction} next - The next middleware function to be called.
    * @returns {void}
    */
   authenticate = catchAsync(
-    async (req: Request, res: Response, next: NextFunction) => {
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       const initConfigs = getInitConfigs();
       if (initConfigs?.authentication === false) return next();
 
@@ -268,13 +281,13 @@ class AuthService {
    * @param {AuthConfigs | undefined} authConfigs - The authentication configuration object.
    * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
    * @param {string} modelName - The model name being affected by the action.
-   * @returns {RequestHandler} The middleware function that checks if authentication is required.
+   * @returns {ArkosRequestHandler} The middleware function that checks if authentication is required.
    */
   handleAuthenticationControl(
     authConfigs: AuthConfigs | undefined,
     action: ControllerActions,
     modelName: string
-  ): RequestHandler {
+  ): ArkosRequestHandler {
     const authenticationControl = authConfigs?.authenticationControl;
 
     if (authenticationControl && typeof authenticationControl === "object") {

@@ -1,4 +1,10 @@
 import { initApp } from "../server";
+import {
+  ArkosRequest,
+  ArkosResponse,
+  ArkosNextFunction,
+  ArkosRequestHandler,
+} from "../types";
 
 /**
  * Initializes the Arkos application.
@@ -9,6 +15,8 @@ import { initApp } from "../server";
 const arkos = {
   init: initApp,
 };
+
+export { ArkosRequest, ArkosResponse, ArkosNextFunction, ArkosRequestHandler };
 
 /**
  * Main entry point for the Arkos module.

@@ -1,10 +1,10 @@
-import { kebabCase } from "change-case-all";
+import { kebabCase } from "../../utils/helpers/change-case.helpers";
 import { Router } from "express";
 import pluralize from "pluralize";
 import {
   getAvalibleRoutes,
   handlerFactory,
-  getDatabaseModels,
+  getAvailableResources,
 } from "./base.controller";
 import {
   getModels,
@@ -16,6 +16,7 @@ import {
 } from "./base.middlewares";
 import { PrismaQueryOptions } from "../../types";
 import authService from "../auth/auth.service";
+import { handleRequestBodyValidationAndTransformation } from "../../utils/helpers/base.controller.helpers";
 
 const models = getModels();
 
@@ -51,6 +52,7 @@ models.forEach(async (model) => {
         "create",
         modelNameInKebab
       ),
+      handleRequestBodyValidationAndTransformation(modelNameInKebab, "create"),
       addPrismaQueryOptionsToRequestQuery<any>(
         prismaQueryOptions as PrismaQueryOptions<any>,
         "createOne"
@@ -201,6 +203,7 @@ models.forEach(async (model) => {
         "update",
         modelNameInKebab
       ),
+      handleRequestBodyValidationAndTransformation(modelNameInKebab, "update"),
       addPrismaQueryOptionsToRequestQuery<any>(
         prismaQueryOptions as PrismaQueryOptions<any>,
         "updateOne"
@@ -241,9 +244,13 @@ models.forEach(async (model) => {
 });
 
 (() => {
-  router.get("/available-routes", authService.authenticate, getAvalibleRoutes);
+  router.get("/available-routes", authService?.authenticate, getAvalibleRoutes);
 
-  router.get("/database-models", authService.authenticate, getDatabaseModels);
+  router.get(
+    "/available-resources",
+    authService?.authenticate,
+    getAvailableResources
+  );
 })();
 
 export default router;

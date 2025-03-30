@@ -11,18 +11,43 @@ const router: Router = Router();
   const { middlewares } = await importPrismaModelModules("auth");
   const authController = await authControllerFactory(middlewares);
 
-  router.get(
-    "/users/me",
-    authService.authenticate,
-    middlewares?.beforeGetMe ?? authController.getMe,
-    middlewares?.beforeGetMe
-      ? authController.getMe
-      : middlewares?.afterGetMe ?? sendResponse,
-    middlewares?.beforeGetMe && middlewares?.afterGetMe
-      ? middlewares?.afterGetMe
-      : sendResponse,
-    sendResponse
-  );
+  router
+    .get(
+      "/users/me",
+      authService.authenticate,
+      middlewares?.beforeGetMe ?? authController.getMe,
+      middlewares?.beforeGetMe
+        ? authController.getMe
+        : middlewares?.afterGetMe ?? sendResponse,
+      middlewares?.beforeGetMe && middlewares?.afterGetMe
+        ? middlewares?.afterGetMe
+        : sendResponse,
+      sendResponse
+    )
+    .patch(
+      "/users/me",
+      authService.authenticate,
+      middlewares?.beforeGetMe ?? authController.getMe,
+      middlewares?.beforeGetMe
+        ? authController.getMe
+        : middlewares?.afterGetMe ?? sendResponse,
+      middlewares?.beforeGetMe && middlewares?.afterGetMe
+        ? middlewares?.afterGetMe
+        : sendResponse,
+      sendResponse
+    )
+    .delete(
+      "/users/me",
+      authService.authenticate,
+      middlewares?.beforeGetMe ?? authController.getMe,
+      middlewares?.beforeGetMe
+        ? authController.getMe
+        : middlewares?.afterGetMe ?? sendResponse,
+      middlewares?.beforeGetMe && middlewares?.afterGetMe
+        ? middlewares?.afterGetMe
+        : sendResponse,
+      sendResponse
+    );
 
   router.use(
     rateLimit({
@@ -66,42 +91,6 @@ const router: Router = Router();
       : middlewares?.afterSignup ?? sendResponse,
     middlewares?.beforeSignup && middlewares?.afterSignup
       ? middlewares?.afterSignup
-      : sendResponse,
-    sendResponse
-  );
-
-  router.post(
-    "/auth/verify-email",
-    middlewares?.beforeVerifyEmail ?? authController.verifyEmail,
-    middlewares?.beforeVerifyEmail
-      ? authController.verifyEmail
-      : middlewares?.afterVerifyEmail ?? sendResponse,
-    middlewares?.beforeVerifyEmail && middlewares?.afterVerifyEmail
-      ? middlewares?.afterVerifyEmail
-      : sendResponse,
-    sendResponse
-  );
-
-  router.post(
-    "/auth/forgot-password",
-    middlewares?.beforeForgotPassword ?? authController.forgotPassword,
-    middlewares?.beforeForgotPassword
-      ? authController.forgotPassword
-      : middlewares?.afterForgotPassword ?? sendResponse,
-    middlewares?.beforeForgotPassword && middlewares?.afterForgotPassword
-      ? middlewares?.afterForgotPassword
-      : sendResponse,
-    sendResponse
-  );
-
-  router.post(
-    "/auth/reset-password",
-    middlewares?.beforeResetPassword ?? authController.resetPassword,
-    middlewares?.beforeResetPassword
-      ? authController.resetPassword
-      : middlewares?.afterResetPassword ?? sendResponse,
-    middlewares?.beforeResetPassword && middlewares?.afterResetPassword
-      ? middlewares?.afterResetPassword
       : sendResponse,
     sendResponse
   );

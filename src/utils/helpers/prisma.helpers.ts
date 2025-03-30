@@ -1,13 +1,21 @@
+import fs from "fs";
 import { Request, Response, NextFunction } from "express";
 import catchAsync from "../../modules/error-handler/utils/catch-async";
 import AppError from "../../modules/error-handler/utils/app-error";
+import { userFileExtension } from "./fs.helpers";
 
 let prismaInstance: any = null;
 
 export const loadPrismaModule = async () => {
   if (!prismaInstance) {
     try {
-      const prismaModule = await import(`${process.cwd()}/src/utils/prisma`);
+      let prismaPath = `${process.cwd()}/src/utils/prisma/index.${userFileExtension}`;
+
+      if (!fs.existsSync(prismaPath)) {
+        prismaPath = `${process.cwd()}/src/utils/prisma.${userFileExtension}`;
+      }
+
+      const prismaModule = await import(prismaPath);
       prismaInstance = prismaModule.default || prismaModule.prisma;
     } catch (error) {
       console.error("Failed to load prisma.ts:", error);

@@ -1,33 +1,45 @@
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
-import { CookieOptions, NextFunction, Request, Response } from "express";
+import { CookieOptions } from "express";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
-import deepmerge from "deepmerge";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
+import arkosEnv from "../../utils/arkos-env";
+import { getInitConfigs } from "../../server";
+import { determineUsernameField } from "./utils/helpers/auth.helpers";
+import { InitConfigsAuthenticationOptions } from "../../types/init-configs";
 
+/**
+ * Default fields to exclude from user object when returning to client
+ */
 export const defaultExcludedUserFields = {
   password: false,
   passwordChangedAt: false,
-  passwordResetOtp: false,
-  passwordResetOtpExpiresAt: false,
-  verificationOtp: false,
-  verificationOptExpiresAt: false,
+  passwordResetToken: false,
+  passwordResetTokenExpiresAt: false,
+  verificationToken: false,
+  verificationTokenExpiresAt: false,
   isVerified: false,
   deletedSelfAccount: false,
   active: false,
 };
 
+/**
+ * Factory function to create authentication controller with configurable middlewares
+ *
+ * @param middlewares - Optional middleware functions to execute after controller actions
+ * @returns An object containing all authentication controller methods
+ */
 export const authControllerFactory = async (middlewares: any = {}) => {
   const baseServices = getBaseServices();
   let prismaQueryOptions: Record<string, any> = {};
 
   const userModules = await importPrismaModelModules("user");
   if (userModules) prismaQueryOptions = userModules?.prismaQueryOptions || {};
-
-  const prisma = getPrismaInstance();
 
   const stringifiedQueryOptions = JSON.stringify(
     deepmerge(
@@ -37,8 +49,15 @@ export const authControllerFactory = async (middlewares: any = {}) => {
   );
 
   return {
+    /**
+     * Retrieves the current authenticated user's information
+     */
     getMe: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         const user = await baseServices["user"].findOne(
           { id: req.user!.id },
           stringifiedQueryOptions
@@ -49,25 +68,61 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         });
 
         if (middlewares?.afterGetMe) {
-          (req as any).responseData = user;
-          (req as any).responseStatus = 200;
+          req.responseData = user;
+          req.responseStatus = 200;
           return next();
         }
 
-        res.status(200).json(req.user);
+        res.status(200).json({ data: req.user });
       }
     ),
 
+    /**
+     * Updates the current authenticated user's information
+     */
+    updateMe: catchAsync(
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
+        const user = await baseServices["user"].updateOne(
+          { id: req.user!.id },
+          req.body,
+          stringifiedQueryOptions
+        );
+
+        Object.keys(defaultExcludedUserFields).forEach((key) => {
+          if (req.user) delete req.user[key as keyof User];
+        });
+
+        if (middlewares?.afterGetMe) {
+          req.responseData = user;
+          req.responseStatus = 200;
+          return next();
+        }
+
+        res.status(200).json({ data: req.user });
+      }
+    ),
+
+    /**
+     * Logs out the current user by invalidating their access token cookie
+     */
     logout: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         res.cookie("arkos_access_token", "no-token", {
           expires: new Date(Date.now() + 10 * 1000),
           httpOnly: true,
         });
 
         if (middlewares?.afterLogout) {
-          (req as any).responseData = null;
-          (req as any).responseStatus = 204;
+          req.responseData = null;
+          req.responseStatus = 204;
           return next();
         }
 
@@ -75,74 +130,114 @@ export const authControllerFactory = async (middlewares: any = {}) => {
       }
     ),
 
+    /**
+     * Authenticates a user using configurable username field and password
+     * Username field can be specified in query parameter or config
+     */
     login: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
-        const { email, password } = req.body;
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
+        const initAuthConfigs = getInitConfigs()
+          ?.authentication as InitConfigsAuthenticationOptions;
+        const usernameField = determineUsernameField(req);
 
-        if (!email || !password) {
+        const usernameValue = req.body[usernameField];
+        const { password } = req.body;
+
+        if (!usernameValue || !password) {
           return next(
-            new AppError("Please provide an email and a password", 400)
+            new AppError(`Please provide ${usernameField} and password`, 400)
           );
         }
 
+        const prisma = getPrismaInstance();
+
+        // Create dynamic where clause based on username field
+        const whereClause: any = {};
+        whereClause[usernameField] = usernameValue;
+
         const user = await (prisma as any).user.findUnique({
-          where: { email },
+          where: whereClause,
         });
 
         if (
           !user ||
           !(await authService.isCorrectPassword(password, user.password))
         ) {
-          return next(new AppError("Incorrect email or password", 401));
-        }
-
-        if (!user.isVerified)
           return next(
-            new AppError(
-              "You must verifiy your email in order to proceed!",
-              423
-            )
+            new AppError(`Incorrect ${usernameField} or password`, 401)
           );
+        }
 
         const token = authService.signJwtToken(user.id!);
 
         const cookieOptions: CookieOptions = {
           expires: new Date(
             Date.now() +
-              Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000
+              Number(
+                process.env.JWT_COOKIE_EXPIRES_IN ||
+                  arkosEnv.JWT_COOKIE_EXPIRES_IN
+              ) *
+                24 *
+                60 *
+                60 *
+                1000
           ),
           httpOnly: true,
           secure: req.secure || req.headers["x-forwarded-proto"] === "https",
-          sameSite: process.env.JWT_SECURE != "false" ? "lax" : "none",
+          sameSite: process.env.JWT_SECURE !== "false" ? "lax" : "none",
         };
 
         if (
           process.env.NODE_ENV === "production" &&
-          process.env.JWT_SECURE != "false"
+          process.env.JWT_SECURE !== "false"
         )
           cookieOptions.secure = true;
 
-        res.cookie("arkos_access_token", token, cookieOptions);
-
         if (middlewares?.afterLogin) {
-          (req as any).responseData = { token };
-          (req as any).responseStatus = 200;
+          req.responseData = { accessToken: token };
+          req.responseStatus = 200;
           return next();
         }
 
-        res.status(200).send();
+        if (
+          initAuthConfigs?.login?.sendAccessTokenThrough === "response-only"
+        ) {
+          res.status(200).json({ accessToken: token });
+        } else if (
+          initAuthConfigs?.login?.sendAccessTokenThrough === "cookie-only"
+        ) {
+          res.cookie("arkos_access_token", token, cookieOptions);
+          res.status(200).send();
+        } else {
+          res.cookie("arkos_access_token", token, cookieOptions);
+          res.status(200).json({ accessToken: token });
+        }
       }
     ),
 
+    /**
+     * Creates a new user account
+     */
     signup: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         const userService = baseServices["user"];
 
-        const user = await userService.createOne(req.body);
+        const user = await userService.createOne(
+          req.body,
+          stringifiedQueryOptions
+        );
 
         if (middlewares?.afterSignup) {
-          (req as any).responseData = { data: user };
-          (req as any).responseStatus = 201;
+          req.responseData = { data: user };
+          req.responseStatus = 201;
           return next();
         }
 
@@ -154,275 +249,15 @@ export const authControllerFactory = async (middlewares: any = {}) => {
       }
     ),
 
-    verifyEmail: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
-        const { otp, email } = req.body;
-
-        // Check if email and OTP are provided
-        if (!email || !otp) {
-          return next(
-            new AppError("Email and otp are required", 400, {
-              error: "Missing parameters",
-            })
-          );
-        }
-
-        const user = await (prisma as any).user.findUnique({
-          where: { email },
-        });
-
-        if (!user) {
-          return next(
-            new AppError("No account found with this email.", 400, {
-              error: "user_not_found",
-            })
-          );
-        }
-
-        if (user.isVerified)
-          return next(
-            new AppError("Your email is already verified.", 400, {
-              error: "already_verified",
-            })
-          );
-
-        if (user.verificationOtp !== otp)
-          return next(
-            new AppError("The OTP is incorrect.", 400, {
-              error: "invalid_otp",
-            })
-          );
-
-        if (
-          user.verificationOptExpiresAt &&
-          new Date() > user.verificationOptExpiresAt
-        )
-          return next(
-            new AppError(
-              "The OTP has expired. Please request a new one.",
-              400,
-              {
-                error: "expired_otp",
-              }
-            )
-          );
-
-        await (prisma as any).user.update({
-          where: { email },
-          data: {
-            isVerified: true,
-            verificationOtp: null,
-            verificationOptExpiresAt: null,
-          },
-        });
-
-        if (middlewares?.afterVerifyEmail) {
-          (req as any).additionalData = {
-            user,
-          };
-          (req as any).responseData = {
-            message: "Email verified successfully.",
-          };
-          (req as any).responseStatus = 200;
-          return next();
-        }
-
-        res.status(200).json({
-          message: "Email verified successfully.",
-        });
-      }
-    ),
-
-    forgotPassword: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
-        if (!req.body.email)
-          return next(
-            new AppError(
-              "Email is required in order to trigger forgot password",
-              400
-            )
-          );
-
-        const user = await (prisma as any).user.findUnique({
-          where: {
-            email: req.body.email,
-          },
-        });
-
-        if (
-          !user ||
-          user?.active === false ||
-          user?.deletedSelfAccount === true
-        )
-          return next(new AppError("User not found!", 404));
-
-        if (!user.isVerified)
-          return next(
-            new AppError("You need to verify your account to proceed", 423, {
-              error: "email_verification_required",
-            })
-          );
-
-        // Verifica se um OTP foi solicitado recentemente
-        if (user.passwordResetOtpExpiresAt) {
-          const now = new Date();
-          const lastOtpRequestedAt = new Date(
-            new Date(user.passwordResetOtpExpiresAt).getTime() - 15 * 60 * 1000
-          );
-          const timeElapsed =
-            (now.getTime() - lastOtpRequestedAt.getTime()) / 1000;
-          const minInterval = 2 * 60; // 2 minutos em segundos
-
-          if (timeElapsed < minInterval)
-            return next(
-              new AppError(
-                `Please wait ${Math.ceil(
-                  minInterval - timeElapsed
-                )} seconds before requesting a new OTP.`,
-                429,
-                {
-                  remainingTime: Math.ceil(minInterval - timeElapsed),
-                }
-              )
-            );
-        }
-
-        const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        const resetOtpExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
-        await (prisma as any).user.update({
-          where: {
-            id: user.id,
-          },
-          data: {
-            passwordResetOtp: resetOtp,
-            passwordResetOtpExpiresAt: resetOtpExpiresAt,
-          },
-        });
-
-        if (middlewares?.afterForgotPassword) {
-          (req as any).additionalData = {
-            user,
-            resetOtp,
-          };
-          (req as any).responseData = {
-            status: "success",
-            message: "OTP code sent successfully!",
-          };
-          (req as any).responseStatus = 200;
-          return next();
-        }
-
-        res.status(200).json({
-          status: "success",
-          message: "OTP code sent successfully!",
-        });
-      }
-    ),
-
-    resetPassword: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
-        const { email, otp, newPassword } = req.body;
-
-        if (!otp || !email || !newPassword)
-          return next(
-            new AppError(
-              "email, otp and newPassword are required to reset password",
-              400
-            )
-          );
-
-        if (!authService.isPasswordStrong(newPassword))
-          return next(
-            new AppError(
-              "Password must contain at least one uppercase letter, one lowercase letter, and one number",
-              400
-            )
-          );
-
-        const user = await (prisma as any).user.findUnique({
-          where: { email },
-        });
-
-        if (!user?.passwordResetOtp)
-          return next(
-            new AppError(
-              "You must request an otp in order to reset password!",
-              400,
-              {
-                error: "no_requested_otp",
-              }
-            )
-          );
-
-        if (await authService.isCorrectPassword(newPassword, user?.password!))
-          return next(
-            new AppError(
-              "New password must not be the same as last one!",
-              400,
-              {
-                error: "new_password_equals_last_password",
-              }
-            )
-          );
-
-        if (
-          !user ||
-          user?.active === false ||
-          user?.deletedSelfAccount === true
-        )
-          return next(new AppError("User not found!", 404));
-
-        if (!user.isVerified)
-          return next(
-            new AppError("You need to verify your account to proceed", 423, {
-              error: "email_verification_required",
-            })
-          );
-
-        if (!user.passwordResetOtp || !user.passwordResetOtpExpiresAt)
-          return next(new AppError("Invalid or expired OTP.", 400));
-
-        const now = new Date();
-        if (now > new Date(user.passwordResetOtpExpiresAt))
-          return next(
-            new AppError("OTP expired. Please request a new one.", 400)
-          );
-
-        if (user.passwordResetOtp != otp)
-          return next(new AppError("Invalid OTP. Please try again.", 400));
-
-        await (prisma as any).user.update({
-          where: { id: user.id },
-          data: {
-            password: await authService.hashPassword(newPassword),
-            passwordResetOtp: null,
-            passwordResetOtpExpiresAt: null,
-            passwordChangedAt: new Date(),
-          },
-        });
-
-        if (middlewares?.afterResetPassword) {
-          (req as any).additionalData = {
-            user,
-          };
-          (req as any).responseData = {
-            status: "success",
-            message: "Password reset successfully!",
-          };
-          (req as any).responseStatus = 200;
-          return next();
-        }
-
-        res.status(200).json({
-          status: "success",
-          message: "Password reset successfully!",
-        });
-      }
-    ),
-
+    /**
+     * Updates the password of the authenticated user
+     */
     updatePassword: catchAsync(
-      async (req: Request, res: Response, next: NextFunction) => {
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
         const { currentPassword, newPassword } = req.body;
 
         if (!currentPassword || !newPassword)
@@ -456,13 +291,20 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           return next(new AppError("Current password is incorrect.", 400));
 
         // Check password strength (optional but recommended)
-        if (!authService.isPasswordStrong(String(newPassword)))
+        if (!authService.isPasswordStrong(String(newPassword))) {
+          const initAuthConfigs = getInitConfigs()
+            ?.authentication as InitConfigsAuthenticationOptions;
+
           return next(
             new AppError(
-              "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+              initAuthConfigs.passwordValidation?.message ||
+                "Password must contain at least one uppercase letter, one lowercase letter, and one number",
               400
             )
           );
+        }
+
+        const prisma = getPrismaInstance();
 
         // Update the password
         await (prisma as any).user.update({
@@ -477,11 +319,11 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           (req as any).additionalData = {
             user,
           };
-          (req as any).responseData = {
+          req.responseData = {
             status: "success",
             message: "Password updated successfully!",
           };
-          (req as any).responseStatus = 200;
+          req.responseStatus = 200;
           return next();
         }
 

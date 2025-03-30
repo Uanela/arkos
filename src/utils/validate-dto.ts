@@ -1,7 +1,6 @@
 import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate, ValidatorOptions } from "class-validator";
 import AppError from "../modules/error-handler/utils/app-error";
-import { getInitConfigs } from "../server";
 
 export type ClassValidatorInitConfigsOptions = {
   resolver?: "class-validator";
@@ -18,7 +17,7 @@ export type ClassValidatorInitConfigsOptions = {
  *
  *
  * @example
- * ```typescript
+ * ```ts
  * class CreateUserDto {
  *   @IsString()
  *   name: string;
@@ -30,7 +29,7 @@ export type ClassValidatorInitConfigsOptions = {
  * async function main() {
  *   const data = { name: "Uanela Como", email: "invalid-email" };
  *   try {
- *     const validatedUser = await validateData(CreateUserDto, data);
+ *     const validatedUser = await validateDto(CreateUserDto, data);
  *     // do something
  *   } catch (error) {
  *     console.error(error.message);
@@ -42,19 +41,10 @@ export type ClassValidatorInitConfigsOptions = {
 export default async function validateDto<T extends object = any>(
   DtoClass: ClassConstructor<T>,
   data: Record<string, any>,
-  validationOptions: ValidatorOptions = {
-    whitelist: true,
-  }
+  validationOptions?: ValidatorOptions
 ): Promise<T> {
-  const globalValidationOptions = (
-    getInitConfigs().validation as ClassValidatorInitConfigsOptions
-  ).validationOptions;
-
   const dataDto = plainToInstance(DtoClass, data);
-  const errors = await validate(dataDto, {
-    ...validationOptions,
-    ...globalValidationOptions,
-  });
+  const errors = await validate(dataDto, validationOptions);
 
   if (errors.length > 0) throw new AppError("Invalid Data", 400, errors);
 
