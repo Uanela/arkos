@@ -139,7 +139,6 @@
     "vitest": "^3.0.9"
   },
   "dependencies": {
-    "arkos": "0.21.0-beta.1",
     "pluralize": "^8.0.0"
   },
   "peerDependencies": {
