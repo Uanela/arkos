@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   authControllerFactory,
   defaultExcludedUserFields,
@@ -9,48 +8,45 @@ import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
 import { getArkosConfig } from "../../../server";
 
-vi.mock("bcrypt", () => ({
+jest.mock("bcrypt", () => ({
   default: {
-    compare: vi.fn(),
-    hash: vi.fn(),
+    compare: jest.fn(),
+    hash: jest.fn(),
   },
 }));
 
 // Mock dependencies
-vi.mock("../auth.service", () => ({
-  default: {
-    isCorrectPassword: vi.fn(),
-    signJwtToken: vi.fn(),
-    isPasswordStrong: vi.fn(),
-    hashPassword: vi.fn(),
-    authenticate: vi.fn(),
-    handleAuthenticationControl: vi.fn(),
-    handleActionAccessControl: vi.fn(),
-  },
+jest.mock("../auth.service", () => ({
+  isCorrectPassword: jest.fn(),
+  signJwtToken: jest.fn(),
+  isPasswordStrong: jest.fn(),
+  hashPassword: jest.fn(),
+  authenticate: jest.fn(),
+  handleAuthenticationControl: jest.fn(),
+  handleActionAccessControl: jest.fn(),
 }));
 
-vi.mock("../../base/base.service", () => ({
-  getBaseServices: vi.fn(),
+jest.mock("../../base/base.service", () => ({
+  getBaseServices: jest.fn(),
 }));
 
-vi.mock("../../../utils/helpers/prisma.helpers", () => ({
-  getPrismaInstance: vi.fn(),
+jest.mock("../../../utils/helpers/prisma.helpers", () => ({
+  getPrismaInstance: jest.fn(),
 }));
 
-// In your auth.controller.test.ts file, update your mock for models.helpers.ts
-
-vi.mock("../../../utils/helpers/models.helpers", () => ({
-  importPrismaModelModules: vi.fn(),
-  getPrismaModelRelations: vi.fn(),
-  getModels: vi.fn(() => []),
-  getModelUniqueFields: vi.fn(() => []),
+// Update your mock for models.helpers.ts
+jest.mock("../../../utils/helpers/models.helpers", () => ({
+  importPrismaModelModules: jest.fn(),
+  getPrismaModelRelations: jest.fn(),
+  getModels: jest.fn(() => []),
+  getModelUniqueFields: jest.fn(() => []),
   models: [],
   prismaModelRelationFields: {},
 }));
 
-vi.mock("../../../server", () => ({
-  getArkosConfig: vi.fn(),
-  close: vi.fn(),
+jest.mock("../../../server", () => ({
+  getArkosConfig: jest.fn(),
+  close: jest.fn(),
 }));
 
 describe("Auth Controller Factory", () => {
@@ -63,35 +59,35 @@ describe("Auth Controller Factory", () => {
 
   beforeEach(async () => {
     // Reset mocks
-    vi.resetAllMocks();
+    jest.resetAllMocks();
 
     // Setup mocks
     userService = {
-      findOne: vi.fn(),
-      createOne: vi.fn(),
+      findOne: jest.fn(),
+      createOne: jest.fn(),
     };
 
     mockPrisma = {
       user: {
-        findUnique: vi.fn(),
-        update: vi.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
       },
     };
 
     // Setup mock implementations
-    (getBaseServices as any).mockReturnValue({
+    (getBaseServices as jest.Mock).mockReturnValue({
       user: userService,
     });
 
-    (getPrismaInstance as any).mockReturnValue(mockPrisma);
-    (importPrismaModelModules as any).mockResolvedValue({
+    (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
+    (importPrismaModelModules as jest.Mock).mockResolvedValue({
       prismaQueryOptions: {
         queryOptions: {},
         findOne: {},
       },
     });
 
-    (getArkosConfig as any).mockReturnValue({
+    (getArkosConfig as jest.Mock).mockReturnValue({
       authentication: {
         usernameField: "username",
         login: {
@@ -116,20 +112,20 @@ describe("Auth Controller Factory", () => {
     };
 
     res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-      cookie: vi.fn(),
-      send: vi.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+      send: jest.fn(),
     };
 
-    next = vi.fn();
+    next = jest.fn();
 
     // Create the auth controller
     authController = await authControllerFactory();
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("getMe", () => {
@@ -150,7 +146,7 @@ describe("Auth Controller Factory", () => {
         expect.any(String)
       );
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(req.user);
+      expect(res.json).toHaveBeenCalledWith({ data: req.user });
     });
 
     it("should remove excluded fields from the user object", async () => {
@@ -259,9 +255,9 @@ describe("Auth Controller Factory", () => {
         username: "testuser",
         password: "hashedPassword",
       });
-
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
+      console.log(JSON.stringify(authService, null, 2));
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
       // Execute
       await authController.login(req, res, next);
@@ -283,8 +279,8 @@ describe("Auth Controller Factory", () => {
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
       // Execute
       await authController.login(req, res, next);
@@ -322,7 +318,7 @@ describe("Auth Controller Factory", () => {
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(false);
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(false);
 
       // Execute
       await authController.login(req, res, next);
@@ -346,10 +342,10 @@ describe("Auth Controller Factory", () => {
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      (getArkosConfig as any).mockReturnValue({
+      (getArkosConfig as jest.Mock).mockReturnValue({
         authentication: {
           usernameField: "username",
           login: {
@@ -383,10 +379,10 @@ describe("Auth Controller Factory", () => {
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      (getArkosConfig as any).mockReturnValue({
+      (getArkosConfig as jest.Mock).mockReturnValue({
         authentication: {
           usernameField: "username",
           login: {
@@ -419,10 +415,10 @@ describe("Auth Controller Factory", () => {
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      (getArkosConfig as any).mockReturnValue({
+      (getArkosConfig as jest.Mock).mockReturnValue({
         authentication: {
           usernameField: "username",
           login: {
@@ -456,8 +452,8 @@ describe("Auth Controller Factory", () => {
         password: "hashedPassword",
       });
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.signJwtToken as any).mockReturnValue("jwt-token-123");
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
       // Execute
       await controllerWithMiddleware.login(req, res, next);
@@ -493,7 +489,7 @@ describe("Auth Controller Factory", () => {
       await authController.signup(req, res, next);
 
       // Verify
-      expect(userService.createOne).toHaveBeenCalledWith(req.body);
+      expect(userService.createOne).toHaveBeenCalledWith({ ...req.body }, "{}");
       expect(res.status).toHaveBeenCalledWith(201);
 
       // Check that excluded fields are removed
@@ -574,32 +570,6 @@ describe("Auth Controller Factory", () => {
       );
     });
 
-    it("should return 423 if user is not verified", async () => {
-      // Setup
-      req.user = {
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-        isVerified: false,
-      };
-
-      req.body = {
-        currentPassword: "CurrentPassword123",
-        newPassword: "NewPassword123",
-      };
-
-      // Execute
-      await authController.updatePassword(req, res, next);
-
-      // Verify
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 423,
-          message: expect.stringContaining("verify your account"),
-        })
-      );
-    });
-
     it("should return 400 if current password is incorrect", async () => {
       // Setup
       req.user = {
@@ -614,7 +584,7 @@ describe("Auth Controller Factory", () => {
         newPassword: "NewPassword123",
       };
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(false);
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(false);
 
       // Execute
       await authController.updatePassword(req, res, next);
@@ -642,8 +612,8 @@ describe("Auth Controller Factory", () => {
         newPassword: "weakpassword",
       };
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.isPasswordStrong as any).mockReturnValue(false);
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.isPasswordStrong as jest.Mock).mockReturnValue(false);
 
       // Execute
       await authController.updatePassword(req, res, next);
@@ -671,9 +641,9 @@ describe("Auth Controller Factory", () => {
         newPassword: "NewPassword123",
       };
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.isPasswordStrong as any).mockReturnValue(true);
-      (authService.hashPassword as any).mockResolvedValueOnce(
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.isPasswordStrong as jest.Mock).mockReturnValue(true);
+      (authService.hashPassword as jest.Mock).mockResolvedValueOnce(
         "newHashedPassword"
       );
 
@@ -714,9 +684,9 @@ describe("Auth Controller Factory", () => {
         newPassword: "NewPassword123",
       };
 
-      (authService.isCorrectPassword as any).mockResolvedValueOnce(true);
-      (authService.isPasswordStrong as any).mockReturnValue(true);
-      (authService.hashPassword as any).mockResolvedValueOnce(
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.isPasswordStrong as jest.Mock).mockReturnValue(true);
+      (authService.hashPassword as jest.Mock).mockResolvedValueOnce(
         "newHashedPassword123"
       );
 

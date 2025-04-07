@@ -11,7 +11,6 @@ import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
 import { determineUsernameField } from "./utils/helpers/auth.helpers";
-import { ArkosConfigAuthenticationOptions } from "../../types/arkos-config";
 
 /**
  * Default fields to exclude from user object when returning to client
@@ -138,8 +137,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const initAuthConfigs = getArkosConfig()
-          ?.authentication as ArkosConfigAuthenticationOptions;
+        const initAuthConfigs = getArkosConfig()?.authentication;
         const usernameField = determineUsernameField(req);
 
         const usernameValue = req.body[usernameField];
@@ -279,12 +277,11 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         // Check password strength (optional but recommended)
         if (!authService.isPasswordStrong(String(newPassword))) {
-          const initAuthConfigs = getArkosConfig()
-            ?.authentication as ArkosConfigAuthenticationOptions;
+          const initAuthConfigs = getArkosConfig()?.authentication;
 
           return next(
             new AppError(
-              initAuthConfigs.passwordValidation?.message ||
+              initAuthConfigs?.passwordValidation?.message ||
                 "Password must contain at least one uppercase letter, one lowercase letter, and one number",
               400
             )

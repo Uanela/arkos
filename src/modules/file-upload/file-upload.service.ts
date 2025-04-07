@@ -467,22 +467,22 @@ export const getFileUploaderServices = () => {
 
   // Default upload restrictions
   const defaultRestrictions = {
-    image: {
+    images: {
       maxCount: 30,
       maxSize: 1024 * 1024 * 15, // 15 MB
       supportedFilesRegex: defaultRegexPatterns.image,
     },
-    video: {
+    videos: {
       maxCount: 10,
       maxSize: 1024 * 1024 * 5096, // 5 GB
       supportedFilesRegex: defaultRegexPatterns.video,
     },
-    document: {
+    documents: {
       maxCount: 30,
       maxSize: 1024 * 1024 * 50, // 50 MB
       supportedFilesRegex: defaultRegexPatterns.document,
     },
-    other: {
+    others: {
       maxCount: 10,
       maxSize: 1024 * 1024 * 5096, // 5 GB
       supportedFilesRegex: defaultRegexPatterns.other,
@@ -499,9 +499,9 @@ export const getFileUploaderServices = () => {
    */
   const imageUploaderService = new FileUploaderService(
     `${baseUploadDir}/images`,
-    restrictions.image.maxSize,
-    restrictions.image.supportedFilesRegex,
-    restrictions.image.maxCount
+    restrictions.images.maxSize,
+    restrictions.images.supportedFilesRegex,
+    restrictions.images.maxCount
   );
 
   /**
@@ -509,9 +509,9 @@ export const getFileUploaderServices = () => {
    */
   const videoUploaderService = new FileUploaderService(
     `${baseUploadDir}/videos`,
-    restrictions.video.maxSize,
-    restrictions.video.supportedFilesRegex,
-    restrictions.video.maxCount
+    restrictions.videos.maxSize,
+    restrictions.videos.supportedFilesRegex,
+    restrictions.videos.maxCount
   );
 
   /**
@@ -519,9 +519,9 @@ export const getFileUploaderServices = () => {
    */
   const documentUploaderService = new FileUploaderService(
     `${baseUploadDir}/documents`,
-    restrictions.document.maxSize,
-    restrictions.document.supportedFilesRegex,
-    restrictions.document.maxCount
+    restrictions.documents.maxSize,
+    restrictions.documents.supportedFilesRegex,
+    restrictions.documents.maxCount
   );
 
   /**
@@ -529,9 +529,9 @@ export const getFileUploaderServices = () => {
    */
   const fileUploaderService = new FileUploaderService(
     `${baseUploadDir}/files`,
-    restrictions.other.maxSize,
-    restrictions.other.supportedFilesRegex,
-    restrictions.other.maxCount
+    restrictions.others.maxSize,
+    restrictions.others.supportedFilesRegex,
+    restrictions.others.maxCount
   );
 
   return {

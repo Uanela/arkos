@@ -2,7 +2,7 @@ import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 
 type ParsedQuery = any;
 
-interface Options {
+export interface Options {
   parseNull?: boolean;
   parseUndefined?: boolean;
   parseBoolean?: boolean;
