@@ -26,8 +26,6 @@ export interface UserRole {
   role: AuthRole;
   user: User;
   userId: string;
-  attributedBy?: User;
-  attributedById?: string;
 }
 
 export interface AuthRole {
@@ -58,20 +56,13 @@ export interface AuthPermission {
 
 export interface User {
   id: string;
-  firstName: string;
-  lastName: string;
-  username: string;
   isStaff: boolean;
   password: string;
   passwordChangedAt?: Date;
-  passwordResetToken?: string;
-  passwordResetTokenExpiresAt?: Date;
-  verificationToken?: string;
-  verificationTokenExpiresAt?: Date;
-  isVerified: boolean;
-  deletedSelfAccount: boolean;
-  active: boolean;
-  roles: UserRole[];
+  deletedSelfAccountAt: Date;
+  isActive: boolean;
+  roles?: UserRole[] | any[];
+  role?: UserRole | any;
 }
 
 export interface ArkosRequest extends Request {

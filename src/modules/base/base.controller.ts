@@ -3,216 +3,268 @@ import catchAsync from "../error-handler/utils/catch-async";
 import APIFeatures from "../../utils/features/api.features";
 import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
-import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
+import { kebabCase } from "../../utils/helpers/change-case.helpers";
 import { getExpressApp } from "../../server";
-import { getModels } from "../../utils/helpers/models.helpers";
+import { getModelModules, getModels } from "../../utils/helpers/models.helpers";
 
-export async function handlerFactory(modelName: string, modelModules: any) {
-  const baseService = new BaseService(modelName);
-  const { middlewares } = modelModules;
+/**
+ * BaseController class providing standardized RESTful API endpoints for any prisma model
+ * @class BaseController
+ */
+export class BaseController {
+  /**
+   * Service instance to handle business logic operations
+   * @private
+   */
+  private baseService: BaseService;
 
-  return {
-    createOne: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        const data = await baseService.createOne(
-          req.body,
-          req.query?.prismaQueryOptions as string
-        );
+  /**
+   * Name of the model this controller handles
+   * @private
+   */
+  private modelName: string;
 
-        if (middlewares?.afterCreateOne) {
-          req.responseData = { data };
-          req.responseStatus = 201;
-          return next();
-        }
+  /**
+   * Model-specific middlewares loaded from model modules
+   * @private
+   */
+  private middlewares: any;
 
-        res.status(201).json({ data });
+  /**
+   * Creates a new BaseController instance
+   * @param {string} modelName - The name of the model for which this controller will handle operations
+   */
+  constructor(modelName: string) {
+    this.modelName = modelName;
+    this.baseService = new BaseService(modelName);
+    this.middlewares = getModelModules(modelName)?.middlewares || {};
+  }
+
+  /**
+   * Creates a single resource
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  createOne = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const data = await this.baseService.createOne(
+        req.body,
+        req.query?.prismaQueryOptions as string
+      );
+
+      if (this.middlewares.afterCreateOne) {
+        req.responseData = { data };
+        req.responseStatus = 201;
+        return next();
       }
-    ),
 
-    createMany: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        const { data, total } = await baseService.createMany(req.body);
+      res.status(201).json({ data });
+    }
+  );
 
-        if (middlewares?.afterCreateMany) {
-          req.responseData = { total, results: data.length, data };
-          req.responseStatus = 201;
-          return next();
-        }
+  /**
+   * Creates multiple resources in a single operation
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  createMany = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const { data, total } = await this.baseService.createMany(req.body);
 
-        res.status(201).json({ total, results: data.length, data });
+      if (this.middlewares.afterCreateMany) {
+        req.responseData = { total, results: data.length, data };
+        req.responseStatus = 201;
+        return next();
       }
-    ),
 
-    findMany: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        const features = new APIFeatures(
-          req,
-          modelName,
-          baseService.relationFields?.singular.reduce(
-            (acc: Record<string, boolean>, curr) => {
-              acc[curr.name] = true;
-              return acc;
-            },
-            {}
-          )
+      res.status(201).json({ total, results: data.length, data });
+    }
+  );
+
+  /**
+   * Retrieves multiple resources with filtering, sorting, pagination, and field selection
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  findMany = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const features = new APIFeatures(
+        req,
+        this.modelName,
+        this.baseService.relationFields?.singular.reduce(
+          (acc: Record<string, boolean>, curr) => {
+            acc[curr.name] = true;
+            return acc;
+          },
+          {}
         )
-          .filter()
-          .sort()
-          .limitFields()
-          .paginate();
+      )
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate();
 
-        const { data, total } = await baseService.findMany(features.filters);
+      const { data, total } = await this.baseService.findMany(features.filters);
 
-        if (middlewares?.afterFindMany) {
-          req.responseData = { total, results: data.length, data };
-          req.responseStatus = 200;
-          return next();
-        }
-
-        res.status(200).json({ total, results: data.length, data });
+      if (this.middlewares.afterFindMany) {
+        req.responseData = { total, results: data.length, data };
+        req.responseStatus = 200;
+        return next();
       }
-    ),
 
-    findOne: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        const data = await baseService.findOne(
-          req.params,
-          req.query?.prismaQueryOptions as string
+      res.status(200).json({ total, results: data.length, data });
+    }
+  );
+
+  /**
+   * Retrieves a single resource by its identifier
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  findOne = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const data = await this.baseService.findOne(
+        req.params,
+        req.query?.prismaQueryOptions as string
+      );
+
+      if (this.middlewares.afterFindOne) {
+        req.responseData = { data };
+        req.responseStatus = 200;
+        return next();
+      }
+
+      res.status(200).json({ data });
+    }
+  );
+
+  /**
+   * Updates a single resource by its identifier
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  updateOne = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const data = await this.baseService.updateOne(
+        req.params,
+        req.body,
+        req.query?.prismaQueryOptions as string
+      );
+
+      if (this.middlewares.afterUpdateOne) {
+        req.responseData = { data };
+        req.responseStatus = 200;
+        return next();
+      }
+
+      res.status(200).json({ data });
+    }
+  );
+
+  /**
+   * Updates multiple resources that match specified criteria
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  updateMany = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      if (!Object.keys(req.query).some((key) => key !== "prismaQueryOptions")) {
+        return next(
+          new AppError("Filter criteria not provided for bulk update.", 400)
         );
-
-        if (middlewares?.afterFindOne) {
-          req.responseData = { data };
-          req.responseStatus = 200;
-          return next();
-        }
-
-        res.status(200).json({ data });
       }
-    ),
 
-    updateOne: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        const data = await baseService.updateOne(
-          req.params,
-          req.body,
-          req.query?.prismaQueryOptions as string
+      const features = new APIFeatures(req, this.modelName).filter().sort();
+      delete features.filters.include;
+
+      const { data, total } = await this.baseService.updateMany(
+        features.filters,
+        req.body
+      );
+
+      if (this.middlewares.afterUpdateMany) {
+        req.responseData = { total, results: data.length, data };
+        req.responseStatus = 200;
+        return next();
+      }
+
+      res.status(200).json({ total, results: data.length, data });
+    }
+  );
+
+  /**
+   * Deletes a single resource by its identifier
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  deleteOne = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      await this.baseService.deleteOne(req.params);
+
+      if (this.middlewares.afterDeleteOne) {
+        req.responseData = { id: String(req.params.id) };
+        req.responseStatus = 204;
+        return next();
+      }
+
+      res.status(204).send();
+    }
+  );
+
+  /**
+   * Deletes multiple resources that match specified criteria
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  deleteMany = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      if (!Object.keys(req.query).some((key) => key !== "prismaQueryOptions")) {
+        return next(
+          new AppError("Filter criteria not provided for bulk deletion.", 400)
         );
-
-        if (middlewares?.afterUpdateOne) {
-          req.responseData = { data };
-          req.responseStatus = 200;
-          return next();
-        }
-
-        res.status(200).json({ data });
       }
-    ),
 
-    updateMany: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        if (
-          !Object.keys(req.query).some(
-            (value) => value !== "prismaQueryOptions"
-          )
-        ) {
-          return next(
-            new AppError("Filter criteria not provided for bulk update.", 400)
-          );
-        }
+      const features = new APIFeatures(req, this.modelName).filter().sort();
+      delete features.filters.include;
 
-        const features = new APIFeatures(req, modelName).filter().sort();
-        delete features.filters.include;
+      const { data, total } = await this.baseService.deleteMany(
+        features.filters
+      );
 
-        const { data, total } = await baseService.updateMany(
-          features.filters,
-          req.body
-        );
-
-        if (middlewares?.afterUpdateMany) {
-          req.responseData = { total, results: data.length, data };
-          req.responseStatus = 200;
-          return next();
-        }
-
-        res.status(200).json({ total, results: data.length, data });
+      if (this.middlewares.afterDeleteMany) {
+        req.responseData = { total, results: data.length, data };
+        req.responseStatus = 200;
+        return next();
       }
-    ),
 
-    deleteOne: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        await baseService.deleteOne(req.params);
-
-        if (middlewares?.afterDeleteOne) {
-          req.responseData = { id: String(req.params.id) };
-          req.responseStatus = 204;
-          return next();
-        }
-
-        res.status(204).send();
-      }
-    ),
-
-    deleteMany: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        if (
-          !Object.keys(req.query).some(
-            (value) => value !== "prismaQueryOptions"
-          )
-        ) {
-          return next(
-            new AppError("Filter criteria not provided for bulk deletion.", 400)
-          );
-        }
-
-        const features = new APIFeatures(req, modelName).filter().sort();
-        delete features.filters.include;
-
-        const { data, total } = await baseService.deleteMany(features.filters);
-
-        if (middlewares?.afterDeleteMany) {
-          req.responseData = { total, results: data.length, data };
-          req.responseStatus = 200;
-          return next();
-        }
-
-        res.status(200).json({ total, results: data.length, data });
-      }
-    ),
-  };
+      res.status(200).json({ total, results: data.length, data });
+    }
+  );
 }
 
+/**
+ * Returns a list of all registered API routes in the Express application
+ * @param {ArkosRequest} req - Express request object
+ * @param {ArkosResponse} res - Express response object
+ * @param {ArkosNextFunction} next - Express next function
+ * @returns {void}
+ */
 export function getAvalibleRoutes(
   req: ArkosRequest,
   res: ArkosResponse,
@@ -251,6 +303,13 @@ export function getAvalibleRoutes(
   res.json(routes);
 }
 
+/**
+ * Returns a list of all available resource endpoints based on the application's models
+ * @param {ArkosRequest} req - Express request object
+ * @param {ArkosResponse} res - Express response object
+ * @param {ArkosNextFunction} next - Express next function
+ * @returns {Promise<void>}
+ */
 export const getAvailableResources = catchAsync(async (req, res, next) => {
   const models = getModels();
   res.status(200).json({

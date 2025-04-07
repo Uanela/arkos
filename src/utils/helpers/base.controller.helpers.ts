@@ -1,5 +1,5 @@
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { getInitConfigs } from "../../server";
+import { getArkosConfig } from "../../server";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 import validateDto from "../validate-dto";
 import { kebabCase } from "./change-case.helpers";
@@ -14,7 +14,7 @@ export function handleRequestBodyValidationAndTransformation(
   return catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       const modelModules = getModelModules(kebabCase(modelName));
-      const validationConfigs = getInitConfigs()?.validation;
+      const validationConfigs = getArkosConfig()?.validation;
       let body = req.body;
 
       if (

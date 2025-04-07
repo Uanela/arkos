@@ -1,10 +1,10 @@
 // import { expect, vi } from "vitest";
-// import { getInitConfigs } from "../../../../../server";
+// import { getArkosConfig } from "../../../../../server";
 // import { describe, it } from "vitest";
 // import { determineUsernameField } from "../auth.helpers";
 
 // vi.mock("../../../../../server", () => ({
-//   getInitConfigs: vi.fn(),
+//   getArkosConfig: vi.fn(),
 //   close: vi.fn(),
 // }));
 
@@ -34,7 +34,7 @@
 //   it("should use configuration value when query parameter is not provided", async () => {
 //     const testReq = { query: {} };
 
-//     (getInitConfigs as any).mockReturnValueOnce({
+//     (getArkosConfig as any).mockReturnValueOnce({
 //       authentication: {
 //         usernameField: "phoneNumber",
 //       },
