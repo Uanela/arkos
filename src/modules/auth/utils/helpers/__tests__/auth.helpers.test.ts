@@ -1,49 +1,47 @@
-// import { expect, vi } from "vitest";
-// import { getArkosConfig } from "../../../../../server";
-// import { describe, it } from "vitest";
-// import { determineUsernameField } from "../auth.helpers";
+import { getArkosConfig } from "../../../../../server";
+import { determineUsernameField } from "../auth.helpers";
 
-// vi.mock("../../../../../server", () => ({
-//   getArkosConfig: vi.fn(),
-//   close: vi.fn(),
-// }));
+jest.mock("../../../../../server", () => ({
+  getArkosConfig: jest.fn(),
+  close: jest.fn(),
+}));
 
-// vi.mock("fs", () => ({
-//   default: {
-//     ...vi.importActual("fs"),
-//     readdirSync: vi.fn(() => ["test.prisma"]),
-//     statSync: vi.fn(() => ({
-//       isFile: vi.fn(),
-//     })),
-//     existsSync: vi.fn(() => false),
-//     mkdirSync: vi.fn(),
-//     unlink: vi.fn(),
-//     access: vi.fn(),
-//   },
-// }));
+jest.mock("fs", () => ({
+  default: {
+    ...jest.requireActual("fs"),
+    readdirSync: jest.fn(() => ["test.prisma"]),
+    statSync: jest.fn(() => ({
+      isFile: jest.fn(),
+    })),
+    existsSync: jest.fn(() => false),
+    mkdirSync: jest.fn(),
+    unlink: jest.fn(),
+    access: jest.fn(),
+  },
+}));
 
-// describe("determineUsernameField", () => {
-//   it("should use query parameter usernameField when provided", async () => {
-//     const testReq = {
-//       query: { usernameField: "email" },
-//     };
+describe("determineUsernameField", () => {
+  it("should use query parameter usernameField when provided", async () => {
+    const testReq = {
+      query: { usernameField: "email" },
+    };
 
-//     expect(determineUsernameField(testReq as any)).toBe("email");
-//   });
+    expect(determineUsernameField(testReq as any)).toBe("email");
+  });
 
-//   it("should use configuration value when query parameter is not provided", async () => {
-//     const testReq = { query: {} };
+  it("should use configuration value when query parameter is not provided", async () => {
+    const testReq = { query: {} };
 
-//     (getArkosConfig as any).mockReturnValueOnce({
-//       authentication: {
-//         usernameField: "phoneNumber",
-//       },
-//     });
+    (getArkosConfig as any).mockReturnValueOnce({
+      authentication: {
+        usernameField: "phoneNumber",
+      },
+    });
 
-//     expect(determineUsernameField(testReq as any)).toBe("phoneNumber");
-//   });
+    expect(determineUsernameField(testReq as any)).toBe("phoneNumber");
+  });
 
-//   it('should default to "username" when neither query nor config specify a field', async () => {
-//     expect(determineUsernameField({ query: {} } as any)).toBe("username");
-//   });
-// });
+  it('should default to "username" when neither query nor config specify a field', async () => {
+    expect(determineUsernameField({ query: {} } as any)).toBe("username");
+  });
+});

@@ -18,7 +18,6 @@ import {
   AuthJwtPayload,
   ControllerActions,
 } from "../../types/auth";
-import { ArkosConfigAuthenticationOptions } from "../../types/arkos-config";
 import { kebabCase } from "../../utils/helpers/change-case.helpers";
 import { singular } from "pluralize";
 
@@ -85,11 +84,10 @@ class AuthService {
    * @returns {boolean} Returns true if the password meets the strength criteria, otherwise false.
    */
   isPasswordStrong(password: string): boolean {
-    const initAuthConfigs = getArkosConfig()
-      ?.authentication as ArkosConfigAuthenticationOptions;
+    const initAuthConfigs = getArkosConfig()?.authentication;
 
     const strongPasswordRegex =
-      initAuthConfigs.passwordValidation?.regex ||
+      initAuthConfigs?.passwordValidation?.regex ||
       /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/;
     return strongPasswordRegex.test(password);
   }

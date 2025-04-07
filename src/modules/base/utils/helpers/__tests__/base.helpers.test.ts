@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   handleRelationFieldsInBody,
   canBeUsedToConnect,
@@ -7,8 +6,8 @@ import {
 } from "../base.helpers"; // Update this path
 
 // Mock the required helpers
-vi.mock("../../../../../utils/helpers/models.helpers", () => ({
-  getPrismaModelRelations: vi.fn((type) => {
+jest.mock("../../../../../utils/helpers/models.helpers", () => ({
+  getPrismaModelRelations: jest.fn((type) => {
     if (type === "Post") {
       return {
         singular: [{ name: "category", type: "Category" }],
@@ -31,7 +30,7 @@ vi.mock("../../../../../utils/helpers/models.helpers", () => ({
     }
     return null;
   }),
-  getModelUniqueFields: vi.fn((modelName) => {
+  getModelUniqueFields: jest.fn((modelName) => {
     if (modelName === "Category") {
       return [{ name: "name" }];
     }

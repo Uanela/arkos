@@ -1,6 +1,5 @@
 import { getArkosConfig } from "../../../../server";
 import { ArkosRequest } from "../../../../types";
-import { ArkosConfigAuthenticationOptions } from "../../../../types/arkos-config";
 import AppError from "../../../error-handler/utils/app-error";
 
 /**
@@ -22,7 +21,6 @@ export const determineUsernameField = (req: ArkosRequest): string => {
       400
     );
 
-  const initAuthConfigs = getArkosConfig()
-    ?.authentication as ArkosConfigAuthenticationOptions;
+  const initAuthConfigs = getArkosConfig()?.authentication;
   return initAuthConfigs?.usernameField || "username";
 };
