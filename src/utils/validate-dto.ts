@@ -2,7 +2,7 @@ import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate, ValidatorOptions } from "class-validator";
 import AppError from "../modules/error-handler/utils/app-error";
 
-export type ClassValidatorInitConfigsOptions = {
+export type ClassValidatorArkosConfigOptions = {
   resolver?: "class-validator";
   validationOptions?: ValidatorOptions;
 };

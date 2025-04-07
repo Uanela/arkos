@@ -9,23 +9,15 @@ import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
-import { getInitConfigs } from "../../server";
+import { getArkosConfig } from "../../server";
 import { determineUsernameField } from "./utils/helpers/auth.helpers";
-import { InitConfigsAuthenticationOptions } from "../../types/init-configs";
+import { ArkosConfigAuthenticationOptions } from "../../types/arkos-config";
 
 /**
  * Default fields to exclude from user object when returning to client
  */
 export const defaultExcludedUserFields = {
   password: false,
-  passwordChangedAt: false,
-  passwordResetToken: false,
-  passwordResetTokenExpiresAt: false,
-  verificationToken: false,
-  verificationTokenExpiresAt: false,
-  isVerified: false,
-  deletedSelfAccount: false,
-  active: false,
 };
 
 /**
@@ -86,6 +78,12 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
+        if ("password" in req.body)
+          throw new AppError(
+            "In order to update password use the update-password endpoint.",
+            400
+          );
+
         const user = await baseServices["user"].updateOne(
           { id: req.user!.id },
           req.body,
@@ -140,8 +138,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const initAuthConfigs = getInitConfigs()
-          ?.authentication as InitConfigsAuthenticationOptions;
+        const initAuthConfigs = getArkosConfig()
+          ?.authentication as ArkosConfigAuthenticationOptions;
         const usernameField = determineUsernameField(req);
 
         const usernameValue = req.body[usernameField];
@@ -267,19 +265,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         const user = req.user;
 
-        if (
-          !user ||
-          user?.active === false ||
-          user?.deletedSelfAccount === true
-        )
+        if (!user || user?.isActive === false || user?.deletedSelfAccountAt)
           return next(new AppError("User not found!", 404));
-
-        if (!user.isVerified)
-          return next(
-            new AppError("You need to verify your account to proceed", 423, {
-              error: "email_verification_required",
-            })
-          );
 
         // Check if the current password is correct
         const isPasswordCorrect = await authService.isCorrectPassword(
@@ -292,8 +279,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         // Check password strength (optional but recommended)
         if (!authService.isPasswordStrong(String(newPassword))) {
-          const initAuthConfigs = getInitConfigs()
-            ?.authentication as InitConfigsAuthenticationOptions;
+          const initAuthConfigs = getArkosConfig()
+            ?.authentication as ArkosConfigAuthenticationOptions;
 
           return next(
             new AppError(

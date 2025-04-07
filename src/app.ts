@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import authRouter from "./modules/auth/auth.router";
+import { getAuthRouter } from "./modules/auth/auth.router";
 import baseRouter from "./modules/base/base.router";
 import errorHandler from "./modules/error-handler/error-handler.controller";
 import { rateLimit } from "express-rate-limit";
@@ -13,9 +13,10 @@ import {
   checkDatabaseConnection,
   loadPrismaModule,
 } from "./utils/helpers/prisma.helpers";
-import { fileUploaderRouter } from "./modules/file-uploader/file-uploader.router";
-import { InitConfigs } from "./types/init-configs";
+import { getFileUploaderRouter } from "./modules/file-upload/file-upload.router";
+import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
+import deepmerge from "./utils/helpers/deepmerge.helper";
 
 const ENV = process.env.NODE_ENV;
 let envPath = ".env";
@@ -48,40 +49,27 @@ const app = express();
 })();
 
 export async function bootstrap(
-  initConfigs: InitConfigs
+  arkosConfig: ArkosConfig
 ): Promise<express.Express> {
   await loadPrismaModule();
 
   app.use(compression());
 
-  const limiter = rateLimit({
-    windowMs: 60 * 1000,
-    limit: 1000,
-    standardHeaders: "draft-7",
-    legacyHeaders: false,
-  });
-
-  app.use(limiter);
+  app.use(
+    rateLimit({
+      windowMs: 60 * 1000,
+      limit: 1000,
+      standardHeaders: "draft-7",
+      legacyHeaders: false,
+    })
+  );
 
   app.set("trust proxy", 1);
 
   app.use(
-    "/api/uploads",
-    express.static(path.join("uploads"), {
-      maxAge: "1y",
-      etag: true,
-      lastModified: true,
-      dotfiles: "ignore",
-      fallthrough: true,
-      index: false,
-      cacheControl: true,
-    })
-  );
-
-  app.use(
     cors({
-      origin: (origin, callback) => {
-        callback(null, true);
+      origin: (origin, cb) => {
+        cb(null, true);
       },
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTION"],
       allowedHeaders: ["Content-Type", "Authorization", "Connection"],
@@ -100,17 +88,23 @@ export async function bootstrap(
   );
 
   app.use(checkDatabaseConnection);
-
   app.use(handleRequestLogs);
 
   app.get("/api", (req, res, next) => {
-    res.status(200).json({ message: initConfigs.welcomeMessage });
+    res.status(200).json({ message: arkosConfig.welcomeMessage });
   });
 
-  if (initConfigs.authentication) app.use("/api", authRouter);
+  if (arkosConfig.authentication)
+    app.use("/api", await getAuthRouter(arkosConfig));
+
   app.use("/api", baseRouter);
-  app.use("/api", fileUploaderRouter);
+  app.use("/api", await getFileUploaderRouter(arkosConfig));
+
   app.use(errorHandler);
 
+  return app;
+}
+
+export function arkosAppFactory() {
   return app;
 }

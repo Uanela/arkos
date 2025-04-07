@@ -123,6 +123,7 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/html-to-text": "^9.0.4",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.13.13",
@@ -139,6 +140,7 @@
     "vitest": "^3.0.9"
   },
   "dependencies": {
+    "html-to-text": "^9.0.5",
     "pluralize": "^8.0.0"
   },
   "peerDependencies": {

@@ -1,6 +1,6 @@
-import { getInitConfigs } from "../../../../server";
+import { getArkosConfig } from "../../../../server";
 import { ArkosRequest } from "../../../../types";
-import { InitConfigsAuthenticationOptions } from "../../../../types/init-configs";
+import { ArkosConfigAuthenticationOptions } from "../../../../types/arkos-config";
 import AppError from "../../../error-handler/utils/app-error";
 
 /**
@@ -22,7 +22,7 @@ export const determineUsernameField = (req: ArkosRequest): string => {
       400
     );
 
-  const initAuthConfigs = getInitConfigs()
-    ?.authentication as InitConfigsAuthenticationOptions;
+  const initAuthConfigs = getArkosConfig()
+    ?.authentication as ArkosConfigAuthenticationOptions;
   return initAuthConfigs?.usernameField || "username";
 };

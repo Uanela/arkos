@@ -4,10 +4,12 @@ import authService from "./auth.service";
 import rateLimit from "express-rate-limit";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import { sendResponse } from "../base/base.middlewares";
+import { ArkosConfig } from "../../types/arkos-config";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
 
 const router: Router = Router();
 
-(async function () {
+export async function getAuthRouter(arkosConfigs: ArkosConfig) {
   const { middlewares } = await importPrismaModelModules("auth");
   const authController = await authControllerFactory(middlewares);
 
@@ -50,12 +52,17 @@ const router: Router = Router();
     );
 
   router.use(
-    rateLimit({
-      windowMs: 5000,
-      limit: 10,
-      standardHeaders: "draft-7",
-      legacyHeaders: false,
-    })
+    rateLimit(
+      deepmerge(
+        {
+          windowMs: 5000,
+          limit: 10,
+          standardHeaders: "draft-7",
+          legacyHeaders: false,
+        },
+        arkosConfigs?.authentication?.requestRateLimitOptions || {}
+      )
+    )
   );
 
   router.post(
@@ -107,6 +114,6 @@ const router: Router = Router();
       : sendResponse,
     sendResponse
   );
-})();
 
-export default router;
+  return router;
+}

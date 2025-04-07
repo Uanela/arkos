@@ -15,22 +15,49 @@ import pluralize from "pluralize";
 import { handleRelationFieldsInBody } from "./utils/helpers/base.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import validateDto from "../../utils/validate-dto";
-import { getInitConfigs } from "../../server";
+import { getArkosConfig } from "../../server";
 import authService from "../auth/auth.service";
 
 /**
  * Base service class for handling CRUD operations on a specific model.
+ * This class provides standard implementation of data operations that can be extended
+ * by model-specific service classes.
+ *
+ * @class BaseService
  */
 export class BaseService {
+  /**
+   * The camelCase name of the model
+   * @public
+   */
   modelName: string;
+
+  /**
+   * Object containing singular and list relation fields for the model
+   * @public
+   */
   relationFields: RelationFields;
+
+  /**
+   * Map of singular relation fields to include in queries
+   * @public
+   */
   singularRelationFieldToInclude: Record<string, boolean>;
+
+  /**
+   * Map of list relation fields to include in queries
+   * @public
+   */
   listRelationFieldToInclude: Record<string, boolean>;
+
+  /**
+   * Instance of the Prisma client
+   * @public
+   */
   prisma: any;
 
   /**
    * Creates an instance of BaseService.
-   *
    * @param {string} modelName - The name of the model to perform operations on.
    */
   constructor(modelName: string) {
@@ -51,7 +78,6 @@ export class BaseService {
       {}
     );
   }
-
   /**
    * Creates a single record in the database.
    *
@@ -101,11 +127,6 @@ export class BaseService {
   async createMany(
     body: Record<string, any>[]
   ): Promise<{ total: number; data: any }> {
-    const modelModules = getModelModules(kebabCase(this.modelName));
-    if (modelModules.dtos.create && getInitConfigs()?.validation) {
-      body = await validateDto(modelModules.dtos.create, body);
-    }
-
     const prisma = getPrismaInstance();
 
     if (!Array.isArray(body) || body.length === 0) {
@@ -133,7 +154,7 @@ export class BaseService {
     filters: Record<string, any>
   ): Promise<{ total: number; data: any }> {
     const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.query && getInitConfigs()?.validation !== false) {
+    // if (modelModules.dtos.query && getArkosConfig()?.validation !== false) {
     //   filters = await validateDto(modelModules.dtos.query, filters);
     // }
 
@@ -178,7 +199,7 @@ export class BaseService {
     queryOptions: string = "{}"
   ): Promise<any> {
     const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    // if (modelModules.dtos.create && getArkosConfig()?.validation !== false) {
     //   filters = await validateDto(modelModules.dtos.create, filters);
     // }
 
@@ -234,7 +255,7 @@ export class BaseService {
     queryOptions: string = "{}"
   ): Promise<any> {
     const modelModules = getModelModules(kebabCase(this.modelName));
-    if (modelModules.dtos.update && getInitConfigs()?.validation) {
+    if (modelModules.dtos.update && getArkosConfig()?.validation) {
       body = await validateDto(modelModules.dtos.update, body);
     }
 
@@ -285,7 +306,7 @@ export class BaseService {
     body: Record<string, any>
   ): Promise<{ total: number; data: any }> {
     const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    // if (modelModules.dtos.create && getArkosConfig()?.validation !== false) {
     //   body = await validateDto(modelModules.dtos.create, body);
     // }
 
@@ -319,7 +340,7 @@ export class BaseService {
    */
   async deleteOne(params: Record<string, any>): Promise<any> {
     const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    // if (modelModules.dtos.create && getArkosConfig()?.validation !== false) {
     //   body = await validateDto(modelModules.dtos.create, body);
     // }
 
@@ -344,7 +365,7 @@ export class BaseService {
     filters: Record<string, any>
   ): Promise<{ total: number; data: any }> {
     const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.create && getInitConfigs()?.validation !== false) {
+    // if (modelModules.dtos.create && getArkosConfig()?.validation !== false) {
     //   body = await validateDto(modelModules.dtos.create, body);
     // }
 

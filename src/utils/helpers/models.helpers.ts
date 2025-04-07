@@ -8,13 +8,13 @@ import {
 import arkosEnv from "../arkos-env";
 import { userFileExtension } from "./fs.helpers";
 
-const globalPrismaModelsModules: Record<
+const prismaModelsModules: Record<
   string,
   Awaited<ReturnType<typeof importPrismaModelModules>>
 > = {};
 
 export function getModelModules(modelName: string) {
-  return globalPrismaModelsModules[kebabCase(modelName)];
+  return prismaModelsModules[kebabCase(modelName)];
 }
 
 /**
@@ -233,7 +233,7 @@ export async function importPrismaModelModules(modelName: string) {
     );
   }
 
-  globalPrismaModelsModules[modelName] = result;
+  prismaModelsModules[modelName] = result;
 
   return result;
 }

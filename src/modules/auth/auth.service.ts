@@ -4,7 +4,7 @@ import { User, UserRole } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
-import { getInitConfigs } from "../../server";
+import { getArkosConfig } from "../../server";
 import arkosEnv from "../../utils/arkos-env";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import {
@@ -18,7 +18,7 @@ import {
   AuthJwtPayload,
   ControllerActions,
 } from "../../types/auth";
-import { InitConfigsAuthenticationOptions } from "../../types/init-configs";
+import { ArkosConfigAuthenticationOptions } from "../../types/arkos-config";
 import { kebabCase } from "../../utils/helpers/change-case.helpers";
 import { singular } from "pluralize";
 
@@ -85,8 +85,8 @@ class AuthService {
    * @returns {boolean} Returns true if the password meets the strength criteria, otherwise false.
    */
   isPasswordStrong(password: string): boolean {
-    const initAuthConfigs = getInitConfigs()
-      ?.authentication as InitConfigsAuthenticationOptions;
+    const initAuthConfigs = getArkosConfig()
+      ?.authentication as ArkosConfigAuthenticationOptions;
 
     const strongPasswordRegex =
       initAuthConfigs.passwordValidation?.regex ||
@@ -182,12 +182,12 @@ class AuthService {
   /**
    * Processes the cookies or authoriation token and returns the user.
    * @param req
-   * @returns {Promise<User | null>} - if authentication is turned off in initConfigs it returns null
+   * @returns {Promise<User | null>} - if authentication is turned off in arkosConfig it returns null
    * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
    */
   async getAuthenticatedUser(req: ArkosRequest): Promise<User | null> {
-    const initConfigs = getInitConfigs();
-    if (initConfigs?.authentication === false) return null;
+    const arkosConfig = getArkosConfig();
+    if (!arkosConfig?.authentication) return null;
 
     const prisma = getPrismaInstance();
 
@@ -267,8 +267,11 @@ class AuthService {
    */
   authenticate = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const initConfigs = getInitConfigs();
-      if (initConfigs?.authentication === false) return next();
+      const arkosConfig = getArkosConfig();
+      if (!arkosConfig?.authentication) {
+        next();
+        return;
+      }
 
       req.user = (await this.getAuthenticatedUser(req)) as User;
       next();

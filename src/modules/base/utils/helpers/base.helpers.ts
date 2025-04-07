@@ -33,6 +33,32 @@ function removeApiAction(obj: Record<string, any>): Record<string, any> {
 }
 
 /**
+ * Checks if an object is already formatted as a Prisma relation operation
+ *
+ * @param {Record<string, any>} obj - The object to check
+ * @returns {boolean} - True if the object contains Prisma relation operations
+ */
+export function isPrismaRelationFormat(obj: Record<string, any>): boolean {
+  if (!obj || typeof obj !== "object") return false;
+
+  // Common Prisma relation operations
+  const prismaOperations = [
+    "create",
+    "connect",
+    "update",
+    "delete",
+    "disconnect",
+    "deleteMany",
+    "connectOrCreate",
+    "upsert",
+    "set",
+  ];
+
+  // Check if any key is a Prisma operation
+  return prismaOperations.some((op) => op in obj);
+}
+
+/**
  * Determines the appropriate Prisma operation (`create`, `connect`, `update`, `delete`, or `disconnect`)
  * for each relation field in the provided body based on its nested data and recursively does the same for each relation field.
  *
@@ -50,6 +76,9 @@ function removeApiAction(obj: Record<string, any>): Record<string, any> {
  * - **Delete**: Used when the nested relation data includes **`apiAction: "delete"`**.
  * - **Disconnect**: Used when the nested relation data includes **`apiAction: "disconnect"`**.
  *
+ * The function will preserve existing Prisma operation formats if detected,
+ * allowing developers to manually structure relation operations when needed.
+ *
  * @param {Record<string, any>} body - The object containing relation fields to be processed.
  * @param {Object} relationFields - Defines relation field types.
  * @param {RelationFields[]} relationFields.singular - List of one-side relation field names (one-to-one).
@@ -66,6 +95,16 @@ export function handleRelationFieldsInBody(
 
   relationFields?.list?.forEach((field) => {
     if (!body[field.name]) return;
+
+    // Skip if the field is already in Prisma relation format
+    if (isPrismaRelationFormat(body[field.name])) {
+      return;
+    }
+
+    // Skip if the field is not an array (likely already handled manually)
+    if (!isListFieldAnArray(body[field.name])) {
+      return;
+    }
 
     const createData: any[] = [];
     const connectData: any[] = [];
@@ -143,6 +182,11 @@ export function handleRelationFieldsInBody(
   relationFields?.singular?.forEach((field) => {
     if (!body[field.name]) return;
     if (ignoreActions.includes(body[field.name]?.apiAction)) return;
+
+    // Skip if the field is already in Prisma relation format
+    if (isPrismaRelationFormat(body[field.name])) {
+      return;
+    }
 
     const relationData = body[field.name];
     let nestedRelations = getPrismaModelRelations(field.type);

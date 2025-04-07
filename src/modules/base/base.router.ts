@@ -3,7 +3,7 @@ import { Router } from "express";
 import pluralize from "pluralize";
 import {
   getAvalibleRoutes,
-  handlerFactory,
+  BaseController,
   getAvailableResources,
 } from "./base.controller";
 import {
@@ -37,7 +37,7 @@ models.forEach(async (model) => {
     createMany,
     updateMany,
     deleteMany,
-  } = await handlerFactory(model, modelModules);
+  } = new BaseController(model);
 
   router
     .route(`/${routeName}`)
