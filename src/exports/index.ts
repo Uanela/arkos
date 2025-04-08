@@ -1,3 +1,6 @@
+import { PrismaModelRouterConfig } from "../types/prisma-model-router-config";
+import { ArkosConfig } from "./../../dist/types/types/arkos-config.d";
+import { BaseController } from "./../modules/base/base.controller";
 import { initApp } from "../server";
 import {
   ArkosRequest,
@@ -16,7 +19,15 @@ const arkos = {
   init: initApp,
 };
 
-export { ArkosRequest, ArkosResponse, ArkosNextFunction, ArkosRequestHandler };
+export {
+  ArkosRequest,
+  ArkosResponse,
+  ArkosNextFunction,
+  ArkosRequestHandler,
+  BaseController,
+  ArkosConfig,
+  PrismaModelRouterConfig,
+};
 
 /**
  * Main entry point for the Arkos module.
@@ -24,8 +35,3 @@ export { ArkosRequest, ArkosResponse, ArkosNextFunction, ArkosRequestHandler };
  * @module arkos
  */
 export default arkos;
-
-// export * from "./services";
-// export * from "./utils";
-// export * from "./validation";
-// export * from "./error-handler";

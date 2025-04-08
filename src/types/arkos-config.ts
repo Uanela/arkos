@@ -32,6 +32,10 @@ export type ArkosConfig = {
    */
   port?: number | undefined;
   /**
+   * Allows to listen on a different host than localhost only
+   */
+  host?: string;
+  /**
    * Defines authentication related configurations, by default is undefined.
    *
    * See [www.arkosjs.com/docs/core-concepts/built-in-authentication-system](https://www.arkosjs.com/docs/core-concepts/built-in-authentication-system) for details.
@@ -104,6 +108,22 @@ export type ArkosConfig = {
      * This is are the options used on the `express-rate-limit` npm package used on epxress. read more about [https://www.npmjs.com/package/express-rate-limit](https://www.npmjs.com/package/express-rate-limit)
      */
     requestRateLimitOptions?: RateLimitOptions;
+    /**
+     * Defines jwt configurations for secret, expiresIn, cookieExpiresIn
+     *
+     * Can be pass also through env variables:
+     * - jwt.secret => JWT_SECRET: If not passed production auth will not work
+     * - jwt.expiresIn => JWT_EXPIRES_IN: default 30d
+     * - jwt.cookieExpiresIn => JWT_COOKIE_EXPIRES_IN: default 90
+     */
+    jwt?: {
+      /** Secret to sign and decode jwt tokens */
+      secret?: string;
+      /**  */
+      expiresIn?: string;
+      /** Days in which the cookie must be kept before expire*/
+      cookieExpiresIn?: number;
+    };
   };
   /** Allows to customize and toggle the built-in validation, by default it is set to `false`. If true is passed it will use validation with the default resolver set to `class-validator` if you intend to change the resolver to `zod` do the following:
    *
@@ -289,7 +309,7 @@ export type ArkosConfig = {
    * See https://www.npmjs.com/package/cors
    */
   cors?: {
-    allowedOrigins?: string | string[] | "all";
+    allowedOrigins?: string | string[] | "*";
     options?: cors.CorsOptions;
     /**
      * If you would like to override the entire middleware
@@ -319,7 +339,7 @@ export type ArkosConfig = {
      *
      * **Caution**: Be careful with this because you may endup breaking your entire application.
      */
-    disable: (
+    disable?: (
       | "compression"
       | "global-rate-limit"
       | "auth-rate-limit"
@@ -336,7 +356,7 @@ export type ArkosConfig = {
      *
      * **Caution**: Be careful with this because you may endup breaking your entire application.
      */
-    replace: {
+    replace?: {
       /**
        * Replace the default compression middleware
        */
@@ -392,7 +412,7 @@ export type ArkosConfig = {
      * Read more about The Arkos Middleware Stack at [www.arkosjs.com/docs/the-middleware-stack](https://www.arkosjs.com/docs/the-middleware-stack) for in-depth details.
      */
     additionals?: express.Router[];
-    disable: (
+    disable?: (
       | "auth-router"
       | "prisma-models-router"
       | "file-uploader"
@@ -404,11 +424,11 @@ export type ArkosConfig = {
      * **Note**: Doing this you will lose all default middleware chaining, auth control, handlers from the specific router.
      *
      * **Tip**: I you want to disable some prisma models specific endpoint
-     * see [www.arkosjs.com/docs/advanced-guide/customizing-generated-routers#disabling-specific-endpoints](https://www.arkosjs.com/docs/advanced-guide/customizing-generated-routers#disabling-specific-endpoints)
+     * see [www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers#disabling-endpoints](https://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers#disabling-endpoints)
      *
      * **Caution**: Be careful with this because you may endup breaking your entire application.
      */
-    replace: {
+    replace?: {
       /**
        * Replace the default authentication router
        * @param config The original Arkos configuration
@@ -449,12 +469,12 @@ export type ArkosConfig = {
    *
    * If you want to call `app.listen` by yourself pass port as `undefined` and then use the return app from `arkos.init()`.
    *
-   * See how to call `app.listen` correctly [www.arkosjs.com/docs/acessing-the-express-app#calling-applisten-by-yourself](https://www.arkosjs.com/docs/acessing-the-express-app#calling-applisten-by-yourself)
+   * See how to call `app.listen` correctly [www.arkosjs.com/docs/accessing-the-express-app#calling-applisten-by-yourself](https://www.arkosjs.com/docs/accessing-the-express-app#calling-applisten-by-yourself)
    *
-   * See [www.arkosjs.com/docs/acessing-the-express-app](https://www.arkosjs.com/docs/acessing-the-express-app) for further details on the method configureApp.
+   * See [www.arkosjs.com/docs/accessing-the-express-app](https://www.arkosjs.com/docs/accessing-the-express-app) for further details on the method configureApp.
    *
    * @param {express.Express} app
    * @returns {any}
    */
-  configureApp?: (app: express.Express) => Promise<any>;
+  configureApp?: (app: express.Express) => Promise<any> | any;
 };
