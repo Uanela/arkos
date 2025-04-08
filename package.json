@@ -111,7 +111,7 @@
   "bugs": {
     "url": "https://github.com/uanela/arkos/issues"
   },
-  "homepage": "https://github.com/uanela/arkos#readme",
+  "homepage": "https://www.arkosjs.com",
   "files": [
     "dist",
     "README.md"
