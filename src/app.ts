@@ -2,7 +2,10 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { getAuthRouter } from "./modules/auth/auth.router";
-import baseRouter from "./modules/base/base.router";
+import {
+  getPrismaModelsRouter,
+  getAvailableResourcesAndRoutesRouter,
+} from "./modules/base/base.router";
 import errorHandler from "./modules/error-handler/error-handler.controller";
 import { rateLimit } from "express-rate-limit";
 import path from "path";
@@ -98,7 +101,7 @@ export async function bootstrap(
                   ) => {
                     const allowed = arkosConfig?.cors?.allowedOrigins;
 
-                    if (allowed === "all") {
+                    if (allowed === "*") {
                       cb(null, true);
                     } else if (Array.isArray(allowed)) {
                       cb(null, !origin || allowed.includes(origin));
@@ -200,14 +203,16 @@ export async function bootstrap(
   if (!disabledRouters.includes("prisma-models-router")) {
     const modelsRouter = replacedRouters.prismaModelsRouter
       ? await replacedRouters.prismaModelsRouter(arkosConfig)
-      : baseRouter;
+      : await getPrismaModelsRouter();
     app.use("/api", modelsRouter);
   }
+
+  app.use("/api", getAvailableResourcesAndRoutesRouter());
 
   // Additional custom routers
   if (routersConfig?.additionals) {
     routersConfig.additionals.forEach((router) => {
-      app.use("/api", router);
+      app.use(router);
     });
   }
 
