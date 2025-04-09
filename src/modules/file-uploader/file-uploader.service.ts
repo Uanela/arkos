@@ -1,13 +1,16 @@
 import multer, { StorageEngine } from "multer";
 import path from "path";
 import fs from "fs";
-import { Request, Response, NextFunction } from "express";
+import { NextFunction } from "express";
 import AppError from "../error-handler/utils/app-error";
 import { promisify } from "util";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import sharp from "sharp";
 import { ArkosRequest, ArkosResponse } from "../../types";
+import {
+  processFile,
+  processImage,
+} from "./utils/helpers/file-uploader.helpers";
 
 /**
  * Service to handle file uploads, including single and multiple file uploads,
@@ -32,6 +35,9 @@ export class FileUploaderService {
     allowedFileTypes: RegExp = /.*/,
     maxCount: number = 30
   ) {
+    uploadDir = uploadDir.startsWith("/") ? uploadDir.substring(1) : uploadDir;
+    uploadDir = uploadDir.endsWith("/") ? uploadDir.slice(0, -1) : uploadDir;
+
     this.uploadDir = path.join(".", `${uploadDir}/`);
     this.fileSizeLimit = fileSizeLimit;
     this.allowedFileTypes = allowedFileTypes;
@@ -102,10 +108,10 @@ export class FileUploaderService {
           const filePath = path.join(oldFilePath);
           try {
             const stats = await promisify(fs.stat)(filePath);
-            if (stats) {
-              await promisify(fs.unlink)(filePath);
-            }
-          } catch (err) {}
+            if (stats) await promisify(fs.unlink)(filePath);
+          } catch (err) {
+            console.error(err);
+          }
         }
 
         next();
@@ -138,18 +144,22 @@ export class FileUploaderService {
    * @returns {Function} Middleware function for handling file deletion.
    */
   public handleDeleteSingleFile(oldFilePath: string) {
-    return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
-      (async () => {
-        const filePath = path.join(oldFilePath);
-        try {
-          const stats = await promisify(fs.stat)(filePath);
-          if (stats) {
-            await promisify(fs.unlink)(filePath);
-          }
-        } catch (err) {}
+    return async (
+      req: ArkosRequest,
+      res: ArkosResponse,
+      next: NextFunction
+    ) => {
+      const filePath = path.join(oldFilePath);
+      try {
+        const stats = await promisify(fs.stat)(filePath);
+        if (stats) {
+          await promisify(fs.unlink)(filePath);
+        }
+      } catch (err) {
+        console.error(err);
+      }
 
-        next();
-      })();
+      next();
     };
   }
 
@@ -234,7 +244,8 @@ export class FileUploaderService {
       }
 
       // Delete the file
-      await promisify(fs.access)(filePath, fs.constants.F_OK);
+
+      await promisify(fs.stat)(filePath);
       await promisify(fs.unlink)(filePath);
 
       return true;
@@ -310,117 +321,27 @@ export class FileUploaderService {
 
           // Get file type from uploadDir path
           const dirParts = this.uploadDir.split("/");
-          const fileType = dirParts[dirParts.length - 1] || "files";
-
-          /**
-           * Generates the correct relative path regardless of upload directory location
-           */
-          const generateRelativePath = (filePath: string) => {
-            const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
-            if (baseUploadDir.startsWith("..")) {
-              // For paths outside project directory
-              return path.join(fileType, path.basename(filePath));
-            } else {
-              // For paths within project
-              return filePath.replace(`${process.cwd()}${baseUploadDir}/`, "");
-            }
-          };
-
-          /**
-           * Processes image files using Sharp for resizing and format conversion
-           */
-          const processImage = async (
-            filePath: string
-          ): Promise<string | null> => {
-            const ext = path.extname(filePath).toLowerCase();
-            const originalFormat = ext.replace(".", "");
-            const outputFormat = options.format || originalFormat;
-
-            // Skip processing for non-image files
-            if (
-              !/jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif/i.test(originalFormat)
-            ) {
-              const relativePath = generateRelativePath(filePath);
-              return `${baseURL}${baseRoute}/${relativePath}`;
-            }
-
-            // Create a temp filename with original name + random string
-            const tempName = `${path.basename(
-              filePath,
-              ext
-            )}_${Date.now()}${ext}`;
-            const tempPath = path.join(path.dirname(filePath), tempName);
-
-            try {
-              let transformer = sharp(filePath);
-              const metadata = await transformer.metadata();
-
-              // Apply resize transformations if requested
-              if (options.resizeTo && metadata.width && metadata.height) {
-                const targetSize = options.resizeTo;
-                const scaleFactor =
-                  targetSize / Math.min(metadata.width, metadata.height);
-                const newWidth = Math.round(metadata.width * scaleFactor);
-                const newHeight = Math.round(metadata.height * scaleFactor);
-                transformer = transformer.resize(newWidth, newHeight);
-              } else if (options.width || options.height) {
-                transformer = transformer.resize(
-                  options.width || null,
-                  options.height || null,
-                  {
-                    fit: "inside",
-                  }
-                );
-              }
-
-              // Apply format transformations if requested
-              if (outputFormat === "webp") {
-                transformer = transformer.toFormat("webp");
-              } else if (outputFormat === "jpeg" || outputFormat === "jpg") {
-                transformer = transformer.toFormat("jpeg");
-              }
-
-              // Save to temp file first
-              await transformer.toFile(tempPath);
-
-              // Rename temp file to original filename
-              await promisify(fs.rename)(tempPath, filePath);
-
-              // Return the public URL for the file
-              const relativePath = generateRelativePath(filePath);
-              return `${baseURL}${baseRoute}/${relativePath}`;
-            } catch (error) {
-              // Clean up temp file if it exists
-              try {
-                await promisify(fs.stat)(tempPath);
-                await promisify(fs.unlink)(tempPath);
-              } catch {
-                // If temp file doesn't exist, no need to clean up
-              }
-              throw error;
-            }
-          };
-
-          /**
-           * Handles basic file processing for non-image files
-           */
-          const processFile = async (filePath: string): Promise<string> => {
-            const relativePath = generateRelativePath(filePath);
-            return `${baseURL}${baseRoute}/${relativePath}`;
-          };
+          const fileType =
+            (this.uploadDir.endsWith("/")
+              ? dirParts[dirParts.length - 2]
+              : dirParts[dirParts.length - 1]) || "files";
 
           // Process all uploaded files
           let data;
-          if (req.files && Array.isArray(req.files)) {
+          if (req.files && Array.isArray(req.files) && req.files.length > 0) {
             // Process multiple files
             const isImageUploader = this.uploadDir.includes("/images");
             if (isImageUploader) {
               data = await Promise.all(
-                req.files.map((file) => processImage(file.path))
+                req.files.map((file) =>
+                  processImage(file.path, baseURL, baseRoute, options, fileType)
+                )
               );
             } else {
               data = await Promise.all(
-                req.files.map((file) => processFile(file.path))
+                req.files.map((file) =>
+                  processFile(file.path, baseURL, baseRoute, fileType)
+                )
               );
             }
             // Filter out any null values from failed processing
@@ -428,10 +349,22 @@ export class FileUploaderService {
           } else if (req.file) {
             // Process a single file
             const isImageUploader = this.uploadDir.includes("/images");
+            // console.log(req.file.path, baseURL, baseRoute, options, fileType);
             if (isImageUploader) {
-              data = await processImage(req.file.path);
+              data = await processImage(
+                req.file.path,
+                baseURL,
+                baseRoute,
+                options,
+                fileType
+              );
             } else {
-              data = await processFile(req.file.path);
+              data = await processFile(
+                req.file.path,
+                baseURL,
+                baseRoute,
+                fileType
+              );
             }
           } else {
             return reject(new AppError("No file uploaded", 400));

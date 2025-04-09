@@ -487,4 +487,33 @@ export type ArkosConfig = {
    * @returns {any}
    */
   configureApp?: (app: express.Express) => Promise<any> | any;
+  /**
+   * Allows to configure email configurations for sending emails through `emailService`
+   *
+   * See [www.arkosjs.com/docs/core-concepts/sending-emails](https://www.arkosjs.com/docs/core-concepts/sending-emails)
+   */
+  email?: {
+    /**
+     * Your email provider url
+     */
+    host: string;
+    /**
+     * Email provider SMTP port, Default is `465`
+     */
+    port?: number;
+    /**
+     * Email used for auth as well as sending emails
+     */
+    from: string;
+    /**
+     * Your SMTP password
+     */
+    password: string;
+    /**
+     * Email name to used like:
+     *
+     * John Doe\<john.doe@gmail.com>
+     */
+    name?: string;
+  };
 };

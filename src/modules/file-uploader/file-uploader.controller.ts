@@ -2,7 +2,7 @@ import AppError from "../error-handler/utils/app-error";
 import {
   FileUploaderService,
   getFileUploaderServices,
-} from "./file-upload.service";
+} from "./file-uploader.service";
 import path from "path";
 import fs from "fs";
 import sharp from "sharp";
