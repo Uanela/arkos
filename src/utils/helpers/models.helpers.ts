@@ -8,7 +8,7 @@ import {
 import arkosEnv from "../arkos-env";
 import { userFileExtension } from "./fs.helpers";
 
-const prismaModelsModules: Record<
+export let prismaModelsModules: Record<
   string,
   Awaited<ReturnType<typeof importPrismaModelModules>>
 > = {};
@@ -148,7 +148,7 @@ export async function importPrismaModelModules(modelName: string) {
     }
   } catch (error) {
     console.error(
-      `Error importing model main DTO for model "${modelName}":`,
+      `Error importing model main DTO for model "${modelName} ${pascalModelName}":`,
       error
     );
   }
@@ -189,6 +189,20 @@ export async function importPrismaModelModules(modelName: string) {
     }
   } catch (error) {
     console.error(`Error importing query DTO for model "${modelName}":`, error);
+  }
+
+  try {
+    if (fs.existsSync(modelSchemaFile)) {
+      const modelSchemaModule = await import(modelSchemaFile);
+      result.dtos.model =
+        modelSchemaModule.default ||
+        modelSchemaModule[`${pascalModelName}Schema`];
+    }
+  } catch (error) {
+    console.error(
+      `Error importing create Schema for model "${modelName}":`,
+      error
+    );
   }
 
   try {
@@ -290,18 +304,13 @@ const prismaRootDir = "./prisma"; // Adjust this path if needed
 const files = getAllPrismaFiles(prismaRootDir);
 
 for (const file of files) {
-  const filePath = path.join(prismaRootDir, file);
-  const stats = fs.statSync(filePath);
-
-  if (stats.isFile()) {
-    const content = fs.readFileSync(filePath, "utf-8");
-    prismaContent.push(content);
-  }
+  const content = fs.readFileSync(file, "utf-8");
+  prismaContent.push(content);
 }
 
 const modelRegex = /model\s+(\w+)\s*{/g;
 const models: string[] = [];
-const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
+export const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
   [] as any;
 
 prismaContent.join("\n").replace(modelRegex, (_, modelName) => {
@@ -412,6 +421,7 @@ for (const model of models) {
  */
 export function getPrismaModelRelations(modelName: string) {
   modelName = pascalCase(modelName);
+
   if (!(modelName in prismaModelRelationFields)) return;
   return prismaModelRelationFields[modelName];
 }
