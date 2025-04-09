@@ -1,5 +1,4 @@
 import { PrismaModelRouterConfig } from "../types/prisma-model-router-config";
-import { ArkosConfig } from "./../../dist/types/types/arkos-config.d";
 import { BaseController } from "./../modules/base/base.controller";
 import { initApp } from "../server";
 import {
@@ -8,6 +7,7 @@ import {
   ArkosNextFunction,
   ArkosRequestHandler,
 } from "../types";
+import { ArkosConfig } from "../types/arkos-config";
 
 /**
  * Initializes the Arkos application.

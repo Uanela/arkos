@@ -490,8 +490,8 @@ export const getFileUploaderServices = () => {
   };
 
   // Merge with user configuration (if any)
-  const restrictions = fileUpload?.uploadRestrictions
-    ? deepmerge(defaultRestrictions, fileUpload.uploadRestrictions)
+  const restrictions = fileUpload?.restrictions
+    ? deepmerge(defaultRestrictions, fileUpload.restrictions)
     : defaultRestrictions;
 
   /**

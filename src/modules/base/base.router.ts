@@ -257,7 +257,7 @@ export async function getPrismaModelsRouter() {
   return router;
 }
 
-export function getAvailableResourcesAndRoutesRouter() {
+export function getAvailableResourcesAndRoutesRouter(): Router {
   const router = Router();
 
   router.get("/available-routes", authService?.authenticate, getAvalibleRoutes);

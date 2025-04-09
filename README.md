@@ -54,7 +54,7 @@ That's it! Your RESTful API is ready to use.
 
 ## Documentation
 
-For detailed documentation, visit our [official docs](https://arkos.dev/docs/intro).
+For detailed documentation, visit our [official docs](https://arkosjs.com/docs/intro).
 
 ## License
 

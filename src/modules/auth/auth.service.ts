@@ -153,22 +153,53 @@ class AuthService {
         if (req.user) {
           const user = req.user as any;
           const prisma = getPrismaInstance();
+          const configs = getArkosConfig();
 
-          const permissions = await (prisma as any).authPermission.count({
-            where: {
-              resource: kebabCase(singular(modelName)),
-              action,
-              roleId: { in: user.roles.map((role: UserRole) => role.roleId) },
-            },
-          });
+          if (user.isSuperUser) {
+            next();
+            return;
+          }
 
-          if (!permissions) {
-            return next(
-              new AppError(
-                "You do not have permission to perfom this action",
-                403
+          if (configs?.authentication?.mode === "dynamic") {
+            const permissions = await (prisma as any).authPermission.count({
+              where: {
+                resource: kebabCase(singular(modelName)),
+                action,
+                roleId: { in: user.roles.map((role: UserRole) => role.roleId) },
+              },
+            });
+
+            if (!permissions)
+              return next(
+                new AppError(
+                  "You do not have permission to perfom this action",
+                  403
+                )
+              );
+          } else if (configs?.authentication?.mode === "static") {
+            const accessControl = authConfigs?.accessControl;
+            let authorizedRoles: any[] = [];
+
+            if (accessControl) {
+              if (Array.isArray(accessControl)) authorizedRoles = accessControl;
+              else if (accessControl[action])
+                authorizedRoles = accessControl[action];
+
+              // Checks for both cases if using single role or multiple roles
+              if (
+                !authorizedRoles.includes(req.user?.role) ||
+                ((req.user?.roles as any[]).length > 0 &&
+                  !authorizedRoles?.some((role) =>
+                    (req.user?.roles as any[]).includes(role)
+                  ))
               )
-            );
+                return next(
+                  new AppError(
+                    "You do not have permission to perfom this action",
+                    403
+                  )
+                );
+            }
           }
         }
 
