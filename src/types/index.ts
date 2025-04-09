@@ -57,6 +57,7 @@ export interface AuthPermission {
 export interface User {
   id: string;
   isStaff: boolean;
+  isSuperUser: boolean;
   password: string;
   passwordChangedAt?: Date;
   deletedSelfAccountAt: Date;

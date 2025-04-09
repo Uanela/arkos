@@ -143,6 +143,16 @@ export type ArkosConfig = {
   validation?:
     | {
         resolver?: "class-validator";
+        /**
+         * ValidatorOptions to used while validating request data.
+         *
+         * **Default**:
+         * ```ts
+         * {
+         *  whitelist: true
+         * }
+         * ```
+         */
         validationOptions?: ValidatorOptions;
       }
     | {
@@ -212,7 +222,7 @@ export type ArkosConfig = {
      * See [www.arkosjs.com/docs/api-reference/default-supported-upload-files](https://www.arkosjs.com/docs/api-reference/default-supported-upload-files) for detailed explanation about default values.
      * ```
      */
-    uploadRestrictions?: {
+    restrictions?: {
       images?: {
         maxCount?: number;
         maxSize?: number;
