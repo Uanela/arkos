@@ -5,5 +5,12 @@
     // "moduleResolution": "bundler", // Change this from "node"
     "outDir": "./dist/cjs"
   },
-  "exclude": ["vitest/globals"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/__tests__/**",
+    "src/**/*.test.ts",
+    "src/**/*.test.js"
+  ]
 }
