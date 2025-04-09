@@ -1,6 +1,8 @@
 import nodemailer, { Transporter } from "nodemailer";
 import { BaseService } from "../base/base.service";
 import { convert } from "html-to-text";
+import { getArkosConfig } from "../../server";
+import AppError from "../error-handler/utils/app-error";
 
 /**
  * Defines the options for sending an email.
@@ -34,7 +36,7 @@ export type SMTPConnectionOptions = {
 /**
  * A service class to handle email-related tasks, including sending emails.
  */
-export class EmailService extends BaseService {
+export class EmailService {
   private transporter: Transporter;
   private defaultHost: string;
   private defaultPort: number;
@@ -46,6 +48,8 @@ export class EmailService extends BaseService {
    * @param {string} [host] - The SMTP host (defaults to the environment variable `EMAIL_HOST`).
    * @param {SMTPAuthOptions} [auth] - The authentication object containing `user` and `pass` for the email account.
    * @param {number} [port] - The SMTP port (defaults to 465).
+   *
+   * See the api reference [www.arkosjs.com/docs/api-reference/the-email-service-class](https://www.arkosjs.com/docs/api-reference/the-email-service-class)
    */
   constructor(
     host: string = process.env.EMAIL_HOST!,
@@ -55,7 +59,6 @@ export class EmailService extends BaseService {
     },
     port: number = parseInt(process.env.EMAIL_PORT || "465")
   ) {
-    super("email");
     this.defaultHost = host;
     this.defaultPort = port;
     this.defaultAuth = auth;
@@ -168,13 +171,24 @@ export class EmailService extends BaseService {
    * @returns {EmailService} A new email service instance.
    */
   public static create(options: SMTPConnectionOptions): EmailService {
+    const { email: emailConfigs } = getArkosConfig();
+
+    if (!emailConfigs)
+      throw new AppError(
+        "You are trying to use emailService without setting arkosConfig.email configurations",
+        500,
+        {
+          docs: "Read more about emailService at https://www.arkosjs.com/docs/core-concepts/sending-emails",
+        }
+      );
+
     return new EmailService(
-      options.host || process.env.EMAIL_HOST!,
+      options.host || emailConfigs.host,
       options.auth || {
-        user: process.env.EMAIL_FROM!,
-        pass: process.env.EMAIL_PASSWORD!,
+        user: emailConfigs.from,
+        pass: emailConfigs.password,
       },
-      options.port || parseInt(process.env.EMAIL_PORT || "465")
+      options.port || parseInt(String(emailConfigs.port) || "465")
     );
   }
 }

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import authService from "../auth/auth.service";
-import { deleteFile, uploadFile } from "./file-upload.controller";
+import { deleteFile, uploadFile } from "./file-uploader.controller";
 import { ArkosConfig } from "../../types/arkos-config";
 import path from "path";
 import express from "express";

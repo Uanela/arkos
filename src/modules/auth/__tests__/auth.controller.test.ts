@@ -255,7 +255,6 @@ describe("Auth Controller Factory", () => {
         username: "testuser",
         password: "hashedPassword",
       });
-      console.log(JSON.stringify(authService, null, 2));
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 

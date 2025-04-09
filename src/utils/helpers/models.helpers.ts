@@ -268,12 +268,29 @@ const prismaModelRelationFields: Record<string, RelationFields> = {};
 
 const prismaContent: string[] = [];
 
-const files = fs
-  .readdirSync(schemaFolderPath)
-  .filter((file) => file.endsWith(".prisma"));
+function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
+  const files = fs.readdirSync(dirPath);
+
+  files?.forEach((file) => {
+    const filePath = path.join(dirPath, file);
+    const stat = fs.statSync(filePath);
+
+    // Skip migrations folder
+    if (stat.isDirectory() && file !== "migrations") {
+      fileList = getAllPrismaFiles(filePath, fileList);
+    } else if (stat.isFile() && file.endsWith(".prisma")) {
+      fileList.push(filePath);
+    }
+  });
+
+  return fileList;
+}
+
+const prismaRootDir = "./prisma"; // Adjust this path if needed
+const files = getAllPrismaFiles(prismaRootDir);
 
 for (const file of files) {
-  const filePath = path.join(schemaFolderPath, file);
+  const filePath = path.join(prismaRootDir, file);
   const stats = fs.statSync(filePath);
 
   if (stats.isFile()) {
@@ -297,7 +314,7 @@ for (const model of models) {
 
   let modelFile;
   for (const file of files) {
-    const filePath = path.join(schemaFolderPath, file);
+    const filePath = path.join(prismaRootDir, file);
     const stats = fs.statSync(filePath);
 
     if (stats.isFile()) {
@@ -314,10 +331,7 @@ for (const model of models) {
     throw new Error(`Model ${modelName} not found`);
   }
 
-  const content = fs.readFileSync(
-    path.join(schemaFolderPath, modelFile),
-    "utf-8"
-  );
+  const content = fs.readFileSync(path.join(prismaRootDir, modelFile), "utf-8");
 
   const modelStart = content.indexOf(`model ${modelName} {`);
   const modelEnd = content.indexOf("}", modelStart);
