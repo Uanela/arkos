@@ -30,6 +30,7 @@ export const uploadFile = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { fileType } = req.params;
     const { format, width, height, resizeTo } = req.query;
+    const options = { format, width, height, resizeTo };
 
     const {
       documentUploaderService,
@@ -73,40 +74,18 @@ export const uploadFile = catchAsync(
     uploader.handleMultipleUpload()(req, res, async (err) => {
       if (err) return next(err);
 
-      // Determine the base URL for file access
-      const protocol = req.get("host")?.includes("localhost")
-        ? "http"
-        : "https";
-      const baseURL = `${protocol}://${req.get("host")}`;
-      const baseRoute = fileUpload?.baseRoute || "/api/uploads";
-
-      /**
-       * Generates the correct relative path regardless of upload directory location
-       * @param {string} filePath - Full path to the uploaded file
-       * @returns {string} Relative path for URL generation
-       */
-      const generateRelativePath = (filePath: string) => {
-        if (baseUploadDir.startsWith("..")) {
-          // For paths outside project directory
-          return path.join(fileType, path.basename(filePath));
-        } else {
-          // Original approach for paths within project
-          return filePath.replace(`${process.cwd()}${baseUploadDir}/`, "");
-        }
-      };
-
       // Process all uploaded files
       let data;
       if (req.files && Array.isArray(req.files)) {
         if (fileType === "images") {
           // Process multiple image files with image transformations
           data = await Promise.all(
-            req.files.map((file) => processImage(file.path))
+            req.files.map((file) => processImage(req, file.path, options))
           );
         } else {
           // Just store other file types without processing
           data = await Promise.all(
-            req.files.map((file) => processFile(file.path))
+            req.files.map((file) => processFile(req, file.path))
           );
         }
         // Filter out any null values from failed processing
@@ -114,9 +93,9 @@ export const uploadFile = catchAsync(
       } else if (req.file) {
         // Process a single file
         if (fileType === "images") {
-          data = await processImage(req.file.path);
+          data = await processImage(req, req.file.path, options);
         } else {
-          data = await processFile(req.file.path);
+          data = await processFile(req, req.file.path);
         }
       } else {
         return next(new AppError("No file uploaded", 400));

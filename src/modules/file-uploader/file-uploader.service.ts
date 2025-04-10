@@ -11,13 +11,14 @@ import {
   processFile,
   processImage,
 } from "./utils/helpers/file-uploader.helpers";
+import { removeBothSlashes } from "../../utils/helpers/text.helpers";
 
 /**
  * Service to handle file uploads, including single and multiple file uploads,
  * file validation (type, size), and file deletion.
  */
 export class FileUploaderService {
-  private uploadDir: string;
+  public readonly uploadDir: string;
   private fileSizeLimit: number;
   private allowedFileTypes: RegExp;
   private storage: StorageEngine;
@@ -105,7 +106,13 @@ export class FileUploaderService {
         }
 
         if (oldFilePath) {
-          const filePath = path.join(oldFilePath);
+          const { fileUpload: configs } = getArkosConfig();
+
+          const filePath = path.resolve(
+            process.cwd(),
+            removeBothSlashes(configs?.baseUploadDir!),
+            removeBothSlashes(oldFilePath)
+          );
           try {
             const stats = await promisify(fs.stat)(filePath);
             if (stats) await promisify(fs.unlink)(filePath);
@@ -126,7 +133,6 @@ export class FileUploaderService {
    */
   public handleMultipleUpload() {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
-      console.log(this.getFieldName(), this.maxCount, "handleMultipleUpload");
       const upload = this.getUploader().array(
         this.getFieldName(),
         this.maxCount
@@ -334,15 +340,11 @@ export class FileUploaderService {
             const isImageUploader = this.uploadDir.includes("/images");
             if (isImageUploader) {
               data = await Promise.all(
-                req.files.map((file) =>
-                  processImage(file.path, baseURL, baseRoute, options, fileType)
-                )
+                req.files.map((file) => processImage(req, file.path, options))
               );
             } else {
               data = await Promise.all(
-                req.files.map((file) =>
-                  processFile(file.path, baseURL, baseRoute, fileType)
-                )
+                req.files.map((file) => processFile(req, file.path))
               );
             }
             // Filter out any null values from failed processing
@@ -350,22 +352,10 @@ export class FileUploaderService {
           } else if (req.file) {
             // Process a single file
             const isImageUploader = this.uploadDir.includes("/images");
-            // console.log(req.file.path, baseURL, baseRoute, options, fileType);
             if (isImageUploader) {
-              data = await processImage(
-                req.file.path,
-                baseURL,
-                baseRoute,
-                options,
-                fileType
-              );
+              data = await processImage(req, req.file.path, options);
             } else {
-              data = await processFile(
-                req.file.path,
-                baseURL,
-                baseRoute,
-                fileType
-              );
+              data = await processFile(req, req.file.path);
             }
           } else {
             return reject(new AppError("No file uploaded", 400));
@@ -430,11 +420,6 @@ export const getFileUploaderServices = () => {
   const restrictions = fileUpload?.restrictions
     ? deepmerge(defaultRestrictions, fileUpload.restrictions)
     : defaultRestrictions;
-
-  console.log(JSON.stringify(restrictions, null, 2));
-
-  console.log(restrictions.images.supportedFilesRegex);
-  console.log(restrictions.videos.supportedFilesRegex);
 
   /**
    * Specialized file uploader service for handling image uploads.

@@ -42,4 +42,3 @@ describe('${moduleName}', () => {
 `;
 
 fs.writeFileSync(testFilePath, testFileContent);
-console.log(`Created test file: ${testFilePath}`);

@@ -13,3 +13,22 @@ export function capitalize(text: string): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 }
+
+// Function to remove the beginning slash
+export function removeBeginningSlash(str: string) {
+  if (str.startsWith("/")) return str.substring(1);
+
+  return str;
+}
+
+// Function to remove the ending slash
+export function removeEndingSlash(str: string) {
+  if (str.endsWith("/")) return str.substring(0, str.length - 1);
+
+  return str;
+}
+
+// Function to remove both beginning and ending slashes
+export function removeBothSlashes(str: string) {
+  return removeEndingSlash(removeBeginningSlash(str));
+}

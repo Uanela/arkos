@@ -2,7 +2,11 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 import { promisify } from "util";
-import { processFile, processImage } from "../file-uploader.helpers";
+import {
+  extractRequestInfo,
+  processFile,
+  processImage,
+} from "../file-uploader.helpers";
 import { getArkosConfig } from "../../../../../server";
 
 // Mock dependencies
@@ -13,9 +17,12 @@ jest.mock("util");
 jest.mock("../../../../../server");
 
 describe("File Uploader Helpers", () => {
-  let mockBaseURL = "https://example.com";
-  let mockBaseRoute = "/files";
-  let mockFileType = "images";
+  let mockReq = {
+    params: {
+      fileType: "images",
+    },
+    get: (() => "example.com") as any,
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -48,41 +55,44 @@ describe("File Uploader Helpers", () => {
     (promisify as any as jest.Mock).mockImplementation((fn) => fn);
   });
 
+  describe("extractRequestInfo", () => {
+    it("Should extract the baseURL and baseRoute correctly", () => {
+      const { baseURL, baseRoute } = extractRequestInfo(mockReq);
+
+      expect(baseURL).toBe("https://example.com");
+      expect(baseRoute).toBe("/api/uploads");
+    });
+  });
+
   describe("processFile", () => {
     it("should process a file with internal upload directory", async () => {
       const mockFilePath = "test.pdf";
       // const mockFilePath = "/app/uploads/documents/test.pdf";
-      mockFileType = "documents";
+      mockReq.params.fileType = "documents";
 
-      const result = await processFile(
-        mockFilePath,
-        mockBaseURL,
-        mockBaseRoute,
-        mockFileType
-      );
+      const result = await processFile(mockReq, mockFilePath);
 
-      expect(result).toBe("https://example.com/files/documents/test.pdf");
+      expect(result).toBe("https://example.com/api/uploads/documents/test.pdf");
     });
 
     it("should process a file with external upload directory", async () => {
       (getArkosConfig as jest.Mock).mockReturnValue({
         fileUpload: {
-          baseUploadDir: "../uploads",
+          baseUploadDir: "../test/uploads",
+          baseRoute: "/",
         },
       });
 
       const mockFilePath = "../uploads/documents/test.pdf";
 
-      const result = await processFile(
-        mockFilePath,
-        mockBaseURL,
-        mockBaseRoute,
-        mockFileType
-      );
+      const result = await processFile(mockReq, mockFilePath);
 
       expect(path.basename).toHaveBeenCalledWith(mockFilePath);
-      expect(path.join).toHaveBeenCalledWith(mockFileType, "test.pdf");
-      expect(result).toBe("https://example.com/files/documents/test.pdf");
+      expect(path.join).toHaveBeenCalledWith(
+        mockReq.params.fileType,
+        "test.pdf"
+      );
+      expect(result).toBe("https://example.com/documents/test.pdf");
     });
   });
 
@@ -118,18 +128,12 @@ describe("File Uploader Helpers", () => {
       // const mockFilePath = "/app/uploads/documents/test.pdf";
       const options = {};
 
-      mockFileType = "documents";
+      mockReq.params.fileType = "documents";
 
-      const result = await processImage(
-        mockFilePath,
-        mockBaseURL,
-        mockBaseRoute,
-        options,
-        mockFileType
-      );
+      const result = await processImage(mockReq, mockFilePath, options);
 
       expect(sharp).not.toHaveBeenCalled();
-      expect(result).toBe("https://example.com/files/documents/test.pdf");
+      expect(result).toBe("https://example.com/api/uploads/documents/test.pdf");
     });
 
     it("should process an image file with resizeTo option", async () => {
@@ -137,21 +141,15 @@ describe("File Uploader Helpers", () => {
       // const mockFilePath = "/app/uploads/images/test.jpg";
       const options = { resizeTo: 500 };
 
-      mockFileType = "images";
+      mockReq.params.fileType = "images";
 
-      const result = await processImage(
-        mockFilePath,
-        mockBaseURL,
-        mockBaseRoute,
-        options,
-        mockFileType
-      );
+      const result = await processImage(mockReq, mockFilePath, options);
 
       expect(sharp).toHaveBeenCalledWith(mockFilePath);
       expect(sharp().resize).toHaveBeenCalledWith(625, 500);
       expect(sharp().toFile).toHaveBeenCalled();
       expect(fs.rename).toHaveBeenCalled();
-      expect(result).toBe("https://example.com/files/images/test.jpg");
+      expect(result).toBe("https://example.com/api/uploads/images/test.jpg");
     });
 
     it("should process an image file with width and height options", async () => {
@@ -159,38 +157,26 @@ describe("File Uploader Helpers", () => {
       const mockFilePath = "test.png";
       const options = { width: 300, height: 200 };
 
-      mockFileType = "images";
+      mockReq.params.fileType = "images";
 
-      const result = await processImage(
-        mockFilePath,
-        mockBaseURL,
-        mockBaseRoute,
-        options,
-        mockFileType
-      );
+      const result = await processImage(mockReq, mockFilePath, options);
 
       expect(sharp).toHaveBeenCalledWith(mockFilePath);
       expect(sharp().resize).toHaveBeenCalledWith(300, 200, { fit: "inside" });
-      expect(result).toBe("https://example.com/files/images/test.png");
+      expect(result).toBe("https://example.com/api/uploads/images/test.png");
     });
 
     it("should convert image format to webp if requested", async () => {
       const mockFilePath = "test.jpg";
       const options = { format: "webp" };
 
-      mockFileType = "images";
+      mockReq.params.fileType = "images";
 
-      const result = await processImage(
-        mockFilePath,
-        mockBaseURL,
-        mockBaseRoute,
-        options,
-        mockFileType
-      );
+      const result = await processImage(mockReq, mockFilePath, options);
 
       expect(sharp).toHaveBeenCalledWith(mockFilePath);
       expect(sharp().toFormat).toHaveBeenCalledWith("webp");
-      expect(result).toBe("https://example.com/files/images/test.jpg");
+      expect(result).toBe("https://example.com/api/uploads/images/test.jpg");
     });
 
     it("should convert image format to jpeg if requested", async () => {
@@ -198,19 +184,13 @@ describe("File Uploader Helpers", () => {
       const mockFilePath = "test.png";
       const options = { format: "jpeg" };
 
-      mockFileType = "images";
+      mockReq.params.fileType = "images";
 
-      const result = await processImage(
-        mockFilePath,
-        mockBaseURL,
-        mockBaseRoute,
-        options,
-        mockFileType
-      );
+      const result = await processImage(mockReq, mockFilePath, options);
 
       expect(sharp).toHaveBeenCalledWith(mockFilePath);
       expect(sharp().toFormat).toHaveBeenCalledWith("jpeg");
-      expect(result).toBe("https://example.com/files/images/test.png");
+      expect(result).toBe("https://example.com/api/uploads/images/test.png");
     });
 
     it("should handle errors and clean up temp files", async () => {
@@ -222,13 +202,7 @@ describe("File Uploader Helpers", () => {
       (sharp().toFile as jest.Mock).mockRejectedValue(error);
 
       await expect(
-        processImage(
-          mockFilePath,
-          mockBaseURL,
-          mockBaseRoute,
-          options,
-          mockFileType
-        )
+        processImage(mockReq, mockFilePath, options)
       ).rejects.toThrow(error);
 
       expect(fs.stat).toHaveBeenCalled();
@@ -246,13 +220,7 @@ describe("File Uploader Helpers", () => {
       });
 
       await expect(
-        processImage(
-          mockFilePath,
-          mockBaseURL,
-          mockBaseRoute,
-          options,
-          mockFileType
-        )
+        processImage(mockReq, mockFilePath, options)
       ).rejects.toThrow(error);
 
       expect(fs.stat).toHaveBeenCalled();

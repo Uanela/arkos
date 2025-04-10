@@ -3,27 +3,31 @@ import { Request, Response, NextFunction } from "express";
 import catchAsync from "../../modules/error-handler/utils/catch-async";
 import AppError from "../../modules/error-handler/utils/app-error";
 import { userFileExtension } from "./fs.helpers";
+import { importModule } from "./global.helpers";
 
-let prismaInstance: any = null;
+export let prismaInstance: any = null;
 
-export const loadPrismaModule = async () => {
+export async function loadPrismaModule(a?: string) {
   if (!prismaInstance) {
     try {
-      let prismaPath = `${process.cwd()}/src/utils/prisma/index.${userFileExtension}`;
+      let prismaPath = `${process.cwd()}/src/utils/prisma.${userFileExtension}`;
 
       if (!fs.existsSync(prismaPath)) {
-        prismaPath = `${process.cwd()}/src/utils/prisma.${userFileExtension}`;
+        prismaPath = `${process.cwd()}/src/utils/prisma/index.${userFileExtension}`;
       }
 
-      const prismaModule = await import(prismaPath);
+      const prismaModule = await importModule(prismaPath);
       prismaInstance = prismaModule.default || prismaModule.prisma;
+      // console.log(prismaInstance, prismaModule, a, "prismaInstance");
+
+      if (!prismaInstance) throw new Error("not found");
     } catch (error) {
-      console.error("Failed to load prisma.ts:", error);
-      throw new Error("Could not initialize Prisma module.");
+      // console.error(`Failed to load prisma.${userFileExtension}:`, error);
+      throw new AppError("Could not initialize Prisma module.", 500, { error });
     }
   }
   return prismaInstance;
-};
+}
 
 export function getPrismaInstance() {
   return prismaInstance;
