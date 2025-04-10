@@ -272,16 +272,16 @@ export class FileUploaderService {
   private getFieldName() {
     let fieldName = "files";
     if (this.uploadDir.endsWith("images") || this.uploadDir.endsWith("images/"))
-      fieldName === "images";
+      fieldName = "images";
     if (this.uploadDir.endsWith("videos") || this.uploadDir.endsWith("videos/"))
-      fieldName === "videos";
+      fieldName = "videos";
     if (
       this.uploadDir.endsWith("documents") ||
       this.uploadDir.endsWith("documents/")
     )
-      fieldName === "documents";
+      fieldName = "documents";
     if (this.uploadDir.endsWith("files") || this.uploadDir.endsWith("files/"))
-      fieldName === "files";
+      fieldName = "files";
     return fieldName;
   }
 

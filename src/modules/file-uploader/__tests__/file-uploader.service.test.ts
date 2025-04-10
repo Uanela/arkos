@@ -446,7 +446,7 @@ describe("FileUploaderService", () => {
       // Setup base test environment
       mockReq.query = { multiple: "false" };
       mockReq.file = {
-        path: "test.jpg",
+        path: "images/test.jpg",
         originalname: "test.jpg",
       };
     });
@@ -469,8 +469,8 @@ describe("FileUploaderService", () => {
       // Setup mocks for multiple files
       mockReq.query = { multiple: "true" };
       mockReq.files = [
-        { path: "test1.jpg", originalname: "test1.jpg" },
-        { path: "test2.jpg", originalname: "test2.jpg" },
+        { path: "images/test1.jpg", originalname: "test1.jpg" },
+        { path: "images/test2.jpg", originalname: "test2.jpg" },
       ];
       mockReq.file = null;
 
@@ -496,7 +496,7 @@ describe("FileUploaderService", () => {
     it("should process images with Sharp when uploading image files", async () => {
       // Setup specific mock for image processing
       mockReq.file = {
-        path: "test.jpg",
+        path: "images/test.jpg",
         originalname: "test.jpg",
       };
 
@@ -515,7 +515,7 @@ describe("FileUploaderService", () => {
         format: "webp",
       });
 
-      expect(sharp).toHaveBeenCalledWith("test.jpg");
+      expect(sharp).toHaveBeenCalledWith("images/test.jpg");
       expect(mockSharp.resize).toHaveBeenCalledWith(
         300,
         200,

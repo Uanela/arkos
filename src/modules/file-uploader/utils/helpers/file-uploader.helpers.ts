@@ -28,9 +28,9 @@ const generateRelativePath = (filePath: string, fileType: string) => {
     return path.join(fileType, path.basename(filePath));
   } else {
     // For paths within project
-    return (
-      `${fileType}/` + filePath.replace(`${process.cwd()}${baseUploadDir}/`, "")
-    );
+    return filePath
+      .replace(`${baseUploadDir}/`, "")
+      .replace(process.cwd() + "/", "");
   }
 };
 
