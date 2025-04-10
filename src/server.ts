@@ -54,7 +54,7 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
         );
 
         if (!!process.env.NODE_ENV)
-          console.log(`${`Environment: ${process.env.NODE_ENV}`}`);
+          console.info(`${`Environment: ${process.env.NODE_ENV}`}`);
       }
     );
 

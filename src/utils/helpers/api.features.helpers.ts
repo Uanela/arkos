@@ -2,28 +2,28 @@
  * Configuration types for field type mapping
  */
 interface FieldConfig {
-  dateFields: string[]
-  booleanFields: string[]
-  numericFields: string[]
+  dateFields: string[];
+  booleanFields: string[];
+  numericFields: string[];
 }
 
 /**
  * Type for the structured filter object returned by the parser
  */
 type ParsedFilter = {
-  [key: string]: any
-  orderBy?: Record<string, 'asc' | 'desc'>
-  OR?: Record<string, any>[]
-}
+  [key: string]: any;
+  orderBy?: Record<string, "asc" | "desc">;
+  OR?: Record<string, any>[];
+};
 
 /**
  * Default configuration for field types
  */
 const DEFAULT_FIELD_CONFIG: FieldConfig = {
-  dateFields: ['createdAt', 'updatedAt', 'deletedAt', 'date'],
-  booleanFields: ['isActive', 'isDeleted', 'isPublished', 'isArchived'],
-  numericFields: ['age', 'price', 'quantity', 'amount', 'rating'],
-}
+  dateFields: ["createdAt", "updatedAt", "deletedAt", "date"],
+  booleanFields: ["isActive", "isDeleted", "isPublished", "isArchived"],
+  numericFields: ["age", "price", "quantity", "amount", "rating"],
+};
 
 /**
  * Parses query parameters into a structured filter object compatible with Prisma queries.
@@ -52,154 +52,117 @@ export function parseQueryParamsWithModifiers(
   // excludedFields: string[],
   fieldConfig: FieldConfig = DEFAULT_FIELD_CONFIG
 ): ParsedFilter {
-  const queryObj = JSON.parse(JSON.stringify(query))
-  // excludedFields.forEach((el) => delete queryObj[el])
-
   return Object.entries(JSON.parse(JSON.stringify(query))).reduce(
     (acc, [key, value]) => {
-      if (!value) return acc
+      if (!value && value !== false) return acc;
 
       // Convert value to string if it's not already
       const stringValue = Array.isArray(value)
         ? value[0]?.toString()
-        : value.toString()
-      const parts = key.split('__')
+        : value.toString();
+      const parts = key.split("__");
       if (parts.length < 2) {
-        acc[key] = value
-        return acc
+        acc[key] = convertValue(stringValue, parts[0], fieldConfig);
+        return acc;
       }
-      const fieldName = parts[0]
+      const fieldName = parts[0];
 
       // Handle ordering
-      if (fieldName === 'orderBy' && parts.length === 2) {
-        if (!acc.orderBy) acc.orderBy = {}
-        acc.orderBy[parts[1]] = stringValue as 'asc' | 'desc'
-        return acc
+      if (fieldName === "orderBy" && parts.length === 2) {
+        if (!acc.orderBy) acc.orderBy = {};
+        acc.orderBy[parts[1]] = stringValue as "asc" | "desc";
+        return acc;
       }
 
       // Handle simple equals case
       if (parts.length === 1) {
         acc[fieldName] = {
-          equals: convertValue(stringValue, fieldName, 'equals', fieldConfig),
-        }
-        return acc
+          equals: convertValue(stringValue, fieldName, fieldConfig),
+        };
+        return acc;
       }
 
-      let currentLevel = acc
-      let currentKey = fieldName
+      let currentLevel = acc;
+      let currentKey = fieldName;
 
       // Build nested structure
       for (let i = 1; i < parts.length - 1; i++) {
         if (!currentLevel[currentKey]) {
-          currentLevel[currentKey] = {}
+          currentLevel[currentKey] = {};
         }
-        currentLevel = currentLevel[currentKey]
-        currentKey = parts[i]
+        currentLevel = currentLevel[currentKey];
+        currentKey = parts[i];
       }
 
-      const lastOperator = parts[parts.length - 1]
+      const lastOperator = parts[parts.length - 1];
 
       // Handle special operators
       switch (lastOperator) {
-        case 'icontains':
+        case "icontains":
           currentLevel[currentKey] = {
             contains: stringValue,
-            mode: 'insensitive',
-          }
-          break
+            mode: "insensitive",
+          };
+          break;
 
-        case 'contains':
+        case "contains":
           currentLevel[currentKey] = {
             contains: stringValue,
-            mode: 'sensitive',
-          }
-          break
+            mode: "sensitive",
+          };
+          break;
 
-        case 'in':
-        case 'notIn':
+        case "in":
+        case "notIn":
           currentLevel[currentKey] = {
             [lastOperator]: stringValue
-              .split(',')
+              .split(",")
               .map((v: string) =>
-                convertValue(v.trim(), fieldName, lastOperator, fieldConfig)
+                convertValue(v.trim(), fieldName, fieldConfig)
               ),
-          }
-          break
+          };
+          break;
 
-        case 'or':
-          const values: string[] = stringValue.split(',')
-          if (!acc.OR) acc.OR = []
+        case "or":
+          const values: string[] = stringValue.split(",");
+          if (!acc.OR) acc.OR = [];
           acc.OR.push(
             ...values.map((val) => ({
               [fieldName]: {
-                equals: convertValue(
-                  val.trim(),
-                  fieldName,
-                  'equals',
-                  fieldConfig
-                ),
+                equals: convertValue(val.trim(), fieldName, fieldConfig),
               },
             }))
-          )
-          break
+          );
+          break;
 
-        case 'isNull':
+        case "isNull":
           currentLevel[currentKey] = {
-            equals: stringValue.toLowerCase() === 'true' ? null : undefined,
-          }
-          break
+            equals: stringValue.toLowerCase() === "true" ? null : undefined,
+          };
+          break;
 
-        case 'isEmpty':
+        case "isEmpty":
           currentLevel[currentKey] = {
-            equals: stringValue.toLowerCase() === 'true' ? '' : undefined,
-          }
-          break
+            equals: stringValue.toLowerCase() === "true" ? "" : undefined,
+          };
+          break;
 
         default:
           currentLevel[currentKey] = {
-            [lastOperator]: convertValue(
-              stringValue,
-              fieldName,
-              lastOperator,
-              fieldConfig
-            ),
-          }
+            [lastOperator]: convertValue(stringValue, fieldName, fieldConfig),
+          };
       }
 
-      return acc
+      return acc;
     },
     {} as ParsedFilter
-  )
+  );
 }
 
 /**
  * Converts string values to appropriate types based on field configuration
- */
-function convertValue(
-  value: string,
-  fieldName: string,
-  operator: string,
-  config: FieldConfig
-): any {
-  // Handle date fields
-  if (config.dateFields.includes(fieldName)) {
-    return new Date(value)
-  }
-
-  // Handle boolean fields
-  if (config.booleanFields.includes(fieldName)) {
-    return value.toLowerCase() === 'true'
-  }
-
-  // Handle numeric fields
-  if (config.numericFields.includes(fieldName)) {
-    return Number(value)
-  }
-
-  return value
-}
-
-// Example usage:
+ * 
+ * // Example usage:
 /*
   const query = {
     name__not__equals: 'uanela',
@@ -215,3 +178,25 @@ function convertValue(
   
   const result = parseQueryParamsWithModifiers(query);
   */
+function convertValue(
+  value: string,
+  fieldName: string,
+  config: FieldConfig
+): any {
+  // Handle date fields
+  if (config.dateFields.includes(fieldName)) {
+    return new Date(value);
+  }
+
+  // Handle boolean fields
+  if (config.booleanFields.includes(fieldName)) {
+    return value.toLowerCase() === "true";
+  }
+
+  // Handle numeric fields
+  if (config.numericFields.includes(fieldName)) {
+    return Number(value);
+  }
+
+  return value;
+}

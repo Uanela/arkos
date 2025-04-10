@@ -4,6 +4,17 @@ import sharp from "sharp";
 import { promisify } from "util";
 import { getArkosConfig } from "../../../../server";
 import mimetype from "mimetype";
+import { ArkosRequest } from "../../../../types";
+
+export function extractRequestInfo(req: Partial<ArkosRequest>) {
+  const { fileUpload } = getArkosConfig();
+
+  // Determine the base URL for file access
+  const protocol = req.get?.("host")?.includes("localhost") ? "http" : "https";
+  const baseURL = `${protocol}://${req.get?.("host")}`;
+  const baseRoute = fileUpload?.baseRoute || "/api/uploads";
+  return { baseURL, baseRoute };
+}
 
 /**
  * Generates the correct relative path regardless of upload directory location
@@ -27,31 +38,31 @@ const generateRelativePath = (filePath: string, fileType: string) => {
  * Handles basic file processing for non-image files
  */
 export const processFile = async (
-  filePath: string,
-  baseURL: string,
-  baseRoute: string,
-  fileType: string
+  req: Partial<ArkosRequest>,
+  filePath: string
 ): Promise<string> => {
-  const relativePath = generateRelativePath(filePath, fileType);
-  return `${baseURL}${baseRoute}/${relativePath}`;
+  const { baseURL, baseRoute } = extractRequestInfo(req);
+
+  const relativePath = generateRelativePath(filePath, req.params!.fileType);
+  return `${baseURL}${baseRoute === "/" ? "" : baseRoute}/${relativePath}`;
 };
 
 /**
  * Processes image files using Sharp for resizing and format conversion
  */
 export const processImage = async (
+  req: Partial<ArkosRequest>,
   filePath: string,
-  baseURL: string,
-  baseRoute: string,
-  options: Record<string, any>,
-  fileType: string
+  options: Record<string, any>
 ): Promise<string | null> => {
+  const { baseURL, baseRoute } = extractRequestInfo(req);
+
   const ext = path.extname(filePath).toLowerCase();
   const originalFormat = ext.replace(".", "");
   const outputFormat = options.format || originalFormat;
 
   if (!mimetype.lookup(ext)?.includes("image")) {
-    const relativePath = generateRelativePath(filePath, fileType);
+    const relativePath = generateRelativePath(filePath, req.params!.fileType);
     return `${baseURL}${baseRoute}/${relativePath}`;
   }
 
@@ -95,9 +106,8 @@ export const processImage = async (
     await promisify(fs.rename)(tempPath, filePath);
 
     // Return the public URL for the file
-    const relativePath = generateRelativePath(filePath, fileType);
+    const relativePath = generateRelativePath(filePath, req?.params!.fileType);
 
-    // console.log(`${baseURL}${baseRoute}/${relativePath}`);
     return `${baseURL}${baseRoute}/${relativePath}`;
   } catch (error) {
     // Clean up temp file if it exists

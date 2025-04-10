@@ -249,39 +249,39 @@ describe("Dynamic Prisma Model Loader", () => {
   //   describe("Prisma schema parsing", () => {
   //     it("should parse prisma schema files correctly", () => {
   //       // Setup
-  //       (fs.readdirSync as jest.Mock).mockReturnValue([
-  //         "schema.prisma",
-  //         "migrations",
-  //       ]);
-  //       (fs.statSync as jest.Mock).mockImplementation((path) => ({
-  //         isDirectory: () => path.includes("migrations"),
-  //         isFile: () => path.endsWith(".prisma"),
-  //       }));
-  //       (fs.readFileSync as jest.Mock).mockReturnValue(`
-  //           model User {
-  //             id        String   @id @default(uuid())
-  //             email     String   @unique
-  //             posts     Post[]
-  //             profile   Profile?
-  //           }
+  // (fs.readdirSync as jest.Mock).mockReturnValue([
+  //   "schema.prisma",
+  //   "migrations",
+  // ]);
+  // (fs.statSync as jest.Mock).mockImplementation((path) => ({
+  //   isDirectory: () => path.includes("migrations"),
+  //   isFile: () => path.endsWith(".prisma"),
+  // }));
+  // (fs.readFileSync as jest.Mock).mockReturnValue(`
+  //     model User {
+  //       id        String   @id @default(uuid())
+  //       email     String   @unique
+  //       posts     Post[]
+  //       profile   Profile?
+  //     }
 
-  //           model Post {
-  //             id        String   @id @default(uuid())
-  //             title     String
-  //             author    User     @relation(fields: [authorId], references: [id])
-  //             authorId  String
-  //           }
+  //     model Post {
+  //       id        String   @id @default(uuid())
+  //       title     String
+  //       author    User     @relation(fields: [authorId], references: [id])
+  //       authorId  String
+  //     }
 
-  //           model Profile {
-  //             id        String   @id @default(uuid())
-  //             bio       String?
-  //             user      User     @relation(fields: [userId], references: [id])
-  //             userId    String   @unique
-  //           }
-  //         `);
+  //     model Profile {
+  //       id        String   @id @default(uuid())
+  //       bio       String?
+  //       user      User     @relation(fields: [userId], references: [id])
+  //       userId    String   @unique
+  //     }
+  //   `);
 
-  //       // Recreate the schema parsing logic for testing
-  //       const getAllPrismaFilesSpy = jest.spyOn(fs, "readdirSync");
+  // // Recreate the schema parsing logic for testing
+  // const getAllPrismaFilesSpy = jest.spyOn(fs, "readdirSync");
 
   //       // We need to manually invoke parts of the module's initialization code
   //       // since it runs at import time in the real module

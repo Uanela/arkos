@@ -16,6 +16,7 @@ jest.mock("path");
 jest.mock("fs");
 jest.mock("sharp");
 jest.mock("util");
+jest.mock("process");
 jest.mock("../../../server");
 jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/helpers/prisma.helpers");
@@ -48,6 +49,9 @@ describe("FileUploaderService", () => {
       query: {},
       files: [],
       file: null,
+      params: {
+        fileType: "images",
+      },
     };
 
     mockRes = {
@@ -88,7 +92,31 @@ describe("FileUploaderService", () => {
       return jest.fn();
     });
 
-    // Setup mock for path operations
+    (path.resolve as any as jest.Mock).mockImplementation((...args) => {
+      // Handle relative paths manually
+      const input = args.join("/");
+
+      // Simple handling of ../ patterns
+      if (input.includes("../")) {
+        // Basic implementation for handling parent directories
+        let parts = input.split("/");
+        const result: string[] = [];
+
+        for (const part of parts) {
+          if (part === "..") {
+            result.pop(); // Remove the last directory
+          } else if (part && part !== ".") {
+            result.push(part);
+          }
+        }
+
+        return "/" + result.join("/") + "/";
+      }
+
+      // For non-relative paths or simpler cases
+      return input;
+    });
+
     (path.join as any as jest.Mock).mockImplementation((...args) =>
       args.join("/")
     );
@@ -157,19 +185,23 @@ describe("FileUploaderService", () => {
 
   describe("constructor", () => {
     it("should initialize with default parameters when not provided", () => {
-      const service = new FileUploaderService("uploads/images");
-
-      expect(service["uploadDir"]).toBe("./uploads/images/");
+      const service = new FileUploaderService("../uploads/images");
+      expect(service["uploadDir"]).toContain("uploads/images/");
       expect(service["fileSizeLimit"]).toBe(5 * 1024 * 1024); // Default 5MB
       expect(service["allowedFileTypes"]).toEqual(/.*/);
       expect(service["maxCount"]).toBe(30);
     });
 
     it("should create the upload directory if it doesn't exist", () => {
-      expect(fs.existsSync).toHaveBeenCalledWith("./uploads/images/");
-      expect(fs.mkdirSync).toHaveBeenCalledWith("./uploads/images/", {
-        recursive: true,
-      });
+      expect(fs.existsSync).toHaveBeenCalledWith(
+        process.cwd() + "/uploads/images/"
+      );
+      expect(fs.mkdirSync).toHaveBeenCalledWith(
+        process.cwd() + "/uploads/images/",
+        {
+          recursive: true,
+        }
+      );
     });
 
     it("should configure multer storage with correct destination and filename", () => {
@@ -188,7 +220,7 @@ describe("FileUploaderService", () => {
 
       const cb = jest.fn();
       destinationCallback({}, {}, cb);
-      expect(cb).toHaveBeenCalledWith(null, "./uploads/images/");
+      expect(cb).toHaveBeenCalledWith(null, process.cwd() + "/uploads/images/");
 
       const filenameCallback = (multer.diskStorage as jest.Mock).mock
         .calls[0][0].filename;
@@ -276,8 +308,12 @@ describe("FileUploaderService", () => {
 
       await middleware(mockReq, mockRes, () => {});
 
-      expect(mockStat).toHaveBeenCalledWith("old22/path/to/file.jpg");
-      expect(mockUnlink).toHaveBeenCalledWith("old22/path/to/file.jpg");
+      expect(mockStat).toHaveBeenCalledWith(
+        process.cwd() + "/uploads/old22/path/to/file.jpg"
+      );
+      expect(mockUnlink).toHaveBeenCalledWith(
+        process.cwd() + "/uploads/old22/path/to/file.jpg"
+      );
     });
 
     it("should pass multer errors to next", () => {
@@ -464,9 +500,6 @@ describe("FileUploaderService", () => {
         originalname: "test.jpg",
       };
 
-      // Mock that we're using the image uploader
-      fileUploaderService["uploadDir"] = "/uploads/images/";
-      // console.log(fileUploaderService.uploadDir);
       const imageUploaderService = new FileUploaderService("uploads/images");
 
       mockUploader.single.mockReturnValueOnce(
@@ -528,7 +561,7 @@ describe("FileUploaderService", () => {
       };
 
       // Mock that we're using the image uploader
-      fileUploaderService["uploadDir"] = "./uploads/images/";
+      const imageUploaderService = new FileUploaderService("uploads/images");
 
       mockUploader.single.mockReturnValueOnce(
         (req: any, res: any, next: Function) => {
@@ -542,7 +575,7 @@ describe("FileUploaderService", () => {
       mockSharp.toFile.mockRejectedValueOnce(processingError);
 
       await expect(
-        fileUploaderService.upload(mockReq, mockRes, { format: "webp" })
+        imageUploaderService.upload(mockReq, mockRes, { format: "webp" })
       ).rejects.toEqual(processingError);
     });
   });
@@ -569,7 +602,7 @@ describe("FileUploaderService", () => {
       (getArkosConfig as any as jest.Mock).mockReturnValue({
         fileUpload: {
           baseRoute: "/custom/api/uploads",
-          baseUploadDir: "/custom/uploads",
+          baseUploadDir: "../custom/uploads",
           restrictions: {
             images: {
               maxCount: 50,
@@ -584,7 +617,8 @@ describe("FileUploaderService", () => {
 
       // Test that the custom config values were used
       expect(services.imageUploaderService["uploadDir"]).toBe(
-        "./custom/uploads/images/"
+        process.cwd().split("/").slice(0, -1).join("/") +
+          "/custom/uploads/images/"
       );
       expect(services.imageUploaderService["maxCount"]).toBe(50);
       expect(services.imageUploaderService["fileSizeLimit"]).toBe(
@@ -603,16 +637,16 @@ describe("FileUploaderService", () => {
 
       // Test that default values were used
       expect(services.imageUploaderService["uploadDir"]).toBe(
-        "./uploads/images/"
+        process.cwd() + "/uploads/images/"
       );
       expect(services.videoUploaderService["uploadDir"]).toBe(
-        "./uploads/videos/"
+        process.cwd() + "/uploads/videos/"
       );
       expect(services.documentUploaderService["uploadDir"]).toBe(
-        "./uploads/documents/"
+        process.cwd() + "/uploads/documents/"
       );
       expect(services.fileUploaderService["uploadDir"]).toBe(
-        "./uploads/files/"
+        process.cwd() + "/uploads/files/"
       );
     });
   });
