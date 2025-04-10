@@ -62,7 +62,10 @@ export function parseQueryParamsWithModifiers(
         : value.toString();
       const parts = key.split("__");
       if (parts.length < 2) {
-        acc[key] = convertValue(stringValue, parts[0], fieldConfig);
+        acc[key] =
+          typeof value === "string"
+            ? convertValue(stringValue, parts[0], fieldConfig)
+            : value;
         return acc;
       }
       const fieldName = parts[0];

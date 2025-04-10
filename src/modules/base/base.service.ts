@@ -160,25 +160,26 @@ export class BaseService {
 
     const prisma = getPrismaInstance();
 
-    const data = await prisma[this.modelName].findMany(
-      "select" in filters
-        ? deepmerge(
-            { ...filters },
-            {
-              select: this.singularRelationFieldToInclude,
-            }
-          )
-        : deepmerge(
-            { ...filters },
-            {
-              include: this.singularRelationFieldToInclude,
-            }
-          )
-    );
-
-    const total = await prisma[this.modelName].count({
-      where: filters.where,
-    });
+    const [data, total] = await Promise.all([
+      prisma[this.modelName].findMany(
+        "select" in filters
+          ? deepmerge(
+              { ...filters },
+              {
+                select: this.singularRelationFieldToInclude,
+              }
+            )
+          : deepmerge(
+              { ...filters },
+              {
+                include: this.singularRelationFieldToInclude,
+              }
+            )
+      ),
+      prisma[this.modelName].count({
+        where: filters.where,
+      }),
+    ]);
 
     return { total, data };
   }

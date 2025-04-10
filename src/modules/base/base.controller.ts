@@ -110,6 +110,8 @@ export class BaseController {
         .limitFields()
         .paginate();
 
+      console.log(JSON.stringify(features.filters, null, 2));
+
       const { data, total } = await this.baseService.findMany(features.filters);
 
       if (this.middlewares.afterFindMany) {
