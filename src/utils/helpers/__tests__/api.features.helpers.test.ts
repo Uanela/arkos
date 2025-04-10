@@ -13,6 +13,17 @@ describe("parseQueryParamsWithModifiers", () => {
       const result = parseQueryParamsWithModifiers(query);
       expect(result).toEqual({ status: "active" });
     });
+
+    it("Should not convert objects to string", () => {
+      const query = {
+        name: {
+          contains: "test",
+          mode: "insensitive",
+        },
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual(query);
+    });
   });
 
   describe("Comparison operators", () => {
