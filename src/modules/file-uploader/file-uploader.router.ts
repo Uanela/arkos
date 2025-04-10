@@ -17,13 +17,13 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
     ({ middlewares = {}, authConfigs = {} } = modelModules);
   }
 
-  let basePathname = fileUpload?.baseRoute || "/uploads/";
+  let basePathname = fileUpload?.baseRoute || "/api/uploads/";
 
   if (!basePathname.startsWith("/")) basePathname = "/" + basePathname;
   if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
 
   router.use(
-    fileUpload?.baseRoute || "/api/uploads",
+    basePathname,
     authService.handleAuthenticationControl(authConfigs, "view", "file-upload"),
     authService.handleActionAccessControl(authConfigs, "view", "file-upload"),
     express.static(

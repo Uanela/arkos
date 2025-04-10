@@ -238,7 +238,7 @@ export type ArkosConfig = {
         maxSize?: number;
         supportedFilesRegex?: RegExp;
       };
-      others?: {
+      files?: {
         maxCount?: number;
         maxSize?: number;
         supportedFilesRegex?: RegExp;
