@@ -66,7 +66,7 @@ describe("File Uploader Helpers", () => {
 
   describe("processFile", () => {
     it("should process a file with internal upload directory", async () => {
-      const mockFilePath = "test.pdf";
+      const mockFilePath = "documents/test.pdf";
       // const mockFilePath = "/app/uploads/documents/test.pdf";
       mockReq.params.fileType = "documents";
 
@@ -124,7 +124,7 @@ describe("File Uploader Helpers", () => {
     });
 
     it("should process a non-image file without transformations", async () => {
-      const mockFilePath = "test.pdf";
+      const mockFilePath = "documents/test.pdf";
       // const mockFilePath = "/app/uploads/documents/test.pdf";
       const options = {};
 
@@ -137,7 +137,7 @@ describe("File Uploader Helpers", () => {
     });
 
     it("should process an image file with resizeTo option", async () => {
-      const mockFilePath = "test.jpg";
+      const mockFilePath = "images/test.jpg";
       // const mockFilePath = "/app/uploads/images/test.jpg";
       const options = { resizeTo: 500 };
 
@@ -153,8 +153,7 @@ describe("File Uploader Helpers", () => {
     });
 
     it("should process an image file with width and height options", async () => {
-      // const mockFilePath = "/app/uploads/images/test.png";
-      const mockFilePath = "test.png";
+      const mockFilePath = "images/test.png";
       const options = { width: 300, height: 200 };
 
       mockReq.params.fileType = "images";
@@ -167,7 +166,7 @@ describe("File Uploader Helpers", () => {
     });
 
     it("should convert image format to webp if requested", async () => {
-      const mockFilePath = "test.jpg";
+      const mockFilePath = "images/test.jpg";
       const options = { format: "webp" };
 
       mockReq.params.fileType = "images";
@@ -180,8 +179,7 @@ describe("File Uploader Helpers", () => {
     });
 
     it("should convert image format to jpeg if requested", async () => {
-      // const mockFilePath = "/app/uploads/images/test.png";
-      const mockFilePath = "test.png";
+      const mockFilePath = "images/test.png";
       const options = { format: "jpeg" };
 
       mockReq.params.fileType = "images";

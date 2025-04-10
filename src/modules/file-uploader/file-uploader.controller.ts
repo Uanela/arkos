@@ -16,7 +16,6 @@ import {
 } from "./utils/helpers/file-uploader.helpers";
 
 const stat = promisify(fs.stat);
-const unlink = promisify(fs.unlink);
 const access = promisify(fs.access);
 const mkdir = promisify(fs.mkdir);
 /**
