@@ -10,6 +10,10 @@ import { NextFunction, Request, Response } from "express";
 import catchAsync from "../error-handler/utils/catch-async";
 import { promisify } from "util";
 import { getArkosConfig } from "../../server";
+import {
+  processFile,
+  processImage,
+} from "./utils/helpers/file-uploader.helpers";
 
 const stat = promisify(fs.stat);
 const unlink = promisify(fs.unlink);
@@ -89,87 +93,6 @@ export const uploadFile = catchAsync(
           // Original approach for paths within project
           return filePath.replace(`${process.cwd()}${baseUploadDir}/`, "");
         }
-      };
-
-      /**
-       * Processes image files using Sharp for resizing and format conversion
-       * @param {string} filePath - Path to the uploaded image file
-       * @returns {Promise<string|null>} Public URL for the processed file or null if processing failed
-       */
-      const processImage = async (filePath: string): Promise<string | null> => {
-        const ext = path.extname(filePath).toLowerCase();
-        const originalFormat = ext.replace(".", "");
-        const outputFormat = format
-          ? format.toString().toLowerCase()
-          : originalFormat;
-
-        // Skip processing for non-image files
-        if (!/jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif/i.test(originalFormat)) {
-          const relativePath = generateRelativePath(filePath);
-          return `${baseURL}${baseRoute}/${relativePath}`;
-        }
-
-        // Create a temp filename with original name + random string
-        const tempName = `${path.basename(filePath, ext)}_${Date.now()}${ext}`;
-        const tempPath = path.join(path.dirname(filePath), tempName);
-
-        try {
-          let transformer = sharp(filePath);
-          const metadata = await transformer.metadata();
-
-          // Apply resize transformations if requested
-          if (resizeTo && metadata.width && metadata.height) {
-            const targetSize = parseInt(resizeTo.toString());
-            const scaleFactor =
-              targetSize / Math.min(metadata.width, metadata.height);
-            const newWidth = Math.round(metadata.width * scaleFactor);
-            const newHeight = Math.round(metadata.height * scaleFactor);
-            transformer = transformer.resize(newWidth, newHeight);
-          } else if (width || height) {
-            transformer = transformer.resize(
-              width ? parseInt(width as string) : null,
-              height ? parseInt(height as string) : null,
-              { fit: "inside" }
-            );
-          }
-
-          // Apply format transformations if requested
-          if (outputFormat === "webp") {
-            transformer = transformer.toFormat("webp");
-          } else if (outputFormat === "jpeg" || outputFormat === "jpg") {
-            transformer = transformer.toFormat("jpeg");
-          }
-
-          // Save to temp file first
-          await transformer.toFile(tempPath);
-
-          // Rename temp file to original filename
-          await fs.promises.rename(tempPath, filePath);
-
-          // Return the public URL for the file
-          const relativePath = generateRelativePath(filePath);
-          return `${baseURL}${baseRoute}/${relativePath}`;
-        } catch (error) {
-          // Clean up temp file if it exists
-          try {
-            await fs.promises.stat(tempPath);
-            await fs.promises.unlink(tempPath);
-          } catch {
-            // If temp file doesn't exist, no need to clean up
-          }
-          next(error);
-          return null;
-        }
-      };
-
-      /**
-       * Handles basic file processing for non-image files
-       * @param {string} filePath - Path to the uploaded file
-       * @returns {Promise<string>} Public URL for the file
-       */
-      const processFile = async (filePath: string) => {
-        const relativePath = generateRelativePath(filePath);
-        return `${baseURL}${baseRoute}/${relativePath}`;
       };
 
       // Process all uploaded files

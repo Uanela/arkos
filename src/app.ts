@@ -184,7 +184,7 @@ export async function bootstrap(
     const fileUploaderRouter = replacedRouters.fileUploader
       ? await replacedRouters.fileUploader(arkosConfig)
       : await getFileUploaderRouter(arkosConfig);
-    app.use("/api", fileUploaderRouter);
+    app.use(fileUploaderRouter);
   }
 
   // Auth router

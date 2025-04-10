@@ -300,8 +300,8 @@ function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
   return fileList;
 }
 
-const prismaRootDir = "./prisma"; // Adjust this path if needed
-const files = getAllPrismaFiles(prismaRootDir);
+// const prismaRootDir = ""; // Adjust this path if needed
+const files = getAllPrismaFiles("./prisma");
 
 for (const file of files) {
   const content = fs.readFileSync(file, "utf-8");
@@ -323,7 +323,7 @@ for (const model of models) {
 
   let modelFile;
   for (const file of files) {
-    const filePath = path.join(prismaRootDir, file);
+    const filePath = path.join(file);
     const stats = fs.statSync(filePath);
 
     if (stats.isFile()) {
@@ -340,7 +340,7 @@ for (const model of models) {
     throw new Error(`Model ${modelName} not found`);
   }
 
-  const content = fs.readFileSync(path.join(prismaRootDir, modelFile), "utf-8");
+  const content = fs.readFileSync(path.join(modelFile), "utf-8");
 
   const modelStart = content.indexOf(`model ${modelName} {`);
   const modelEnd = content.indexOf("}", modelStart);

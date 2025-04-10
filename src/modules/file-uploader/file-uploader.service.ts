@@ -38,7 +38,7 @@ export class FileUploaderService {
     uploadDir = uploadDir.startsWith("/") ? uploadDir.substring(1) : uploadDir;
     uploadDir = uploadDir.endsWith("/") ? uploadDir.slice(0, -1) : uploadDir;
 
-    this.uploadDir = path.join(".", `${uploadDir}/`);
+    this.uploadDir = path.resolve(process.cwd(), `${uploadDir}/`);
     this.fileSizeLimit = fileSizeLimit;
     this.allowedFileTypes = allowedFileTypes;
     this.maxCount = maxCount;
@@ -126,6 +126,7 @@ export class FileUploaderService {
    */
   public handleMultipleUpload() {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
+      console.log(this.getFieldName(), this.maxCount, "handleMultipleUpload");
       const upload = this.getUploader().array(
         this.getFieldName(),
         this.maxCount
@@ -389,13 +390,13 @@ export const getFileUploaderServices = () => {
 
   // Default regex patterns for each file type
   const defaultRegexPatterns = {
-    image:
+    images:
       /jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif|heic|ico|jfif|raw|cr2|nef|orf|sr2|arw|dng|pef|raf|rw2|psd|ai|eps|xcf|jxr|wdp|hdp|jp2|j2k|jpf|jpx|jpm|mj2|avif/,
-    video:
+    videos:
       /mp4|avi|mov|mkv|flv|wmv|webm|mpg|mpeg|3gp|m4v|ts|rm|rmvb|vob|ogv|dv|qt|asf|m2ts|mts|divx|f4v|swf|mxf|roq|nsv|mvb|svi|mpe|m2v|mp2|mpv|h264|h265|hevc/,
-    document:
+    documents:
       /pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odg|odp|txt|rtf|csv|epub|md|tex|pages|numbers|key|xml|json|yaml|yml|ini|cfg|conf|log|html|htm|xhtml|djvu|mobi|azw|azw3|fb2|lit|ps|wpd|wps|dot|dotx|xlt|xltx|pot|potx|oft|one|onetoc2|opf|oxps|hwp/,
-    other: /.*/,
+    files: /.*/,
   };
 
   // Default upload restrictions
@@ -403,22 +404,25 @@ export const getFileUploaderServices = () => {
     images: {
       maxCount: 30,
       maxSize: 1024 * 1024 * 15, // 15 MB
-      supportedFilesRegex: defaultRegexPatterns.image,
+      supportedFilesRegex:
+        /jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif|heic|ico|jfif|raw|cr2|nef|orf|sr2|arw|dng|pef|raf|rw2|psd|ai|eps|xcf|jxr|wdp|hdp|jp2|j2k|jpf|jpx|jpm|mj2|avif/,
     },
     videos: {
       maxCount: 10,
       maxSize: 1024 * 1024 * 5096, // 5 GB
-      supportedFilesRegex: defaultRegexPatterns.video,
+      supportedFilesRegex:
+        /mp4|avi|mov|mkv|flv|wmv|webm|mpg|mpeg|3gp|m4v|ts|rm|rmvb|vob|ogv|dv|qt|asf|m2ts|mts|divx|f4v|swf|mxf|roq|nsv|mvb|svi|mpe|m2v|mp2|mpv|h264|h265|hevc/,
     },
     documents: {
       maxCount: 30,
       maxSize: 1024 * 1024 * 50, // 50 MB
-      supportedFilesRegex: defaultRegexPatterns.document,
+      supportedFilesRegex:
+        /pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odg|odp|txt|rtf|csv|epub|md|tex|pages|numbers|key|xml|json|yaml|yml|ini|cfg|conf|log|html|htm|xhtml|djvu|mobi|azw|azw3|fb2|lit|ps|wpd|wps|dot|dotx|xlt|xltx|pot|potx|oft|one|onetoc2|opf|oxps|hwp/,
     },
-    others: {
+    files: {
       maxCount: 10,
       maxSize: 1024 * 1024 * 5096, // 5 GB
-      supportedFilesRegex: defaultRegexPatterns.other,
+      supportedFilesRegex: /.*/,
     },
   };
 
@@ -426,6 +430,11 @@ export const getFileUploaderServices = () => {
   const restrictions = fileUpload?.restrictions
     ? deepmerge(defaultRestrictions, fileUpload.restrictions)
     : defaultRestrictions;
+
+  console.log(JSON.stringify(restrictions, null, 2));
+
+  console.log(restrictions.images.supportedFilesRegex);
+  console.log(restrictions.videos.supportedFilesRegex);
 
   /**
    * Specialized file uploader service for handling image uploads.
@@ -462,9 +471,9 @@ export const getFileUploaderServices = () => {
    */
   const fileUploaderService = new FileUploaderService(
     `${baseUploadDir}/files`,
-    restrictions.others.maxSize,
-    restrictions.others.supportedFilesRegex,
-    restrictions.others.maxCount
+    restrictions.files.maxSize,
+    restrictions.files.supportedFilesRegex,
+    restrictions.files.maxCount
   );
 
   return {
