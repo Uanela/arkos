@@ -184,7 +184,7 @@ describe("App Bootstrap", () => {
         welcomeMessage: "Test API",
         port: 3000,
         middlewares: {
-          additionals: [customMiddleware1(), customMiddleware2()],
+          additional: [customMiddleware1(), customMiddleware2()],
         },
       });
 
@@ -378,7 +378,7 @@ describe("App Bootstrap", () => {
         welcomeMessage: "Test API",
         port: 3000,
         routers: {
-          additionals: [customRouter1, customRouter2],
+          additional: [customRouter1, customRouter2],
         },
       });
 

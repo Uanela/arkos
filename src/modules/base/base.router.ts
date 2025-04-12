@@ -44,11 +44,7 @@ export async function getPrismaModelsRouter() {
       router
         .route(`/${routeName}`)
         .post(
-          authService.handleAuthenticationControl(
-            authConfigs,
-            "create",
-            modelNameInKebab
-          ),
+          authService.handleAuthenticationControl(authConfigs, "create"),
           authService.handleActionAccessControl(
             authConfigs,
             "create",
@@ -72,11 +68,7 @@ export async function getPrismaModelsRouter() {
           sendResponse
         )
         .get(
-          authService.handleAuthenticationControl(
-            authConfigs,
-            "view",
-            modelNameInKebab
-          ),
+          authService.handleAuthenticationControl(authConfigs, "view"),
           authService.handleActionAccessControl(
             authConfigs,
             "view",
@@ -99,11 +91,7 @@ export async function getPrismaModelsRouter() {
       router
         .route(`/${routeName}/many`)
         .post(
-          authService.handleAuthenticationControl(
-            authConfigs,
-            "create",
-            modelNameInKebab
-          ),
+          authService.handleAuthenticationControl(authConfigs, "create"),
           authService.handleActionAccessControl(
             authConfigs,
             "create",
@@ -123,11 +111,7 @@ export async function getPrismaModelsRouter() {
           sendResponse
         )
         .patch(
-          authService.handleAuthenticationControl(
-            authConfigs,
-            "update",
-            modelNameInKebab
-          ),
+          authService.handleAuthenticationControl(authConfigs, "update"),
           authService.handleActionAccessControl(
             authConfigs,
             "update",
@@ -147,11 +131,7 @@ export async function getPrismaModelsRouter() {
           sendResponse
         )
         .delete(
-          authService.handleAuthenticationControl(
-            authConfigs,
-            "delete",
-            modelNameInKebab
-          ),
+          authService.handleAuthenticationControl(authConfigs, "delete"),
           authService.handleActionAccessControl(
             authConfigs,
             "delete",
@@ -174,11 +154,7 @@ export async function getPrismaModelsRouter() {
       router
         .route(`/${routeName}/:id`)
         .get(
-          authService.handleAuthenticationControl(
-            authConfigs,
-            "view",
-            modelNameInKebab
-          ),
+          authService.handleAuthenticationControl(authConfigs, "view"),
           authService.handleActionAccessControl(
             authConfigs,
             "view",
@@ -198,11 +174,7 @@ export async function getPrismaModelsRouter() {
           sendResponse
         )
         .patch(
-          authService.handleAuthenticationControl(
-            authConfigs,
-            "update",
-            modelNameInKebab
-          ),
+          authService.handleAuthenticationControl(authConfigs, "update"),
           authService.handleActionAccessControl(
             authConfigs,
             "update",
@@ -226,11 +198,7 @@ export async function getPrismaModelsRouter() {
           sendResponse
         )
         .delete(
-          authService.handleAuthenticationControl(
-            authConfigs,
-            "delete",
-            modelNameInKebab
-          ),
+          authService.handleAuthenticationControl(authConfigs, "delete"),
           authService.handleActionAccessControl(
             authConfigs,
             "delete",

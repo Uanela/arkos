@@ -159,8 +159,8 @@ export async function bootstrap(
     app.use(replacedMiddlewares.requestLogger || handleRequestLogs);
 
   // Additional custom middlewares
-  if (arkosConfig?.middlewares?.additionals)
-    arkosConfig.middlewares.additionals.forEach((middleware) => {
+  if (arkosConfig?.middlewares?.additional)
+    arkosConfig.middlewares.additional.forEach((middleware) => {
       app.use(middleware);
     });
 
@@ -206,8 +206,8 @@ export async function bootstrap(
   app.use("/api", getAvailableResourcesAndRoutesRouter());
 
   // Additional custom routers
-  if (routersConfig?.additionals) {
-    routersConfig.additionals.forEach((router) => {
+  if (routersConfig?.additional) {
+    routersConfig.additional.forEach((router) => {
       app.use(router);
     });
   }
