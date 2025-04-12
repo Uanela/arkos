@@ -36,7 +36,7 @@ jobs:
         run: pnpm test
 
       - name: Build (if needed)
-        run: pnpm run build --if-present
+        run: pnpm run build
 
       - name: Extract version and tag info
         id: version_info
