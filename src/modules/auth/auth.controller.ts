@@ -59,12 +59,12 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         });
 
         if (middlewares?.afterGetMe) {
-          req.responseData = user;
+          req.responseData = { data: user };
           req.responseStatus = 200;
           return next();
         }
 
-        res.status(200).json({ data: req.user });
+        res.status(200).json({ data: user });
       }
     ),
 

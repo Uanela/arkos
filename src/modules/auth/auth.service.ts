@@ -251,6 +251,9 @@ class AuthService {
    * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
    */
   async getAuthenticatedUser(req: ArkosRequest): Promise<User | null> {
+    const arkosConfig = getArkosConfig();
+    if (!arkosConfig?.authentication) return null;
+
     const prisma = getPrismaInstance();
 
     let token: string | undefined;

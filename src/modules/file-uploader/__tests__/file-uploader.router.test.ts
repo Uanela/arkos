@@ -255,8 +255,7 @@ describe("File Uploader Router", () => {
     // Assert
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
       customAuthConfigs,
-      "view",
-      "file-upload"
+      "view"
     );
 
     expect(authService.handleActionAccessControl).toHaveBeenCalledWith(
@@ -267,8 +266,7 @@ describe("File Uploader Router", () => {
 
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
       customAuthConfigs,
-      "create",
-      "file-upload"
+      "create"
     );
 
     expect(authService.handleActionAccessControl).toHaveBeenCalledWith(
@@ -279,8 +277,7 @@ describe("File Uploader Router", () => {
 
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
       customAuthConfigs,
-      "delete",
-      "file-upload"
+      "delete"
     );
   });
 
@@ -294,8 +291,7 @@ describe("File Uploader Router", () => {
     // Assert
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
       {},
-      "view",
-      "file-upload"
+      "view"
     );
 
     expect(authService.handleActionAccessControl).toHaveBeenCalledWith(

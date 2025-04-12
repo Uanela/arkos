@@ -101,6 +101,7 @@ describe("Auth Controller Factory", () => {
       user: {
         id: "user-id-123",
         username: "testuser",
+        email: "test@example.com",
         password: "hashedPassword",
         isVerified: true,
         active: true,
@@ -131,11 +132,13 @@ describe("Auth Controller Factory", () => {
   describe("getMe", () => {
     it("should get the current user and return it", async () => {
       // Setup
-      userService.findOne.mockResolvedValueOnce({
+      const user = {
         id: "user-id-123",
         username: "testuser",
         email: "test@example.com",
-      });
+      };
+
+      userService.findOne.mockResolvedValueOnce(user);
 
       // Execute
       await authController.getMe(req, res, next);
@@ -146,7 +149,7 @@ describe("Auth Controller Factory", () => {
         expect.any(String)
       );
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ data: req.user });
+      expect(res.json).toHaveBeenCalledWith({ data: user });
     });
 
     it("should remove excluded fields from the user object", async () => {
