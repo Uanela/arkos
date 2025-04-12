@@ -20,13 +20,20 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18"
-          registry-url: "https://registry.npmjs.org"
+          registry-url:
+            "https://registry.npmjs.org"
+
+            # Install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: npm test
+        run: pnpm test
 
       - name: Build (if needed)
         run: pnpm run build --if-present
