@@ -90,6 +90,8 @@ class AuthService {
   /**
    * Checks if a password is strong, requiring uppercase, lowercase, and numeric characters as the default.
    *
+   * **NB**: You must pay attention when using custom validation with zod or class-validator, try to use the same regex always.
+   *
    * **Note**: You can define it when calling arkos.init()
    * ```ts
    * arkos.init({
@@ -102,7 +104,7 @@ class AuthService {
    * @param {string} password - The password to check.
    * @returns {boolean} Returns true if the password meets the strength criteria, otherwise false.
    */
-  isPasswordStrong(password: string): boolean {
+  public isPasswordStrong(password: string): boolean {
     const initAuthConfigs = getArkosConfig()?.authentication;
 
     const strongPasswordRegex =
@@ -249,9 +251,6 @@ class AuthService {
    * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
    */
   async getAuthenticatedUser(req: ArkosRequest): Promise<User | null> {
-    const arkosConfig = getArkosConfig();
-    if (!arkosConfig?.authentication) return null;
-
     const prisma = getPrismaInstance();
 
     let token: string | undefined;
@@ -346,13 +345,11 @@ class AuthService {
    *
    * @param {AuthConfigs | undefined} authConfigs - The authentication configuration object.
    * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
-   * @param {string} modelName - The model name being affected by the action.
    * @returns {ArkosRequestHandler} The middleware function that checks if authentication is required.
    */
   handleAuthenticationControl(
     authConfigs: AuthConfigs | undefined,
-    action: ControllerActions,
-    modelName: string
+    action: ControllerActions
   ): ArkosRequestHandler {
     const authenticationControl = authConfigs?.authenticationControl;
 

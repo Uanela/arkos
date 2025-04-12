@@ -351,7 +351,7 @@ export type ArkosConfig = {
      *
      * Read more about The Arkos Middleware Stack at [www.arkosjs.com/docs/the-middleware-stack](https://www.arkosjs.com/docs/the-middleware-stack) for in-depth details.
      */
-    additionals?: express.RequestHandler[];
+    additional?: express.RequestHandler[];
     /**
      * An array containing a list of defaults middlewares to be disabled
      *
@@ -429,7 +429,7 @@ export type ArkosConfig = {
      *
      * Read more about The Arkos Middleware Stack at [www.arkosjs.com/docs/the-middleware-stack](https://www.arkosjs.com/docs/the-middleware-stack) for in-depth details.
      */
-    additionals?: express.Router[];
+    additional?: express.Router[];
     disable?: (
       | "auth-router"
       | "prisma-models-router"
