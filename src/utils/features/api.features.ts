@@ -73,9 +73,10 @@ export default class APIFeatures {
         if (
           field.typeName === "String" &&
           key !== "id" &&
+          key !== "password" &&
           !field.isList &&
-          !field.name.includes("Id") &&
-          !field.name.includes("ID")
+          !key.includes("Id") &&
+          !key.includes("ID")
         ) {
           searchableFields.push({
             [`${key}`]: {
@@ -130,77 +131,144 @@ export default class APIFeatures {
     return this;
   }
 
+  // limitFields() {
+  //   if (
+  //     this.searchParams?.fields &&
+  //     !this.searchParams?.addFields &&
+  //     !this.searchParams?.removeFields
+  //   ) {
+  //     const fieldsToSelect = this.searchParams.fields
+  //       .split(",")
+  //       .filter(
+  //         (field: string) => !field.startsWith("+") && !field.startsWith("-")
+  //       );
+
+  //     this.filters = {
+  //       ...this.filters,
+  //       select: fieldsToSelect.reduce((acc: any, field: string) => {
+  //         acc[field] = true;
+  //         return acc;
+  //       }, {}),
+  //     };
+  //     this.filters.select = { ...this.filters.select, ...this.filters.include };
+  //     delete this.filters.include;
+  //   } else if (
+  //     this.searchParams?.fields &&
+  //     (this.searchParams?.addFields || this.searchParams?.removeFields)
+  //   )
+  //     throw new AppError(
+  //       "Cannot use fields in the same query with addFields or removeFields.",
+  //       400
+  //     );
+
+  //   if (this.searchParams?.addFields && !this.searchParams?.fields) {
+  //     const fieldsToAdd = this.searchParams.addFields
+  //       .split(",")
+  //       .filter((field: string) => field.startsWith("+"));
+
+  //     this.filters = {
+  //       ...this.filters,
+  //       select: {
+  //         ...this.filters.include,
+  //         ...fieldsToAdd.reduce((acc: any, field: string) => {
+  //           acc[field.replace("+", "")] = true;
+  //           return acc;
+  //         }, {}),
+  //       },
+  //     };
+  //   } else if (this.searchParams?.fields && this.searchParams?.addFields)
+  //     throw new AppError(
+  //       "Cannot use addFields in the same query with fields.",
+  //       400
+  //     );
+
+  //   if (this.searchParams?.removeFields && !this.searchParams?.fields) {
+  //     const fieldsToRemove = this.searchParams.removeFields
+  //       .split(",")
+  //       .filter((field: string) => field.startsWith("-"));
+
+  //     this.filters = {
+  //       ...this.filters,
+  //       select: {
+  //         ...this.filters.include,
+  //         ...fieldsToRemove.reduce((acc: any, field: string) => {
+  //           acc[field.replace("-", "")] = false;
+  //           return acc;
+  //         }, {}),
+  //       },
+  //     };
+  //   } else if (this.searchParams?.removeFields && this.searchParams?.addFields)
+  //     throw new AppError(
+  //       "Cannot use removeFields in the same query with fields.",
+  //       400
+  //     );
+
+  //   return this;
+  // }
+
   limitFields() {
-    if (
-      this.searchParams?.fields &&
-      !this.searchParams?.addFields &&
-      !this.searchParams?.removeFields
-    ) {
-      const fieldsToSelect = this.searchParams.fields
-        .split(",")
-        .filter(
-          (field: string) => !field.startsWith("+") && !field.startsWith("-")
+    if (this.searchParams?.fields) {
+      const fields = this.searchParams.fields.split(",");
+
+      // Separate fields into includes, excludes, and regular fields
+      const regularFields = fields.filter(
+        (field: string) => !field.startsWith("+") && !field.startsWith("-")
+      );
+      const includeFields = fields
+        .filter((field: string) => field.startsWith("+"))
+        .map((field: string) => field.substring(1));
+      const excludeFields = fields
+        .filter((field: string) => field.startsWith("-"))
+        .map((field: string) => field.substring(1));
+
+      // Create selection object based on field type
+      let selection: Record<string, any> = {};
+
+      // If regular fields exist, use them as the base selection
+      if (regularFields.length > 0) {
+        selection = regularFields.reduce(
+          (acc: Record<string, any>, field: string) => {
+            acc[field] = true;
+            return acc;
+          },
+          {} as Record<string, any>
         );
+      }
+      // Otherwise, use include fields as additions to any existing included fields
+      else {
+        // Start with current include fields if they exist
+        selection = this.filters.include || {};
 
+        // Add any explicitly included fields
+        includeFields.forEach((field: string) => {
+          selection[field] = true;
+        });
+
+        // Add any explicitly excluded fields
+        excludeFields.forEach((field: string) => {
+          selection[field] = false;
+        });
+      }
+
+      // Apply the selection to filters
       this.filters = {
         ...this.filters,
-        select: fieldsToSelect.reduce((acc: any, field: string) => {
-          acc[field] = true;
-          return acc;
-        }, {}),
+        select: selection,
       };
-      this.filters.select = { ...this.filters.select, ...this.filters.include };
-      delete this.filters.include;
-    } else if (
-      this.searchParams?.fields &&
-      (this.searchParams?.addFields || this.searchParams?.removeFields)
-    )
+
+      // Remove the include filter as it's now part of select
+      if (this.filters.include) {
+        delete this.filters.include;
+      }
+    }
+
+    // Remove any references to the now-unused parameters
+    if (this.searchParams?.addFields || this.searchParams?.removeFields) {
       throw new AppError(
-        "Cannot use fields in the same query with addFields or removeFields.",
+        "The addFields and removeFields parameters are deprecated. Please use fields with + and - prefixes instead.",
         400
       );
-
-    if (this.searchParams?.addFields && !this.searchParams?.fields) {
-      const fieldsToAdd = this.searchParams.addFields
-        .split(",")
-        .filter((field: string) => field.startsWith("+"));
-
-      this.filters = {
-        ...this.filters,
-        select: {
-          ...this.filters.include,
-          ...fieldsToAdd.reduce((acc: any, field: string) => {
-            acc[field.replace("+", "")] = true;
-            return acc;
-          }, {}),
-        },
-      };
-    } else if (this.searchParams?.fields && this.searchParams?.addFields)
-      throw new AppError(
-        "Cannot use addFields in the same query with fields.",
-        400
-      );
-
-    if (this.searchParams?.removeFields && !this.searchParams?.fields) {
-      const fieldsToRemove = this.searchParams.removeFields
-        .split(",")
-        .filter((field: string) => field.startsWith("-"));
-
-      this.filters = {
-        ...this.filters,
-        select: {
-          ...this.filters.include,
-          ...fieldsToRemove.reduce((acc: any, field: string) => {
-            acc[field.replace("-", "")] = false;
-            return acc;
-          }, {}),
-        },
-      };
-    } else if (this.searchParams?.removeFields && this.searchParams?.addFields)
-      throw new AppError(
-        "Cannot use removeFields in the same query with fields.",
-        400
-      );
+    }
 
     return this;
   }

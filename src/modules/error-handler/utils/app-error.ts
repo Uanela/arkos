@@ -33,8 +33,8 @@
 class AppError extends Error {
   statusCode: number;
   status: string;
-  missing?: boolean;
-  isOperational: boolean;
+  public missing?: boolean;
+  public isOperational: boolean;
   code?: string;
   meta?: Record<string, any>;
 

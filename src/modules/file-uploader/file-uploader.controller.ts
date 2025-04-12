@@ -5,7 +5,6 @@ import {
 } from "./file-uploader.service";
 import path from "path";
 import fs from "fs";
-import sharp from "sharp";
 import { NextFunction, Request, Response } from "express";
 import catchAsync from "../error-handler/utils/catch-async";
 import { promisify } from "util";
@@ -14,10 +13,12 @@ import {
   processFile,
   processImage,
 } from "./utils/helpers/file-uploader.helpers";
+import {
+  accessAsync,
+  mkdirAsync,
+  statAsync,
+} from "../../utils/helpers/fs.helpers";
 
-const stat = promisify(fs.stat);
-const access = promisify(fs.access);
-const mkdir = promisify(fs.mkdir);
 /**
  * Handles file upload requests, processes images if needed, and returns URLs
  * Supports paths outside of the project directory with '../' prefix
@@ -44,10 +45,10 @@ export const uploadFile = catchAsync(
     // Ensure upload directory exists
     const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
     try {
-      await access(uploadPath);
-    } catch (error) {
+      await accessAsync(uploadPath);
+    } catch (err) {
       // Create directory if it doesn't exist
-      await mkdir(uploadPath, { recursive: true });
+      await mkdirAsync(uploadPath, { recursive: true });
     }
 
     // Select the appropriate uploader service based on file type
@@ -194,12 +195,12 @@ export const streamFile = catchAsync(
 
     const filePath = path.join(".", "uploads", fileType, fileName);
     try {
-      await access(filePath);
-    } catch {
-      return next(new AppError("File not found", 404));
+      await accessAsync(filePath);
+    } catch (err) {
+      throw new AppError("File not found", 404);
     }
 
-    const fileStat = await stat(filePath);
+    const fileStat = await statAsync(filePath);
     const fileSize = fileStat.size;
     const range = req.headers.range;
 

@@ -1,3 +1,10 @@
+import { promisify } from "util";
+import fs from "fs";
+
+export const statAsync = promisify(fs.stat);
+export const accessAsync = promisify(fs.access);
+export const mkdirAsync = promisify(fs.mkdir);
+
 // Runtime-agnostic approach with proper TypeScript support
 export const extension = (() => {
   // Safely detect environment without direct import.meta reference

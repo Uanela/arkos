@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { User, UserRole } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
@@ -35,10 +35,29 @@ class AuthService {
    */
   signJwtToken(
     id: number | string,
-    expiresIn: string | number = process.env.JWT_EXPIRES_IN ||
-      arkosEnv.JWT_EXPIRES_IN,
-    secret: string = process.env.JWT_SECRET || arkosEnv.JWT_SECRET
+    expiresIn?: SignOptions["expiresIn"],
+    secret?: string
   ): string {
+    const { authentication: configs } = getArkosConfig();
+
+    if (
+      process.env.NODE_ENV === "production" &&
+      !process.env.JWT_SECRET &&
+      !configs?.jwt?.secret
+    )
+      throw new AppError("Missing JWT secret!", 500);
+
+    secret =
+      secret ||
+      configs?.jwt?.secret ||
+      process.env.JWT_SECRET ||
+      arkosEnv.JWT_SECRET;
+
+    expiresIn = (expiresIn ||
+      configs?.jwt?.expiresIn ||
+      process.env.JWT_EXPIRES_IN ||
+      arkosEnv.JWT_EXPIRES_IN) as keyof SignOptions["expiresIn"];
+
     return jwt.sign({ id }, secret, {
       expiresIn: expiresIn as any,
     });
@@ -121,8 +140,23 @@ class AuthService {
    */
   async verifyJwtToken(
     token: string,
-    secret: string = process.env.JWT_SECRET || arkosEnv.JWT_SECRET
+    secret?: string
   ): Promise<AuthJwtPayload> {
+    const { authentication: configs } = getArkosConfig();
+
+    if (
+      process.env.NODE_ENV === "production" &&
+      !process.env.JWT_SECRET &&
+      !configs?.jwt?.secret
+    )
+      throw new AppError("Missing JWT secret!", 500);
+
+    secret =
+      secret ||
+      configs?.jwt?.secret ||
+      process.env.JWT_SECRET ||
+      arkosEnv.JWT_SECRET;
+
     return new Promise((resolve, reject) => {
       jwt.verify(token, secret, (err, decoded) => {
         if (err) reject(err);

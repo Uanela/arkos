@@ -45,7 +45,7 @@ else if (ENV === "test") {
 
 dotenv.config({ path: envPath });
 
-const app = express();
+export const app = express();
 
 export async function bootstrap(
   arkosConfig: ArkosConfig
