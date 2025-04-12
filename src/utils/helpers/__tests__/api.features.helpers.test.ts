@@ -24,6 +24,12 @@ describe("parseQueryParamsWithModifiers", () => {
       const result = parseQueryParamsWithModifiers(query);
       expect(result).toEqual(query);
     });
+
+    it("Should handle falsy values (false, null, undefined)", () => {
+      const query = { createdAt__not: null };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({ createdAt: { not: null } });
+    });
   });
 
   describe("Comparison operators", () => {

@@ -1,0 +1,101 @@
+# .github/workflows/npm-publish.yml
+name: Publish to npm
+
+on:
+  push:
+    branches:
+      - feat/unit-testing
+    tags:
+      - "v*" # Will trigger on any tag starting with 'v' (e.g., v1.0.0, v2.3.1)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build (if needed)
+        run: pnpm run build --if-present
+
+      - name: Extract version and tag info
+        id: version_info
+        run: |
+          # Check if triggered by a tag
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "Using explicit version from tag: $VERSION"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            
+            # Check if tag has custom npm tag (format: v1.0.0-beta, v1.0.0-alpha, etc)
+            if [[ $VERSION == *-* ]]; then
+              NPM_TAG=$(echo $VERSION | cut -d'-' -f2)
+              echo "Using npm tag: $NPM_TAG"
+              echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+            else
+              echo "Using default npm tag: latest"
+              echo "npm_tag=latest" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Check commit message for version bump instructions
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            if [[ $COMMIT_MSG == *"[bump:patch]"* ]]; then
+              echo "Bumping patch version based on commit message"
+              echo "bump_type=patch" >> $GITHUB_OUTPUT
+            elif [[ $COMMIT_MSG == *"[bump:minor]"* ]]; then
+              echo "Bumping minor version based on commit message"
+              echo "bump_type=minor" >> $GITHUB_OUTPUT
+            elif [[ $COMMIT_MSG == *"[bump:major]"* ]]; then
+              echo "Bumping major version based on commit message"
+              echo "bump_type=major" >> $GITHUB_OUTPUT
+            else
+              echo "No version bump instruction found, using patch as default"
+              echo "bump_type=patch" >> $GITHUB_OUTPUT
+            fi
+            
+            # Check for npm tag in commit message (format: [tag:beta], [tag:alpha], etc)
+            if [[ $COMMIT_MSG =~ \[tag:([a-zA-Z0-9-]+)\] ]]; then
+              NPM_TAG="${BASH_REMATCH[1]}"
+              echo "Using npm tag from commit message: $NPM_TAG"
+              echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+            else
+              echo "Using default npm tag: latest"
+              echo "npm_tag=latest" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Update version (if not using explicit tag)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          npm version ${{ steps.version_info.outputs.bump_type }} -m "Bump version to %s [skip ci]"
+          git push --follow-tags
+
+      - name: Set specific version (if using explicit tag)
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        run: |
+          npm version ${{ steps.version_info.outputs.version }} --no-git-tag-version
+
+      - name: Publish to npm
+        run: |
+          if [ "${{ steps.version_info.outputs.npm_tag }}" == "latest" ]; then
+            npm publish
+          else
+            npm publish --tag ${{ steps.version_info.outputs.npm_tag }}
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

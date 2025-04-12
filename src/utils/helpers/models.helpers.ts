@@ -282,7 +282,7 @@ const prismaModelRelationFields: Record<string, RelationFields> = {};
 
 const prismaContent: string[] = [];
 
-function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
+export function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
   const files = fs.readdirSync(dirPath);
 
   files?.forEach((file) => {
@@ -305,6 +305,7 @@ const files = getAllPrismaFiles("./prisma");
 
 for (const file of files) {
   const content = fs.readFileSync(file, "utf-8");
+
   prismaContent.push(content);
 }
 
@@ -432,6 +433,7 @@ export function getPrismaModelRelations(modelName: string) {
  * @returns {string[]} An array of model names (e.g., ["User", "Post"]).
  */
 function getModels() {
+  console.log(models);
   return models;
 }
 

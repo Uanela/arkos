@@ -37,9 +37,9 @@ function emptyTarget(val: any): any {
   return Array.isArray(val) ? [] : {};
 }
 
-function getKeys(target: any): string[] {
+function getKeys(target: any): (string | symbol)[] {
   const objectKeys = Object.keys(target);
-  const symbolKeys = getEnumerableOwnPropertySymbols(target).map(String);
+  const symbolKeys = getEnumerableOwnPropertySymbols(target);
   return [...objectKeys, ...symbolKeys];
 }
 

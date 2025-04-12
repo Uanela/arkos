@@ -1,5 +1,5 @@
 import path from "path";
-import fs from "fs";
+import fs, { existsSync, readdirSync } from "fs";
 import * as dynamicLoader from "../../../utils/helpers/models.helpers";
 import {
   camelCase,
@@ -7,11 +7,48 @@ import {
   pascalCase,
 } from "../../../utils/helpers/change-case.helpers";
 
+const mockedPrismaSchema = `
+      model User {
+        id        String   @id @default(uuid())
+        email     String   @unique
+        posts     Post[]
+        profile   Profile?
+      }
+
+      model Post {
+        id        String   @id @default(uuid())
+        title     String
+        author    User     @relation(fields: [authorId], references: [id])
+        authorId  String
+      }
+
+      model Profile {
+        id        String   @id @default(uuid())
+        bio       String?
+        user      User     @relation(fields: [userId], references: [id])
+        userId    String   @unique
+      }
+    `;
+
+const modelRegex = /model\s+(\w+)\s*{/g;
+const models: string[] = [];
+export const prismaModelsUniqueFields: Record<string, any[]> = [] as any;
+
 // Mocking dependencies
 jest.mock("path");
-jest.mock("fs");
-jest.mock("node:import");
-jest.mock("../../../utils/helpers/change-case.helpers");
+jest.mock("fs", () => ({
+  ...jest.requireActual("fs"),
+  readdirSync: jest.fn(),
+  statSync: jest.fn(),
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+}));
+// jest.mock("node:import");
+jest.mock("../../../utils/helpers/change-case.helpers", () => ({
+  camelCase: jest.fn(),
+  kebabCase: jest.fn(),
+  pascalCase: jest.fn(),
+}));
 jest.mock("../../arkos-env", () => ({
   __esModule: true,
   default: { PRISMA_SCHEMA_PATH: "./custom-prisma-path" },
@@ -19,17 +56,20 @@ jest.mock("../../arkos-env", () => ({
 jest.mock("../fs.helpers", () => ({
   userFileExtension: "js",
 }));
+// jest.mock("../models.helpers", () => ({
+//   ...jest.requireActual("../models.helpers"),
+// }));
 
 describe("Dynamic Prisma Model Loader", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Setup basic mocks for helpers
-    (camelCase as jest.Mock).mockImplementation((str) => str.toLowerCase());
-    (kebabCase as jest.Mock).mockImplementation((str) => str.toLowerCase());
-    (pascalCase as jest.Mock).mockImplementation(
-      (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-    );
+    // // Setup basic mocks for helpers
+    // (camelCase as jest.Mock).mockImplementation((str) => str.toLowerCase());
+    // (kebabCase as jest.Mock).mockImplementation((str) => str.toLowerCase());
+    // (pascalCase as jest.Mock).mockImplementation(
+    //   (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+    // );
 
     // Setup path mocks
     (path.resolve as jest.Mock).mockReturnValue("/mocked/path");
@@ -39,8 +79,8 @@ describe("Dynamic Prisma Model Loader", () => {
     jest.spyOn(process, "cwd").mockReturnValue("/project");
 
     // Clear module caches between tests to avoid state issues
-    (dynamicLoader.prismaModelsModules as any) = {};
-    (dynamicLoader.prismaModelRelationFields as any) = {};
+    // (dynamicLoader.prismaModelsModules as any) = {};
+    // (dynamicLoader.prismaModelRelationFields as any) = {};
   });
 
   describe("getModelModules", () => {
@@ -218,24 +258,24 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should return relations for a known model", () => {
       // Setup
       const mockRelations = { singular: [], list: [] };
-      (dynamicLoader.getPrismaModelRelations as any) = jest.fn();
 
-      (
-        dynamicLoader.getPrismaModelRelations as any as jest.Mock
-      ).mockReturnValueOnce(mockRelations);
-
+      // Mock pascalCase to return "User" when called with any string
       (pascalCase as jest.Mock).mockReturnValue("User");
 
+      // Important: Directly modify the actual object reference that the function uses
+      dynamicLoader.prismaModelRelationFields.User = mockRelations;
+
+      // Act
       const result = dynamicLoader.getPrismaModelRelations("user");
 
       // Assert
       expect(result).toBe(mockRelations);
-      //   expect(pascalCase).toHaveBeenCalledWith("user");
+      expect(pascalCase).toHaveBeenCalledWith("user");
     });
 
     it("should return undefined for unknown model", () => {
       // Setup
-      (dynamicLoader.prismaModelRelationFields as any) = {};
+      (dynamicLoader.prismaModelRelationFields as any) = { user: [] };
       (pascalCase as jest.Mock).mockReturnValue("Unknown");
 
       // Act
@@ -246,73 +286,49 @@ describe("Dynamic Prisma Model Loader", () => {
     });
   });
 
-  //   describe("Prisma schema parsing", () => {
-  //     it("should parse prisma schema files correctly", () => {
-  //       // Setup
-  // (fs.readdirSync as jest.Mock).mockReturnValue([
-  //   "schema.prisma",
-  //   "migrations",
-  // ]);
-  // (fs.statSync as jest.Mock).mockImplementation((path) => ({
-  //   isDirectory: () => path.includes("migrations"),
-  //   isFile: () => path.endsWith(".prisma"),
-  // }));
-  // (fs.readFileSync as jest.Mock).mockReturnValue(`
-  //     model User {
-  //       id        String   @id @default(uuid())
-  //       email     String   @unique
-  //       posts     Post[]
-  //       profile   Profile?
-  //     }
-
-  //     model Post {
-  //       id        String   @id @default(uuid())
-  //       title     String
-  //       author    User     @relation(fields: [authorId], references: [id])
-  //       authorId  String
-  //     }
-
-  //     model Profile {
-  //       id        String   @id @default(uuid())
-  //       bio       String?
-  //       user      User     @relation(fields: [userId], references: [id])
-  //       userId    String   @unique
-  //     }
-  //   `);
-
-  // // Recreate the schema parsing logic for testing
-  // const getAllPrismaFilesSpy = jest.spyOn(fs, "readdirSync");
-
-  //       // We need to manually invoke parts of the module's initialization code
-  //       // since it runs at import time in the real module
-  //       const testModels = ["user", "post", "profile"];
-  //       (dynamicLoader.models as any) = testModels;
-
-  //       // Act - in real code this happens at import time
-  //       const modelRelations = {
-  //         User: {
-  //           singular: [{ name: "profile", type: "Profile" }],
-  //           list: [{ name: "posts", type: "Post" }],
-  //         },
-  //         Post: {
-  //           singular: [{ name: "author", type: "User" }],
-  //           list: [],
-  //         },
-  //         Profile: {
-  //           singular: [{ name: "user", type: "User" }],
-  //           list: [],
-  //         },
-  //       };
-  //       (dynamicLoader.prismaModelRelationFields as any) = modelRelations;
-
-  //       // Assert
-  //         expect(getAllPrismaFilesSpy).toHaveBeenCalled();
-  //       expect(dynamicLoader.getModels()).toEqual(testModels);
-  //       expect(dynamicLoader.getPrismaModelRelations("User")).toEqual(
-  //         modelRelations.User
-  //       );
-  //     });
-  //   });
+  describe("Prisma schema parsing", () => {
+    // it("should parse prisma schema files correctly", () => {
+    //   const testModels = ["user", "post", "profile"];
+    //   dynamicLoader.models.push(...testModels);
+    //   // Act - in real code this happens at import time
+    //   const modelRelations = {
+    //     User: {
+    //       singular: [{ name: "profile", type: "Profile" }],
+    //       list: [{ name: "posts", type: "Post" }],
+    //     },
+    //     Post: {
+    //       singular: [{ name: "author", type: "User" }],
+    //       list: [],
+    //     },
+    //     Profile: {
+    //       singular: [{ name: "user", type: "User" }],
+    //       list: [],
+    //     },
+    //   };
+    //   jest.spyOn(fs, "readFileSync").mockReturnValue(mockedPrismaSchema);
+    //   jest
+    //     .spyOn(dynamicLoader, "getAllPrismaFiles")
+    //     .mockReturnValue(["one file"]);
+    //   dynamicLoader.prismaModelRelationFields.Post = modelRelations.Post;
+    //   // dynamicLoader.prismaModelRelationFields.User =
+    //   dynamicLoader.prismaModelRelationFields.Profile = modelRelations.Profile;
+    //   // Setup
+    //   const mockRelations = {
+    //     singular: [{ name: "profile", type: "Profile" }],
+    //     list: [{ name: "posts", type: "Post" }],
+    //   };
+    //   // Mock pascalCase to return "User" when called with any string
+    //   (pascalCase as jest.Mock).mockReturnValue("User");
+    //   // Important: Directly modify the actual object reference that the function uses
+    //   dynamicLoader.prismaModelRelationFields.User = mockRelations;
+    //   // Assert
+    //   // expect(getAllPrismaFilesSpy).toHaveBeenCalled();
+    //   expect(dynamicLoader.getModels()).toEqual(testModels);
+    //   expect(dynamicLoader.getPrismaModelRelations("User")).toEqual(
+    //     modelRelations.User
+    //   );
+    // });
+  });
 
   describe("getModelUniqueFields", () => {
     it("should return unique fields for a model", () => {

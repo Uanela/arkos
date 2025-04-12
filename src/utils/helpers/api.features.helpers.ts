@@ -54,16 +54,16 @@ export function parseQueryParamsWithModifiers(
 ): ParsedFilter {
   return Object.entries(JSON.parse(JSON.stringify(query))).reduce(
     (acc, [key, value]) => {
-      if (!value && value !== false) return acc;
+      const parts = key.split("__");
+      if (!value && value !== false && value !== "false" && parts.length < 2)
+        return acc;
 
       // Convert value to string if it's not already
-      const stringValue = Array.isArray(value)
-        ? value[0]?.toString()
-        : value.toString();
-      const parts = key.split("__");
+      const stringValue = Array.isArray(value) ? value[0]?.toString() : value;
+
       if (parts.length < 2) {
         acc[key] =
-          typeof value === "string"
+          typeof value === "string" && !Number.isNaN(value)
             ? convertValue(stringValue, parts[0], fieldConfig)
             : value;
         return acc;
@@ -187,17 +187,17 @@ function convertValue(
   config: FieldConfig
 ): any {
   // Handle date fields
-  if (config.dateFields.includes(fieldName)) {
+  if (config.dateFields.includes(fieldName) && value) {
     return new Date(value);
   }
 
   // Handle boolean fields
-  if (config.booleanFields.includes(fieldName)) {
+  if (config.booleanFields.includes(fieldName) && value) {
     return value.toLowerCase() === "true";
   }
 
   // Handle numeric fields
-  if (config.numericFields.includes(fieldName)) {
+  if (config.numericFields.includes(fieldName) && value) {
     return Number(value);
   }
 

@@ -18,10 +18,10 @@ import { PrismaQueryOptions } from "../../types";
 import authService from "../auth/auth.service";
 import { handleRequestBodyValidationAndTransformation } from "../../utils/helpers/base.controller.helpers";
 
-const models = getModels();
-
 export async function getPrismaModelsRouter() {
   const router: Router = Router();
+
+  const models = getModels();
 
   await new Promise((resolve) => {
     models.forEach(async (model, i) => {

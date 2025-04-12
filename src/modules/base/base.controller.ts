@@ -110,8 +110,6 @@ export class BaseController {
         .limitFields()
         .paginate();
 
-      console.log(JSON.stringify(features.filters, null, 2));
-
       const { data, total } = await this.baseService.findMany(features.filters);
 
       if (this.middlewares.afterFindMany) {
@@ -188,6 +186,7 @@ export class BaseController {
         );
       }
 
+      req.query.filterMode = req.query?.filterMode || "AND";
       const features = new APIFeatures(req, this.modelName).filter().sort();
       delete features.filters.include;
 
@@ -242,6 +241,7 @@ export class BaseController {
         );
       }
 
+      req.query.filterMode = req.query?.filterMode || "AND";
       const features = new APIFeatures(req, this.modelName).filter().sort();
       delete features.filters.include;
 

@@ -1,5 +1,4 @@
 import nodemailer, { Transporter } from "nodemailer";
-import { BaseService } from "../base/base.service";
 import { convert } from "html-to-text";
 import { getArkosConfig } from "../../server";
 import AppError from "../error-handler/utils/app-error";
@@ -31,63 +30,98 @@ export type SMTPConnectionOptions = {
   port?: number;
   secure?: boolean;
   auth?: SMTPAuthOptions;
+  name?: string;
 };
 
 /**
  * A service class to handle email-related tasks, including sending emails.
+ *
+ * See the api reference [www.arkosjs.com/docs/api-reference/the-email-service-class](https://www.arkosjs.com/docs/api-reference/the-email-service-class)
  */
 export class EmailService {
-  private transporter: Transporter;
-  private defaultHost: string;
-  private defaultPort: number;
-  private defaultAuth: SMTPAuthOptions;
+  private transporter: Transporter | null = null;
+  private customConfig: SMTPConnectionOptions | null = null;
 
   /**
    * Creates an instance of the EmailService class.
    *
-   * @param {string} [host] - The SMTP host (defaults to the environment variable `EMAIL_HOST`).
-   * @param {SMTPAuthOptions} [auth] - The authentication object containing `user` and `pass` for the email account.
-   * @param {number} [port] - The SMTP port (defaults to 465).
-   *
-   * See the api reference [www.arkosjs.com/docs/api-reference/the-email-service-class](https://www.arkosjs.com/docs/api-reference/the-email-service-class)
+   * @param {SMTPConnectionOptions} [config] - Optional custom SMTP configuration.
+   * If provided, these settings will be used instead of the Arkos config.
    */
-  constructor(
-    host: string = process.env.EMAIL_HOST!,
-    auth: SMTPAuthOptions = {
-      user: process.env.EMAIL_FROM!,
-      pass: process.env.EMAIL_PASSWORD!,
-    },
-    port: number = parseInt(process.env.EMAIL_PORT || "465")
-  ) {
-    this.defaultHost = host;
-    this.defaultPort = port;
-    this.defaultAuth = auth;
-
-    // Initialize the default transporter
-    this.transporter = nodemailer.createTransport({
-      host: this.defaultHost,
-      port: this.defaultPort,
-      secure: true,
-      auth: this.defaultAuth,
-    });
+  constructor(config?: SMTPConnectionOptions) {
+    if (config) {
+      this.customConfig = config;
+    }
   }
 
   /**
-   * Verifies the connection to the email server.
-   * @param {Transporter} [transporterToVerify] - Optional transporter to verify instead of the default one.
-   * @returns {Promise<boolean>} A promise that resolves to true if connection is valid.
+   * Gets the email configuration, either from constructor-provided config or ArkosConfig
+   * @returns Configuration object with host, port, and auth details
+   * @throws AppError if email configuration is not set
    */
-  public async verifyConnection(
-    transporterToVerify?: Transporter
-  ): Promise<boolean> {
-    try {
-      const transporter = transporterToVerify || this.transporter;
-      await transporter.verify();
-      return true;
-    } catch (error) {
-      console.error("Email Server Connection Failed", 500);
-      return false;
+  private getEmailConfig(): SMTPConnectionOptions {
+    // If custom config was provided through constructor, use it
+    if (this.customConfig) {
+      return this.customConfig;
     }
+
+    // Otherwise, get from Arkos config
+    const { email: emailConfigs } = getArkosConfig();
+
+    if (!emailConfigs) {
+      throw new AppError(
+        "You are trying to use emailService without setting arkosConfig.email configurations",
+        500,
+        {
+          docs: "Read more about emailService at https://www.arkosjs.com/docs/core-concepts/sending-emails",
+        }
+      );
+    }
+
+    return {
+      host: emailConfigs.host,
+      port: emailConfigs.port || 465,
+      secure: emailConfigs.secure !== undefined ? emailConfigs.secure : true,
+      auth: {
+        user: emailConfigs.auth?.user,
+        pass: emailConfigs.auth?.pass,
+      },
+      name: emailConfigs.name,
+    };
+  }
+
+  /**
+   * Gets or creates a transporter using provided config or default config
+   * @param customConfig Optional override connection settings
+   * @returns A configured nodemailer transporter
+   */
+  private getTransporter(customConfig?: SMTPConnectionOptions): Transporter {
+    if (customConfig) {
+      // Create temporary transporter with custom settings
+      const defaultConfig = this.getEmailConfig();
+      return nodemailer.createTransport({
+        host: customConfig.host || defaultConfig.host,
+        port: customConfig.port || defaultConfig.port,
+        secure:
+          customConfig.secure !== undefined
+            ? customConfig.secure
+            : defaultConfig.secure,
+        auth: customConfig.auth || defaultConfig.auth,
+      });
+    }
+
+    // Use cached transporter or create new one with default settings
+    if (!this.transporter) {
+      const config = this.getEmailConfig();
+      this.transporter = nodemailer.createTransport({
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        auth: config.auth,
+      });
+    }
+
+    return this.transporter;
   }
 
   /**
@@ -96,100 +130,76 @@ export class EmailService {
    *
    * @param {EmailOptions} options - The options for the email to be sent.
    * @param {SMTPConnectionOptions} [connectionOptions] - Optional custom connection settings.
-   * @returns {Promise<{ success: boolean; messageId?: string; error?: any }>} A promise that resolves with the result of the email send attempt.
-   * @throws {Error} Throws an error if the email sending fails.
+   * @param {boolean} [skipVerification=false] - Whether to skip connection verification.
+   * @returns {Promise<{ success: boolean; messageId?: string }>} Result with message ID on success.
    */
   public async send(
     options: EmailOptions,
-    connectionOptions?: SMTPConnectionOptions
-  ): Promise<{ success: boolean; messageId?: string; error?: any }> {
-    try {
-      let transporter = this.transporter;
-      let fromAddress = options?.from || process.env.EMAIL_FROM;
+    connectionOptions?: SMTPConnectionOptions,
+    skipVerification = false
+  ): Promise<{ success: boolean; messageId?: string }> {
+    const config = this.getEmailConfig();
+    const transporter = connectionOptions
+      ? this.getTransporter(connectionOptions)
+      : this.getTransporter();
 
-      // If custom connection options are provided, create a temporary transporter
-      if (connectionOptions) {
-        const tempTransporter = nodemailer.createTransport({
-          host: connectionOptions.host || this.defaultHost,
-          port: connectionOptions.port || this.defaultPort,
-          secure:
-            connectionOptions.secure !== undefined
-              ? connectionOptions.secure
-              : true,
-          auth: connectionOptions.auth || this.defaultAuth,
-        });
+    // Determine from address with proper fallbacks
+    const fromAddress =
+      options.from || connectionOptions?.auth?.user || config.auth?.user;
 
-        // Verify the temporary connection
-        await this.verifyConnection(tempTransporter);
+    // Optionally verify connection
+    if (connectionOptions || !skipVerification) {
+      const isConnected = await this.verifyConnection(transporter);
 
-        // Use the temporary transporter and update from address if auth user is provided
-        transporter = tempTransporter;
-        if (connectionOptions.auth?.user) {
-          fromAddress = options?.from || connectionOptions.auth.user;
-        }
-      } else {
-        // Verify the default connection
-        await this.verifyConnection();
+      if (!isConnected) {
+        throw new Error("Failed to connect to email server");
       }
+    }
 
-      // Send the email
-      const info = await transporter.sendMail({
-        ...options,
-        from: fromAddress,
-        text: options?.text || convert(options.html),
-      });
+    // Send the email
+    const info = await transporter.sendMail({
+      ...options,
+      from: fromAddress,
+      text: options?.text || convert(options.html),
+    });
 
-      return { success: true, messageId: info.messageId };
+    return { success: true, messageId: info.messageId };
+  }
+
+  /**
+   * Verifies the connection to the email server.
+   * @param {Transporter} [transporterToVerify] - Optional transporter to verify.
+   * @returns {Promise<boolean>} A promise that resolves to true if connection is valid.
+   */
+  public async verifyConnection(
+    transporterToVerify?: Transporter
+  ): Promise<boolean> {
+    try {
+      const transporter = transporterToVerify || this.getTransporter();
+      await transporter.verify();
+      return true;
     } catch (error) {
-      throw error;
+      console.error("Email Server Connection Failed", error);
+      return false;
     }
   }
 
   /**
-   * Updates the default configuration for the email service.
-   *
-   * @param {SMTPConnectionOptions} options - The new connection options.
+   * Updates the custom configuration for this email service instance.
+   * @param {SMTPConnectionOptions} config - The new connection options.
    */
-  public updateDefaultConfig(options: SMTPConnectionOptions): void {
-    if (options.host) this.defaultHost = options.host;
-    if (options.port) this.defaultPort = options.port;
-    if (options.auth) this.defaultAuth = options.auth;
-
-    // Update the default transporter
-    this.transporter = nodemailer.createTransport({
-      host: this.defaultHost,
-      port: this.defaultPort,
-      secure: options.secure !== undefined ? options.secure : true,
-      auth: this.defaultAuth,
-    });
+  public updateConfig(config: SMTPConnectionOptions): void {
+    this.customConfig = config;
+    this.transporter = null; // Reset transporter so it will be recreated with new config
   }
 
   /**
    * Creates a new instance of EmailService with custom configuration.
-   *
-   * @param {SMTPConnectionOptions} options - The connection options.
-   * @returns {EmailService} A new email service instance.
+   * @param {SMTPConnectionOptions} config - The connection options for the new instance.
+   * @returns {EmailService} A new EmailService instance.
    */
-  public static create(options: SMTPConnectionOptions): EmailService {
-    const { email: emailConfigs } = getArkosConfig();
-
-    if (!emailConfigs)
-      throw new AppError(
-        "You are trying to use emailService without setting arkosConfig.email configurations",
-        500,
-        {
-          docs: "Read more about emailService at https://www.arkosjs.com/docs/core-concepts/sending-emails",
-        }
-      );
-
-    return new EmailService(
-      options.host || emailConfigs.host,
-      options.auth || {
-        user: emailConfigs.from,
-        pass: emailConfigs.password,
-      },
-      options.port || parseInt(String(emailConfigs.port) || "465")
-    );
+  public static create(config: SMTPConnectionOptions): EmailService {
+    return new EmailService(config);
   }
 }
 
