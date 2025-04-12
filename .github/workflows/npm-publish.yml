@@ -49,13 +49,13 @@ jobs:
           version: 8
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Run tests
         run: pnpm test
 
       - name: Build (if needed)
-        run: pnpm run build --if-present
+        run: pnpm run build
 
       - name: Extract version and tag info
         id: version_info
