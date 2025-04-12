@@ -750,8 +750,7 @@ describe("AuthService", () => {
       // Execute
       const middleware = authService.handleAuthenticationControl(
         authConfigs,
-        "view",
-        "User"
+        "view"
       );
 
       // Verify
@@ -769,8 +768,7 @@ describe("AuthService", () => {
       // Execute
       const middleware = authService.handleAuthenticationControl(
         authConfigs,
-        "create",
-        "User"
+        "create"
       );
 
       // Verify
@@ -784,8 +782,7 @@ describe("AuthService", () => {
       // Execute
       const middleware = authService.handleAuthenticationControl(
         authConfigs,
-        "update",
-        "User"
+        "update"
       );
 
       // Verify
@@ -796,8 +793,7 @@ describe("AuthService", () => {
       // Execute
       const middleware = authService.handleAuthenticationControl(
         undefined,
-        "delete",
-        "User"
+        "delete"
       );
 
       // Verify
