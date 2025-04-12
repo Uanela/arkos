@@ -4,7 +4,7 @@ name: Publish to npm
 on:
   push:
     branches:
-      - main
+      - feat/unit-testing
     tags:
       - "v*"
   workflow_dispatch:
