@@ -141,7 +141,7 @@ class ArkosApiGenerator {
     // Install dependencies
     this.installDependencies();
 
-    console.log(`
+    console.info(`
  🚀 Arkos.js project created successfully!
 
 Next steps:
@@ -276,7 +276,7 @@ model User {
   }
 
   private installDependencies() {
-    console.log("Installing dependencies...");
+    console.info("Installing dependencies...");
     execSync("npm install", { stdio: "inherit" });
   }
 }
