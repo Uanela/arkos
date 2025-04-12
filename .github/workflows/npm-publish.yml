@@ -123,7 +123,7 @@ jobs:
           pnpm version ${{ steps.version_info.outputs.bump_type }} -m "Bump version to %s [skip ci]"
           git push --follow-tags
 
-      - name: Simulate version bump (for manual dry run)
+      - name: Simulate version bump (for manual dry run )
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           CURRENT_VERSION=$(node -p "require('./package.json').version")
