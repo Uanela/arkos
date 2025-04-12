@@ -2,7 +2,7 @@
 
 # Arkos
 
-## The Express And Prisma Framework For RESTful API
+### The Express And Prisma Framework For RESTful API
 
 Used to simplify the development of a secure and scalable RESTful API with minimal configuration, allowing developers to focus on what really matters for the business
 
@@ -20,41 +20,9 @@ Used to simplify the development of a secure and scalable RESTful API with minim
 
 **BETA VERSION**
 
-## Getting Started
-
-### 1. Install
-
-```bash
-npm install arkos
-# or
-pnpm install arkos
-```
-
-### 2. Set up Prisma
-
-```bash
-npm install @prisma/client
-npm install prisma --save-dev
-
-# Initialize and generate
-npx prisma generate
-npx prisma migrate dev
-```
-
-### 3. Start your API in one line
-
-```ts
-// src/app.ts
-import arkos from "arkos";
-
-arkos.init({ port: 3000 });
-```
-
-That's it! Your RESTful API is ready to use.
-
 ## Documentation
 
-For detailed documentation, visit our [official docs](https://arkos.dev/docs/intro).
+For detailed documentation, visit our [official docs](https://arkosjs.com/docs/intro).
 
 ## License
 

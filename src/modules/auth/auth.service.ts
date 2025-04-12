@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { User, UserRole } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
@@ -35,10 +35,29 @@ class AuthService {
    */
   signJwtToken(
     id: number | string,
-    expiresIn: string | number = process.env.JWT_EXPIRES_IN ||
-      arkosEnv.JWT_EXPIRES_IN,
-    secret: string = process.env.JWT_SECRET || arkosEnv.JWT_SECRET
+    expiresIn?: SignOptions["expiresIn"],
+    secret?: string
   ): string {
+    const { authentication: configs } = getArkosConfig();
+
+    if (
+      process.env.NODE_ENV === "production" &&
+      !process.env.JWT_SECRET &&
+      !configs?.jwt?.secret
+    )
+      throw new AppError("Missing JWT secret!", 500);
+
+    secret =
+      secret ||
+      configs?.jwt?.secret ||
+      process.env.JWT_SECRET ||
+      arkosEnv.JWT_SECRET;
+
+    expiresIn = (expiresIn ||
+      configs?.jwt?.expiresIn ||
+      process.env.JWT_EXPIRES_IN ||
+      arkosEnv.JWT_EXPIRES_IN) as keyof SignOptions["expiresIn"];
+
     return jwt.sign({ id }, secret, {
       expiresIn: expiresIn as any,
     });
@@ -121,8 +140,23 @@ class AuthService {
    */
   async verifyJwtToken(
     token: string,
-    secret: string = process.env.JWT_SECRET || arkosEnv.JWT_SECRET
+    secret?: string
   ): Promise<AuthJwtPayload> {
+    const { authentication: configs } = getArkosConfig();
+
+    if (
+      process.env.NODE_ENV === "production" &&
+      !process.env.JWT_SECRET &&
+      !configs?.jwt?.secret
+    )
+      throw new AppError("Missing JWT secret!", 500);
+
+    secret =
+      secret ||
+      configs?.jwt?.secret ||
+      process.env.JWT_SECRET ||
+      arkosEnv.JWT_SECRET;
+
     return new Promise((resolve, reject) => {
       jwt.verify(token, secret, (err, decoded) => {
         if (err) reject(err);
@@ -153,22 +187,53 @@ class AuthService {
         if (req.user) {
           const user = req.user as any;
           const prisma = getPrismaInstance();
+          const configs = getArkosConfig();
 
-          const permissions = await (prisma as any).authPermission.count({
-            where: {
-              resource: kebabCase(singular(modelName)),
-              action,
-              roleId: { in: user.roles.map((role: UserRole) => role.roleId) },
-            },
-          });
+          if (user.isSuperUser) {
+            next();
+            return;
+          }
 
-          if (!permissions) {
-            return next(
-              new AppError(
-                "You do not have permission to perfom this action",
-                403
+          if (configs?.authentication?.mode === "dynamic") {
+            const permissions = await (prisma as any).authPermission.count({
+              where: {
+                resource: kebabCase(singular(modelName)),
+                action,
+                roleId: { in: user.roles.map((role: UserRole) => role.roleId) },
+              },
+            });
+
+            if (!permissions)
+              return next(
+                new AppError(
+                  "You do not have permission to perfom this action",
+                  403
+                )
+              );
+          } else if (configs?.authentication?.mode === "static") {
+            const accessControl = authConfigs?.accessControl;
+            let authorizedRoles: any[] = [];
+
+            if (accessControl) {
+              if (Array.isArray(accessControl)) authorizedRoles = accessControl;
+              else if (accessControl[action])
+                authorizedRoles = accessControl[action];
+
+              // Checks for both cases if using single role or multiple roles
+              if (
+                !authorizedRoles.includes(req.user?.role) ||
+                ((req.user?.roles as any[]).length > 0 &&
+                  !authorizedRoles?.some((role) =>
+                    (req.user?.roles as any[]).includes(role)
+                  ))
               )
-            );
+                return next(
+                  new AppError(
+                    "You do not have permission to perfom this action",
+                    403
+                  )
+                );
+            }
           }
         }
 

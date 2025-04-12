@@ -15,7 +15,7 @@ export type AccessControlRules = {
   /**
    * Maps each `ControllerAction` to the roles allowed to perform it.
    */
-  [key in ControllerActions]: any | any[];
+  [key in ControllerActions]: any[];
 };
 
 /**
@@ -41,7 +41,10 @@ export type AuthConfigs = {
    * @type {Role | Role[] | AccessControlRules}
    */
   authenticationControl?: boolean | Partial<AuthenticationControlRules>;
-  accessControl?: any | any[] | Partial<AccessControlRules>;
+  /**
+   * List of user roles, or restricted by actions
+   */
+  accessControl?: any[] | Partial<AccessControlRules>;
 };
 
 /**

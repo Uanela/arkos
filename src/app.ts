@@ -16,7 +16,7 @@ import {
   checkDatabaseConnection,
   loadPrismaModule,
 } from "./utils/helpers/prisma.helpers";
-import { getFileUploaderRouter } from "./modules/file-upload/file-upload.router";
+import { getFileUploaderRouter } from "./modules/file-uploader/file-uploader.router";
 import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
 import deepmerge from "./utils/helpers/deepmerge.helper";
@@ -45,11 +45,7 @@ else if (ENV === "test") {
 
 dotenv.config({ path: envPath });
 
-const app = express();
-
-(async () => {
-  await loadPrismaModule();
-})();
+export const app: express.Express = express();
 
 export async function bootstrap(
   arkosConfig: ArkosConfig
@@ -188,7 +184,7 @@ export async function bootstrap(
     const fileUploaderRouter = replacedRouters.fileUploader
       ? await replacedRouters.fileUploader(arkosConfig)
       : await getFileUploaderRouter(arkosConfig);
-    app.use("/api", fileUploaderRouter);
+    app.use(fileUploaderRouter);
   }
 
   // Auth router

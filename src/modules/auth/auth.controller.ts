@@ -137,7 +137,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const initAuthConfigs = getArkosConfig()?.authentication;
+        const authConfigs = getArkosConfig()?.authentication;
         const usernameField = determineUsernameField(req);
 
         const usernameValue = req.body[usernameField];
@@ -174,7 +174,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           expires: new Date(
             Date.now() +
               Number(
-                process.env.JWT_COOKIE_EXPIRES_IN ||
+                authConfigs?.jwt?.cookieExpiresIn ||
+                  process.env.JWT_COOKIE_EXPIRES_IN ||
                   arkosEnv.JWT_COOKIE_EXPIRES_IN
               ) *
                 24 *
@@ -184,12 +185,15 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           ),
           httpOnly: true,
           secure: req.secure || req.headers["x-forwarded-proto"] === "https",
-          sameSite: process.env.JWT_SECURE !== "false" ? "lax" : "none",
+          sameSite:
+            authConfigs?.jwt?.secret || process.env.JWT_SECURE !== "false"
+              ? "lax"
+              : "none",
         };
 
         if (
           process.env.NODE_ENV === "production" &&
-          process.env.JWT_SECURE !== "false"
+          (authConfigs?.jwt?.secret || process.env.JWT_SECURE !== "false")
         )
           cookieOptions.secure = true;
 
@@ -199,12 +203,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           return next();
         }
 
-        if (
-          initAuthConfigs?.login?.sendAccessTokenThrough === "response-only"
-        ) {
+        if (authConfigs?.login?.sendAccessTokenThrough === "response-only") {
           res.status(200).json({ accessToken: token });
         } else if (
-          initAuthConfigs?.login?.sendAccessTokenThrough === "cookie-only"
+          authConfigs?.login?.sendAccessTokenThrough === "cookie-only"
         ) {
           res.cookie("arkos_access_token", token, cookieOptions);
           res.status(200).send();

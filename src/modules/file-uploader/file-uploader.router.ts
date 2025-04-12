@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import authService from "../auth/auth.service";
-import { deleteFile, uploadFile } from "./file-upload.controller";
+import { deleteFile, uploadFile } from "./file-uploader.controller";
 import { ArkosConfig } from "../../types/arkos-config";
 import path from "path";
 import express from "express";
@@ -17,13 +17,13 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
     ({ middlewares = {}, authConfigs = {} } = modelModules);
   }
 
-  let basePathname = fileUpload?.baseRoute || "/uploads/";
+  let basePathname = fileUpload?.baseRoute || "/api/uploads/";
 
   if (!basePathname.startsWith("/")) basePathname = "/" + basePathname;
   if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
 
   router.use(
-    fileUpload?.baseRoute || "/api/uploads",
+    basePathname,
     authService.handleAuthenticationControl(authConfigs, "view", "file-upload"),
     authService.handleActionAccessControl(authConfigs, "view", "file-upload"),
     express.static(

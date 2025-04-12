@@ -14,8 +14,6 @@ import AppError from "../error-handler/utils/app-error";
 import pluralize from "pluralize";
 import { handleRelationFieldsInBody } from "./utils/helpers/base.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
-import validateDto from "../../utils/validate-dto";
-import { getArkosConfig } from "../../server";
 import authService from "../auth/auth.service";
 
 /**
@@ -107,10 +105,19 @@ export class BaseService {
       deepmerge(
         {
           data: bodyWithRelationFieldsHandled,
-          include: {
-            ...this.singularRelationFieldToInclude,
-            ...this.singularRelationFieldToInclude,
-          },
+          ...(JSON.parse(queryOptions || "{}").hasOwnProperty("select")
+            ? {
+                select: {
+                  ...this.singularRelationFieldToInclude,
+                  ...this.listRelationFieldToInclude,
+                },
+              }
+            : {
+                include: {
+                  ...this.singularRelationFieldToInclude,
+                  ...this.listRelationFieldToInclude,
+                },
+              }),
         },
         JSON.parse(queryOptions || "{}")
       )
@@ -136,11 +143,13 @@ export class BaseService {
       );
     }
 
-    const data = await prisma[this.modelName].createMany({
-      data: body,
-    });
+    const [data, total] = await Promise.all([
+      prisma[this.modelName].createMany({
+        data: body,
+      }),
+      prisma[this.modelName].count(),
+    ]);
 
-    const total = await prisma[this.modelName].count();
     return { total, data };
   }
 
@@ -153,32 +162,28 @@ export class BaseService {
   async findMany(
     filters: Record<string, any>
   ): Promise<{ total: number; data: any }> {
-    const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.query && getArkosConfig()?.validation !== false) {
-    //   filters = await validateDto(modelModules.dtos.query, filters);
-    // }
-
     const prisma = getPrismaInstance();
 
-    const data = await prisma[this.modelName].findMany(
-      "select" in filters
-        ? deepmerge(
-            { ...filters },
-            {
-              select: this.singularRelationFieldToInclude,
-            }
-          )
-        : deepmerge(
-            { ...filters },
-            {
-              include: this.singularRelationFieldToInclude,
-            }
-          )
-    );
-
-    const total = await prisma[this.modelName].count({
-      where: filters.where,
-    });
+    const [data, total] = await Promise.all([
+      prisma[this.modelName].findMany(
+        "select" in filters
+          ? deepmerge(
+              { ...filters },
+              {
+                select: this.singularRelationFieldToInclude,
+              }
+            )
+          : deepmerge(
+              { ...filters },
+              {
+                include: this.singularRelationFieldToInclude,
+              }
+            )
+      ),
+      prisma[this.modelName].count({
+        where: filters.where,
+      }),
+    ]);
 
     return { total, data };
   }
@@ -193,16 +198,8 @@ export class BaseService {
    */
   async findOne(
     filters: Record<string, any>,
-    // queryOptions: string = JSON.stringify(
-    //   getModelModules(kebabCase(this.modelName)).prismaQueryOptions || {}
-    // )
     queryOptions: string = "{}"
   ): Promise<any> {
-    const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.create && getArkosConfig()?.validation !== false) {
-    //   filters = await validateDto(modelModules.dtos.create, filters);
-    // }
-
     const prisma = getPrismaInstance();
 
     const data = await prisma[this.modelName].findUnique(
@@ -249,16 +246,8 @@ export class BaseService {
   async updateOne(
     filters: Record<string, any>,
     body: Record<string, any>,
-    // queryOptions: string = JSON.stringify(
-    //   getModelModules(kebabCase(this.modelName)).prismaQueryOptions || {}
-    // )
     queryOptions: string = "{}"
   ): Promise<any> {
-    const modelModules = getModelModules(kebabCase(this.modelName));
-    if (modelModules.dtos.update && getArkosConfig()?.validation) {
-      body = await validateDto(modelModules.dtos.update, body);
-    }
-
     const prisma = getPrismaInstance();
 
     if (kebabCase(this.modelName) === "user" && body.password) {
@@ -274,10 +263,19 @@ export class BaseService {
         {
           where: { ...filters, id: String(filters.id) },
           data: bodyWithRelationFieldsHandled,
-          include: {
-            ...this.singularRelationFieldToInclude,
-            ...this.singularRelationFieldToInclude,
-          },
+          ...(JSON.parse(queryOptions || "{}").hasOwnProperty("select")
+            ? {
+                select: {
+                  ...this.singularRelationFieldToInclude,
+                  ...this.listRelationFieldToInclude,
+                },
+              }
+            : {
+                include: {
+                  ...this.singularRelationFieldToInclude,
+                  ...this.listRelationFieldToInclude,
+                },
+              }),
         },
         JSON.parse(queryOptions || "{}")
       )
@@ -305,11 +303,6 @@ export class BaseService {
     filters: Record<string, any>,
     body: Record<string, any>
   ): Promise<{ total: number; data: any }> {
-    const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.create && getArkosConfig()?.validation !== false) {
-    //   body = await validateDto(modelModules.dtos.create, body);
-    // }
-
     const prisma = getPrismaInstance();
 
     if (!filters || typeof filters !== "object") {
@@ -339,11 +332,6 @@ export class BaseService {
    * @returns {Promise<any>} The deleted record.
    */
   async deleteOne(params: Record<string, any>): Promise<any> {
-    const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.create && getArkosConfig()?.validation !== false) {
-    //   body = await validateDto(modelModules.dtos.create, body);
-    // }
-
     const prisma = getPrismaInstance();
 
     return await prisma[this.modelName].delete({
@@ -364,11 +352,6 @@ export class BaseService {
   async deleteMany(
     filters: Record<string, any>
   ): Promise<{ total: number; data: any }> {
-    const modelModules = getModelModules(kebabCase(this.modelName));
-    // if (modelModules.dtos.create && getArkosConfig()?.validation !== false) {
-    //   body = await validateDto(modelModules.dtos.create, body);
-    // }
-
     const prisma = getPrismaInstance();
 
     if (!filters || typeof filters !== "object") {

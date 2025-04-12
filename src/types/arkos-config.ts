@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import compression from "compression";
 import { Options as QueryParserOptions } from "../utils/helpers/query-parser.helpers";
 import { ValidatorOptions } from "class-validator";
+import { SignOptions } from "jsonwebtoken";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
@@ -112,17 +113,24 @@ export type ArkosConfig = {
      * Defines jwt configurations for secret, expiresIn, cookieExpiresIn
      *
      * Can be pass also through env variables:
-     * - jwt.secret => JWT_SECRET: If not passed production auth will not work
+     * - jwt.secret => JWT_SECRET: If not passed production auth will  throw an error
      * - jwt.expiresIn => JWT_EXPIRES_IN: default 30d
      * - jwt.cookieExpiresIn => JWT_COOKIE_EXPIRES_IN: default 90
+     * - jwt.secure => JWT_SECURE: default true
+     *
+     * **Note**: the values passed here will take precedence
      */
     jwt?: {
       /** Secret to sign and decode jwt tokens */
       secret?: string;
-      /**  */
-      expiresIn?: string;
+      /**
+       * Do define when the toke expires
+       */
+      expiresIn?: SignOptions["expiresIn"];
       /** Days in which the cookie must be kept before expire*/
       cookieExpiresIn?: number;
+      /** If it must be secure or not, Default: true */
+      secure?: boolean;
     };
   };
   /** Allows to customize and toggle the built-in validation, by default it is set to `false`. If true is passed it will use validation with the default resolver set to `class-validator` if you intend to change the resolver to `zod` do the following:
@@ -143,6 +151,16 @@ export type ArkosConfig = {
   validation?:
     | {
         resolver?: "class-validator";
+        /**
+         * ValidatorOptions to used while validating request data.
+         *
+         * **Default**:
+         * ```ts
+         * {
+         *  whitelist: true
+         * }
+         * ```
+         */
         validationOptions?: ValidatorOptions;
       }
     | {
@@ -212,7 +230,7 @@ export type ArkosConfig = {
      * See [www.arkosjs.com/docs/api-reference/default-supported-upload-files](https://www.arkosjs.com/docs/api-reference/default-supported-upload-files) for detailed explanation about default values.
      * ```
      */
-    uploadRestrictions?: {
+    restrictions?: {
       images?: {
         maxCount?: number;
         maxSize?: number;
@@ -228,7 +246,7 @@ export type ArkosConfig = {
         maxSize?: number;
         supportedFilesRegex?: RegExp;
       };
-      others?: {
+      files?: {
         maxCount?: number;
         maxSize?: number;
         supportedFilesRegex?: RegExp;
@@ -251,7 +269,7 @@ export type ArkosConfig = {
    * 
    * This is are the options used on the `express-rate-limit` npm package used on epxress. read more about [https://www.npmjs.com/package/express-rate-limit](https://www.npmjs.com/package/express-rate-limit)
    */
-  globalRequestRateLimitOptions?: RateLimitOptions;
+  globalRequestRateLimitOptions?: Partial<RateLimitOptions>;
   /**
    * Defines options for the built-in express.json() middleware
    * Nothing is passed by default.
@@ -477,4 +495,42 @@ export type ArkosConfig = {
    * @returns {any}
    */
   configureApp?: (app: express.Express) => Promise<any> | any;
+  /**
+   * Allows to configure email configurations for sending emails through `emailService`
+   *
+   * See [www.arkosjs.com/docs/core-concepts/sending-emails](https://www.arkosjs.com/docs/core-concepts/sending-emails)
+   */
+  email?: {
+    /**
+     * Your email provider url
+     */
+    host: string;
+    /**
+     * Email provider SMTP port, Default is `465`
+     */
+    port?: number;
+    /**
+     * If smtp connection must be secure, Default is `true`
+     */
+    secure?: boolean;
+    /**
+     * Used to authenticate in your smtp server
+     */
+    auth: {
+      /**
+       * Email used for auth as well as sending emails
+       */
+      user: string;
+      /**
+       * Your SMTP password
+       */
+      pass: string;
+    };
+    /**
+     * Email name to used like:
+     *
+     * John Doe\<john.doe@gmail.com>
+     */
+    name?: string;
+  };
 };

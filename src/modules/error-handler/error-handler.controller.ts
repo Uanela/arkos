@@ -86,7 +86,7 @@ export default function errorHandler(
     error = errorControllerHelper.handleNetworkError(err);
   // if (err.name === "UnhandledPromiseRejection")
   //   error = errorControllerHelper.handleUnhandledPromiseError(err);
-  error = new AppError("Something Went Wrong!", 500);
+  if (!err.isOperational) error = new AppError("Something went wrong!", 500);
 
   // Send the error response for production environment
   sendProductionError(error, req, res);
@@ -134,8 +134,6 @@ function sendDevelopmentError(err: AppError, req: Request, res: Response) {
  */
 function sendProductionError(err: AppError, req: Request, res: Response) {
   if (req.originalUrl.startsWith("/api")) {
-    console.error("[\x1b[31mERROR\x1b[0m]:", err);
-
     if (err.isOperational) {
       return res.status(err.statusCode).json({
         status: err.status,
@@ -151,12 +149,10 @@ function sendProductionError(err: AppError, req: Request, res: Response) {
 
   if (err.isOperational) {
     return res.status(err.statusCode).json({
-      title: "Something Went Wrong!",
+      title: "Something went wrong!",
       message: err.message,
     });
   }
-
-  console.error("[\x1b[31mERROR\x1b[0m]:", err);
 
   return res.status(err.statusCode).json({
     title: "Something went wrong!",

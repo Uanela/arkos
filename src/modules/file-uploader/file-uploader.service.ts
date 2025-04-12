@@ -1,20 +1,24 @@
 import multer, { StorageEngine } from "multer";
 import path from "path";
 import fs from "fs";
-import { Request, Response, NextFunction } from "express";
+import { NextFunction } from "express";
 import AppError from "../error-handler/utils/app-error";
 import { promisify } from "util";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import sharp from "sharp";
 import { ArkosRequest, ArkosResponse } from "../../types";
+import {
+  processFile,
+  processImage,
+} from "./utils/helpers/file-uploader.helpers";
+import { removeBothSlashes } from "../../utils/helpers/text.helpers";
 
 /**
  * Service to handle file uploads, including single and multiple file uploads,
  * file validation (type, size), and file deletion.
  */
 export class FileUploaderService {
-  private uploadDir: string;
+  public readonly uploadDir: string;
   private fileSizeLimit: number;
   private allowedFileTypes: RegExp;
   private storage: StorageEngine;
@@ -32,7 +36,10 @@ export class FileUploaderService {
     allowedFileTypes: RegExp = /.*/,
     maxCount: number = 30
   ) {
-    this.uploadDir = path.join(".", `${uploadDir}/`);
+    uploadDir = uploadDir.startsWith("/") ? uploadDir.substring(1) : uploadDir;
+    uploadDir = uploadDir.endsWith("/") ? uploadDir.slice(0, -1) : uploadDir;
+
+    this.uploadDir = path.resolve(process.cwd(), `${uploadDir}/`);
     this.fileSizeLimit = fileSizeLimit;
     this.allowedFileTypes = allowedFileTypes;
     this.maxCount = maxCount;
@@ -99,13 +106,19 @@ export class FileUploaderService {
         }
 
         if (oldFilePath) {
-          const filePath = path.join(oldFilePath);
+          const { fileUpload: configs } = getArkosConfig();
+
+          const filePath = path.resolve(
+            process.cwd(),
+            removeBothSlashes(configs?.baseUploadDir!),
+            removeBothSlashes(oldFilePath)
+          );
           try {
             const stats = await promisify(fs.stat)(filePath);
-            if (stats) {
-              await promisify(fs.unlink)(filePath);
-            }
-          } catch (err) {}
+            if (stats) await promisify(fs.unlink)(filePath);
+          } catch (err) {
+            console.error(err);
+          }
         }
 
         next();
@@ -138,18 +151,22 @@ export class FileUploaderService {
    * @returns {Function} Middleware function for handling file deletion.
    */
   public handleDeleteSingleFile(oldFilePath: string) {
-    return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
-      (async () => {
-        const filePath = path.join(oldFilePath);
-        try {
-          const stats = await promisify(fs.stat)(filePath);
-          if (stats) {
-            await promisify(fs.unlink)(filePath);
-          }
-        } catch (err) {}
+    return async (
+      req: ArkosRequest,
+      res: ArkosResponse,
+      next: NextFunction
+    ) => {
+      const filePath = path.join(oldFilePath);
+      try {
+        const stats = await promisify(fs.stat)(filePath);
+        if (stats) {
+          await promisify(fs.unlink)(filePath);
+        }
+      } catch (err) {
+        console.error(err);
+      }
 
-        next();
-      })();
+      next();
     };
   }
 
@@ -234,7 +251,8 @@ export class FileUploaderService {
       }
 
       // Delete the file
-      await promisify(fs.access)(filePath, fs.constants.F_OK);
+
+      await promisify(fs.stat)(filePath);
       await promisify(fs.unlink)(filePath);
 
       return true;
@@ -254,16 +272,16 @@ export class FileUploaderService {
   private getFieldName() {
     let fieldName = "files";
     if (this.uploadDir.endsWith("images") || this.uploadDir.endsWith("images/"))
-      fieldName === "images";
+      fieldName = "images";
     if (this.uploadDir.endsWith("videos") || this.uploadDir.endsWith("videos/"))
-      fieldName === "videos";
+      fieldName = "videos";
     if (
       this.uploadDir.endsWith("documents") ||
       this.uploadDir.endsWith("documents/")
     )
-      fieldName === "documents";
+      fieldName = "documents";
     if (this.uploadDir.endsWith("files") || this.uploadDir.endsWith("files/"))
-      fieldName === "files";
+      fieldName = "files";
     return fieldName;
   }
 
@@ -310,117 +328,23 @@ export class FileUploaderService {
 
           // Get file type from uploadDir path
           const dirParts = this.uploadDir.split("/");
-          const fileType = dirParts[dirParts.length - 1] || "files";
-
-          /**
-           * Generates the correct relative path regardless of upload directory location
-           */
-          const generateRelativePath = (filePath: string) => {
-            const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
-            if (baseUploadDir.startsWith("..")) {
-              // For paths outside project directory
-              return path.join(fileType, path.basename(filePath));
-            } else {
-              // For paths within project
-              return filePath.replace(`${process.cwd()}${baseUploadDir}/`, "");
-            }
-          };
-
-          /**
-           * Processes image files using Sharp for resizing and format conversion
-           */
-          const processImage = async (
-            filePath: string
-          ): Promise<string | null> => {
-            const ext = path.extname(filePath).toLowerCase();
-            const originalFormat = ext.replace(".", "");
-            const outputFormat = options.format || originalFormat;
-
-            // Skip processing for non-image files
-            if (
-              !/jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif/i.test(originalFormat)
-            ) {
-              const relativePath = generateRelativePath(filePath);
-              return `${baseURL}${baseRoute}/${relativePath}`;
-            }
-
-            // Create a temp filename with original name + random string
-            const tempName = `${path.basename(
-              filePath,
-              ext
-            )}_${Date.now()}${ext}`;
-            const tempPath = path.join(path.dirname(filePath), tempName);
-
-            try {
-              let transformer = sharp(filePath);
-              const metadata = await transformer.metadata();
-
-              // Apply resize transformations if requested
-              if (options.resizeTo && metadata.width && metadata.height) {
-                const targetSize = options.resizeTo;
-                const scaleFactor =
-                  targetSize / Math.min(metadata.width, metadata.height);
-                const newWidth = Math.round(metadata.width * scaleFactor);
-                const newHeight = Math.round(metadata.height * scaleFactor);
-                transformer = transformer.resize(newWidth, newHeight);
-              } else if (options.width || options.height) {
-                transformer = transformer.resize(
-                  options.width || null,
-                  options.height || null,
-                  {
-                    fit: "inside",
-                  }
-                );
-              }
-
-              // Apply format transformations if requested
-              if (outputFormat === "webp") {
-                transformer = transformer.toFormat("webp");
-              } else if (outputFormat === "jpeg" || outputFormat === "jpg") {
-                transformer = transformer.toFormat("jpeg");
-              }
-
-              // Save to temp file first
-              await transformer.toFile(tempPath);
-
-              // Rename temp file to original filename
-              await promisify(fs.rename)(tempPath, filePath);
-
-              // Return the public URL for the file
-              const relativePath = generateRelativePath(filePath);
-              return `${baseURL}${baseRoute}/${relativePath}`;
-            } catch (error) {
-              // Clean up temp file if it exists
-              try {
-                await promisify(fs.stat)(tempPath);
-                await promisify(fs.unlink)(tempPath);
-              } catch {
-                // If temp file doesn't exist, no need to clean up
-              }
-              throw error;
-            }
-          };
-
-          /**
-           * Handles basic file processing for non-image files
-           */
-          const processFile = async (filePath: string): Promise<string> => {
-            const relativePath = generateRelativePath(filePath);
-            return `${baseURL}${baseRoute}/${relativePath}`;
-          };
+          const fileType =
+            (this.uploadDir.endsWith("/")
+              ? dirParts[dirParts.length - 2]
+              : dirParts[dirParts.length - 1]) || "files";
 
           // Process all uploaded files
           let data;
-          if (req.files && Array.isArray(req.files)) {
+          if (req.files && Array.isArray(req.files) && req.files.length > 0) {
             // Process multiple files
             const isImageUploader = this.uploadDir.includes("/images");
             if (isImageUploader) {
               data = await Promise.all(
-                req.files.map((file) => processImage(file.path))
+                req.files.map((file) => processImage(req, file.path, options))
               );
             } else {
               data = await Promise.all(
-                req.files.map((file) => processFile(file.path))
+                req.files.map((file) => processFile(req, file.path))
               );
             }
             // Filter out any null values from failed processing
@@ -429,9 +353,9 @@ export class FileUploaderService {
             // Process a single file
             const isImageUploader = this.uploadDir.includes("/images");
             if (isImageUploader) {
-              data = await processImage(req.file.path);
+              data = await processImage(req, req.file.path, options);
             } else {
-              data = await processFile(req.file.path);
+              data = await processFile(req, req.file.path);
             }
           } else {
             return reject(new AppError("No file uploaded", 400));
@@ -456,13 +380,13 @@ export const getFileUploaderServices = () => {
 
   // Default regex patterns for each file type
   const defaultRegexPatterns = {
-    image:
+    images:
       /jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif|heic|ico|jfif|raw|cr2|nef|orf|sr2|arw|dng|pef|raf|rw2|psd|ai|eps|xcf|jxr|wdp|hdp|jp2|j2k|jpf|jpx|jpm|mj2|avif/,
-    video:
+    videos:
       /mp4|avi|mov|mkv|flv|wmv|webm|mpg|mpeg|3gp|m4v|ts|rm|rmvb|vob|ogv|dv|qt|asf|m2ts|mts|divx|f4v|swf|mxf|roq|nsv|mvb|svi|mpe|m2v|mp2|mpv|h264|h265|hevc/,
-    document:
+    documents:
       /pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odg|odp|txt|rtf|csv|epub|md|tex|pages|numbers|key|xml|json|yaml|yml|ini|cfg|conf|log|html|htm|xhtml|djvu|mobi|azw|azw3|fb2|lit|ps|wpd|wps|dot|dotx|xlt|xltx|pot|potx|oft|one|onetoc2|opf|oxps|hwp/,
-    other: /.*/,
+    files: /.*/,
   };
 
   // Default upload restrictions
@@ -470,28 +394,31 @@ export const getFileUploaderServices = () => {
     images: {
       maxCount: 30,
       maxSize: 1024 * 1024 * 15, // 15 MB
-      supportedFilesRegex: defaultRegexPatterns.image,
+      supportedFilesRegex:
+        /jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif|heic|ico|jfif|raw|cr2|nef|orf|sr2|arw|dng|pef|raf|rw2|psd|ai|eps|xcf|jxr|wdp|hdp|jp2|j2k|jpf|jpx|jpm|mj2|avif/,
     },
     videos: {
       maxCount: 10,
       maxSize: 1024 * 1024 * 5096, // 5 GB
-      supportedFilesRegex: defaultRegexPatterns.video,
+      supportedFilesRegex:
+        /mp4|avi|mov|mkv|flv|wmv|webm|mpg|mpeg|3gp|m4v|ts|rm|rmvb|vob|ogv|dv|qt|asf|m2ts|mts|divx|f4v|swf|mxf|roq|nsv|mvb|svi|mpe|m2v|mp2|mpv|h264|h265|hevc/,
     },
     documents: {
       maxCount: 30,
       maxSize: 1024 * 1024 * 50, // 50 MB
-      supportedFilesRegex: defaultRegexPatterns.document,
+      supportedFilesRegex:
+        /pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odg|odp|txt|rtf|csv|epub|md|tex|pages|numbers|key|xml|json|yaml|yml|ini|cfg|conf|log|html|htm|xhtml|djvu|mobi|azw|azw3|fb2|lit|ps|wpd|wps|dot|dotx|xlt|xltx|pot|potx|oft|one|onetoc2|opf|oxps|hwp/,
     },
-    others: {
+    files: {
       maxCount: 10,
       maxSize: 1024 * 1024 * 5096, // 5 GB
-      supportedFilesRegex: defaultRegexPatterns.other,
+      supportedFilesRegex: /.*/,
     },
   };
 
   // Merge with user configuration (if any)
-  const restrictions = fileUpload?.uploadRestrictions
-    ? deepmerge(defaultRestrictions, fileUpload.uploadRestrictions)
+  const restrictions = fileUpload?.restrictions
+    ? deepmerge(defaultRestrictions, fileUpload.restrictions)
     : defaultRestrictions;
 
   /**
@@ -529,9 +456,9 @@ export const getFileUploaderServices = () => {
    */
   const fileUploaderService = new FileUploaderService(
     `${baseUploadDir}/files`,
-    restrictions.others.maxSize,
-    restrictions.others.supportedFilesRegex,
-    restrictions.others.maxCount
+    restrictions.files.maxSize,
+    restrictions.files.supportedFilesRegex,
+    restrictions.files.maxCount
   );
 
   return {

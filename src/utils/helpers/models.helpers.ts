@@ -8,7 +8,7 @@ import {
 import arkosEnv from "../arkos-env";
 import { userFileExtension } from "./fs.helpers";
 
-const prismaModelsModules: Record<
+export let prismaModelsModules: Record<
   string,
   Awaited<ReturnType<typeof importPrismaModelModules>>
 > = {};
@@ -148,7 +148,7 @@ export async function importPrismaModelModules(modelName: string) {
     }
   } catch (error) {
     console.error(
-      `Error importing model main DTO for model "${modelName}":`,
+      `Error importing model main DTO for model "${modelName} ${pascalModelName}":`,
       error
     );
   }
@@ -189,6 +189,20 @@ export async function importPrismaModelModules(modelName: string) {
     }
   } catch (error) {
     console.error(`Error importing query DTO for model "${modelName}":`, error);
+  }
+
+  try {
+    if (fs.existsSync(modelSchemaFile)) {
+      const modelSchemaModule = await import(modelSchemaFile);
+      result.dtos.model =
+        modelSchemaModule.default ||
+        modelSchemaModule[`${pascalModelName}Schema`];
+    }
+  } catch (error) {
+    console.error(
+      `Error importing create Schema for model "${modelName}":`,
+      error
+    );
   }
 
   try {
@@ -268,23 +282,36 @@ const prismaModelRelationFields: Record<string, RelationFields> = {};
 
 const prismaContent: string[] = [];
 
-const files = fs
-  .readdirSync(schemaFolderPath)
-  .filter((file) => file.endsWith(".prisma"));
+export function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
+  const files = fs.readdirSync(dirPath);
+
+  files?.forEach((file) => {
+    const filePath = path.join(dirPath, file);
+    const stat = fs.statSync(filePath);
+
+    // Skip migrations folder
+    if (stat.isDirectory() && file !== "migrations") {
+      fileList = getAllPrismaFiles(filePath, fileList);
+    } else if (stat.isFile() && file.endsWith(".prisma")) {
+      fileList.push(filePath);
+    }
+  });
+
+  return fileList;
+}
+
+// const prismaRootDir = ""; // Adjust this path if needed
+const files = getAllPrismaFiles("./prisma");
 
 for (const file of files) {
-  const filePath = path.join(schemaFolderPath, file);
-  const stats = fs.statSync(filePath);
+  const content = fs.readFileSync(file, "utf-8");
 
-  if (stats.isFile()) {
-    const content = fs.readFileSync(filePath, "utf-8");
-    prismaContent.push(content);
-  }
+  prismaContent.push(content);
 }
 
 const modelRegex = /model\s+(\w+)\s*{/g;
 const models: string[] = [];
-const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
+export const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
   [] as any;
 
 prismaContent.join("\n").replace(modelRegex, (_, modelName) => {
@@ -297,7 +324,7 @@ for (const model of models) {
 
   let modelFile;
   for (const file of files) {
-    const filePath = path.join(schemaFolderPath, file);
+    const filePath = path.join(file);
     const stats = fs.statSync(filePath);
 
     if (stats.isFile()) {
@@ -314,10 +341,7 @@ for (const model of models) {
     throw new Error(`Model ${modelName} not found`);
   }
 
-  const content = fs.readFileSync(
-    path.join(schemaFolderPath, modelFile),
-    "utf-8"
-  );
+  const content = fs.readFileSync(path.join(modelFile), "utf-8");
 
   const modelStart = content.indexOf(`model ${modelName} {`);
   const modelEnd = content.indexOf("}", modelStart);
@@ -398,6 +422,7 @@ for (const model of models) {
  */
 export function getPrismaModelRelations(modelName: string) {
   modelName = pascalCase(modelName);
+
   if (!(modelName in prismaModelRelationFields)) return;
   return prismaModelRelationFields[modelName];
 }
@@ -408,6 +433,7 @@ export function getPrismaModelRelations(modelName: string) {
  * @returns {string[]} An array of model names (e.g., ["User", "Post"]).
  */
 function getModels() {
+  console.log(models);
   return models;
 }
 

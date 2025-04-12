@@ -186,6 +186,7 @@ export class BaseController {
         );
       }
 
+      req.query.filterMode = req.query?.filterMode || "AND";
       const features = new APIFeatures(req, this.modelName).filter().sort();
       delete features.filters.include;
 
@@ -240,6 +241,7 @@ export class BaseController {
         );
       }
 
+      req.query.filterMode = req.query?.filterMode || "AND";
       const features = new APIFeatures(req, this.modelName).filter().sort();
       delete features.filters.include;
 

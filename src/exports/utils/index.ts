@@ -1,1 +1,1 @@
-export * from "../../utils/features/change-case.features";
+export * from "../../utils/helpers/change-case.helpers";
