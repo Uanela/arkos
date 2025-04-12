@@ -1,0 +1,185 @@
+# .github/workflows/npm-publish.yml
+name: Publish to npm
+
+on:
+  push:
+    branches:
+      - dev
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Version bump type (patch, minor, major)"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      npm_tag:
+        description: "npm tag (latest, beta, etc)"
+        required: true
+        default: "beta"
+      dry_run:
+        description: "Perform a dry run (no actual publishing)"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          # Add this line to ensure we have permission to push
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          registry-url: "https://registry.npmjs.org"
+
+      # Install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build (if needed)
+        run: pnpm run build
+
+      - name: Extract version and tag info
+        id: version_info
+        run: |
+          # Check if manually triggered
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Using manual trigger parameters"
+            echo "bump_type=${{ github.event.inputs.bump_type }}" >> $GITHUB_OUTPUT
+            echo "npm_tag=${{ github.event.inputs.npm_tag }}" >> $GITHUB_OUTPUT
+            echo "dry_run=${{ github.event.inputs.dry_run }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check if triggered by a tag
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "Using explicit version from tag: $VERSION"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            
+            # Check if tag has custom npm tag (format: v1.0.0-beta, v1.0.0-alpha, etc)
+            if [[ $VERSION == *-* ]]; then
+              NPM_TAG=$(echo $VERSION | cut -d'-' -f2)
+              echo "Using npm tag: $NPM_TAG"
+              echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+            else
+              echo "Using default npm tag: latest"
+              echo "npm_tag=latest" >> $GITHUB_OUTPUT
+            fi
+          else
+            # Check commit message for version bump instructions
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            if [[ $COMMIT_MSG == *"[bump:patch]"* ]]; then
+              echo "Bumping patch version based on commit message"
+              echo "bump_type=patch" >> $GITHUB_OUTPUT
+            elif [[ $COMMIT_MSG == *"[bump:minor]"* ]]; then
+              echo "Bumping minor version based on commit message"
+              echo "bump_type=minor" >> $GITHUB_OUTPUT
+            elif [[ $COMMIT_MSG == *"[bump:major]"* ]]; then
+              echo "Bumping major version based on commit message"
+              echo "bump_type=major" >> $GITHUB_OUTPUT
+            else
+              echo "No version bump instruction found, using patch as default"
+              echo "bump_type=patch" >> $GITHUB_OUTPUT
+            fi
+            
+            # Check for npm tag in commit message (format: [tag:beta], [tag:alpha], etc)
+            if [[ $COMMIT_MSG =~ \[tag:([a-zA-Z0-9-]+)\] ]]; then
+              NPM_TAG="${BASH_REMATCH[1]}"
+              echo "Using npm tag from commit message: $NPM_TAG"
+              echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+            else
+              echo "Using default npm tag: latest"
+              echo "npm_tag=latest" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          # Default dry_run for non-manual triggers
+          echo "dry_run=false" >> $GITHUB_OUTPUT
+
+      - name: Debug Git Status
+        run: |
+          echo "Current Git status:"
+          git status
+
+      - name: Update version (if not using explicit tag)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') && github.event_name != 'workflow_dispatch' }}
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+
+          # Use --no-git-tag-version and handle git operations manually
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          pnpm version ${{ steps.version_info.outputs.bump_type }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+
+          echo "Version bumped from $CURRENT_VERSION to $NEW_VERSION"
+
+          # Manually commit changes
+          git add package.json
+          if [ -f "pnpm-lock.yaml" ]; then
+            git add pnpm-lock.yaml
+          fi
+
+          git commit -m "Bump version to v$NEW_VERSION [skip ci]"
+          git tag "v$NEW_VERSION"
+
+          # Push changes back to the repository
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "v$NEW_VERSION"
+
+      - name: Simulate version bump (for manual dry run)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          NEW_VERSION=$(pnpm --no-git-tag-version version ${{ github.event.inputs.bump_type }} | sed 's/v//')
+          echo "Would bump from $CURRENT_VERSION to $NEW_VERSION"
+          # Reset version change for dry run
+          git checkout -- package.json
+          if [ -f "pnpm-lock.yaml" ]; then
+            git checkout -- pnpm-lock.yaml
+          fi
+
+      - name: Set specific version (if using explicit tag)
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        run: |
+          pnpm version ${{ steps.version_info.outputs.version }} --no-git-tag-version
+
+      - name: Publish to npm
+        run: |
+          if [ "${{ steps.version_info.outputs.dry_run }}" == "true" ]; then
+            echo "DRY RUN: Would publish with these parameters:"
+            echo "Version: $(node -p "require('./package.json').version")"
+            echo "Tag: ${{ steps.version_info.outputs.npm_tag }}"
+            pnpm publish --dry-run --no-git-checks $([ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && echo "--tag ${{ steps.version_info.outputs.npm_tag }}")
+          else
+            if [ "${{ steps.version_info.outputs.npm_tag }}" == "latest" ]; then
+              pnpm publish --no-git-checks
+            else
+              pnpm publish --no-git-checks --tag ${{ steps.version_info.outputs.npm_tag }}
+            fi
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
