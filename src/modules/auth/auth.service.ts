@@ -20,6 +20,7 @@ import {
 } from "../../types/auth";
 import { kebabCase } from "../../utils/helpers/change-case.helpers";
 import { singular } from "pluralize";
+import { MsDuration } from "./utils/helpers/auth.controller.helpers";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -35,7 +36,7 @@ class AuthService {
    */
   signJwtToken(
     id: number | string,
-    expiresIn?: SignOptions["expiresIn"],
+    expiresIn?: MsDuration | number,
     secret?: string
   ): string {
     const { authentication: configs } = getArkosConfig();
@@ -45,7 +46,7 @@ class AuthService {
       !process.env.JWT_SECRET &&
       !configs?.jwt?.secret
     )
-      throw new AppError("Missing JWT secret!", 500);
+      throw new AppError("Missing JWT secret on production!", 500);
 
     secret =
       secret ||

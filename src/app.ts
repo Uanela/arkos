@@ -199,7 +199,7 @@ export async function bootstrap(
   if (!disabledRouters.includes("prisma-models-router")) {
     const modelsRouter = replacedRouters.prismaModelsRouter
       ? await replacedRouters.prismaModelsRouter(arkosConfig)
-      : await getPrismaModelsRouter();
+      : await getPrismaModelsRouter(arkosConfig);
     app.use("/api", modelsRouter);
   }
 

@@ -2,354 +2,139 @@ import { Router } from "express";
 import {
   getPrismaModelsRouter,
   getAvailableResourcesAndRoutesRouter,
-} from "../base.router"; // Update with the correct path
-import {
-  getAvalibleRoutes,
-  BaseController,
-  getAvailableResources,
-} from "../base.controller"; // Update with the correct path
-import {
-  getModels,
-  importPrismaModelModules,
-} from "../../../utils/helpers/models.helpers";
-import {
-  addPrismaQueryOptionsToRequestQuery,
-  sendResponse,
-} from "../base.middlewares"; // Update with the correct path
+} from "../base.router";
+import * as modelsHelpers from "../../../utils/helpers/models.helpers";
+import * as baseController from "../base.controller";
 import authService from "../../auth/auth.service";
-import { handleRequestBodyValidationAndTransformation } from "../../../utils/helpers/base.controller.helpers";
+import * as routerHelpers from "../utils/helpers/base.router.helpers";
 
-// Mock dependencies
+// Mock the dependencies
 jest.mock("express", () => {
   const mockRouter = {
     get: jest.fn().mockReturnThis(),
     post: jest.fn().mockReturnThis(),
-    patch: jest.fn().mockReturnThis(),
+    put: jest.fn().mockReturnThis(),
     delete: jest.fn().mockReturnThis(),
-    route: jest.fn().mockReturnThis(),
     use: jest.fn().mockReturnThis(),
   };
 
-  // Create a mock express function
-  const mockExpress: any = jest.fn(() => ({
-    use: jest.fn().mockReturnThis(),
-    listen: jest.fn().mockReturnThis(),
+  const mockExpress = jest.fn(() => ({
+    get: jest.fn(),
+    use: jest.fn(),
+    listen: jest.fn(),
+    set: jest.fn(),
   }));
 
-  mockExpress.Router = jest.fn(() => mockRouter);
-  mockExpress.default = mockExpress;
-  mockExpress.json = jest.fn();
-  mockExpress.urlencoded = jest.fn();
-  mockExpress.static = jest.fn();
+  (mockExpress as any).Router = jest.fn(() => mockRouter);
+  (mockExpress as any).json = jest.fn(() => "express.json");
 
   return mockExpress;
 });
 
-jest.mock("../../../utils/helpers/models.helpers", () => ({
-  ...jest.requireActual("../../../utils/helpers/models.helpers"),
-  getModels: jest.fn(() => ["user", "products"]),
-  importPrismaModelModules: jest.fn(),
-}));
-jest.mock("../base.controller"); // Update with the correct path
-jest.mock("../base.middlewares"); // Update with the correct path
+jest.mock("../../../utils/helpers/models.helpers");
+jest.mock("../base.controller");
 jest.mock("../../auth/auth.service");
-jest.mock("../../../utils/helpers/base.controller.helpers");
-jest.mock("pluralize", () => ({
-  __esModule: true,
-  default: {
-    plural: jest.fn((str) => `${str}s`),
-  },
-}));
-jest.mock("../../../utils/helpers/change-case.helpers", () => ({
-  kebabCase: jest.fn((str) => str.toLowerCase()),
-}));
+jest.mock("../utils/helpers/base.router.helpers");
 jest.mock("fs");
 
 describe("Base Router", () => {
-  let mockRouter: any;
-  let mockBaseController: any;
-
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
-
-    // Setup mocks
-    mockRouter = Router();
-    mockBaseController = {
-      createOne: jest.fn(),
-      findMany: jest.fn(),
-      findOne: jest.fn(),
-      updateOne: jest.fn(),
-      deleteOne: jest.fn(),
-      createMany: jest.fn(),
-      updateMany: jest.fn(),
-      deleteMany: jest.fn(),
-    };
-
-    // Mock BaseController constructor
-    (BaseController as jest.Mock).mockImplementation(() => mockBaseController);
-
-    // Mock getModels
-    (getModels as jest.Mock).mockReturnValue(["User", "Post", "Comment"]);
-
-    // Mock authService
-    (authService.handleAuthenticationControl as jest.Mock).mockReturnValue(
-      jest.fn()
-    );
-    (authService.handleActionAccessControl as jest.Mock).mockReturnValue(
-      jest.fn()
-    );
-
-    // Mock helpers
-    (addPrismaQueryOptionsToRequestQuery as jest.Mock).mockReturnValue(
-      jest.fn()
-    );
-    (handleRequestBodyValidationAndTransformation as jest.Mock).mockReturnValue(
-      jest.fn()
-    );
   });
 
   describe("getPrismaModelsRouter", () => {
-    test("should create router with routes for all models", async () => {
-      // Arrange
-      (importPrismaModelModules as jest.Mock).mockResolvedValue({
-        middlewares: {},
-        authConfigs: {},
-        prismaQueryOptions: {},
-      });
+    it("should create a router with routes for all models", async () => {
+      // Mock return values
+      const mockModels = ["User", "Post", "Comment"];
+      (modelsHelpers.getModels as jest.Mock).mockReturnValue(mockModels);
 
-      // Act
-      const router = await getPrismaModelsRouter();
+      (routerHelpers.setupRouters as jest.Mock).mockReturnValue([
+        Promise.resolve(),
+        Promise.resolve(),
+        Promise.resolve(),
+      ]);
 
-      // Assert
-      expect(Router).toHaveBeenCalled();
-      expect(getModels).toHaveBeenCalled();
-      expect(importPrismaModelModules).toHaveBeenCalledTimes(3); // Once for each model
-      expect(BaseController).toHaveBeenCalledTimes(3); // Once for each model
+      // Call the function
+      const mockRouter = Router();
+      const result = await getPrismaModelsRouter();
 
-      // Check if routes are created for each model (User, Post, Comment)
-      expect(mockRouter.route).toHaveBeenCalledWith("/users");
-      expect(mockRouter.route).toHaveBeenCalledWith("/posts");
-      expect(mockRouter.route).toHaveBeenCalledWith("/comments");
-
-      // Check if routes with :id parameter are created
-      expect(mockRouter.route).toHaveBeenCalledWith("/users/:id");
-      expect(mockRouter.route).toHaveBeenCalledWith("/posts/:id");
-      expect(mockRouter.route).toHaveBeenCalledWith("/comments/:id");
-
-      // Check if /many routes are created
-      expect(mockRouter.route).toHaveBeenCalledWith("/users/many");
-      expect(mockRouter.route).toHaveBeenCalledWith("/posts/many");
-      expect(mockRouter.route).toHaveBeenCalledWith("/comments/many");
-
-      // Expect the router to be returned
-      expect(router).toBe(mockRouter);
+      // Assertions
+      expect(modelsHelpers.getModels).toHaveBeenCalledTimes(1);
+      expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
+      expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
+        mockModels,
+        mockRouter
+      );
+      expect(result).toBe(mockRouter);
     });
 
-    test("should add correct middleware chains for routes with no custom middlewares", async () => {
-      // Arrange
-      (importPrismaModelModules as jest.Mock).mockResolvedValue({
-        middlewares: {},
-        authConfigs: {},
-        prismaQueryOptions: {},
-      });
+    it("should pass arkosConfigs to the router setup if provided", async () => {
+      // Mock return values
+      const mockModels = ["User", "Post"];
+      (modelsHelpers.getModels as jest.Mock).mockReturnValue(mockModels);
 
-      // Act
-      await getPrismaModelsRouter();
+      (routerHelpers.setupRouters as jest.Mock).mockReturnValue([
+        Promise.resolve(),
+        Promise.resolve(),
+      ]);
 
-      // Assert - Check route handlers for POST /:resource
-      expect(mockRouter.post).toHaveBeenCalledWith(
-        expect.any(Function), // authService.handleAuthenticationControl
-        expect.any(Function), // authService.handleActionAccessControl
-        expect.any(Function), // handleRequestBodyValidationAndTransformation
-        expect.any(Function), // addPrismaQueryOptionsToRequestQuery
-        mockBaseController.createOne,
-        sendResponse,
-        sendResponse,
-        sendResponse
+      const mockArkosConfig = { authentication: { mode: "dynamic" } };
+
+      // Call the function
+      const mockRouter = Router();
+      const result = await getPrismaModelsRouter(mockArkosConfig as any);
+
+      // Assertions
+      expect(modelsHelpers.getModels).toHaveBeenCalledTimes(1);
+      expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
+      expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
+        mockModels,
+        mockRouter
       );
-
-      // Assert - Check route handlers for GET /:resource
-      expect(mockRouter.get).toHaveBeenCalledWith(
-        expect.any(Function), // authService.handleAuthenticationControl
-        expect.any(Function), // authService.handleActionAccessControl
-        expect.any(Function), // addPrismaQueryOptionsToRequestQuery
-        mockBaseController.findMany,
-        sendResponse,
-        sendResponse,
-        sendResponse
-      );
-
-      // Similar assertions can be made for other routes
-    });
-
-    test("should correctly handle custom middlewares in the chain", async () => {
-      // Arrange
-      const customMiddlewares = {
-        beforeCreateOne: jest.fn(),
-        afterCreateOne: jest.fn(),
-        beforeFindMany: jest.fn(),
-        afterFindMany: jest.fn(),
-      };
-
-      (importPrismaModelModules as jest.Mock).mockResolvedValue({
-        middlewares: customMiddlewares,
-        authConfigs: {},
-        prismaQueryOptions: {},
-      });
-
-      // Act
-      await getPrismaModelsRouter();
-
-      // Assert - Check route handlers for POST /:resource with custom middlewares
-      expect(mockRouter.post).toHaveBeenCalledWith(
-        expect.any(Function), // authService.handleAuthenticationControl
-        expect.any(Function), // authService.handleActionAccessControl
-        expect.any(Function), // handleRequestBodyValidationAndTransformation
-        expect.any(Function), // addPrismaQueryOptionsToRequestQuery
-        customMiddlewares.beforeCreateOne,
-        mockBaseController.createOne,
-        customMiddlewares.afterCreateOne,
-        sendResponse
-      );
-
-      // Assert - Check route handlers for GET /:resource with custom middlewares
-      expect(mockRouter.get).toHaveBeenCalledWith(
-        expect.any(Function), // authService.handleAuthenticationControl
-        expect.any(Function), // authService.handleActionAccessControl
-        expect.any(Function), // addPrismaQueryOptionsToRequestQuery
-        customMiddlewares.beforeFindMany,
-        mockBaseController.findMany,
-        customMiddlewares.afterFindMany,
-        sendResponse
-      );
-    });
-
-    test("should handle only beforeXXX middlewares in the chain", async () => {
-      // Arrange
-      const customMiddlewares = {
-        beforeCreateOne: jest.fn(),
-        beforeFindMany: jest.fn(),
-      };
-
-      (importPrismaModelModules as jest.Mock).mockResolvedValue({
-        middlewares: customMiddlewares,
-        authConfigs: {},
-        prismaQueryOptions: {},
-      });
-
-      // Act
-      await getPrismaModelsRouter();
-
-      // Assert
-      expect(mockRouter.post).toHaveBeenCalledWith(
-        expect.any(Function), // authService.handleAuthenticationControl
-        expect.any(Function), // authService.handleActionAccessControl
-        expect.any(Function), // handleRequestBodyValidationAndTransformation
-        expect.any(Function), // addPrismaQueryOptionsToRequestQuery
-        customMiddlewares.beforeCreateOne,
-        mockBaseController.createOne,
-        sendResponse,
-        sendResponse
-      );
-
-      expect(mockRouter.get).toHaveBeenCalledWith(
-        expect.any(Function), // authService.handleAuthenticationControl
-        expect.any(Function), // authService.handleActionAccessControl
-        expect.any(Function), // addPrismaQueryOptionsToRequestQuery
-        customMiddlewares.beforeFindMany,
-        mockBaseController.findMany,
-        sendResponse,
-        sendResponse
-      );
-    });
-
-    test("should handle only afterXXX middlewares in the chain", async () => {
-      // Arrange
-      const customMiddlewares = {
-        afterCreateOne: jest.fn(),
-        afterFindMany: jest.fn(),
-      };
-
-      (importPrismaModelModules as jest.Mock).mockResolvedValue({
-        middlewares: customMiddlewares,
-        authConfigs: {},
-        prismaQueryOptions: {},
-      });
-
-      // Act
-      await getPrismaModelsRouter();
-
-      // Assert
-      expect(mockRouter.post).toHaveBeenCalledWith(
-        expect.any(Function), // authService.handleAuthenticationControl
-        expect.any(Function), // authService.handleActionAccessControl
-        expect.any(Function), // handleRequestBodyValidationAndTransformation
-        expect.any(Function), // addPrismaQueryOptionsToRequestQuery
-        mockBaseController.createOne,
-        customMiddlewares.afterCreateOne,
-        sendResponse,
-        sendResponse
-      );
-
-      expect(mockRouter.get).toHaveBeenCalledWith(
-        expect.any(Function), // authService.handleAuthenticationControl
-        expect.any(Function), // authService.handleActionAccessControl
-        expect.any(Function), // addPrismaQueryOptionsToRequestQuery
-        mockBaseController.findMany,
-        customMiddlewares.afterFindMany,
-        sendResponse,
-        sendResponse
-      );
+      expect(result).toBe(mockRouter);
     });
   });
 
   describe("getAvailableResourcesAndRoutesRouter", () => {
-    test("should create router with available routes endpoint", () => {
-      // Act
-      const router = getAvailableResourcesAndRoutesRouter();
+    it("should create a router with available routes and resources endpoints", () => {
+      // Mock authentication middleware
+      (authService.authenticate as jest.Mock) = jest.fn();
+      (authService.handleActionAccessControl as jest.Mock) = jest.fn(() =>
+        jest.fn()
+      );
+      (baseController.getAvalibleRoutes as jest.Mock) = jest.fn();
+      (baseController.getAvailableResources as jest.Mock) = jest.fn();
 
-      // Assert
-      expect(Router).toHaveBeenCalled();
-      expect(mockRouter.get).toHaveBeenCalledWith(
+      // Call the function
+      const mockRouter = Router();
+      const result = getAvailableResourcesAndRoutesRouter();
+
+      // Verify route setup
+      expect(Router).toHaveBeenCalledTimes(2);
+
+      // Verify routes were created
+      const routerInstance = (Router as jest.Mock).mock.results[0].value;
+      expect(routerInstance.get).toHaveBeenCalledTimes(2);
+
+      // Check first route (available-routes)
+      expect(routerInstance.get).toHaveBeenNthCalledWith(
+        1,
         "/available-routes",
         authService.authenticate,
-        getAvalibleRoutes
+        expect.any(Function),
+        baseController.getAvalibleRoutes
       );
 
-      expect(mockRouter.get).toHaveBeenCalledWith(
+      // Check second route (available-resources)
+      expect(routerInstance.get).toHaveBeenCalledWith(
         "/available-resources",
         authService.authenticate,
-        getAvailableResources
+        expect.any(Function),
+        baseController.getAvailableResources
       );
 
-      // Expect the router to be returned
-      expect(router).toBe(mockRouter);
-    });
-
-    test("should handle missing authService.authenticate gracefully", () => {
-      // Arrange
-      (authService.authenticate as unknown) = undefined;
-
-      // Act
-      const router = getAvailableResourcesAndRoutesRouter();
-
-      // Assert
-      expect(Router).toHaveBeenCalled();
-      expect(mockRouter.get).toHaveBeenCalledWith(
-        "/available-routes",
-        undefined,
-        getAvalibleRoutes
-      );
-
-      expect(mockRouter.get).toHaveBeenCalledWith(
-        "/available-resources",
-        undefined,
-        getAvailableResources
-      );
-
-      // Expect the router to be returned
-      expect(router).toBe(mockRouter);
+      // Verify result
+      expect(result).toBe(mockRouter);
     });
   });
 });

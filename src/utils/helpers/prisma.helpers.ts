@@ -18,7 +18,6 @@ export async function loadPrismaModule(a?: string) {
 
       const prismaModule = await importModule(prismaPath);
       prismaInstance = prismaModule.default || prismaModule.prisma;
-      // console.log(prismaInstance, prismaModule, a, "prismaInstance");
 
       if (!prismaInstance) throw new Error("not found");
     } catch (error) {

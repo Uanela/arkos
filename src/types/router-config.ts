@@ -1,19 +1,19 @@
-export type AvailableEndpoints =
+export type RouterEndpoint =
   | "createOne"
   | "findOne"
   | "updateOne"
   | "deleteOne"
   | "findMany"
   | "createMany"
-  | "udpateMany"
+  | "updateMany"
   | "deleteMany";
 
 /**
  * Allows to customize the generated routers
  *
- * See docs [www.arkosjs.com/docs/advanced-guide/customizing-generated-routers#generated-routers-configuration](https://www.arkosjs.com/docs/advanced-guide/customizing-generated-routers#generated-routers-configuration)
+ * See docs [https://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers](https://https://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers)
  */
-export type PrismaModelRouterConfig = {
+export type RouterConfig = {
   /**
    * Allows to configure nested routes.
    *
@@ -25,7 +25,7 @@ export type PrismaModelRouterConfig = {
    *
    * Returning only the fields belonging to the passed author id.
    *
-   * See more at [www.arkosjs.com/docs/advanced-guide/customizing-generated-routers](https://www.arkosjs.com/docs/advanced-guide/customizing-generated-routers)
+   * See more at [ttps://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers](https://ttps://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers)
    */
   parent?: {
     /**
@@ -62,13 +62,13 @@ export type PrismaModelRouterConfig = {
      *
      * If you want to point to a different field pass it here.
      */
-    referenceField?: string;
+    foreignKey?: string;
     /**
      * Customizes what endpoints to be created.
      *
      * Default is "*" to generate all endpoints
      */
-    endpoints?: "*" | AvailableEndpoints | AvailableEndpoints[];
+    endpoints?: "*" | RouterEndpoint | RouterEndpoint[];
   };
   /**
    * Use to disable endpoints or the whole router

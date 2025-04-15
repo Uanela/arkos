@@ -3,14 +3,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import compression from "compression";
 import { rateLimit } from "express-rate-limit";
-import * as dotenv from "dotenv";
 import { bootstrap, app } from "../app";
-import { ArkosConfig } from "../types/arkos-config";
 import { queryParser } from "../utils/helpers/query-parser.helpers";
-import {
-  checkDatabaseConnection,
-  loadPrismaModule,
-} from "../utils/helpers/prisma.helpers";
+import { loadPrismaModule } from "../utils/helpers/prisma.helpers";
 import { handleRequestLogs } from "../modules/base/base.middlewares";
 import errorHandler from "../modules/error-handler/error-handler.controller";
 import { getAuthRouter } from "../modules/auth/auth.router";

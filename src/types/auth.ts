@@ -58,10 +58,5 @@ export interface AuthJwtPayload extends JwtPayload {
    */
   id?: number | string;
 
-  /**
-   * The username of the authenticated user.
-   *
-   * @type {string}
-   */
-  username?: string;
+  [x: string]: any;
 }

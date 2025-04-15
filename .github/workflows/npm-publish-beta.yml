@@ -85,8 +85,8 @@ jobs:
               echo "Using npm tag: $NPM_TAG"
               echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
             else
-              echo "Using default npm tag: latest"
-              echo "npm_tag=latest" >> $GITHUB_OUTPUT
+              echo "Using default npm tag: beta"
+              echo "npm_tag=beta" >> $GITHUB_OUTPUT
             fi
           else
             # Check commit message for version bump instructions
@@ -111,9 +111,20 @@ jobs:
               echo "Using npm tag from commit message: $NPM_TAG"
               echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
             else
-              echo "Using default npm tag: latest"
-              echo "npm_tag=latest" >> $GITHUB_OUTPUT
+              echo "Using default npm tag: beta"
+              echo "npm_tag=beta" >> $GITHUB_OUTPUT
             fi
+          fi
+
+          # Check commit message for version bump instructions
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+
+          # Add this new section to check for as_latest flag
+          if [[ $COMMIT_MSG == *"[as_latest:true]"* ]]; then
+            echo "Override detected: Publishing as latest regardless of tag"
+            echo "as_latest=true" >> $GITHUB_OUTPUT
+          else
+            echo "as_latest=false" >> $GITHUB_OUTPUT
           fi
 
           # Default dry_run for non-manual triggers
@@ -172,12 +183,21 @@ jobs:
           if [ "${{ steps.version_info.outputs.dry_run }}" == "true" ]; then
             echo "DRY RUN: Would publish with these parameters:"
             echo "Version: $(node -p "require('./package.json').version")"
-            echo "Tag: ${{ steps.version_info.outputs.npm_tag }}"
-            pnpm publish --dry-run --no-git-checks $([ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && echo "--tag ${{ steps.version_info.outputs.npm_tag }}")
+            
+            # Check if should publish as latest despite original tag
+            if [ "${{ steps.version_info.outputs.as_latest }}" == "true" ]; then
+              echo "Tag: latest (overridden by as_latest flag)"
+              pnpm publish --dry-run --no-git-checks
+            else
+              echo "Tag: ${{ steps.version_info.outputs.npm_tag }}"
+              pnpm publish --dry-run --no-git-checks $([ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && echo "--tag ${{ steps.version_info.outputs.npm_tag }}")
+            fi
           else
-            if [ "${{ steps.version_info.outputs.npm_tag }}" == "latest" ]; then
+            if [ "${{ steps.version_info.outputs.as_latest }}" == "true" ] || [ "${{ steps.version_info.outputs.npm_tag }}" == "latest" ]; then
+              # Publish as latest
               pnpm publish --no-git-checks
             else
+              # Publish with specified tag
               pnpm publish --no-git-checks --tag ${{ steps.version_info.outputs.npm_tag }}
             fi
           fi

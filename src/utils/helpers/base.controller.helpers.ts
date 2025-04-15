@@ -1,15 +1,36 @@
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { getArkosConfig } from "../../server";
-import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
+import {
+  ArkosNextFunction,
+  ArkosRequest,
+  ArkosRequestHandler,
+  ArkosResponse,
+} from "../../types";
 import validateDto from "../validate-dto";
 import { kebabCase } from "./change-case.helpers";
 import { getModelModules } from "./models.helpers";
 import validateSchema from "../validate-schema";
 import { catchAsync } from "../../exports/error-handler";
 
+type AuthActions = "signup" | "login" | "updateMe" | "updatePassword";
+type DefaultActions = "create" | "update";
+
+// Overload for 'auth'
+export function handleRequestBodyValidationAndTransformation(
+  modelName: "auth",
+  action: AuthActions
+): ArkosRequestHandler;
+
+// Overload for other models
+export function handleRequestBodyValidationAndTransformation(
+  modelName: Exclude<string, "auth">,
+  action: DefaultActions
+): ArkosRequestHandler;
+
+// Implementation
 export function handleRequestBodyValidationAndTransformation(
   modelName: string,
-  action: "create" | "update"
+  action: string
 ) {
   return catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
