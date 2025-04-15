@@ -38,7 +38,7 @@ export function setupRouters(models: string[], router: Router) {
     } = new BaseController(model);
 
     // Check for router customization/disabling
-    const routerConfig: RouterConfig = customRouterModule?.default?.config;
+    const routerConfig: RouterConfig = customRouterModule?.config;
     const disableConfig = routerConfig?.disable || {};
     const isCompletelyDisabled = disableConfig === true;
 

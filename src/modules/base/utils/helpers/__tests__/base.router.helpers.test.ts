@@ -246,10 +246,9 @@ describe("setupRouters", () => {
       authConfigs: {},
       prismaQueryOptions: {},
       router: {
-        default: {
-          config: {
-            disable: true,
-          },
+        default: {},
+        config: {
+          disable: true,
         },
       },
     };

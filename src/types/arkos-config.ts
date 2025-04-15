@@ -305,12 +305,14 @@ export type ArkosConfig = {
    * Allows to specify the request rate limit for all endpoints.
    * 
    * #### Default
-   *
+   *```ts
+   *{
       windowMs: 60 * 1000,
       limit: 1000,
       standardHeaders: "draft-7",
       legacyHeaders: false,
     }
+    ```
    * 
    * Passing an object not overriding all the default options will only
    * cause it to be deepmerged and not actually replace with empty fields
