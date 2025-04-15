@@ -106,6 +106,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/login",
+      expect.any(Function),
       mockAuthController.login,
       sendResponse,
       sendResponse,
@@ -114,6 +115,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/signup",
+      expect.any(Function),
       mockAuthController.signup,
       sendResponse,
       sendResponse,
@@ -169,6 +171,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/login",
+      expect.any(Function),
       customMiddlewares.beforeLogin,
       mockAuthController.login,
       customMiddlewares.afterLogin,
@@ -177,6 +180,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/signup",
+      expect.any(Function),
       customMiddlewares.beforeSignup,
       mockAuthController.signup,
       customMiddlewares.afterSignup,
@@ -202,6 +206,7 @@ describe("Auth Router", () => {
       "/users/me",
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
       sendResponse,
       sendResponse,
       sendResponse
@@ -218,6 +223,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/login",
+      expect.any(Function),
       expect.any(Function),
       sendResponse,
       sendResponse,
@@ -236,6 +242,7 @@ describe("Auth Router", () => {
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/signup",
       expect.any(Function),
+      expect.any(Function),
       sendResponse,
       sendResponse,
       sendResponse
@@ -243,6 +250,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/update-password",
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       sendResponse,
@@ -279,6 +287,7 @@ describe("Auth Router", () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
       sendResponse,
       sendResponse
     );
@@ -294,6 +303,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/login",
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       sendResponse,
@@ -313,12 +323,14 @@ describe("Auth Router", () => {
       "/auth/signup",
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
       sendResponse,
       sendResponse
     );
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/update-password",
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
@@ -355,6 +367,7 @@ describe("Auth Router", () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
       sendResponse,
       sendResponse
     );
@@ -370,6 +383,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/login",
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       sendResponse,
@@ -389,12 +403,14 @@ describe("Auth Router", () => {
       "/auth/signup",
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
       sendResponse,
       sendResponse
     );
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/update-password",
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
@@ -437,6 +453,7 @@ describe("Auth Router", () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
 
       sendResponse
     );
@@ -453,6 +470,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/login",
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
@@ -475,12 +493,13 @@ describe("Auth Router", () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
-
+      expect.any(Function),
       sendResponse
     );
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/auth/update-password",
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),

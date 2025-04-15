@@ -69,7 +69,7 @@ describe("Auth Controller Factory", () => {
 
     mockPrisma = {
       user: {
-        findUnique: jest.fn(),
+        findFirst: jest.fn(),
         update: jest.fn(),
       },
     };
@@ -87,14 +87,13 @@ describe("Auth Controller Factory", () => {
       },
     });
 
-    (getArkosConfig as jest.Mock).mockReturnValue({
-      authentication: {
-        usernameField: "username",
-        login: {
-          sendAccessTokenThrough: "both",
-        },
-      },
-    });
+    // (getArkosConfig as jest.Mock).mockReturnValueOnce({
+    //   authentication: {
+    //     login: {
+    //       sendAccessTokenThrough: "both",
+    //     },
+    //   },
+    // });
 
     // Create request, response, and next function mocks
     req = {
@@ -253,7 +252,7 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -265,38 +264,47 @@ describe("Auth Controller Factory", () => {
       await authController.login(req, res, next);
 
       // Verify
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
         where: { username: "testuser" },
       });
     });
 
     it("should use username field from query parameter when provided", async () => {
-      // Setup
-      req.query.usernameField = "email";
-      req.body = { email: "test@example.com", password: "Password123" };
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: {
+          login: {
+            allowedUsernames: ["email"],
+          },
+        },
+      });
 
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
+      // Setup
+      req = {
+        body: { email: "test@arkosjs.com", password: "Password123" },
+        query: { usernameField: "email" },
+      };
+
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
         id: "user-id-123",
-        email: "test@example.com",
+        email: "test@arkosjs.com",
         password: "hashedPassword",
       });
 
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      // Execute
       await authController.login(req, res, next);
 
       // Verify
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: "test@example.com" },
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
+        where: { email: "test@arkosjs.com" },
       });
     });
 
     it("should return 401 if user is not found", async () => {
       // Setup
       req.body = { username: "nonexistentuser", password: "Password123" };
-      mockPrisma.user.findUnique.mockResolvedValueOnce(null);
+      mockPrisma.user.findFirst.mockResolvedValueOnce(null);
 
       // Execute
       await authController.login(req, res, next);
@@ -314,7 +322,7 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "WrongPassword123" };
 
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -338,7 +346,7 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -347,14 +355,14 @@ describe("Auth Controller Factory", () => {
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        authentication: {
-          usernameField: "username",
-          login: {
-            sendAccessTokenThrough: "both",
-          },
-        },
-      });
+      // (getArkosConfig as jest.Mock).mockReturnValueOnce({
+      //   authentication: {
+      //     usernameField: "username",
+      //     login: {
+      //       sendAccessTokenThrough: "both",
+      //     },
+      //   },
+      // });
 
       // Execute
       await authController.login(req, res, next);
@@ -373,25 +381,24 @@ describe("Auth Controller Factory", () => {
 
     it('should only set cookie when config is "cookie-only"', async () => {
       // Setup
-      req.body = { username: "testuser", password: "Password123" };
-
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-      });
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
-
-      (getArkosConfig as jest.Mock).mockReturnValue({
+      (getArkosConfig as jest.Mock).mockReturnValueOnce({
         authentication: {
-          usernameField: "username",
           login: {
             sendAccessTokenThrough: "cookie-only",
           },
         },
       });
+
+      req.body = { username: "testuser321", password: "Password123" };
+
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
+        id: "user-id-123",
+        username: "testuser321",
+        password: "hashedPassword",
+      });
+
+      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
+      (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
       // Execute
       await authController.login(req, res, next);
@@ -411,7 +418,7 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -420,9 +427,8 @@ describe("Auth Controller Factory", () => {
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      (getArkosConfig as jest.Mock).mockReturnValue({
+      (getArkosConfig as jest.Mock).mockReturnValueOnce({
         authentication: {
-          usernameField: "username",
           login: {
             sendAccessTokenThrough: "response-only",
           },
@@ -448,7 +454,7 @@ describe("Auth Controller Factory", () => {
 
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findUnique.mockResolvedValueOnce({
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",

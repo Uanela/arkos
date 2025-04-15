@@ -6,6 +6,7 @@ import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import { sendResponse } from "../base/base.middlewares";
 import { ArkosConfig } from "../../types/arkos-config";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
+import { handleRequestBodyValidationAndTransformation } from "../../utils/helpers/base.controller.helpers";
 
 const router: Router = Router();
 
@@ -29,6 +30,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     .patch(
       "/users/me",
       authService.authenticate,
+      handleRequestBodyValidationAndTransformation("auth", "updateMe"),
       middlewares?.beforeGetMe ?? authController.getMe,
       middlewares?.beforeGetMe
         ? authController.getMe
@@ -67,6 +69,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
 
   router.post(
     "/auth/login",
+    handleRequestBodyValidationAndTransformation("auth", "login"),
     middlewares?.beforeLogin ?? authController.login,
     middlewares?.beforeLogin
       ? authController.login
@@ -92,6 +95,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
 
   router.post(
     "/auth/signup",
+    handleRequestBodyValidationAndTransformation("auth", "signup"),
     middlewares?.beforeSignup ?? authController.signup,
     middlewares?.beforeSignup
       ? authController.signup
@@ -105,6 +109,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
   router.post(
     "/auth/update-password",
     authService.authenticate,
+    handleRequestBodyValidationAndTransformation("auth", "updatePassword"),
     middlewares?.beforeUpdatePassword ?? authController.updatePassword,
     middlewares?.beforeUpdatePassword
       ? authController.updatePassword

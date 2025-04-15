@@ -3,7 +3,7 @@ import {
   canBeUsedToConnect,
   isListFieldAnArray,
   isPrismaRelationFormat,
-} from "../base.helpers"; // Update this path
+} from "../base.service.helpers"; // Update this path
 
 // Mock the required helpers
 jest.mock("../../../../../utils/helpers/models.helpers", () => ({

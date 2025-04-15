@@ -2,7 +2,7 @@ import { BaseService } from "../base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import AppError from "../../error-handler/utils/app-error";
 import authService from "../../auth/auth.service";
-import { handleRelationFieldsInBody } from "../utils/helpers/base.helpers";
+import { handleRelationFieldsInBody } from "../utils/helpers/base.service.helpers";
 import { getPrismaModelRelations } from "../../../utils/helpers/models.helpers";
 
 // Mock dependencies
@@ -12,7 +12,8 @@ jest.mock("fs", () => ({
 }));
 jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../auth/auth.service");
-jest.mock("../utils/helpers/base.helpers");
+jest.mock("../utils/helpers/base.router.helpers");
+jest.mock("../utils/helpers/base.service.helpers");
 jest.mock("../../../utils/helpers/models.helpers", () => ({
   ...jest.requireActual("../../../utils/helpers/models.helpers"),
   getPrismaModelRelations: jest.fn(),

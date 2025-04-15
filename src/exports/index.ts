@@ -1,4 +1,4 @@
-import { PrismaModelRouterConfig } from "../types/prisma-model-router-config";
+import { RouterConfig } from "../types/router-config";
 import { BaseController } from "./../modules/base/base.controller";
 import { initApp } from "../server";
 import {
@@ -26,7 +26,7 @@ export {
   ArkosRequestHandler,
   BaseController,
   ArkosConfig,
-  PrismaModelRouterConfig,
+  RouterConfig,
 };
 
 /**

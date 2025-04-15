@@ -4,7 +4,6 @@ import {
   pascalCase,
 } from "../../utils/helpers/change-case.helpers";
 import {
-  getModelModules,
   getModels,
   getPrismaModelRelations,
   RelationFields,
@@ -12,7 +11,7 @@ import {
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import AppError from "../error-handler/utils/app-error";
 import pluralize from "pluralize";
-import { handleRelationFieldsInBody } from "./utils/helpers/base.helpers";
+import { handleRelationFieldsInBody } from "./utils/helpers/base.service.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import authService from "../auth/auth.service";
 

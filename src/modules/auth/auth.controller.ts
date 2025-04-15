@@ -10,7 +10,13 @@ import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
-import { determineUsernameField } from "./utils/helpers/auth.helpers";
+import {
+  createPrismaWhereClause,
+  determineUsernameField,
+  getNestedValue,
+  MsDuration,
+  toMs,
+} from "./utils/helpers/auth.controller.helpers";
 
 /**
  * Default fields to exclude from user object when returning to client
@@ -130,6 +136,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     /**
      * Authenticates a user using configurable username field and password
      * Username field can be specified in query parameter or config
+     * Supports nested fields and array queries (e.g., "profile.nickname", "phones.some.number")
      */
     login: catchAsync(
       async (
@@ -138,24 +145,39 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         next: ArkosNextFunction
       ) => {
         const authConfigs = getArkosConfig()?.authentication;
+
         const usernameField = determineUsernameField(req);
 
-        const usernameValue = req.body[usernameField];
+        // For the error message, we only care about the top-level field name
+        const topLevelField = usernameField.split(".")[0];
+        const usernameValue = req.body[topLevelField];
         const { password } = req.body;
 
         if (!usernameValue || !password) {
           return next(
-            new AppError(`Please provide ${usernameField} and password`, 400)
+            new AppError(`Please provide ${topLevelField} and password`, 400)
           );
         }
 
         const prisma = getPrismaInstance();
 
-        // Create dynamic where clause based on username field
-        const whereClause: any = {};
-        whereClause[usernameField] = usernameValue;
+        // Create appropriate where clause for the query
+        let whereClause: Record<string, any>;
 
-        const user = await (prisma as any).user.findUnique({
+        if (usernameField.includes(".")) {
+          // For nested paths, we need to extract the actual value to search for
+          const valueToFind = getNestedValue(req.body, usernameField);
+          if (valueToFind === undefined) {
+            return next(new AppError(`Invalid ${usernameField} provided`, 400));
+          }
+          whereClause = createPrismaWhereClause(usernameField, valueToFind);
+        } else {
+          // Simple field case
+          whereClause = { [usernameField]: usernameValue };
+        }
+
+        // Use findFirst instead of findUnique for complex queries
+        const user = await (prisma as any).user.findFirst({
           where: whereClause,
         });
 
@@ -164,7 +186,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           !(await authService.isCorrectPassword(password, user.password))
         ) {
           return next(
-            new AppError(`Incorrect ${usernameField} or password`, 401)
+            new AppError(
+              `Incorrect ${topLevelField.toLowerCase()} or password`,
+              401
+            )
           );
         }
 
@@ -174,28 +199,32 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           expires: new Date(
             Date.now() +
               Number(
-                authConfigs?.jwt?.cookieExpiresIn ||
-                  process.env.JWT_COOKIE_EXPIRES_IN ||
-                  arkosEnv.JWT_COOKIE_EXPIRES_IN
+                toMs(
+                  authConfigs?.jwt?.expiresIn ||
+                    (arkosEnv.JWT_EXPIRES_IN as MsDuration)
+                )
               ) *
                 24 *
                 60 *
                 60 *
                 1000
           ),
-          httpOnly: true,
-          secure: req.secure || req.headers["x-forwarded-proto"] === "https",
+          httpOnly:
+            authConfigs?.jwt?.cookie?.httpOnly ||
+            process.env.JWT_COOKIE_HTTP_ONLY === "true" ||
+            true,
+          secure:
+            authConfigs?.jwt?.cookie?.secure ||
+            process.env.JWT_COOKIE_SECURE === "true" ||
+            req.secure ||
+            req.headers["x-forwarded-proto"] === "https",
           sameSite:
-            authConfigs?.jwt?.secret || process.env.JWT_SECURE !== "false"
-              ? "lax"
-              : "none",
+            authConfigs?.jwt?.cookie?.sameSite ||
+            process.env.JWT_COOKIE_SAME_SITE ||
+            process.env.NODE_ENV === "production"
+              ? "none"
+              : "lax",
         };
-
-        if (
-          process.env.NODE_ENV === "production" &&
-          (authConfigs?.jwt?.secret || process.env.JWT_SECURE !== "false")
-        )
-          cookieOptions.secure = true;
 
         if (middlewares?.afterLogin) {
           req.responseData = { accessToken: token };

@@ -6,6 +6,7 @@ import compression from "compression";
 import { Options as QueryParserOptions } from "../utils/helpers/query-parser.helpers";
 import { ValidatorOptions } from "class-validator";
 import { SignOptions } from "jsonwebtoken";
+import { MsDuration } from "../modules/auth/utils/helpers/auth.controller.helpers";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
@@ -52,34 +53,56 @@ export type ArkosConfig = {
      * Defines auth login related configurations to customize the api.
      */
     login?: {
+      /**
+       * Defines the field that will be used as username by the built-in auth system, by default arkos will look for the field "username" in your model User, hence when making login for example you must send:
+       *
+       * ```json
+       *  {
+       *    "username": "johndoe",
+       *    "password": "somePassword123"
+       *  }
+       * ```
+       *
+       * **Note:** You can also modify the usernameField on the fly by passing it to the request query parameters. example:
+       *
+       * ```curl
+       * POST /api/auth/login?usernameField=email
+       * ```
+       *
+       * See more at [www.arkosjs.com/docs/authentication-system/sending-authentication-requests#example-changing-the-username-field](https://www.arkosjs.com/docs/authentication-system/sending-authentication-requests#example-changing-the-username-field)
+       *
+       * By specifing here another field for username, for example passing "email", "companyCode" or something else your json will be like:
+       *
+       * **Example with email**
+       *
+       * ```json
+       *  {
+       *    "email": "john.doe@example.com",
+       *    "password": "somePassword123"
+       *  }
+       * ```
+       */
+      allowedUsernames?: string[];
       /** Defines wether to send the access token in response after login or only send as cookie, defeault is both.*/
       sendAccessTokenThrough?: "cookie-only" | "response-only" | "both";
     };
-    /** Defines the field that will be used as username by the built-in auth system, by default arkos will look for the field "username" in your model User, hence when making login for example you must send:
+    /**
+     * @deprecated
      *
-     * ```json
-     *  {
-     *    "username": "johndoe",
-     *    "password": "somePassword123"
+     * **Use this instead**:
+     *
+     * ```ts
+     * arkos.init({
+     *  authentication: {
+     *    login: {
+     *      allowedUsernames: ["email", "profile.nickname"]
+     *    }
      *  }
+     * })
      * ```
      *
-     * **Note:** You can also modify the usernameField on the fly by passing it to the request query parameters. example:
+     *  * See more at [www.arkosjs.com/docs/authentication-system/sending-authentication-requests#example-changing-the-username-field](https://www.arkosjs.com/docs/authentication-system/sending-authentication-requests#example-changing-the-username-field)
      *
-     * ```curl
-     * POST /api/auth/login?usernameField=email
-     * ```
-     *
-     * By specifing here another field for username, for example passing "email", "companyCode" or something else your json will be like:
-     *
-     * **Example with email**
-     *
-     * ```json
-     *  {
-     *    "email": "john.doe@example.com",
-     *    "password": "somePassword123"
-     *  }
-     * ```
      */
     usernameField?: string;
     /**
@@ -110,27 +133,52 @@ export type ArkosConfig = {
      */
     requestRateLimitOptions?: RateLimitOptions;
     /**
-     * Defines jwt configurations for secret, expiresIn, cookieExpiresIn
+     * JWT (JSON Web Token) authentication configuration.
      *
-     * Can be pass also through env variables:
-     * - jwt.secret => JWT_SECRET: If not passed production auth will  throw an error
-     * - jwt.expiresIn => JWT_EXPIRES_IN: default 30d
-     * - jwt.cookieExpiresIn => JWT_COOKIE_EXPIRES_IN: default 90
-     * - jwt.secure => JWT_SECURE: default true
+     * You can override these values directly in code, or use environment variables:
      *
-     * **Note**: the values passed here will take precedence
+     * - `JWT_SECRET`: Secret used to sign and verify JWT tokens.
+     * - `JWT_EXPIRES_IN`: Duration string or number indicating when the token should expire (e.g. "30d", 3600).
+     * - `JWT_COOKIE_EXPIRES_IN`: Defaults to 90 (used for calculating cookie expiration).
+     * - `JWT_COOKIE_SECURE`: Whether the cookie is sent only over HTTPS. Default: `true` in production.
+     * - `JWT_COOKIE_HTTP_ONLY`: Whether the cookie is HTTP-only. Default: `true`.
+     * - `JWT_COOKIE_SAME_SITE`: Can be "lax", "strict", or "none". Defaults to "lax" in dev, "none" in prod.
+     *
+     * ⚠️ Values passed here take precedence over environment variables.
      */
     jwt?: {
-      /** Secret to sign and decode jwt tokens */
+      /** Secret key used for signing and verifying JWT tokens */
       secret?: string;
       /**
-       * Do define when the toke expires
+       * Duration after which the JWT token expires.
+       * Accepts either a duration string (e.g. "30d", "1h") or a number in milliseconds.
+       * Defaults to "30d" if not provided.
        */
-      expiresIn?: SignOptions["expiresIn"];
-      /** Days in which the cookie must be kept before expire*/
-      cookieExpiresIn?: number;
-      /** If it must be secure or not, Default: true */
-      secure?: boolean;
+      expiresIn?: MsDuration | number;
+
+      /**
+       * Configuration for the JWT cookie sent to the client
+       */
+      cookie?: {
+        /**
+         * Whether the cookie should be marked as secure (sent only over HTTPS).
+         * Defaults to `true` in production and `false` in development.
+         */
+        secure?: boolean;
+
+        /**
+         * Whether the cookie should be marked as HTTP-only.
+         * Default is `true` to prevent access via JavaScript.
+         */
+        httpOnly?: boolean;
+
+        /**
+         * Controls the SameSite attribute of the cookie.
+         * Defaults to "none" in production and "lax" in development.
+         * Options: "lax" | "strict" | "none"
+         */
+        sameSite?: "lax" | "strict" | "none";
+      };
     };
   };
   /** Allows to customize and toggle the built-in validation, by default it is set to `false`. If true is passed it will use validation with the default resolver set to `class-validator` if you intend to change the resolver to `zod` do the following:
