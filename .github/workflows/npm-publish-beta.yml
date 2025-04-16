@@ -121,7 +121,7 @@ jobs:
 
           # Add this new section to check for as_latest flag
           if [[ $COMMIT_MSG == *"[as_latest:true]"* ]]; then
-            echo "Override detected: Publishing as latest regardless of tag"
+            echo "Override detected: Publishing as latest distribution tag while keeping version suffix"
             echo "as_latest=true" >> $GITHUB_OUTPUT
           else
             echo "as_latest=false" >> $GITHUB_OUTPUT
@@ -146,8 +146,9 @@ jobs:
           pnpm version ${{ steps.version_info.outputs.bump_type }} --no-git-tag-version
           NEW_VERSION=$(node -p "require('./package.json').version")
 
-          # Modify version to include tag suffix if not "latest"
-          if [ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && [ "${{ steps.version_info.outputs.as_latest }}" != "true" ]; then
+          # Always modify version to include tag suffix if tag is not "latest"
+          # Note: as_latest flag only affects distribution tag, not version string
+          if [ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ]; then
             TAG_SUFFIX="${{ steps.version_info.outputs.npm_tag }}"
             # Update package.json with the new version that includes the tag
             TAGGED_VERSION="${NEW_VERSION}-${TAG_SUFFIX}"
@@ -179,7 +180,7 @@ jobs:
           pnpm --no-git-tag-version version ${{ github.event.inputs.bump_type }}
           BUMPED_VERSION=$(node -p "require('./package.json').version")
 
-          # Add tag suffix if not "latest"
+          # Always add tag suffix if tag is not "latest"
           if [ "${{ github.event.inputs.npm_tag }}" != "latest" ]; then
             TAG_SUFFIX="${{ github.event.inputs.npm_tag }}"
             FINAL_VERSION="${BUMPED_VERSION}-${TAG_SUFFIX}"
@@ -202,7 +203,8 @@ jobs:
           TAG_VERSION="${{ steps.version_info.outputs.version }}"
 
           # If tag doesn't already have a suffix and npm_tag is not "latest", add it
-          if [[ ! "$TAG_VERSION" == *-* ]] && [ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && [ "${{ steps.version_info.outputs.as_latest }}" != "true" ]; then
+          # (regardless of as_latest flag - that only affects distribution tag)
+          if [[ ! "$TAG_VERSION" == *-* ]] && [ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ]; then
             TAG_SUFFIX="${{ steps.version_info.outputs.npm_tag }}"
             FINAL_VERSION="${TAG_VERSION}-${TAG_SUFFIX}"
             pnpm version $FINAL_VERSION --no-git-tag-version
@@ -219,14 +221,23 @@ jobs:
             # Check if should publish as latest despite original tag
             if [ "${{ steps.version_info.outputs.as_latest }}" == "true" ]; then
               echo "Tag: latest (overridden by as_latest flag)"
+              echo "Would run: pnpm publish --no-git-checks"
               pnpm publish --dry-run --no-git-checks
             else
               echo "Tag: ${{ steps.version_info.outputs.npm_tag }}"
+              echo "Would run: pnpm publish --no-git-checks $([ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && echo "--tag ${{ steps.version_info.outputs.npm_tag }}")"
               pnpm publish --dry-run --no-git-checks $([ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && echo "--tag ${{ steps.version_info.outputs.npm_tag }}")
             fi
           else
-            if [ "${{ steps.version_info.outputs.as_latest }}" == "true" ] || [ "${{ steps.version_info.outputs.npm_tag }}" == "latest" ]; then
-              # Publish as latest
+            if [ "${{ steps.version_info.outputs.as_latest }}" == "true" ]; then
+              # Publish as latest dist-tag but keep the version with its suffix
+              pnpm publish --no-git-checks
+              
+              # Add message about what happened for clarity
+              VERSION=$(node -p "require('./package.json').version")
+              echo "Published version $VERSION with 'latest' dist-tag"
+            elif [ "${{ steps.version_info.outputs.npm_tag }}" == "latest" ]; then
+              # Standard latest publish
               pnpm publish --no-git-checks
             else
               # Publish with specified tag
