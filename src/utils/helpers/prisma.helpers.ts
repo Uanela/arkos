@@ -21,8 +21,9 @@ export async function loadPrismaModule(a?: string) {
 
       if (!prismaInstance) throw new Error("not found");
     } catch (error) {
-      // console.error(`Failed to load prisma.${userFileExtension}:`, error);
-      throw new AppError("Could not initialize Prisma module.", 500, { error });
+      throw new AppError("Could not initialize Prisma module.", 500, {
+        tip: `Make sure your prisma instance is exported under src/utils/prisma.${userFileExtension}, read more about Arkos' Project Structure under https://www.arkosjs.com/docs/project-structure#root-structure`,
+      });
     }
   }
   return prismaInstance;
