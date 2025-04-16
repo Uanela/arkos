@@ -16,8 +16,6 @@ import {
 } from "../change-case.helpers";
 
 describe("change-case.helpers", () => {
-  const input = "HelloWorld42Test";
-
   test("split", () => {
     expect(split("helloWorld")).toEqual(["hello", "World"]);
     expect(split("NASAEngineer")).toEqual(["NASA", "Engineer"]);

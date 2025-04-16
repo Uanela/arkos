@@ -1,12 +1,8 @@
 import { importModule } from "../global.helpers";
 
-jest.mock("../global.helpers", () => ({
-  importModule: jest.fn(() => ({ default: true })),
-}));
-
 describe("importModule", () => {
-  it("Just for covarage", () => {
-    const module = importModule("test");
-    expect(module).toEqual({ default: true });
+  it("Just for covarage", async () => {
+    const module = await importModule("fs");
+    expect(module).toBeDefined();
   });
 });

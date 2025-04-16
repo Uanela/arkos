@@ -104,20 +104,24 @@ export default function errorHandler(
  *
  * @returns {void} - Sends the response with the error details to the client.
  */
-function sendDevelopmentError(err: AppError, req: Request, res: Response) {
+function sendDevelopmentError(
+  err: AppError,
+  req: Request,
+  res: Response
+): void {
   console.error("[\x1b[31mERROR\x1b[0m]:", err);
 
   if (req.originalUrl.startsWith("/api"))
-    return res.status(err.statusCode).json({
+    res.status(err.statusCode).json({
       message: err.message.split("\n")[err.message.split("\n").length - 1],
       error: err,
       stack: err.stack?.split("\n"),
     });
-
-  res.status(err.statusCode).json({
-    title: "Something went wrong!",
-    message: err.message,
-  });
+  else
+    res.status(err.statusCode).json({
+      title: "Something went wrong!",
+      message: err.message,
+    });
 }
 
 /**
@@ -132,29 +136,31 @@ function sendDevelopmentError(err: AppError, req: Request, res: Response) {
  *
  * @returns {void} - Sends the response with the error details to the client.
  */
-function sendProductionError(err: AppError, req: Request, res: Response) {
+function sendProductionError(err: AppError, req: Request, res: Response): void {
   if (req.originalUrl.startsWith("/api")) {
-    if (err.isOperational) {
-      return res.status(err.statusCode).json({
+    if (err.isOperational)
+      res.status(err.statusCode).json({
         status: err.status,
         message: err.message,
       });
-    }
+    else
+      res.status(500).json({
+        status: "error",
+        message: "Something went wrong!",
+      });
 
-    return res.status(500).json({
-      status: "error",
-      message: "Something went wrong!",
-    });
+    return;
   }
 
   if (err.isOperational) {
-    return res.status(err.statusCode).json({
+    res.status(err.statusCode).json({
       title: "Something went wrong!",
       message: err.message,
     });
+    return;
   }
 
-  return res.status(err.statusCode).json({
+  res.status(err.statusCode).json({
     title: "Something went wrong!",
     message: "Please try again later.",
   });
@@ -176,12 +182,10 @@ process.on("SIGTERM", () => {
   ) {
     process.exit();
   } else {
-    console.error(
-      "👋🏽 SIGTERM RECEIVED in Production. Shutting down gracefully!"
-    );
+    console.error("SIGTERM RECEIVED in Production. Shutting down gracefully!");
 
     server.close(() => {
-      console.error("🔥 Process terminated");
+      console.error("Process terminated!!!");
     });
   }
 });

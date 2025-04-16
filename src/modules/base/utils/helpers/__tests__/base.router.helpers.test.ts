@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { setupRouters } from "../base.router.helpers"; // Adjust the import path
 import * as importHelpers from "../../../../../utils/helpers/models.helpers";
-// import authService from "../../../auth/auth.service";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
 

@@ -146,7 +146,17 @@ jobs:
           pnpm version ${{ steps.version_info.outputs.bump_type }} --no-git-tag-version
           NEW_VERSION=$(node -p "require('./package.json').version")
 
-          echo "Version bumped from $CURRENT_VERSION to $NEW_VERSION"
+          # Modify version to include tag suffix if not "latest"
+          if [ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && [ "${{ steps.version_info.outputs.as_latest }}" != "true" ]; then
+            TAG_SUFFIX="${{ steps.version_info.outputs.npm_tag }}"
+            # Update package.json with the new version that includes the tag
+            TAGGED_VERSION="${NEW_VERSION}-${TAG_SUFFIX}"
+            npm version $TAGGED_VERSION --no-git-tag-version
+            echo "Version with tag: $TAGGED_VERSION"
+          fi
+
+          FINAL_VERSION=$(node -p "require('./package.json').version")
+          echo "Final version: $FINAL_VERSION"
 
           # Manually commit changes
           git add package.json
@@ -154,19 +164,31 @@ jobs:
             git add pnpm-lock.yaml
           fi
 
-          git commit -m "Bump version to v$NEW_VERSION [skip ci]"
-          git tag "v$NEW_VERSION"
+          git commit -m "Bump version to v$FINAL_VERSION [skip ci]"
+          git tag "v$FINAL_VERSION"
 
           # Push changes back to the repository
           git push origin HEAD:${{ github.ref_name }}
-          git push origin "v$NEW_VERSION"
+          git push origin "v$FINAL_VERSION"
 
       - name: Simulate version bump (for manual dry run)
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           CURRENT_VERSION=$(node -p "require('./package.json').version")
-          NEW_VERSION=$(pnpm --no-git-tag-version version ${{ github.event.inputs.bump_type }} | sed 's/v//')
-          echo "Would bump from $CURRENT_VERSION to $NEW_VERSION"
+          # First bump to new version without tag
+          pnpm --no-git-tag-version version ${{ github.event.inputs.bump_type }}
+          BUMPED_VERSION=$(node -p "require('./package.json').version")
+
+          # Add tag suffix if not "latest"
+          if [ "${{ github.event.inputs.npm_tag }}" != "latest" ]; then
+            TAG_SUFFIX="${{ github.event.inputs.npm_tag }}"
+            FINAL_VERSION="${BUMPED_VERSION}-${TAG_SUFFIX}"
+            npm version $FINAL_VERSION --no-git-tag-version
+          else
+            FINAL_VERSION=$BUMPED_VERSION
+          fi
+
+          echo "Would bump from $CURRENT_VERSION to $FINAL_VERSION"
           # Reset version change for dry run
           git checkout -- package.json
           if [ -f "pnpm-lock.yaml" ]; then
@@ -176,7 +198,17 @@ jobs:
       - name: Set specific version (if using explicit tag)
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: |
-          pnpm version ${{ steps.version_info.outputs.version }} --no-git-tag-version
+          # Extract version from tag
+          TAG_VERSION="${{ steps.version_info.outputs.version }}"
+
+          # If tag doesn't already have a suffix and npm_tag is not "latest", add it
+          if [[ ! "$TAG_VERSION" == *-* ]] && [ "${{ steps.version_info.outputs.npm_tag }}" != "latest" ] && [ "${{ steps.version_info.outputs.as_latest }}" != "true" ]; then
+            TAG_SUFFIX="${{ steps.version_info.outputs.npm_tag }}"
+            FINAL_VERSION="${TAG_VERSION}-${TAG_SUFFIX}"
+            pnpm version $FINAL_VERSION --no-git-tag-version
+          else
+            pnpm version $TAG_VERSION --no-git-tag-version
+          fi
 
       - name: Publish to npm
         run: |
