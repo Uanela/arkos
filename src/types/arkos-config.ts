@@ -5,13 +5,28 @@ import cookieParser from "cookie-parser";
 import compression from "compression";
 import { Options as QueryParserOptions } from "../utils/helpers/query-parser.helpers";
 import { ValidatorOptions } from "class-validator";
-import { SignOptions } from "jsonwebtoken";
 import { MsDuration } from "../modules/auth/utils/helpers/auth.controller.helpers";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
  */
 export type ArkosConfig = {
+  /**
+   * Allows to configure request configs
+   */
+  request?: {
+    /**
+     * Allows to configure request parameters
+     */
+    parameters?: {
+      /**
+       * Toggles allowing `VERY DANGEROUS` request paramateres under `req.query` for pass prisma query options.
+       *
+       * See more
+       */
+      allowDangerousPrismaQueryOptions?: boolean;
+    };
+  };
   /** Message you would like to send, as Json and 200 response when
    * ```
    * GET /api
@@ -139,7 +154,6 @@ export type ArkosConfig = {
      *
      * - `JWT_SECRET`: Secret used to sign and verify JWT tokens.
      * - `JWT_EXPIRES_IN`: Duration string or number indicating when the token should expire (e.g. "30d", 3600).
-     * - `JWT_COOKIE_EXPIRES_IN`: Defaults to 90 (used for calculating cookie expiration).
      * - `JWT_COOKIE_SECURE`: Whether the cookie is sent only over HTTPS. Default: `true` in production.
      * - `JWT_COOKIE_HTTP_ONLY`: Whether the cookie is HTTP-only. Default: `true`.
      * - `JWT_COOKIE_SAME_SITE`: Can be "lax", "strict", or "none". Defaults to "lax" in dev, "none" in prod.

@@ -7,44 +7,44 @@
   "types": "dist/types/exports/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/exports/index.d.ts",
       "import": "./dist/es2020/exports/index.js",
-      "require": "./dist/cjs/exports/index.js",
-      "types": "./dist/types/exports/index.d.ts"
+      "require": "./dist/cjs/exports/index.js"
     },
     "./prisma": {
+      "types": "./dist/types/exports/prisma/index.d.ts",
       "import": "./dist/es2020/exports/prisma/index.js",
-      "require": "./dist/cjs/exports/prisma/index.js",
-      "types": "./dist/types/exports/prisma/index.d.ts"
+      "require": "./dist/cjs/exports/prisma/index.js"
     },
     "./auth": {
+      "types": "./dist/types/exports/auth/index.d.ts",
       "import": "./dist/es2020/exports/auth/index.js",
-      "require": "./dist/cjs/exports/auth/index.js",
-      "types": "./dist/types/exports/auth/index.d.ts"
+      "require": "./dist/cjs/exports/auth/index.js"
     },
     "./services": {
+      "types": "./dist/types/exports/services/index.d.ts",
       "import": "./dist/es2020/exports/services/index.js",
-      "require": "./dist/cjs/exports/services/index.js",
-      "types": "./dist/types/exports/services/index.d.ts"
+      "require": "./dist/cjs/exports/services/index.js"
     },
     "./validation": {
+      "types": "./dist/types/exports/validation/index.d.ts",
       "import": "./dist/es2020/exports/validation/index.js",
-      "require": "./dist/cjs/exports/validation/index.js",
-      "types": "./dist/types/exports/validation/index.d.ts"
+      "require": "./dist/cjs/exports/validation/index.js"
     },
     "./error-handler": {
+      "types": "./dist/types/exports/error-handler/index.d.ts",
       "import": "./dist/es2020/exports/error-handler/index.js",
-      "require": "./dist/cjs/exports/error-handler/index.js",
-      "types": "./dist/types/exports/error-handler/index.d.ts"
+      "require": "./dist/cjs/exports/error-handler/index.js"
     },
     "./utils": {
+      "types": "./dist/types/exports/utils/index.d.ts",
       "import": "./dist/es2020/exports/utils/index.js",
-      "require": "./dist/cjs/exports/utils/index.js",
-      "types": "./dist/types/exports/utils/index.d.ts"
+      "require": "./dist/cjs/exports/utils/index.js"
     },
     "./*": {
+      "types": "./dist/types/exports/*.d.ts",
       "import": "./dist/es2020/exports/*.js",
-      "require": "./dist/cjs/exports/*.js",
-      "types": "./dist/types/exports/*.d.ts"
+      "require": "./dist/cjs/exports/*.js"
     }
   },
   "typesVersions": {

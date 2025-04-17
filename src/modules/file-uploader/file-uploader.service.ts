@@ -337,7 +337,7 @@ export class FileUploaderService {
           let data;
           if (req.files && Array.isArray(req.files) && req.files.length > 0) {
             // Process multiple files
-            const isImageUploader = this.uploadDir.includes("/images");
+            const isImageUploader = this.uploadDir?.includes("/images");
             if (isImageUploader) {
               data = await Promise.all(
                 req.files.map((file) => processImage(req, file.path, options))
@@ -351,7 +351,7 @@ export class FileUploaderService {
             data = data.filter((url) => url !== null);
           } else if (req.file) {
             // Process a single file
-            const isImageUploader = this.uploadDir.includes("/images");
+            const isImageUploader = this.uploadDir?.includes("/images");
             if (isImageUploader) {
               data = await processImage(req, req.file.path, options);
             } else {

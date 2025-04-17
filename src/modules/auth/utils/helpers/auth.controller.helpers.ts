@@ -70,31 +70,35 @@ export const createPrismaWhereClause = (
 };
 
 /**
- * Access a value from an object using dot notation path
- * Example: getNestedValue({profile: {nickname: "john"}}, "profile.nickname") => "john"
+ * Access a value from a simple object based on a dot notation path
+ * The object will only contain a single property that matches the last part of the path
+ * Example: getNestedValue({nickname: "john"}, "profile.nickname") => "john"
  *
- * @param obj - The object to access
- * @param path - The dot notation path
- * @returns The value at the specified path or undefined if not found
+ * @param obj - The object containing the value (simple key-value pair)
+ * @param path - The dot notation path (only the last part is used to access the object)
+ * @returns The value from the object if the key matches the last part of the path, or undefined
  */
 export const getNestedValue = (obj: any, path: string): any => {
   if (!obj || !path) return undefined;
 
   const properties = path.split(".");
-  let value = obj;
+  const lastProperty = properties[properties.length - 1];
 
-  for (const prop of properties) {
-    if (value === null || value === undefined) return undefined;
-    // Skip "some" in the path as it's a Prisma operator, not an actual property
-    if (prop !== "some") {
-      value = value[prop];
-    }
+  // If the last property exists in the object, return its value
+  if (lastProperty in obj) {
+    return obj[lastProperty];
   }
 
-  return value;
+  return undefined;
 };
 
-// MsDuration type allows specific units for durations
+/**
+ * MsDuration type allows specific units for durations
+ *
+ * **For example**: 90d, 10ms, 50s.
+ *
+ * **Available metrics**: ms, s, m, h, d, w, y.
+ * */
 export type MsDuration =
   | number
   | `${number}`
@@ -139,11 +143,11 @@ export function toMs(input: number | MsDuration): number {
     {
       ms: 1,
       s: 1000,
-      m: 60_000,
-      h: 3_600_000,
-      d: 86_400_000,
-      w: 604_800_000,
-      y: 31_557_600_000, // 365.25 days in ms
+      m: 60000,
+      h: 3600000,
+      d: 86400000,
+      w: 604800000,
+      y: 31557600000, // 365.25 days in ms
     };
 
   return value * multipliers[unit];

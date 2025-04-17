@@ -5,7 +5,7 @@ import {
   kebabCase,
   pascalCase,
 } from "../../utils/helpers/change-case.helpers";
-import { userFileExtension } from "./fs.helpers";
+import { getUserFileExtension } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 
 export let prismaModelsModules: Record<
@@ -24,38 +24,38 @@ export function getFileModelModulesFileStructure(modelName: string) {
 
   return {
     core: {
-      service: `${kebabModelName}.service.${userFileExtension}`,
-      controller: `${kebabModelName}.controller.${userFileExtension}`,
-      middlewares: `${kebabModelName}.middlewares.${userFileExtension}`,
-      authConfigs: `${kebabModelName}.auth-configs.${userFileExtension}`,
-      prismaQueryOptions: `${kebabModelName}.prisma-query-options.${userFileExtension}`,
-      router: `${kebabModelName}.router.${userFileExtension}`,
+      service: `${kebabModelName}.service.${getUserFileExtension()}`,
+      controller: `${kebabModelName}.controller.${getUserFileExtension()}`,
+      middlewares: `${kebabModelName}.middlewares.${getUserFileExtension()}`,
+      authConfigs: `${kebabModelName}.auth-configs.${getUserFileExtension()}`,
+      prismaQueryOptions: `${kebabModelName}.prisma-query-options.${getUserFileExtension()}`,
+      router: `${kebabModelName}.router.${getUserFileExtension()}`,
     },
     dtos: isAuthModule
       ? {
-          login: `login.dto.${userFileExtension}`,
-          signup: `signup.dto.${userFileExtension}`,
-          updateMe: `update-me.dto.${userFileExtension}`,
-          updatePassword: `update-password.dto.${userFileExtension}`,
+          login: `login.dto.${getUserFileExtension()}`,
+          signup: `signup.dto.${getUserFileExtension()}`,
+          updateMe: `update-me.dto.${getUserFileExtension()}`,
+          updatePassword: `update-password.dto.${getUserFileExtension()}`,
         }
       : {
-          model: `${lowerModelName}.dto.${userFileExtension}`,
-          create: `create-${lowerModelName}.dto.${userFileExtension}`,
-          update: `update-${lowerModelName}.dto.${userFileExtension}`,
-          query: `query-${lowerModelName}.dto.${userFileExtension}`,
+          model: `${lowerModelName}.dto.${getUserFileExtension()}`,
+          create: `create-${lowerModelName}.dto.${getUserFileExtension()}`,
+          update: `update-${lowerModelName}.dto.${getUserFileExtension()}`,
+          query: `query-${lowerModelName}.dto.${getUserFileExtension()}`,
         },
     schemas: isAuthModule
       ? {
-          login: `login.schema.${userFileExtension}`,
-          signup: `signup.schema.${userFileExtension}`,
-          updateMe: `update-me.schema.${userFileExtension}`,
-          updatePassword: `update-password.schema.${userFileExtension}`,
+          login: `login.schema.${getUserFileExtension()}`,
+          signup: `signup.schema.${getUserFileExtension()}`,
+          updateMe: `update-me.schema.${getUserFileExtension()}`,
+          updatePassword: `update-password.schema.${getUserFileExtension()}`,
         }
       : {
-          model: `${lowerModelName}.schema.${userFileExtension}`,
-          create: `create-${lowerModelName}.schema.${userFileExtension}`,
-          update: `update-${lowerModelName}.schema.${userFileExtension}`,
-          query: `query-${lowerModelName}.schema.${userFileExtension}`,
+          model: `${lowerModelName}.schema.${getUserFileExtension()}`,
+          create: `create-${lowerModelName}.schema.${getUserFileExtension()}`,
+          update: `update-${lowerModelName}.schema.${getUserFileExtension()}`,
+          query: `query-${lowerModelName}.schema.${getUserFileExtension()}`,
         },
   };
 }
@@ -226,13 +226,14 @@ export function initializePrismaModels(testName?: string) {
   for (const file of files) {
     const content = fs.readFileSync(file, "utf-8");
 
-    if (!prismaContent.includes(content)) prismaContent.push(content);
+    if (!prismaContent?.includes(content)) prismaContent.push(content);
   }
 
   const content = prismaContent
     .join("\n")
     .replace(modelRegex, (_, modelName) => {
-      if (!models.includes(modelName)) models.push(camelCase(modelName.trim()));
+      if (!models?.includes(modelName))
+        models.push(camelCase(modelName.trim()));
       return `model ${modelName} {`;
     });
 
@@ -247,7 +248,7 @@ export function initializePrismaModels(testName?: string) {
     //     if (stats.isFile()) {
     //       const content = fs.readFileSync(filePath, "utf-8");
     //       prismaContent.push(content);
-    //       if (content.includes(`model ${modelName} {`)) {
+    //       if (content?.includes(`model ${modelName} {`)) {
     //         modelFile = file;
     //         break;
     //       }
@@ -280,7 +281,7 @@ export function initializePrismaModels(testName?: string) {
         continue;
 
       const [fieldName, type] = trimmedLine.split(/\s+/);
-      const isUnique = trimmedLine.includes("@unique");
+      const isUnique = trimmedLine?.includes("@unique");
 
       if (isUnique) {
         const existingFields = prismaModelsUniqueFields[model] || [];
@@ -303,9 +304,9 @@ export function initializePrismaModels(testName?: string) {
       const cleanType = type?.replace("[]", "").replace("?", "");
 
       if (
-        trimmedLine.includes("@relation") ||
+        trimmedLine?.includes("@relation") ||
         trimmedLine.match(/\s+\w+(\[\])?(\s+@|$)/) ||
-        models.includes(camelCase(cleanType || ""))
+        models?.includes(camelCase(cleanType || ""))
       ) {
         const modelStart = content.indexOf(`enum ${cleanType} {`);
 

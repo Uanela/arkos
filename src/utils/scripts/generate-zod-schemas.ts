@@ -21,7 +21,7 @@ async function generateZodSchemas(inputContent: string): Promise<any> {
   function typeToZodSchema(type: string, isOptional: boolean = false): string {
     type = type.trim();
     const baseSchema = (() => {
-      if (type.includes("Date")) {
+      if (type?.includes("Date")) {
         return `z.date().or(z.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), "Data inválida")`;
       }
       switch (type) {
@@ -35,7 +35,7 @@ async function generateZodSchemas(inputContent: string): Promise<any> {
           return "z.any()";
         default:
           // Handle arrays
-          if (type.includes("[]")) {
+          if (type?.includes("[]")) {
             const arrayType = type.replace("[]", "");
             // Handle primitive types in arrays
             switch (arrayType) {
@@ -86,7 +86,7 @@ async function generateZodSchemas(inputContent: string): Promise<any> {
         const [propName, type] = line.split(":").map((part) => part.trim());
         // Skip createdAt, updatedAt, and deletedAt
         if (
-          ["createdAt", "updatedAt", "deletedAt"].includes(
+          ["createdAt", "updatedAt", "deletedAt"]?.includes(
             propName.replace("?", "")
           )
         ) {

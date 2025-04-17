@@ -224,10 +224,10 @@ class AuthService {
 
               // Checks for both cases if using single role or multiple roles
               if (
-                !authorizedRoles.includes(req.user?.role) ||
+                !authorizedRoles?.includes(req.user?.role) ||
                 ((req.user?.roles as any[]).length > 0 &&
                   !authorizedRoles?.some((role) =>
-                    (req.user?.roles as any[]).includes(role)
+                    (req.user?.roles as any[])?.includes(role)
                   ))
               )
                 return next(
@@ -313,7 +313,7 @@ class AuthService {
 
     if (
       this.userChangedPasswordAfter(user, decoded.iat!) &&
-      !req.path.includes("logout")
+      !req.path?.includes("logout")
     )
       throw new AppError(
         "User recently changed password! Please log in again.",

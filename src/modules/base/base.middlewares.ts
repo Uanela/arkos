@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { PrismaQueryOptions } from "../../types";
+import { getArkosConfig } from "../../server";
 
 export function callNext(req: Request, res: Response, next: NextFunction) {
   next();
@@ -31,7 +32,14 @@ export function addPrismaQueryOptionsToRequestQuery<T>(
   action: keyof PrismaQueryOptions<T>
 ) {
   return (req: Request, res: Response, next: NextFunction) => {
+    const configs = getArkosConfig();
+
     req.query.prismaQueryOptions = JSON.stringify({
+      ...JSON.parse(
+        (configs?.request?.parameters?.allowDangerousPrismaQueryOptions &&
+          (req.query.prismaQueryOptions as string)) ||
+          "{}"
+      ),
       ...prismaQueryOptions?.queryOptions,
       ...(prismaQueryOptions ? prismaQueryOptions[action] : {}),
     });

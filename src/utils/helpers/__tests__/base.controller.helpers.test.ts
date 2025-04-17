@@ -14,7 +14,7 @@ jest.mock("fs");
 
 (fs.readdirSync as jest.Mock).mockReturnValue(["schema.prisma", "migrations"]);
 (fs.statSync as jest.Mock).mockImplementation((path) => ({
-  isDirectory: () => path.includes("migrations"),
+  isDirectory: () => path?.includes("migrations"),
   isFile: () => path.endsWith(".prisma"),
 }));
 (fs.readFileSync as jest.Mock).mockReturnValue(`

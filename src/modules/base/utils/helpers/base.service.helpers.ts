@@ -113,7 +113,7 @@ export function handleRelationFieldsInBody(
     const deleteManyIds: any[] = [];
 
     body[field.name]?.forEach((bodyField: any) => {
-      if (ignoreActions.includes(bodyField?.apiAction)) return;
+      if (ignoreActions?.includes(bodyField?.apiAction)) return;
 
       const apiAction = bodyField?.apiAction;
 
@@ -181,7 +181,7 @@ export function handleRelationFieldsInBody(
 
   relationFields?.singular?.forEach((field) => {
     if (!body[field.name]) return;
-    if (ignoreActions.includes(body[field.name]?.apiAction)) return;
+    if (ignoreActions?.includes(body[field.name]?.apiAction)) return;
 
     // Skip if the field is already in Prisma relation format
     if (isPrismaRelationFormat(body[field.name])) {
@@ -260,7 +260,7 @@ export function canBeUsedToConnect(
   if (!bodyField) return false;
 
   // If the field has an apiAction that's not for connecting, return false
-  if (bodyField.apiAction && !["connect"].includes(bodyField.apiAction)) {
+  if (bodyField.apiAction && !["connect"]?.includes(bodyField.apiAction)) {
     return false;
   }
 
