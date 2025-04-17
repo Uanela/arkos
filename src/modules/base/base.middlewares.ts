@@ -56,7 +56,7 @@ export function handleRequestLogs(
   res: Response,
   next: NextFunction
 ) {
-  // if (process.env.NODE_ENV === 'production') return next()
+  // if (process.env.NODE_ENV === "production") return next()
   const startTime = Date.now(); // Capture the start time
 
   // Define colors for each HTTP method
