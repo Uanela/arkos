@@ -262,14 +262,14 @@ function splitPrefixSuffix(
 
   while (prefixIndex < input.length) {
     const char = input.charAt(prefixIndex);
-    if (!prefixCharacters.includes(char)) break;
+    if (!prefixCharacters?.includes(char)) break;
     prefixIndex++;
   }
 
   while (suffixIndex > prefixIndex) {
     const index = suffixIndex - 1;
     const char = input.charAt(index);
-    if (!suffixCharacters.includes(char)) break;
+    if (!suffixCharacters?.includes(char)) break;
     suffixIndex = index;
   }
 

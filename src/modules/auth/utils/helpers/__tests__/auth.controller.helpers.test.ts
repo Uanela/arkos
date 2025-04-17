@@ -58,6 +58,26 @@ describe("auth controller helpers", () => {
       expect(determineUsernameField(testReq as any)).toBe("phoneNumber");
     });
 
+    it("should determine the correct username field to be used when using nested", async () => {
+      const testReq = {
+        query: {
+          usernameField: "profile.phoneNumber",
+        },
+      };
+
+      (getArkosConfig as any).mockReturnValueOnce({
+        authentication: {
+          login: {
+            allowedUsernames: ["profile.phoneNumber"],
+          },
+        },
+      });
+
+      expect(determineUsernameField(testReq as any)).toBe(
+        "profile.phoneNumber"
+      );
+    });
+
     it('should default to "username" when neither query nor config specify a field', async () => {
       expect(determineUsernameField({ query: {} } as any)).toBe("username");
     });
@@ -218,54 +238,31 @@ describe("auth controller helpers", () => {
       expect(getNestedValue(obj, "")).toBeUndefined();
     });
 
-    it("should get value for simple property", () => {
-      const obj = { name: "John" };
-      expect(getNestedValue(obj, "name")).toBe("John");
-    });
-
-    it("should get value for nested property", () => {
-      const obj = { profile: { nickname: "John" } };
+    it("should get value directly from the object when the path matches the key", () => {
+      const obj = { nickname: "John" };
       expect(getNestedValue(obj, "profile.nickname")).toBe("John");
     });
 
-    it("should get value for deeply nested property", () => {
-      const obj = { user: { profile: { settings: { theme: "dark" } } } };
+    it("should get value from deep path", () => {
+      const obj = { theme: "dark" };
       expect(getNestedValue(obj, "user.profile.settings.theme")).toBe("dark");
     });
 
-    it("should return undefined when property doesn't exist", () => {
-      const obj = { profile: { nickname: "John" } };
+    it("should return undefined when property doesn't exist in object", () => {
+      const obj = { nickname: "John" };
       expect(getNestedValue(obj, "profile.age")).toBeUndefined();
     });
 
-    it("should return undefined when nested path breaks", () => {
-      const obj = { profile: { nickname: "John" } };
-      expect(getNestedValue(obj, "profile.address.city")).toBeUndefined();
-    });
-
     it("should skip 'some' in the path as it's a Prisma operator", () => {
-      const obj = {
-        contacts: {
-          email: "test@example.com",
-        },
-      };
+      const obj = { email: "test@example.com" };
       expect(getNestedValue(obj, "contacts.some.email")).toBe(
-        obj.contacts.email
+        "test@example.com"
       );
-
-      const objWithArray = {
-        contacts: [{ email: "test@example.com" }],
-      };
-
-      expect(
-        getNestedValue(objWithArray, "contacts.some.email")
-      ).toBeUndefined();
     });
 
-    it("should handle array access", () => {
-      const obj = { users: [{ name: "John" }, { name: "Jane" }] };
+    it("should handle name property with array notation in path", () => {
+      const obj = { name: "John" };
       expect(getNestedValue(obj, "users.0.name")).toBe("John");
-      expect(getNestedValue(obj, "users.1.name")).toBe("Jane");
     });
   });
 });

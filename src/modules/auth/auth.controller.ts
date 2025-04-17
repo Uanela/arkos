@@ -149,22 +149,24 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         const usernameField = determineUsernameField(req);
 
         // For the error message, we only care about the top-level field name
-        const topLevelField = usernameField.split(".")[0];
-        const usernameValue = req.body[topLevelField];
+        const lastField =
+          usernameField.split(".")[usernameField.split(".").length - 1];
+
+        const usernameValue = req.body[lastField];
+
         const { password } = req.body;
 
-        if (!usernameValue || !password) {
+        if (!usernameValue || !password)
           return next(
-            new AppError(`Please provide ${topLevelField} and password`, 400)
+            new AppError(`Please provide both ${lastField} and password`, 400)
           );
-        }
 
         const prisma = getPrismaInstance();
 
         // Create appropriate where clause for the query
         let whereClause: Record<string, any>;
 
-        if (usernameField.includes(".")) {
+        if (usernameField?.includes(".")) {
           // For nested paths, we need to extract the actual value to search for
           const valueToFind = getNestedValue(req.body, usernameField);
           if (valueToFind === undefined) {
@@ -185,12 +187,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           !user ||
           !(await authService.isCorrectPassword(password, user.password))
         ) {
-          return next(
-            new AppError(
-              `Incorrect ${topLevelField.toLowerCase()} or password`,
-              401
-            )
-          );
+          return next(new AppError(`Incorrect ${lastField} or password`, 401));
         }
 
         const token = authService.signJwtToken(user.id!);
@@ -201,13 +198,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
               Number(
                 toMs(
                   authConfigs?.jwt?.expiresIn ||
+                    (process.env.JWT_EXPIRES_IN as MsDuration) ||
                     (arkosEnv.JWT_EXPIRES_IN as MsDuration)
                 )
-              ) *
-                24 *
-                60 *
-                60 *
-                1000
+              )
           ),
           httpOnly:
             authConfigs?.jwt?.cookie?.httpOnly ||

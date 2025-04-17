@@ -6,6 +6,7 @@ import {
   pascalCase,
 } from "../../../utils/helpers/change-case.helpers";
 import { importModule } from "../global.helpers";
+import { getUserFileExtension } from "../fs.helpers";
 
 const mockedPrismaSchema = `
       model User {
@@ -51,7 +52,7 @@ jest.mock("../../arkos-env", () => ({
   default: { PRISMA_SCHEMA_PATH: "./custom-prisma-path" },
 }));
 jest.mock("../fs.helpers", () => ({
-  userFileExtension: "js",
+  getUserFileExtension: jest.fn(() => "js"),
 }));
 // jest.mock("../models.helpers", () => ({
 //   ...jest.requireActual("../models.helpers"),
@@ -222,7 +223,7 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should handle errors when importing modules", async () => {
       // Setup
       (fs.existsSync as jest.Mock).mockImplementation((path) => {
-        if (path.includes("middlewares")) {
+        if (path?.includes("middlewares")) {
           console.error("Error importing");
           return false;
         }
@@ -464,6 +465,7 @@ describe("Prisma Models Helpers - Additional Tests", () => {
 
   describe("getFileModelModulesFileStructure", () => {
     it("should return the correct file structure for regular models", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("js");
       // Act
       const result = dynamicLoader.getFileModelModulesFileStructure("User");
 
@@ -493,6 +495,7 @@ describe("Prisma Models Helpers - Additional Tests", () => {
     });
 
     it("should return the correct file structure for auth model", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("js");
       // Act
       const result = dynamicLoader.getFileModelModulesFileStructure("Auth");
 
