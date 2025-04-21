@@ -1,8 +1,9 @@
 import {
   handleRelationFieldsInBody,
   canBeUsedToConnect,
-  isListFieldAnArray,
+  // isListFieldAnArray,
   isPrismaRelationFormat,
+  removeApiAction,
 } from "../base.service.helpers"; // Update this path
 
 // Mock the required helpers
@@ -546,21 +547,21 @@ describe("canBeUsedToConnect", () => {
   });
 });
 
-describe("isListFieldAnArray", () => {
-  it("should return true for arrays", () => {
-    expect(isListFieldAnArray([])).toBe(true);
-    expect(isListFieldAnArray([1, 2, 3])).toBe(true);
-    expect(isListFieldAnArray(new Array())).toBe(true);
-  });
+// describe("isListFieldAnArray", () => {
+//   it("should return true for arrays", () => {
+//     expect(isListFieldAnArray([])).toBe(true);
+//     expect(isListFieldAnArray([1, 2, 3])).toBe(true);
+//     expect(isListFieldAnArray(new Array())).toBe(true);
+//   });
 
-  it("should return false for non-arrays", () => {
-    expect(isListFieldAnArray({})).toBe(false);
-    expect(isListFieldAnArray("array")).toBe(false);
-    expect(isListFieldAnArray(123)).toBe(false);
-    expect(isListFieldAnArray(null)).toBe(false);
-    expect(isListFieldAnArray(undefined)).toBe(false);
-  });
-});
+//   it("should return false for non-arrays", () => {
+//     expect(isListFieldAnArray({})).toBe(false);
+//     expect(isListFieldAnArray("array")).toBe(false);
+//     expect(isListFieldAnArray(123)).toBe(false);
+//     expect(isListFieldAnArray(null)).toBe(false);
+//     expect(isListFieldAnArray(undefined)).toBe(false);
+//   });
+// });
 
 // Existing mocks should still be in place
 
@@ -601,10 +602,6 @@ describe("isPrismaRelationFormat", () => {
   it("should return false for objects without Prisma operations", () => {
     expect(isPrismaRelationFormat({ name: "Test" })).toBe(false);
     expect(isPrismaRelationFormat({ id: 1, title: "Test" })).toBe(false);
-    // expect(isPrismaRelationFormat(null)).toBe(false);
-    // expect(isPrismaRelationFormat(undefined)).toBe(false);
-    // expect(isPrismaRelationFormat("string")).toBe(false);
-    // expect(isPrismaRelationFormat(123)).toBe(false);
     expect(isPrismaRelationFormat([])).toBe(false);
     expect(isPrismaRelationFormat({ apiAction: "create" })).toBe(false);
   });
@@ -901,6 +898,36 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
               },
             },
           ],
+        },
+      });
+    });
+  });
+
+  describe("removeApiAction", () => {
+    it("Should strip out all apiAction fields", () => {
+      const obj = {
+        name: "Uanela Como",
+        profile: {
+          nickmake: "uanela",
+          bio: "The best",
+          games: {
+            id: "123",
+            apiAction: "connect",
+          },
+          apiAction: "create",
+        },
+      };
+
+      const result = removeApiAction(obj);
+
+      expect(result).toEqual({
+        name: "Uanela Como",
+        profile: {
+          nickmake: "uanela",
+          bio: "The best",
+          games: {
+            id: "123",
+          },
         },
       });
     });

@@ -9,6 +9,7 @@ import {
 // Mock console.info for testing log output
 jest.spyOn(console, "info").mockImplementation(() => {});
 // jest.spyOn(global, "Date").mock(new Date());
+jest.mock("fs");
 
 describe("Express Middleware Functions", () => {
   let mockRequest: Partial<Request>;

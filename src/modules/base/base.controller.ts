@@ -6,6 +6,7 @@ import AppError from "../error-handler/utils/app-error";
 import { kebabCase } from "../../utils/helpers/change-case.helpers";
 import { getExpressApp } from "../../server";
 import { getModelModules, getModels } from "../../utils/helpers/models.helpers";
+import { getAppRoutes } from "../../utils/helpers/base.controller.helpers";
 
 /**
  * BaseController class providing standardized RESTful API endpoints for any prisma model
@@ -272,35 +273,7 @@ export function getAvalibleRoutes(
   res: ArkosResponse,
   next: ArkosNextFunction
 ) {
-  const routes: { method: string; path: string }[] = [];
-  req.params;
-  const app = getExpressApp();
-
-  app._router.stack.forEach((middleware: any) => {
-    if (middleware.route) {
-      Object.keys(middleware.route.methods).forEach((method) => {
-        routes.push({
-          method: method.toUpperCase(),
-          path: middleware.route.path,
-        });
-      });
-    } else if (middleware.handle && middleware.handle.stack) {
-      middleware.handle.stack.forEach((routerMiddleware: any) => {
-        if (routerMiddleware.route) {
-          Object.keys(routerMiddleware.route.methods).forEach((method) => {
-            const fullPath =
-              (middleware.regexp
-                ? middleware.regexp.toString().replace("/", "")
-                : "") + routerMiddleware.route.path;
-            routes.push({
-              method: method.toUpperCase(),
-              path: routerMiddleware.route.path,
-            });
-          });
-        }
-      });
-    }
-  });
+  const routes = getAppRoutes();
 
   res.json(routes);
 }

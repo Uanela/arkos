@@ -1,6 +1,18 @@
 import { NextFunction, Request, Response } from "express";
-import { PrismaQueryOptions } from "../../types";
+import {
+  PrismaQueryOptions,
+  ArkosNextFunction,
+  ArkosRequest,
+  ArkosRequestHandler,
+  ArkosResponse,
+} from "../../types";
 import { getArkosConfig } from "../../server";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
+import { catchAsync } from "../../exports/error-handler";
+import { getModelModules } from "../../utils/helpers/models.helpers";
+import { kebabCase } from "../../exports/utils";
+import validateDto from "../../utils/validate-dto";
+import validateSchema from "../../utils/validate-schema";
 
 export function callNext(req: Request, res: Response, next: NextFunction) {
   next();
@@ -41,7 +53,7 @@ export function addPrismaQueryOptionsToRequestQuery<T>(
           "{}"
       ),
       ...prismaQueryOptions?.queryOptions,
-      ...(prismaQueryOptions ? prismaQueryOptions[action] : {}),
+      ...(prismaQueryOptions?.[action] || {}),
     });
     next();
   };
@@ -57,7 +69,7 @@ export function handleRequestLogs(
   next: NextFunction
 ) {
   // if (process.env.NODE_ENV === "production") return next()
-  const startTime = Date.now(); //Capture the start time
+  const startTime = Date.now(); // Capture the start time
 
   // Define colors for each HTTP method
   const methodColors = {
@@ -107,4 +119,55 @@ export function handleRequestLogs(
   });
 
   next(); // Pass control to the next middleware or route handler
+}
+
+type AuthActions = "signup" | "login" | "updateMe" | "updatePassword";
+type DefaultActions = "create" | "update";
+
+// Overload for 'auth'
+export function handleRequestBodyValidationAndTransformation(
+  resourceName: "auth",
+  action: AuthActions
+): ArkosRequestHandler;
+
+// Overload for other models
+export function handleRequestBodyValidationAndTransformation(
+  resourceName: Exclude<string, "auth">,
+  action: DefaultActions
+): ArkosRequestHandler;
+
+// Implementation
+export function handleRequestBodyValidationAndTransformation(
+  resourceName: string,
+  action: string
+) {
+  return catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const modelModules = getModelModules(kebabCase(resourceName));
+      const validationConfigs = getArkosConfig()?.validation;
+      let body = req.body;
+
+      if (
+        validationConfigs?.resolver === "class-validator" &&
+        modelModules.dtos[action]
+      )
+        req.body = await validateDto(
+          modelModules.dtos[action],
+          body,
+          deepmerge(
+            {
+              whitelist: true,
+            },
+            validationConfigs?.validationOptions || {}
+          )
+        );
+      else if (
+        validationConfigs?.resolver === "zod" &&
+        modelModules.schemas[action]
+      )
+        req.body = await validateSchema(modelModules.schemas[action], body);
+
+      next();
+    }
+  );
 }

@@ -15,7 +15,8 @@ import {
  * ```typescript
  * import { ArkosRequest, ArkosResponse, ArkosNextFunction } from 'arkos'
  *
- * export const getManyPosts = catchAsync(async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+ * export const getManyPosts = catchAsync(async
+ * (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
  *    const posts = await getSomePosts()
  *    res.status(200).json({ data: posts })
  * })
@@ -25,7 +26,7 @@ const catchAsync =
   (fn: ArkosRequestHandler) =>
   async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
     try {
-      await fn(req, res, next);
+      return await fn(req, res, next);
     } catch (err) {
       next(err);
     }

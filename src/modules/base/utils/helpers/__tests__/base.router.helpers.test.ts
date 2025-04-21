@@ -35,15 +35,14 @@ jest.mock("../../../../auth/auth.service", () => ({
   handleActionAccessControl: jest.fn(() => "accessControlMiddleware"),
 }));
 
-jest.mock("../../../../../utils/helpers/base.controller.helpers", () => ({
-  handleRequestBodyValidationAndTransformation: jest.fn(
-    () => "validationMiddleware"
-  ),
-}));
+// jest.mock("../../../base.middlewares", () => ({
+//   ,
+// }));
 
 jest.mock("../../../base.middlewares", () => ({
   addPrismaQueryOptionsToRequestQuery: jest.fn(() => "queryOptionsMiddleware"),
   sendResponse: "sendResponseMiddleware",
+  handleRequestBodyValidationAndTransformation: jest.fn(() => jest.fn()),
 }));
 
 jest.mock("../../../base.controller");

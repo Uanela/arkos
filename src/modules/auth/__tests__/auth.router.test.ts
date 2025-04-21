@@ -42,7 +42,6 @@ jest.mock("../auth.controller");
 jest.mock("../auth.service");
 jest.mock("express-rate-limit");
 jest.mock("../../../utils/helpers/models.helpers");
-jest.mock("../../base/base.middlewares");
 jest.mock("../../../utils/helpers/deepmerge.helper");
 jest.mock("../../../app");
 

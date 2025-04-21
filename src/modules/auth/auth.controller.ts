@@ -6,7 +6,10 @@ import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
-import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
+import {
+  getModelModules,
+  importPrismaModelModules,
+} from "../../utils/helpers/models.helpers";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
@@ -61,7 +64,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         );
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
-          if (req.user) delete req.user[key as keyof User];
+          if (user) delete user[key as keyof User];
         });
 
         if (middlewares?.afterGetMe) {
@@ -96,7 +99,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         );
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
-          if (req.user) delete req.user[key as keyof User];
+          if (user) delete user[key as keyof User];
         });
 
         if (middlewares?.afterGetMe) {
@@ -105,7 +108,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           return next();
         }
 
-        res.status(200).json({ data: req.user });
+        res.status(200).json({ data: user });
       }
     ),
 
@@ -166,7 +169,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         // Create appropriate where clause for the query
         let whereClause: Record<string, any>;
 
-        if (usernameField?.includes(".")) {
+        if (usernameField?.includes?.(".")) {
           // For nested paths, we need to extract the actual value to search for
           const valueToFind = getNestedValue(req.body, usernameField);
           if (valueToFind === undefined) {
@@ -181,6 +184,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         // Use findFirst instead of findUnique for complex queries
         const user = await (prisma as any).user.findFirst({
           where: whereClause,
+          // select: {
+          //   id: true,
+          //   password: true,
+          // },
         });
 
         if (
@@ -220,23 +227,33 @@ export const authControllerFactory = async (middlewares: any = {}) => {
               : "lax",
         };
 
-        if (middlewares?.afterLogin) {
+        if (
+          authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
+          authConfigs?.login?.sendAccessTokenThrough === "both"
+        ) {
           req.responseData = { accessToken: token };
+        } else if (
+          authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
+          authConfigs?.login?.sendAccessTokenThrough === "both"
+        )
+          res.cookie("arkos_access_token", token, cookieOptions);
+
+        if (middlewares?.afterLogin) {
+          req.additionalData = { user };
           req.responseStatus = 200;
           return next();
         }
 
-        if (authConfigs?.login?.sendAccessTokenThrough === "response-only") {
-          res.status(200).json({ accessToken: token });
-        } else if (
-          authConfigs?.login?.sendAccessTokenThrough === "cookie-only"
+        if (
+          authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
+          authConfigs?.login?.sendAccessTokenThrough === "both"
         ) {
-          res.cookie("arkos_access_token", token, cookieOptions);
+          res.status(200).json(req.responseData);
+        } else if (
+          authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
+          authConfigs?.login?.sendAccessTokenThrough === "both"
+        )
           res.status(200).send();
-        } else {
-          res.cookie("arkos_access_token", token, cookieOptions);
-          res.status(200).json({ accessToken: token });
-        }
       }
     ),
 
@@ -297,17 +314,22 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           String(user.password)
         );
 
+        const configs = getArkosConfig();
+        const initAuthConfigs = configs?.authentication;
+        // const modules = getModelModules("auth");
+
         if (!isPasswordCorrect)
           return next(new AppError("Current password is incorrect.", 400));
 
         // Check password strength (optional but recommended)
-        if (!authService.isPasswordStrong(String(newPassword))) {
-          const initAuthConfigs = getArkosConfig()?.authentication;
-
+        if (
+          !authService.isPasswordStrong(String(newPassword)) &&
+          !configs?.validation
+        ) {
           return next(
             new AppError(
               initAuthConfigs?.passwordValidation?.message ||
-                "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+                "The new password must contain at least one uppercase letter, one lowercase letter, and one number",
               400
             )
           );
@@ -325,7 +347,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         });
 
         if (middlewares?.afterUpdatePassword) {
-          (req as any).additionalData = {
+          req.additionalData = {
             user,
           };
           req.responseData = {

@@ -51,7 +51,7 @@ describe("Database Connection Utilities", () => {
       });
 
       (fs.existsSync as jest.Mock).mockImplementationOnce((path: string) => {
-        return path?.includes(mockedPrismaJsPath);
+        return path?.includes?.(mockedPrismaJsPath);
       });
 
       const prisma = await loadPrismaModule();
@@ -69,7 +69,7 @@ describe("Database Connection Utilities", () => {
       });
 
       (fs.existsSync as jest.Mock).mockImplementationOnce((path: string) => {
-        return path?.includes(mockedPrismaIndexJsPath);
+        return path?.includes?.(mockedPrismaIndexJsPath);
       });
 
       const prisma = await loadPrismaModule();

@@ -3,10 +3,12 @@ import { authControllerFactory } from "./auth.controller";
 import authService from "./auth.service";
 import rateLimit from "express-rate-limit";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
-import { sendResponse } from "../base/base.middlewares";
+import {
+  handleRequestBodyValidationAndTransformation,
+  sendResponse,
+} from "../base/base.middlewares";
 import { ArkosConfig } from "../../types/arkos-config";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { handleRequestBodyValidationAndTransformation } from "../../utils/helpers/base.controller.helpers";
 
 const router: Router = Router();
 

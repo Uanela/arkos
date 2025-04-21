@@ -16,18 +16,18 @@ export async function getPrismaModelsRouter(arkosConfigs?: ArkosConfig) {
 
 export function getAvailableResourcesAndRoutesRouter(): Router {
   const router = Router();
-
+  //
   router.get(
     "/available-routes",
     authService?.authenticate,
-    authService?.handleActionAccessControl({}, "view", ""),
+    // authService?.handleActionAccessControl({}, "view", ""),
     getAvalibleRoutes
   );
 
   router.get(
     "/available-resources",
     authService?.authenticate,
-    authService?.handleActionAccessControl({}, "view", ""),
+    // authService?.handleActionAccessControl({}, "view", ""),
     getAvailableResources
   );
 

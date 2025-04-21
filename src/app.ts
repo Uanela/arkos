@@ -59,14 +59,14 @@ export async function bootstrap(
   const replacedMiddlewares = middlewaresConfig?.replace || {};
 
   // Compression middleware
-  if (!disabledMiddlewares?.includes("compression"))
+  if (!disabledMiddlewares?.includes?.("compression"))
     app.use(
       replacedMiddlewares.compression ||
         compression(arkosConfig?.compressionOptions)
     );
 
   // Global rate limit middleware
-  if (!disabledMiddlewares?.includes("global-rate-limit"))
+  if (!disabledMiddlewares?.includes?.("global-rate-limit"))
     app.use(
       replacedMiddlewares.globalRateLimit ||
         rateLimit(
@@ -83,7 +83,7 @@ export async function bootstrap(
     );
 
   // CORS middleware
-  if (!disabledMiddlewares?.includes("cors"))
+  if (!disabledMiddlewares?.includes?.("cors"))
     app.use(
       replacedMiddlewares.cors ||
         cors(
@@ -100,7 +100,7 @@ export async function bootstrap(
                     if (allowed === "*") {
                       cb(null, true);
                     } else if (Array.isArray(allowed)) {
-                      cb(null, !origin || allowed?.includes(origin));
+                      cb(null, !origin || allowed?.includes?.(origin));
                     } else if (typeof allowed === "string") {
                       cb(null, !origin || allowed === origin);
                     } else {
@@ -121,21 +121,21 @@ export async function bootstrap(
     );
 
   // JSON body parser middleware
-  if (!disabledMiddlewares?.includes("express-json"))
+  if (!disabledMiddlewares?.includes?.("express-json"))
     app.use(
       replacedMiddlewares.expressJson ||
         express.json(arkosConfig?.jsonBodyParserOptions)
     );
 
   // Cookie parser middleware
-  if (!disabledMiddlewares?.includes("cookie-parser"))
+  if (!disabledMiddlewares?.includes?.("cookie-parser"))
     app.use(
       replacedMiddlewares.cookieParser ||
         cookieParser(...[...(arkosConfig?.cookieParserParameters || [])])
     );
 
   // Query parser middleware
-  if (!disabledMiddlewares?.includes("query-parser"))
+  if (!disabledMiddlewares?.includes?.("query-parser"))
     app.use(
       replacedMiddlewares.queryParser ||
         queryParser(
@@ -151,11 +151,11 @@ export async function bootstrap(
     );
 
   // Database connection check middleware
-  if (!disabledMiddlewares?.includes("database-connection"))
+  if (!disabledMiddlewares?.includes?.("database-connection"))
     app.use(replacedMiddlewares.databaseConnection || checkDatabaseConnection);
 
   // Request logger middleware
-  if (!disabledMiddlewares?.includes("request-logger"))
+  if (!disabledMiddlewares?.includes?.("request-logger"))
     app.use(replacedMiddlewares.requestLogger || handleRequestLogs);
 
   // Additional custom middlewares
@@ -170,7 +170,7 @@ export async function bootstrap(
   const replacedRouters = routersConfig?.replace || {};
 
   // Welcome endpoint
-  if (!disabledRouters?.includes("welcome-endpoint"))
+  if (!disabledRouters?.includes?.("welcome-endpoint"))
     app.get(
       "/api",
       replacedRouters.welcomeEndpoint ||
@@ -180,7 +180,7 @@ export async function bootstrap(
     );
 
   // File uploader router
-  if (!disabledRouters?.includes("file-uploader")) {
+  if (!disabledRouters?.includes?.("file-uploader")) {
     const fileUploaderRouter = replacedRouters.fileUploader
       ? await replacedRouters.fileUploader(arkosConfig)
       : await getFileUploaderRouter(arkosConfig);
@@ -188,7 +188,10 @@ export async function bootstrap(
   }
 
   // Auth router
-  if (!disabledRouters?.includes("auth-router") && arkosConfig.authentication) {
+  if (
+    !disabledRouters?.includes?.("auth-router") &&
+    arkosConfig.authentication
+  ) {
     const authRouter = replacedRouters.authRouter
       ? await replacedRouters.authRouter(arkosConfig)
       : await getAuthRouter(arkosConfig);
@@ -196,7 +199,7 @@ export async function bootstrap(
   }
 
   // Prisma models router
-  if (!disabledRouters?.includes("prisma-models-router")) {
+  if (!disabledRouters?.includes?.("prisma-models-router")) {
     const modelsRouter = replacedRouters.prismaModelsRouter
       ? await replacedRouters.prismaModelsRouter(arkosConfig)
       : await getPrismaModelsRouter(arkosConfig);
@@ -213,7 +216,7 @@ export async function bootstrap(
   }
 
   // Global error handler middleware (must be last)
-  if (!disabledMiddlewares?.includes("global-error-handler"))
+  if (!disabledMiddlewares?.includes?.("global-error-handler"))
     app.use(replacedMiddlewares.globalErrorHandler || errorHandler);
 
   return app;

@@ -1,50 +1,67 @@
 import { JwtPayload } from "jsonwebtoken";
 
 /**
- * Possible actions that can be performed by a controller.
+ * Base set of controller actions available to all controllers.
  */
-export type ControllerActions = "create" | "update" | "delete" | "view";
+export type BaseControllerActions = "create" | "update" | "delete" | "view";
+
+/**
+ * Extends the base controller actions with custom actions.
+ *
+ * @typeParam T - Additional action types that extend the base actions.
+ */
+export type ExtendedControllerActions<T extends string = never> =
+  | BaseControllerActions
+  | T;
 
 /**
  * Rules defining access control for different controller actions.
  *
- * @typeParam key - One of the `ControllerActions`.
+ * @typeParam T - Additional action types that extend the base actions.
  * @typeParam Role - A type representing a role or set of roles allowed to perform the action.
  */
-export type AccessControlRules = {
+export type AccessControlRules<T extends string = never> = {
   /**
-   * Maps each `ControllerAction` to the roles allowed to perform it.
+   * Maps each controller action to the roles allowed to perform it.
    */
-  [key in ControllerActions]: any[];
+  [key in ExtendedControllerActions<T>]: any[];
 };
 
 /**
- * Rules defining access control for different controller actions.
+ * Rules defining authentication requirements for different controller actions.
  *
- * @typeParam key - One of the `ControllerActions`.
- * @typeParam Role - A type representing a role or set of roles allowed to perform the action.
+ * @typeParam T - Additional action types that extend the base actions.
  */
-export type AuthenticationControlRules = {
+export type AuthenticationControlRules<T extends string = never> = {
   /**
-   * Maps each `ControllerAction` to the actions that requires authentication to perform it.
+   * Maps each controller action to whether authentication is required to perform it.
    */
-  [key in ControllerActions]: boolean;
+  [key in ExtendedControllerActions<T>]: boolean;
 };
 
 /**
  * Configuration for authentication and access control.
+ *
+ * @typeParam T - Additional action types that extend the base actions.
  */
-export type AuthConfigs = {
+export type AuthConfigs<T extends string = never> = {
   /**
-   * Defines access control rules for roles or actions.
+   * Defines authentication requirements for actions.
+   * - When boolean: applies to all actions
+   * - When partial rules: applies to specified actions
    *
-   * @type {Role | Role[] | AccessControlRules}
+   * @type {boolean | Partial<AuthenticationControlRules<T>>}
    */
-  authenticationControl?: boolean | Partial<AuthenticationControlRules>;
+  authenticationControl?: boolean | Partial<AuthenticationControlRules<T>>;
+
   /**
-   * List of user roles, or restricted by actions
+   * Defines role-based access control.
+   * - When array: list of roles allowed for all actions
+   * - When partial rules: specific roles for each action
+   *
+   * @type {any[] | Partial<AccessControlRules<T>>}
    */
-  accessControl?: any[] | Partial<AccessControlRules>;
+  accessControl?: any[] | Partial<AccessControlRules<T>>;
 };
 
 /**
@@ -58,5 +75,8 @@ export interface AuthJwtPayload extends JwtPayload {
    */
   id?: number | string;
 
+  /**
+   * Additional properties can be added to the payload.
+   */
   [x: string]: any;
 }

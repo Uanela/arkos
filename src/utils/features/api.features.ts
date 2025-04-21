@@ -75,8 +75,8 @@ export default class APIFeatures {
           key !== "id" &&
           key !== "password" &&
           !field.isList &&
-          !key?.includes("Id") &&
-          !key?.includes("ID")
+          !key?.includes?.("Id") &&
+          !key?.includes?.("ID")
         ) {
           searchableFields.push({
             [`${key}`]: {

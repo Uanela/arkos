@@ -66,13 +66,15 @@ export interface User {
   role?: UserRole | any;
 }
 
-export interface ArkosRequest extends Request {
+export interface ArkosRequest<Body = any, Query = any> extends Request {
   user?: User & Record<string, any>;
   relationFields?: Record<string, boolean>;
   include?: Record<string, any>;
   responseData?: Record<string, any> | null | undefined;
   additionalData?: Record<string, any> | null | undefined;
   responseStatus?: number | string | null | undefined;
+  body: Body;
+  // query: Query extends Request['ParsedQs'];
 }
 
 export interface ArkosResponse extends Response {}

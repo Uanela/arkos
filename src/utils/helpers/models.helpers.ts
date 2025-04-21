@@ -21,41 +21,42 @@ export function getFileModelModulesFileStructure(modelName: string) {
   const kebabModelName = kebabCase(modelName).toLowerCase();
   const lowerModelName = kebabModelName.toLowerCase();
   const isAuthModule = modelName.toLowerCase() === "auth";
+  const ext = getUserFileExtension();
 
   return {
     core: {
-      service: `${kebabModelName}.service.${getUserFileExtension()}`,
-      controller: `${kebabModelName}.controller.${getUserFileExtension()}`,
-      middlewares: `${kebabModelName}.middlewares.${getUserFileExtension()}`,
-      authConfigs: `${kebabModelName}.auth-configs.${getUserFileExtension()}`,
-      prismaQueryOptions: `${kebabModelName}.prisma-query-options.${getUserFileExtension()}`,
-      router: `${kebabModelName}.router.${getUserFileExtension()}`,
+      service: `${kebabModelName}.service.${ext}`,
+      controller: `${kebabModelName}.controller.${ext}`,
+      middlewares: `${kebabModelName}.middlewares.${ext}`,
+      authConfigs: `${kebabModelName}.auth-configs.${ext}`,
+      prismaQueryOptions: `${kebabModelName}.prisma-query-options.${ext}`,
+      router: `${kebabModelName}.router.${ext}`,
     },
     dtos: isAuthModule
       ? {
-          login: `login.dto.${getUserFileExtension()}`,
-          signup: `signup.dto.${getUserFileExtension()}`,
-          updateMe: `update-me.dto.${getUserFileExtension()}`,
-          updatePassword: `update-password.dto.${getUserFileExtension()}`,
+          login: `login.dto.${ext}`,
+          signup: `signup.dto.${ext}`,
+          updateMe: `update-me.dto.${ext}`,
+          updatePassword: `update-password.dto.${ext}`,
         }
       : {
-          model: `${lowerModelName}.dto.${getUserFileExtension()}`,
-          create: `create-${lowerModelName}.dto.${getUserFileExtension()}`,
-          update: `update-${lowerModelName}.dto.${getUserFileExtension()}`,
-          query: `query-${lowerModelName}.dto.${getUserFileExtension()}`,
+          model: `${lowerModelName}.dto.${ext}`,
+          create: `create-${lowerModelName}.dto.${ext}`,
+          update: `update-${lowerModelName}.dto.${ext}`,
+          query: `query-${lowerModelName}.dto.${ext}`,
         },
     schemas: isAuthModule
       ? {
-          login: `login.schema.${getUserFileExtension()}`,
-          signup: `signup.schema.${getUserFileExtension()}`,
-          updateMe: `update-me.schema.${getUserFileExtension()}`,
-          updatePassword: `update-password.schema.${getUserFileExtension()}`,
+          login: `login.schema.${ext}`,
+          signup: `signup.schema.${ext}`,
+          updateMe: `update-me.schema.${ext}`,
+          updatePassword: `update-password.schema.${ext}`,
         }
       : {
-          model: `${lowerModelName}.schema.${getUserFileExtension()}`,
-          create: `create-${lowerModelName}.schema.${getUserFileExtension()}`,
-          update: `update-${lowerModelName}.schema.${getUserFileExtension()}`,
-          query: `query-${lowerModelName}.schema.${getUserFileExtension()}`,
+          model: `${lowerModelName}.schema.${ext}`,
+          create: `create-${lowerModelName}.schema.${ext}`,
+          update: `update-${lowerModelName}.schema.${ext}`,
+          query: `query-${lowerModelName}.schema.${ext}`,
         },
   };
 }
@@ -226,13 +227,13 @@ export function initializePrismaModels(testName?: string) {
   for (const file of files) {
     const content = fs.readFileSync(file, "utf-8");
 
-    if (!prismaContent?.includes(content)) prismaContent.push(content);
+    if (!prismaContent?.includes?.(content)) prismaContent.push(content);
   }
 
   const content = prismaContent
     .join("\n")
     .replace(modelRegex, (_, modelName) => {
-      if (!models?.includes(modelName))
+      if (!models?.includes?.(modelName))
         models.push(camelCase(modelName.trim()));
       return `model ${modelName} {`;
     });
@@ -240,26 +241,6 @@ export function initializePrismaModels(testName?: string) {
   for (const model of models) {
     const modelName = pascalCase(model);
 
-    //   let modelFile;
-    //   for (const file of files) {
-    //     const filePath = path.join(file);
-    //     const stats = fs.statSync(filePath);
-
-    //     if (stats.isFile()) {
-    //       const content = fs.readFileSync(filePath, "utf-8");
-    //       prismaContent.push(content);
-    //       if (content?.includes(`model ${modelName} {`)) {
-    //         modelFile = file;
-    //         break;
-    //       }
-    //     }
-    //   }
-
-    //   if (!modelFile) {
-    //     return;
-    //   }
-
-    //   const content = fs.readFileSync(path.join(modelFile), "utf-8");
     const modelStart = content.indexOf(`model ${modelName} {`);
     const modelEnd = content.indexOf("}", modelStart);
     const modelDefinition = content.slice(modelStart, modelEnd);
@@ -281,7 +262,7 @@ export function initializePrismaModels(testName?: string) {
         continue;
 
       const [fieldName, type] = trimmedLine.split(/\s+/);
-      const isUnique = trimmedLine?.includes("@unique");
+      const isUnique = trimmedLine?.includes?.("@unique");
 
       if (isUnique) {
         const existingFields = prismaModelsUniqueFields[model] || [];
@@ -304,15 +285,17 @@ export function initializePrismaModels(testName?: string) {
       const cleanType = type?.replace("[]", "").replace("?", "");
 
       if (
-        trimmedLine?.includes("@relation") ||
+        trimmedLine?.includes?.("@relation") ||
         trimmedLine.match(/\s+\w+(\[\])?(\s+@|$)/) ||
-        models?.includes(camelCase(cleanType || ""))
+        models?.includes?.(camelCase(cleanType || ""))
       ) {
-        const modelStart = content.indexOf(`enum ${cleanType} {`);
+        const enumStart = content.indexOf(`enum ${cleanType} {`);
+        const typeStart = content.indexOf(`type ${cleanType} {`);
 
         if (
           !cleanType ||
-          modelStart >= 0 ||
+          enumStart >= 0 ||
+          typeStart >= 0 ||
           cleanType === "String" ||
           cleanType === "Int" ||
           cleanType === "Float" ||
@@ -322,11 +305,13 @@ export function initializePrismaModels(testName?: string) {
           cleanType === "Decimal" ||
           cleanType === "BigInt" ||
           cleanType === "Json"
+
+          // && !content.includes?.(`model ${cleanType} {`)
         ) {
           continue;
         }
 
-        if (!type?.includes("[]")) {
+        if (!type?.includes?.("[]")) {
           relations.singular.push({
             name: fieldName,
             type: cleanType,

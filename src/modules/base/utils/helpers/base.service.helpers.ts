@@ -10,7 +10,7 @@ import {
  * @param {Record<string, any>} obj - The object to clean
  * @returns {Record<string, any>} - The cleaned object
  */
-function removeApiAction(obj: Record<string, any>): Record<string, any> {
+export function removeApiAction(obj: Record<string, any>): Record<string, any> {
   if (!obj || typeof obj !== "object") return obj;
 
   const result: Record<string, any> = {};
@@ -102,7 +102,7 @@ export function handleRelationFieldsInBody(
     }
 
     // Skip if the field is not an array (likely already handled manually)
-    if (!isListFieldAnArray(body[field.name])) {
+    if (!Array.isArray(body[field.name])) {
       return;
     }
 
@@ -113,7 +113,7 @@ export function handleRelationFieldsInBody(
     const deleteManyIds: any[] = [];
 
     body[field.name]?.forEach((bodyField: any) => {
-      if (ignoreActions?.includes(bodyField?.apiAction)) return;
+      if (ignoreActions?.includes?.(bodyField?.apiAction)) return;
 
       const apiAction = bodyField?.apiAction;
 
@@ -181,7 +181,7 @@ export function handleRelationFieldsInBody(
 
   relationFields?.singular?.forEach((field) => {
     if (!body[field.name]) return;
-    if (ignoreActions?.includes(body[field.name]?.apiAction)) return;
+    if (ignoreActions?.includes?.(body[field.name]?.apiAction)) return;
 
     // Skip if the field is already in Prisma relation format
     if (isPrismaRelationFormat(body[field.name])) {
@@ -260,7 +260,7 @@ export function canBeUsedToConnect(
   if (!bodyField) return false;
 
   // If the field has an apiAction that's not for connecting, return false
-  if (bodyField.apiAction && !["connect"]?.includes(bodyField.apiAction)) {
+  if (bodyField.apiAction && !["connect"]?.includes?.(bodyField.apiAction)) {
     return false;
   }
 
@@ -286,12 +286,12 @@ export function canBeUsedToConnect(
   return false;
 }
 
-/**
- * Checks if a list field is actually an array
- *
- * @param {any} field - The field to check
- * @returns {boolean} - True if the field is an array
- */
-export function isListFieldAnArray(field: any): boolean {
-  return Array.isArray(field);
-}
+// /**
+//  * Checks if a list field is actually an array
+//  *
+//  * @param {any} field - The field to check
+//  * @returns {boolean} - True if the field is an array
+//  */
+// export function isListFieldAnArray(field: any): boolean {
+//   return Array.isArray(field);
+// }

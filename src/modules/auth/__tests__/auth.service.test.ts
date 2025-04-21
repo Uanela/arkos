@@ -50,6 +50,9 @@ describe("AuthService", () => {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
+      userRole: {
+        findFirst: jest.fn(),
+      },
       authPermission: {
         count: jest.fn(),
       },
@@ -361,9 +364,13 @@ describe("AuthService", () => {
       expect(authService.verifyJwtToken).toHaveBeenCalledWith(token);
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: "user-123" },
-        include: expect.objectContaining({
-          roles: expect.any(Object),
-        }),
+        select: {
+          id: true,
+          passwordChangedAt: true,
+          isActive: true,
+          deletedSelfAccountAt: true,
+          isSuperUser: true,
+        },
       });
       expect(result).toEqual(mockUser);
     });
@@ -559,12 +566,26 @@ describe("AuthService", () => {
       await accessControlMiddleware(mockReq, mockRes, mockNext);
 
       // Verify
-      expect(mockPrisma.authPermission.count).toHaveBeenCalledWith({
+      // expect(mockPrisma.authPermission.count).toHaveBeenCalledWith({
+      //   where: {
+      //     resource: "user",
+      //     action: "create",
+      //     roleId: { in: [1, 2] },
+      //   },
+      // });
+      expect(mockPrisma.userRole.findFirst).toHaveBeenCalledWith({
         where: {
-          resource: "user",
-          action: "create",
-          roleId: { in: [1, 2] },
+          userId: "user-123",
+          role: {
+            permissions: {
+              some: {
+                resource: "user",
+                action: "create",
+              },
+            },
+          },
         },
+        select: { id: true },
       });
       expect(mockNext).toHaveBeenCalled();
     });
