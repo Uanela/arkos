@@ -10,7 +10,9 @@ export function extractRequestInfo(req: Partial<ArkosRequest>) {
   const { fileUpload } = getArkosConfig();
 
   // Determine the base URL for file access
-  const protocol = req.get?.("host")?.includes("localhost") ? "http" : "https";
+  const protocol = req.get?.("host")?.includes?.("localhost")
+    ? "http"
+    : "https";
   const baseURL = `${protocol}://${req.get?.("host")}`;
   const baseRoute = fileUpload?.baseRoute || "/api/uploads";
   return { baseURL, baseRoute };
@@ -61,7 +63,7 @@ export const processImage = async (
   const originalFormat = ext.replace(".", "");
   const outputFormat = options.format || originalFormat;
 
-  if (!mimetype.lookup(ext)?.includes("image")) {
+  if (!mimetype.lookup(ext)?.includes?.("image")) {
     const relativePath = generateRelativePath(filePath, req.params!.fileType);
     return `${baseURL}${baseRoute}/${relativePath}`;
   }

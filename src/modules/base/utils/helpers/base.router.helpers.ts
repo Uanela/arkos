@@ -4,12 +4,12 @@ import { RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
 import { RouterEndpoint } from "../../../../types/router-config";
-import { handleRequestBodyValidationAndTransformation } from "../../../../utils/helpers/base.controller.helpers";
 import { importPrismaModelModules } from "../../../../utils/helpers/models.helpers";
 import authService from "../../../auth/auth.service";
 import { BaseController } from "../../base.controller";
 import {
   addPrismaQueryOptionsToRequestQuery,
+  handleRequestBodyValidationAndTransformation,
   sendResponse,
 } from "../../base.middlewares";
 

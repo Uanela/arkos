@@ -97,7 +97,7 @@ describe("FileUploaderService", () => {
       const input = args.join("/");
 
       // Simple handling of ../ patterns
-      if (input?.includes("../")) {
+      if (input?.includes?.("../")) {
         // Basic implementation for handling parent directories
         let parts = input.split("/");
         const result: string[] = [];

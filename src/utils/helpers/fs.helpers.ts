@@ -54,7 +54,7 @@ export const mkdirAsync = promisify(fs.mkdir);
 //       process.versions &&
 //       parseInt((process.versions as any).node.split(".")[0]) >= 18
 //     ) {
-//       const isUsingTypeScript = new Error().stack?.includes(".ts:");
+//       const isUsingTypeScript = new Error().stack?.includes?.(".ts:");
 //       if (isUsingTypeScript) return "ts";
 //     }
 //   } catch (e) {

@@ -142,6 +142,8 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
       res.status(err.statusCode).json({
         status: err.status,
         message: err.message,
+        meta: err.meta || {},
+        code: err.code || "",
       });
     else
       res.status(500).json({

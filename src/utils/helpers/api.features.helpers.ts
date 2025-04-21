@@ -187,17 +187,17 @@ function convertValue(
   config: FieldConfig
 ): any {
   // Handle date fields
-  if (config.dateFields?.includes(fieldName) && value) {
+  if (config.dateFields?.includes?.(fieldName) && value) {
     return new Date(value);
   }
 
   // Handle boolean fields
-  if (config.booleanFields?.includes(fieldName) && value) {
+  if (config.booleanFields?.includes?.(fieldName) && value) {
     return value.toLowerCase() === "true";
   }
 
   // Handle numeric fields
-  if (config.numericFields?.includes(fieldName) && value) {
+  if (config.numericFields?.includes?.(fieldName) && value) {
     return Number(value);
   }
 

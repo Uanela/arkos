@@ -1,5 +1,5 @@
 import fs from "fs";
-import { handleRequestBodyValidationAndTransformation } from "../base.controller.helpers";
+import { handleRequestBodyValidationAndTransformation } from "../../../modules/base/base.middlewares";
 import * as modelsHelpers from "../../../utils/helpers/models.helpers";
 import * as serverConfig from "../../../server";
 import * as validateDtoModule from "../../validate-dto";
@@ -14,7 +14,7 @@ jest.mock("fs");
 
 (fs.readdirSync as jest.Mock).mockReturnValue(["schema.prisma", "migrations"]);
 (fs.statSync as jest.Mock).mockImplementation((path) => ({
-  isDirectory: () => path?.includes("migrations"),
+  isDirectory: () => path?.includes?.("migrations"),
   isFile: () => path.endsWith(".prisma"),
 }));
 (fs.readFileSync as jest.Mock).mockReturnValue(`

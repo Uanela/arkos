@@ -170,7 +170,7 @@ describe("Auth Controller Factory", () => {
 
       // Verify
       Object.keys(defaultExcludedUserFields).forEach((field) => {
-        expect(req.user[field]).toBeUndefined();
+        expect(fullUser[field as keyof typeof fullUser]).toBeUndefined();
       });
     });
 
@@ -266,6 +266,10 @@ describe("Auth Controller Factory", () => {
       // Verify
       expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
         where: { username: "testuser" },
+        select: {
+          id: true,
+          password: true,
+        },
       });
     });
 
@@ -298,6 +302,7 @@ describe("Auth Controller Factory", () => {
       // Verify
       expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
         where: { email: "test@arkosjs.com" },
+        select: { id: true, password: true },
       });
     });
 
@@ -630,7 +635,7 @@ describe("Auth Controller Factory", () => {
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 400,
-          message: expect.stringContaining("Password must contain"),
+          message: expect.stringContaining("The new password must contain"),
         })
       );
     });

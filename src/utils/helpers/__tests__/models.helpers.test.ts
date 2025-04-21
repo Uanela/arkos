@@ -1,38 +1,9 @@
 import path from "path";
-import fs, { existsSync, readdirSync } from "fs";
+import fs from "fs";
 import * as dynamicLoader from "../../../utils/helpers/models.helpers";
-import {
-  kebabCase,
-  pascalCase,
-} from "../../../utils/helpers/change-case.helpers";
-import { importModule } from "../global.helpers";
+
 import { getUserFileExtension } from "../fs.helpers";
 
-const mockedPrismaSchema = `
-      model User {
-        id        String   @id @default(uuid())
-        email     String   @unique
-        posts     Post[]
-        profile   Profile?
-      }
-
-      model Post {
-        id        String   @id @default(uuid())
-        title     String
-        author    User     @relation(fields: [authorId], references: [id])
-        authorId  String
-      }
-
-      model Profile {
-        id        String   @id @default(uuid())
-        bio       String?
-        user      User     @relation(fields: [userId], references: [id])
-        userId    String   @unique
-      }
-    `;
-
-const modelRegex = /model\s+(\w+)\s*{/g;
-const models: string[] = [];
 export const prismaModelsUniqueFields: Record<string, any[]> = [] as any;
 
 // Mocking dependencies
@@ -223,7 +194,7 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should handle errors when importing modules", async () => {
       // Setup
       (fs.existsSync as jest.Mock).mockImplementation((path) => {
-        if (path?.includes("middlewares")) {
+        if (path?.includes?.("middlewares")) {
           console.error("Error importing");
           return false;
         }

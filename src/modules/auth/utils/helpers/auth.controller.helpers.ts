@@ -20,7 +20,7 @@ export const determineUsernameField = (req: ArkosRequest): string => {
   if (
     req.query?.usernameField &&
     typeof req.query?.usernameField === "string" &&
-    authConfigs?.login?.allowedUsernames?.includes(req.query.usernameField)
+    authConfigs?.login?.allowedUsernames?.includes?.(req.query.usernameField)
   )
     return req.query.usernameField;
   else if (req.query?.usernameField)

@@ -38,10 +38,10 @@ function isFieldDefinition(line: string): boolean {
 function parseFieldType(fieldType: string, line: string): string {
   // Remove any ? or [] from the type for the switch
   const baseType = fieldType.replace("?", "").replace("[]", "");
-  const isArray = fieldType?.includes("[]");
+  const isArray = fieldType?.includes?.("[]");
 
   // If it's a relation (has @relation), keep the original type
-  if (line?.includes("@relation")) {
+  if (line?.includes?.("@relation")) {
     return isArray ? `${baseType}[]` : baseType;
   }
 
@@ -115,7 +115,7 @@ function generateTypes() {
       const fieldName = parts[0];
       const fieldType = parts[1];
 
-      const isOptional = line?.includes("?");
+      const isOptional = line?.includes?.("?");
       const parsedType = parseFieldType(fieldType, line);
 
       typeDefinitions += `  ${fieldName}${

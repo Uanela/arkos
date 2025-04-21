@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { User, UserRole } from "../../types";
+import { AuthPermissionAction, User, UserRole } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
@@ -16,7 +16,7 @@ import {
 import {
   AuthConfigs,
   AuthJwtPayload,
-  ControllerActions,
+  BaseControllerActions,
 } from "../../types/auth";
 import { kebabCase } from "../../utils/helpers/change-case.helpers";
 import { singular } from "pluralize";
@@ -60,7 +60,7 @@ class AuthService {
       arkosEnv.JWT_EXPIRES_IN) as keyof SignOptions["expiresIn"];
 
     return jwt.sign({ id }, secret, {
-      expiresIn: expiresIn as any,
+      expiresIn: expiresIn as MsDuration,
     });
   }
 
@@ -173,13 +173,13 @@ class AuthService {
    *
    * @param {AuthConfigs} authConfigs - The configuration object for authentication and access control.
    * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
-   * @param {string} modelName - The model name that the action is being performed on (e.g., "User", "Post").
+   * @param {string} resourceName - The resource name that the action is being performed on (e.g., "User", "Post").
    * @returns {ArkosRequestHandler} The middleware function that checks if the user has permission to perform the action.
    */
   handleActionAccessControl(
     authConfigs: AuthConfigs,
-    action: ControllerActions,
-    modelName: string
+    action: BaseControllerActions,
+    resourceName: string
   ): ArkosRequestHandler {
     return catchAsync(
       async (
@@ -198,15 +198,22 @@ class AuthService {
           }
 
           if (configs?.authentication?.mode === "dynamic") {
-            const permissions = await (prisma as any).authPermission.count({
+            const matchingRole = await prisma.userRole.findFirst({
               where: {
-                resource: kebabCase(singular(modelName)),
-                action,
-                roleId: { in: user.roles.map((role: UserRole) => role.roleId) },
+                userId: req.user.id,
+                role: {
+                  permissions: {
+                    some: {
+                      resource: kebabCase(singular(resourceName)),
+                      action: action,
+                    },
+                  },
+                },
               },
+              select: { id: true },
             });
 
-            if (!permissions)
+            if (!matchingRole)
               return next(
                 new AppError(
                   "You do not have permission to perfom this action",
@@ -224,10 +231,10 @@ class AuthService {
 
               // Checks for both cases if using single role or multiple roles
               if (
-                !authorizedRoles?.includes(req.user?.role) ||
+                !authorizedRoles?.includes?.(req.user?.role) ||
                 ((req.user?.roles as any[]).length > 0 &&
                   !authorizedRoles?.some((role) =>
-                    (req.user?.roles as any[])?.includes(role)
+                    (req.user?.roles as any[])?.includes?.(role)
                   ))
               )
                 return next(
@@ -292,16 +299,12 @@ class AuthService {
 
     const user: any | null = await (prisma as any).user.findUnique({
       where: { id: String(decoded.id) },
-      include: {
-        roles: {
-          include: {
-            role: {
-              include: {
-                permissions: true,
-              },
-            },
-          },
-        },
+      select: {
+        id: true,
+        passwordChangedAt: true,
+        isActive: true,
+        deletedSelfAccountAt: true,
+        isSuperUser: true,
       },
     });
 
@@ -313,7 +316,7 @@ class AuthService {
 
     if (
       this.userChangedPasswordAfter(user, decoded.iat!) &&
-      !req.path?.includes("logout")
+      !req.path?.includes?.("logout")
     )
       throw new AppError(
         "User recently changed password! Please log in again.",
@@ -353,7 +356,7 @@ class AuthService {
    */
   handleAuthenticationControl(
     authConfigs: AuthConfigs | undefined,
-    action: ControllerActions
+    action: BaseControllerActions
   ): ArkosRequestHandler {
     const authenticationControl = authConfigs?.authenticationControl;
 
