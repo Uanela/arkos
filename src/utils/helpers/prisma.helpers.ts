@@ -10,10 +10,18 @@ export let prismaInstance: any = null;
 export async function loadPrismaModule(a?: string) {
   if (!prismaInstance) {
     try {
-      let prismaPath = `${process.cwd()}/src/utils/prisma.${getUserFileExtension()}`;
+      let prismaPath = `${
+        process.env.NODE_ENV === "production"
+          ? process.cwd() + "/.build/"
+          : process.cwd()
+      }/src/utils/prisma.${getUserFileExtension()}`;
 
       if (!fs.existsSync(prismaPath)) {
-        prismaPath = `${process.cwd()}/src/utils/prisma/index.${getUserFileExtension()}`;
+        prismaPath = `${
+          process.env.NODE_ENV === "production"
+            ? process.cwd() + "/.build/"
+            : process.cwd()
+        }/src/utils/prisma/index.${getUserFileExtension()}`;
       }
 
       const prismaModule = await importModule(prismaPath);
