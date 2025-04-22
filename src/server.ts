@@ -64,6 +64,7 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
 process.on("unhandledRejection", (err: AppError) => {
   console.error("UNHANDLED REJECTION! SHUTTING DOWN...");
   console.error(err.name, err.message);
+  console.error(err);
   server.close(() => {
     process.exit(1);
   });
