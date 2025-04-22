@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.0.19-beta",
+  "version": "1.0.20-beta",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/es2020/exports/index.js",
@@ -70,10 +70,6 @@
         "./dist/types/exports/utils/index.d.ts"
       ]
     }
-  },
-  "bin": {
-    "arkos": "./dist/src/utils/scripts/index.js",
-    "arkos-dev": "./src/utils/scripts/index.ts"
   },
   "scripts": {
     "build:es2020": "tsc -p tsconfig.es2020.json",

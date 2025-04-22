@@ -38,8 +38,16 @@ function resetModuleState() {
   (dbUtils as any).prismaInstance = null;
 }
 
-let mockedPrismaJsPath = `${process.cwd()}/src/utils/prisma`;
-let mockedPrismaIndexJsPath = `${process.cwd()}/src/utils/prisma/index`;
+let mockedPrismaJsPath = `${
+  process.env.NODE_ENV === "production"
+    ? process.cwd() + "/.build/"
+    : process.cwd()
+}/src/utils/prisma`;
+let mockedPrismaIndexJsPath = `${
+  process.env.NODE_ENV === "production"
+    ? process.cwd() + "/.build/"
+    : process.cwd()
+}/src/utils/prisma/index`;
 
 describe("Database Connection Utilities", () => {
   describe("loadPrismaModule", () => {
