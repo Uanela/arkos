@@ -1,21 +1,20 @@
-import { Prisma } from "@prisma/client";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 
 export type PrismaOperations = "findMany";
 
-export type PrismaQueryOptions<T> = {
+export type PrismaQueryOptions<T extends Record<string, any>> = {
   queryOptions?: Omit<
-    Prisma.Args<T, "findMany">,
+    Parameters<T["findMany"]>[0],
     "where" | "cursor" | "take" | "skip" | "orderBy"
   >;
-  findOne?: Partial<Partial<Prisma.Args<T, "findUnique">>>;
-  findMany?: Partial<Prisma.Args<T, "findMany">>;
-  deleteMany?: Partial<Prisma.Args<T, "deleteMany">>;
-  updateMany?: Partial<Prisma.Args<T, "updateMany">>;
-  createMany?: Partial<Prisma.Args<T, "createMany">>;
-  createOne?: Partial<Prisma.Args<T, "create">>;
-  updateOne?: Partial<Prisma.Args<T, "update">>;
-  deleteOne?: Partial<Prisma.Args<T, "delete">>;
+  findOne?: Partial<Parameters<T["findUnique"]>[0]>;
+  findMany?: Partial<Parameters<T["findMany"]>[0]>;
+  deleteMany?: Partial<Parameters<T["deleteMany"]>[0]>;
+  updateMany?: Partial<Parameters<T["updateMany"]>[0]>;
+  createMany?: Partial<Parameters<T["createMany"]>[0]>;
+  createOne?: Partial<Parameters<T["create"]>[0]>;
+  updateOne?: Partial<Parameters<T["update"]>[0]>;
+  deleteOne?: Partial<Parameters<T["delete"]>[0]>;
 };
 
 export interface UserRole {

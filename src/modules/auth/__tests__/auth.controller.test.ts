@@ -266,10 +266,6 @@ describe("Auth Controller Factory", () => {
       // Verify
       expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
         where: { username: "testuser" },
-        select: {
-          id: true,
-          password: true,
-        },
       });
     });
 
@@ -302,7 +298,6 @@ describe("Auth Controller Factory", () => {
       // Verify
       expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
         where: { email: "test@arkosjs.com" },
-        select: { id: true, password: true },
       });
     });
 
@@ -360,15 +355,13 @@ describe("Auth Controller Factory", () => {
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      // (getArkosConfig as jest.Mock).mockReturnValueOnce({
-      //   authentication: {
-      //     usernameField: "username",
-      //     login: {
-      //       sendAccessTokenThrough: "both",
-      //     },
-      //   },
-      // });
-
+      (getArkosConfig as jest.Mock).mockReturnValueOnce({
+        authentication: {
+          login: {
+            sendAccessTokenThrough: "both",
+          },
+        },
+      });
       // Execute
       await authController.login(req, res, next);
 
@@ -451,7 +444,15 @@ describe("Auth Controller Factory", () => {
       });
     });
 
-    it("should call next middleware when afterLogin is provided", async () => {
+    it("should call next middleware when afterLogin is provided and send cookies strategy response-only or both", async () => {
+      (getArkosConfig as jest.Mock).mockReturnValueOnce({
+        authentication: {
+          login: {
+            sendAccessTokenThrough: "both",
+          },
+        },
+      });
+
       // Setup
       const controllerWithMiddleware = await authControllerFactory({
         afterLogin: true,

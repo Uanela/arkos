@@ -24,6 +24,7 @@ export default function errorHandler(
   res: Response,
   next: NextFunction
 ): void {
+  console.error("[\x1b[31mERROR\x1b[0m]:", err);
   // Default error status
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
@@ -109,8 +110,6 @@ function sendDevelopmentError(
   req: Request,
   res: Response
 ): void {
-  console.error("[\x1b[31mERROR\x1b[0m]:", err);
-
   if (req.originalUrl.startsWith("/api"))
     res.status(err.statusCode).json({
       message: err.message.split("\n")[err.message.split("\n").length - 1],
@@ -143,7 +142,7 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
         status: err.status,
         message: err.message,
         meta: err.meta || {},
-        code: err.code || "",
+        code: err.code || "unknown",
       });
     else
       res.status(500).json({

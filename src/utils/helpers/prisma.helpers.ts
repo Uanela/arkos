@@ -2,7 +2,7 @@ import fs from "fs";
 import { Request, Response, NextFunction } from "express";
 import catchAsync from "../../modules/error-handler/utils/catch-async";
 import AppError from "../../modules/error-handler/utils/app-error";
-import { getUserFileExtension } from "./fs.helpers";
+import { crd, getUserFileExtension } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 
 export let prismaInstance: any = null;
@@ -10,18 +10,10 @@ export let prismaInstance: any = null;
 export async function loadPrismaModule(a?: string) {
   if (!prismaInstance) {
     try {
-      let prismaPath = `${
-        process.env.NODE_ENV === "production"
-          ? process.cwd() + "/.build/"
-          : process.cwd()
-      }/src/utils/prisma.${getUserFileExtension()}`;
+      let prismaPath = `${crd()}/src/utils/prisma.${getUserFileExtension()}`;
 
       if (!fs.existsSync(prismaPath)) {
-        prismaPath = `${
-          process.env.NODE_ENV === "production"
-            ? process.cwd() + "/.build/"
-            : process.cwd()
-        }/src/utils/prisma/index.${getUserFileExtension()}`;
+        prismaPath = `${crd()}/src/utils/prisma/index.${getUserFileExtension()}`;
       }
 
       const prismaModule = await importModule(prismaPath);

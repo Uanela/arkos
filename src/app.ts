@@ -52,7 +52,7 @@ export async function bootstrap(
 ): Promise<express.Express> {
   await loadPrismaModule();
 
-  if (arkosConfig.configureApp) await arkosConfig.configureApp(app);
+  if (arkosConfig?.configureApp) await arkosConfig.configureApp(app);
 
   const middlewaresConfig = arkosConfig?.middlewares;
   const disabledMiddlewares = middlewaresConfig?.disable || [];

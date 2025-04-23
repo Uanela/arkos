@@ -1,4 +1,4 @@
-import { getExpressApp } from "../../server";
+import { getExpressApp } from "../../../../server";
 
 export const getAppRoutes = () => {
   const app = getExpressApp();

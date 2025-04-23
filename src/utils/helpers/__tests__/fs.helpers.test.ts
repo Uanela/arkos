@@ -128,7 +128,6 @@ describe("fs.helpers", () => {
     // Set up mocks for path.join to return predictable paths
     const mockProjectRoot = "/mock/project/root";
     const mockTsConfigPath = "/mock/project/root/tsconfig.json";
-    const mockSrcDir = "/mock/project/root/src";
 
     beforeEach(() => {
       // Reset the module's userFileExtension before each test
@@ -144,8 +143,9 @@ describe("fs.helpers", () => {
 
       // Reset all fs mocks
       (fs.existsSync as jest.Mock).mockReset();
-      (fs.statSync as jest.Mock).mockReset();
-      (fs.readdirSync as jest.Mock).mockReset();
+
+      // Reset environment variables
+      delete process.env.ARKOS_BUILD;
     });
 
     afterEach(() => {
@@ -163,11 +163,9 @@ describe("fs.helpers", () => {
       expect(fs.existsSync).not.toHaveBeenCalled();
     });
 
-    it('should return "ts" when tsconfig.json exists in project root', () => {
+    it('should return "ts" when tsconfig.json exists and ARKOS_BUILD is not "true"', () => {
       // Mock fs.existsSync to return true for tsconfig.json
-      (fs.existsSync as jest.Mock).mockImplementation((path) => {
-        return path === mockTsConfigPath;
-      });
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       const result = getUserFileExtension();
 
@@ -176,79 +174,32 @@ describe("fs.helpers", () => {
       expect(fsHelpers.userFileExtension).toBe("ts");
     });
 
-    it("should check for .ts files in src directories when tsconfig.json is not found", () => {
-      // Mock no tsconfig.json
-      (fs.existsSync as jest.Mock).mockImplementation((path) => {
-        if (path === mockTsConfigPath) return false;
-        if (path === mockSrcDir) return true;
-        return false;
-      });
+    it('should return "js" when tsconfig.json exists but ARKOS_BUILD is "true"', () => {
+      // Mock fs.existsSync to return true for tsconfig.json
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-      // Mock src as a directory
-      (fs.statSync as jest.Mock).mockReturnValue({ isDirectory: () => true });
-
-      // Mock finding a .ts file in src
-      (fs.readdirSync as jest.Mock).mockReturnValue(["app.ts", "index.js"]);
+      // Set the ARKOS_BUILD environment variable
+      process.env.ARKOS_BUILD = "true";
 
       const result = getUserFileExtension();
 
-      expect(result).toBe("ts");
+      expect(result).toBe("js");
       expect(fs.existsSync).toHaveBeenCalledWith(mockTsConfigPath);
-      expect(fs.readdirSync).toHaveBeenCalled();
-      expect(fsHelpers.userFileExtension).toBe("ts");
+      expect(fsHelpers.userFileExtension).toBe("js");
     });
 
-    it("should check for .tsx files in src directories", () => {
-      // Mock no tsconfig.json
-      (fs.existsSync as jest.Mock).mockImplementation((path) => {
-        if (path === mockTsConfigPath) return false;
-        if (path === mockSrcDir) return true;
-        return false;
-      });
-
-      // Mock src as a directory
-      (fs.statSync as jest.Mock).mockReturnValue({ isDirectory: () => true });
-
-      // Mock finding a .tsx file in src
-      (fs.readdirSync as jest.Mock).mockReturnValue(["App.tsx", "index.js"]);
-
-      const result = getUserFileExtension();
-
-      expect(result).toBe("ts");
-      expect(fsHelpers.userFileExtension).toBe("ts");
-    });
-
-    it('should default to "js" when no TypeScript indicators are found', () => {
-      // Mock no tsconfig.json and no src directory
+    it('should return "js" when tsconfig.json does not exist', () => {
+      // Mock fs.existsSync to return false for tsconfig.json
       (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       const result = getUserFileExtension();
 
       expect(result).toBe("js");
+      expect(fs.existsSync).toHaveBeenCalledWith(mockTsConfigPath);
       expect(fsHelpers.userFileExtension).toBe("js");
     });
 
-    it('should default to "js" when directories exist but no .ts files are found', () => {
-      // Mock no tsconfig.json but src directory exists
-      (fs.existsSync as jest.Mock).mockImplementation((path) => {
-        if (path === mockTsConfigPath) return false;
-        if (path === mockSrcDir) return true;
-        return false;
-      });
-
-      // Mock src as a directory
-      (fs.statSync as jest.Mock).mockReturnValue({ isDirectory: () => true });
-
-      // Mock only finding .js files
-      (fs.readdirSync as jest.Mock).mockReturnValue(["app.js", "index.js"]);
-
-      const result = getUserFileExtension();
-
-      expect(result).toBe("js");
-      expect(fsHelpers.userFileExtension).toBe("js");
-    });
-
-    it('should default to "js" when an error occurs', () => {
+    it('should return "js" when an error occurs during file system checks', () => {
       // Force an error by making fs.existsSync throw
       (fs.existsSync as jest.Mock).mockImplementation(() => {
         throw new Error("Mock error");

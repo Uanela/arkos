@@ -232,7 +232,9 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           authConfigs?.login?.sendAccessTokenThrough === "both"
         ) {
           req.responseData = { accessToken: token };
-        } else if (
+        }
+
+        if (
           authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
           authConfigs?.login?.sendAccessTokenThrough === "both"
         )
