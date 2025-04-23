@@ -39,7 +39,9 @@ export function addRouteMiddlwaresAndConfigs() {}
  * @param {ControllerActions} action - The controller action to apply.
  * @returns A middleware function that attaches the query options to the request.
  */
-export function addPrismaQueryOptionsToRequestQuery<T>(
+export function addPrismaQueryOptionsToRequestQuery<
+  T extends Record<string, any>
+>(
   prismaQueryOptions: PrismaQueryOptions<T>,
   action: keyof PrismaQueryOptions<T>
 ) {

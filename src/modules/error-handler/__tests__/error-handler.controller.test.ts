@@ -184,6 +184,7 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
+        code: "unknown",
         status: "fail",
         message: "Test operational error",
         meta: {},
@@ -203,6 +204,7 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
+        code: "unknown",
         status: "error",
         message: expect.stringMatching("Something went wrong!"),
         meta: {},

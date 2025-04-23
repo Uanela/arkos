@@ -6,7 +6,7 @@ import AppError from "../error-handler/utils/app-error";
 import { kebabCase } from "../../utils/helpers/change-case.helpers";
 import { getExpressApp } from "../../server";
 import { getModelModules, getModels } from "../../utils/helpers/models.helpers";
-import { getAppRoutes } from "../../utils/helpers/base.controller.helpers";
+import { getAppRoutes } from "./utils/helpers/base.controller.helpers";
 
 /**
  * BaseController class providing standardized RESTful API endpoints for any prisma model

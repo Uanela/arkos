@@ -121,7 +121,6 @@ describe("Base Router", () => {
         1,
         "/available-routes",
         authService.authenticate,
-        expect.any(Function),
         baseController.getAvalibleRoutes
       );
 
@@ -129,7 +128,6 @@ describe("Base Router", () => {
       expect(routerInstance.get).toHaveBeenCalledWith(
         "/available-resources",
         authService.authenticate,
-        expect.any(Function),
         baseController.getAvailableResources
       );
 

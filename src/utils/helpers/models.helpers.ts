@@ -5,7 +5,7 @@ import {
   kebabCase,
   pascalCase,
 } from "../../utils/helpers/change-case.helpers";
-import { getUserFileExtension } from "./fs.helpers";
+import { crd, getUserFileExtension } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 
 export let prismaModelsModules: Record<
@@ -129,7 +129,7 @@ export async function processSubdir(
 export async function importPrismaModelModules(
   modelName: string
 ): Promise<Record<string, any>> {
-  const moduleDir = path.resolve(process.cwd(), "src", "modules", modelName);
+  const moduleDir = path.resolve(crd(), "src", "modules", modelName);
 
   const result: {
     service?: any;
