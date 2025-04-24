@@ -344,7 +344,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           where: { id: user.id },
           data: {
             password: await authService.hashPassword(newPassword),
-            passwordChangedAt: new Date(),
+            passwordChangedAt: new Date(Date.now()),
           },
         });
 
