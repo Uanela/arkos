@@ -13,8 +13,8 @@ interface StartOptions {
 /**
  * Production start command for the arkos CLI
  */
-export function startCommand(options: StartOptions = {}) {
-  const configs = getArkosConfig();
+export async function startCommand(options: StartOptions = {}) {
+  // const configs = getArkosConfig();
   //   console.log(configs);
   try {
     const { port, host } = options;
@@ -53,9 +53,11 @@ export function startCommand(options: StartOptions = {}) {
       process.exit(0);
     });
 
-    console.info(`    \x1b[1m\x1b[36m♖ Arkos.js ${getVersion()}\x1b[0m`);
-    console.info(`    - Local:        http://${host}:${port}`);
-    console.info(`    - Environments: production\n`);
+    // console.log(getArkosConfig());
+
+    console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+    console.info(`  - Local:        http://${host}:${port}`);
+    console.info(`  - Environments: production\n`);
   } catch (error) {
     console.error("❌ Production server failed to start:", error);
     process.exit(1);

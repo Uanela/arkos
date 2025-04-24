@@ -20,7 +20,7 @@ interface BuildOptions {
  */
 export function buildCommand(options: BuildOptions = {}) {
   try {
-    console.info(`🚀 Building project...`);
+    console.info(`🚀 Building an optimized production ready project...\n`);
 
     ensureBuildDir();
 

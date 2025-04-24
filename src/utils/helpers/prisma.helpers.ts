@@ -7,7 +7,7 @@ import { importModule } from "./global.helpers";
 
 export let prismaInstance: any = null;
 
-export async function loadPrismaModule(a?: string) {
+export async function loadPrismaModule() {
   if (!prismaInstance) {
     try {
       let prismaPath = `${crd()}/src/utils/prisma.${getUserFileExtension()}`;
@@ -19,11 +19,13 @@ export async function loadPrismaModule(a?: string) {
       const prismaModule = await importModule(prismaPath);
       prismaInstance = prismaModule.default || prismaModule.prisma;
 
-      if (!prismaInstance) throw new Error("not found");
-    } catch (error) {
-      throw new AppError("Could not initialize Prisma module.", 500, {
-        tip: `Make sure your prisma instance is exported under src/utils/prisma.${getUserFileExtension()}, read more about Arkos' Project Structure under https://www.arkosjs.com/docs/project-structure#root-structure`,
-      });
+      if (!prismaInstance) throw new Error("Prisma not found");
+    } catch (error: any) {
+      if (error.message === "Prisma not found")
+        throw new AppError("Could not initialize Prisma module.", 500, {
+          tip: `Make sure your prisma instance is exported under src/utils/prisma.${getUserFileExtension()} or src/utils/prisma/index.${getUserFileExtension()}, read more about Arkos' Project Structure under https://www.arkosjs.com/docs/project-structure#root-structure`,
+        });
+      throw error;
     }
   }
   return prismaInstance;

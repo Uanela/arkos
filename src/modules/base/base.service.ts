@@ -204,7 +204,7 @@ export class BaseService {
     const data = await prisma[this.modelName].findUnique(
       deepmerge(
         {
-          where: { ...filters, id: String(filters.id) },
+          where: { ...filters },
           ...(JSON.parse(queryOptions || "{}").hasOwnProperty("select")
             ? {
                 select: {
@@ -260,7 +260,7 @@ export class BaseService {
     const data = await prisma[this.modelName].update(
       deepmerge(
         {
-          where: { ...filters, id: String(filters.id) },
+          where: { ...filters },
           data: bodyWithRelationFieldsHandled,
           ...(JSON.parse(queryOptions || "{}").hasOwnProperty("select")
             ? {

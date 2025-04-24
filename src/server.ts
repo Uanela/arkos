@@ -53,8 +53,8 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
         //   `[\x1b[32mREADY\x1b[0m] \x1b[90m${time}\x1b[0m App running on port \x1b[33m${port}\x1b[0m, server waiting on http://localhost:${port}`
         // );
 
-        if (!!process.env.NODE_ENV)
-          console.info(`${`Environment: ${process.env.NODE_ENV}`}`);
+        // if (!!process.env.NODE_ENV)
+        //   console.info(`${`Environment: ${process.env.NODE_ENV}`}`);
       }
     );
 

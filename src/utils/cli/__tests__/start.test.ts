@@ -1,5 +1,5 @@
 import path from "path";
-import fs from "fs";
+import fs, { readdirSync } from "fs";
 import { spawn } from "child_process";
 import { startCommand } from "../start";
 
@@ -11,10 +11,15 @@ jest.mock("child_process", () => ({
 }));
 
 jest.mock("fs", () => ({
+  ...jest.requireActual("fs"),
   existsSync: jest.fn(),
+  readdirSync: jest.fn(),
+  readFileSync: jest.fn(),
 }));
+jest.mock("util");
 
 jest.mock("path", () => ({
+  ...jest.requireActual("path"),
   join: jest.fn((...args) => args.join("/")),
 }));
 

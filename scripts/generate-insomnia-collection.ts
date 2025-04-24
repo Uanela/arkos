@@ -311,7 +311,7 @@ export function writeInsomniaCollectionJson() {
     JSON.stringify(insomniaCollection, null, 2)
   );
 
-  console.log(
+  console.info(
     "Insomnia collection generated successfully! .cache/insomnia-collection.json"
   );
 }
