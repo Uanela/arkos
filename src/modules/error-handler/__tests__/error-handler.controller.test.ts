@@ -117,17 +117,16 @@ describe("Error Handler Middleware", () => {
       );
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        message: "Test error",
-        error: expect.objectContaining({
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
           statusCode: 400,
           message: "Test error",
-        }),
-        stack: expect.arrayContaining([
-          "Error: Test error",
-          "    at Test.stack",
-        ]),
-      });
+          stack: expect.arrayContaining([
+            "Error: Test error",
+            "    at Test.stack",
+          ]),
+        })
+      );
     });
 
     it("should handle multi-line error messages and take the last line", () => {

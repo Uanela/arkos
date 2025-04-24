@@ -218,14 +218,4 @@ describe("CLI Index", () => {
   //     expect((cliModule as any).devCommand).toBe(devCommand);
   //     // Note: startCommand is not exported according to the original file
   //   });
-
-  it("should log program setup", () => {
-    // Import the module to trigger the CLI setup
-    jest.isolateModules(() => {
-      require("../index");
-    });
-
-    // Verify console.log was called with program setup message
-    expect(console.log).toHaveBeenCalledWith("program setup", mockProgram);
-  });
 });

@@ -2,6 +2,7 @@
 import { spawn } from "child_process";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import { getVersion } from ".";
+import { getArkosConfig } from "../../server";
 
 interface DevOptions {
   port?: string;
@@ -11,9 +12,7 @@ interface DevOptions {
 /**
  * Dev server command for the arkos CLI
  */
-export function devCommand(options: DevOptions = {}) {
-  //   console.log(configs);
-
+export async function devCommand(options: DevOptions = {}) {
   try {
     const { port, host } = options;
 
@@ -54,9 +53,11 @@ export function devCommand(options: DevOptions = {}) {
       });
     }
 
-    console.info(`    \x1b[1m\x1b[36m♖ Arkos.js ${getVersion()}\x1b[0m`);
-    console.info(`    - Local:        http://${host}:${port}`);
-    console.info(`    - Environments: development\n`);
+    // console.log(getArkosConfig());
+
+    console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+    console.info(`  - Local:        http://${host}:${port}`);
+    console.info(`  - Environments: development\n`);
 
     // Handle process exit
     process.on("SIGINT", () => {

@@ -10,8 +10,18 @@ jest.mock("child_process", () => ({
 }));
 
 jest.mock("../../helpers/fs.helpers", () => ({
+  ...jest.requireActual("../../helpers/fs.helpers"),
   getUserFileExtension: jest.fn(),
 }));
+
+jest.mock("fs", () => ({
+  ...jest.requireActual("fs"),
+  existsSync: jest.fn(),
+  readdirSync: jest.fn(),
+  readFileSync: jest.fn(() => "{}"),
+}));
+
+jest.mock("util");
 
 // Mock console methods
 const originalConsoleLog = console.log;

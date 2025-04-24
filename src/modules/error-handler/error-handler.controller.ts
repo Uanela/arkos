@@ -112,8 +112,8 @@ function sendDevelopmentError(
 ): void {
   if (req.originalUrl.startsWith("/api"))
     res.status(err.statusCode).json({
+      ...err,
       message: err.message.split("\n")[err.message.split("\n").length - 1],
-      error: err,
       stack: err.stack?.split("\n"),
     });
   else

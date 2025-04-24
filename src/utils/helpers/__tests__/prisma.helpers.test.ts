@@ -2,183 +2,246 @@ import fs from "fs";
 import { Request, Response, NextFunction } from "express";
 import * as dbUtils from "../prisma.helpers";
 import AppError from "../../../modules/error-handler/utils/app-error";
+import { getUserFileExtension } from "../fs.helpers";
 import { importModule } from "../global.helpers";
-importModule;
-
-const { loadPrismaModule, checkDatabaseConnection } = dbUtils;
+import { cwd } from "process";
 
 // Mock external dependencies
 jest.mock("fs");
 jest.mock("../fs.helpers");
+jest.mock("../global.helpers");
 jest.mock("../../../modules/error-handler/utils/catch-async", () => {
   return (fn: Function) => fn;
 });
 
-// Mock for fs.helpers
-jest.mock("../fs.helpers", () => ({
-  getUserFileExtension: jest.fn(() => "ts"),
-}));
-jest.mock("../global.helpers", () => ({
-  importModule: jest.fn(),
-}));
+// Set up mock values
+const mockedCwd = "/mock/project";
+const mockFileExtension = "ts";
+const mockPrismaBasePath = `${mockedCwd}/src/utils/prisma`;
+const mockPrismaJsPath = `${mockPrismaBasePath}.${mockFileExtension}`;
+const mockPrismaIndexJsPath = `${mockPrismaBasePath}/index.${mockFileExtension}`;
 
-// Mock for dynamic imports
+// Mock Prisma module
 const mockPrismaModule = {
   default: {
-    $connect: jest.fn(),
+    $connect: jest.fn().mockResolvedValue(undefined),
+    $disconnect: jest.fn().mockResolvedValue(undefined),
   },
   prisma: {
-    $connect: jest.fn(),
+    $connect: jest.fn().mockResolvedValue(undefined),
+    $disconnect: jest.fn().mockResolvedValue(undefined),
   },
 };
 
-// Helper to reset module state between tests
-function resetModuleState() {
-  // Reset our mocked prismaInstance
-  (dbUtils as any).prismaInstance = null;
-}
+jest.spyOn(require("../fs.helpers"), "crd").mockReturnValue(mockedCwd);
 
-let mockedPrismaJsPath = `${
-  process.env.NODE_ENV === "production"
-    ? process.cwd() + "/.build/"
-    : process.cwd()
-}/src/utils/prisma`;
-let mockedPrismaIndexJsPath = `${
-  process.env.NODE_ENV === "production"
-    ? process.cwd() + "/.build/"
-    : process.cwd()
-}/src/utils/prisma/index`;
+describe("prisma.helpers", () => {
+  // Set up mocks before each test
+  beforeEach(() => {
+    // Reset module state
+    (dbUtils as any).prismaInstance = null;
 
-describe("Database Connection Utilities", () => {
+    // Reset all mocks
+    jest.clearAllMocks();
+
+    // Set up mocks for filesystem helpers
+    (getUserFileExtension as jest.Mock).mockReturnValue(mockFileExtension);
+
+    // Mock process.cwd to return a consistent path
+    jest.spyOn(process, "cwd").mockReturnValue(mockedCwd);
+  });
+
   describe("loadPrismaModule", () => {
-    it("should load prisma module from default path prisma.js", async () => {
-      (importModule as jest.Mock).mockResolvedValueOnce(mockPrismaModule);
+    it("should load prisma module from main path (prisma.ts)", async () => {
+      // Set up mock for file existence check
+      (fs.existsSync as jest.Mock).mockImplementation(
+        (path: string) => path === mockPrismaJsPath
+      );
 
-      jest.mock(mockedPrismaJsPath, () => mockPrismaModule, {
-        virtual: true,
+      jest.spyOn(process, "cwd").mockReturnValue(mockedCwd);
+      // Set up mock for dynamic import
+      (importModule as jest.Mock).mockResolvedValue({
+        default: mockPrismaModule.default,
       });
 
-      (fs.existsSync as jest.Mock).mockImplementationOnce((path: string) => {
-        return path?.includes?.(mockedPrismaJsPath);
-      });
+      // Call function under test
+      const result = await dbUtils.loadPrismaModule();
 
-      const prisma = await loadPrismaModule();
-
-      expect(fs.existsSync).toHaveReturnedWith(true);
-      expect(prisma).toHaveProperty("$connect");
+      // Assert expected behavior
+      expect(fs.existsSync).toHaveBeenCalledWith(mockPrismaJsPath);
+      expect(importModule).toHaveBeenCalledWith(mockPrismaJsPath);
+      expect(result).toBe(mockPrismaModule.default);
     });
 
-    it("should load prisma module from fallback path  prisma/index.js", async () => {
-      (importModule as jest.Mock).mockResolvedValueOnce(mockPrismaModule);
-      (dbUtils as any).prismaInstance = null;
-
-      jest.mock(mockedPrismaIndexJsPath, () => mockPrismaModule, {
-        virtual: true,
+    it("should load prisma module from fallback path (prisma/index.ts)", async () => {
+      // Mock file existence to fail for main path but succeed for fallback
+      (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
+        return path === mockPrismaIndexJsPath;
       });
 
-      (fs.existsSync as jest.Mock).mockImplementationOnce((path: string) => {
-        return path?.includes?.(mockedPrismaIndexJsPath);
+      // Set up mock for dynamic import
+      (importModule as jest.Mock).mockResolvedValue({
+        default: mockPrismaModule.default,
       });
 
-      const prisma = await loadPrismaModule();
+      // Call function under test
+      const result = await dbUtils.loadPrismaModule();
 
-      expect(fs.existsSync).toHaveReturnedWith(false);
-      expect(prisma).toHaveProperty("$connect");
+      // Assert expected behavior
+      expect(fs.existsSync).toHaveBeenCalledWith(mockPrismaJsPath);
+      expect(fs.existsSync).not.toHaveBeenCalledWith(mockPrismaIndexJsPath);
+      expect(importModule).toHaveBeenCalledWith(mockPrismaIndexJsPath);
+      expect(result).toBe(mockPrismaModule.default);
     });
 
     it("should use prisma field if default is not available", async () => {
-      (importModule as jest.Mock).mockResolvedValueOnce({
+      // Set up mock for file existence check
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      // Set up mock for dynamic import without default export
+      (importModule as jest.Mock).mockResolvedValue({
         prisma: mockPrismaModule.prisma,
       });
 
-      const prisma = await loadPrismaModule();
+      // Call function under test
+      const result = await dbUtils.loadPrismaModule();
 
-      expect(prisma).toHaveProperty("$connect");
+      // Assert expected behavior
+      expect(result).toBe(mockPrismaModule.prisma);
     });
 
     it("should throw AppError when prisma module cannot be loaded", async () => {
-      (fs.existsSync as jest.Mock).mockClear();
+      // Set up mocks for file existence
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-      try {
-        expect(await loadPrismaModule("albani")).rejects.toThrow(AppError);
-      } catch {}
+      // Mock import to return object without prisma
+      (importModule as jest.Mock).mockResolvedValue({});
+
+      // Assert that the function throws an AppError
+      await expect(dbUtils.loadPrismaModule()).rejects.toThrow(AppError);
+      await expect(dbUtils.loadPrismaModule()).rejects.toThrow(
+        "Could not initialize Prisma module."
+      );
+    });
+
+    it("should throw original error when import fails", async () => {
+      // Set up mocks for file existence
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      // Mock import to fail
+      const mockError = new Error("Import failed");
+      (importModule as jest.Mock).mockRejectedValue(mockError);
+
+      // Assert that the function throws the original error
+      await expect(dbUtils.loadPrismaModule()).rejects.toBe(mockError);
     });
 
     it("should reuse prisma instance if already loaded", async () => {
-      // Load module once
-      (dbUtils as any).prismaInstance = null;
-      (importModule as jest.Mock).mockResolvedValueOnce({
-        prisma: mockPrismaModule.prisma,
+      // Set up mocks
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (importModule as jest.Mock).mockResolvedValue({
+        default: mockPrismaModule.default,
       });
-      const firstInstance = await loadPrismaModule();
-      expect(fs.existsSync).toHaveBeenCalled();
+
+      // Load first instance
+      const firstInstance = await dbUtils.loadPrismaModule();
+
       // Reset mocks to verify they're not called again
-      (fs.existsSync as jest.Mock).mockClear();
+      jest.clearAllMocks();
 
-      // Load module again
-      const secondInstance = await loadPrismaModule();
+      // Load second instance
+      const secondInstance = await dbUtils.loadPrismaModule();
 
+      // Verify both instances are the same and no additional imports occurred
       expect(secondInstance).toBe(firstInstance);
+      expect(importModule).not.toHaveBeenCalled();
       expect(fs.existsSync).not.toHaveBeenCalled();
     });
   });
 
   describe("getPrismaInstance", () => {
-    it("should return the current prisma instance", async () => {
-      const loadedInstance = await loadPrismaModule();
-
-      const instance = dbUtils.getPrismaInstance();
-
-      expect(instance).toBe(loadedInstance);
-    });
-
     it("should return null if prisma is not loaded yet", () => {
       // Ensure prisma is not loaded
-      resetModuleState();
+      (dbUtils as any).prismaInstance = null;
 
-      const instance = dbUtils.getPrismaInstance();
+      // Call function under test
+      const result = dbUtils.getPrismaInstance();
 
-      expect(instance).toBeNull();
+      // Assert expected behavior
+      expect(result).toBeNull();
+    });
+
+    it("should return the loaded prisma instance", async () => {
+      // Set up mocks
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (importModule as jest.Mock).mockResolvedValue({
+        default: mockPrismaModule.default,
+      });
+
+      // Load prisma instance
+      await dbUtils.loadPrismaModule();
+
+      // Call function under test
+      const result = dbUtils.getPrismaInstance();
+
+      // Assert expected behavior
+      expect(result).toBe(mockPrismaModule.default);
     });
   });
 
   describe("checkDatabaseConnection", () => {
     it("should call next() when database connection succeeds", async () => {
+      // Set up mocks
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (importModule as jest.Mock).mockResolvedValue({
+        default: mockPrismaModule.default,
+      });
+
+      // Create mock Express objects
       const req = {} as Request;
       const res = {} as Response;
       const next = jest.fn() as NextFunction;
 
-      await checkDatabaseConnection(req, res, next);
+      // Call function under test
+      await dbUtils.checkDatabaseConnection(req, res, next);
 
+      // Assert expected behavior
+      expect(mockPrismaModule.default.$connect).toHaveBeenCalled();
       expect(next).toHaveBeenCalledWith();
+      expect(next).not.toHaveBeenCalledWith(expect.any(AppError));
     });
 
-    // it("should call next with AppError when connection fails", async () => {
-    //   const req = {} as Request;
-    //   const res = {} as Response;
-    //   const next = jest.fn() as NextFunction;
-    //   const errorMessage = "Connection failed";
+    it("should call next with AppError when connection fails", async () => {
+      // Set up error message
+      const errorMessage = "Connection failed";
 
-    //   // Mock connection failure
-    //   mockPrismaModule.default.$connect.mockRejectedValueOnce(
-    //     new Error(errorMessage)
-    //   );
+      // Set up mocks
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (importModule as jest.Mock).mockResolvedValue({
+        default: {
+          $connect: jest.fn().mockRejectedValue(new Error(errorMessage)),
+        },
+      });
 
-    //   jest.mock("../prisma.helpers", () => ({
-    //     loadPrismaModule: jest.fn(() => {
-    //       console.log("dropd");
-    //     }),
-    //   }));
+      // Create mock Express objects
+      const req = {} as Request;
+      const res = {} as Response;
+      const next = jest.fn() as NextFunction;
 
-    //   await checkDatabaseConnection(req, res, next);
-    //   // expect(mockPrismaModule.default.$connect).toHaveBeenCalled();
-    //   expect(next).toHaveBeenCalledWith(expect.any(AppError));
-    //   expect(next).toHaveBeenCalledWith(
-    //     expect.objectContaining({
-    //       message: errorMessage,
-    //       statusCode: 503,
-    //     })
-    //   );
-    // });
+      // Mock console.error to prevent test output noise
+      jest.spyOn(console, "error").mockImplementation();
+
+      // Call function under test
+      await dbUtils.checkDatabaseConnection(req, res, next);
+
+      // Assert expected behavior
+      expect(next).toHaveBeenCalledWith(expect.any(AppError));
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: errorMessage,
+          statusCode: 503,
+        })
+      );
+    });
   });
 });
