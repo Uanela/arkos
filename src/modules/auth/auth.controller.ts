@@ -229,14 +229,16 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         if (
           authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both"
+          authConfigs?.login?.sendAccessTokenThrough === "both" ||
+          !authConfigs?.login?.sendAccessTokenThrough
         ) {
           req.responseData = { accessToken: token };
         }
 
         if (
           authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both"
+          authConfigs?.login?.sendAccessTokenThrough === "both" ||
+          !authConfigs?.login?.sendAccessTokenThrough
         )
           res.cookie("arkos_access_token", token, cookieOptions);
 
@@ -248,12 +250,14 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         if (
           authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both"
+          authConfigs?.login?.sendAccessTokenThrough === "both" ||
+          !authConfigs?.login?.sendAccessTokenThrough
         ) {
           res.status(200).json(req.responseData);
         } else if (
           authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both"
+          authConfigs?.login?.sendAccessTokenThrough === "both" ||
+          !authConfigs?.login?.sendAccessTokenThrough
         )
           res.status(200).send();
       }

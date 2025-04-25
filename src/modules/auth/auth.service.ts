@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { AuthPermissionAction, User, UserRole } from "../../types";
+import { User } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
@@ -25,7 +25,7 @@ import { MsDuration } from "./utils/helpers/auth.controller.helpers";
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
  */
-class AuthService {
+export class AuthService {
   /**
    * Signs a JWT token for the user.
    *
@@ -43,8 +43,7 @@ class AuthService {
 
     if (
       process.env.NODE_ENV === "production" &&
-      (!process.env.JWT_SECRET ||
-      !configs?.jwt?.secret)
+      (!process.env.JWT_SECRET || !configs?.jwt?.secret)
     )
       throw new AppError("Missing JWT secret on production!", 500);
 
