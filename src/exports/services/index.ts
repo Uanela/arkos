@@ -3,14 +3,14 @@ import {
   FileUploaderService,
 } from "../../modules/file-uploader/file-uploader.service";
 import { EmailOptions } from "../../modules/email/email.service";
-import authService from "../../modules/auth/auth.service";
+import authService, { AuthService } from "../../modules/auth/auth.service";
 import emailService, { EmailService } from "../../modules/email/email.service";
 import { BaseService, getBaseServices } from "../../modules/base/base.service";
 
 /**
  * Authentication service.
  */
-export { authService };
+export { authService, AuthService };
 
 /**
  * Base service.
