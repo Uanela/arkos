@@ -51,7 +51,7 @@ describe("BaseService", () => {
         create: jest.fn(),
         createMany: jest.fn(),
         findMany: jest.fn(),
-        findUnique: jest.fn(),
+        findFirst: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
         delete: jest.fn(),
@@ -235,11 +235,11 @@ describe("BaseService", () => {
       const filters = { id: "1" };
       const expectedData = { id: "1", title: "Test Post" };
 
-      mockPrisma.post.findUnique.mockResolvedValue(expectedData);
+      mockPrisma.post.findFirst.mockResolvedValue(expectedData);
 
       const result = await baseService.findOne(filters);
 
-      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+      expect(mockPrisma.post.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { ...filters, id: "1" },
           include: expect.objectContaining({
@@ -252,7 +252,7 @@ describe("BaseService", () => {
     });
 
     it("should throw error if record not found", async () => {
-      mockPrisma.post.findUnique.mockResolvedValue(null);
+      mockPrisma.post.findFirst.mockResolvedValue(null);
 
       await expect(baseService.findOne({ id: "999" })).rejects.toThrow(
         AppError
@@ -265,11 +265,11 @@ describe("BaseService", () => {
         select: { title: true },
       });
 
-      mockPrisma.post.findUnique.mockResolvedValue({ id: "1", title: "Test" });
+      mockPrisma.post.findFirst.mockResolvedValue({ id: "1", title: "Test" });
 
       await baseService.findOne(filters, queryOptions);
 
-      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+      expect(mockPrisma.post.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           select: expect.objectContaining({
             title: true,

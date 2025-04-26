@@ -7,7 +7,7 @@ export type PrismaQueryOptions<T extends Record<string, any>> = {
     Parameters<T["findMany"]>[0],
     "where" | "cursor" | "take" | "skip" | "orderBy"
   >;
-  findOne?: Partial<Parameters<T["findUnique"]>[0]>;
+  findOne?: Partial<Parameters<T["findFirst"]>[0]>;
   findMany?: Partial<Parameters<T["findMany"]>[0]>;
   deleteMany?: Partial<Parameters<T["deleteMany"]>[0]>;
   updateMany?: Partial<Parameters<T["updateMany"]>[0]>;
