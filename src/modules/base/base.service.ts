@@ -201,7 +201,7 @@ export class BaseService {
   ): Promise<any> {
     const prisma = getPrismaInstance();
 
-    const data = await prisma[this.modelName].findUnique(
+    const data = await prisma[this.modelName].findFirst(
       deepmerge(
         {
           where: { ...filters },

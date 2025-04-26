@@ -60,7 +60,12 @@ export const authControllerFactory = async (middlewares: any = {}) => {
       ) => {
         const user = await baseServices["user"].findOne(
           { id: req.user!.id },
-          stringifiedQueryOptions
+          JSON.stringify(
+            deepmerge(
+              JSON.parse(stringifiedQueryOptions),
+              JSON.parse(req.query.prismaQueryOptions as string)
+            )
+          )
         );
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
@@ -95,7 +100,12 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         const user = await baseServices["user"].updateOne(
           { id: req.user!.id },
           req.body,
-          stringifiedQueryOptions
+          JSON.stringify(
+            deepmerge(
+              JSON.parse(stringifiedQueryOptions),
+              JSON.parse(req.query.prismaQueryOptions as string)
+            )
+          )
         );
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
@@ -276,7 +286,12 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         const user = await userService.createOne(
           req.body,
-          stringifiedQueryOptions
+          JSON.stringify(
+            deepmerge(
+              JSON.parse(stringifiedQueryOptions),
+              JSON.parse(req.query.prismaQueryOptions as string)
+            )
+          )
         );
 
         if (middlewares?.afterSignup) {
