@@ -8,8 +8,6 @@ import {
 } from "./modules/base/base.router";
 import errorHandler from "./modules/error-handler/error-handler.controller";
 import { rateLimit } from "express-rate-limit";
-import path from "path";
-import * as dotenv from "dotenv";
 import compression from "compression";
 import { handleRequestLogs } from "./modules/base/base.middlewares";
 import {
@@ -20,30 +18,6 @@ import { getFileUploaderRouter } from "./modules/file-uploader/file-uploader.rou
 import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
 import deepmerge from "./utils/helpers/deepmerge.helper";
-
-const ENV = process.env.NODE_ENV;
-let envPath = ".env";
-
-// Default to `.env.local` if available in any environment
-if (ENV === "production") {
-  envPath = path.resolve(process.cwd(), ".env.production");
-} else if (ENV === "staging") {
-  envPath = path.resolve(process.cwd(), ".env.staging");
-} else if (ENV === "development") {
-  envPath = path.resolve(process.cwd(), ".env.development");
-} else if (ENV === "local") {
-  // For local development, .env.local can be used
-  envPath = path.resolve(process.cwd(), ".env.local");
-}
-
-// Optionally, add support for `.env.test`, `.env.qa`, or other environments if required
-else if (ENV === "test") {
-  envPath = path.resolve(process.cwd(), ".env.test");
-} else if (ENV === "qa") {
-  envPath = path.resolve(process.cwd(), ".env.qa");
-}
-
-dotenv.config({ path: envPath });
 
 export const app: express.Express = express();
 

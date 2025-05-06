@@ -2,7 +2,8 @@
 import { spawn } from "child_process";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import { getVersion } from ".";
-import { getArkosConfig } from "../../server";
+import { loadEnvironmentVariables } from "../dotenv.helpers";
+import { importModule } from "../helpers/global.helpers";
 
 interface DevOptions {
   port?: string;
@@ -13,6 +14,10 @@ interface DevOptions {
  * Dev server command for the arkos CLI
  */
 export async function devCommand(options: DevOptions = {}) {
+  process.env.NODE_ENV = "development";
+
+  const envFiles = loadEnvironmentVariables();
+
   try {
     const { port, host } = options;
 
@@ -28,11 +33,11 @@ export async function devCommand(options: DevOptions = {}) {
     }
 
     // Set environment variables
-    const env = {
+    const env: { [x: string]: string } = {
       NODE_ENV: "development",
       ...process.env,
-      ...(port && { PORT: port }),
-      ...(host && { HOST: host }),
+      ...(port && { CLI_PORT: port }),
+      ...(host && { CLI_HOST: host }),
     };
 
     // Start the application with the appropriate runner
@@ -53,11 +58,77 @@ export async function devCommand(options: DevOptions = {}) {
       });
     }
 
-    // console.log(getArkosConfig());
+    const checkConfig = async () => {
+      try {
+        // Import the config getter
 
-    console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-    console.info(`  - Local:        http://${host}:${port}`);
-    console.info(`  - Environments: development\n`);
+        const { getArkosConfig } = await importModule("../../server");
+
+        const config = getArkosConfig();
+
+        if (config && config.available) {
+          // Config is ready, display the info with actual values
+          console.info("\n");
+          console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+          console.info(
+            `  - Local:        http://${
+              env.CLI_HOST || config.host || env.HOST || "localhost"
+            }:${env.CLI_PORT || config.port || env.PORT || "8000"}`
+          );
+          console.info(
+            `  - Environments: ${envFiles
+              ?.join(", ")
+              .replaceAll(`${process.cwd()}/`, "")}\n`
+          );
+          return true;
+        }
+        return false;
+      } catch (error) {
+        return false;
+      }
+    };
+
+    // Try to get config periodically
+    const waitForConfig = async () => {
+      let attempts = 0;
+      const maxAttempts = 15;
+
+      while (attempts < maxAttempts) {
+        const ready = await checkConfig();
+        if (ready) break;
+
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        attempts++;
+      }
+
+      // Fall back to defaults if config never became available
+      if (attempts >= maxAttempts) {
+        console.info("\n");
+        console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+        console.info(
+          `  - Local:        http://${
+            env.CLI_HOST || env.HOST || "localhost"
+          }:${env.CLI_PORT || env.PORT || "8000"}`
+        );
+        console.info(
+          `  - Environments: ${envFiles
+            ?.join(", ")
+            .replaceAll(`${process.cwd()}/`, "")}\n`
+        );
+      }
+    };
+
+    waitForConfig();
+
+    // console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+    // console.info(
+    //   `  - Local:        http://${env.HOST || host}:${env.PORT || port}`
+    // );
+    // console.info(
+    //   `  - Environments: ${envFiles
+    //     ?.join(", ")
+    //     .replaceAll(`${process.cwd()}/`, "")}\n`
+    // );
 
     // Handle process exit
     process.on("SIGINT", () => {

@@ -3,16 +3,17 @@ import deepmerge from "../helpers/deepmerge.helper";
 import { parseQueryParamsWithModifiers } from "../helpers/api.features.helpers";
 import AppError from "../../modules/error-handler/utils/app-error";
 import { getPrismaInstance } from "../helpers/prisma.helpers";
+import { ArkosRequest } from "../../types";
 
 type ModelName = string;
 
 export default class APIFeatures {
-  req: Request;
+  req: ArkosRequest;
   searchParams: any; // The query string parameters from the request
   searchParamsWithModifiers: any; // The query string parameters from the request
   filters: any = {};
   modelName: ModelName;
-  relationFields: Record<string, boolean>;
+  // relationFields: Record<string, boolean>;
   excludedFields = [
     "page",
     "sort",
@@ -38,8 +39,8 @@ export default class APIFeatures {
     this.searchParams = parseQueryParamsWithModifiers(req.query);
     this.filters = { ...this.filters };
 
-    if (relationFields) this.filters.iclude = relationFields;
-    this.relationFields = relationFields || {};
+    // if (relationFields) this.filters.include = relationFields;
+    // this.relationFields = relationFields || {};
   }
 
   filter() {
@@ -49,8 +50,8 @@ export default class APIFeatures {
 
     this.excludedFields.forEach((el) => delete queryObj[el]);
 
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `${match}`);
+    // let queryStr = JSON.stringify(queryObj);
+    // queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `${match}`);
 
     const whereObj = { ...this.req.params, ...queryObj };
     const whereLogicalOperatorFilters = Object.keys(whereObj).map((key) => ({
@@ -92,18 +93,14 @@ export default class APIFeatures {
       });
     }
 
-    const parsedQueryOptions =
-      typeof this.req.query?.prismaQueryOptions === "string"
-        ? JSON.parse(this.req.query?.prismaQueryOptions)
-        : {};
-
-    this.filters = deepmerge(
+    const firstMerge = deepmerge(
       {
         where: whereOptions,
       },
-      parsedQueryOptions,
-      this.filters
+      this.req.prismaQueryOptions || {}
     );
+
+    this.filters = deepmerge(firstMerge, this.filters);
     return this;
   }
 

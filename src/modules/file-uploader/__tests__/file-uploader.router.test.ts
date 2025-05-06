@@ -53,9 +53,7 @@ describe("File Uploader Router", () => {
     (authService.handleAuthenticationControl as jest.Mock).mockReturnValue(
       jest.fn()
     );
-    (authService.handleActionAccessControl as jest.Mock).mockReturnValue(
-      jest.fn()
-    );
+    (authService.handleAccessControl as jest.Mock).mockReturnValue(jest.fn());
     (path.resolve as jest.Mock).mockReturnValue("/resolved/path/to/uploads");
     (deepmerge as any as jest.Mock).mockImplementation((obj1, obj2) => ({
       ...obj1,
@@ -109,7 +107,7 @@ describe("File Uploader Router", () => {
     expect(mockRouter.use).toHaveBeenCalledWith(
       "/api/uploads/",
       expect.any(Function), // authService.handleAuthenticationControl
-      expect.any(Function), // authService.handleActionAccessControl
+      expect.any(Function), // authService.handleAccessControl
       "mockedStaticMiddleware" // express.static middleware
     );
 
@@ -117,15 +115,15 @@ describe("File Uploader Router", () => {
     expect(mockRouter.post).toHaveBeenCalledWith(
       "/api/uploads/:fileType",
       expect.any(Function), // authService.handleAuthenticationControl
-      expect.any(Function), // authService.handleActionAccessControl
+      expect.any(Function), // authService.handleAccessControl
       uploadFile
     );
 
-    // Check delete route setup
+    // Check Delete route setup
     expect(mockRouter.delete).toHaveBeenCalledWith(
       "/api/uploads/:fileType/:fileName",
       expect.any(Function), // authService.handleAuthenticationControl
-      expect.any(Function), // authService.handleActionAccessControl
+      expect.any(Function), // authService.handleAccessControl
       deleteFile
     );
 
@@ -240,8 +238,8 @@ describe("File Uploader Router", () => {
     };
 
     const customAuthConfigs = {
-      roles: ["admin", "editor"],
-      permissions: ["upload:create", "upload:delete"],
+      authenticationControl: { View: false },
+      accessControl: { Delete: ["Admin"] },
     };
 
     (importPrismaModelModules as jest.Mock).mockResolvedValue({
@@ -254,30 +252,30 @@ describe("File Uploader Router", () => {
 
     // Assert
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
-      customAuthConfigs,
-      "view"
+      "View",
+      customAuthConfigs.authenticationControl
     );
 
-    expect(authService.handleActionAccessControl).toHaveBeenCalledWith(
-      customAuthConfigs,
-      "view",
-      "file-upload"
-    );
-
-    expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
-      customAuthConfigs,
-      "create"
-    );
-
-    expect(authService.handleActionAccessControl).toHaveBeenCalledWith(
-      customAuthConfigs,
-      "create",
-      "file-upload"
+    expect(authService.handleAccessControl).toHaveBeenCalledWith(
+      "View",
+      "file-upload",
+      customAuthConfigs.accessControl
     );
 
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
-      customAuthConfigs,
-      "delete"
+      "Create",
+      customAuthConfigs.authenticationControl
+    );
+
+    expect(authService.handleAccessControl).toHaveBeenCalledWith(
+      "Create",
+      "file-upload",
+      customAuthConfigs.accessControl
+    );
+
+    expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
+      "Delete",
+      customAuthConfigs.authenticationControl
     );
   });
 
@@ -290,14 +288,14 @@ describe("File Uploader Router", () => {
 
     // Assert
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
-      {},
-      "view"
+      "View",
+      undefined
     );
 
-    expect(authService.handleActionAccessControl).toHaveBeenCalledWith(
-      {},
-      "view",
-      "file-upload"
+    expect(authService.handleAccessControl).toHaveBeenCalledWith(
+      "View",
+      "file-upload",
+      undefined
     );
 
     // All the routes should still be configured correctly

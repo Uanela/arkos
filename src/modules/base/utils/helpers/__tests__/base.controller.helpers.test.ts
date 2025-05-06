@@ -6,6 +6,7 @@ import * as validateSchemaModule from "../../../../../utils/validate-schema";
 import { handleRequestBodyValidationAndTransformation } from "../../../base.middlewares";
 import { ArkosRequest, ArkosResponse } from "../../../../../types";
 import { getAppRoutes } from "../base.controller.helpers";
+import { z } from "zod";
 
 jest.mock("../../../../../utils/helpers/models.helpers");
 jest.mock("../../../../../server");
@@ -78,8 +79,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     (validateDtoModule.default as jest.Mock).mockResolvedValue(transformedBody);
 
     const middleware = handleRequestBodyValidationAndTransformation(
-      modelName,
-      action
+      modelsHelpers.getModelModules("user").dtos.create
     );
 
     // Act
@@ -101,8 +101,8 @@ describe("handleRequestBodyValidationAndTransformation", () => {
 
   it("should call validateSchema when validation resolver is zod", async () => {
     // Arrange
-    const modelName = "TestModel";
-    const action = "update";
+    // const modelName = "TestModel";
+    // const action = "update";
     const transformedBody = { name: "transformed test" };
 
     (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({
@@ -121,8 +121,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     );
 
     const middleware = handleRequestBodyValidationAndTransformation(
-      modelName,
-      action
+      z.object({})
     );
 
     // Act
@@ -131,8 +130,8 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     // Assert
     expect(validateSchemaModule.default).toHaveBeenCalledTimes(1);
     expect(validateSchemaModule.default).toHaveBeenCalledWith(
-      modelsHelpers.getModelModules("user").schemas.update,
-      { name: "test" }
+      expect.objectContaining({ parse: expect.any(Function) }),
+      expect.objectContaining({ name: "test" })
     );
     expect(req.body).toEqual(transformedBody);
     expect(next).toHaveBeenCalledTimes(1);
@@ -152,8 +151,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     (serverConfig.getArkosConfig as jest.Mock).mockReturnValue({});
 
     const middleware = handleRequestBodyValidationAndTransformation(
-      modelName,
-      action
+      class CreateDto {}
     );
 
     // Act
@@ -183,10 +181,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
       },
     });
 
-    const middleware = handleRequestBodyValidationAndTransformation(
-      modelName,
-      action
-    );
+    const middleware = handleRequestBodyValidationAndTransformation(undefined);
 
     // Act
     await middleware(req as ArkosRequest, res as ArkosResponse, next);
@@ -196,30 +191,6 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     expect(validateSchemaModule.default).not.toHaveBeenCalled();
     expect(req.body).toEqual(originalBody);
     expect(next).toHaveBeenCalledTimes(1);
-  });
-
-  it("should convert model name to kebab case when getting model modules", async () => {
-    // Arrange
-    const modelName = "TestModel";
-    const action = "create";
-
-    (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({
-      dtos: {},
-      schemas: {},
-    });
-
-    (serverConfig.getArkosConfig as jest.Mock).mockReturnValue({});
-
-    const middleware = handleRequestBodyValidationAndTransformation(
-      modelName,
-      action
-    );
-
-    // Act
-    await middleware(req as ArkosRequest, res as ArkosResponse, next);
-
-    // Assert
-    expect(modelsHelpers.getModelModules).toHaveBeenCalledWith("test-model");
   });
 
   describe("getAppRoutes", () => {

@@ -16,10 +16,10 @@ import {
 import {
   AuthConfigs,
   AuthJwtPayload,
-  BaseControllerActions,
+  AccessAction,
+  AccessControlConfig,
+  AuthenticationControlConfig,
 } from "../../types/auth";
-import { kebabCase } from "../../utils/helpers/change-case.helpers";
-import { singular } from "pluralize";
 import { MsDuration } from "./utils/helpers/auth.controller.helpers";
 
 /**
@@ -170,15 +170,15 @@ export class AuthService {
   /**
    * Middleware function to handle access control based on user roles and permissions.
    *
-   * @param {AuthConfigs} authConfigs - The configuration object for authentication and access control.
-   * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
+   * @param {AccessAction} action - The action being performed (e.g., create, update, delete, view).
    * @param {string} resourceName - The resource name that the action is being performed on (e.g., "User", "Post").
+   * @param {AccessControlConfig} accessControl - The access control configuration.
    * @returns {ArkosRequestHandler} The middleware function that checks if the user has permission to perform the action.
    */
-  handleActionAccessControl(
-    authConfigs: AuthConfigs,
-    action: BaseControllerActions,
-    resourceName: string
+  handleAccessControl(
+    action: AccessAction,
+    resourceName: string,
+    accessControl?: AccessControlConfig
   ): ArkosRequestHandler {
     return catchAsync(
       async (
@@ -203,7 +203,7 @@ export class AuthService {
                 role: {
                   permissions: {
                     some: {
-                      resource: kebabCase(singular(resourceName)),
+                      resource: resourceName,
                       action: action,
                     },
                   },
@@ -220,28 +220,34 @@ export class AuthService {
                 )
               );
           } else if (configs?.authentication?.mode === "static") {
-            const accessControl = authConfigs?.accessControl;
-            let authorizedRoles: any[] = [];
+            let authorizedRoles: string[] = [];
 
-            if (accessControl) {
-              if (Array.isArray(accessControl)) authorizedRoles = accessControl;
-              else if (accessControl[action])
-                authorizedRoles = accessControl[action];
+            if (!accessControl)
+              return next(
+                new AppError(
+                  "You do not have permission to perform this action",
+                  403
+                )
+              );
 
-              // Checks for both cases if using single role or multiple roles
-              if (
-                !authorizedRoles?.includes?.(req.user?.role) ||
-                ((req.user?.roles as any[]).length > 0 &&
-                  !authorizedRoles?.some((role) =>
-                    (req.user?.roles as any[])?.includes?.(role)
-                  ))
-              )
-                return next(
-                  new AppError(
-                    "You do not have permission to perfom this action",
-                    403
-                  )
-                );
+            if (Array.isArray(accessControl)) authorizedRoles = accessControl;
+            else if (accessControl[action])
+              authorizedRoles = accessControl[action] || [];
+
+            const userRoles = Array.isArray(user?.roles)
+              ? user.roles
+              : [user.role];
+            const hasPermission = userRoles.some((role: string) =>
+              authorizedRoles.includes(role)
+            );
+
+            if (!hasPermission) {
+              return next(
+                new AppError(
+                  "You do not have permission to perform this action",
+                  403
+                )
+              );
             }
           }
         }
@@ -349,16 +355,14 @@ export class AuthService {
   /**
    * Handles authentication control by checking the `authenticationControl` configuration in the `authConfigs`.
    *
-   * @param {AuthConfigs | undefined} authConfigs - The authentication configuration object.
    * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
+   * @param {AuthenticationControlConfig} authenticationControl - The authentication configuration object.
    * @returns {ArkosRequestHandler} The middleware function that checks if authentication is required.
    */
   handleAuthenticationControl(
-    authConfigs: AuthConfigs | undefined,
-    action: BaseControllerActions
+    action: AccessAction,
+    authenticationControl?: AuthenticationControlConfig | undefined
   ): ArkosRequestHandler {
-    const authenticationControl = authConfigs?.authenticationControl;
-
     if (authenticationControl && typeof authenticationControl === "object") {
       if (authenticationControl[action] === false) return callNext;
       else if (authenticationControl[action] === true) return this.authenticate;

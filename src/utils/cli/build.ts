@@ -1,8 +1,9 @@
 // src/utils/cli/build.ts
 import path from "path";
 import fs from "fs";
-import { execSync, spawn } from "child_process";
+import { execSync } from "child_process";
 import { getUserFileExtension } from "../helpers/fs.helpers";
+import { loadEnvironmentVariables } from "../dotenv.helpers";
 
 // Constants
 const BUILD_DIR = ".build";
@@ -10,7 +11,6 @@ const MODULE_TYPES = ["cjs", "esm"] as const;
 type ModuleType = (typeof MODULE_TYPES)[number];
 
 interface BuildOptions {
-  watch?: boolean;
   config?: string;
   module?: string;
 }
@@ -19,24 +19,34 @@ interface BuildOptions {
  * Main build function for the arkos CLI
  */
 export function buildCommand(options: BuildOptions = {}) {
+  const fileExt = getUserFileExtension();
+  process.env.NODE_ENV = "production";
+  process.env.NODE_ENV = "true";
+
+  const envFiles = loadEnvironmentVariables();
+  const moduleType = validateModuleType(options.module);
+
   try {
-    console.info(`🚀 Building an optimized production ready project...\n`);
+    console.info(`🛠️ Using env variables from ${envFiles?.join(", ")}...`);
+    console.info(
+      `🚀 Building an optimized production ready project with ${moduleType} format...\n`
+    );
 
     ensureBuildDir();
 
     // Detect project type
-    const fileExt = getUserFileExtension();
 
     if (fileExt === "ts") {
-      buildTypeScriptProject(options);
+      buildTypeScriptProject(options, moduleType);
     } else {
-      buildJavaScriptProject(options);
+      buildJavaScriptProject(options, moduleType);
     }
 
     console.info(`✅ Build complete! \n`);
     console.info(`Next step:\n`);
     console.info(`Run the generated build with the start command.\n`);
   } catch (error) {
+    console.info("\n");
     console.error("❌ Build failed:", error);
     process.exit(1);
   }
@@ -86,7 +96,7 @@ function ensureBuildDir() {
 /**
  * Build a TypeScript project
  */
-function buildTypeScriptProject(options: BuildOptions) {
+function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
   // Read the user's tsconfig.json
   const tsconfigPath = path.join(
     process.cwd(),
@@ -104,12 +114,13 @@ function buildTypeScriptProject(options: BuildOptions) {
     // Continue with default config
   }
 
-  // Create a custom tsconfig that outputs to our .build directory
+  // Create a custom tsconfig that outputs to our build directory with the correct module type
   const tempTsconfig = {
     ...tsconfig,
     compilerOptions: {
       ...(tsconfig.compilerOptions || {}),
       outDir: path.join(`./${BUILD_DIR}`),
+      // module: moduleType === "esm" ? "ESNext" : "CommonJS",
     },
   };
 
@@ -121,33 +132,17 @@ function buildTypeScriptProject(options: BuildOptions) {
 
   try {
     // Run TypeScript compiler
+    execSync(`npx tsc -p ${tempTsconfigPath}`, {
+      stdio: "inherit",
+      cwd: process.cwd(),
+    });
 
-    if (options.watch) {
-      // For watch mode, spawn a process
-      const tsc = spawn("npx", ["tsc", "-p", tempTsconfigPath, "--watch"], {
-        stdio: "inherit",
-        shell: true,
-      });
+    // Copy non-TypeScript files
 
-      // Handle process exit
-      process.on("SIGINT", () => {
-        tsc.kill();
-        cleanupTempConfig(tempTsconfigPath);
-        process.exit(0);
-      });
-    } else {
-      // For one-time build, use execSync
-      execSync(`npx tsc -p ${tempTsconfigPath}`, {
-        stdio: "inherit",
-        cwd: process.cwd(),
-      });
+    copyAllNonSourceFiles(moduleType, [".ts", ".tsx"]);
 
-      // Copy non-TypeScript files
-      // copyAssetFiles(moduleType);
-
-      // Clean up temp config
-      cleanupTempConfig(tempTsconfigPath);
-    }
+    // Clean up temp config
+    cleanupTempConfig(tempTsconfigPath);
   } catch (error) {
     cleanupTempConfig(tempTsconfigPath);
     throw error;
@@ -157,24 +152,28 @@ function buildTypeScriptProject(options: BuildOptions) {
 /**
  * Build a JavaScript project
  */
-function buildJavaScriptProject(options: BuildOptions) {
+function buildJavaScriptProject(options: BuildOptions, moduleType: ModuleType) {
   // Target directory
   const targetDir = path.join(BUILD_DIR);
 
   try {
-    // For JS projects, we need to handle module transformations if needed
-    if (true) {
-      // For ESM output, we might want to transform CJS to ESM if needed
-      // This is a simplified approach - for production, consider using tools like Babel
+    // Copy JavaScript files based on module type
+    if (moduleType === "esm") {
+      // Copy JS files for ESM (skip .cjs files as they are CommonJS)
+
       execSync(
-        `npx copyfiles -u 0 "src/**/*.js" "src/**/*.jsx" "src/**/*.mjs" "src/**/*.cjs" ${targetDir}`,
+        `npx copyfiles -u 0 "src/**/*.js" "src/**/*.jsx" "src/**/*.mjs" ${targetDir}`,
         {
           stdio: "inherit",
           cwd: process.cwd(),
         }
       );
+
+      // Note about CommonJS files
+      console.info("Note: .cjs files are skipped in ESM build");
     } else {
-      // For CJS output, direct copy is usually fine
+      // Copy all JS files for CommonJS
+
       execSync(
         `npx copyfiles -u 0 "src/**/*.js" "src/**/*.jsx" "src/**/*.cjs" "src/**/*.mjs" ${targetDir}`,
         {
@@ -184,28 +183,18 @@ function buildJavaScriptProject(options: BuildOptions) {
       );
     }
 
-    // Copy asset files
-    copyAssetFiles();
+    // Copy all non-JS files
+    copyAllNonSourceFiles(moduleType, [
+      ".js",
+      ".jsx",
+      ".mjs",
+      ".cjs",
+      ".ts",
+      ".tsx",
+    ]);
 
-    // Handle watch mode
-    if (options.watch) {
-      const patterns = `"src/**/*.js" "src/**/*.jsx" "src/**/*.mjs" "src/**/*.cjs"`;
-
-      const watcher = spawn(
-        "npx",
-        ["chokidar", patterns, "-c", `npx copyfiles -u 0 {path} ${targetDir}`],
-        {
-          stdio: "inherit",
-          shell: true,
-        }
-      );
-
-      // Handle process exit
-      process.on("SIGINT", () => {
-        watcher.kill();
-        process.exit(0);
-      });
-    }
+    // Create appropriate package.json in the build directory
+    createModulePackageJson(moduleType);
   } catch (error) {
     console.error("❌ Error building JavaScript project:", error);
     throw error;
@@ -213,21 +202,114 @@ function buildJavaScriptProject(options: BuildOptions) {
 }
 
 /**
- * Copy asset files to the build directory
+ * Copy all non-source code files to the build directory
+ * This function will copy everything except the specified source file extensions
  */
-function copyAssetFiles() {
-  const targetDir = path.join(BUILD_DIR);
+function copyAllNonSourceFiles(
+  moduleType: ModuleType,
+  skipExtensions: string[]
+) {
+  const targetDir = path.join(BUILD_DIR, moduleType);
+  const sourceDir = "src";
 
   try {
-    execSync(
-      `npx copyfiles -u 0 "src/**/*.json" "src/**/*.html" "src/**/*.css" "src/**/*.svg" "src/**/*.png" ${targetDir}`,
-      {
-        stdio: "inherit",
-        cwd: process.cwd(),
+    // Recursive function to copy files
+    function copyDirRecursive(dir: string) {
+      if (!fs.existsSync(dir)) return;
+
+      const items = fs.readdirSync(dir);
+
+      for (const item of items) {
+        const sourcePath = path.join(dir, item);
+        const targetPath = path.join(
+          targetDir,
+          dir.replace(sourceDir, ""),
+          item
+        );
+
+        // Get file stats
+        const stats = fs.statSync(sourcePath);
+
+        if (stats.isDirectory()) {
+          // Ensure target directory exists
+          if (!fs.existsSync(targetPath)) {
+            fs.mkdirSync(targetPath, { recursive: true });
+          }
+          // Recurse into subdirectory
+          copyDirRecursive(sourcePath);
+        } else if (stats.isFile()) {
+          // Check if this is a file we should skip
+          const ext = path.extname(item).toLowerCase();
+          if (!skipExtensions.includes(ext)) {
+            // Ensure the target directory exists
+            const targetDir = path.dirname(targetPath);
+            if (!fs.existsSync(targetDir)) {
+              fs.mkdirSync(targetDir, { recursive: true });
+            }
+            // Copy the file
+            fs.copyFileSync(sourcePath, targetPath);
+          }
+        }
       }
+    }
+
+    // Start copying from src directory
+    copyDirRecursive(sourceDir);
+
+    // Copy project root files if needed
+    const rootFilesToCopy = ["README.md", "LICENSE"];
+
+    for (const file of rootFilesToCopy) {
+      if (fs.existsSync(path.join(process.cwd(), file))) {
+        fs.copyFileSync(
+          path.join(process.cwd(), file),
+          path.join(targetDir, file)
+        );
+      }
+    }
+
+    console.info(`📦 Copied all non-source files to ${targetDir}`);
+  } catch (error) {
+    console.warn("Warning: Error copying project files:", error);
+    console.error(error);
+  }
+}
+
+/**
+ * Create appropriate package.json in the build directory
+ */
+function createModulePackageJson(moduleType: ModuleType) {
+  const packageJsonPath = path.join(process.cwd(), "package.json");
+
+  if (!fs.existsSync(packageJsonPath)) {
+    return;
+  }
+
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+    const buildPackageJson: any = {
+      name: packageJson.name,
+      version: packageJson.version,
+      description: packageJson.description,
+      main: "index.js",
+      dependencies: packageJson.dependencies,
+    };
+
+    // Set appropriate type field for ESM
+    if (moduleType === "esm") {
+      buildPackageJson.type = "module";
+    }
+
+    const targetDir = path.join(BUILD_DIR, moduleType);
+    fs.writeFileSync(
+      path.join(targetDir, "package.json"),
+      JSON.stringify(buildPackageJson, null, 2)
     );
   } catch (error) {
-    console.warn("Warning: Error copying asset files:", error);
+    console.warn(
+      "Warning: Failed to create module-specific package.json",
+      error
+    );
   }
 }
 
@@ -236,9 +318,7 @@ function copyAssetFiles() {
  */
 function cleanupTempConfig(configPath: string) {
   try {
-    if (fs.existsSync(configPath)) {
-      fs.unlinkSync(configPath);
-    }
+    if (fs.existsSync(configPath)) fs.unlinkSync(configPath);
   } catch (error) {
     console.warn("Warning: Error cleaning up temporary config:", error);
   }

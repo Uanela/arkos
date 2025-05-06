@@ -23,7 +23,7 @@ jest.mock("../auth.service", () => ({
   hashPassword: jest.fn(),
   authenticate: jest.fn(),
   handleAuthenticationControl: jest.fn(),
-  handleActionAccessControl: jest.fn(),
+  handleAccessControl: jest.fn(),
 }));
 
 jest.mock("../../base/base.service", () => ({
@@ -65,6 +65,7 @@ describe("Auth Controller Factory", () => {
     userService = {
       findOne: jest.fn(),
       createOne: jest.fn(),
+      updateOne: jest.fn(),
     };
 
     mockPrisma = {
@@ -145,7 +146,7 @@ describe("Auth Controller Factory", () => {
       // Verify
       expect(userService.findOne).toHaveBeenCalledWith(
         { id: "user-id-123" },
-        expect.any(String)
+        {}
       );
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ data: user });
@@ -252,7 +253,7 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findFirst.mockResolvedValueOnce({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -264,9 +265,12 @@ describe("Auth Controller Factory", () => {
       await authController.login(req, res, next);
 
       // Verify
-      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
-        where: { username: "testuser" },
-      });
+      expect(userService.findOne).toHaveBeenCalledWith(
+        {
+          username: "testuser",
+        },
+        {}
+      );
     });
 
     it("should use username field from query parameter when provided", async () => {
@@ -284,7 +288,7 @@ describe("Auth Controller Factory", () => {
         query: { usernameField: "email" },
       };
 
-      mockPrisma.user.findFirst.mockResolvedValueOnce({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         email: "test@arkosjs.com",
         password: "hashedPassword",
@@ -296,15 +300,16 @@ describe("Auth Controller Factory", () => {
       await authController.login(req, res, next);
 
       // Verify
-      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
-        where: { email: "test@arkosjs.com" },
-      });
+      expect(userService.findOne).toHaveBeenCalledWith(
+        { email: "test@arkosjs.com" },
+        {}
+      );
     });
 
     it("should return 401 if user is not found", async () => {
       // Setup
       req.body = { username: "nonexistentuser", password: "Password123" };
-      mockPrisma.user.findFirst.mockResolvedValueOnce(null);
+      userService.findOne.mockResolvedValueOnce(null);
 
       // Execute
       await authController.login(req, res, next);
@@ -322,7 +327,7 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "WrongPassword123" };
 
-      mockPrisma.user.findFirst.mockResolvedValueOnce({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -346,7 +351,7 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findFirst.mockResolvedValueOnce({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -389,7 +394,7 @@ describe("Auth Controller Factory", () => {
 
       req.body = { username: "testuser321", password: "Password123" };
 
-      mockPrisma.user.findFirst.mockResolvedValueOnce({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser321",
         password: "hashedPassword",
@@ -416,7 +421,7 @@ describe("Auth Controller Factory", () => {
       // Setup
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findFirst.mockResolvedValueOnce({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -460,7 +465,7 @@ describe("Auth Controller Factory", () => {
 
       req.body = { username: "testuser", password: "Password123" };
 
-      mockPrisma.user.findFirst.mockResolvedValueOnce({
+      userService.findOne.mockResolvedValueOnce({
         id: "user-id-123",
         username: "testuser",
         password: "hashedPassword",
@@ -503,7 +508,7 @@ describe("Auth Controller Factory", () => {
       await authController.signup(req, res, next);
 
       // Verify
-      expect(userService.createOne).toHaveBeenCalledWith({ ...req.body }, "{}");
+      expect(userService.createOne).toHaveBeenCalledWith({ ...req.body }, {});
       expect(res.status).toHaveBeenCalledWith(201);
 
       // Check that excluded fields are removed
@@ -665,13 +670,13 @@ describe("Auth Controller Factory", () => {
       await authController.updatePassword(req, res, next);
 
       // Verify
-      expect(mockPrisma.user.update).toHaveBeenCalledWith({
-        where: { id: "user-id-123" },
-        data: {
+      expect(userService.updateOne).toHaveBeenCalledWith(
+        { id: "user-id-123" },
+        {
           password: "newHashedPassword",
           passwordChangedAt: expect.any(Date),
-        },
-      });
+        }
+      );
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({

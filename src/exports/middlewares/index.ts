@@ -1,4 +1,4 @@
 export {
-  addPrismaQueryOptionsToRequestQuery,
+  addPrismaQueryOptionsToRequest,
   handleRequestBodyValidationAndTransformation,
 } from "../../modules/base/base.middlewares";

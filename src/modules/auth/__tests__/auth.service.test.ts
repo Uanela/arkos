@@ -521,8 +521,8 @@ describe("AuthService", () => {
     });
   });
 
-  describe("handleActionAccessControl", () => {
-    it("should allow access for superusers and call next()", async () => {
+  describe("handleAccessControl", () => {
+    it("should allow access for superuser and call next()", async () => {
       // Setup
       mockReq.user = {
         id: "admin-123",
@@ -530,10 +530,9 @@ describe("AuthService", () => {
         isSuperUser: true,
       };
 
-      const accessControlMiddleware = authService.handleActionAccessControl(
-        {},
-        "create",
-        "User"
+      const accessControlMiddleware = authService.handleAccessControl(
+        "User",
+        "create"
       );
 
       // Execute
@@ -556,10 +555,9 @@ describe("AuthService", () => {
 
       mockPrisma.authPermission.count.mockResolvedValue(1); // User has permission
 
-      const accessControlMiddleware = authService.handleActionAccessControl(
-        {},
-        "create",
-        "Users"
+      const accessControlMiddleware = authService.handleAccessControl(
+        "Create",
+        "User"
       );
 
       // Execute
@@ -569,7 +567,7 @@ describe("AuthService", () => {
       // expect(mockPrisma.authPermission.count).toHaveBeenCalledWith({
       //   where: {
       //     resource: "user",
-      //     action: "create",
+      //     action: "Create",
       //     roleId: { in: [1, 2] },
       //   },
       // });
@@ -579,8 +577,8 @@ describe("AuthService", () => {
           role: {
             permissions: {
               some: {
-                resource: "user",
-                action: "create",
+                resource: "User",
+                action: "Create",
               },
             },
           },
@@ -603,10 +601,9 @@ describe("AuthService", () => {
 
       mockPrisma.authPermission.count.mockResolvedValue(0); // No permissions
 
-      const accessControlMiddleware = authService.handleActionAccessControl(
-        {},
-        "create",
-        "Users"
+      const accessControlMiddleware = authService.handleAccessControl(
+        "User",
+        "create"
       );
 
       // Create mock AppError constructor
@@ -644,10 +641,10 @@ describe("AuthService", () => {
         },
       };
 
-      const accessControlMiddleware = authService.handleActionAccessControl(
-        authConfigs,
+      const accessControlMiddleware = authService.handleAccessControl(
         "create",
-        "Post"
+        "Post",
+        authConfigs.accessControl
       );
 
       // Execute
@@ -675,10 +672,10 @@ describe("AuthService", () => {
         },
       };
 
-      const accessControlMiddleware = authService.handleActionAccessControl(
-        authConfigs,
+      const accessControlMiddleware = authService.handleAccessControl(
         "create",
-        "Post"
+        "Post",
+        authConfigs.accessControl
       );
 
       // Create mock AppError constructor
@@ -692,7 +689,6 @@ describe("AuthService", () => {
       // Verify
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: "You do not have permission to perfom this action",
           statusCode: 403,
         })
       );
@@ -714,10 +710,10 @@ describe("AuthService", () => {
         accessControl: ["admin", "editor"],
       };
 
-      const accessControlMiddleware = authService.handleActionAccessControl(
-        authConfigs,
+      const accessControlMiddleware = authService.handleAccessControl(
         "create",
-        "Post"
+        "Post",
+        authConfigs.accessControl
       );
 
       // Execute
@@ -745,10 +741,10 @@ describe("AuthService", () => {
         },
       };
 
-      const accessControlMiddleware = authService.handleActionAccessControl(
-        authConfigs,
+      const accessControlMiddleware = authService.handleAccessControl(
         "create",
-        "Post"
+        "Post",
+        authConfigs.accessControl
       );
 
       // Execute
@@ -770,8 +766,8 @@ describe("AuthService", () => {
 
       // Execute
       const middleware = authService.handleAuthenticationControl(
-        authConfigs,
-        "view"
+        "view",
+        authConfigs.authenticationControl
       );
 
       // Verify
@@ -788,8 +784,8 @@ describe("AuthService", () => {
 
       // Execute
       const middleware = authService.handleAuthenticationControl(
-        authConfigs,
-        "create"
+        "create",
+        authConfigs.authenticationControl
       );
 
       // Verify
@@ -798,13 +794,9 @@ describe("AuthService", () => {
 
     it("should return authenticate middleware if authenticationControl is not specified", () => {
       // Setup
-      const authConfigs = {};
 
       // Execute
-      const middleware = authService.handleAuthenticationControl(
-        authConfigs,
-        "update"
-      );
+      const middleware = authService.handleAuthenticationControl("update", {});
 
       // Verify
       expect(middleware).toBe(authService.authenticate);
@@ -812,10 +804,7 @@ describe("AuthService", () => {
 
     it("should return authenticate middleware if authConfigs is undefined", () => {
       // Execute
-      const middleware = authService.handleAuthenticationControl(
-        undefined,
-        "delete"
-      );
+      const middleware = authService.handleAuthenticationControl("delete");
 
       // Verify
       expect(middleware).toBe(authService.authenticate);

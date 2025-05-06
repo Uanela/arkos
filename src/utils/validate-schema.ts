@@ -32,7 +32,12 @@ export default async function validateSchema<T>(
 ): Promise<T> {
   const result = schema.safeParse(data);
   if (!result.success) {
-    throw new AppError("Invalid Data", 400, result.error.format());
+    throw new AppError(
+      "Invalid request body",
+      400,
+      result.error.format(),
+      "invalid_request_body"
+    );
   }
   return result.data;
 }

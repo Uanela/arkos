@@ -1,6 +1,6 @@
 import { Router } from "express";
-import pluralize from "pluralize";
-import { RouterConfig } from "../../../../exports";
+import { singular, plural } from "pluralize";
+import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
 import { RouterEndpoint } from "../../../../types/router-config";
@@ -8,12 +8,16 @@ import { importPrismaModelModules } from "../../../../utils/helpers/models.helpe
 import authService from "../../../auth/auth.service";
 import { BaseController } from "../../base.controller";
 import {
-  addPrismaQueryOptionsToRequestQuery,
+  addPrismaQueryOptionsToRequest,
   handleRequestBodyValidationAndTransformation,
   sendResponse,
 } from "../../base.middlewares";
 
-export function setupRouters(models: string[], router: Router) {
+export function setupRouters(
+  models: string[],
+  router: Router,
+  arkosConfigs: ArkosConfig
+) {
   return models.map(async (model) => {
     const modelNameInKebab = kebabCase(model);
     const modelModules = await importPrismaModelModules(modelNameInKebab);
@@ -22,20 +26,12 @@ export function setupRouters(models: string[], router: Router) {
       authConfigs,
       prismaQueryOptions,
       router: customRouterModule,
+      dtos,
+      schemas,
     } = modelModules;
 
-    const routeName = pluralize.plural(modelNameInKebab);
-    const apiRoutePath = `/api/${routeName}`;
-    const {
-      createOne,
-      findMany,
-      findOne,
-      updateOne,
-      deleteOne,
-      createMany,
-      updateMany,
-      deleteMany,
-    } = new BaseController(model);
+    const routeName = plural(modelNameInKebab);
+    const controller = new BaseController(model);
 
     // Check for router customization/disabling
     const routerConfig: RouterConfig = customRouterModule?.config;
@@ -47,7 +43,7 @@ export function setupRouters(models: string[], router: Router) {
     const hasCustomImplementation = (path: string, method: string) => {
       return customRouter.stack?.some(
         (layer) =>
-          layer.path === path &&
+          layer.path === `/api/${path}` &&
           layer.method.toLowerCase() === method.toLowerCase()
       );
     };
@@ -58,7 +54,18 @@ export function setupRouters(models: string[], router: Router) {
       return typeof disableConfig === "object" && !!disableConfig[endpoint];
     };
 
-    // Create individual routes instead of chaining
+    // Helper to get the correct schema or DTO based on Arkos Config
+    const getValidationSchemaOrDto = (
+      key: keyof typeof dtos | keyof typeof schemas
+    ) => {
+      const validationConfigs = arkosConfigs?.validation;
+      if (validationConfigs?.resolver === "class-validator") {
+        return dtos?.[key];
+      } else if (validationConfigs?.resolver === "zod") {
+        return schemas?.[key];
+      }
+      return undefined;
+    };
 
     // POST /{routeName} - Create One
     if (
@@ -67,24 +74,26 @@ export function setupRouters(models: string[], router: Router) {
     ) {
       router.post(
         `/${routeName}`,
-        authService.handleAuthenticationControl(authConfigs, "create"),
-        authService.handleActionAccessControl(
-          authConfigs,
-          "create",
-          modelNameInKebab
+        authService.handleAuthenticationControl(
+          "Create",
+          authConfigs?.authenticationControl
+        ),
+        authService.handleAccessControl(
+          "Create",
+          kebabCase(singular(modelNameInKebab)),
+          authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
-          modelNameInKebab,
-          "create"
+          getValidationSchemaOrDto("create")
         ),
-        addPrismaQueryOptionsToRequestQuery<any>(
+        addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createOne"
         ),
-        middlewares?.beforeCreateOne ?? createOne,
+        middlewares?.beforeCreateOne || controller.createOne,
         middlewares?.beforeCreateOne
-          ? createOne
-          : middlewares?.afterCreateOne ?? sendResponse,
+          ? controller.createOne
+          : middlewares?.afterCreateOne || sendResponse,
         middlewares?.beforeCreateOne && middlewares?.afterCreateOne
           ? middlewares?.afterCreateOne
           : sendResponse,
@@ -99,20 +108,23 @@ export function setupRouters(models: string[], router: Router) {
     ) {
       router.get(
         `/${routeName}`,
-        authService.handleAuthenticationControl(authConfigs, "view"),
-        authService.handleActionAccessControl(
-          authConfigs,
-          "view",
-          modelNameInKebab
+        authService.handleAuthenticationControl(
+          "View",
+          authConfigs?.authenticationControl
         ),
-        addPrismaQueryOptionsToRequestQuery<any>(
+        authService.handleAccessControl(
+          "View",
+          kebabCase(singular(modelNameInKebab)),
+          authConfigs?.accessControl || {}
+        ),
+        addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findMany"
         ),
-        middlewares?.beforeFindMany ?? findMany,
+        middlewares?.beforeFindMany || controller.findMany,
         middlewares?.beforeFindMany
-          ? findMany
-          : middlewares?.afterFindMany ?? sendResponse,
+          ? controller.findMany
+          : middlewares?.afterFindMany || sendResponse,
         middlewares?.beforeFindMany && middlewares?.afterFindMany
           ? middlewares?.afterFindMany
           : sendResponse,
@@ -127,20 +139,26 @@ export function setupRouters(models: string[], router: Router) {
     ) {
       router.post(
         `/${routeName}/many`,
-        authService.handleAuthenticationControl(authConfigs, "create"),
-        authService.handleActionAccessControl(
-          authConfigs,
-          "create",
-          modelNameInKebab
+        authService.handleAuthenticationControl(
+          "Create",
+          authConfigs?.authenticationControl
         ),
-        addPrismaQueryOptionsToRequestQuery<any>(
+        authService.handleAccessControl(
+          "Create",
+          kebabCase(singular(modelNameInKebab)),
+          authConfigs?.accessControl || {}
+        ),
+        handleRequestBodyValidationAndTransformation(
+          getValidationSchemaOrDto("createMany")
+        ),
+        addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createMany"
         ),
-        middlewares?.beforeCreateMany ?? createMany,
+        middlewares?.beforeCreateMany || controller.createMany,
         middlewares?.beforeCreateMany
-          ? createMany
-          : middlewares?.afterCreateMany ?? sendResponse,
+          ? controller.createMany
+          : middlewares?.afterCreateMany || sendResponse,
         middlewares?.beforeCreateMany && middlewares?.afterCreateMany
           ? middlewares?.afterCreateMany
           : sendResponse,
@@ -155,20 +173,26 @@ export function setupRouters(models: string[], router: Router) {
     ) {
       router.patch(
         `/${routeName}/many`,
-        authService.handleAuthenticationControl(authConfigs, "update"),
-        authService.handleActionAccessControl(
-          authConfigs,
-          "update",
-          modelNameInKebab
+        authService.handleAuthenticationControl(
+          "Update",
+          authConfigs?.authenticationControl
         ),
-        addPrismaQueryOptionsToRequestQuery<any>(
+        authService.handleAccessControl(
+          "Update",
+          kebabCase(singular(modelNameInKebab)),
+          authConfigs?.accessControl || {}
+        ),
+        handleRequestBodyValidationAndTransformation(
+          getValidationSchemaOrDto("updateMany")
+        ),
+        addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
         ),
-        middlewares?.beforeUpdateMany ?? updateMany,
+        middlewares?.beforeUpdateMany || controller.updateMany,
         middlewares?.beforeUpdateMany
-          ? updateMany
-          : middlewares?.afterUpdateMany ?? sendResponse,
+          ? controller.updateMany
+          : middlewares?.afterUpdateMany || sendResponse,
         middlewares?.beforeUpdateMany && middlewares?.afterUpdateMany
           ? middlewares?.afterUpdateMany
           : sendResponse,
@@ -183,20 +207,26 @@ export function setupRouters(models: string[], router: Router) {
     ) {
       router.delete(
         `/${routeName}/many`,
-        authService.handleAuthenticationControl(authConfigs, "delete"),
-        authService.handleActionAccessControl(
-          authConfigs,
-          "delete",
-          modelNameInKebab
+        authService.handleAuthenticationControl(
+          "Delete",
+          authConfigs?.authenticationControl
         ),
-        addPrismaQueryOptionsToRequestQuery<any>(
+        authService.handleAccessControl(
+          "Delete",
+          kebabCase(singular(modelNameInKebab)),
+          authConfigs?.accessControl || {}
+        ),
+        handleRequestBodyValidationAndTransformation(
+          getValidationSchemaOrDto("deleteMany")
+        ),
+        addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteMany"
         ),
-        middlewares?.beforeDeleteMany ?? deleteMany,
+        middlewares?.beforeDeleteMany || controller.deleteMany,
         middlewares?.beforeDeleteMany
-          ? deleteMany
-          : middlewares?.afterDeleteMany ?? sendResponse,
+          ? controller.deleteMany
+          : middlewares?.afterDeleteMany || sendResponse,
         middlewares?.beforeDeleteMany && middlewares?.afterDeleteMany
           ? middlewares?.afterDeleteMany
           : sendResponse,
@@ -211,20 +241,26 @@ export function setupRouters(models: string[], router: Router) {
     ) {
       router.get(
         `/${routeName}/:id`,
-        authService.handleAuthenticationControl(authConfigs, "view"),
-        authService.handleActionAccessControl(
-          authConfigs,
-          "view",
-          modelNameInKebab
+        authService.handleAuthenticationControl(
+          "View",
+          authConfigs?.authenticationControl
         ),
-        addPrismaQueryOptionsToRequestQuery<any>(
+        authService.handleAccessControl(
+          "View",
+          kebabCase(singular(modelNameInKebab)),
+          authConfigs?.accessControl || {}
+        ),
+        handleRequestBodyValidationAndTransformation(
+          getValidationSchemaOrDto("findOne")
+        ),
+        addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findOne"
         ),
-        middlewares?.beforeFindOne ?? findOne,
+        middlewares?.beforeFindOne || controller.findOne,
         middlewares?.beforeFindOne
-          ? findOne
-          : middlewares?.afterFindOne ?? sendResponse,
+          ? controller.findOne
+          : middlewares?.afterFindOne || sendResponse,
         middlewares?.beforeFindOne && middlewares?.afterFindOne
           ? middlewares?.afterFindOne
           : sendResponse,
@@ -239,24 +275,26 @@ export function setupRouters(models: string[], router: Router) {
     ) {
       router.patch(
         `/${routeName}/:id`,
-        authService.handleAuthenticationControl(authConfigs, "update"),
-        authService.handleActionAccessControl(
-          authConfigs,
-          "update",
-          modelNameInKebab
+        authService.handleAuthenticationControl(
+          "Update",
+          authConfigs?.authenticationControl
+        ),
+        authService.handleAccessControl(
+          "Update",
+          kebabCase(singular(modelNameInKebab)),
+          authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
-          modelNameInKebab,
-          "update"
+          getValidationSchemaOrDto("update")
         ),
-        addPrismaQueryOptionsToRequestQuery<any>(
+        addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateOne"
         ),
-        middlewares?.beforeUpdateOne ?? updateOne,
+        middlewares?.beforeUpdateOne || controller.updateOne,
         middlewares?.beforeUpdateOne
-          ? updateOne
-          : middlewares?.afterUpdateOne ?? sendResponse,
+          ? controller.updateOne
+          : middlewares?.afterUpdateOne || sendResponse,
         middlewares?.beforeUpdateOne && middlewares?.afterUpdateOne
           ? middlewares?.afterUpdateOne
           : sendResponse,
@@ -271,33 +309,53 @@ export function setupRouters(models: string[], router: Router) {
     ) {
       router.delete(
         `/${routeName}/:id`,
-        authService.handleAuthenticationControl(authConfigs, "delete"),
-        authService.handleActionAccessControl(
-          authConfigs,
-          "delete",
-          modelNameInKebab
+        authService.handleAuthenticationControl(
+          "Delete",
+          authConfigs?.authenticationControl
         ),
-        addPrismaQueryOptionsToRequestQuery<any>(
+        authService.handleAccessControl(
+          "Delete",
+          kebabCase(singular(modelNameInKebab)),
+          authConfigs?.accessControl || {}
+        ),
+        handleRequestBodyValidationAndTransformation(
+          getValidationSchemaOrDto("delete")
+        ),
+        addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteOne"
         ),
-        middlewares?.beforeDeleteOne ?? deleteOne,
+        middlewares?.beforeDeleteOne || controller.deleteOne,
         middlewares?.beforeDeleteOne
-          ? deleteOne
-          : middlewares?.afterDeleteOne ?? sendResponse,
+          ? controller.deleteOne
+          : middlewares?.afterDeleteOne || sendResponse,
         middlewares?.beforeDeleteOne && middlewares?.afterDeleteOne
           ? middlewares?.afterDeleteOne
           : sendResponse,
         sendResponse
       );
     }
+    // console.log(JSON.stringify(customRouterModule, null, 2));
+    // If the custom router has its own routes, add them
+    if (customRouterModule?.default && !customRouterModule?.config?.disable) {
+      // console.log(JSON.stringify(customRouterModule.defaull, null, 2));
+      router.use(`/${routeName}`, customRouterModule.default);
+      // customRouter.stack.forEach((layer) => {
+      //   if (layer.route) {
+      //     const route = layer.route;
+      //     const path = route.path;
 
-    // // If the custom router has its own routes, add them
-    // if (customRouterModule?.default) {
-    //   customRouter.stack.forEach((stack) => {
-    //     const { method, path, handle } = stack;
-    //     (router as any)[method.toLowerCase()](path, handle);
-    //   });
-    // }
+      //     route.stack.forEach((routeLayer) => {
+      //       const method = routeLayer.method.toLowerCase() as any;
+
+      //       // Get all middleware handlers for this route
+      //       const handlers = route.stack.map((routeStack) => routeStack.handle);
+
+      //       // Apply all middleware handlers to the matching route method
+      //       (router as any)[method](`/${routeName}/${path}`, ...handlers);
+      //     });
+      //   }
+      // });
+    }
   });
 }

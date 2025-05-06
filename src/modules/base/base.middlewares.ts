@@ -5,24 +5,32 @@ import {
   ArkosRequest,
   ArkosRequestHandler,
   ArkosResponse,
+  AuthPrismaQueryOptions,
 } from "../../types";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { catchAsync } from "../../exports/error-handler";
-import { getModelModules } from "../../utils/helpers/models.helpers";
-import { kebabCase } from "../../exports/utils";
 import validateDto from "../../utils/validate-dto";
 import validateSchema from "../../utils/validate-schema";
+import { ZodSchema } from "zod";
+import { ClassConstructor } from "class-transformer";
+import { ValidatorOptions } from "class-validator";
 
 export function callNext(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-export function sendResponse(req: Request, res: Response, next: NextFunction) {
-  if ((req as any).responseData && (req as any).responseStatus)
-    res.status((req as any).responseStatus).json((req as any).responseData);
-  else if ((req as any).responseStatus && !(req as any).responseData)
-    res.status((req as any).responseStatus).send();
+export function sendResponse(
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: NextFunction
+) {
+  if (Number(req?.responseStatus) === 204)
+    res.status(Number(req?.responseStatus)).send();
+  else if (req.responseData && req?.responseStatus)
+    res.status(Number(req?.responseStatus)).json(req.responseData);
+  else if (Number(req?.responseStatus) && !req.responseData)
+    res.status(Number(req?.responseStatus)).send();
   else
     res
       .status(500)
@@ -32,35 +40,58 @@ export function sendResponse(req: Request, res: Response, next: NextFunction) {
 export function addRouteMiddlwaresAndConfigs() {}
 
 /**
+ * Type representing all possible actions that can be performed on a controller
+ * Combines both standard CRUD operations and auth-specific operations
+ */
+export type ControllerActions =
+  | keyof PrismaQueryOptions<any>
+  | keyof Omit<AuthPrismaQueryOptions<any>, keyof PrismaQueryOptions<any>>;
+
+/**
  * Middleware to add Prisma query options to the request's query parameters.
  *
  * @template T - The type of the Prisma model.
- * @param {PrismaQueryOptions<T>} prismaQueryOptions - The Prisma query options to attach.
+ * @param {PrismaQueryOptions<T> | AuthPrismaQueryOptions<T>} prismaQueryOptions - The Prisma query options to attach.
  * @param {ControllerActions} action - The controller action to apply.
  * @returns A middleware function that attaches the query options to the request.
  */
-export function addPrismaQueryOptionsToRequestQuery<
-  T extends Record<string, any>
->(
-  prismaQueryOptions: PrismaQueryOptions<T>,
-  action: keyof PrismaQueryOptions<T>
+export function addPrismaQueryOptionsToRequest<T extends Record<string, any>>(
+  prismaQueryOptions: PrismaQueryOptions<T> | AuthPrismaQueryOptions<T>,
+  action: ControllerActions
 ) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
     const configs = getArkosConfig();
 
-    req.query.prismaQueryOptions = JSON.stringify({
-      ...JSON.parse(
-        (configs?.request?.parameters?.allowDangerousPrismaQueryOptions &&
-          (req.query.prismaQueryOptions as string)) ||
-          "{}"
-      ),
-      ...prismaQueryOptions?.queryOptions,
-      ...(prismaQueryOptions?.[action] || {}),
-    });
+    // Check if the action exists in the provided options object
+    if (prismaQueryOptions && action in prismaQueryOptions) {
+      const firstMerge = deepmerge(
+        (prismaQueryOptions as any)?.queryOptions || {},
+        (prismaQueryOptions as any)[action] || {}
+      ) as Record<string, any>;
+
+      req.prismaQueryOptions = deepmerge(
+        firstMerge,
+        JSON.parse(
+          configs?.request?.parameters?.allowDangerousPrismaQueryOptions
+            ? (req.query?.prismaQueryOptions as string) || "{}"
+            : "{}"
+        )
+      );
+    } else {
+      // If no specific options for this action, just use the general queryOptions
+      req.prismaQueryOptions = deepmerge(
+        (prismaQueryOptions as any)?.queryOptions || {},
+        JSON.parse(
+          configs?.request?.parameters?.allowDangerousPrismaQueryOptions
+            ? (req.query?.prismaQueryOptions as string) || "{}"
+            : "{}"
+        )
+      );
+    }
+
     next();
   };
 }
-
 /**
  * Logs request events with colored text such as errors, requests responses.
  *
@@ -123,51 +154,41 @@ export function handleRequestLogs(
   next(); // Pass control to the next middleware or route handler
 }
 
-type AuthActions = "signup" | "login" | "updateMe" | "updatePassword";
-type DefaultActions = "create" | "update";
-
 // Overload for 'auth'
-export function handleRequestBodyValidationAndTransformation(
-  resourceName: "auth",
-  action: AuthActions
+export function handleRequestBodyValidationAndTransformation<T extends object>(
+  schemaOrDtoClass?: ClassConstructor<T>,
+  classValidatorValidationOptions?: ValidatorOptions
 ): ArkosRequestHandler;
 
 // Overload for other models
-export function handleRequestBodyValidationAndTransformation(
-  resourceName: Exclude<string, "auth">,
-  action: DefaultActions
+export function handleRequestBodyValidationAndTransformation<T extends object>(
+  schemaOrDtoClass?: ZodSchema<T>
 ): ArkosRequestHandler;
 
 // Implementation
-export function handleRequestBodyValidationAndTransformation(
-  resourceName: string,
-  action: string
+export function handleRequestBodyValidationAndTransformation<T extends object>(
+  schemaOrDtoClass?: ZodSchema<T> | ClassConstructor<T>,
+  classValidatorValidationOptions?: ValidatorOptions
 ) {
   return catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const modelModules = getModelModules(kebabCase(resourceName));
       const validationConfigs = getArkosConfig()?.validation;
       let body = req.body;
 
-      if (
-        validationConfigs?.resolver === "class-validator" &&
-        modelModules.dtos[action]
-      )
+      if (validationConfigs?.resolver === "class-validator" && schemaOrDtoClass)
         req.body = await validateDto(
-          modelModules.dtos[action],
+          schemaOrDtoClass as ClassConstructor<T>,
           body,
           deepmerge(
             {
               whitelist: true,
+              ...classValidatorValidationOptions,
             },
             validationConfigs?.validationOptions || {}
           )
         );
-      else if (
-        validationConfigs?.resolver === "zod" &&
-        modelModules.schemas[action]
-      )
-        req.body = await validateSchema(modelModules.schemas[action], body);
+      else if (validationConfigs?.resolver === "zod" && schemaOrDtoClass)
+        req.body = await validateSchema(schemaOrDtoClass as ZodSchema<T>, body);
 
       next();
     }

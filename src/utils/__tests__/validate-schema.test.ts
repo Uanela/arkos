@@ -47,11 +47,12 @@ describe("validateSchema", () => {
     } catch {}
 
     expect(AppError).toHaveBeenCalledWith(
-      "Invalid Data",
+      "Invalid request body",
       400,
       expect.objectContaining({
         email: expect.anything(),
-      })
+      }),
+      "invalid_request_body"
     );
   });
 
@@ -123,13 +124,14 @@ describe("validateSchema", () => {
     } catch {}
 
     expect(AppError).toHaveBeenCalledWith(
-      "Invalid Data",
+      "Invalid request body",
       400,
       expect.objectContaining({
         name: expect.anything(),
         age: expect.anything(),
         email: expect.anything(),
-      })
+      }),
+      "invalid_request_body"
     );
   });
 });

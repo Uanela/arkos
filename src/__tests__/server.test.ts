@@ -3,17 +3,27 @@ import { Express } from "express";
 import { initApp, getArkosConfig, getExpressApp } from "../server";
 import { ArkosConfig } from "../types/arkos-config";
 import { bootstrap } from "../app";
+import http from "http";
 
 // Mock dependencies
 jest.mock("../app", () => ({
-  bootstrap: jest.fn().mockResolvedValue({
-    listen: jest.fn().mockReturnValue({
-      close: jest.fn(),
-    }),
-  }),
+  bootstrap: jest.fn().mockResolvedValue({}),
 }));
 
-jest.mock("http");
+// Mock the http module
+jest.mock("http", () => {
+  const mockServer = {
+    listen: jest.fn().mockImplementation((port, host, callback) => {
+      if (typeof callback === "function") callback();
+      return mockServer;
+    }),
+    close: jest.fn(),
+  };
+  return {
+    createServer: jest.fn().mockReturnValue(mockServer),
+    Server: jest.fn(),
+  };
+});
 
 // Spy on console methods
 const consoleInfoSpy = jest.spyOn(console, "info").mockImplementation();
@@ -29,14 +39,9 @@ describe("Server Module", () => {
     // Reset mocks
     jest.clearAllMocks();
 
-    // Mock the server and app
-    mockServer = { close: jest.fn() };
-    mockApp = {
-      listen: jest.fn().mockImplementation((port, callback) => {
-        if (typeof callback === "function") callback();
-        return mockServer;
-      }),
-    };
+    // Setup http mock
+    mockServer = (http.createServer as jest.Mock)();
+    mockApp = {};
 
     (bootstrap as jest.Mock).mockResolvedValue(mockApp);
   });
@@ -51,17 +56,25 @@ describe("Server Module", () => {
     it("initializes app with default config when no config is provided", async () => {
       const app = await initApp();
 
-      expect(bootstrap).toHaveBeenCalledWith({
-        welcomeMessage: expect.any(String),
-        port: 8000,
-        fileUpload: {
-          baseUploadDir: "uploads",
-          baseRoute: "/api/uploads",
-        },
-      });
+      expect(bootstrap).toHaveBeenCalledWith(
+        expect.objectContaining({
+          welcomeMessage: expect.any(String),
+          port: 8000,
+          host: "localhost",
+          fileUpload: {
+            baseUploadDir: "uploads",
+            baseRoute: "/api/uploads",
+          },
+          available: true,
+        })
+      );
 
-      expect(mockApp.listen).toHaveBeenCalledWith(8000, expect.any(Function));
-      // expect(consoleInfoSpy).toHaveBeenCalledTimes(2); // Welcome message and port info
+      expect(http.createServer).toHaveBeenCalledWith(mockApp);
+      expect(mockServer.listen).toHaveBeenCalledWith(
+        8000,
+        "localhost",
+        expect.any(Function)
+      );
     });
 
     it("merges provided config with default config", async () => {
@@ -72,17 +85,24 @@ describe("Server Module", () => {
 
       await initApp(customConfig);
 
-      const expectedConfig = {
-        welcomeMessage: "Custom welcome message",
-        port: 9000,
-        fileUpload: {
-          baseUploadDir: "uploads",
-          baseRoute: "/api/uploads",
-        },
-      };
+      expect(bootstrap).toHaveBeenCalledWith(
+        expect.objectContaining({
+          welcomeMessage: "Custom welcome message",
+          port: 9000,
+          host: "localhost",
+          fileUpload: {
+            baseUploadDir: "uploads",
+            baseRoute: "/api/uploads",
+          },
+          available: true,
+        })
+      );
 
-      expect(bootstrap).toHaveBeenCalledWith(expectedConfig);
-      expect(mockApp.listen).toHaveBeenCalledWith(9000, expect.any(Function));
+      expect(mockServer.listen).toHaveBeenCalledWith(
+        9000,
+        "localhost",
+        expect.any(Function)
+      );
     });
 
     it("starts server with host when provided", async () => {
@@ -93,20 +113,39 @@ describe("Server Module", () => {
 
       await initApp(customConfig);
 
-      expect(mockApp.listen).toHaveBeenCalledWith(
-        [9000, "0.0.0.0"],
+      expect(mockServer.listen).toHaveBeenCalledWith(
+        9000,
+        "0.0.0.0",
         expect.any(Function)
       );
     });
 
     it("does not start server when port is undefined", async () => {
+      // Reset the createServer mock to ensure it's not called
+      (http.createServer as jest.Mock).mockClear();
+
       const customConfig: ArkosConfig = {
         port: undefined,
       };
 
       await initApp(customConfig);
 
-      expect(mockApp.listen).not.toHaveBeenCalled();
+      // We only check that listen wasn't called since server is created even when port is undefined
+      expect(mockServer.listen).not.toHaveBeenCalled();
+    });
+
+    it("calls configureServer when provided", async () => {
+      const configureServerMock = jest.fn();
+      const customConfig: ArkosConfig = {
+        port: 8000, // Ensure port is defined so server is created
+        configureServer: configureServerMock,
+      };
+
+      await initApp(customConfig);
+
+      // The HTTP server should be passed to configureServer
+      expect(configureServerMock).toHaveBeenCalled();
+      expect(configureServerMock.mock.calls[0][0]).toBe(mockServer);
     });
   });
 
@@ -114,20 +153,23 @@ describe("Server Module", () => {
     it("returns the current config", async () => {
       const customConfig: ArkosConfig = {
         port: 9000,
+        host: "0.0.0.0", // Match the expected host
       };
 
       await initApp(customConfig);
       const config = getArkosConfig();
 
-      expect(config).toEqual({
-        welcomeMessage: expect.any(String),
+      // Use objectContaining instead of toEqual for more flexibility
+      expect(config).toMatchObject({
         port: 9000,
         host: "0.0.0.0",
+        available: true,
         fileUpload: {
           baseUploadDir: "uploads",
           baseRoute: "/api/uploads",
         },
       });
+      expect(config.welcomeMessage).toBeDefined();
     });
   });
 

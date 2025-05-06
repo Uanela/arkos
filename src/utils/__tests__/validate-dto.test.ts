@@ -64,7 +64,12 @@ describe("validateDto", () => {
       expect(await validateDto(TestUserDto, mockData)).rejects.toThrow();
     } catch (err) {}
 
-    expect(AppError).toHaveBeenCalledWith("Invalid Data", 400, mockErrors);
+    expect(AppError).toHaveBeenCalledWith(
+      "Invalid request body",
+      400,
+      mockErrors,
+      "invalid_request_body"
+    );
   });
 
   it("should pass custom validation options to validate function", async () => {

@@ -6,12 +6,13 @@ import { ArkosConfig } from "../../types/arkos-config";
 import path from "path";
 import express from "express";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
+import { AuthConfigs } from "../../types/auth";
 
 const router: Router = Router();
 
 export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
   const modelModules = await importPrismaModelModules("file-upload");
-  let { middlewares = {}, authConfigs = {} } = {};
+  let { middlewares = {}, authConfigs = {} as AuthConfigs } = {};
 
   if (modelModules) {
     ({ middlewares = {}, authConfigs = {} } = modelModules);
@@ -24,8 +25,15 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
 
   router.use(
     basePathname,
-    authService.handleAuthenticationControl(authConfigs, "view"),
-    authService.handleActionAccessControl(authConfigs, "view", "file-upload"),
+    authService.handleAuthenticationControl(
+      "View",
+      authConfigs.authenticationControl
+    ),
+    authService.handleAccessControl(
+      "View",
+      "file-upload",
+      authConfigs.accessControl
+    ),
     express.static(
       path.resolve(process.cwd(), fileUpload?.baseUploadDir || "uploads"),
       deepmerge(
@@ -45,15 +53,29 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
 
   router.post(
     `${basePathname}:fileType`,
-    authService.handleAuthenticationControl(authConfigs, "create"),
-    authService.handleActionAccessControl(authConfigs, "create", "file-upload"),
+    authService.handleAuthenticationControl(
+      "Create",
+      authConfigs.authenticationControl
+    ),
+    authService.handleAccessControl(
+      "Create",
+      "file-upload",
+      authConfigs.accessControl
+    ),
     uploadFile
   );
 
   router.delete(
     `${basePathname}:fileType/:fileName`,
-    authService.handleAuthenticationControl(authConfigs, "delete"),
-    authService.handleActionAccessControl(authConfigs, "create", "file-upload"),
+    authService.handleAuthenticationControl(
+      "Delete",
+      authConfigs.authenticationControl
+    ),
+    authService.handleAccessControl(
+      "Create",
+      "file-upload",
+      authConfigs.accessControl
+    ),
     deleteFile
   );
 

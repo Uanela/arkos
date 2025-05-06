@@ -2,81 +2,111 @@ import { JwtPayload } from "jsonwebtoken";
 
 /**
  * Base set of controller actions available to all controllers.
- */
-export type BaseControllerActions = "create" | "update" | "delete" | "view";
-
-/**
- * Extends the base controller actions with custom actions.
  *
- * @typeParam T - Additional action types that extend the base actions.
+ * @example
+ * const action: AccessAction = "Create";
+ * const customAction: AccessAction = "export"; // Custom action
  */
-export type ExtendedControllerActions<T extends string = never> =
-  | BaseControllerActions
-  | T;
+export type AccessAction = "Create" | "Update" | "Delete" | "View" | string;
 
 /**
  * Rules defining access control for different controller actions.
+ * The array contains role names that are allowed to perform the action.
  *
- * @typeParam T - Additional action types that extend the base actions.
- * @typeParam Role - A type representing a role or set of roles allowed to perform the action.
+ * @see {@link https://www.arkosjs.com/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior}
+ * @example
+ * const rules: AccessControlRules = {
+ *   Create: ["Admin", "Manager"],
+ *   Update: ["Admin"],
+ *   Delete: ["Admin"],
+ *   View: ["Admin", "User", "Guest"]
+ * };
  */
-export type AccessControlRules<T extends string = never> = {
-  /**
-   * Maps each controller action to the roles allowed to perform it.
-   */
-  [key in ExtendedControllerActions<T>]: any[];
+export type AccessControlRules = {
+  [key in AccessAction]: string[];
 };
 
 /**
  * Rules defining authentication requirements for different controller actions.
  *
- * @typeParam T - Additional action types that extend the base actions.
+ * @see {@link https://www.arkosjs.com/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior}
+ * @example
+ * const authRules: AuthenticationControlRules = {
+ *   Create: true,
+ *   Update: true,
+ *   Delete: true,
+ *   View: false  // Public access
+ * };
  */
-export type AuthenticationControlRules<T extends string = never> = {
-  /**
-   * Maps each controller action to whether authentication is required to perform it.
-   */
-  [key in ExtendedControllerActions<T>]: boolean;
+export type AuthenticationControlRules = {
+  [key in AccessAction]: boolean;
 };
+
+/**
+ * Configuration for authentication control.
+ *
+ * @example
+ * // All actions require authentication
+ * const config1: AuthenticationControlConfig = true;
+ *
+ * // Specific rules per action
+ * const config2: AuthenticationControlConfig = {
+ *   Create: true,
+ *   View: false
+ * };
+ */
+export type AuthenticationControlConfig =
+  | boolean
+  | Partial<AuthenticationControlRules>;
+
+/**
+ * Configuration for access control.
+ *
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/built-in-authentication-system#1-static-rbac-config-based}
+ * @example
+ * // All actions allowed for these roles
+ * const config1: AccessControlConfig = ["Admin", "Manager"];
+ *
+ * // Specific rules per action
+ * const config2: AccessControlConfig = {
+ *   Create: ["Admin"],
+ *   View: ["User", "Admin"]
+ * };
+ */
+export type AccessControlConfig = string[] | Partial<AccessControlRules>;
 
 /**
  * Configuration for authentication and access control.
  *
- * @typeParam T - Additional action types that extend the base actions.
+ * @see {@link https://www.arkosjs.com/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior}
+ * @example
+ * export const authConfig: AuthConfigs = {
+ *   authenticationControl: {
+ *     Create: true,
+ *     View: false
+ *   },
+ *   accessControl: {
+ *     Create: ["Admin"],
+ *     View: ["User", "Admin"]
+ *   }
+ * };
  */
-export type AuthConfigs<T extends string = never> = {
-  /**
-   * Defines authentication requirements for actions.
-   * - When boolean: applies to all actions
-   * - When partial rules: applies to specified actions
-   *
-   * @type {boolean | Partial<AuthenticationControlRules<T>>}
-   */
-  authenticationControl?: boolean | Partial<AuthenticationControlRules<T>>;
-
-  /**
-   * Defines role-based access control.
-   * - When array: list of roles allowed for all actions
-   * - When partial rules: specific roles for each action
-   *
-   * @type {any[] | Partial<AccessControlRules<T>>}
-   */
-  accessControl?: any[] | Partial<AccessControlRules<T>>;
+export type AuthConfigs = {
+  authenticationControl?: AuthenticationControlConfig;
+  accessControl?: AccessControlConfig;
 };
 
 /**
  * Payload structure for JWT-based authentication, extending the standard `JwtPayload`.
+ *
+ * @example
+ * const payload: AuthJwtPayload = {
+ *   id: 123,
+ *   roles: ["Admin"],
+ *   email: "user@example.com"
+ * };
  */
 export interface AuthJwtPayload extends JwtPayload {
-  /**
-   * The unique identifier of the authenticated user.
-   *
-   * @type {number | string}
-   */
   id?: number | string;
-
-  /**
-   * Additional properties can be added to the payload.
-   */
   [x: string]: any;
 }

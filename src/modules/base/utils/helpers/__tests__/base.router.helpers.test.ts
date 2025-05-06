@@ -32,7 +32,7 @@ jest.mock("express", () => {
 jest.mock("../../../../../utils/helpers/models.helpers");
 jest.mock("../../../../auth/auth.service", () => ({
   handleAuthenticationControl: jest.fn(() => "authMiddleware"),
-  handleActionAccessControl: jest.fn(() => "accessControlMiddleware"),
+  handleAccessControl: jest.fn(() => "accessControlMiddleware"),
 }));
 
 // jest.mock("../../../base.middlewares", () => ({
@@ -40,13 +40,14 @@ jest.mock("../../../../auth/auth.service", () => ({
 // }));
 
 jest.mock("../../../base.middlewares", () => ({
-  addPrismaQueryOptionsToRequestQuery: jest.fn(() => "queryOptionsMiddleware"),
+  addPrismaQueryOptionsToRequest: jest.fn(() => "queryOptionsMiddleware"),
   sendResponse: "sendResponseMiddleware",
   handleRequestBodyValidationAndTransformation: jest.fn(() => jest.fn()),
 }));
 
 jest.mock("../../../base.controller");
 jest.mock("pluralize", () => ({
+  ...jest.requireActual("pluralize"),
   plural: jest.fn((str) => `${str}s`),
 }));
 
@@ -96,7 +97,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router);
+    const setupPromises = setupRouters(["User"], router, {});
     await Promise.all(setupPromises);
 
     // Verify all routes are registered
@@ -126,6 +127,7 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      "queryOptionsMiddleware",
       "createManyHandler",
       "sendResponseMiddleware",
       "sendResponseMiddleware",
@@ -136,6 +138,7 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      "queryOptionsMiddleware",
       "updateManyHandler",
       "sendResponseMiddleware",
       "sendResponseMiddleware",
@@ -146,6 +149,7 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      "queryOptionsMiddleware",
       "deleteManyHandler",
       "sendResponseMiddleware",
       "sendResponseMiddleware",
@@ -156,6 +160,7 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      "queryOptionsMiddleware",
       "findOneHandler",
       "sendResponseMiddleware",
       "sendResponseMiddleware",
@@ -166,7 +171,7 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      expect.anything(),
+      "queryOptionsMiddleware",
       "updateOneHandler",
       "sendResponseMiddleware",
       "sendResponseMiddleware",
@@ -177,6 +182,7 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      "queryOptionsMiddleware",
       "deleteOneHandler",
       "sendResponseMiddleware",
       "sendResponseMiddleware",
@@ -191,12 +197,10 @@ describe("setupRouters", () => {
       authConfigs: {},
       prismaQueryOptions: {},
       router: {
-        default: {
-          config: {
-            disable: {
-              createOne: true,
-              findMany: true,
-            },
+        config: {
+          disable: {
+            createOne: true,
+            findMany: true,
           },
         },
       },
@@ -207,7 +211,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router);
+    const setupPromises = setupRouters(["User"], router, {});
     await Promise.all(setupPromises);
 
     // Verify disabled routes are not registered
@@ -220,6 +224,7 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      "queryOptionsMiddleware",
       "createManyHandler",
       expect.anything(),
       expect.anything(),
@@ -230,6 +235,7 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
+      "queryOptionsMiddleware",
       "findOneHandler",
       expect.anything(),
       expect.anything(),
@@ -256,7 +262,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router);
+    const setupPromises = setupRouters(["User"], router, {});
     await Promise.all(setupPromises);
 
     // Verify no routes are registered
@@ -283,7 +289,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router);
+    const setupPromises = setupRouters(["User"], router, {});
     await Promise.all(setupPromises);
 
     // Verify custom middleware is used
@@ -329,7 +335,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router);
+    const setupPromises = setupRouters(["User"], router, {});
     await Promise.all(setupPromises);
 
     // Verify the route with custom implementation is not registered
@@ -374,7 +380,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User", "Post"], router);
+    const setupPromises = setupRouters(["User", "Post"], router, {});
     await Promise.all(setupPromises);
 
     // Verify routes for both models were registered

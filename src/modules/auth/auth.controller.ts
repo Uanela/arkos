@@ -6,10 +6,7 @@ import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
-import {
-  getModelModules,
-  importPrismaModelModules,
-} from "../../utils/helpers/models.helpers";
+import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
@@ -35,18 +32,11 @@ export const defaultExcludedUserFields = {
  * @returns An object containing all authentication controller methods
  */
 export const authControllerFactory = async (middlewares: any = {}) => {
-  const baseServices = getBaseServices();
+  const userService = getBaseServices()["user"];
   let prismaQueryOptions: Record<string, any> = {};
 
   const userModules = await importPrismaModelModules("user");
   if (userModules) prismaQueryOptions = userModules?.prismaQueryOptions || {};
-
-  const stringifiedQueryOptions = JSON.stringify(
-    deepmerge(
-      prismaQueryOptions?.queryOptions || {},
-      prismaQueryOptions?.findOne || {}
-    ) || {}
-  );
 
   return {
     /**
@@ -58,14 +48,9 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const user = await baseServices["user"].findOne(
+        const user = await userService.findOne(
           { id: req.user!.id },
-          JSON.stringify(
-            deepmerge(
-              JSON.parse(stringifiedQueryOptions),
-              JSON.parse(req.query.prismaQueryOptions as string)
-            )
-          )
+          req.prismaQueryOptions || {}
         );
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
@@ -94,18 +79,15 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         if ("password" in req.body)
           throw new AppError(
             "In order to update password use the update-password endpoint.",
-            400
+            400,
+            {},
+            "invalid_field_password"
           );
 
-        const user = await baseServices["user"].updateOne(
+        const user = await userService.updateOne(
           { id: req.user!.id },
           req.body,
-          JSON.stringify(
-            deepmerge(
-              JSON.parse(stringifiedQueryOptions),
-              JSON.parse(req.query.prismaQueryOptions as string)
-            )
-          )
+          req.prismaQueryOptions || {}
         );
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
@@ -113,7 +95,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         });
 
         if (middlewares?.afterGetMe) {
-          req.responseData = user;
+          req.responseData = { data: user };
           req.responseStatus = 200;
           return next();
         }
@@ -174,8 +156,6 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             new AppError(`Please provide both ${lastField} and password`, 400)
           );
 
-        const prisma = getPrismaInstance();
-
         // Create appropriate where clause for the query
         let whereClause: Record<string, any>;
 
@@ -192,13 +172,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         }
 
         // Use findFirst instead of findUnique for complex queries
-        const user = await (prisma as any).user.findFirst({
-          where: whereClause,
-          // select: {
-          //   id: true,
-          //   password: true,
-          // },
-        });
+        const user = await userService.findOne(
+          whereClause,
+          req.prismaQueryOptions || {}
+        );
 
         if (
           !user ||
@@ -274,7 +251,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     ),
 
     /**
-     * Creates a new user account
+     * Creates a new user account using the userService
      */
     signup: catchAsync(
       async (
@@ -282,16 +259,9 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const userService = baseServices["user"];
-
         const user = await userService.createOne(
           req.body,
-          JSON.stringify(
-            deepmerge(
-              JSON.parse(stringifiedQueryOptions),
-              JSON.parse(req.query.prismaQueryOptions as string)
-            )
-          )
+          req.prismaQueryOptions || {}
         );
 
         if (middlewares?.afterSignup) {
@@ -305,6 +275,40 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         });
 
         res.status(201).json({ data: user });
+      }
+    ),
+    /**
+     * Marks user account as self-deleted by setting deletedSelfAccountAt timestamp
+     */
+    deleteMe: catchAsync(
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
+        const userId = req.user!.id; // Assuming the authenticated user's ID is available in req.user
+
+        const updatedUser = await userService.updateOne(
+          { id: userId },
+          {
+            deletedSelfAccountAt: new Date().toISOString(),
+          },
+          req.prismaQueryOptions || {}
+        );
+
+        if (middlewares?.afterDeleteMe) {
+          req.responseData = { data: updatedUser };
+          req.responseStatus = 200;
+          return next();
+        }
+
+        Object.keys(defaultExcludedUserFields).forEach((key) => {
+          delete updatedUser[key as keyof User];
+        });
+
+        res.status(200).json({
+          message: "Account deleted successfully",
+        });
       }
     ),
 
@@ -356,16 +360,14 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           );
         }
 
-        const prisma = getPrismaInstance();
-
         // Update the password
-        await (prisma as any).user.update({
-          where: { id: user.id },
-          data: {
+        await userService.updateOne(
+          { id: user.id },
+          {
             password: await authService.hashPassword(newPassword),
             passwordChangedAt: new Date(Date.now()),
-          },
-        });
+          }
+        );
 
         if (middlewares?.afterUpdatePassword) {
           req.additionalData = {

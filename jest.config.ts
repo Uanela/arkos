@@ -13,6 +13,7 @@ const config: Config = {
   collectCoverage: true,
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov"],
+  silent: false,
 };
 
 export default config;

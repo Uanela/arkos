@@ -16,13 +16,11 @@ export function getVersion() {
 
 const program = new Command();
 
-program.name("arkos").description("Arkos framework CLI").version(getVersion());
+program.name("arkos").description("Arkos.js CLI").version(getVersion());
 
 program
   .command("build")
   .description("Build your Arkos project")
-  .option("-w, --watch", "Watch for changes")
-  .option("-c, --config <path>", "Path to config file")
   .option("-m, --module <type>", "Module type (cjs or esm)", "cjs")
   .action(buildCommand);
 
