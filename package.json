@@ -92,7 +92,7 @@
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "postbuilda": "echo {\\\"type\":\"commonjs\\\"} > dist/cjs/package.json",
-    "build": "pnpm test && rimraf dist && pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run minify",
+    "build": "pnpm test && npx rimraf dist && pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run minify",
     "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "clean": "rm -r dist",
     "dev": "ts-node --watch",
