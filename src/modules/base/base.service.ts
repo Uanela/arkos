@@ -9,11 +9,10 @@ import {
   RelationFields,
 } from "../../utils/helpers/models.helpers";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import AppError from "../error-handler/utils/app-error";
-import pluralize from "pluralize";
 import { handleRelationFieldsInBody } from "./utils/helpers/base.service.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import authService from "../auth/auth.service";
+import { PrismaModelDelegate } from "../../types";
 
 /**
  * Base service class for handling CRUD operations on a specific model.
@@ -21,8 +20,21 @@ import authService from "../auth/auth.service";
  * by model-specific service classes.
  *
  * @class BaseService
+ *
+ * @usage
+ *
+ * **Example:** creating a simple service
+ *
+ * ```ts
+ * import prisma from 'your-prisma-path'
+ *
+ * const userService = new BaseService<typeof prisma.user>("user")
+ * ```
+ *
+ *
+ * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-service-class}
  */
-export class BaseService {
+export class BaseService<TModel extends PrismaModelDelegate = any> {
   /**
    * The camelCase name of the model
    * @public
@@ -34,18 +46,6 @@ export class BaseService {
    * @public
    */
   relationFields: RelationFields;
-
-  /**
-   * Map of singular relation fields to include in queries
-   * @public
-   */
-  singularRelationFieldToInclude: Record<string, boolean>;
-
-  /**
-   * Map of list relation fields to include in queries
-   * @public
-   */
-  listRelationFieldToInclude: Record<string, boolean>;
 
   /**
    * Instance of the Prisma client
@@ -60,40 +60,29 @@ export class BaseService {
   constructor(modelName: string) {
     this.modelName = camelCase(modelName);
     this.relationFields = getPrismaModelRelations(pascalCase(modelName))!;
-    this.singularRelationFieldToInclude = this.relationFields?.singular?.reduce(
-      (acc: Record<string, boolean>, curr) => {
-        acc[curr.name] = true;
-        return acc;
-      },
-      {}
-    );
-    this.listRelationFieldToInclude = this.relationFields?.list?.reduce(
-      (acc: Record<string, boolean>, curr) => {
-        acc[curr.name] = true;
-        return acc;
-      },
-      {}
-    );
   }
+
   /**
    * Creates a single record in the database.
    *
-   * @param {Record<string, any>} body - The data to create the record with.
-   * @param {string} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<any>} The created record.
+   * @param {Parameters<TModel["create"]>[0]["data"]} data - The data to create the record with.
+   * @param {Omit<Parameters<TModel["create"]>[0], "data">} [queryOptions] - Additional query options to modify the Prisma query.
+   * @returns {Promise<Promise<ReturnType<TModel["create"]>>>} The created record.
    */
   async createOne(
-    body: Record<string, any>,
-    queryOptions: string = "{}"
-  ): Promise<any> {
-    if (kebabCase(this.modelName) === "user" && body.password) {
-      body.password = await authService.hashPassword(body.password);
+    data: Parameters<TModel["create"]>[0]["data"],
+    queryOptions?: Omit<Parameters<TModel["create"]>[0], "data">
+  ): Promise<ReturnType<TModel["create"]>> {
+    if (kebabCase(this.modelName) === "user" && (data as any).password) {
+      (data as any).password = await authService.hashPassword(
+        (data as any).password
+      );
     }
 
     const prisma = getPrismaInstance();
 
-    const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(
-      body,
+    const dataWithRelationFieldsHandled = handleRelationFieldsInBody(
+      data,
       {
         ...this.relationFields,
       },
@@ -103,22 +92,9 @@ export class BaseService {
     return await prisma[this.modelName].create(
       deepmerge(
         {
-          data: bodyWithRelationFieldsHandled,
-          ...(JSON.parse(queryOptions || "{}").hasOwnProperty("select")
-            ? {
-                select: {
-                  ...this.singularRelationFieldToInclude,
-                  ...this.listRelationFieldToInclude,
-                },
-              }
-            : {
-                include: {
-                  ...this.singularRelationFieldToInclude,
-                  ...this.listRelationFieldToInclude,
-                },
-              }),
+          data: dataWithRelationFieldsHandled,
         },
-        JSON.parse(queryOptions || "{}")
+        (queryOptions as {}) || {}
       )
     );
   }
@@ -126,245 +102,209 @@ export class BaseService {
   /**
    * Creates multiple records in the database.
    *
-   * @param {Record<string, any>[]} body - An array of data to create records with.
-   * @returns {Promise<{ total: number; data: any }>} The result containing the total count and the created data.
-   * @throws {AppError} Throws an error if the data array is invalid or empty.
+   * @param {Array<Omit<Parameters<TModel["createMany"]>[0]["data"], never>[0]>} data - An array of data to create records with.
+   * @param {Omit<Parameters<TModel["createMany"]>[0], "data">} [queryOptions] - Additional query options to modify the Prisma query.
+   * @returns {Promise<ReturnType<TModel["createMany"]>>} The result of the createMany operation.
    */
   async createMany(
-    body: Record<string, any>[]
-  ): Promise<{ total: number; data: any }> {
+    data: Parameters<TModel["createMany"]>[0]["data"],
+    queryOptions?: Omit<Parameters<TModel["createMany"]>[0], "data">
+  ): Promise<ReturnType<TModel["createMany"]>> {
     const prisma = getPrismaInstance();
 
-    if (!Array.isArray(body) || body.length === 0) {
-      throw new AppError(
-        "Invalid or empty data array provided for creation.",
-        400
-      );
-    }
+    if (Array.isArray(data) && this.modelName === "user")
+      (data as any[]).forEach(async (_, i) => {
+        if ("password" in data[i])
+          (data[i] as any).password = await authService.hashPassword(
+            (data as any)?.password
+          );
+      });
 
-    const [data, total] = await Promise.all([
-      prisma[this.modelName].createMany({
-        data: body,
-      }),
-      prisma[this.modelName].count(),
-    ]);
+    return await prisma[this.modelName].createMany(
+      deepmerge({ data }, (queryOptions as {}) || {})
+    );
+  }
 
-    return { total, data };
+  /**
+   * Counts records based on provided filters.
+   *
+   * @param {Parameters<TModel["count"]>[0]} filters - The filters to apply to the query.
+   * @returns {Promise<number>} The count of records matching the filters.
+   */
+  async count(filters: Parameters<TModel["count"]>[0]): Promise<number> {
+    const prisma = getPrismaInstance();
+
+    return await prisma[this.modelName].count({
+      where: filters,
+    });
   }
 
   /**
    * Finds multiple records based on provided filters.
    *
-   * @param {Record<string, any>} filters - The filters to apply to the query.
-   * @returns {Promise<{ total: number; data: any }>} The result containing the total count and the found data.
+   * @param {Parameters<TModel["findMany"]>[0]['where']} filters - The filters to apply to the query.
+   * @param {Partial<Parameters<TModel["findMany"]>[0]>} [queryOptions] - Additional query options to modify the Prisma query.
+   * @returns {Promise<ReturnType<TModel["findMany"]>>} The found data.
    */
   async findMany(
-    filters: Record<string, any>
-  ): Promise<{ total: number; data: any }> {
+    filters: Parameters<TModel["findMany"]>[0]["where"],
+    queryOptions?: Omit<Partial<Parameters<TModel["findMany"]>[0]>, "where">
+  ): Promise<ReturnType<TModel["findMany"]>> {
     const prisma = getPrismaInstance();
 
-    const [data, total] = await Promise.all([
-      prisma[this.modelName].findMany(
-        "select" in filters
-          ? deepmerge(
-              { ...filters },
-              {
-                select: this.singularRelationFieldToInclude,
-              }
-            )
-          : deepmerge(
-              { ...filters },
-              {
-                include: this.singularRelationFieldToInclude,
-              }
-            )
-      ),
-      prisma[this.modelName].count({
-        where: filters.where,
-      }),
-    ]);
-
-    return { total, data };
+    return await prisma[this.modelName].findMany(
+      deepmerge({ where: filters }, (queryOptions as {}) || {})
+    );
   }
 
   /**
    * Finds a single record by its parameters.
    *
-   * @param {Record<string, any>} filters - The parameters to find the record by.
-   * @param {string} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<any>} The found record.
-   * @throws {AppError} Throws an error if the record is not found.
+   * @param {Parameters<TModel["findFirst"]>[0]["where"] | Parameters<TModel["findUnique"]>[0]["where"]} filters - The parameters to find the record by.
+   * @param {Omit<Parameters<TModel["findFirst"]>[0], "where">} [queryOptions] - Additional query options to modify the Prisma query.
+   * @returns {Promise<  ReturnType<TModel["findFirst"]> | ReturnType<TModel["findUnique"]>>} The found record or null if not found.
    */
   async findOne(
-    filters: Record<string, any>,
-    queryOptions: string = "{}"
-  ): Promise<any> {
+    filters:
+      | Parameters<TModel["findFirst"]>[0]["where"]
+      | Parameters<TModel["findUnique"]>[0]["where"],
+    queryOptions?:
+      | Omit<Parameters<TModel["findFirst"]>[0], "where">
+      | Omit<Parameters<TModel["findFirst"]>[0], "where">
+  ): Promise<
+    ReturnType<TModel["findFirst"]> | ReturnType<TModel["findUnique"]>
+  > {
     const prisma = getPrismaInstance();
 
-    const data = await prisma[this.modelName].findFirst(
+    if (
+      Object.keys(filters).length === 1 &&
+      "id" in filters &&
+      (filters as any).id !== "me"
+    )
+      return prisma[this.modelName].findUnique(
+        deepmerge(
+          {
+            where: filters,
+          },
+          (queryOptions as {}) || {}
+        )
+      );
+
+    return await prisma[this.modelName].findFirst(
       deepmerge(
         {
-          where: { ...filters },
-          ...(JSON.parse(queryOptions || "{}").hasOwnProperty("select")
-            ? {
-                select: {
-                  ...this.singularRelationFieldToInclude,
-                  ...this.listRelationFieldToInclude,
-                },
-              }
-            : {
-                include: {
-                  ...this.singularRelationFieldToInclude,
-                  ...this.listRelationFieldToInclude,
-                },
-              }),
+          where: filters,
         },
-        JSON.parse(queryOptions || "{}")
+        (queryOptions as {}) || {}
       )
     );
-
-    if (!data) {
-      throw new AppError(
-        `${pascalCase(String(this.modelName))} with ID ${filters.id} not found`,
-        404
-      );
-    }
-
-    return data;
   }
 
   /**
    * Updates a single record by its ID.
    *
-   * @param {Record<string, any>} filters - The parameters to find the record by.
-   * @param {Record<string, any>} body - The data to update the record with.
-   * @param {string} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<any>} The updated record.
-   * @throws {AppError} Throws an error if the record is not found.
+   * @param {Parameters<TModel["update"]>[0]["where"]} filters - The parameters to find the record by.
+   * @param {Parameters<TModel["update"]>[0]["data"]} data - The data to update the record with.
+   * @param {Omit<Parameters<TModel["update"]>[0], "where" | "data">} [queryOptions] - Additional query options to modify the Prisma query.
+   * @returns {Promise<ReturnType<TModel["update"]>>} The updated record or null if not found.
    */
   async updateOne(
-    filters: Record<string, any>,
-    body: Record<string, any>,
-    queryOptions: string = "{}"
-  ): Promise<any> {
+    filters: Parameters<TModel["update"]>[0]["where"],
+    data: Parameters<TModel["update"]>[0]["data"],
+    queryOptions?: Omit<Parameters<TModel["update"]>[0], "where" | "data">
+  ): Promise<ReturnType<TModel["update"]>> {
     const prisma = getPrismaInstance();
 
-    if (kebabCase(this.modelName) === "user" && body.password) {
-      body.password = await authService.hashPassword(body.password);
-    }
-
-    const bodyWithRelationFieldsHandled = handleRelationFieldsInBody(body, {
-      ...this.relationFields,
-    });
-
-    const data = await prisma[this.modelName].update(
-      deepmerge(
-        {
-          where: { ...filters },
-          data: bodyWithRelationFieldsHandled,
-          ...(JSON.parse(queryOptions || "{}").hasOwnProperty("select")
-            ? {
-                select: {
-                  ...this.singularRelationFieldToInclude,
-                  ...this.listRelationFieldToInclude,
-                },
-              }
-            : {
-                include: {
-                  ...this.singularRelationFieldToInclude,
-                  ...this.listRelationFieldToInclude,
-                },
-              }),
-        },
-        JSON.parse(queryOptions || "{}")
-      )
-    );
-
-    if (!data) {
-      throw new AppError(
-        `${pascalCase(String(this.modelName))} with ID ${filters.id} not found`,
-        404
+    if (kebabCase(this.modelName) === "user" && (data as any)?.password) {
+      (data as any).password = await authService.hashPassword(
+        (data as any)?.password
       );
     }
 
-    return data;
+    const dataWithRelationFieldsHandled = handleRelationFieldsInBody(data, {
+      ...this.relationFields,
+    });
+
+    return await prisma[this.modelName].update(
+      deepmerge(
+        {
+          where: filters,
+          data: dataWithRelationFieldsHandled,
+        },
+        (queryOptions as {}) || {}
+      )
+    );
   }
 
   /**
    * Updates multiple records based on the provided filter and data.
    *
-   * @param {Record<string, any>} filters - The filters to identify records to update.
-   * @param {Record<string, any>} body - The data to update the records with.
-   * @returns {Promise<{ total: number; data: any }>} The result containing the total count and the updated data.
-   * @throws {AppError} Throws an error if no records match the filters.
+   * @param {Parameters<TModel["updateMany"]>[0]['where']} filters - The filters to identify records to update.
+   * @param {Parameters<TModel["updateMany"]>[0]["data"]} data - The data to update the records with.
+   * @param {Partial<Parameters<TModel["updateMany"]>[0]>} [queryOptions] - Additional query options.
+   * @returns {Promise<ReturnType<TModel["updateMany"]>>} The result of the updateMany operation.
    */
   async updateMany(
-    filters: Record<string, any>,
-    body: Record<string, any>
-  ): Promise<{ total: number; data: any }> {
+    filters: Parameters<TModel["updateMany"]>[0]["where"],
+    data: Parameters<TModel["updateMany"]>[0]["data"],
+    queryOptions?: Partial<Parameters<TModel["updateMany"]>[0]>
+  ): Promise<ReturnType<TModel["updateMany"]>> {
     const prisma = getPrismaInstance();
 
-    if (!filters || typeof filters !== "object") {
-      throw new AppError("Invalid filters provided for udpate many.", 400);
-    }
+    if (Array.isArray(data) && this.modelName === "user")
+      (data as any[]).forEach(async (_, i) => {
+        if ("password" in data[i])
+          (data[i] as any).password = await authService.hashPassword(
+            (data as any)?.password
+          );
+      });
 
-    const data = await prisma[this.modelName].updateMany({
-      ...filters,
-      data: body,
-    });
+    const firstMerge = deepmerge({ data }, (queryOptions as {}) || {});
 
-    if (!data || data.count === 0) {
-      throw new AppError(
-        `${pluralize(pascalCase(String(this.modelName)))} not found`,
-        404
-      );
-    }
-
-    const total = await prisma[this.modelName].count();
-    return { total, data };
+    return await prisma[this.modelName].updateMany(
+      deepmerge({ where: filters }, firstMerge)
+    );
   }
 
   /**
    * Deletes a single record by its ID.
    *
-   * @param {Record<string, any>} params - The parameters to find the record by.
-   * @returns {Promise<any>} The deleted record.
+   * @param {Parameters<TModel["delete"]>[0]["where"]} filters - The parameters to find the record by.
+   * @param {Omit<Parameters<TModel["delete"]>[0], "where">} [queryOptions] - Additional query options.
+   * @returns {Promise<ReturnType<TModel["delete"]>>} The deleted record or null if an error occurs.
    */
-  async deleteOne(params: Record<string, any>): Promise<any> {
+  async deleteOne(
+    filters: Parameters<TModel["delete"]>[0]["where"],
+    queryOptions?: Omit<Parameters<TModel["delete"]>[0], "where">
+  ): Promise<ReturnType<TModel["delete"]>> {
     const prisma = getPrismaInstance();
 
-    return await prisma[this.modelName].delete({
-      where: {
-        ...params,
-        id: String(params.id),
-      },
-    });
+    return await prisma[this.modelName].delete(
+      deepmerge(
+        {
+          where: filters,
+        },
+        (queryOptions as {}) || {}
+      )
+    );
   }
 
   /**
    * Deletes multiple records based on the provided filter.
    *
-   * @param {Record<string, any>} filter - The filter to identify records to delete.
-   * @returns {Promise<{ total: number; data: any }>} The result containing the total count and the deleted data.
-   * @throws {AppError} Throws an error if no records match the filter.
+   * @param {Parameters<TModel["deleteMany"]>[0]['where']} filters - The filter to identify records to delete.
+   * @param {Omit<Parameters<TModel["deleteMany"]>[0], "where">} [queryOptions] - Additional query options.
+   * @returns {Promise<ReturnType<TModel["deleteMany"]>>} The result of the deleteMany operation.
    */
   async deleteMany(
-    filters: Record<string, any>
-  ): Promise<{ total: number; data: any }> {
+    filters: Record<string, any>,
+    queryOptions: Partial<Parameters<TModel["deleteMany"]>[0]> = {}
+  ): Promise<ReturnType<TModel["deleteMany"]>> {
     const prisma = getPrismaInstance();
 
-    if (!filters || typeof filters !== "object") {
-      throw new AppError("Invalid filters provided for deletion.", 400);
-    }
-
-    const data = await prisma[this.modelName].deleteMany(filters);
-
-    if (!data || data.count === 0) {
-      throw new AppError(`No records found to delete`, 404);
-    }
-
-    const total = await prisma[this.modelName].count();
-    return { total, data };
+    return await prisma[this.modelName].deleteMany(
+      deepmerge({ where: filters }, (queryOptions as {}) || {})
+    );
   }
 }
 

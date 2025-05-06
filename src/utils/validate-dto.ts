@@ -33,7 +33,7 @@ import AppError from "../modules/error-handler/utils/app-error";
  * ```
  */
 
-export default async function validateDto<T extends object = any>(
+export default async function validateDto<T extends object>(
   DtoClass: ClassConstructor<T>,
   data: Record<string, any>,
   validationOptions?: ValidatorOptions
@@ -41,7 +41,13 @@ export default async function validateDto<T extends object = any>(
   const dataDto = plainToInstance(DtoClass, data);
   const errors = await validate(dataDto, validationOptions);
 
-  if (errors.length > 0) throw new AppError("Invalid Data", 400, errors);
+  if (errors.length > 0)
+    throw new AppError(
+      "Invalid request body",
+      400,
+      errors,
+      "invalid_request_body"
+    );
 
   return dataDto;
 }

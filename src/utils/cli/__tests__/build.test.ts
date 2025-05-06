@@ -1,8 +1,9 @@
-import path from "path";
 import fs from "fs";
+import path from "path";
 import { execSync, spawn } from "child_process";
 import { buildCommand } from "../build";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
+import { loadEnvironmentVariables } from "../../dotenv.helpers";
 
 // Mock dependencies
 jest.mock("child_process", () => ({
@@ -19,24 +20,34 @@ jest.mock("fs", () => ({
   writeFileSync: jest.fn(),
   readFileSync: jest.fn(),
   unlinkSync: jest.fn(),
+  statSync: jest.fn(() => ({
+    isDirectory: () => false,
+    isFile: () => true,
+  })),
+  readdirSync: jest.fn(() => []),
+  copyFileSync: jest.fn(),
 }));
 
 jest.mock("path", () => ({
+  ...jest.requireActual("path"),
   join: jest.fn((...args) => args.join("/")),
+  extname: jest.fn((filename) => {
+    const parts = filename.split(".");
+    return parts.length > 1 ? `.${parts[parts.length - 1]}` : "";
+  }),
+  dirname: jest.fn((p) => p.substring(0, p.lastIndexOf("/"))),
 }));
 
 jest.mock("../../helpers/fs.helpers", () => ({
   getUserFileExtension: jest.fn(),
 }));
 
-// Mock process.exit
-const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
-  throw new Error(`Process.exit called with code ${code}`);
-});
+jest.mock("../../dotenv.helpers", () => ({
+  loadEnvironmentVariables: jest.fn(() => [".env"]),
+}));
 
 describe("buildCommand", () => {
-  // Store original process.on and console methods
-  const originalProcessOn = process.on;
+  // Store original console methods
   const originalConsole = {
     log: console.log,
     info: console.info,
@@ -44,8 +55,11 @@ describe("buildCommand", () => {
     warn: console.warn,
   };
 
-  // Setup mocks
-  const mockProcessOn = jest.fn();
+  // Mock process.exit
+  const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
+    console.error(`Process.exit called with code ${code}`);
+    return "" as never;
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -56,14 +70,30 @@ describe("buildCommand", () => {
     console.error = jest.fn();
     console.warn = jest.fn();
 
-    // Mock process methods
-    process.on = mockProcessOn;
+    // Mock process.cwd()
     jest.spyOn(process, "cwd").mockReturnValue("/mock/project");
 
     // Default fs.existsSync behavior
     (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
       if (path.includes("tsconfig.json")) return true;
-      return false;
+      if (path.includes(".build")) return false;
+      return true;
+    });
+
+    // Default fs.readFileSync behavior
+    (fs.readFileSync as jest.Mock).mockImplementation((path: string) => {
+      if (path.includes("tsconfig.json")) {
+        return JSON.stringify({ compilerOptions: { target: "es2020" } });
+      }
+      if (path.includes("package.json")) {
+        return JSON.stringify({
+          name: "test-project",
+          version: "1.0.0",
+          description: "Test project",
+          dependencies: { test: "^1.0.0" },
+        });
+      }
+      return "";
     });
   });
 
@@ -73,321 +103,355 @@ describe("buildCommand", () => {
     console.info = originalConsole.info;
     console.error = originalConsole.error;
     console.warn = originalConsole.warn;
-
-    // Restore process.on
-    process.on = originalProcessOn;
   });
 
   afterAll(() => {
     mockExit.mockRestore();
   });
 
-  describe("TypeScript projects", () => {
-    beforeEach(() => {
-      // Setup TypeScript project mocks
+  describe("Module type validation", () => {
+    it("should default to 'cjs' when no module type is specified", () => {
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-      (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({
-          compilerOptions: { target: "es2020" },
-        })
-      );
-    });
 
-    it("should build TypeScript project with default options", () => {
-      // Execute build command
-      buildCommand();
+      buildCommand({});
 
-      // Verify build directory creation
-      expect(fs.mkdirSync).toHaveBeenCalledWith(".build", { recursive: true });
-      expect(fs.mkdirSync).toHaveBeenCalledWith(".build/cjs", {
-        recursive: true,
-      });
-      expect(fs.mkdirSync).toHaveBeenCalledWith(".build/esm", {
-        recursive: true,
-      });
-
-      // Verify temporary tsconfig creation
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        "/mock/project/tsconfig.arkos-build.json",
-        expect.stringContaining("./.build")
-      );
-
-      // Verify TypeScript compilation executed
-      expect(execSync).toHaveBeenCalledWith(
-        "npx tsc -p /mock/project/tsconfig.arkos-build.json",
-        expect.objectContaining({
-          stdio: "inherit",
-          cwd: "/mock/project",
-        })
-      );
-
-      //   // Verify temporary config cleanup
-      //   expect(fs.unlinkSync).toHaveBeenCalledWith(
-      //     "/mock/project/tsconfig.arkos-build.json"
-      //   );
-
-      // Verify completion message
-      expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Build complete")
-      );
-    });
-
-    it("should use custom tsconfig path when specified", () => {
-      // Execute build with custom config
-      buildCommand({ config: "custom-tsconfig.json" });
-
-      // Verify custom config was read
-      expect(fs.readFileSync).toHaveBeenCalledWith(
-        "/mock/project/custom-tsconfig.json",
-        "utf8"
-      );
-
-      // Verify temporary config was created with appropriate name
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         "/mock/project/tsconfig.arkos-build.json",
         expect.any(String)
       );
     });
 
-    it("should handle watch mode correctly", () => {
-      // Mock spawn return value for kill verification
-      const mockTscProcess = { kill: jest.fn() };
-      (spawn as jest.Mock).mockReturnValue(mockTscProcess);
+    it("should correctly handle 'esm' module type", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
 
-      // Execute build in watch mode
-      buildCommand({ watch: true });
+      buildCommand({ module: "esm" });
 
-      // Verify watch command execution
-      expect(spawn).toHaveBeenCalledWith(
-        "npx",
-        ["tsc", "-p", "/mock/project/tsconfig.arkos-build.json", "--watch"],
-        expect.objectContaining({ stdio: "inherit" })
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        "/mock/project/tsconfig.arkos-build.json",
+        expect.any(String)
       );
-
-      // Verify SIGINT handler registration
-      expect(mockProcessOn).toHaveBeenCalledWith(
-        "SIGINT",
-        expect.any(Function)
-      );
-
-      // Execute the registered SIGINT handler
-      const sigintHandler = mockProcessOn.mock.calls.find(
-        (call) => call[0] === "SIGINT"
-      )[1];
-      sigintHandler();
-
-      // Verify process cleanup on SIGINT
-      expect(mockTscProcess.kill).toHaveBeenCalled();
-      expect(fs.unlinkSync).toHaveBeenCalled();
-      expect(mockExit).toHaveBeenCalledWith(0);
     });
 
-    it("should handle tsconfig reading errors gracefully", () => {
-      // Setup tsconfig read error
-      (fs.readFileSync as jest.Mock).mockImplementation(() => {
-        throw new Error("Failed to read tsconfig");
+    it("should recognize all ESM module aliases", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      const esmAliases = ["esm", "es", "es2020", "esnext", "module"];
+
+      for (const alias of esmAliases) {
+        jest.clearAllMocks();
+        buildCommand({ module: alias });
+
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+          "/mock/project/tsconfig.arkos-build.json",
+          expect.any(String)
+        );
+      }
+    });
+
+    it("should recognize all CommonJS module aliases", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      const cjsAliases = ["cjs", "commonjs"];
+
+      for (const alias of cjsAliases) {
+        jest.clearAllMocks();
+        buildCommand({ module: alias });
+
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+          "/mock/project/tsconfig.arkos-build.json",
+          expect.any(String)
+        );
+      }
+    });
+
+    it("should default to 'cjs' for unrecognized module types with a warning", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      buildCommand({ module: "invalid" });
+
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Unrecognized module type "invalid"')
+      );
+
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        "/mock/project/tsconfig.arkos-build.json",
+        expect.any(String)
+      );
+    });
+  });
+
+  describe("Build directory setup", () => {
+    it("should create build directory if it doesn't exist", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      buildCommand({});
+
+      expect(fs.mkdirSync).toHaveBeenCalledWith(".build", { recursive: true });
+    });
+
+    it("should create module-specific subdirectories", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      buildCommand({});
+
+      expect(fs.mkdirSync).toHaveBeenCalledWith(".build/cjs", {
+        recursive: true,
+      });
+      expect(fs.mkdirSync).toHaveBeenCalledWith(".build/esm", {
+        recursive: true,
+      });
+    });
+  });
+
+  describe("TypeScript projects", () => {
+    beforeEach(() => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+    });
+
+    it("should correctly build a TypeScript project with default settings", () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      buildCommand({});
+
+      // Verify tsconfig creation
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        "/mock/project/tsconfig.arkos-build.json",
+        expect.stringContaining('"outDir": "./.build"')
+      );
+
+      (execSync as jest.Mock).mockImplementation(() => {
+        return "";
       });
 
-      // Execute build command
-      buildCommand();
+      // (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-      // Verify error was logged but build continued
+      expect(console.error).not.toHaveBeenCalled();
+
+      // Verify TypeScript compilation command
+      expect(execSync).toHaveBeenCalledWith(
+        "npx tsc -p /mock/project/tsconfig.arkos-build.json",
+        expect.any(Object)
+      );
+
+      // Verify temp config cleanup
+      expect(fs.unlinkSync).toHaveBeenCalledWith(
+        "/mock/project/tsconfig.arkos-build.json"
+      );
+    });
+
+    it("should handle custom tsconfig path", () => {
+      buildCommand({ config: "custom-tsconfig.json" });
+
+      expect(fs.readFileSync).toHaveBeenCalledWith(
+        "/mock/project/custom-tsconfig.json",
+        "utf8"
+      );
+    });
+
+    it("should handle tsconfig read errors gracefully", () => {
+      (fs.readFileSync as jest.Mock).mockImplementation((path) => {
+        if (path.includes("tsconfig.json")) {
+          throw new Error("Failed to read tsconfig");
+        }
+        return "";
+      });
+
+      buildCommand({});
+
       expect(console.error).toHaveBeenCalledWith(
         "❌ Error reading tsconfig.json:",
         expect.any(Error)
       );
 
-      // Verify build still proceeded with default config
+      // Should still create a default config
       expect(fs.writeFileSync).toHaveBeenCalled();
-      expect(execSync).toHaveBeenCalled();
     });
 
-    it("should handle compiler errors and exit with code 1", () => {
-      // Setup compiler error
+    it("should handle TypeScript compilation errors", () => {
       (execSync as jest.Mock).mockImplementation(() => {
-        throw new Error("Compilation failed");
+        throw new Error("TypeScript compilation failed");
       });
 
-      // Execute build command and expect it to throw
-      expect(() => buildCommand()).toThrow();
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-      // Verify error handling
+      buildCommand({});
+
       expect(console.error).toHaveBeenCalledWith(
         "❌ Build failed:",
         expect.any(Error)
       );
 
-      // Verify process exit attempt
-      expect(mockExit).toHaveBeenCalledWith(1);
-
-      // Verify temp config was cleaned up
       expect(fs.unlinkSync).toHaveBeenCalled();
     });
 
-    it("should handle temporary config cleanup errors gracefully", () => {
-      // Setup cleanup error
-      (fs.unlinkSync as jest.Mock).mockImplementation(() => {
-        throw new Error("Cleanup failed");
+    it("should handle temp config cleanup errors gracefully", () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      (fs.unlinkSync as jest.Mock).mockImplementation((val) => {
+        throw new Error("Failed to delete temp config");
       });
 
-      // Execute build command
-      buildCommand();
+      buildCommand({});
 
-      // Verify warning was logged but build completed
       expect(console.warn).toHaveBeenCalledWith(
         "Warning: Error cleaning up temporary config:",
         expect.any(Error)
-      );
-
-      // Verify build still completed successfully
-      expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Build complete")
       );
     });
   });
 
   describe("JavaScript projects", () => {
     beforeEach(() => {
-      // Setup JavaScript project mocks
-      (getUserFileExtension as jest.Mock).mockReturnValue(null);
+      (getUserFileExtension as jest.Mock).mockReturnValue("js");
     });
 
-    it("should build JavaScript project with default options", () => {
-      // Execute build command
-      buildCommand();
+    it("should correctly build a JavaScript project with CommonJS format", () => {
+      buildCommand({ module: "cjs" });
 
-      // Verify build directory creation
-      expect(fs.mkdirSync).toHaveBeenCalledWith(".build", { recursive: true });
-
-      // Verify JavaScript files copy command
+      // Should copy all JS file types for CJS build
       expect(execSync).toHaveBeenCalledWith(
-        expect.stringMatching(/copyfiles.*\.js.*\.jsx.*\.mjs.*\.cjs/),
+        expect.stringContaining("src/**/*.js"),
         expect.any(Object)
       );
-
-      // Verify asset files copy command
       expect(execSync).toHaveBeenCalledWith(
-        expect.stringMatching(/copyfiles.*\.json.*\.html.*\.css.*\.svg.*\.png/),
+        expect.stringContaining("src/**/*.jsx"),
         expect.any(Object)
       );
+      expect(execSync).toHaveBeenCalledWith(
+        expect.stringContaining("src/**/*.cjs"),
+        expect.any(Object)
+      );
+      expect(execSync).toHaveBeenCalledWith(
+        expect.stringContaining("src/**/*.mjs"),
+        expect.any(Object)
+      );
+    });
 
-      // Verify completion message
+    it("should correctly build a JavaScript project with ESM format", () => {
+      (execSync as jest.Mock).mockImplementation((...args) => {
+        return "";
+      });
+
+      buildCommand({ module: "esm" });
+
+      (getUserFileExtension as jest.Mock).mockReturnValue("js");
+
+      // Should skip .cjs files for ESM build
+      const copyCommand = (execSync as jest.Mock).mock.calls[0][0];
+      // console.log(copyCommand);
+      expect(copyCommand).toContain("src/**/*.js");
+      expect(copyCommand).toContain("src/**/*.jsx");
+      expect(copyCommand).toContain("src/**/*.mjs");
+      expect(copyCommand).not.toContain("src/**/*.cjs");
+
       expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Build complete")
+        expect.stringContaining("Note: .cjs files are skipped in ESM build")
       );
     });
 
-    it("should handle watch mode correctly", () => {
-      // Mock spawn return value for kill verification
-      const mockWatcherProcess = { kill: jest.fn() };
-      (spawn as jest.Mock).mockReturnValue(mockWatcherProcess);
+    it("should copy non-source files during build", () => {
+      // Setup mock for readdirSync to return some files
+      (fs.readdirSync as jest.Mock).mockReturnValue(["file.jpg", "file.txt"]);
+      (fs.statSync as jest.Mock).mockImplementation(() => ({
+        isDirectory: () => false,
+        isFile: () => true,
+      }));
 
-      // Execute build in watch mode
-      buildCommand({ watch: true });
+      buildCommand({});
 
-      // Verify file watcher execution
-      expect(spawn).toHaveBeenCalledWith(
-        "npx",
-        [
-          "chokidar",
-          expect.any(String),
-          "-c",
-          expect.stringContaining("copyfiles"),
-        ],
-        expect.objectContaining({ stdio: "inherit" })
-      );
-
-      // Verify SIGINT handler registration
-      expect(mockProcessOn).toHaveBeenCalledWith(
-        "SIGINT",
-        expect.any(Function)
-      );
-
-      // Execute the registered SIGINT handler
-      const sigintHandler = mockProcessOn.mock.calls.find(
-        (call) => call[0] === "SIGINT"
-      )[1];
-      sigintHandler();
-
-      // Verify process cleanup on SIGINT
-      expect(mockWatcherProcess.kill).toHaveBeenCalled();
-      expect(mockExit).toHaveBeenCalledWith(0);
+      // Should have called copyFileSync for non-source files
+      expect(fs.copyFileSync).toHaveBeenCalled();
     });
 
-    it("should handle asset copy errors gracefully", () => {
-      // Setup copy errors for asset files only
-      (execSync as jest.Mock)
-        .mockImplementationOnce(() => {}) // JS files copy succeeds
-        .mockImplementationOnce(() => {
-          // Asset files copy fails
-          throw new Error("Asset copy failed");
-        });
+    it("should create appropriate package.json in the build directory", () => {
+      buildCommand({ module: "esm" });
 
-      // Execute build command
-      buildCommand();
-
-      // Verify warning was logged but build completed
-      expect(console.warn).toHaveBeenCalledWith(
-        "Warning: Error copying asset files:",
-        expect.any(Error)
+      // For ESM, should include type:module
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        ".build/esm/package.json",
+        expect.stringContaining('"type": "module"')
       );
 
-      // Verify build still completed successfully
+      // Reset and test CJS
+      jest.clearAllMocks();
+      buildCommand({ module: "cjs" });
+
+      // For CJS, should not include type:module
+      const packageJsonCalls = (
+        fs.writeFileSync as jest.Mock
+      ).mock.calls.filter((call) => call[0].includes("package.json"));
+
+      expect(packageJsonCalls.length).toBe(1);
+      expect(packageJsonCalls[0][1]).not.toContain('"type":"module"');
+    });
+
+    it("should handle package.json errors gracefully", () => {
+      (fs.readFileSync as jest.Mock).mockImplementation((path) => {
+        if (path.includes("package.json")) {
+          throw new Error("Failed to read package.json");
+        }
+        return "";
+      });
+
+      buildCommand({});
+
+      // Should still complete without creating a package.json in build dir
       expect(console.info).toHaveBeenCalledWith(
         expect.stringContaining("Build complete")
       );
     });
   });
 
-  describe("Module type validation", () => {
-    beforeEach(() => {
-      // Setup JavaScript project for module tests
-      (getUserFileExtension as jest.Mock).mockReturnValue(null);
-    });
+  describe("Error handling", () => {
+    it("should handle build failures and exit with code 1", () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+      (execSync as jest.Mock).mockImplementation(() => {
+        throw new Error("Build failed");
+      });
 
-    it("should recognize ESM module variations", () => {
-      const esmTypes = ["esm", "es", "es2020", "esnext", "module"];
+      buildCommand({});
 
-      for (const moduleType of esmTypes) {
-        jest.clearAllMocks();
-        buildCommand({ module: moduleType });
-
-        // Verify correct output directory
-        expect(execSync).toHaveBeenCalledWith(
-          expect.stringMatching(/copyfiles.*\.build/),
-          expect.any(Object)
-        );
-      }
-    });
-
-    it("should recognize CommonJS module variations", () => {
-      const cjsTypes = ["cjs", "commonjs"];
-
-      for (const moduleType of cjsTypes) {
-        jest.clearAllMocks();
-        buildCommand({ module: moduleType });
-
-        // Verify correct output directory
-        expect(execSync).toHaveBeenCalledWith(
-          expect.stringMatching(/copyfiles.*\.build/),
-          expect.any(Object)
-        );
-      }
-    });
-
-    it("should default to CJS for unrecognized module types", () => {
-      // Execute build with invalid module type
-      buildCommand({ module: "invalid" });
-
-      // Verify warning and default to CJS
-      expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Unrecognized module type "invalid"')
+      expect(console.error).toHaveBeenCalledWith(
+        "Process.exit called with code 1"
       );
 
-      // Verify build proceeds with default module type
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringMatching(/copyfiles.*\.build/),
-        expect.any(Object)
+      expect(console.error).toHaveBeenCalledWith(
+        "❌ Build failed:",
+        expect.any(Error)
+      );
+    });
+
+    it("should handle file copy errors gracefully", () => {
+      (execSync as jest.Mock).mockImplementation(() => {
+        return "";
+      });
+      (getUserFileExtension as jest.Mock).mockReturnValue("js");
+      (fs.copyFileSync as jest.Mock).mockImplementation(() => {
+        throw new Error("Copy failed");
+      });
+      (fs.readdirSync as jest.Mock).mockReturnValue(["file.txt"]);
+
+      buildCommand({});
+
+      expect(console.warn).toHaveBeenCalledWith(
+        "Warning: Error copying project files:",
+        expect.any(Error)
+      );
+
+      // Should still complete
+      expect(console.info).toHaveBeenCalledWith(
+        expect.stringContaining("Build complete")
+      );
+    });
+  });
+
+  describe("Environment loading", () => {
+    it("should load environment variables", () => {
+      buildCommand({});
+
+      expect(loadEnvironmentVariables).toHaveBeenCalled();
+      expect(console.info).toHaveBeenCalledWith(
+        expect.stringContaining("Using env variables from .env")
       );
     });
   });

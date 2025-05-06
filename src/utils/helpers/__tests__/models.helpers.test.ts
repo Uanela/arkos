@@ -24,6 +24,7 @@ jest.mock("../../arkos-env", () => ({
 }));
 jest.mock("../fs.helpers", () => ({
   getUserFileExtension: jest.fn(() => "js"),
+  crd: jest.fn(),
 }));
 // jest.mock("../models.helpers", () => ({
 //   ...jest.requireActual("../models.helpers"),
@@ -453,15 +454,19 @@ describe("Prisma Models Helpers - Additional Tests", () => {
       expect(result.dtos).toEqual({
         model: "user.dto.js",
         create: "create-user.dto.js",
+        createMany: "create-many-user.dto.js",
         update: "update-user.dto.js",
         query: "query-user.dto.js",
+        updateMany: "update-many-user.dto.js",
       });
 
       expect(result.schemas).toEqual({
         model: "user.schema.js",
         create: "create-user.schema.js",
+        createMany: "create-many-user.schema.js",
         update: "update-user.schema.js",
         query: "query-user.schema.js",
+        updateMany: "update-many-user.schema.js",
       });
     });
 

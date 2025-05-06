@@ -7,6 +7,7 @@ import {
 } from "../../utils/helpers/change-case.helpers";
 import { crd, getUserFileExtension } from "./fs.helpers";
 import { importModule } from "./global.helpers";
+import { AuthConfigs } from "../../types/auth";
 
 export let prismaModelsModules: Record<
   string,
@@ -19,7 +20,6 @@ export function getModelModules(modelName: string) {
 
 export function getFileModelModulesFileStructure(modelName: string) {
   const kebabModelName = kebabCase(modelName).toLowerCase();
-  const lowerModelName = kebabModelName.toLowerCase();
   const isAuthModule = modelName.toLowerCase() === "auth";
   const ext = getUserFileExtension();
 
@@ -40,10 +40,12 @@ export function getFileModelModulesFileStructure(modelName: string) {
           updatePassword: `update-password.dto.${ext}`,
         }
       : {
-          model: `${lowerModelName}.dto.${ext}`,
-          create: `create-${lowerModelName}.dto.${ext}`,
-          update: `update-${lowerModelName}.dto.${ext}`,
-          query: `query-${lowerModelName}.dto.${ext}`,
+          model: `${kebabModelName}.dto.${ext}`,
+          create: `create-${kebabModelName}.dto.${ext}`,
+          createMany: `create-many-${kebabModelName}.dto.${ext}`,
+          update: `update-${kebabModelName}.dto.${ext}`,
+          updateMany: `update-many-${kebabModelName}.dto.${ext}`,
+          query: `query-${kebabModelName}.dto.${ext}`,
         },
     schemas: isAuthModule
       ? {
@@ -53,10 +55,12 @@ export function getFileModelModulesFileStructure(modelName: string) {
           updatePassword: `update-password.schema.${ext}`,
         }
       : {
-          model: `${lowerModelName}.schema.${ext}`,
-          create: `create-${lowerModelName}.schema.${ext}`,
-          update: `update-${lowerModelName}.schema.${ext}`,
-          query: `query-${lowerModelName}.schema.${ext}`,
+          model: `${kebabModelName}.schema.${ext}`,
+          create: `create-${kebabModelName}.schema.${ext}`,
+          createMany: `create-many-${kebabModelName}.schema.${ext}`,
+          update: `update-${kebabModelName}.schema.${ext}`,
+          updateMany: `update-many-${kebabModelName}.schema.${ext}`,
+          query: `query-${kebabModelName}.schema.${ext}`,
         },
   };
 }
@@ -66,12 +70,7 @@ export async function processSubdir(
   type: "dtos" | "schemas",
   result: Record<string, any>
 ) {
-  const moduleDir = path.resolve(
-    process.cwd(),
-    "src",
-    "modules",
-    kebabCase(modelName)
-  );
+  const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
   const subdir = path.join(moduleDir, type);
   const pascalModelName = pascalCase(modelName);
@@ -119,6 +118,17 @@ export async function processSubdir(
   }
 }
 
+type importPrismaModelModulesReturnType = {
+  service?: any;
+  controller?: any;
+  middlewares?: any;
+  authConfigs?: AuthConfigs;
+  prismaQueryOptions?: any;
+  router?: any;
+  dtos: Record<string, any>;
+  schemas: Record<string, any>;
+};
+
 /**
  * Dynamically imports model-specific modules for a given model with optimized file handling.
  * Includes special handling for the Auth module.
@@ -128,19 +138,10 @@ export async function processSubdir(
  */
 export async function importPrismaModelModules(
   modelName: string
-): Promise<Record<string, any>> {
-  const moduleDir = path.resolve(crd(), "src", "modules", modelName);
+): Promise<importPrismaModelModulesReturnType> {
+  const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
-  const result: {
-    service?: any;
-    controller?: any;
-    middlewares?: any;
-    authConfigs?: any;
-    prismaQueryOptions?: any;
-    router?: any;
-    dtos: Record<string, any>;
-    schemas: Record<string, any>;
-  } = {
+  const result: importPrismaModelModulesReturnType = {
     dtos: {},
     schemas: {},
   };
@@ -152,11 +153,18 @@ export async function importPrismaModelModules(
       const filePath = path.join(moduleDir, fileName);
       try {
         const module = await importModule(filePath).catch(() => null);
+        // console.log(`-------${modelName}--------------`);
+        // console.log(key, moduleDir, filePath);
+        // console.log(JSON.stringify(module, null, 2));
+        // console.log(`-------${modelName}--------------\n`);
         if (module) {
           if (key === "middlewares") result[key] = module;
+          else if (key === "router") result[key] = module;
           else result[key as keyof typeof result] = module.default || module;
         }
-      } catch {}
+      } catch (err) {
+        console.error(err);
+      }
     })
   );
 

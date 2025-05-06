@@ -130,7 +130,7 @@ describe("File Uploader Controller", () => {
           mockNext
         );
       } catch (err) {
-        console.log(err);
+        console.error(err);
       }
 
       expect(fs.mkdir).toHaveBeenCalledWith(expect.stringContaining("images"), {

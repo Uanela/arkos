@@ -56,14 +56,15 @@ describe("Base Router", () => {
 
       // Call the function
       const mockRouter = Router();
-      const result = await getPrismaModelsRouter();
+      const result = await getPrismaModelsRouter({});
 
       // Assertions
       expect(modelsHelpers.getModels).toHaveBeenCalledTimes(1);
       expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
       expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
         mockModels,
-        mockRouter
+        mockRouter,
+        {}
       );
       expect(result).toBe(mockRouter);
     });
@@ -89,7 +90,8 @@ describe("Base Router", () => {
       expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
       expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
         mockModels,
-        mockRouter
+        mockRouter,
+        mockArkosConfig
       );
       expect(result).toBe(mockRouter);
     });
@@ -99,9 +101,7 @@ describe("Base Router", () => {
     it("should create a router with available routes and resources endpoints", () => {
       // Mock authentication middleware
       (authService.authenticate as jest.Mock) = jest.fn();
-      (authService.handleActionAccessControl as jest.Mock) = jest.fn(() =>
-        jest.fn()
-      );
+      (authService.handleAccessControl as jest.Mock) = jest.fn(() => jest.fn());
       (baseController.getAvalibleRoutes as jest.Mock) = jest.fn();
       (baseController.getAvailableResources as jest.Mock) = jest.fn();
 

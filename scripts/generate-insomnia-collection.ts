@@ -3,8 +3,8 @@ import { kebabCase } from "../src/utils/helpers/change-case.helpers";
 import fs from "fs";
 import path from "path";
 import pluralize from "pluralize";
+import { getAppRoutes } from "../src/modules/base/utils/helpers/base.controller.helpers";
 // import DtoParser from "./dto-parser";
-import { getAppRoutes } from "../src/utils/helpers/base.controller.helpers";
 
 // Define types for the routes and collection
 interface Route {

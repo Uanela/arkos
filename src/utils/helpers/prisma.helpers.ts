@@ -2,7 +2,7 @@ import fs from "fs";
 import { Request, Response, NextFunction } from "express";
 import catchAsync from "../../modules/error-handler/utils/catch-async";
 import AppError from "../../modules/error-handler/utils/app-error";
-import { crd, getUserFileExtension } from "./fs.helpers";
+import { crd, getUserFileExtension as ext } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 
 export let prismaInstance: any = null;
@@ -10,10 +10,10 @@ export let prismaInstance: any = null;
 export async function loadPrismaModule() {
   if (!prismaInstance) {
     try {
-      let prismaPath = `${crd()}/src/utils/prisma.${getUserFileExtension()}`;
+      let prismaPath = `${crd()}/src/utils/prisma.${ext()}`;
 
       if (!fs.existsSync(prismaPath)) {
-        prismaPath = `${crd()}/src/utils/prisma/index.${getUserFileExtension()}`;
+        prismaPath = `${crd()}/src/utils/prisma/index.${ext()}`;
       }
 
       const prismaModule = await importModule(prismaPath);
@@ -22,9 +22,12 @@ export async function loadPrismaModule() {
       if (!prismaInstance) throw new Error("Prisma not found");
     } catch (error: any) {
       if (error.message === "Prisma not found")
-        throw new AppError("Could not initialize Prisma module.", 500, {
-          tip: `Make sure your prisma instance is exported under src/utils/prisma.${getUserFileExtension()} or src/utils/prisma/index.${getUserFileExtension()}, read more about Arkos' Project Structure under https://www.arkosjs.com/docs/project-structure#root-structure`,
-        });
+        throw new AppError(
+          `Could not initialize Prisma module. Make sure your prisma instance is exported under src/utils/prisma.${ext()} or src/utils/prisma/index.${ext()}, read more about Arkos' Project Structure under https://www.arkosjs.com/docs/project-structure#root-structure`,
+          500,
+          {},
+          "prisma_instance_not_found"
+        );
       throw error;
     }
   }

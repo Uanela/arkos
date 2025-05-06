@@ -1,4 +1,7 @@
-import { defaultExcludedUserFields } from "./../../modules/auth/auth.controller";
-import { AuthConfigs, AuthJwtPayload } from "../../types/auth";
-
-export { defaultExcludedUserFields, AuthConfigs, AuthJwtPayload };
+export { defaultExcludedUserFields } from "./../../modules/auth/auth.controller";
+export {
+  AuthConfigs,
+  AuthJwtPayload,
+  AccessControlConfig,
+  AuthenticationControlConfig,
+} from "../../types/auth";

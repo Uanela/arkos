@@ -58,6 +58,7 @@ describe("BaseController", () => {
       query: {},
       responseData: null,
       responseStatus: null,
+      prismaQueryOptions: {},
     };
     mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -86,10 +87,7 @@ describe("BaseController", () => {
 
       await baseController.createOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.createOne).toHaveBeenCalledWith(
-        mockBody,
-        undefined
-      );
+      expect(mockBaseService.createOne).toHaveBeenCalledWith(mockBody, {});
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
     });
@@ -122,12 +120,15 @@ describe("BaseController", () => {
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.createMany).toHaveBeenCalledWith(mockBody);
+      expect(mockBaseService.createMany).toHaveBeenCalledWith(mockBody, {});
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        total: mockResult.total,
-        results: mockResult.data.length,
-        data: mockResult.data,
+        data: {
+          data: {
+            count: 2,
+          },
+          total: 5,
+        },
       });
     });
   });
@@ -145,14 +146,15 @@ describe("BaseController", () => {
       await baseController.findMany(mockRequest, mockResponse, mockNext);
 
       expect(APIFeatures).toHaveBeenCalled();
-      expect(mockBaseService.findMany).toHaveBeenCalledWith({
-        where: { published: true },
-      });
+      expect(mockBaseService.findMany).toHaveBeenCalledWith(
+        {
+          published: true,
+        },
+        expect.any(Object)
+      );
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        total: mockResult.total,
-        results: mockResult.data.length,
-        data: mockResult.data,
+        data: mockResult,
       });
     });
   });
@@ -166,10 +168,7 @@ describe("BaseController", () => {
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.findOne).toHaveBeenCalledWith(
-        mockParams,
-        undefined
-      );
+      expect(mockBaseService.findOne).toHaveBeenCalledWith(mockParams, {});
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
     });
@@ -189,7 +188,7 @@ describe("BaseController", () => {
       expect(mockBaseService.updateOne).toHaveBeenCalledWith(
         mockParams,
         mockBody,
-        undefined
+        {}
       );
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
@@ -216,9 +215,7 @@ describe("BaseController", () => {
       expect(mockBaseService.updateMany).toHaveBeenCalled();
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        total: mockResult.total,
-        results: mockResult.data.length,
-        data: mockResult.data,
+        data: mockResult,
       });
     });
   });
@@ -231,7 +228,7 @@ describe("BaseController", () => {
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(mockParams);
+      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(mockParams, {});
       expect(mockResponse.status).toHaveBeenCalledWith(204);
       expect(mockResponse.send).toHaveBeenCalled();
     });
@@ -255,9 +252,7 @@ describe("BaseController", () => {
       expect(mockBaseService.deleteMany).toHaveBeenCalled();
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        total: mockResult.total,
-        results: mockResult.data.length,
-        data: mockResult.data,
+        data: mockResult,
       });
     });
   });
