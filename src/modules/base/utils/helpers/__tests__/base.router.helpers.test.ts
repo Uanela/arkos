@@ -395,4 +395,39 @@ describe("setupRouters", () => {
         (router.delete as jest.Mock).mock.calls.length
     ).toBe(16);
   });
+
+  it("should first setup the custom router if provied", async () => {
+    const mockPostModules = {
+      middlewares: {},
+      authConfigs: {},
+      prismaQueryOptions: {},
+      router: {
+        default: "customRouter",
+      },
+    };
+
+    (importHelpers.importPrismaModelModules as jest.Mock).mockImplementation(
+      (modelName) => {
+        if (modelName === "post") return Promise.resolve(mockPostModules);
+        return Promise.resolve({});
+      }
+    );
+
+    // Call the function
+    const setupPromises = setupRouters(["Post"], router, {});
+    await Promise.all(setupPromises);
+
+    // Verify routes for both models were registered
+    expect(pluralize.plural).toHaveBeenCalledWith("post");
+
+    expect(router.use).toHaveBeenCalledWith(`/posts`, "customRouter");
+
+    // 8 routes per model * 2 models = 16 total routes
+    expect(
+      (router.get as jest.Mock).mock.calls.length +
+        (router.post as jest.Mock).mock.calls.length +
+        (router.patch as jest.Mock).mock.calls.length +
+        (router.delete as jest.Mock).mock.calls.length
+    ).toBe(8);
+  });
 });
