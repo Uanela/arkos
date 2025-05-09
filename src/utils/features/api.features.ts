@@ -88,9 +88,12 @@ export default class APIFeatures {
         }
       });
 
-      whereOptions = deepmerge(whereOptions, {
-        OR: searchableFields,
-      });
+      whereOptions = deepmerge(
+        {
+          OR: searchableFields,
+        },
+        whereOptions
+      );
     }
 
     const firstMerge = deepmerge(

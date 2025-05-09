@@ -489,7 +489,7 @@ export type ArkosConfig = {
      * **Note**: Doing this you will lose all default middleware chaining, auth control, handlers from the specific router.
      *
      * **Tip**: I you want to disable some prisma models specific endpoint
-     * see [www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers#disabling-endpoints](https://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers#disabling-endpoints)
+     * see [www.arkosjs.com/docs/guide/adding-custom-routers#disabling-auto-generated-endpoints](https://www.arkosjs.com/docs/guide/adding-custom-routers#disabling-auto-generated-endpoints)
      *
      * **Caution**: Be careful with this because you may endup breaking your entire application.
      */
@@ -549,9 +549,9 @@ export type ArkosConfig = {
    *
    * If you want to call `server.listen` by yourself pass port as `undefined` and then use the return server from `arkos.init()`.
    *
-   * See how to call `server.listen` correctly [www.arkosjs.com/docs/guide/accessing-the-http-server#calling-serverlisten-by-yourself](https://www.arkosjs.com/docs/guide/accessing-the-http-server#calling-serverlisten-by-yourself)
+   * See how to call `server.listen` correctly [www.arkosjs.com/docs/guide/accessing-the-express-app#creating-your-own-http-server](https://www.arkosjs.com/docs/guide/accessing-the-express-app#creating-your-own-http-server)
    *
-   * See [www.arkosjs.com/docs/guide/accessing-the-http-server](https://www.arkosjs.com/docs/guide/accessing-the-http-server) for further details on the method configureServer.
+   * See [www.arkosjs.com/docs/guide/accessing-the-express-app#accessing-the-http-server](https://www.arkosjs.com/docs/guide/accessing-the-express-app#accessing-the-http-server) for further details on the method configureServer.
    *
    * @param {http.Server} server - The HTTP server instance
    * @returns {any}

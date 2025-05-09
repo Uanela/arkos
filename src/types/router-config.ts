@@ -11,7 +11,7 @@ export type RouterEndpoint =
 /**
  * Allows to customize the generated routers
  *
- * See docs [https://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers](https://https://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers)
+ * See docs [https://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers](https://https://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers)
  */
 export type RouterConfig = {
   /**
@@ -25,7 +25,7 @@ export type RouterConfig = {
    *
    * Returning only the fields belonging to the passed author id.
    *
-   * See more at [ttps://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers](https://ttps://www.arkosjs.com/docs/advanced-guide/customizing-prisma-models-routers)
+   * See more at [ttps://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers](https://ttps://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers)
    */
   parent?: {
     /**
@@ -62,13 +62,13 @@ export type RouterConfig = {
      *
      * If you want to point to a different field pass it here.
      */
-    foreignKey?: string;
+    foreignKeyField?: string;
     /**
      * Customizes what endpoints to be created.
      *
      * Default is "*" to generate all endpoints
      */
-    endpoints?: "*" | RouterEndpoint | RouterEndpoint[];
+    endpoints?: "*" | RouterEndpoint[];
   };
   /**
    * Use to disable endpoints or the whole router
