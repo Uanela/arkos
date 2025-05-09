@@ -270,41 +270,30 @@ export class BaseService<TModel extends PrismaModelDelegate = any> {
    * Deletes a single record by its ID.
    *
    * @param {Parameters<TModel["delete"]>[0]["where"]} filters - The parameters to find the record by.
-   * @param {Omit<Parameters<TModel["delete"]>[0], "where">} [queryOptions] - Additional query options.
    * @returns {Promise<ReturnType<TModel["delete"]>>} The deleted record or null if an error occurs.
    */
   async deleteOne(
-    filters: Parameters<TModel["delete"]>[0]["where"],
-    queryOptions?: Omit<Parameters<TModel["delete"]>[0], "where">
+    filters: Parameters<TModel["delete"]>[0]["where"]
   ): Promise<ReturnType<TModel["delete"]>> {
     const prisma = getPrismaInstance();
 
-    return await prisma[this.modelName].delete(
-      deepmerge(
-        {
-          where: filters,
-        },
-        (queryOptions as {}) || {}
-      )
-    );
+    return await prisma[this.modelName].delete({
+      where: filters,
+    });
   }
 
   /**
    * Deletes multiple records based on the provided filter.
    *
    * @param {Parameters<TModel["deleteMany"]>[0]['where']} filters - The filter to identify records to delete.
-   * @param {Omit<Parameters<TModel["deleteMany"]>[0], "where">} [queryOptions] - Additional query options.
    * @returns {Promise<ReturnType<TModel["deleteMany"]>>} The result of the deleteMany operation.
    */
   async deleteMany(
-    filters: Record<string, any>,
-    queryOptions: Partial<Parameters<TModel["deleteMany"]>[0]> = {}
+    filters: Record<string, any>
   ): Promise<ReturnType<TModel["deleteMany"]>> {
     const prisma = getPrismaInstance();
 
-    return await prisma[this.modelName].deleteMany(
-      deepmerge({ where: filters }, (queryOptions as {}) || {})
-    );
+    return await prisma[this.modelName].deleteMany({ where: filters });
   }
 }
 

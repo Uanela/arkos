@@ -228,7 +228,7 @@ describe("BaseController", () => {
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(mockParams, {});
+      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(mockParams);
       expect(mockResponse.status).toHaveBeenCalledWith(204);
       expect(mockResponse.send).toHaveBeenCalled();
     });

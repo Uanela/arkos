@@ -11,13 +11,22 @@ import pluralize from "pluralize";
 /**
  * BaseController class providing standardized RESTful API endpoints for any prisma model
  * @class BaseController
+ *
+ * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-controller-class}
+ *
+ * **Example:**
+ *
+ * ```ts
+ *
+ *
+ * ```
  */
 export class BaseController {
   /**
    * Service instance to handle business logic operations
    * @private
    */
-  private baseService: BaseService;
+  private service: BaseService;
 
   /**
    * Name of the model this controller handles
@@ -37,7 +46,7 @@ export class BaseController {
    */
   constructor(modelName: string) {
     this.modelName = modelName;
-    this.baseService = new BaseService(modelName);
+    this.service = new BaseService(modelName);
     this.middlewares = getModelModules(modelName)?.middlewares || {};
   }
 
@@ -50,7 +59,7 @@ export class BaseController {
    */
   createOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const data = await this.baseService.createOne(
+      const data = await this.service.createOne(
         req.body,
         req.prismaQueryOptions
       );
@@ -74,7 +83,7 @@ export class BaseController {
    */
   createMany = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const data = await this.baseService.createMany(
+      const data = await this.service.createMany(
         req.body,
         req.prismaQueryOptions
       );
@@ -112,7 +121,7 @@ export class BaseController {
       } = new APIFeatures(
         req,
         this.modelName,
-        this.baseService.relationFields?.singular.reduce(
+        this.service.relationFields?.singular.reduce(
           (acc: Record<string, boolean>, curr) => {
             acc[curr.name] = true;
             return acc;
@@ -127,8 +136,8 @@ export class BaseController {
 
       // Execute both operations separately
       const [data, total] = await Promise.all([
-        this.baseService.findMany(where, queryOptions),
-        this.baseService.count(where),
+        this.service.findMany(where, queryOptions),
+        this.service.count(where),
       ]);
 
       if (this.middlewares.afterFindMany) {
@@ -150,7 +159,7 @@ export class BaseController {
    */
   findOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const data = await this.baseService.findOne(
+      const data = await this.service.findOne(
         req.params,
         req.prismaQueryOptions
       );
@@ -202,7 +211,7 @@ export class BaseController {
    */
   updateOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const data = await this.baseService.updateOne(
+      const data = await this.service.updateOne(
         req.params,
         req.body,
         req.prismaQueryOptions
@@ -261,7 +270,7 @@ export class BaseController {
       const features = new APIFeatures(req, this.modelName).filter().sort();
       delete features.filters.include;
 
-      const data = await this.baseService.updateMany(
+      const data = await this.service.updateMany(
         features.filters,
         req.body,
         req.prismaQueryOptions
@@ -295,10 +304,7 @@ export class BaseController {
    */
   deleteOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const data = await this.baseService.deleteOne(
-        req.params,
-        req.prismaQueryOptions
-      );
+      const data = await this.service.deleteOne(req.params);
 
       if (!data) {
         if (Object.keys(req.params).length === 1 && "id" in req.params) {
@@ -351,10 +357,10 @@ export class BaseController {
 
       req.query.filterMode = req.query?.filterMode || "AND";
       const {
-        filters: { where, ...queryOptions },
+        filters: { where },
       } = new APIFeatures(req, this.modelName).filter().sort();
 
-      const data = await this.baseService.deleteMany(where, queryOptions);
+      const data = await this.service.deleteMany(where);
 
       if (!data || data.count === 0) {
         return next(new AppError(`No records found to delete`, 404));

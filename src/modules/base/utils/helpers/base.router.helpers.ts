@@ -43,7 +43,10 @@ export function setupRouters(
     const hasCustomImplementation = (path: string, method: string) => {
       return customRouter.stack?.some(
         (layer) =>
-          layer.path === `/api/${path}` &&
+          (layer.path === `/api/${path}` ||
+            layer.path === `api/${path}` ||
+            layer.path === `api/${path}/` ||
+            layer.path === `/api/${path}/`) &&
           layer.method.toLowerCase() === method.toLowerCase()
       );
     };
@@ -66,6 +69,10 @@ export function setupRouters(
       }
       return undefined;
     };
+
+    // If the custom router has its own routes, add them
+    if (customRouterModule?.default && !customRouterModule?.config?.disable)
+      router.use(`/${routeName}`, customRouterModule.default);
 
     // POST /{routeName} - Create One
     if (
@@ -334,28 +341,6 @@ export function setupRouters(
           : sendResponse,
         sendResponse
       );
-    }
-    // console.log(JSON.stringify(customRouterModule, null, 2));
-    // If the custom router has its own routes, add them
-    if (customRouterModule?.default && !customRouterModule?.config?.disable) {
-      // console.log(JSON.stringify(customRouterModule.defaull, null, 2));
-      router.use(`/${routeName}`, customRouterModule.default);
-      // customRouter.stack.forEach((layer) => {
-      //   if (layer.route) {
-      //     const route = layer.route;
-      //     const path = route.path;
-
-      //     route.stack.forEach((routeLayer) => {
-      //       const method = routeLayer.method.toLowerCase() as any;
-
-      //       // Get all middleware handlers for this route
-      //       const handlers = route.stack.map((routeStack) => routeStack.handle);
-
-      //       // Apply all middleware handlers to the matching route method
-      //       (router as any)[method](`/${routeName}/${path}`, ...handlers);
-      //     });
-      //   }
-      // });
     }
   });
 }
