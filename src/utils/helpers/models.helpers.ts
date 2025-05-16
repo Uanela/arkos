@@ -110,11 +110,13 @@ export async function processSubdir(
           }
         } catch (error) {
           // Silent fail - file might not exist
+          console.error(error);
         }
       })
     );
   } catch (error) {
     // Directory doesn't exist, continue silently
+    console.error(error);
   }
 }
 
@@ -153,10 +155,7 @@ export async function importPrismaModelModules(
       const filePath = path.join(moduleDir, fileName);
       try {
         const module = await importModule(filePath).catch(() => null);
-        // console.log(`-------${modelName}--------------`);
-        // console.log(key, moduleDir, filePath);
-        // console.log(JSON.stringify(module, null, 2));
-        // console.log(`-------${modelName}--------------\n`);
+
         if (module) {
           if (key === "middlewares") result[key] = module;
           else if (key === "router") result[key] = module;
@@ -227,7 +226,7 @@ export const models: string[] = [];
 export const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
   [] as any;
 
-export function initializePrismaModels(testName?: string) {
+export function initializePrismaModels() {
   const prismaContent: string[] = [];
 
   const files = getAllPrismaFiles("./prisma");
@@ -265,7 +264,8 @@ export function initializePrismaModels(testName?: string) {
       if (
         !trimmedLine ||
         trimmedLine.startsWith("model") ||
-        trimmedLine.startsWith("//")
+        trimmedLine.startsWith("//") ||
+        trimmedLine.startsWith("/*")
       )
         continue;
 

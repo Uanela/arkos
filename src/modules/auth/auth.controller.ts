@@ -5,7 +5,6 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
-import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
