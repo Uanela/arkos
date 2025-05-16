@@ -605,9 +605,7 @@ describe("Prisma Models Helpers - Additional Tests", () => {
       } as any);
 
       // Act
-      dynamicLoader.initializePrismaModels(
-        "should parse Prisma schema files and extract models"
-      );
+      dynamicLoader.initializePrismaModels();
 
       // Assert
       expect(dynamicLoader.models).toContain("user");
@@ -641,9 +639,7 @@ describe("Prisma Models Helpers - Additional Tests", () => {
       } as any);
 
       // Act
-      dynamicLoader.initializePrismaModels(
-        "should parse Prisma schema files and extract models"
-      );
+      dynamicLoader.initializePrismaModels();
 
       // Assert
       expect(dynamicLoader.prismaModelsUniqueFields.user).toHaveLength(2);
