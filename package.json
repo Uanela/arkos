@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.1.59-beta",
+  "version": "1.1.60-test",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/es2020/exports/index.js",
@@ -153,6 +153,7 @@
     "@types/node": "^22.13.13",
     "@types/nodemailer": "^6.4.17",
     "@types/pluralize": "^0.0.33",
+    "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "bcrypt": "^5.1.1",
@@ -166,7 +167,8 @@
   },
   "dependencies": {
     "commander": "^13.1.0",
-    "pluralize": "^8.0.0"
+    "pluralize": "^8.0.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "peerDependencies": {
     "@prisma/client": "^6.4.1",
