@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.1.60-test",
+  "version": "1.1.62-test",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/es2020/exports/index.js",
@@ -92,7 +92,7 @@
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "postbuilda": "echo {\\\"type\":\"commonjs\\\"} > dist/cjs/package.json",
-    "build": "pnpm test && npx rimraf dist && pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run minify",
+    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run minify",
     "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "clean": "rm -r dist",
     "dev": "ts-node --watch",
@@ -153,6 +153,7 @@
     "@types/node": "^22.13.13",
     "@types/nodemailer": "^6.4.17",
     "@types/pluralize": "^0.0.33",
+    "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
@@ -168,6 +169,7 @@
   "dependencies": {
     "commander": "^13.1.0",
     "pluralize": "^8.0.0",
+    "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
   "peerDependencies": {

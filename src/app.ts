@@ -18,6 +18,7 @@ import { getFileUploaderRouter } from "./modules/file-uploader/file-uploader.rou
 import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
 import deepmerge from "./utils/helpers/deepmerge.helper";
+import { getSwaggerRouter } from "./modules/swagger/swagger.router";
 
 export const app: express.Express = express();
 
@@ -181,6 +182,8 @@ export async function bootstrap(
   }
 
   app.use("/api", getAvailableResourcesAndRoutesRouter());
+
+  app.use("/api", getSwaggerRouter(arkosConfig));
 
   // Additional custom routers
   if (routersConfig?.additional) {
