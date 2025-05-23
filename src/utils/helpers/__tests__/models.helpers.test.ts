@@ -59,6 +59,8 @@ describe("Dynamic Prisma Model Loader", () => {
   });
 
   describe("importPrismaModelModules", () => {
+    let importPrismaModelModulesSpy: any;
+
     beforeEach(() => {
       // Mock console.error to suppress logs during testing
       jest.spyOn(console, "error").mockImplementation(() => {});
@@ -124,7 +126,7 @@ describe("Dynamic Prisma Model Loader", () => {
       );
 
       // Set up a mock implementation for importPrismaModelModules to avoid actual dynamic imports
-      jest
+      importPrismaModelModulesSpy = jest
         .spyOn(dynamicLoader, "importPrismaModelModules")
         .mockImplementation(async (modelName) => {
           const result: any = {
@@ -210,6 +212,23 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(result).toHaveProperty("dtos");
       expect(result).toHaveProperty("schemas");
       expect(result.middlewares).toBeUndefined();
+    });
+
+    it("should return the existing prisma model modules", async () => {
+      jest
+        .mock(dynamicLoader, "prismaModelsModules")
+        .mockImplementationOnce((m) => {
+          console.log(m);
+          return "some modules" as any;
+        });
+
+      importPrismaModelModulesSpy.mockRestore();
+
+      // (dynamicLoader.getModelModules as jest.Mock)
+
+      const result = await dynamicLoader.importPrismaModelModules("123");
+
+      expect(result).toBe("some modules");
     });
   });
 

@@ -147,6 +147,10 @@ export async function importPrismaModelModules(
     dtos: {},
     schemas: {},
   };
+  // return "123" as any;
+
+  console.log(getModelModules(modelName));
+  if (getModelModules(modelName)) return getModelModules(modelName);
 
   const fileStructure = getFileModelModulesFileStructure(modelName);
   // Batch process core files
