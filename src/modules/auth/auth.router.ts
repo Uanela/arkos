@@ -84,6 +84,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
 
   router.use(
+    "/auth",
     rateLimit(
       deepmerge(
         {

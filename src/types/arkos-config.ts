@@ -129,7 +129,7 @@ export type ArkosConfig = {
      * 
      *@see This is are the options used on the `express-rate-limit` npm package used on epxress. read more about [https://www.npmjs.com/package/express-rate-limit](https://www.npmjs.com/package/express-rate-limit)
      */
-    requestRateLimitOptions?: RateLimitOptions;
+    requestRateLimitOptions?: Partial<RateLimitOptions>;
     /**
      * JWT (JSON Web Token) authentication configuration.
      *

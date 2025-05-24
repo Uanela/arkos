@@ -160,6 +160,7 @@ describe("Auth Router", () => {
         limit: 10,
         standardHeaders: "draft-7",
         legacyHeaders: false,
+        handler: expect.any(Function),
       },
       mockArkosConfig.authentication.requestRateLimitOptions
     );
