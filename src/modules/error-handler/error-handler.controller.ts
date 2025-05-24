@@ -87,7 +87,7 @@ export default function errorHandler(
     error = errorControllerHelper.handleNetworkError(err);
   // if (err.name === "UnhandledPromiseRejection")
   //   error = errorControllerHelper.handleUnhandledPromiseError(err);
-  if (!err.isOperational) error = new AppError("Something went wrong!", 500);
+  if (!error.isOperational) error = new AppError("Something went wrong!", 500);
 
   // Send the error response for production environment
   sendProductionError(error, req, res);
