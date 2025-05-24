@@ -91,6 +91,11 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
           limit: 10,
           standardHeaders: "draft-7",
           legacyHeaders: false,
+          handler: (req, res) => {
+            res.status(429).json({
+              message: "Too many requests, please try again later",
+            });
+          },
         },
         arkosConfigs?.authentication?.requestRateLimitOptions || {}
       )

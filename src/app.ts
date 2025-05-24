@@ -50,6 +50,11 @@ export async function bootstrap(
               limit: 1000,
               standardHeaders: "draft-7",
               legacyHeaders: false,
+              handler: (req, res) => {
+                res.status(429).json({
+                  message: "Too many requests, please try again later",
+                });
+              },
             },
             arkosConfig?.globalRequestRateLimitOptions || {}
           )
