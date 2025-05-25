@@ -47,7 +47,7 @@ export async function bootstrap(
           deepmerge(
             {
               windowMs: 60 * 1000,
-              limit: 1000,
+              limit: 500,
               standardHeaders: "draft-7",
               legacyHeaders: false,
               handler: (req, res) => {

@@ -267,14 +267,12 @@ export class BaseController {
       }
 
       req.query.filterMode = req.query?.filterMode || "AND";
-      const features = new APIFeatures(req, this.modelName).filter().sort();
-      delete features.filters.include;
+      const {
+        filters: { where, ...queryOptions },
+      } = new APIFeatures(req, this.modelName).filter().sort();
+      delete queryOptions.include;
 
-      const data = await this.service.updateMany(
-        features.filters,
-        req.body,
-        req.prismaQueryOptions
-      );
+      const data = await this.service.updateMany(where, req.body, queryOptions);
 
       if (!data || data.count === 0) {
         return next(
