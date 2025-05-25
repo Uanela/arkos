@@ -214,7 +214,7 @@ describe("App Bootstrap", () => {
       expect(deepmerge).toHaveBeenCalledWith(
         expect.objectContaining({
           windowMs: 60 * 1000,
-          limit: 1000,
+          limit: 500,
         }),
         rateLimitOptions
       );
