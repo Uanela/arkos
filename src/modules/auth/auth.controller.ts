@@ -93,7 +93,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           if (user) delete user[key as keyof User];
         });
 
-        if (middlewares?.afterGetMe) {
+        if (middlewares?.afterUpdateMe) {
           req.responseData = { data: user };
           req.responseStatus = 200;
           return next();
@@ -130,6 +130,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     /**
      * Authenticates a user using configurable username field and password
      * Username field can be specified in query parameter or config
+     *
      * Supports nested fields and array queries (e.g., "profile.nickname", "phones.some.number")
      */
     login: catchAsync(
