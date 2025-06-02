@@ -1,6 +1,5 @@
 import { BaseService } from "../base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
-import AppError from "../../error-handler/utils/app-error";
 import authService from "../../auth/auth.service";
 import { handleRelationFieldsInBody } from "../utils/helpers/base.service.helpers";
 import { getPrismaModelRelations } from "../../../utils/helpers/models.helpers";
@@ -34,7 +33,7 @@ jest.mock("../../../server", () => ({
 }));
 
 describe("BaseService", () => {
-  let baseService: BaseService;
+  let baseService: BaseService<any>;
   let mockPrisma: any;
 
   beforeEach(() => {

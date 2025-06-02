@@ -26,13 +26,13 @@ describe("BaseController", () => {
   let mockRequest: any;
   let mockResponse: any;
   let mockNext: jest.Mock;
-  let mockBaseService: jest.Mocked<BaseService>;
+  let mockBaseService: jest.Mocked<BaseService<any>>;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Setup mock service
-    mockBaseService = new BaseService("Post") as jest.Mocked<BaseService>;
+    mockBaseService = new BaseService("Post") as jest.Mocked<BaseService<any>>;
     (BaseService as jest.Mock).mockImplementation(() => mockBaseService);
 
     // Setup mocked model modules
