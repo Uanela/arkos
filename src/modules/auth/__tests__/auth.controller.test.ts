@@ -8,7 +8,7 @@ import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
 import { getArkosConfig } from "../../../server";
 
-jest.mock("bcrypt", () => ({
+jest.mock("bcryptjs", () => ({
   default: {
     compare: jest.fn(),
     hash: jest.fn(),

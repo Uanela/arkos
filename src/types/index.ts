@@ -30,10 +30,7 @@ export type AuthPrismaQueryOptions<T extends Record<string, any>> = {
  * Interface defining the minimum structure required for Prisma model delegates
  * This allows us to constraint TModel without requiring Prisma imports
  */
-export type PrismaModelDelegate = Record<
-  string,
-  (args: Record<string, never>) => any
->;
+export type PrismaModelDelegate = a;
 
 type a = {
   create: (args: { data: never; [key: string]: never }) => Promise<any>;

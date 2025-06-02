@@ -1,4 +1,4 @@
-import express, { Express } from "express";
+import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import compression from "compression";
@@ -6,7 +6,6 @@ import { rateLimit } from "express-rate-limit";
 import { bootstrap, app } from "../app";
 import { queryParser } from "../utils/helpers/query-parser.helpers";
 import { loadPrismaModule } from "../utils/helpers/prisma.helpers";
-import { handleRequestLogs } from "../modules/base/base.middlewares";
 import errorHandler from "../modules/error-handler/error-handler.controller";
 import { getAuthRouter } from "../modules/auth/auth.router";
 import {
