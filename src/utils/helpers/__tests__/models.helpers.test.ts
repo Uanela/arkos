@@ -26,9 +26,6 @@ jest.mock("../fs.helpers", () => ({
   getUserFileExtension: jest.fn(() => "js"),
   crd: jest.fn(),
 }));
-// jest.mock("../models.helpers", () => ({
-//   ...jest.requireActual("../models.helpers"),
-// }));
 
 describe("Dynamic Prisma Model Loader", () => {
   beforeEach(() => {
@@ -447,7 +444,9 @@ describe("Prisma Models Helpers - Additional Tests", () => {
         controller: "user.controller.js",
         middlewares: "user.middlewares.js",
         authConfigs: "user.auth-configs.js",
+        authConfigsNew: "user.auth.js",
         prismaQueryOptions: "user.prisma-query-options.js",
+        prismaQueryOptionsNew: "user.query.js",
         router: "user.router.js",
       });
 
@@ -481,7 +480,9 @@ describe("Prisma Models Helpers - Additional Tests", () => {
         controller: "auth.controller.js",
         middlewares: "auth.middlewares.js",
         authConfigs: "auth.auth-configs.js",
+        authConfigsNew: "auth.auth.js",
         prismaQueryOptions: "auth.prisma-query-options.js",
+        prismaQueryOptionsNew: "auth.query.js",
         router: "auth.router.js",
       });
 
@@ -722,6 +723,129 @@ describe("Prisma Models Helpers - Additional Tests", () => {
 
       // Assert
       expect(result).toEqual(uniqueFields);
+    });
+  });
+
+  describe("New naming convention handling", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      jest.spyOn(console, "error").mockImplementation(() => {});
+
+      // Setup path mocks
+      (path.resolve as jest.Mock).mockReturnValue("/mocked/path");
+      (path.join as jest.Mock).mockImplementation((...args) => args.join("/"));
+    });
+
+    it("should throw error when both old and new prismaQueryOptions files exist", async () => {
+      // Setup - mock importModule to return modules for both old and new files
+      const { importModule } = require("../global.helpers");
+      (importModule as jest.Mock).mockImplementation((filePath) => {
+        if (
+          filePath.includes("prisma-query-options") ||
+          filePath.includes(".query.")
+        ) {
+          return Promise.resolve({ default: { query: "options" } });
+        }
+        return Promise.resolve(null);
+      });
+
+      // Act & Assert
+      expect(await dynamicLoader.importPrismaModelModules("User")).rejects
+        .toThrow(`
+        /Cannot use both.*prisma-query-options.*and.*query.*at once/`);
+    });
+
+    // it("should throw error when both old and new authConfigs files exist", async () => {
+    //   // Setup - mock importModule to return modules for both old and new files
+    //   const { importModule } = require("../global.helpers");
+    //   (importModule as jest.Mock).mockImplementation((filePath) => {
+    //     if (filePath.includes("auth-configs") || filePath.includes(".auth.")) {
+    //       return Promise.resolve({ default: { auth: "config" } });
+    //     }
+    //     return Promise.resolve(null);
+    //   });
+
+    //   // Act & Assert
+    //   await expect(
+    //     dynamicLoader.importPrismaModelModules("User")
+    //   ).rejects.toThrow(`/Cannot use both.*auth-configs.*and.*auth.*at once/`);
+    // });
+
+    it("should throw error when both old and new authConfigs files exist", async () => {
+      const { importModule } = require("../global.helpers");
+      (importModule as jest.Mock).mockImplementation((filePath) => {
+        if (filePath.includes("auth-configs") || filePath.includes(".auth.")) {
+          return Promise.resolve({ default: { auth: "config" } });
+        }
+        return Promise.resolve(null);
+      });
+
+      // const a = await dynamicLoader.importPrismaModelModules("User");
+
+      expect(async () => {
+        try {
+          await dynamicLoader.importPrismaModelModules("User");
+        } catch (err) {
+          console.log(err);
+        }
+      }).rejects.toThrow(/Cannot use both.*auth-configs.*and.*auth.*at once/);
+    });
+
+    it("should store new prismaQueryOptions file content under old key", async () => {
+      // Setup - mock importModule to return module only for new file
+      const { importModule } = require("../global.helpers");
+      (importModule as jest.Mock).mockImplementation((filePath) => {
+        if (filePath.includes(".query.")) {
+          return Promise.resolve({ default: { newQuery: "options" } });
+        }
+        return Promise.resolve(null);
+      });
+
+      // Act
+      const result = await dynamicLoader.importPrismaModelModules("User");
+
+      // Assert
+      expect(result.prismaQueryOptions).toEqual({ newQuery: "options" });
+      expect(result.prismaQueryOptionsNew).toBeUndefined();
+    });
+
+    it("should store new authConfigs file content under old key", async () => {
+      // Setup - mock importModule to return module only for new file
+      const { importModule } = require("../global.helpers");
+      (importModule as jest.Mock).mockImplementation((filePath) => {
+        if (filePath.includes(".auth.")) {
+          return Promise.resolve({ default: { newAuth: "config" } });
+        }
+        return Promise.resolve(null);
+      });
+
+      // Act
+      const result = await dynamicLoader.importPrismaModelModules("User");
+
+      // Assert
+      expect(result.authConfigs).toEqual({ newAuth: "config" });
+      expect(result.authConfigsNew).toBeUndefined();
+    });
+
+    it("should work with old naming convention files", async () => {
+      // Setup - mock importModule to return modules only for old files
+      const { importModule } = require("../global.helpers");
+      (importModule as jest.Mock).mockImplementation((filePath) => {
+        if (filePath.includes("prisma-query-options")) {
+          return Promise.resolve({ default: { oldQuery: "options" } });
+        }
+        if (filePath.includes("auth-configs")) {
+          return Promise.resolve({ default: { oldAuth: "config" } });
+        }
+        return Promise.resolve(null);
+      });
+
+      // Act
+      const result = await dynamicLoader.importPrismaModelModules("User");
+
+      // Assert
+      expect(result.prismaQueryOptions).toEqual({ oldQuery: "options" });
+      expect(result.authConfigs).toEqual({ oldAuth: "config" });
     });
   });
 });

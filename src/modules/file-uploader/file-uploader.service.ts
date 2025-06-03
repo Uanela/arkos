@@ -368,6 +368,77 @@ export class FileUploaderService {
       });
     });
   }
+
+  /**
+   * Deletes a file based on filename and file type from request parameters
+   * @param {string} fileName - The name of the file to delete
+   * @param {ArkosRequest} req - Arkos request object containing params.fileType
+   * @returns {Promise<boolean>} - True if deletion successful, false otherwise
+   */
+  public async deleteFileByName(
+    fileName: string,
+    fileType: "images" | "videos" | "documents" | "files"
+  ): Promise<boolean> {
+    try {
+      if (!fileType) throw new AppError("File type parameter is required", 400);
+
+      // Validate file type
+      const validFileTypes = ["images", "videos", "documents", "files"];
+      if (!validFileTypes.includes(fileType)) {
+        throw new AppError(
+          `Invalid file type: ${fileType}. Must be one of: ${validFileTypes.join(
+            ", "
+          )}`,
+          400
+        );
+      }
+
+      // Get the appropriate uploader service based on file type
+      const {
+        documentUploaderService,
+        fileUploaderService,
+        imageUploaderService,
+        videoUploaderService,
+      } = getFileUploaderServices();
+
+      let targetService: FileUploaderService;
+      switch (fileType) {
+        case "images":
+          targetService = imageUploaderService;
+          break;
+        case "videos":
+          targetService = videoUploaderService;
+          break;
+        case "documents":
+          targetService = documentUploaderService;
+          break;
+        case "files":
+          targetService = fileUploaderService;
+          break;
+        default:
+          throw new AppError(`Unsupported file type: ${fileType}`, 400);
+      }
+
+      // Construct the full file path
+      const filePath = path.join(targetService.uploadDir, fileName);
+
+      // Check if file exists and delete it
+      await promisify(fs.stat)(filePath);
+      await promisify(fs.unlink)(filePath);
+
+      return true;
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      if (error.code === "ENOENT") {
+        throw new AppError("File not found", 404);
+      }
+
+      throw new AppError(`Failed to delete file: ${error.message}`, 500);
+    }
+  }
 }
 
 /**
@@ -377,17 +448,6 @@ export class FileUploaderService {
 export const getFileUploaderServices = () => {
   const { fileUpload } = getArkosConfig();
   const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
-
-  // Default regex patterns for each file type
-  const defaultRegexPatterns = {
-    images:
-      /jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif|heic|ico|jfif|raw|cr2|nef|orf|sr2|arw|dng|pef|raf|rw2|psd|ai|eps|xcf|jxr|wdp|hdp|jp2|j2k|jpf|jpx|jpm|mj2|avif/,
-    videos:
-      /mp4|avi|mov|mkv|flv|wmv|webm|mpg|mpeg|3gp|m4v|ts|rm|rmvb|vob|ogv|dv|qt|asf|m2ts|mts|divx|f4v|swf|mxf|roq|nsv|mvb|svi|mpe|m2v|mp2|mpv|h264|h265|hevc/,
-    documents:
-      /pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odg|odp|txt|rtf|csv|epub|md|tex|pages|numbers|key|xml|json|yaml|yml|ini|cfg|conf|log|html|htm|xhtml|djvu|mobi|azw|azw3|fb2|lit|ps|wpd|wps|dot|dotx|xlt|xltx|pot|potx|oft|one|onetoc2|opf|oxps|hwp/,
-    files: /.*/,
-  };
 
   // Default upload restrictions
   const defaultRestrictions = {

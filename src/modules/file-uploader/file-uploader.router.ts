@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import authService from "../auth/auth.service";
-import { deleteFile, uploadFile } from "./file-uploader.controller";
+import fileUploaderController from "./file-uploader.controller";
 import { ArkosConfig } from "../../types/arkos-config";
 import path from "path";
 import express from "express";
@@ -62,7 +62,7 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
       "file-upload",
       authConfigs.accessControl
     ),
-    uploadFile
+    fileUploaderController.uploadFile
   );
 
   router.delete(
@@ -72,11 +72,25 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
       authConfigs.authenticationControl
     ),
     authService.handleAccessControl(
-      "Create",
+      "Delete",
       "file-upload",
       authConfigs.accessControl
     ),
-    deleteFile
+    fileUploaderController.deleteFile
+  );
+
+  router.delete(
+    `${basePathname}:fileType/:fileName`,
+    authService.handleAuthenticationControl(
+      "Update",
+      authConfigs.authenticationControl
+    ),
+    authService.handleAccessControl(
+      "Update",
+      "file-upload",
+      authConfigs.accessControl
+    ),
+    fileUploaderController.updateFile
   );
 
   return router;

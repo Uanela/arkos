@@ -155,6 +155,51 @@ describe("AuthService", () => {
     });
   });
 
+  describe("isPasswordHashed", () => {
+    it("should return true if password is hashed", () => {
+      // Setup
+      const hashedPassword = "$2b$10$abcdefghijklmnopqrstuvwx";
+      (bcrypt.getRounds as jest.Mock).mockReturnValue(10);
+
+      // Execute
+      const result = authService.isPasswordHashed(hashedPassword);
+
+      // Verify
+      expect(bcrypt.getRounds).toHaveBeenCalledWith(hashedPassword);
+      expect(result).toBe(true);
+    });
+
+    it("should return false if password is not hashed", () => {
+      // Setup
+      const plainPassword = "plainPassword123";
+      (bcrypt.getRounds as jest.Mock).mockImplementation(() => {
+        throw new Error("Invalid hash");
+      });
+
+      // Execute
+      const result = authService.isPasswordHashed(plainPassword);
+
+      // Verify
+      expect(bcrypt.getRounds).toHaveBeenCalledWith(plainPassword);
+      expect(result).toBe(false);
+    });
+
+    it("should return false if bcrypt.getRounds throws any error", () => {
+      // Setup
+      const invalidInput = "";
+      (bcrypt.getRounds as jest.Mock).mockImplementation(() => {
+        throw new TypeError("Invalid input");
+      });
+
+      // Execute
+      const result = authService.isPasswordHashed(invalidInput);
+
+      // Verify
+      expect(bcrypt.getRounds).toHaveBeenCalledWith(invalidInput);
+      expect(result).toBe(false);
+    });
+  });
+
   describe("hashPassword", () => {
     it("should hash the password using bcrypt", async () => {
       // Setup

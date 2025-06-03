@@ -118,7 +118,7 @@ describe("FileUploaderService", () => {
     });
 
     (path.join as any as jest.Mock).mockImplementation((...args) =>
-      args.join("/")
+      args.join("/").replaceAll("//", "/")
     );
     (path.extname as any as jest.Mock).mockImplementation((filePath) => ".jpg");
     (path.basename as any as jest.Mock).mockImplementation((filePath, ext) => {
@@ -647,6 +647,174 @@ describe("FileUploaderService", () => {
       );
       expect(services.fileUploaderService["uploadDir"]).toBe(
         process.cwd() + "/uploads/files/"
+      );
+    });
+  });
+
+  describe("deleteFileByName", () => {
+    it("should delete a file by name and file type", async () => {
+      const fileType = "images";
+      const fileName = "test-image.jpg";
+
+      const result = await fileUploaderService.deleteFileByName(
+        fileName,
+        fileType
+      );
+
+      expect(mockStat).toHaveBeenCalledWith(
+        expect.stringContaining("uploads/images/" + fileName)
+      );
+      expect(mockUnlink).toHaveBeenCalledWith(
+        expect.stringContaining("uploads/images/" + fileName)
+      );
+      expect(result).toBe(true);
+    });
+
+    it("should work with videos file type", async () => {
+      const fileType = "videos";
+      const fileName = "test-video.mp4";
+
+      const result = await fileUploaderService.deleteFileByName(
+        fileName,
+        fileType
+      );
+
+      expect(mockStat).toHaveBeenCalledWith(
+        expect.stringContaining("uploads/videos/" + fileName)
+      );
+      expect(mockUnlink).toHaveBeenCalledWith(
+        expect.stringContaining("uploads/videos/" + fileName)
+      );
+      expect(result).toBe(true);
+    });
+
+    it("should work with documents file type", async () => {
+      const fileType = "documents";
+      const fileName = "test-document.pdf";
+
+      const result = await fileUploaderService.deleteFileByName(
+        fileName,
+        fileType
+      );
+
+      expect(mockStat).toHaveBeenCalledWith(
+        expect.stringContaining("uploads/documents/" + fileName)
+      );
+      expect(mockUnlink).toHaveBeenCalledWith(
+        expect.stringContaining("uploads/documents/" + fileName)
+      );
+      expect(result).toBe(true);
+    });
+
+    it("should work with files file type", async () => {
+      const fileType = "files";
+      const fileName = "test-file.zip";
+
+      const result = await fileUploaderService.deleteFileByName(
+        fileName,
+        fileType
+      );
+
+      expect(mockStat).toHaveBeenCalledWith(
+        expect.stringContaining("uploads/files/" + fileName)
+      );
+      expect(mockUnlink).toHaveBeenCalledWith(
+        expect.stringContaining("uploads/files/" + fileName)
+      );
+      expect(result).toBe(true);
+    });
+
+    it("should throw AppError if fileType is missing", async () => {
+      const fileName = "test.jpg";
+
+      await expect(
+        fileUploaderService.deleteFileByName(fileName, undefined as any)
+      ).rejects.toBeInstanceOf(AppError);
+
+      expect(AppError).toHaveBeenCalledWith(
+        "File type parameter is required",
+        400
+      );
+    });
+
+    it("should throw AppError for invalid file type", async () => {
+      const fileType = "invalid";
+      const fileName = "test.jpg";
+
+      await expect(
+        fileUploaderService.deleteFileByName(fileName, fileType as any)
+      ).rejects.toBeInstanceOf(AppError);
+
+      expect(AppError).toHaveBeenCalledWith(
+        "Invalid file type: invalid. Must be one of: images, videos, documents, files",
+        400
+      );
+    });
+
+    it("should throw AppError if file doesn't exist", async () => {
+      const fileType = "images";
+      const fileName = "nonexistent.jpg";
+
+      const enoentError = new Error("File not found");
+      (enoentError as any).code = "ENOENT";
+      mockStat.mockRejectedValueOnce(enoentError);
+
+      await expect(
+        fileUploaderService.deleteFileByName(fileName, fileType)
+      ).rejects.toBeInstanceOf(AppError);
+
+      expect(AppError).toHaveBeenCalledWith("File not found", 404);
+    });
+
+    it("should throw AppError for other filesystem errors", async () => {
+      const fileType = "images";
+      const fileName = "test.jpg";
+
+      const permissionError = new Error("Permission denied");
+      (permissionError as any).code = "EACCES";
+      mockStat.mockRejectedValueOnce(permissionError);
+
+      await expect(
+        fileUploaderService.deleteFileByName(fileName, fileType)
+      ).rejects.toBeInstanceOf(AppError);
+
+      expect(AppError).toHaveBeenCalledWith(
+        "Failed to delete file: Permission denied",
+        500
+      );
+    });
+
+    it("should handle deletion failure gracefully", async () => {
+      const fileType = "images";
+      const fileName = "test.jpg";
+
+      const unlinkError = new Error("Cannot delete file");
+      mockUnlink.mockRejectedValueOnce(unlinkError);
+
+      await expect(
+        fileUploaderService.deleteFileByName(fileName, fileType)
+      ).rejects.toBeInstanceOf(AppError);
+
+      expect(AppError).toHaveBeenCalledWith(
+        "Failed to delete file: Cannot delete file",
+        500
+      );
+    });
+
+    it("should re-throw AppError instances without wrapping", async () => {
+      const fileType = "images";
+      const fileName = "test.jpg";
+
+      const originalAppError = new AppError("Custom app error", 422);
+      mockStat.mockRejectedValueOnce(originalAppError);
+
+      await expect(
+        fileUploaderService.deleteFileByName(fileName, fileType)
+      ).rejects.toEqual(originalAppError);
+
+      expect(AppError).not.toHaveBeenCalledWith(
+        expect.stringContaining("Failed to delete file"),
+        500
       );
     });
   });

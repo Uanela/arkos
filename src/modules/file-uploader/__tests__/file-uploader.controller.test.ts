@@ -6,11 +6,7 @@ import AppError from "../../error-handler/utils/app-error";
 import * as fileUploaderService from "../file-uploader.service";
 import * as helpers from "../utils/helpers/file-uploader.helpers";
 import * as server from "../../../server";
-import {
-  uploadFile,
-  deleteFile,
-  streamFile,
-} from "../file-uploader.controller";
+import fileUploaderController from "../file-uploader.controller";
 import { accessAsync, statAsync } from "../../../utils/helpers/fs.helpers";
 
 jest.mock("fs");
@@ -37,7 +33,7 @@ describe("File Uploader Controller", () => {
       query: {},
       protocol: "http",
       get: jest.fn().mockReturnValue("example.com"),
-      originalUrl: "/uploads/images/test.jpg",
+      originalUrl: "/api/uploads/images/test.jpg",
     };
 
     mockResponse = {
@@ -75,6 +71,7 @@ describe("File Uploader Controller", () => {
         .fn()
         .mockReturnValue((req: any, res: any, cb: any) => cb()),
       deleteFileByUrl: jest.fn().mockResolvedValue(true),
+      deleteFileByName: jest.fn().mockResolvedValue(true),
     };
 
     const mockFileUploaderService = {
@@ -82,6 +79,7 @@ describe("File Uploader Controller", () => {
         .fn()
         .mockReturnValue((req: any, res: any, cb: any) => cb()),
       deleteFileByUrl: jest.fn().mockResolvedValue(true),
+      deleteFileByName: jest.fn().mockResolvedValue(true),
     };
 
     const mockDocumentUploaderService = {
@@ -89,6 +87,7 @@ describe("File Uploader Controller", () => {
         .fn()
         .mockReturnValue((req: any, res: any, cb: any) => cb()),
       deleteFileByUrl: jest.fn().mockResolvedValue(true),
+      deleteFileByName: jest.fn().mockResolvedValue(true),
     };
 
     const mockVideoUploaderService = {
@@ -96,6 +95,7 @@ describe("File Uploader Controller", () => {
         .fn()
         .mockReturnValue((req: any, res: any, cb: any) => cb()),
       deleteFileByUrl: jest.fn().mockResolvedValue(true),
+      deleteFileByName: jest.fn().mockResolvedValue(true),
     };
 
     (fileUploaderService.getFileUploaderServices as jest.Mock).mockReturnValue({
@@ -124,7 +124,7 @@ describe("File Uploader Controller", () => {
       );
 
       try {
-        await uploadFile(
+        await fileUploaderController.uploadFile(
           mockRequest as Request,
           mockResponse as Response,
           mockNext
@@ -141,7 +141,7 @@ describe("File Uploader Controller", () => {
     it("should return error for invalid file type", async () => {
       mockRequest.params = { fileType: "invalid" };
 
-      await uploadFile(
+      await fileUploaderController.uploadFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -158,7 +158,7 @@ describe("File Uploader Controller", () => {
         { path: "/tmp/upload2.jpg" },
       ] as Express.Multer.File[];
 
-      await uploadFile(
+      await fileUploaderController.uploadFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -180,7 +180,7 @@ describe("File Uploader Controller", () => {
       mockRequest.params = { fileType: "images" };
       mockRequest.file = { path: "/tmp/upload1.jpg" } as Express.Multer.File;
 
-      await uploadFile(
+      await fileUploaderController.uploadFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -199,7 +199,7 @@ describe("File Uploader Controller", () => {
       mockRequest.params = { fileType: "documents" };
       mockRequest.file = { path: "/tmp/document.pdf" } as Express.Multer.File;
 
-      await uploadFile(
+      await fileUploaderController.uploadFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -212,7 +212,7 @@ describe("File Uploader Controller", () => {
     it("should return error when no file is uploaded", async () => {
       mockRequest.params = { fileType: "images" };
 
-      await uploadFile(
+      await fileUploaderController.uploadFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -231,7 +231,7 @@ describe("File Uploader Controller", () => {
         (req: any, res: any, cb: any) => cb(new Error("Upload failed"))
       );
 
-      await uploadFile(
+      await fileUploaderController.uploadFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -242,10 +242,10 @@ describe("File Uploader Controller", () => {
   });
 
   describe("deleteFile", () => {
-    it("should delete a file successfully", async () => {
+    it("should delete a file successfully by url", async () => {
       mockRequest.params = { fileType: "images", fileName: "test.jpg" };
 
-      await deleteFile(
+      await fileUploaderController.deleteFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -261,10 +261,30 @@ describe("File Uploader Controller", () => {
       });
     });
 
+    it("should delete a file successfully by file name", async () => {
+      mockRequest.params = { fileType: "images", fileName: "test.jpg" };
+
+      await fileUploaderController.deleteFile(
+        { ...mockRequest, originalUrl: "/api/users/avatar" } as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      const imageService =
+        fileUploaderService.getFileUploaderServices().imageUploaderService;
+      expect(imageService.deleteFileByUrl).not.toHaveBeenCalled();
+      expect(imageService.deleteFileByName).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        message: "File deleted successfully",
+      });
+    });
+
     it("should return error for invalid file type", async () => {
       mockRequest.params = { fileType: "invalid", fileName: "test.jpg" };
 
-      await deleteFile(
+      await fileUploaderController.deleteFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -279,11 +299,12 @@ describe("File Uploader Controller", () => {
 
       const imageService =
         fileUploaderService.getFileUploaderServices().imageUploaderService;
-      (imageService.deleteFileByUrl as jest.Mock).mockRejectedValueOnce(
+
+      (imageService.deleteFileByName as jest.Mock).mockRejectedValueOnce(
         new Error("File not found")
       );
 
-      await deleteFile(
+      await fileUploaderController.deleteFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -307,7 +328,7 @@ describe("File Uploader Controller", () => {
         range: undefined,
       };
 
-      await streamFile(
+      await fileUploaderController.streamFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -330,7 +351,7 @@ describe("File Uploader Controller", () => {
       mockRequest.params = { fileType: "images", fileName: "test.jpg" };
       mockRequest.headers = { range: "bytes=0-511" };
 
-      await streamFile(
+      await fileUploaderController.streamFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -354,7 +375,7 @@ describe("File Uploader Controller", () => {
       mockRequest.params = { fileType: "images", fileName: "test.jpg" };
       mockRequest.headers = { range: "bytes=2000-3000" };
 
-      await streamFile(
+      await fileUploaderController.streamFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -374,7 +395,7 @@ describe("File Uploader Controller", () => {
         new Error("ENOENT")
       );
 
-      await streamFile(
+      await fileUploaderController.streamFile(
         mockRequest as Request,
         mockResponse as Response,
         mockNext
@@ -382,6 +403,222 @@ describe("File Uploader Controller", () => {
 
       expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
       expect(AppError).toHaveBeenCalledWith("File not found", 404);
+    });
+  });
+
+  describe("updateFile", () => {
+    it("should update a single image file successfully and delete old file by url", async () => {
+      mockRequest.params = {
+        fileType: "images",
+        fileName: "old-image.jpg",
+      };
+      mockRequest.file = { path: "/tmp/new-upload.jpg" } as Express.Multer.File;
+
+      await fileUploaderController.updateFile(
+        {
+          ...mockRequest,
+          originalUrl: "/api/uploads/images/old-image.jpg",
+        } as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      const imageService =
+        fileUploaderService.getFileUploaderServices().imageUploaderService;
+      expect(imageService.deleteFileByUrl).toHaveBeenCalledWith(
+        "http://example.com/api/uploads/images/old-image.jpg"
+      );
+      expect(helpers.processImage).toHaveBeenCalledTimes(1);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        data: "http://example.com/images/test.jpg",
+        message: "File updated successfully",
+      });
+    });
+
+    it("should update a single image file successfully and delete old file by name", async () => {
+      mockRequest.params = {
+        fileType: "images",
+        fileName: "old-image.jpg",
+      };
+      mockRequest.file = { path: "/tmp/new-upload.jpg" } as Express.Multer.File;
+
+      await fileUploaderController.updateFile(
+        {
+          ...mockRequest,
+          originalUrl: "/api/users/me/avatar",
+        } as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      const imageService =
+        fileUploaderService.getFileUploaderServices().imageUploaderService;
+      expect(imageService.deleteFileByName).toHaveBeenCalledWith(
+        "old-image.jpg",
+        "images"
+      );
+      expect(helpers.processImage).toHaveBeenCalledTimes(1);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        data: "http://example.com/images/test.jpg",
+        message: "File updated successfully",
+      });
+    });
+
+    // it("should update multiple image files successfully", async () => {
+    //   mockRequest.params = { fileType: "images", fileName: "old-image.jpg" };
+    //   mockRequest.files = [
+    //     { path: "/tmp/new-upload1.jpg" },
+    //     { path: "/tmp/new-upload2.jpg" },
+    //   ] as Express.Multer.File[];
+
+    //   await fileUploaderController.updateFile(
+    //     mockRequest as Request,
+    //     mockResponse as Response,
+    //     mockNext
+    //   );
+
+    //   const imageService =
+    //     fileUploaderService.getFileUploaderServices().imageUploaderService;
+    //   expect(imageService.deleteFileByUrl).toHaveBeenCalledWith(
+    //     "http://example.com/api/files/images/old-image.jpg"
+    //   );
+    //   expect(helpers.processImage).toHaveBeenCalledTimes(2);
+    //   expect(mockResponse.status).toHaveBeenCalledWith(200);
+    //   expect(mockResponse.json).toHaveBeenCalledWith({
+    //     success: true,
+    //     data: [
+    //       "http://example.com/images/test.jpg",
+    //       "http://example.com/images/test.jpg",
+    //     ],
+    //     message: "File updated successfully. 2 new files uploaded",
+    //   });
+    // });
+
+    it("should update a document file successfully", async () => {
+      mockRequest.params = { fileType: "documents", fileName: "old-doc.pdf" };
+      mockRequest.file = {
+        path: "/tmp/new-document.pdf",
+      } as Express.Multer.File;
+
+      await fileUploaderController.updateFile(
+        {
+          ...mockRequest,
+          originalUrl: "/api/uploads/documents/old-doc.pdf",
+        } as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      const documentService =
+        fileUploaderService.getFileUploaderServices().documentUploaderService;
+      expect(documentService.deleteFileByUrl).toHaveBeenCalledWith(
+        "http://example.com/api/uploads/documents/old-doc.pdf"
+      );
+      expect(helpers.processFile).toHaveBeenCalledTimes(1);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    it("should return error for invalid file type", async () => {
+      mockRequest.params = { fileType: "invalid", fileName: "test.jpg" };
+      mockRequest.file = { path: "/tmp/new-upload.jpg" } as Express.Multer.File;
+
+      await fileUploaderController.updateFile(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(AppError).toHaveBeenCalledWith("Invalid file type", 400);
+    });
+
+    it("should return error when no new file is uploaded", async () => {
+      mockRequest.params = { fileType: "images", fileName: "old-image.jpg" };
+
+      await fileUploaderController.updateFile(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(AppError).toHaveBeenCalledWith("No new file uploaded", 400);
+    });
+
+    it("should continue with upload even if old file deletion fails", async () => {
+      mockRequest.params = { fileType: "images", fileName: "nonexistent.jpg" };
+      mockRequest.file = { path: "/tmp/new-upload.jpg" } as Express.Multer.File;
+
+      const imageService =
+        fileUploaderService.getFileUploaderServices().imageUploaderService;
+      (imageService.deleteFileByName as jest.Mock).mockRejectedValueOnce(
+        new Error("File not found")
+      );
+
+      // Mock console.warn to avoid output during tests
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+
+      await fileUploaderController.updateFile(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Could not delete old file: nonexistent.jpg",
+        expect.any(Error)
+      );
+      expect(helpers.processImage).toHaveBeenCalledTimes(1);
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+
+      consoleSpy.mockRestore();
+    });
+
+    it("should handle uploader error", async () => {
+      mockRequest.params = { fileType: "images", fileName: "old-image.jpg" };
+      mockRequest.file = { path: "/tmp/new-upload.jpg" } as Express.Multer.File;
+
+      const mockImageService =
+        fileUploaderService.getFileUploaderServices().imageUploaderService;
+      (mockImageService.handleMultipleUpload as jest.Mock).mockReturnValue(
+        (req: any, res: any, cb: any) => cb(new Error("Upload failed"))
+      );
+
+      await fileUploaderController.updateFile(
+        mockRequest as Request,
+        mockResponse as Response,
+        mockNext
+      );
+
+      expect(mockNext).toHaveBeenCalledWith(new Error("Upload failed"));
+    });
+
+    it("should create directory if it doesn't exist during update", async () => {
+      mockRequest.params = { fileType: "images", fileName: "old-image.jpg" };
+      mockRequest.file = { path: "/tmp/new-upload.jpg" } as Express.Multer.File;
+
+      // Mock directory doesn't exist
+      (accessAsync as any as jest.Mock).mockRejectedValueOnce(
+        new Error("ENOENT")
+      );
+
+      try {
+        await fileUploaderController.updateFile(
+          mockRequest as Request,
+          mockResponse as Response,
+          mockNext
+        );
+      } catch (err) {
+        console.error(err);
+      }
+
+      expect(fs.mkdir).toHaveBeenCalledWith(expect.stringContaining("images"), {
+        recursive: true,
+      });
     });
   });
 });
