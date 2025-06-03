@@ -224,7 +224,6 @@ describe("BaseService", () => {
           where: { published: true },
           select: expect.objectContaining({
             title: true,
-            // category: true,
           }),
         })
       );
@@ -243,22 +242,10 @@ describe("BaseService", () => {
       expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { ...filters, id: "1" },
-          // include: expect.objectContaining({
-          //   category: true,
-          //   tags: true,
-          // }),
         })
       );
       expect(result).toEqual(expectedData);
     });
-
-    // it("should throw error if record not found", async () => {
-    //   mockPrisma.post.findFirst.mockResolvedValue(null);
-
-    //   await expect(baseService.findOne({ id: "999" })).rejects.toThrow(
-    //     AppError
-    //   );
-    // });
 
     it("should use select if provided in query options", async () => {
       const filters = { id: "1" };
@@ -274,11 +261,63 @@ describe("BaseService", () => {
         expect.objectContaining({
           select: expect.objectContaining({
             title: true,
-            // category: true,
-            // tags: true,
           }),
         })
       );
+    });
+  });
+
+  describe("findById", () => {
+    it("should find a record by id", async () => {
+      const id = "1";
+      const expectedData = { id: "1", title: "Test Post" };
+
+      mockPrisma.post.findUnique.mockResolvedValue(expectedData);
+
+      const result = await baseService.findById(id);
+
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "1" },
+        })
+      );
+      expect(result).toEqual(expectedData);
+    });
+
+    it("should use select if provided in query options", async () => {
+      const id = "1";
+      const queryOptions = {
+        select: { title: true },
+      };
+
+      mockPrisma.post.findUnique.mockResolvedValue({ id: "1", title: "Test" });
+
+      await baseService.findById(id, queryOptions);
+
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "1" },
+          select: expect.objectContaining({
+            title: true,
+          }),
+        })
+      );
+    });
+
+    it("should handle numeric id", async () => {
+      const id = 1;
+      const expectedData = { id: 1, title: "Test Post" };
+
+      mockPrisma.post.findUnique.mockResolvedValue(expectedData);
+
+      const result = await baseService.findById(id);
+
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 1 },
+        })
+      );
+      expect(result).toEqual(expectedData);
     });
   });
 
@@ -300,10 +339,6 @@ describe("BaseService", () => {
         expect.objectContaining({
           where: { ...filters, id: "1" },
           data: body,
-          // include: expect.objectContaining({
-          //   category: true,
-          //   tags: true,
-          // }),
         })
       );
       expect(result).toEqual(expectedData);

@@ -47,10 +47,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const user = await userService.findOne(
+        const user = (await userService.findOne(
           { id: req.user!.id },
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
           if (user) delete user[key as keyof User];
@@ -83,11 +83,11 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             "invalid_field_password"
           );
 
-        const user = await userService.updateOne(
+        const user = (await userService.updateOne(
           { id: req.user!.id },
           req.body,
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
           if (user) delete user[key as keyof User];
@@ -172,10 +172,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         }
 
         // Use findFirst instead of findUnique for complex queries
-        const user = await userService.findOne(
+        const user = (await userService.findOne(
           whereClause,
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         if (
           !user ||
@@ -259,10 +259,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const user = await userService.createOne(
+        const user = (await userService.createOne(
           req.body,
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         if (middlewares?.afterSignup) {
           req.responseData = { data: user };
@@ -288,13 +288,13 @@ export const authControllerFactory = async (middlewares: any = {}) => {
       ) => {
         const userId = req.user!.id; // Assuming the authenticated user's ID is available in req.user
 
-        const updatedUser = await userService.updateOne(
+        const updatedUser = (await userService.updateOne(
           { id: userId },
           {
             deletedSelfAccountAt: new Date().toISOString(),
           },
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         if (middlewares?.afterDeleteMe) {
           req.responseData = { data: updatedUser };

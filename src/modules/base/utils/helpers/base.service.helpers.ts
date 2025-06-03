@@ -285,13 +285,3 @@ export function canBeUsedToConnect(
 
   return false;
 }
-
-// /**
-//  * Checks if a list field is actually an array
-//  *
-//  * @param {any} field - The field to check
-//  * @returns {boolean} - True if the field is an array
-//  */
-// export function isListFieldAnArray(field: any): boolean {
-//   return Array.isArray(field);
-// }

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { getFileUploaderRouter } from "../file-uploader.router"; // Update with the correct path
 import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
 import authService from "../../auth/auth.service";
-import { deleteFile, uploadFile } from "../file-uploader.controller";
+import fileUploaderController from "../file-uploader.controller";
 import express from "express";
 import deepmerge from "../../../utils/helpers/deepmerge.helper";
 import path from "path";
@@ -116,7 +116,7 @@ describe("File Uploader Router", () => {
       "/api/uploads/:fileType",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      uploadFile
+      fileUploaderController.uploadFile
     );
 
     // Check Delete route setup
@@ -124,7 +124,7 @@ describe("File Uploader Router", () => {
       "/api/uploads/:fileType/:fileName",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      deleteFile
+      fileUploaderController.deleteFile
     );
 
     // Expect the router to be returned
@@ -173,14 +173,14 @@ describe("File Uploader Router", () => {
         `${testCase.expected}:fileType`,
         expect.any(Function),
         expect.any(Function),
-        uploadFile
+        fileUploaderController.uploadFile
       );
 
       expect(mockRouter.delete).toHaveBeenCalledWith(
         `${testCase.expected}:fileType/:fileName`,
         expect.any(Function),
         expect.any(Function),
-        deleteFile
+        fileUploaderController.deleteFile
       );
     }
   });
@@ -301,7 +301,7 @@ describe("File Uploader Router", () => {
     // All the routes should still be configured correctly
     expect(mockRouter.use).toHaveBeenCalledTimes(1);
     expect(mockRouter.post).toHaveBeenCalledTimes(1);
-    expect(mockRouter.delete).toHaveBeenCalledTimes(1);
+    expect(mockRouter.delete).toHaveBeenCalledTimes(2);
   });
 
   test("should merge default and custom express static options", async () => {

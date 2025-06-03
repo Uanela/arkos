@@ -14,7 +14,6 @@ import {
   ArkosRequestHandler,
 } from "../../types";
 import {
-  AuthConfigs,
   AuthJwtPayload,
   AccessAction,
   AccessControlConfig,
@@ -61,6 +60,26 @@ export class AuthService {
     return jwt.sign({ id }, secret, {
       expiresIn: expiresIn as MsDuration,
     });
+  }
+
+  /**
+   * Is used by default internally by Arkos under `BaseService` class to check if the password is already hashed.
+   *
+   * This was just added to prevent unwanted errors when someone just forgets that the `BaseService` class will automatically hash the password field using `authService.hashPassword` by default.
+   *
+   * So now before `BaseService` hashes it will test it.
+   *
+   *
+   * @param password The password to be tested if is hashed
+   * @returns
+   */
+  isPasswordHashed(password: string) {
+    try {
+      bcrypt.getRounds(password);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**

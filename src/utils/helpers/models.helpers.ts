@@ -29,7 +29,9 @@ export function getFileModelModulesFileStructure(modelName: string) {
       controller: `${kebabModelName}.controller.${ext}`,
       middlewares: `${kebabModelName}.middlewares.${ext}`,
       authConfigs: `${kebabModelName}.auth-configs.${ext}`,
+      authConfigsNew: `${kebabModelName}.auth.${ext}`,
       prismaQueryOptions: `${kebabModelName}.prisma-query-options.${ext}`,
+      prismaQueryOptionsNew: `${kebabModelName}.query.${ext}`,
       router: `${kebabModelName}.router.${ext}`,
     },
     dtos: isAuthModule
@@ -125,7 +127,9 @@ type importPrismaModelModulesReturnType = {
   controller?: any;
   middlewares?: any;
   authConfigs?: AuthConfigs;
+  authConfigsNew?: AuthConfigs;
   prismaQueryOptions?: any;
+  prismaQueryOptionsNew?: any;
   router?: any;
   dtos: Record<string, any>;
   schemas: Record<string, any>;
@@ -157,11 +161,61 @@ export async function importPrismaModelModules(
         const module = await importModule(filePath).catch(() => null);
 
         if (module) {
-          if (key === "middlewares") result[key] = module;
-          else if (key === "router") result[key] = module;
-          else result[key as keyof typeof result] = module.default || module;
+          // Handle prismaQueryOptions (old vs new naming)
+          if (key === "prismaQueryOptions") {
+            if (result.prismaQueryOptions) {
+              throw Error(
+                `\n Cannot use both ${fileName} and ${fileName.replace(
+                  "prisma-query-options",
+                  "query"
+                )} at once, please choose only one name convention. \n`
+              );
+            }
+            result.prismaQueryOptions = module.default || module;
+          } else if (key === "prismaQueryOptionsNew") {
+            if (result.prismaQueryOptions) {
+              throw Error(
+                `\n Cannot use both ${fileName} and ${fileName.replace(
+                  "query",
+                  "prisma-query-options"
+                )} at once, please choose only one name convention. \n`
+              );
+            }
+            // Store new naming convention under old key
+            result.prismaQueryOptions = module.default || module;
+          }
+          // Handle authConfigs (old vs new naming)
+          else if (key === "authConfigs") {
+            if (result.authConfigs) {
+              throw Error(
+                `\n Cannot use both ${fileName} and ${fileName.replace(
+                  "auth-configs",
+                  "auth"
+                )} at once, please choose only one name convention. \n`
+              );
+            }
+            result.authConfigs = module.default || module;
+          } else if (key === "authConfigsNew") {
+            if (result.authConfigs) {
+              throw Error(
+                `\n Cannot use both ${fileName} and ${fileName.replace(
+                  "auth",
+                  "auth-configs"
+                )} at once, please choose only one name convention. \n`
+              );
+            }
+            // Store new naming convention under old key
+            result.authConfigs = module.default || module;
+          }
+          // Handle other modules
+          else if (key === "middlewares" || key === "router") {
+            result[key] = module;
+          } else {
+            result[key as keyof typeof result] = module.default || module;
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.message.includes("Cannot use both")) throw err;
         console.error(err);
       }
     })
