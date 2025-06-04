@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { getFileUploaderRouter } from "../file-uploader.router"; // Update with the correct path
+import { getFileUploadRouter } from "../file-upload.router"; // Update with the correct path
 import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
 import authService from "../../auth/auth.service";
-import fileUploaderController from "../file-uploader.controller";
+import fileUploadController from "../file-upload.controller";
 import express from "express";
 import deepmerge from "../../../utils/helpers/deepmerge.helper";
 import path from "path";
@@ -34,12 +34,12 @@ jest.mock("express", () => {
 
 jest.mock("../../../utils/helpers/models.helpers");
 jest.mock("../../auth/auth.service");
-jest.mock("../file-uploader.controller");
+jest.mock("../file-upload.controller");
 jest.mock("path");
 jest.mock("fs");
 jest.mock("../../../utils/helpers/deepmerge.helper");
 
-describe("File Uploader Router", () => {
+describe("File Upload Router", () => {
   let mockRouter: any;
   let mockArkosConfig: any;
 
@@ -79,7 +79,7 @@ describe("File Uploader Router", () => {
     });
 
     // Act
-    const router = await getFileUploaderRouter(mockArkosConfig);
+    const router = await getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(Router).toHaveBeenCalled();
@@ -116,7 +116,7 @@ describe("File Uploader Router", () => {
       "/api/uploads/:fileType",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      fileUploaderController.uploadFile
+      fileUploadController.uploadFile
     );
 
     // Check Delete route setup
@@ -124,7 +124,7 @@ describe("File Uploader Router", () => {
       "/api/uploads/:fileType/:fileName",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      fileUploaderController.deleteFile
+      fileUploadController.deleteFile
     );
 
     // Expect the router to be returned
@@ -159,7 +159,7 @@ describe("File Uploader Router", () => {
       };
 
       // Act
-      await getFileUploaderRouter(config);
+      await getFileUploadRouter(config);
 
       // Assert
       expect(mockRouter.use).toHaveBeenCalledWith(
@@ -173,14 +173,14 @@ describe("File Uploader Router", () => {
         `${testCase.expected}:fileType`,
         expect.any(Function),
         expect.any(Function),
-        fileUploaderController.uploadFile
+        fileUploadController.uploadFile
       );
 
       expect(mockRouter.delete).toHaveBeenCalledWith(
         `${testCase.expected}:fileType/:fileName`,
         expect.any(Function),
         expect.any(Function),
-        fileUploaderController.deleteFile
+        fileUploadController.deleteFile
       );
     }
   });
@@ -199,7 +199,7 @@ describe("File Uploader Router", () => {
     };
 
     // Act
-    await getFileUploaderRouter(configWithoutBaseRoute);
+    await getFileUploadRouter(configWithoutBaseRoute);
 
     // Assert
     expect(mockRouter.use).toHaveBeenCalledWith(
@@ -224,7 +224,7 @@ describe("File Uploader Router", () => {
     };
 
     // Act
-    await getFileUploaderRouter(configWithoutBaseUploadDir);
+    await getFileUploadRouter(configWithoutBaseUploadDir);
 
     // Assert
     expect(path.resolve).toHaveBeenCalledWith(process.cwd(), "uploads");
@@ -248,7 +248,7 @@ describe("File Uploader Router", () => {
     });
 
     // Act
-    await getFileUploaderRouter(mockArkosConfig);
+    await getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
@@ -284,7 +284,7 @@ describe("File Uploader Router", () => {
     (importPrismaModelModules as jest.Mock).mockResolvedValue(null);
 
     // Act
-    await getFileUploaderRouter(mockArkosConfig);
+    await getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
@@ -325,7 +325,7 @@ describe("File Uploader Router", () => {
     };
 
     // Act
-    await getFileUploaderRouter(configWithCustomStaticOptions);
+    await getFileUploadRouter(configWithCustomStaticOptions);
 
     // Assert
     expect(deepmerge).toHaveBeenCalledWith(

@@ -76,6 +76,9 @@ jest.mock("commander", () => ({
     version() {
       return this;
     }
+    requiredOption() {
+      return this;
+    }
   },
 }));
 

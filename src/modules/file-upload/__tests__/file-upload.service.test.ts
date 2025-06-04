@@ -4,9 +4,9 @@ import fs from "fs";
 import { promisify } from "util";
 import sharp from "sharp";
 import {
-  FileUploaderService,
-  getFileUploaderServices,
-} from "../file-uploader.service";
+  FileUploadService,
+  getFileUploadServices,
+} from "../file-upload.service";
 import AppError from "../../error-handler/utils/app-error";
 import { getArkosConfig } from "../../../server";
 
@@ -22,13 +22,13 @@ jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../../utils/helpers/models.helpers");
 
-describe("FileUploaderService", () => {
+describe("FileUploadService", () => {
   let mockReq: any;
   let mockRes: any;
   let mockNext: any;
-  let fileUploaderService: FileUploaderService;
+  let fileUploadService: FileUploadService;
   let mockStorage: any;
-  let mockUploader: any;
+  let mockUpload: any;
   let mockSharp: any;
   let mockUnlink = jest.fn().mockResolvedValue(undefined);
 
@@ -138,7 +138,7 @@ describe("FileUploaderService", () => {
     (multer.diskStorage as any as jest.Mock).mockReturnValue(mockStorage);
 
     // Setup mock for multer uploader
-    mockUploader = {
+    mockUpload = {
       single: jest
         .fn()
         .mockReturnValue((req: any, res: any, next: any) => next()),
@@ -147,7 +147,7 @@ describe("FileUploaderService", () => {
         .mockReturnValue((req: any, res: any, next: any) => next()),
     };
 
-    (multer as unknown as any as jest.Mock).mockReturnValue(mockUploader);
+    (multer as unknown as any as jest.Mock).mockReturnValue(mockUpload);
 
     // Setup mock for getArkosConfig
     (getArkosConfig as any as jest.Mock).mockReturnValue({
@@ -175,7 +175,7 @@ describe("FileUploaderService", () => {
     (sharp as unknown as any as jest.Mock).mockReturnValue(mockSharp);
 
     // Initialize the service
-    fileUploaderService = new FileUploaderService(
+    fileUploadService = new FileUploadService(
       "uploads/images",
       5 * 1024 * 1024,
       /jpeg|jpg|png/,
@@ -185,7 +185,7 @@ describe("FileUploaderService", () => {
 
   describe("constructor", () => {
     it("should initialize with default parameters when not provided", () => {
-      const service = new FileUploaderService("../uploads/images");
+      const service = new FileUploadService("../uploads/images");
       expect(service["uploadDir"]).toContain("uploads/images/");
       expect(service["fileSizeLimit"]).toBe(5 * 1024 * 1024); // Default 5MB
       expect(service["allowedFileTypes"]).toEqual(/.*/);
@@ -213,7 +213,7 @@ describe("FileUploaderService", () => {
         filename: mockFilenameFn,
       });
 
-      new FileUploaderService("uploads/images");
+      new FileUploadService("uploads/images");
 
       const destinationCallback = (multer.diskStorage as jest.Mock).mock
         .calls[0][0].destination;
@@ -237,7 +237,7 @@ describe("FileUploaderService", () => {
 
   describe("fileFilter", () => {
     it("should accept valid file types", () => {
-      const fileFilter = fileUploaderService["fileFilter"];
+      const fileFilter = fileUploadService["fileFilter"];
       const cb = jest.fn();
       const mockFile = {
         originalname: "test.jpg",
@@ -251,9 +251,9 @@ describe("FileUploaderService", () => {
 
     it("should reject invalid file types", () => {
       // Override the regex for this test
-      fileUploaderService["allowedFileTypes"] = /jpeg|jpg|png/;
+      fileUploadService["allowedFileTypes"] = /jpeg|jpg|png/;
 
-      const fileFilter = fileUploaderService["fileFilter"];
+      const fileFilter = fileUploadService["fileFilter"];
       const cb = jest.fn();
       const mockFile = {
         originalname: "test.pdf",
@@ -270,9 +270,9 @@ describe("FileUploaderService", () => {
     });
   });
 
-  describe("getUploader", () => {
+  describe("getUpload", () => {
     it("should return multer instance with correct configuration", () => {
-      const uploader = fileUploaderService.getUploader();
+      const uploader = fileUploadService.getUpload();
 
       expect(multer).toHaveBeenCalledWith({
         storage: mockStorage,
@@ -280,17 +280,17 @@ describe("FileUploaderService", () => {
         limits: { fileSize: 5 * 1024 * 1024 },
       });
 
-      expect(uploader).toBe(mockUploader);
+      expect(uploader).toBe(mockUpload);
     });
   });
 
   describe("handleSingleUpload", () => {
     it("should call next() if upload is successful", () => {
-      const middleware = fileUploaderService.handleSingleUpload();
+      const middleware = fileUploadService.handleSingleUpload();
 
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockUploader.single).toHaveBeenCalledWith(expect.any(String));
+      expect(mockUpload.single).toHaveBeenCalledWith(expect.any(String));
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -298,11 +298,11 @@ describe("FileUploaderService", () => {
       // Make promisify return our specific mocks when called with the right functions
 
       // Override multer implementation
-      mockUploader.single.mockReturnValueOnce((req: any, res: any, next: any) =>
+      mockUpload.single.mockReturnValueOnce((req: any, res: any, next: any) =>
         next()
       );
 
-      const middleware = fileUploaderService.handleSingleUpload(
+      const middleware = fileUploadService.handleSingleUpload(
         "old22/path/to/file.jpg"
       );
 
@@ -322,11 +322,11 @@ describe("FileUploaderService", () => {
         "fieldname"
       );
 
-      mockUploader.single.mockReturnValueOnce((req: any, res: any, next: any) =>
+      mockUpload.single.mockReturnValueOnce((req: any, res: any, next: any) =>
         next(multerError)
       );
 
-      const middleware = fileUploaderService.handleSingleUpload();
+      const middleware = fileUploadService.handleSingleUpload();
 
       middleware(mockReq, mockRes, mockNext);
 
@@ -336,11 +336,11 @@ describe("FileUploaderService", () => {
     it("should pass regular errors to next", () => {
       const regularError = new Error("Some other error");
 
-      mockUploader.single.mockReturnValueOnce((req: any, res: any, next: any) =>
+      mockUpload.single.mockReturnValueOnce((req: any, res: any, next: any) =>
         next(regularError)
       );
 
-      const middleware = fileUploaderService.handleSingleUpload();
+      const middleware = fileUploadService.handleSingleUpload();
 
       middleware(mockReq, mockRes, mockNext);
 
@@ -350,11 +350,11 @@ describe("FileUploaderService", () => {
 
   describe("handleMultipleUpload", () => {
     it("should call next() if multiple upload is successful", () => {
-      const middleware = fileUploaderService.handleMultipleUpload();
+      const middleware = fileUploadService.handleMultipleUpload();
 
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockUploader.array).toHaveBeenCalledWith(expect.any(String), 30);
+      expect(mockUpload.array).toHaveBeenCalledWith(expect.any(String), 30);
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -364,11 +364,11 @@ describe("FileUploaderService", () => {
         "fieldname"
       );
 
-      mockUploader.array.mockReturnValueOnce((req: any, res: any, next: any) =>
+      mockUpload.array.mockReturnValueOnce((req: any, res: any, next: any) =>
         next(multerError)
       );
 
-      const middleware = fileUploaderService.handleMultipleUpload();
+      const middleware = fileUploadService.handleMultipleUpload();
 
       middleware(mockReq, mockRes, mockNext);
 
@@ -379,7 +379,7 @@ describe("FileUploaderService", () => {
   describe("handleDeleteSingleFile", () => {
     it("should delete the file if it exists", async () => {
       const middleware =
-        fileUploaderService.handleDeleteSingleFile("path/to/file.jpg");
+        fileUploadService.handleDeleteSingleFile("path/to/file.jpg");
 
       await middleware(mockReq, mockRes, mockNext);
 
@@ -389,7 +389,7 @@ describe("FileUploaderService", () => {
     });
 
     it("should call next even if file doesn't exist", async () => {
-      const middleware = fileUploaderService.handleDeleteSingleFile(
+      const middleware = fileUploadService.handleDeleteSingleFile(
         "nonexistent/file.jpg"
       );
 
@@ -401,7 +401,7 @@ describe("FileUploaderService", () => {
 
   describe("deleteFileByUrl", () => {
     it("should delete a file by its URL", async () => {
-      const result = await fileUploaderService.deleteFileByUrl(
+      const result = await fileUploadService.deleteFileByUrl(
         "http://localhost:3000/api/uploads/images/file.jpg"
       );
 
@@ -412,9 +412,7 @@ describe("FileUploaderService", () => {
 
     it("should throw AppError if file URL is invalid", async () => {
       await expect(
-        fileUploaderService.deleteFileByUrl(
-          "http://localhost:3000/invalid/path"
-        )
+        fileUploadService.deleteFileByUrl("http://localhost:3000/invalid/path")
       ).rejects.toBeInstanceOf(AppError);
 
       expect(AppError).toHaveBeenCalledWith(
@@ -432,7 +430,7 @@ describe("FileUploaderService", () => {
       });
 
       await expect(
-        fileUploaderService.deleteFileByUrl(
+        fileUploadService.deleteFileByUrl(
           "http://localhost:3000/api/uploads/images/nonexistent.jpg"
         )
       ).rejects.toBeInstanceOf(AppError);
@@ -453,14 +451,14 @@ describe("FileUploaderService", () => {
 
     it("should handle single file upload successfully", async () => {
       // Setup mocks
-      mockUploader.single.mockReturnValueOnce(
+      mockUpload.single.mockReturnValueOnce(
         (req: any, res: any, next: Function) => {
           req.file = mockReq.file;
           next();
         }
       );
 
-      const result = await fileUploaderService.upload(mockReq, mockRes);
+      const result = await fileUploadService.upload(mockReq, mockRes);
 
       expect(result).toBe("http://localhost:3000/api/uploads/images/test.jpg");
     });
@@ -474,14 +472,14 @@ describe("FileUploaderService", () => {
       ];
       mockReq.file = null;
 
-      mockUploader.array.mockReturnValueOnce(
+      mockUpload.array.mockReturnValueOnce(
         (req: any, res: any, next: Function) => {
           req.files = mockReq.files;
           next();
         }
       );
 
-      const result = await fileUploaderService.upload(mockReq, mockRes);
+      const result = await fileUploadService.upload(mockReq, mockRes);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(2);
@@ -500,16 +498,16 @@ describe("FileUploaderService", () => {
         originalname: "test.jpg",
       };
 
-      const imageUploaderService = new FileUploaderService("uploads/images");
+      const imageUploadService = new FileUploadService("uploads/images");
 
-      mockUploader.single.mockReturnValueOnce(
+      mockUpload.single.mockReturnValueOnce(
         (req: any, res: any, next: Function) => {
           req.file = mockReq.file;
           next();
         }
       );
 
-      const result = await imageUploaderService.upload(mockReq, mockRes, {
+      const result = await imageUploadService.upload(mockReq, mockRes, {
         width: 300,
         height: 200,
         format: "webp",
@@ -532,12 +530,12 @@ describe("FileUploaderService", () => {
       mockReq.file = null;
       mockReq.files = null;
 
-      mockUploader.single.mockReturnValueOnce(
+      mockUpload.single.mockReturnValueOnce(
         (req: any, res: any, next: Function) => next()
       );
 
       await expect(
-        fileUploaderService.upload(mockReq, mockRes)
+        fileUploadService.upload(mockReq, mockRes)
       ).rejects.toBeInstanceOf(AppError);
       expect(AppError).toHaveBeenCalledWith("No file uploaded", 400);
     });
@@ -545,13 +543,13 @@ describe("FileUploaderService", () => {
     it("should handle upload errors", async () => {
       const uploadError = new Error("Upload failed");
 
-      mockUploader.single.mockReturnValueOnce(
+      mockUpload.single.mockReturnValueOnce(
         (req: any, res: any, next: Function) => next(uploadError)
       );
 
-      await expect(
-        fileUploaderService.upload(mockReq, mockRes)
-      ).rejects.toEqual(uploadError);
+      await expect(fileUploadService.upload(mockReq, mockRes)).rejects.toEqual(
+        uploadError
+      );
     });
 
     it("should handle image processing errors", async () => {
@@ -561,9 +559,9 @@ describe("FileUploaderService", () => {
       };
 
       // Mock that we're using the image uploader
-      const imageUploaderService = new FileUploaderService("uploads/images");
+      const imageUploadService = new FileUploadService("uploads/images");
 
-      mockUploader.single.mockReturnValueOnce(
+      mockUpload.single.mockReturnValueOnce(
         (req: any, res: any, next: Function) => {
           req.file = mockReq.file;
           next();
@@ -575,26 +573,24 @@ describe("FileUploaderService", () => {
       mockSharp.toFile.mockRejectedValueOnce(processingError);
 
       await expect(
-        imageUploaderService.upload(mockReq, mockRes, { format: "webp" })
+        imageUploadService.upload(mockReq, mockRes, { format: "webp" })
       ).rejects.toEqual(processingError);
     });
   });
 
-  describe("getFileUploaderServices", () => {
+  describe("getFileUploadServices", () => {
     it("should return all file uploader services", () => {
-      const services = getFileUploaderServices();
+      const services = getFileUploadServices();
 
-      expect(services).toHaveProperty("imageUploaderService");
-      expect(services).toHaveProperty("videoUploaderService");
-      expect(services).toHaveProperty("documentUploaderService");
-      expect(services).toHaveProperty("fileUploaderService");
+      expect(services).toHaveProperty("imageUploadService");
+      expect(services).toHaveProperty("videoUploadService");
+      expect(services).toHaveProperty("documentUploadService");
+      expect(services).toHaveProperty("fileUploadService");
 
-      expect(services.imageUploaderService).toBeInstanceOf(FileUploaderService);
-      expect(services.videoUploaderService).toBeInstanceOf(FileUploaderService);
-      expect(services.documentUploaderService).toBeInstanceOf(
-        FileUploaderService
-      );
-      expect(services.fileUploaderService).toBeInstanceOf(FileUploaderService);
+      expect(services.imageUploadService).toBeInstanceOf(FileUploadService);
+      expect(services.videoUploadService).toBeInstanceOf(FileUploadService);
+      expect(services.documentUploadService).toBeInstanceOf(FileUploadService);
+      expect(services.fileUploadService).toBeInstanceOf(FileUploadService);
     });
 
     it("should use config values when available", () => {
@@ -613,18 +609,18 @@ describe("FileUploaderService", () => {
         },
       });
 
-      const services = getFileUploaderServices();
+      const services = getFileUploadServices();
 
       // Test that the custom config values were used
-      expect(services.imageUploaderService["uploadDir"]).toBe(
+      expect(services.imageUploadService["uploadDir"]).toBe(
         process.cwd().split("/").slice(0, -1).join("/") +
           "/custom/uploads/images/"
       );
-      expect(services.imageUploaderService["maxCount"]).toBe(50);
-      expect(services.imageUploaderService["fileSizeLimit"]).toBe(
+      expect(services.imageUploadService["maxCount"]).toBe(50);
+      expect(services.imageUploadService["fileSizeLimit"]).toBe(
         20 * 1024 * 1024
       );
-      expect(services.imageUploaderService["allowedFileTypes"]).toEqual(
+      expect(services.imageUploadService["allowedFileTypes"]).toEqual(
         /custom-regex/
       );
     });
@@ -633,19 +629,19 @@ describe("FileUploaderService", () => {
       // Setup empty config
       (getArkosConfig as any as jest.Mock).mockReturnValue({});
 
-      const services = getFileUploaderServices();
+      const services = getFileUploadServices();
 
       // Test that default values were used
-      expect(services.imageUploaderService["uploadDir"]).toBe(
+      expect(services.imageUploadService["uploadDir"]).toBe(
         process.cwd() + "/uploads/images/"
       );
-      expect(services.videoUploaderService["uploadDir"]).toBe(
+      expect(services.videoUploadService["uploadDir"]).toBe(
         process.cwd() + "/uploads/videos/"
       );
-      expect(services.documentUploaderService["uploadDir"]).toBe(
+      expect(services.documentUploadService["uploadDir"]).toBe(
         process.cwd() + "/uploads/documents/"
       );
-      expect(services.fileUploaderService["uploadDir"]).toBe(
+      expect(services.fileUploadService["uploadDir"]).toBe(
         process.cwd() + "/uploads/files/"
       );
     });
@@ -656,7 +652,7 @@ describe("FileUploaderService", () => {
       const fileType = "images";
       const fileName = "test-image.jpg";
 
-      const result = await fileUploaderService.deleteFileByName(
+      const result = await fileUploadService.deleteFileByName(
         fileName,
         fileType
       );
@@ -674,7 +670,7 @@ describe("FileUploaderService", () => {
       const fileType = "videos";
       const fileName = "test-video.mp4";
 
-      const result = await fileUploaderService.deleteFileByName(
+      const result = await fileUploadService.deleteFileByName(
         fileName,
         fileType
       );
@@ -692,7 +688,7 @@ describe("FileUploaderService", () => {
       const fileType = "documents";
       const fileName = "test-document.pdf";
 
-      const result = await fileUploaderService.deleteFileByName(
+      const result = await fileUploadService.deleteFileByName(
         fileName,
         fileType
       );
@@ -710,7 +706,7 @@ describe("FileUploaderService", () => {
       const fileType = "files";
       const fileName = "test-file.zip";
 
-      const result = await fileUploaderService.deleteFileByName(
+      const result = await fileUploadService.deleteFileByName(
         fileName,
         fileType
       );
@@ -728,7 +724,7 @@ describe("FileUploaderService", () => {
       const fileName = "test.jpg";
 
       await expect(
-        fileUploaderService.deleteFileByName(fileName, undefined as any)
+        fileUploadService.deleteFileByName(fileName, undefined as any)
       ).rejects.toBeInstanceOf(AppError);
 
       expect(AppError).toHaveBeenCalledWith(
@@ -742,7 +738,7 @@ describe("FileUploaderService", () => {
       const fileName = "test.jpg";
 
       await expect(
-        fileUploaderService.deleteFileByName(fileName, fileType as any)
+        fileUploadService.deleteFileByName(fileName, fileType as any)
       ).rejects.toBeInstanceOf(AppError);
 
       expect(AppError).toHaveBeenCalledWith(
@@ -760,7 +756,7 @@ describe("FileUploaderService", () => {
       mockStat.mockRejectedValueOnce(enoentError);
 
       await expect(
-        fileUploaderService.deleteFileByName(fileName, fileType)
+        fileUploadService.deleteFileByName(fileName, fileType)
       ).rejects.toBeInstanceOf(AppError);
 
       expect(AppError).toHaveBeenCalledWith("File not found", 404);
@@ -775,7 +771,7 @@ describe("FileUploaderService", () => {
       mockStat.mockRejectedValueOnce(permissionError);
 
       await expect(
-        fileUploaderService.deleteFileByName(fileName, fileType)
+        fileUploadService.deleteFileByName(fileName, fileType)
       ).rejects.toBeInstanceOf(AppError);
 
       expect(AppError).toHaveBeenCalledWith(
@@ -792,7 +788,7 @@ describe("FileUploaderService", () => {
       mockUnlink.mockRejectedValueOnce(unlinkError);
 
       await expect(
-        fileUploaderService.deleteFileByName(fileName, fileType)
+        fileUploadService.deleteFileByName(fileName, fileType)
       ).rejects.toBeInstanceOf(AppError);
 
       expect(AppError).toHaveBeenCalledWith(
@@ -809,7 +805,7 @@ describe("FileUploaderService", () => {
       mockStat.mockRejectedValueOnce(originalAppError);
 
       await expect(
-        fileUploaderService.deleteFileByName(fileName, fileType)
+        fileUploadService.deleteFileByName(fileName, fileType)
       ).rejects.toEqual(originalAppError);
 
       expect(AppError).not.toHaveBeenCalledWith(

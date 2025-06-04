@@ -1,16 +1,13 @@
 import AppError from "../error-handler/utils/app-error";
 import {
-  FileUploaderService,
-  getFileUploaderServices,
-} from "./file-uploader.service";
+  FileUploadService,
+  getFileUploadServices,
+} from "./file-upload.service";
 import path from "path";
 import fs from "fs";
 import catchAsync from "../error-handler/utils/catch-async";
 import { getArkosConfig } from "../../server";
-import {
-  processFile,
-  processImage,
-} from "./utils/helpers/file-uploader.helpers";
+import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import {
   accessAsync,
   mkdirAsync,
@@ -21,7 +18,7 @@ import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 /**
  * Handles files uploads and allow to be extended
  */
-class FileUploaderController {
+class FileUploadController {
   /**
    * Handles file upload requests, processes images if needed, and returns URLs
    *
@@ -37,11 +34,11 @@ class FileUploaderController {
       const options = { format, width, height, resizeTo };
 
       const {
-        documentUploaderService,
-        fileUploaderService,
-        imageUploaderService,
-        videoUploaderService,
-      } = getFileUploaderServices();
+        documentUploadService,
+        fileUploadService,
+        imageUploadService,
+        videoUploadService,
+      } = getFileUploadServices();
 
       const { fileUpload } = getArkosConfig();
       const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
@@ -56,19 +53,19 @@ class FileUploaderController {
       }
 
       // Select the appropriate uploader service based on file type
-      let uploader: FileUploaderService;
+      let uploader: FileUploadService;
       switch (fileType) {
         case "images":
-          uploader = imageUploaderService;
+          uploader = imageUploadService;
           break;
         case "videos":
-          uploader = videoUploaderService;
+          uploader = videoUploadService;
           break;
         case "documents":
-          uploader = documentUploaderService;
+          uploader = documentUploadService;
           break;
         case "files":
-          uploader = fileUploaderService;
+          uploader = fileUploadService;
           break;
         default:
           return next(new AppError("Invalid file type", 400));
@@ -129,25 +126,25 @@ class FileUploaderController {
       const { fileType, fileName } = req.params;
 
       const {
-        documentUploaderService,
-        fileUploaderService,
-        imageUploaderService,
-        videoUploaderService,
-      } = getFileUploaderServices();
+        documentUploadService,
+        fileUploadService,
+        imageUploadService,
+        videoUploadService,
+      } = getFileUploadServices();
 
-      let uploader: FileUploaderService;
+      let uploader: FileUploadService;
       switch (fileType) {
         case "images":
-          uploader = imageUploaderService;
+          uploader = imageUploadService;
           break;
         case "videos":
-          uploader = videoUploaderService;
+          uploader = videoUploadService;
           break;
         case "documents":
-          uploader = documentUploaderService;
+          uploader = documentUploadService;
           break;
         case "files":
-          uploader = fileUploaderService;
+          uploader = fileUploadService;
           break;
         default:
           return next(new AppError("Invalid file type", 400));
@@ -205,11 +202,11 @@ class FileUploaderController {
       const options = { format, width, height, resizeTo };
 
       const {
-        documentUploaderService,
-        fileUploaderService,
-        imageUploaderService,
-        videoUploaderService,
-      } = getFileUploaderServices();
+        documentUploadService,
+        fileUploadService,
+        imageUploadService,
+        videoUploadService,
+      } = getFileUploadServices();
 
       const { fileUpload } = getArkosConfig();
       const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
@@ -224,19 +221,19 @@ class FileUploaderController {
       }
 
       // Select the appropriate uploader service based on file type
-      let uploader: FileUploaderService;
+      let uploader: FileUploadService;
       switch (fileType) {
         case "images":
-          uploader = imageUploaderService;
+          uploader = imageUploadService;
           break;
         case "videos":
-          uploader = videoUploaderService;
+          uploader = videoUploadService;
           break;
         case "documents":
-          uploader = documentUploaderService;
+          uploader = documentUploadService;
           break;
         case "files":
-          uploader = fileUploaderService;
+          uploader = fileUploadService;
           break;
         default:
           return next(new AppError("Invalid file type", 400));
@@ -385,8 +382,8 @@ class FileUploaderController {
  *
  * @instance
  * @constant
- * @see {@link https://www.arkosjs.com/docs/api-reference/file-uploader-controller-object}
+ * @see {@link https://www.arkosjs.com/docs/api-reference/file-upload-controller-object}
  */
-const fileUploaderController = new FileUploaderController();
+const fileUploadController = new FileUploadController();
 
-export default fileUploaderController;
+export default fileUploadController;

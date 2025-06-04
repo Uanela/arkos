@@ -14,7 +14,7 @@ import {
   checkDatabaseConnection,
   loadPrismaModule,
 } from "./utils/helpers/prisma.helpers";
-import { getFileUploaderRouter } from "./modules/file-uploader/file-uploader.router";
+import { getFileUploadRouter } from "./modules/file-upload/file-upload.router";
 import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
 import deepmerge from "./utils/helpers/deepmerge.helper";
@@ -158,12 +158,12 @@ export async function bootstrap(
         })
     );
 
-  // File uploader router
-  if (!disabledRouters?.includes?.("file-uploader")) {
-    const fileUploaderRouter = replacedRouters.fileUploader
-      ? await replacedRouters.fileUploader(arkosConfig)
-      : await getFileUploaderRouter(arkosConfig);
-    app.use(fileUploaderRouter);
+  // File upload router
+  if (!disabledRouters?.includes?.("file-upload")) {
+    const fileUploadRouter = replacedRouters.fileUpload
+      ? await replacedRouters.fileUpload(arkosConfig)
+      : await getFileUploadRouter(arkosConfig);
+    app.use(fileUploadRouter);
   }
 
   // Auth router

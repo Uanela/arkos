@@ -59,7 +59,6 @@ export async function startCommand(options: StartOptions = {}) {
     const checkConfig = async () => {
       try {
         const { getArkosConfig } = await importModule("../../server");
-        console.info(getArkosConfig);
 
         const config = getArkosConfig();
 
@@ -75,7 +74,10 @@ export async function startCommand(options: StartOptions = {}) {
           console.info(
             `  - Environments: ${envFiles
               ?.join(", ")
-              .replaceAll(`${process.cwd()}/`, "")}\n`
+              .replaceAll(`${process.cwd()}/`, "")
+              .replaceAll(`/${process.cwd()}`, "")
+              .replaceAll(`/${process.cwd()}/`, "")
+              .replaceAll(`${process.cwd()}`, "")}\n`
           );
           return true;
         }
@@ -117,16 +119,6 @@ export async function startCommand(options: StartOptions = {}) {
     };
 
     waitForConfig();
-
-    // console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-    // console.info(
-    //   `  - Local:        http://${env.HOST || host}:${env.PORT || port}`
-    // );
-    // console.info(
-    //   `  - Environments: ${envFiles
-    //     ?.join(", ")
-    //     .replaceAll(`${process.cwd()}/`, "")}\n`
-    // );
   } catch (error) {
     console.error("❌ Production server failed to start:", error);
     process.exit(1);
