@@ -136,6 +136,79 @@ type importPrismaModelModulesReturnType = {
 };
 
 /**
+ * Validates naming convention conflicts for prismaQueryOptions and authConfigs
+ * @param {string} key - The current file key being processed
+ * @param {string} fileName - The filename being imported
+ * @param {importPrismaModelModulesReturnType} result - The current result object
+ * @throws {Error} When conflicting naming conventions are detected
+ */
+export function validateNamingConventions(
+  key: string,
+  fileName: string,
+  result: importPrismaModelModulesReturnType
+): void {
+  if (key === "prismaQueryOptions") {
+    if (result.prismaQueryOptions) {
+      throw new Error(
+        `\n Cannot use both ${fileName} and ${fileName.replace(
+          "prisma-query-options",
+          "query"
+        )} at once, please choose only one name convention. \n`
+      );
+    }
+  } else if (key === "prismaQueryOptionsNew") {
+    if (result.prismaQueryOptions) {
+      throw new Error(
+        `\n Cannot use both ${fileName} and ${fileName.replace(
+          "query",
+          "prisma-query-options"
+        )} at once, please choose only one name convention. \n`
+      );
+    }
+  } else if (key === "authConfigs") {
+    if (result.authConfigs) {
+      throw new Error(
+        `\n Cannot use both ${fileName} and ${fileName.replace(
+          "auth-configs",
+          "auth"
+        )} at once, please choose only one name convention. \n`
+      );
+    }
+  } else if (key === "authConfigsNew") {
+    if (result.authConfigs) {
+      throw new Error(
+        `\n Cannot use both ${fileName} and ${fileName.replace(
+          "auth",
+          "auth-configs"
+        )} at once, please choose only one name convention. \n`
+      );
+    }
+  }
+}
+
+/**
+ * Processes and assigns module to the result object based on the key
+ * @param {string} key - The file key being processed
+ * @param {any} module - The imported module
+ * @param {importPrismaModelModulesReturnType} result - The result object to modify
+ */
+export function assignModuleToResult(
+  key: string,
+  module: any,
+  result: importPrismaModelModulesReturnType
+): void {
+  if (key === "prismaQueryOptions" || key === "prismaQueryOptionsNew") {
+    result.prismaQueryOptions = module.default || module;
+  } else if (key === "authConfigs" || key === "authConfigsNew") {
+    result.authConfigs = module.default || module;
+  } else if (key === "middlewares" || key === "router") {
+    result[key] = module;
+  } else {
+    result[key as keyof typeof result] = module.default || module;
+  }
+}
+
+/**
  * Dynamically imports model-specific modules for a given model with optimized file handling.
  * Includes special handling for the Auth module.
  *
@@ -153,6 +226,7 @@ export async function importPrismaModelModules(
   };
 
   const fileStructure = getFileModelModulesFileStructure(modelName);
+
   // Batch process core files
   await Promise.all(
     Object.entries(fileStructure.core).map(async ([key, fileName]) => {
@@ -161,58 +235,11 @@ export async function importPrismaModelModules(
         const module = await importModule(filePath).catch(() => null);
 
         if (module) {
-          // Handle prismaQueryOptions (old vs new naming)
-          if (key === "prismaQueryOptions") {
-            if (result.prismaQueryOptions) {
-              throw Error(
-                `\n Cannot use both ${fileName} and ${fileName.replace(
-                  "prisma-query-options",
-                  "query"
-                )} at once, please choose only one name convention. \n`
-              );
-            }
-            result.prismaQueryOptions = module.default || module;
-          } else if (key === "prismaQueryOptionsNew") {
-            if (result.prismaQueryOptions) {
-              throw Error(
-                `\n Cannot use both ${fileName} and ${fileName.replace(
-                  "query",
-                  "prisma-query-options"
-                )} at once, please choose only one name convention. \n`
-              );
-            }
-            // Store new naming convention under old key
-            result.prismaQueryOptions = module.default || module;
-          }
-          // Handle authConfigs (old vs new naming)
-          else if (key === "authConfigs") {
-            if (result.authConfigs) {
-              throw Error(
-                `\n Cannot use both ${fileName} and ${fileName.replace(
-                  "auth-configs",
-                  "auth"
-                )} at once, please choose only one name convention. \n`
-              );
-            }
-            result.authConfigs = module.default || module;
-          } else if (key === "authConfigsNew") {
-            if (result.authConfigs) {
-              throw Error(
-                `\n Cannot use both ${fileName} and ${fileName.replace(
-                  "auth",
-                  "auth-configs"
-                )} at once, please choose only one name convention. \n`
-              );
-            }
-            // Store new naming convention under old key
-            result.authConfigs = module.default || module;
-          }
-          // Handle other modules
-          else if (key === "middlewares" || key === "router") {
-            result[key] = module;
-          } else {
-            result[key as keyof typeof result] = module.default || module;
-          }
+          // Validate naming conventions before assignment
+          validateNamingConventions(key, fileName, result);
+
+          // Assign module to result
+          assignModuleToResult(key, module, result);
         }
       } catch (err: any) {
         if (err.message.includes("Cannot use both")) throw err;
@@ -231,6 +258,103 @@ export async function importPrismaModelModules(
 
   return result;
 }
+
+// /**
+//  * Dynamically imports model-specific modules for a given model with optimized file handling.
+//  * Includes special handling for the Auth module.
+//  *
+//  * @param {string} modelName - The name of the model (e.g., "User", "Post", "Auth").
+//  * @returns {Promise<Object>} An object containing the imported modules
+//  */
+// export async function importPrismaModelModules(
+//   modelName: string
+// ): Promise<importPrismaModelModulesReturnType> {
+//   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
+
+//   const result: importPrismaModelModulesReturnType = {
+//     dtos: {},
+//     schemas: {},
+//   };
+
+//   const fileStructure = getFileModelModulesFileStructure(modelName);
+//   // Batch process core files
+//   await Promise.all(
+//     Object.entries(fileStructure.core).map(async ([key, fileName]) => {
+//       const filePath = path.join(moduleDir, fileName);
+//       try {
+//         const module = await importModule(filePath).catch(() => null);
+
+//         if (module) {
+//           // Handle prismaQueryOptions (old vs new naming)
+//           if (key === "prismaQueryOptions") {
+//             if (result.prismaQueryOptions) {
+//               throw Error(
+//                 `\n Cannot use both ${fileName} and ${fileName.replace(
+//                   "prisma-query-options",
+//                   "query"
+//                 )} at once, please choose only one name convention. \n`
+//               );
+//             }
+//             result.prismaQueryOptions = module.default || module;
+//           } else if (key === "prismaQueryOptionsNew") {
+//             if (result.prismaQueryOptions) {
+//               throw Error(
+//                 `\n Cannot use both ${fileName} and ${fileName.replace(
+//                   "query",
+//                   "prisma-query-options"
+//                 )} at once, please choose only one name convention. \n`
+//               );
+//             }
+//             // Store new naming convention under old key
+//             result.prismaQueryOptions = module.default || module;
+//           }
+//           // Handle authConfigs (old vs new naming)
+//           else if (key === "authConfigs") {
+//             if (result.authConfigs) {
+//               throw Error(
+//                 `\n Cannot use both ${fileName} and ${fileName.replace(
+//                   "auth-configs",
+//                   "auth"
+//                 )} at once, please choose only one name convention. \n`
+//               );
+//             }
+//             result.authConfigs = module.default || module;
+//           } else if (key === "authConfigsNew") {
+//             if (result.authConfigs) {
+//               throw Error(
+//                 `\n Cannot use both ${fileName} and ${fileName.replace(
+//                   "auth",
+//                   "auth-configs"
+//                 )} at once, please choose only one name convention. \n`
+//               );
+//             }
+//             // Store new naming convention under old key
+//             result.authConfigs = module.default || module;
+//           }
+//           // Handle other modules
+//           else if (key === "middlewares" || key === "router") {
+//             result[key] = module;
+//           } else {
+//             result[key as keyof typeof result] = module.default || module;
+//           }
+//         }
+//       } catch (err: any) {
+//         if (err.message.includes("Cannot use both")) throw err;
+//         console.error(err);
+//       }
+//     })
+//   );
+
+//   await Promise.all([
+//     processSubdir(modelName, "dtos", result),
+//     processSubdir(modelName, "schemas", result),
+//   ]);
+
+//   // Cache the result
+//   prismaModelsModules[modelName] = result;
+
+//   return result;
+// }
 
 export type ModelFieldDefition = {
   name: string;

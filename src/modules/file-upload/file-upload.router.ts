@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import authService from "../auth/auth.service";
-import fileUploaderController from "./file-uploader.controller";
+import fileUploadController from "./file-upload.controller";
 import { ArkosConfig } from "../../types/arkos-config";
 import path from "path";
 import express from "express";
@@ -10,7 +10,7 @@ import { AuthConfigs } from "../../types/auth";
 
 const router: Router = Router();
 
-export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
+export async function getFileUploadRouter({ fileUpload }: ArkosConfig) {
   const modelModules = await importPrismaModelModules("file-upload");
   let { middlewares = {}, authConfigs = {} as AuthConfigs } = {};
 
@@ -62,7 +62,7 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
       "file-upload",
       authConfigs.accessControl
     ),
-    fileUploaderController.uploadFile
+    fileUploadController.uploadFile
   );
 
   router.delete(
@@ -76,7 +76,7 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
       "file-upload",
       authConfigs.accessControl
     ),
-    fileUploaderController.deleteFile
+    fileUploadController.deleteFile
   );
 
   router.delete(
@@ -90,7 +90,7 @@ export async function getFileUploaderRouter({ fileUpload }: ArkosConfig) {
       "file-upload",
       authConfigs.accessControl
     ),
-    fileUploaderController.updateFile
+    fileUploadController.updateFile
   );
 
   return router;

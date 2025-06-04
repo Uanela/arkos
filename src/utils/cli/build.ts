@@ -27,10 +27,12 @@ export function buildCommand(options: BuildOptions = {}) {
   const moduleType = validateModuleType(options.module);
 
   try {
-    console.info(`🛠️ Using env variables from ${envFiles?.join(", ")}...`);
     console.info(
-      `🚀 Building an optimized production ready project with ${moduleType} format...\n`
+      `Using env variables from ${envFiles
+        ?.join(", ")
+        .replaceAll(process.cwd(), "")}...\n`
     );
+    console.info(`Building an optimized production ready project.\n`);
 
     ensureBuildDir();
 
@@ -42,7 +44,7 @@ export function buildCommand(options: BuildOptions = {}) {
       buildJavaScriptProject(options, moduleType);
     }
 
-    console.info(`✅ Build complete! \n`);
+    console.info(`Build complete! \n`);
     console.info(`Next step:\n`);
     console.info(`Run the generated build with the start command.\n`);
   } catch (error) {
@@ -119,6 +121,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
     ...tsconfig,
     compilerOptions: {
       ...(tsconfig.compilerOptions || {}),
+      rootDir: ".",
       outDir: path.join(`./${BUILD_DIR}`),
       // module: moduleType === "esm" ? "ESNext" : "CommonJS",
     },
@@ -209,7 +212,7 @@ function copyAllNonSourceFiles(
   moduleType: ModuleType,
   skipExtensions: string[]
 ) {
-  const targetDir = path.join(BUILD_DIR, moduleType);
+  const targetDir = path.join(BUILD_DIR);
   const sourceDir = "src";
 
   try {
@@ -268,7 +271,7 @@ function copyAllNonSourceFiles(
       }
     }
 
-    console.info(`📦 Copied all non-source files to ${targetDir}`);
+    console.info(`Copied all non-source files to ${targetDir}`);
   } catch (error) {
     console.warn("Warning: Error copying project files:", error);
     console.error(error);

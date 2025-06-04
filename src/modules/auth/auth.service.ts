@@ -42,7 +42,8 @@ export class AuthService {
 
     if (
       process.env.NODE_ENV === "production" &&
-      (!process.env.JWT_SECRET || !configs?.jwt?.secret)
+      !process.env.JWT_SECRET &&
+      !configs?.jwt?.secret
     )
       throw new AppError("Missing JWT secret on production!", 500);
 

@@ -480,7 +480,7 @@ export type ArkosConfig = {
     disable?: (
       | "auth-router"
       | "prisma-models-router"
-      | "file-uploader"
+      | "file-upload"
       | "welcome-endpoint"
     )[];
     /**
@@ -511,11 +511,11 @@ export type ArkosConfig = {
         config: ArkosConfig
       ) => express.Router | Promise<express.Router>;
       /**
-       * Replace the default file uploader router
+       * Replace the default file upload router
        * @param config The original Arkos configuration
        * @returns A router handling file upload endpoints
        */
-      fileUploader?: (
+      fileUpload?: (
         config: ArkosConfig
       ) => express.Router | Promise<express.Router>;
       /**

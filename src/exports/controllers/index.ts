@@ -1,3 +1,4 @@
-import fileUploaderController from "../../modules/file-uploader/file-uploader.controller";
+import { BaseController } from "./../../modules/base/base.controller";
+import fileUploadController from "../../modules/file-upload/file-upload.controller";
 
-export { fileUploaderController };
+export { fileUploadController, BaseController };

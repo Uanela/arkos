@@ -7,17 +7,14 @@ import { promisify } from "util";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { ArkosRequest, ArkosResponse } from "../../types";
-import {
-  processFile,
-  processImage,
-} from "./utils/helpers/file-uploader.helpers";
+import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { removeBothSlashes } from "../../utils/helpers/text.helpers";
 
 /**
  * Service to handle file uploads, including single and multiple file uploads,
  * file validation (type, size), and file deletion.
  */
-export class FileUploaderService {
+export class FileUploadService {
   public readonly uploadDir: string;
   private fileSizeLimit: number;
   private allowedFileTypes: RegExp;
@@ -82,7 +79,7 @@ export class FileUploaderService {
    * Returns the multer upload configuration.
    * @returns {multer.Instance} The multer instance configured for file uploads.
    */
-  public getUploader() {
+  public getUpload() {
     return multer({
       storage: this.storage,
       fileFilter: this.fileFilter,
@@ -97,7 +94,7 @@ export class FileUploaderService {
    */
   public handleSingleUpload(oldFilePath?: string) {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
-      const upload = this.getUploader().single(this.getFieldName());
+      const upload = this.getUpload().single(this.getFieldName());
       upload(req, res, async (err) => {
         if (err instanceof multer.MulterError) {
           return next(err);
@@ -133,10 +130,7 @@ export class FileUploaderService {
    */
   public handleMultipleUpload() {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
-      const upload = this.getUploader().array(
-        this.getFieldName(),
-        this.maxCount
-      );
+      const upload = this.getUpload().array(this.getFieldName(), this.maxCount);
       upload(req, res, (err) => {
         if (err instanceof multer.MulterError) return next(err);
         else if (err) return next(err);
@@ -226,25 +220,25 @@ export class FileUploaderService {
 
       // Get the appropriate uploader service based on file type
       const {
-        documentUploaderService,
-        fileUploaderService,
-        imageUploaderService,
-        videoUploaderService,
-      } = getFileUploaderServices();
+        documentUploadService,
+        fileUploadService,
+        imageUploadService,
+        videoUploadService,
+      } = getFileUploadServices();
 
       let filePath: string;
       switch (fileType) {
         case "images":
-          filePath = path.join(imageUploaderService.uploadDir, fileName);
+          filePath = path.join(imageUploadService.uploadDir, fileName);
           break;
         case "videos":
-          filePath = path.join(videoUploaderService.uploadDir, fileName);
+          filePath = path.join(videoUploadService.uploadDir, fileName);
           break;
         case "documents":
-          filePath = path.join(documentUploaderService.uploadDir, fileName);
+          filePath = path.join(documentUploadService.uploadDir, fileName);
           break;
         case "files":
-          filePath = path.join(fileUploaderService.uploadDir, fileName);
+          filePath = path.join(fileUploadService.uploadDir, fileName);
           break;
         default:
           throw new AppError(`Unsupported file type: ${fileType}`, 400);
@@ -313,8 +307,8 @@ export class FileUploaderService {
 
       // Use appropriate upload handler
       const uploadHandler = isMultiple
-        ? this.getUploader().array(this.getFieldName(), this.maxCount)
-        : this.getUploader().single(this.getFieldName());
+        ? this.getUpload().array(this.getFieldName(), this.maxCount)
+        : this.getUpload().single(this.getFieldName());
 
       uploadHandler(req, res, async (err) => {
         if (err) return reject(err);
@@ -337,8 +331,8 @@ export class FileUploaderService {
           let data;
           if (req.files && Array.isArray(req.files) && req.files.length > 0) {
             // Process multiple files
-            const isImageUploader = this.uploadDir?.includes?.("/images");
-            if (isImageUploader) {
+            const isImageUpload = this.uploadDir?.includes?.("/images");
+            if (isImageUpload) {
               data = await Promise.all(
                 req.files.map((file) => processImage(req, file.path, options))
               );
@@ -351,8 +345,8 @@ export class FileUploaderService {
             data = data.filter((url) => url !== null);
           } else if (req.file) {
             // Process a single file
-            const isImageUploader = this.uploadDir?.includes?.("/images");
-            if (isImageUploader) {
+            const isImageUpload = this.uploadDir?.includes?.("/images");
+            if (isImageUpload) {
               data = await processImage(req, req.file.path, options);
             } else {
               data = await processFile(req, req.file.path);
@@ -395,25 +389,25 @@ export class FileUploaderService {
 
       // Get the appropriate uploader service based on file type
       const {
-        documentUploaderService,
-        fileUploaderService,
-        imageUploaderService,
-        videoUploaderService,
-      } = getFileUploaderServices();
+        documentUploadService,
+        fileUploadService,
+        imageUploadService,
+        videoUploadService,
+      } = getFileUploadServices();
 
-      let targetService: FileUploaderService;
+      let targetService: FileUploadService;
       switch (fileType) {
         case "images":
-          targetService = imageUploaderService;
+          targetService = imageUploadService;
           break;
         case "videos":
-          targetService = videoUploaderService;
+          targetService = videoUploadService;
           break;
         case "documents":
-          targetService = documentUploaderService;
+          targetService = documentUploadService;
           break;
         case "files":
-          targetService = fileUploaderService;
+          targetService = fileUploadService;
           break;
         default:
           throw new AppError(`Unsupported file type: ${fileType}`, 400);
@@ -445,7 +439,7 @@ export class FileUploaderService {
  * Creates and returns all file uploader services based on config
  * @returns Object containing all specialized file uploader services
  */
-export const getFileUploaderServices = () => {
+export const getFileUploadServices = () => {
   const { fileUpload } = getArkosConfig();
   const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
 
@@ -484,7 +478,7 @@ export const getFileUploaderServices = () => {
   /**
    * Specialized file uploader service for handling image uploads.
    */
-  const imageUploaderService = new FileUploaderService(
+  const imageUploadService = new FileUploadService(
     `${baseUploadDir}/images`,
     restrictions.images.maxSize,
     restrictions.images.supportedFilesRegex,
@@ -494,7 +488,7 @@ export const getFileUploaderServices = () => {
   /**
    * Specialized file uploader service for handling video uploads.
    */
-  const videoUploaderService = new FileUploaderService(
+  const videoUploadService = new FileUploadService(
     `${baseUploadDir}/videos`,
     restrictions.videos.maxSize,
     restrictions.videos.supportedFilesRegex,
@@ -504,7 +498,7 @@ export const getFileUploaderServices = () => {
   /**
    * Specialized file uploader service for handling document uploads.
    */
-  const documentUploaderService = new FileUploaderService(
+  const documentUploadService = new FileUploadService(
     `${baseUploadDir}/documents`,
     restrictions.documents.maxSize,
     restrictions.documents.supportedFilesRegex,
@@ -514,7 +508,7 @@ export const getFileUploaderServices = () => {
   /**
    * Generic file uploader service for handling all file uploads.
    */
-  const fileUploaderService = new FileUploaderService(
+  const fileUploadService = new FileUploadService(
     `${baseUploadDir}/files`,
     restrictions.files.maxSize,
     restrictions.files.supportedFilesRegex,
@@ -522,9 +516,9 @@ export const getFileUploaderServices = () => {
   );
 
   return {
-    imageUploaderService,
-    videoUploaderService,
-    documentUploaderService,
-    fileUploaderService,
+    imageUploadService,
+    videoUploadService,
+    documentUploadService,
+    fileUploadService,
   };
 };

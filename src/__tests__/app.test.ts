@@ -12,7 +12,7 @@ import {
   getPrismaModelsRouter,
   getAvailableResourcesAndRoutesRouter,
 } from "../modules/base/base.router";
-import { getFileUploaderRouter } from "../modules/file-uploader/file-uploader.router";
+import { getFileUploadRouter } from "../modules/file-upload/file-upload.router";
 import deepmerge from "../utils/helpers/deepmerge.helper";
 
 // Mock dependencies
@@ -84,8 +84,8 @@ jest.mock("../modules/base/base.router", () => ({
   getAvailableResourcesAndRoutesRouter: jest.fn().mockReturnValue(jest.fn()),
 }));
 
-jest.mock("../modules/file-uploader/file-uploader.router", () => ({
-  getFileUploaderRouter: jest.fn().mockResolvedValue(jest.fn()),
+jest.mock("../modules/file-upload/file-upload.router", () => ({
+  getFileUploadRouter: jest.fn().mockResolvedValue(jest.fn()),
 }));
 
 describe("App Bootstrap", () => {
@@ -293,7 +293,7 @@ describe("App Bootstrap", () => {
       });
 
       expect(app.get).toHaveBeenCalledWith("/api", expect.any(Function));
-      expect(getFileUploaderRouter).toHaveBeenCalled();
+      expect(getFileUploadRouter).toHaveBeenCalled();
       expect(getPrismaModelsRouter).toHaveBeenCalled();
       expect(getAvailableResourcesAndRoutesRouter).toHaveBeenCalled();
     });
@@ -303,16 +303,12 @@ describe("App Bootstrap", () => {
         welcomeMessage: "Test API",
         port: 3000,
         routers: {
-          disable: [
-            "welcome-endpoint",
-            "file-uploader",
-            "prisma-models-router",
-          ],
+          disable: ["welcome-endpoint", "file-upload", "prisma-models-router"],
         },
       });
 
       expect(app.get).not.toHaveBeenCalledWith("/api", expect.any(Function));
-      expect(getFileUploaderRouter).not.toHaveBeenCalled();
+      expect(getFileUploadRouter).not.toHaveBeenCalled();
       expect(getPrismaModelsRouter).not.toHaveBeenCalled();
 
       // This should still be called
@@ -321,7 +317,7 @@ describe("App Bootstrap", () => {
 
     it("uses replaced routers", async () => {
       const customWelcomeHandler = jest.fn();
-      const customFileUploaderRouter = jest
+      const customFileUploadRouter = jest
         .fn()
         .mockResolvedValue(express.Router());
       const customPrismaModelsRouter = jest
@@ -334,16 +330,16 @@ describe("App Bootstrap", () => {
         routers: {
           replace: {
             welcomeEndpoint: customWelcomeHandler,
-            fileUploader: customFileUploaderRouter,
+            fileUpload: customFileUploadRouter,
             prismaModelsRouter: customPrismaModelsRouter,
           },
         },
       });
 
       expect(app.get).toHaveBeenCalledWith("/api", customWelcomeHandler);
-      expect(customFileUploaderRouter).toHaveBeenCalled();
+      expect(customFileUploadRouter).toHaveBeenCalled();
       expect(customPrismaModelsRouter).toHaveBeenCalled();
-      expect(getFileUploaderRouter).not.toHaveBeenCalled();
+      expect(getFileUploadRouter).not.toHaveBeenCalled();
       expect(getPrismaModelsRouter).not.toHaveBeenCalled();
     });
 
