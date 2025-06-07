@@ -1,6 +1,6 @@
 import { RouterConfig } from "../types/router-config";
 import { BaseController } from "./../modules/base/base.controller";
-import { initApp } from "../server";
+import { initApp, getArkosConfig } from "../server";
 import {
   ArkosRequest,
   ArkosResponse,
@@ -27,6 +27,7 @@ export {
   BaseController,
   ArkosConfig,
   RouterConfig,
+  getArkosConfig,
 };
 
 /**

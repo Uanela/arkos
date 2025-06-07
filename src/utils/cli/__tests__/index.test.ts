@@ -4,7 +4,7 @@ import path from "path";
 import { buildCommand } from "../build";
 import { devCommand } from "../dev";
 import { startCommand } from "../start";
-import { getVersion, program } from "../index";
+import { getVersion } from "../index";
 
 // Mock dependencies
 jest.mock("commander", () => {
@@ -16,6 +16,7 @@ jest.mock("commander", () => {
     option: jest.fn().mockReturnThis(),
     action: jest.fn().mockReturnThis(),
     parse: jest.fn().mockReturnThis(),
+    alias: jest.fn().mockReturnThis(),
     requiredOption: jest.fn().mockReturnThis(),
   };
   return {
@@ -36,6 +37,7 @@ jest.mock("../start", () => ({
 }));
 
 jest.mock("fs", () => ({
+  ...jest.requireActual("fs"),
   readFileSync: jest.fn(() => '{ "version": "1.2.3"}'),
 }));
 

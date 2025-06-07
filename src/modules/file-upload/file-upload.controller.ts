@@ -14,11 +14,18 @@ import {
   statAsync,
 } from "../../utils/helpers/fs.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
+import { getModelModules } from "../../utils/helpers/models.helpers";
 
 /**
  * Handles files uploads and allow to be extended
  */
 class FileUploadController {
+  /**
+   * Model-specific middlewares loaded from model modules
+   * @private
+   */
+  private middlewares: any;
+
   /**
    * Handles file upload requests, processes images if needed, and returns URLs
    *
@@ -29,6 +36,8 @@ class FileUploadController {
    */
   uploadFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      this.middlewares = getModelModules("file-upload")?.middlewares || {};
+
       const { fileType } = req.params;
       const { format, width, height, resizeTo } = req.query;
       const options = { format, width, height, resizeTo };
@@ -77,7 +86,7 @@ class FileUploadController {
 
         // Process all uploaded files
         let data;
-        if (req.files && Array.isArray(req.files)) {
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
           if (fileType === "images") {
             // Process multiple image files with image transformations
             data = await Promise.all(
@@ -102,13 +111,21 @@ class FileUploadController {
           return next(new AppError("No file uploaded", 400));
         }
 
-        res.status(200).json({
+        const jsonContent = {
           success: true,
           data,
           message: Array.isArray(data)
             ? `${data.length} files uploaded successfully`
             : "File uploaded successfully",
-        });
+        };
+
+        if (this.middlewares?.afterUploadFile) {
+          req.responseData = jsonContent;
+          req.responseStatus = 200;
+          return next();
+        }
+
+        res.status(200).json(jsonContent);
       });
     }
   );
@@ -123,6 +140,8 @@ class FileUploadController {
    */
   deleteFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      this.middlewares = getModelModules("file-upload")?.middlewares || {};
+
       const { fileType, fileName } = req.params;
 
       const {
@@ -174,10 +193,12 @@ class FileUploadController {
           await uploader.deleteFileByName(fileName, fileType);
         }
 
-        res.status(200).json({
-          success: true,
-          message: "File deleted successfully",
-        });
+        if (this.middlewares.afterDeleteFile) {
+          req.responseStatus = 204;
+          return next();
+        }
+
+        res.status(204).json();
       } catch (error) {
         // Handle different types of errors
         if (error instanceof AppError) {
@@ -197,6 +218,8 @@ class FileUploadController {
    */
   updateFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      this.middlewares = getModelModules("file-upload")?.middlewares || {};
+
       const { fileType, fileName } = req.params;
       const { format, width, height, resizeTo } = req.query;
       const options = { format, width, height, resizeTo };
@@ -281,7 +304,7 @@ class FileUploadController {
 
         // Process the new uploaded file(s)
         let data;
-        if (req.files && Array.isArray(req.files)) {
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
           if (fileType === "images") {
             // Process multiple image files with image transformations
             data = await Promise.all(
@@ -304,7 +327,7 @@ class FileUploadController {
           }
         }
 
-        res.status(200).json({
+        const jsonContent = {
           success: true,
           data,
           message: Array.isArray(data)
@@ -314,7 +337,15 @@ class FileUploadController {
             : fileName && fileName.trim() !== ""
             ? "File updated successfully"
             : "File uploaded successfully",
-        });
+        };
+
+        if (this.middlewares.afterUpdateFile) {
+          req.responseData = jsonContent;
+          req.responseStatus = 200;
+          return next();
+        }
+
+        res.status(200).json(jsonContent);
       });
     }
   );

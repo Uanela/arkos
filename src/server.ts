@@ -74,7 +74,12 @@ process.on("unhandledRejection", (err: AppError) => {
   });
 });
 
-export function getArkosConfig() {
+/**
+ * Gives access to the underlying current configurations being used by **Arkos** by default and also passed through `arkos.init()`
+ *
+ * @returns {ArkosConfig}
+ */
+export function getArkosConfig(): ArkosConfig {
   return _arkosConfig;
 }
 
