@@ -1,13 +1,13 @@
-// src/utils/cli/generate.ts
 import fs from "fs";
 import path from "path";
-import { generateTemplate } from "./utils/generators";
-import { ensureDirectoryExists } from "./utils/helpers";
+import { generateTemplate } from "./utils/template-generators";
+import { ensureDirectoryExists } from "./utils/cli.helpers";
 import {
   camelCase,
   kebabCase,
   pascalCase,
 } from "../helpers/change-case.helpers";
+import { getUserFileExtension } from "../helpers/fs.helpers";
 
 interface GenerateOptions {
   path?: string;
@@ -18,7 +18,7 @@ export const generateCommand = {
   controller: async (options: GenerateOptions) => {
     const modelName = options.model;
     if (!modelName) {
-      console.error("❌ Model name is required");
+      console.error("\n❌ Model name is required");
       process.exit(1);
     }
 
@@ -30,8 +30,9 @@ export const generateCommand = {
       kebab: kebabCase(modelName),
     };
 
+    const ext = getUserFileExtension();
     const modulePath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(modulePath, `${names.kebab}.controller.ts`);
+    const filePath = path.join(modulePath, `${names.kebab}.controller.${ext}`);
 
     try {
       ensureDirectoryExists(modulePath);
@@ -56,7 +57,7 @@ export const generateCommand = {
   service: async (options: GenerateOptions) => {
     const modelName = options.model;
     if (!modelName) {
-      console.error("❌ Model name is required");
+      console.error("\n❌ Model name is required");
       process.exit(1);
     }
 
@@ -68,8 +69,9 @@ export const generateCommand = {
       kebab: kebabCase(modelName),
     };
 
+    const ext = getUserFileExtension();
     const modulePath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(modulePath, `${names.kebab}.service.ts`);
+    const filePath = path.join(modulePath, `${names.kebab}.service.${ext}`);
 
     try {
       ensureDirectoryExists(modulePath);
@@ -82,7 +84,7 @@ export const generateCommand = {
       });
 
       fs.writeFileSync(filePath, content);
-      console.log(`✅ Service generated: ${filePath}`);
+      console.log(`\n✅ Service generated: ${filePath}`);
     } catch (error) {
       console.error(`❌ Failed to generate service:`, error);
       process.exit(1);
@@ -92,7 +94,7 @@ export const generateCommand = {
   router: async (options: GenerateOptions) => {
     const modelName = options.model;
     if (!modelName) {
-      console.error("❌ Model name is required");
+      console.error("\n❌ Model name is required");
       process.exit(1);
     }
 
@@ -104,8 +106,9 @@ export const generateCommand = {
       kebab: kebabCase(modelName),
     };
 
+    const ext = getUserFileExtension();
     const modulePath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(modulePath, `${names.kebab}.router.ts`);
+    const filePath = path.join(modulePath, `${names.kebab}.router.${ext}`);
 
     try {
       ensureDirectoryExists(modulePath);
@@ -119,15 +122,19 @@ export const generateCommand = {
       });
 
       fs.writeFileSync(filePath, content);
-      console.log(`✅ Router generated: ${filePath}`);
+      console.log(
+        `\n✅ Router generated: ${filePath.replace(process.cwd(), "")}`
+      );
     } catch (error) {
       console.error(`❌ Failed to generate router:`, error);
       process.exit(1);
     }
   },
 
-  middleware: async (middlewareName: string, options: GenerateOptions) => {
-    if (!middlewareName) {
+  middlewares: async (options: GenerateOptions) => {
+    const modelName = options.model;
+
+    if (!modelName) {
       console.error("❌ Middleware name is required");
       process.exit(1);
     }
@@ -135,28 +142,34 @@ export const generateCommand = {
     const { path: customPath = "src/modules" } = options;
 
     const names = {
-      pascal: pascalCase(middlewareName),
-      camel: camelCase(middlewareName),
-      kebab: kebabCase(middlewareName),
+      pascal: pascalCase(modelName),
+      camel: camelCase(modelName),
+      kebab: kebabCase(modelName),
     };
 
-    const middlewarePath = path.join(process.cwd(), customPath);
-    const filePath = path.join(middlewarePath, `${names.kebab}.middlewares.ts`);
+    const ext = getUserFileExtension();
+    const middlewarePath = path.join(process.cwd(), customPath, names.kebab);
+    const filePath = path.join(
+      middlewarePath,
+      `${names.kebab}.middlewares.${ext}`
+    );
 
     try {
       ensureDirectoryExists(middlewarePath);
 
-      const content = generateTemplate("middleware", { middlewareName: names });
+      const content = generateTemplate("middlewares", {
+        modelName: names,
+      });
 
       fs.writeFileSync(filePath, content);
-      console.log(`✅ Middleware generated: ${filePath}`);
+      console.log(`\n✅ Middleware generated: ${filePath}`);
     } catch (error) {
       console.error(`❌ Failed to generate middleware:`, error);
       process.exit(1);
     }
   },
 
-  authConfig: async (options: GenerateOptions) => {
+  authConfigs: async (options: GenerateOptions) => {
     const modelName = options.model;
     const { path: customPath = "src/modules" } = options;
 
@@ -166,16 +179,19 @@ export const generateCommand = {
       kebab: kebabCase(modelName),
     };
 
-    const configPath = path.join(process.cwd(), customPath);
-    const filePath = path.join(configPath, `${names.kebab}.auth.ts`);
+    const ext = getUserFileExtension();
+    const configPath = path.join(process.cwd(), customPath, names.kebab);
+    const filePath = path.join(configPath, `${names.kebab}.auth.${ext}`);
 
     try {
       ensureDirectoryExists(configPath);
 
-      const content = generateTemplate("auth-config");
+      const content = generateTemplate("auth-configs");
 
       fs.writeFileSync(filePath, content);
-      console.log(`✅ Auth config generated: ${filePath}`);
+      console.log(
+        `\n✅ Auth config generated: ${filePath.replace(process.cwd(), "")}`
+      );
     } catch (error) {
       console.error(`❌ Failed to generate auth config:`, error);
       process.exit(1);
@@ -185,7 +201,14 @@ export const generateCommand = {
   queryOptions: async (options: GenerateOptions) => {
     const modelName = options.model;
     if (!modelName) {
-      console.error("❌ Model name is required");
+      console.error("\n❌ Model name is required");
+      process.exit(1);
+    }
+
+    if (modelName === "file-upload") {
+      console.error(
+        "\n❌ Prisma query options are not available to file-upload resource"
+      );
       process.exit(1);
     }
 
@@ -197,8 +220,9 @@ export const generateCommand = {
       kebab: kebabCase(modelName),
     };
 
-    const configPath = path.join(process.cwd(), customPath);
-    const filePath = path.join(configPath, `${names.kebab}.query.ts`);
+    const ext = getUserFileExtension();
+    const configPath = path.join(process.cwd(), customPath, names.kebab);
+    const filePath = path.join(configPath, `${names.kebab}.query.${ext}`);
 
     try {
       ensureDirectoryExists(configPath);
@@ -206,7 +230,9 @@ export const generateCommand = {
       const content = generateTemplate("query-options", { modelName: names });
 
       fs.writeFileSync(filePath, content);
-      console.log(`✅ Query config generated: ${filePath}`);
+      console.log(
+        `\n✅ Query config generated: ${filePath.replace(process.cwd(), "")}`
+      );
     } catch (error) {
       console.error(`❌ Failed to generate query config:`, error);
       process.exit(1);

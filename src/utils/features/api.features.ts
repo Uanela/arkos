@@ -38,9 +38,6 @@ export default class APIFeatures {
     this.modelName = modelName;
     this.searchParams = parseQueryParamsWithModifiers(req.query);
     this.filters = { ...this.filters };
-
-    // if (relationFields) this.filters.include = relationFields;
-    // this.relationFields = relationFields || {};
   }
 
   filter() {
@@ -49,9 +46,6 @@ export default class APIFeatures {
     const queryObj = { ...this.searchParams };
 
     this.excludedFields.forEach((el) => delete queryObj[el]);
-
-    // let queryStr = JSON.stringify(queryObj);
-    // queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `${match}`);
 
     const whereObj = { ...this.req.params, ...queryObj };
     const whereLogicalOperatorFilters = Object.keys(whereObj).map((key) => ({

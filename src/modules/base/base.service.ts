@@ -16,6 +16,7 @@ import authService from "../auth/auth.service";
 /**
  * Base service class for handling CRUD operations on a specific model.
  * This class provides standard implementation of data operations that can be extended
+ *
  * by model-specific service classes.
  *
  * @class BaseService
@@ -25,7 +26,7 @@ import authService from "../auth/auth.service";
  * **Example:** creating a simple service
  *
  * ```ts
- * import prisma from '../../utils/prisma'
+ * import { prisma } from '../../utils/prisma'
  *
  * const userService = new BaseService<typeof prisma.user>("user")
  * ```
@@ -81,10 +82,11 @@ export class BaseService<TModel extends Record<string, any> = any> {
   ): Promise<
     TModel["create"] extends (args: { data: any } & TOptions) => infer R
       ? R
-      : never
+      : any
   > {
+    // user uer Password123 true false Promise { true }
     if (kebabCase(this.modelName) === "user" && (data as any).password)
-      if (!authService.isPasswordHashed((data as any).password))
+      if (!(await authService.isPasswordHashed((data as any).password)))
         (data as any).password = await authService.hashPassword(
           (data as any).password
         );
@@ -129,7 +131,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
   ): Promise<
     TModel["createMany"] extends (args: { data: any } & TOptions) => infer R
       ? R
-      : never
+      : any
   > {
     const prisma = getPrismaInstance();
 
@@ -137,7 +139,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       (data as { [x: string]: any; password?: string }[]).forEach(
         async (curr, i) => {
           if ("password" in curr && this.modelName === "user")
-            if (!authService.isPasswordHashed(curr.password!))
+            if (!(await authService.isPasswordHashed(curr.password!)))
               curr.password = await authService.hashPassword(curr?.password!);
 
           data[i] = handleRelationFieldsInBody(
@@ -198,7 +200,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
   ): Promise<
     TModel["findMany"] extends (args: { where: any } & TOptions) => infer R
       ? R
-      : never
+      : any
   > {
     const prisma = getPrismaInstance();
 
@@ -224,7 +226,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
   ): Promise<
     TModel["findUnique"] extends (args: { where: any } & TOptions) => infer R
       ? R
-      : never
+      : any
   > {
     const prisma = getPrismaInstance();
 
@@ -269,7 +271,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
           args: { where: any } & TOptions
         ) => infer R2
       ? R2
-      : never
+      : any
   > {
     const prisma = getPrismaInstance();
 
@@ -326,12 +328,12 @@ export class BaseService<TModel extends Record<string, any> = any> {
       args: { where: any; data: any } & TOptions
     ) => infer R
       ? R
-      : never
+      : any
   > {
     const prisma = getPrismaInstance();
 
     if (kebabCase(this.modelName) === "user" && (data as any)?.password) {
-      if (!authService.isPasswordHashed((data as any).password!))
+      if (!(await authService.isPasswordHashed((data as any).password!)))
         (data as any).password = await authService.hashPassword(
           (data as any)?.password
         );
@@ -384,7 +386,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       args: { where: any; data: any } & TOptions
     ) => infer R
       ? R
-      : never
+      : any
   > {
     const prisma = getPrismaInstance();
 
@@ -392,7 +394,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       (data as { [x: string]: any; password?: string }[]).forEach(
         async (curr, i) => {
           if ("password" in data[i])
-            if (!authService.isPasswordHashed(curr.password!))
+            if (!(await authService.isPasswordHashed(curr.password!)))
               (data[i] as any).password = await authService.hashPassword(
                 curr.password!
               );

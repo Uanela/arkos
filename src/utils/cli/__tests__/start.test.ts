@@ -79,6 +79,9 @@ jest.mock("commander", () => ({
     requiredOption() {
       return this;
     }
+    alias() {
+      return this;
+    }
   },
 }));
 

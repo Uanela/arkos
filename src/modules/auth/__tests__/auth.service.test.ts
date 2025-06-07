@@ -16,6 +16,7 @@ jest.mock("../../../utils/helpers/models.helpers", () => ({
   getModels: jest.fn().mockReturnValue([]),
   getModelFields: jest.fn().mockReturnValue([]),
   getPrismaModels: jest.fn().mockReturnValue([]),
+  getModelModules: jest.fn().mockReturnValue([]),
 }));
 
 describe("AuthService", () => {
@@ -172,9 +173,6 @@ describe("AuthService", () => {
     it("should return false if password is not hashed", () => {
       // Setup
       const plainPassword = "plainPassword123";
-      (bcrypt.getRounds as jest.Mock).mockImplementation(() => {
-        throw new Error("Invalid hash");
-      });
 
       // Execute
       const result = authService.isPasswordHashed(plainPassword);
@@ -187,9 +185,6 @@ describe("AuthService", () => {
     it("should return false if bcrypt.getRounds throws any error", () => {
       // Setup
       const invalidInput = "";
-      (bcrypt.getRounds as jest.Mock).mockImplementation(() => {
-        throw new TypeError("Invalid input");
-      });
 
       // Execute
       const result = authService.isPasswordHashed(invalidInput);

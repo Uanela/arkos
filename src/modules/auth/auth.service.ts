@@ -75,12 +75,7 @@ export class AuthService {
    * @returns
    */
   isPasswordHashed(password: string) {
-    try {
-      bcrypt.getRounds(password);
-      return true;
-    } catch {
-      return false;
-    }
+    return !Number.isNaN(bcrypt.getRounds(password) * 1);
   }
 
   /**

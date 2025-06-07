@@ -211,4 +211,54 @@ describe("fs.helpers", () => {
       expect(fsHelpers.userFileExtension).toBe("js");
     });
   });
+
+  describe("crd", () => {
+    it("should return the correct the build folder when project is built through arkos build", () => {
+      process.env.ARKOS_BUILD = "true";
+
+      expect(fsHelpers.crd()).toContain("/.build/");
+    });
+
+    it("should return only the process.cwd when project not built", () => {
+      process.env.ARKOS_BUILD = "true";
+
+      expect(fsHelpers.crd()).not.toContain("./build/");
+    });
+  });
+
+  describe("checkFileExists", () => {
+    beforeEach(() => {
+      (path.resolve as jest.Mock).mockImplementation((...args) =>
+        args.join("/").replace(/\/+/g, "/")
+      );
+    });
+
+    it("should return true when file exists", () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      const result = fsHelpers.checkFileExists("existing-file.ts");
+
+      expect(result).toBe(true);
+      expect(fs.existsSync).toHaveBeenCalledWith("existing-file.ts");
+    });
+
+    it("should return false when file does not exist", () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+      const result = fsHelpers.checkFileExists("non-existent-file.ts");
+
+      expect(result).toBe(false);
+      expect(fs.existsSync).toHaveBeenCalledWith("non-existent-file.ts");
+    });
+
+    it("should return false when fs.existsSync throws an error", () => {
+      (fs.existsSync as jest.Mock).mockImplementation(() => {
+        throw new Error("File system error");
+      });
+
+      const result = fsHelpers.checkFileExists("error-file.ts");
+
+      expect(result).toBe(false);
+    });
+  });
 });

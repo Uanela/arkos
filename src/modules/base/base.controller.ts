@@ -326,14 +326,13 @@ export class BaseController {
         queryOptions
       )) as { count: number };
 
-      if (!data || data.count === 0) {
+      if (!data || data.count === 0)
         return next(
           new AppError(
             `${pluralize(pascalCase(String(this.modelName)))} not found`,
             404
           )
         );
-      }
 
       if (this.middlewares.afterUpdateMany) {
         req.responseData = { results: data.count, data };
