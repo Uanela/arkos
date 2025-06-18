@@ -265,11 +265,9 @@ export class BaseService<TModel extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    TModel["findFirst"] extends (args: { where: any } & TOptions) => infer R
+    TModel["findFirst"] extends (args: { where: any }) => infer R
       ? R
-      : TModel["findUnique"] extends (
-          args: { where: any } & TOptions
-        ) => infer R2
+      : TModel["findUnique"] extends (args: { where: any }) => infer R2
       ? R2
       : any
   > {

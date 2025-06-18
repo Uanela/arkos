@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-// First, we need to detect which module system we're running in
-// We'll use dynamic import which works in both systems
 (async () => {
   try {
     // Get path and fs using dynamic import
