@@ -79,7 +79,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             "In order to update password use the update-password endpoint.",
             400,
             {},
-            "invalid_field_password"
+            "InvalidFieldPassword"
           );
 
         const user = (await userService.updateOne(

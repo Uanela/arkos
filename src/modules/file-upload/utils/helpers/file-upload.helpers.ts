@@ -6,13 +6,12 @@ import { getArkosConfig } from "../../../../server";
 import mimetype from "mimetype";
 import { ArkosRequest } from "../../../../types";
 
-export function extractRequestInfo(req: Partial<ArkosRequest>) {
+export function extractRequestInfo(req: ArkosRequest) {
   const { fileUpload } = getArkosConfig();
 
   // Determine the base URL for file access
-  const protocol = req.get?.("host")?.includes?.("localhost")
-    ? "http"
-    : "https";
+  const protocol =
+    req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
   const baseURL = `${protocol}://${req.get?.("host")}`;
   const baseRoute = fileUpload?.baseRoute || "/api/uploads";
   return { baseURL, baseRoute };
@@ -40,7 +39,7 @@ const generateRelativePath = (filePath: string, fileType: string) => {
  * Handles basic file processing for non-image files
  */
 export const processFile = async (
-  req: Partial<ArkosRequest>,
+  req: ArkosRequest,
   filePath: string
 ): Promise<string> => {
   const { baseURL, baseRoute } = extractRequestInfo(req);
@@ -53,7 +52,7 @@ export const processFile = async (
  * Processes image files using Sharp for resizing and format conversion
  */
 export const processImage = async (
-  req: Partial<ArkosRequest>,
+  req: ArkosRequest,
   filePath: string,
   options: Record<string, any>
 ): Promise<string | null> => {
