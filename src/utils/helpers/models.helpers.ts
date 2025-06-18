@@ -232,7 +232,13 @@ export async function importPrismaModelModules(
     Object.entries(fileStructure.core).map(async ([key, fileName]) => {
       const filePath = path.join(moduleDir, fileName);
       try {
-        const module = await importModule(filePath).catch(() => null);
+        const module = await importModule(filePath).catch((err) => {
+          if (!err.message.includes("Cannot find module")) {
+            console.error(`Failed to import ${fileName}: \n`);
+            console.error(err);
+            process.exit(1);
+          }
+        });
 
         if (module) {
           // Validate naming conventions before assignment

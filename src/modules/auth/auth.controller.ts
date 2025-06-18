@@ -6,7 +6,6 @@ import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
 import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
-import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
 import {
@@ -208,10 +207,12 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             req.headers["x-forwarded-proto"] === "https",
           sameSite:
             authConfigs?.jwt?.cookie?.sameSite ||
-            process.env.JWT_COOKIE_SAME_SITE ||
-            process.env.NODE_ENV === "production"
-              ? "none"
-              : "lax",
+            (process.env.JWT_COOKIE_SAME_SITE as
+              | "none"
+              | "lax"
+              | "strict"
+              | undefined) ||
+            (process.env.NODE_ENV === "production" ? "none" : "lax"),
         };
 
         if (
