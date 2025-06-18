@@ -52,6 +52,9 @@ describe("FileUploadService", () => {
       params: {
         fileType: "images",
       },
+      headers: {
+        "x-forwarded-proto": "http",
+      },
     };
 
     mockRes = {

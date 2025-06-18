@@ -22,7 +22,10 @@ describe("File Upload Helpers", () => {
       fileType: "images",
     },
     get: (() => "example.com") as any,
-  };
+    headers: {
+      "x-forwarded-proto": "https",
+    },
+  } as any;
 
   beforeEach(() => {
     jest.clearAllMocks();
