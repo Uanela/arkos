@@ -135,7 +135,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
 
   try {
     // Run TypeScript compiler
-    execSync(`npx tsc -p ${tempTsconfigPath}`, {
+    execSync(`npx rimraf ${BUILD_DIR} && npx tsc -p ${tempTsconfigPath}`, {
       stdio: "inherit",
       cwd: process.cwd(),
     });

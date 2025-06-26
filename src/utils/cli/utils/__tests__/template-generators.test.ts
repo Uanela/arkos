@@ -3,7 +3,6 @@ import {
   getUserFileExtension,
 } from "../../../helpers/fs.helpers";
 import { generateTemplate } from "../template-generators";
-import fs from "fs";
 
 // Mock the fs helpers
 jest.mock("fs");
@@ -20,12 +19,6 @@ describe("generateTemplate", () => {
     pascal: "User",
     camel: "user",
     kebab: "user",
-  };
-
-  const mockMiddlewareName = {
-    pascal: "UserMiddleware",
-    camel: "userMiddleware",
-    kebab: "user-middleware",
   };
 
   beforeEach(() => {

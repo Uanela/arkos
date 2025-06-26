@@ -34,7 +34,7 @@ import authService from "../auth/auth.service";
  * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-service-class}
  *
  */
-export class BaseService<TModel extends Record<string, any> = any> {
+export class BaseService<ModelDelegate extends Record<string, any> = any> {
   /**
    * The camelCase name of the model
    * @public
@@ -65,14 +65,14 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Creates a single record in the database.
    *
-   * @param {Parameters<TModel["create"]>[0] extends { data: infer D; [x: string]: any } ? D : any} data - The data to create the record with.
+   * @param {Parameters<ModelDelegate["create"]>[0] extends { data: infer D; [x: string]: any } ? D : any} data - The data to create the record with.
    * @param {TOptions} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<ReturnType<TModel["create"]>>} The created record.
+   * @returns {Promise<ReturnType<ModelDelegate["create"]>>} The created record.
    */
   async createOne<
-    TOptions extends Omit<Parameters<TModel["create"]>[0], "data">
+    TOptions extends Omit<Parameters<ModelDelegate["create"]>[0], "data">,
   >(
-    data: Parameters<TModel["create"]>[0] extends {
+    data: Parameters<ModelDelegate["create"]>[0] extends {
       data: infer D;
       [x: string]: any;
     }
@@ -80,13 +80,13 @@ export class BaseService<TModel extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    TModel["create"] extends (args: { data: any } & TOptions) => infer R
+    ModelDelegate["create"] extends (args: { data: any } & TOptions) => infer R
       ? R
       : any
   > {
     // user uer Password123 true false Promise { true }
     if (kebabCase(this.modelName) === "user" && (data as any).password)
-      if (!(await authService.isPasswordHashed((data as any).password)))
+      if (!authService.isPasswordHashed((data as any).password))
         (data as any).password = await authService.hashPassword(
           (data as any).password
         );
@@ -101,7 +101,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       ["delete", "disconnect", "update"]
     );
 
-    return await prisma[this.modelName].create(
+    return await (prisma[this.modelName] as ModelDelegate).create(
       deepmerge(
         {
           data: dataWithRelationFieldsHandled,
@@ -114,14 +114,14 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Creates multiple records in the database.
    *
-   * @param {Parameters<TModel["createMany"]>[0] extends { data: infer D; [x: string]: any } ? D : any} data - An array of data to create records with.
+   * @param {Parameters<ModelDelegate["createMany"]>[0] extends { data: infer D; [x: string]: any } ? D : any} data - An array of data to create records with.
    * @param {TOptions} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<ReturnType<TModel["createMany"]>>} The result of the createMany operation.
+   * @returns {Promise<ReturnType<ModelDelegate["createMany"]>>} The result of the createMany operation.
    */
   async createMany<
-    TOptions extends Omit<Parameters<TModel["createMany"]>[0], "data">
+    TOptions extends Omit<Parameters<ModelDelegate["createMany"]>[0], "data">,
   >(
-    data: Parameters<TModel["createMany"]>[0] extends {
+    data: Parameters<ModelDelegate["createMany"]>[0] extends {
       data: infer D;
       [x: string]: any;
     }
@@ -129,7 +129,9 @@ export class BaseService<TModel extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    TModel["createMany"] extends (args: { data: any } & TOptions) => infer R
+    ModelDelegate["createMany"] extends (
+      args: { data: any } & TOptions
+    ) => infer R
       ? R
       : any
   > {
@@ -139,7 +141,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       (data as { [x: string]: any; password?: string }[]).forEach(
         async (curr, i) => {
           if ("password" in curr && this.modelName === "user")
-            if (!(await authService.isPasswordHashed(curr.password!)))
+            if (!authService.isPasswordHashed(curr.password!))
               curr.password = await authService.hashPassword(curr?.password!);
 
           data[i] = handleRelationFieldsInBody(
@@ -152,7 +154,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
         }
       );
 
-    return await prisma[this.modelName].createMany(
+    return await (prisma[this.modelName] as ModelDelegate).createMany(
       deepmerge({ data }, (queryOptions as {}) || {}) as {
         data: any;
       } & TOptions
@@ -162,12 +164,12 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Counts records based on provided filters.
    *
-   * @param {Parameters<TModel["count"]>[0] extends { where: infer W; [x: string]: any } ? W : any} filters - The filters to apply to the query.
+   * @param {Parameters<ModelDelegate["count"]>[0] extends { where?: infer W; [x: string]: any } ? W : any} filters - The filters to apply to the query.
    * @returns {Promise<number>} The count of records matching the filters.
    */
   async count(
-    filters: Parameters<TModel["count"]>[0] extends {
-      where: infer W;
+    filters: Parameters<ModelDelegate["count"]>[0] extends {
+      where?: infer W;
       [x: string]: any;
     }
       ? W
@@ -175,7 +177,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
   ): Promise<number> {
     const prisma = getPrismaInstance();
 
-    return await prisma[this.modelName].count({
+    return await (prisma[this.modelName] as ModelDelegate).count({
       where: filters,
     });
   }
@@ -183,28 +185,30 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Finds multiple records based on provided filters.
    *
-   * @param {Parameters<TModel["findMany"]>[0] extends { where: infer W; [x: string]: any } ? W : any} filters - The filters to apply to the query.
+   * @param {Parameters<ModelDelegate["findMany"]>[0] extends { where?: infer W; [x: string]: any } ? W : any} filters - The filters to apply to the query.
    * @param {TOptions} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<ReturnType<TModel["findMany"]>>} The found data.
+   * @returns {Promise<ReturnType<ModelDelegate["findMany"]>>} The found data.
    */
   async findMany<
-    TOptions extends Omit<Parameters<TModel["findMany"]>[0], "where">
+    TOptions extends Omit<Parameters<ModelDelegate["findMany"]>[0], "where">,
   >(
-    filters: Parameters<TModel["findMany"]>[0] extends {
-      where: infer W;
+    filters: Parameters<ModelDelegate["findMany"]>[0] extends {
+      where?: infer W;
       [x: string]: any;
     }
       ? W
       : any,
     queryOptions?: TOptions
   ): Promise<
-    TModel["findMany"] extends (args: { where: any } & TOptions) => infer R
+    ModelDelegate["findMany"] extends (
+      args: { where: any } & TOptions
+    ) => infer R
       ? R
       : any
   > {
     const prisma = getPrismaInstance();
 
-    return await prisma[this.modelName].findMany(
+    return await (prisma[this.modelName] as ModelDelegate).findMany(
       deepmerge({ where: filters }, (queryOptions as {}) || {}) as {
         where: any;
       } & TOptions
@@ -216,21 +220,23 @@ export class BaseService<TModel extends Record<string, any> = any> {
    *
    * @param {string | number} id - The ID of the record to find.
    * @param {TOptions} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<ReturnType<TModel["findUnique"]>>} The found record or null if not found.
+   * @returns {Promise<ReturnType<ModelDelegate["findUnique"]>>} The found record or null if not found.
    */
   async findById<
-    TOptions extends Omit<Parameters<TModel["findUnique"]>[0], "where">
+    TOptions extends Omit<Parameters<ModelDelegate["findUnique"]>[0], "where">,
   >(
     id: string | number,
     queryOptions?: TOptions
   ): Promise<
-    TModel["findUnique"] extends (args: { where: any } & TOptions) => infer R
+    ModelDelegate["findUnique"] extends (
+      args: { where: any } & TOptions
+    ) => infer R
       ? R
       : any
   > {
     const prisma = getPrismaInstance();
 
-    return await prisma[this.modelName].findUnique(
+    return await (prisma[this.modelName] as ModelDelegate).findUnique(
       deepmerge(
         {
           where: { id },
@@ -243,33 +249,33 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Finds a single record by its parameters.
    *
-   * @param {Parameters<TModel["findFirst"]>[0] extends { where: infer W; [x: string]: any } ? W : any | Parameters<TModel["findUnique"]>[0] extends { where: infer W; [x: string]: any } ? W : any} filters - The parameters to find the record by.
+   * @param {Parameters<ModelDelegate["findFirst"]>[0] extends { where?: infer W; [x: string]: any } ? W : any | Parameters<TModel["findUnique"]>[0] extends { where: infer W; [x: string]: any } ? W : any} filters - The parameters to find the record by.
    * @param {TOptions} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<ReturnType<TModel["findFirst"]> | ReturnType<TModel["findUnique"]>>} The found record or null if not found.
+   * @returns {Promise<ReturnType<ModelDelegate["findFirst"]> | ReturnType<TModel["findUnique"]>>} The found record or null if not found.
    */
   async findOne<
     TOptions extends
-      | Omit<Parameters<TModel["findFirst"]>[0], "where">
-      | Omit<Parameters<TModel["findUnique"]>[0], "where">
+      | Omit<Parameters<ModelDelegate["findFirst"]>[0], "where">
+      | Omit<Parameters<ModelDelegate["findUnique"]>[0], "where">,
   >(
-    filters: Parameters<TModel["findFirst"]>[0] extends {
-      where: infer W;
+    filters: Parameters<ModelDelegate["findFirst"]>[0] extends {
+      where?: infer W;
       [x: string]: any;
     }
       ? W
-      : any | Parameters<TModel["findUnique"]>[0] extends {
-          where: infer W;
-          [x: string]: any;
-        }
-      ? W
-      : any,
+      : any | Parameters<ModelDelegate["findUnique"]>[0] extends {
+            where?: infer W;
+            [x: string]: any;
+          }
+        ? W
+        : any,
     queryOptions?: TOptions
   ): Promise<
-    TModel["findFirst"] extends (args: { where: any }) => infer R
+    ModelDelegate["findFirst"] extends (args: { where: any }) => infer R
       ? R
-      : TModel["findUnique"] extends (args: { where: any }) => infer R2
-      ? R2
-      : any
+      : ModelDelegate["findUnique"] extends (args: { where: any }) => infer R2
+        ? R2
+        : any
   > {
     const prisma = getPrismaInstance();
 
@@ -278,7 +284,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       "id" in (filters as Record<string, any>) &&
       (filters as any).id !== "me"
     )
-      return prisma[this.modelName].findUnique(
+      return (prisma[this.modelName] as ModelDelegate).findUnique(
         deepmerge(
           {
             where: filters,
@@ -287,7 +293,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
         ) as { where: any } & TOptions
       );
 
-    return await prisma[this.modelName].findFirst(
+    return await (prisma[this.modelName] as ModelDelegate).findFirst(
       deepmerge(
         {
           where: filters,
@@ -300,21 +306,24 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Updates a single record by its ID.
    *
-   * @param {Parameters<TModel["update"]>[0] extends { where: infer W; [x: string]: any } ? W : any} filters - The parameters to find the record by.
-   * @param {Parameters<TModel["update"]>[0] extends { data: infer D; [x: string]: any } ? D : any} data - The data to update the record with.
+   * @param {Parameters<ModelDelegate["update"]>[0] extends { where?: infer W; [x: string]: any } ? W : any} filters - The parameters to find the record by.
+   * @param {Parameters<ModelDelegate["update"]>[0] extends { data: infer D; [x: string]: any } ? D : any} data - The data to update the record with.
    * @param {TOptions} [queryOptions] - Additional query options to modify the Prisma query.
-   * @returns {Promise<ReturnType<TModel["update"]>>} The updated record or null if not found.
+   * @returns {Promise<ReturnType<ModelDelegate["update"]>>} The updated record or null if not found.
    */
   async updateOne<
-    TOptions extends Omit<Parameters<TModel["update"]>[0], "where" | "data">
+    TOptions extends Omit<
+      Parameters<ModelDelegate["update"]>[0],
+      "where" | "data"
+    >,
   >(
-    filters: Parameters<TModel["update"]>[0] extends {
-      where: infer W;
+    filters: Parameters<ModelDelegate["update"]>[0] extends {
+      where?: infer W;
       [x: string]: any;
     }
       ? W
       : any,
-    data: Parameters<TModel["update"]>[0] extends {
+    data: Parameters<ModelDelegate["update"]>[0] extends {
       data: infer D;
       [x: string]: any;
     }
@@ -322,7 +331,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    TModel["update"] extends (
+    ModelDelegate["update"] extends (
       args: { where: any; data: any } & TOptions
     ) => infer R
       ? R
@@ -331,7 +340,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
     const prisma = getPrismaInstance();
 
     if (kebabCase(this.modelName) === "user" && (data as any)?.password) {
-      if (!(await authService.isPasswordHashed((data as any).password!)))
+      if (!authService.isPasswordHashed((data as any).password!))
         (data as any).password = await authService.hashPassword(
           (data as any)?.password
         );
@@ -344,7 +353,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       }
     );
 
-    return await prisma[this.modelName].update(
+    return await (prisma[this.modelName] as ModelDelegate).update(
       deepmerge(
         {
           where: filters,
@@ -358,21 +367,24 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Updates multiple records based on the provided filter and data.
    *
-   * @param {Parameters<TModel["updateMany"]>[0] extends { where: infer W; [x: string]: any } ? W : any} filters - The filters to identify records to update.
-   * @param {Parameters<TModel["updateMany"]>[0] extends { data: infer D; [x: string]: any } ? D : any} data - The data to update the records with.
+   * @param {Parameters<ModelDelegate["updateMany"]>[0] extends { where?: infer W; [x: string]: any } ? W : any} filters - The filters to identify records to update.
+   * @param {Parameters<ModelDelegate["updateMany"]>[0] extends { data: infer D; [x: string]: any } ? D : any} data - The data to update the records with.
    * @param {TOptions} [queryOptions] - Additional query options.
-   * @returns {Promise<ReturnType<TModel["updateMany"]>>} The result of the updateMany operation.
+   * @returns {Promise<ReturnType<ModelDelegate["updateMany"]>>} The result of the updateMany operation.
    */
   async updateMany<
-    TOptions extends Omit<Parameters<TModel["updateMany"]>[0], "where" | "data">
+    TOptions extends Omit<
+      Parameters<ModelDelegate["updateMany"]>[0],
+      "where" | "data"
+    >,
   >(
-    filters: Parameters<TModel["updateMany"]>[0] extends {
-      where: infer W;
+    filters: Parameters<ModelDelegate["updateMany"]>[0] extends {
+      where?: infer W;
       [x: string]: any;
     }
       ? W
       : any,
-    data: Parameters<TModel["updateMany"]>[0] extends {
+    data: Parameters<ModelDelegate["updateMany"]>[0] extends {
       data: infer D;
       [x: string]: any;
     }
@@ -380,7 +392,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    TModel["updateMany"] extends (
+    ModelDelegate["updateMany"] extends (
       args: { where: any; data: any } & TOptions
     ) => infer R
       ? R
@@ -392,7 +404,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
       (data as { [x: string]: any; password?: string }[]).forEach(
         async (curr, i) => {
           if ("password" in data[i])
-            if (!(await authService.isPasswordHashed(curr.password!)))
+            if (!authService.isPasswordHashed(curr.password!))
               (data[i] as any).password = await authService.hashPassword(
                 curr.password!
               );
@@ -401,7 +413,7 @@ export class BaseService<TModel extends Record<string, any> = any> {
 
     const firstMerge = deepmerge({ data }, (queryOptions as {}) || {});
 
-    return await prisma[this.modelName].updateMany(
+    return await (prisma[this.modelName] as ModelDelegate).updateMany(
       deepmerge({ where: filters }, firstMerge) as {
         where: any;
         data: any;
@@ -412,20 +424,20 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Deletes a single record by its ID.
    *
-   * @param {Parameters<TModel["delete"]>[0] extends { where: infer W; [x: string]: any } ? W : any} filters - The parameters to find the record by.
-   * @returns {Promise<ReturnType<TModel["delete"]>>} The deleted record or null if an error occurs.
+   * @param {Parameters<ModelDelegate["delete"]>[0] extends { where?: infer W; [x: string]: any } ? W : any} filters - The parameters to find the record by.
+   * @returns {Promise<ReturnType<ModelDelegate["delete"]>>} The deleted record or null if an error occurs.
    */
   async deleteOne(
-    filters: Parameters<TModel["delete"]>[0] extends {
-      where: infer W;
+    filters: Parameters<ModelDelegate["delete"]>[0] extends {
+      where?: infer W;
       [x: string]: any;
     }
       ? W
       : any
-  ): Promise<ReturnType<TModel["delete"]>> {
+  ): Promise<ReturnType<ModelDelegate["delete"]>> {
     const prisma = getPrismaInstance();
 
-    return await prisma[this.modelName].delete({
+    return await (prisma[this.modelName] as ModelDelegate).delete({
       where: filters,
     });
   }
@@ -433,20 +445,22 @@ export class BaseService<TModel extends Record<string, any> = any> {
   /**
    * Deletes multiple records based on the provided filter.
    *
-   * @param {Parameters<TModel["deleteMany"]>[0] extends { where: infer W; [x: string]: any } ? W : Record<string, any>} filters - The filter to identify records to delete.
-   * @returns {Promise<ReturnType<TModel["deleteMany"]>>} The result of the deleteMany operation.
+   * @param {Parameters<ModelDelegate["deleteMany"]>[0] extends { where?: infer W; [x: string]: any } ? W : Record<string, any>} filters - The filter to identify records to delete.
+   * @returns {Promise<ReturnType<ModelDelegate["deleteMany"]>>} The result of the deleteMany operation.
    */
   async deleteMany(
-    filters: Parameters<TModel["deleteMany"]>[0] extends {
-      where: infer W;
+    filters: Parameters<ModelDelegate["deleteMany"]>[0] extends {
+      where?: infer W;
       [x: string]: any;
     }
       ? W
       : Record<string, any>
-  ): Promise<ReturnType<TModel["deleteMany"]>> {
+  ): Promise<ReturnType<ModelDelegate["deleteMany"]>> {
     const prisma = getPrismaInstance();
 
-    return await prisma[this.modelName].deleteMany({ where: filters });
+    return await (prisma[this.modelName] as ModelDelegate).deleteMany({
+      where: filters,
+    });
   }
 }
 

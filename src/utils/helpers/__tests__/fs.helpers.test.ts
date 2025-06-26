@@ -261,4 +261,55 @@ describe("fs.helpers", () => {
       expect(result).toBe(false);
     });
   });
+
+  describe("fullCleanCwd", () => {
+    const originalCwd = process.cwd();
+    const cwd = originalCwd.replace(/\/+$/, "");
+
+    it("should remove the cwd from the start of a path", () => {
+      const input = `${cwd}/src/index.ts`;
+      const expected = "src/index.ts";
+      expect(fsHelpers.fullCleanCwd(input)).toBe(expected);
+    });
+
+    it("should return empty string when path is exactly cwd", () => {
+      const input = cwd;
+      expect(fsHelpers.fullCleanCwd(input)).toBe("");
+    });
+
+    it("should return empty string when path is cwd with trailing slash", () => {
+      const input = cwd + "/";
+      expect(fsHelpers.fullCleanCwd(input)).toBe("");
+    });
+
+    it("should not alter a path that does not start with cwd", () => {
+      const input = "/some/other/path/file.ts";
+      expect(fsHelpers.fullCleanCwd(input)).toBe(input);
+    });
+
+    it("should throw if path is not a string", () => {
+      expect(() => fsHelpers.fullCleanCwd(null as any)).toThrow(
+        "Path must be a string"
+      );
+      expect(() => fsHelpers.fullCleanCwd(undefined as any)).toThrow(
+        "Path must be a string"
+      );
+      expect(() => fsHelpers.fullCleanCwd(123 as any)).toThrow(
+        "Path must be a string"
+      );
+    });
+
+    it("should only remove cwd prefix once", () => {
+      const input = `${cwd}/${cwd}/file.ts`;
+      const expected = `${cwd}/file.ts`; // only the first cwd should be removed
+      expect(fsHelpers.fullCleanCwd(input)).toBe(expected);
+    });
+
+    it("should handle mixed trailing slashes", () => {
+      const withSlash = cwd + "/";
+      const input = withSlash + "folder/file.ts";
+      const expected = "folder/file.ts";
+      expect(fsHelpers.fullCleanCwd(input)).toBe(expected);
+    });
+  });
 });

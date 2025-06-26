@@ -11,6 +11,20 @@ export const crd = () =>
     ? process.cwd() + "/.build/"
     : process.cwd();
 
+/**
+ * Removes the current working directory prefix from the given path.
+ * Handles cases with or without a trailing slash in cwd.
+ *
+ * @param path - The path to clean
+ * @returns The path without the cwd prefix
+ */
+export function fullCleanCwd(path: string): string {
+  if (typeof path !== "string") throw new Error("Path must be a string");
+
+  const cwd = process.cwd().replace(/\/+$/, ""); // remove trailing slashes
+  return path.replace(new RegExp(`^${cwd}/?`), ""); // remove cwd + optional slash
+}
+
 export let userFileExtension: "ts" | "js" | undefined;
 
 /**
