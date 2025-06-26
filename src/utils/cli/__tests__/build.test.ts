@@ -1,6 +1,5 @@
 import fs from "fs";
-import path from "path";
-import { execSync, spawn } from "child_process";
+import { execSync } from "child_process";
 import { buildCommand } from "../build";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../../dotenv.helpers";
@@ -229,7 +228,7 @@ describe("buildCommand", () => {
 
       // Verify TypeScript compilation command
       expect(execSync).toHaveBeenCalledWith(
-        "npx tsc -p /mock/project/tsconfig.arkos-build.json",
+        "npx rimraf .build && npx tsc -p /mock/project/tsconfig.arkos-build.json",
         expect.any(Object)
       );
 

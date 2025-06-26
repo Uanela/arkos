@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.1.92-test",
+  "version": "1.1.93-test",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/es2020/exports/index.js",
@@ -66,30 +66,14 @@
   },
   "typesVersions": {
     "*": {
-      "*": [
-        "./dist/types/exports/*/index.d.ts"
-      ],
-      "services": [
-        "./dist/types/exports/services/index.d.ts"
-      ],
-      "validation": [
-        "./dist/types/exports/validation/index.d.ts"
-      ],
-      "error-handler": [
-        "./dist/types/exports/error-handler/index.d.ts"
-      ],
-      "prisma": [
-        "./dist/types/exports/prisma/index.d.ts"
-      ],
-      "auth": [
-        "./dist/types/exports/auth/index.d.ts"
-      ],
-      "middlewares": [
-        "./dist/types/exports/middlewares/index.d.ts"
-      ],
-      "utils": [
-        "./dist/types/exports/utils/index.d.ts"
-      ]
+      "*": ["./dist/types/exports/*/index.d.ts"],
+      "services": ["./dist/types/exports/services/index.d.ts"],
+      "validation": ["./dist/types/exports/validation/index.d.ts"],
+      "error-handler": ["./dist/types/exports/error-handler/index.d.ts"],
+      "prisma": ["./dist/types/exports/prisma/index.d.ts"],
+      "auth": ["./dist/types/exports/auth/index.d.ts"],
+      "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
+      "utils": ["./dist/types/exports/utils/index.d.ts"]
     }
   },
   "scripts": {
@@ -138,11 +122,7 @@
     "url": "https://github.com/uanela/arkos/issues"
   },
   "homepage": "https://www.arkosjs.com",
-  "files": [
-    "dist",
-    "cli.js",
-    "README.md"
-  ],
+  "files": ["dist", "cli.js", "README.md"],
   "devDependencies": {
     "@prisma/client": "^6.4.1",
     "@types/bcrypt": "^5.0.2",

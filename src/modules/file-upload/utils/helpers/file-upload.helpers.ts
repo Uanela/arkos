@@ -5,6 +5,7 @@ import { promisify } from "util";
 import { getArkosConfig } from "../../../../server";
 import mimetype from "mimetype";
 import { ArkosRequest } from "../../../../types";
+import { fullCleanCwd } from "../../../../utils/helpers/fs.helpers";
 
 export function extractRequestInfo(req: ArkosRequest) {
   const { fileUpload } = getArkosConfig();
@@ -29,9 +30,13 @@ const generateRelativePath = (filePath: string, fileType: string) => {
     return path.join(fileType, path.basename(filePath));
   } else {
     // For paths within project
-    return filePath
-      .replace(`${baseUploadDir}/`, "")
-      .replace(process.cwd() + "/", "");
+    return fullCleanCwd(
+      filePath
+        .replace(`${baseUploadDir}/`, "")
+        .replace(`/${baseUploadDir}/`, "")
+        .replace(`/${baseUploadDir}`, "")
+        .replace(`${baseUploadDir}`, "")
+    );
   }
 };
 
