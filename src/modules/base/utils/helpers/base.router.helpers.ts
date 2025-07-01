@@ -12,6 +12,7 @@ import {
   handleRequestBodyValidationAndTransformation,
   sendResponse,
 } from "../../base.middlewares";
+import catchAsync from "../../../error-handler/utils/catch-async";
 
 export function setupRouters(
   models: string[],
@@ -74,6 +75,10 @@ export function setupRouters(
     if (customRouterModule?.default && !customRouterModule?.config?.disable)
       router.use(`/${routeName}`, customRouterModule.default);
 
+    function safeCatchAsync(middleware: any) {
+      return middleware ? catchAsync(middleware) : undefined;
+    }
+
     // POST /{routeName} - Create One
     if (
       !isEndpointDisabled("createOne") &&
@@ -97,13 +102,16 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createOne"
         ),
-        middlewares?.beforeCreateOne || controller.createOne,
-        middlewares?.beforeCreateOne
-          ? controller.createOne
-          : middlewares?.afterCreateOne || sendResponse,
-        middlewares?.beforeCreateOne && middlewares?.afterCreateOne
-          ? middlewares?.afterCreateOne
-          : sendResponse,
+        ...[
+          safeCatchAsync(middlewares?.beforeCreateOne) || controller.createOne,
+          safeCatchAsync(middlewares?.beforeCreateOne)
+            ? controller.createOne
+            : safeCatchAsync(middlewares?.afterCreateOne) || sendResponse,
+          safeCatchAsync(middlewares?.beforeCreateOne) &&
+          safeCatchAsync(middlewares?.afterCreateOne)
+            ? safeCatchAsync(middlewares?.afterCreateOne)
+            : sendResponse,
+        ].filter((m) => !!m),
         sendResponse
       );
     }
@@ -128,14 +136,17 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findMany"
         ),
-        middlewares?.beforeFindMany || controller.findMany,
-        middlewares?.beforeFindMany
-          ? controller.findMany
-          : middlewares?.afterFindMany || sendResponse,
-        middlewares?.beforeFindMany && middlewares?.afterFindMany
-          ? middlewares?.afterFindMany
-          : sendResponse,
-        sendResponse
+        ...[
+          safeCatchAsync(middlewares?.beforeFindMany) || controller.findMany,
+          safeCatchAsync(middlewares?.beforeFindMany)
+            ? controller.findMany
+            : safeCatchAsync(middlewares?.afterFindMany) || sendResponse,
+          safeCatchAsync(middlewares?.beforeFindMany) &&
+          safeCatchAsync(middlewares?.afterFindMany)
+            ? safeCatchAsync(middlewares?.afterFindMany)
+            : sendResponse,
+          sendResponse,
+        ].filter((m) => !!m)
       );
     }
 
@@ -162,14 +173,18 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createMany"
         ),
-        middlewares?.beforeCreateMany || controller.createMany,
-        middlewares?.beforeCreateMany
-          ? controller.createMany
-          : middlewares?.afterCreateMany || sendResponse,
-        middlewares?.beforeCreateMany && middlewares?.afterCreateMany
-          ? middlewares?.afterCreateMany
-          : sendResponse,
-        sendResponse
+        ...[
+          safeCatchAsync(middlewares?.beforeCreateMany) ||
+            controller.createMany,
+          safeCatchAsync(middlewares?.beforeCreateMany)
+            ? controller.createMany
+            : safeCatchAsync(middlewares?.afterCreateMany) || sendResponse,
+          safeCatchAsync(middlewares?.beforeCreateMany) &&
+          safeCatchAsync(middlewares?.afterCreateMany)
+            ? safeCatchAsync(middlewares?.afterCreateMany)
+            : sendResponse,
+          sendResponse,
+        ].filter((m) => !!m)
       );
     }
 
@@ -196,14 +211,18 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
         ),
-        middlewares?.beforeUpdateMany || controller.updateMany,
-        middlewares?.beforeUpdateMany
-          ? controller.updateMany
-          : middlewares?.afterUpdateMany || sendResponse,
-        middlewares?.beforeUpdateMany && middlewares?.afterUpdateMany
-          ? middlewares?.afterUpdateMany
-          : sendResponse,
-        sendResponse
+        ...[
+          safeCatchAsync(middlewares?.beforeUpdateMany) ||
+            controller.updateMany,
+          safeCatchAsync(middlewares?.beforeUpdateMany)
+            ? controller.updateMany
+            : safeCatchAsync(middlewares?.afterUpdateMany) || sendResponse,
+          safeCatchAsync(middlewares?.beforeUpdateMany) &&
+          safeCatchAsync(middlewares?.afterUpdateMany)
+            ? safeCatchAsync(middlewares?.afterUpdateMany)
+            : sendResponse,
+          sendResponse,
+        ].filter((m) => !!m)
       );
     }
 
@@ -230,14 +249,18 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteMany"
         ),
-        middlewares?.beforeDeleteMany || controller.deleteMany,
-        middlewares?.beforeDeleteMany
-          ? controller.deleteMany
-          : middlewares?.afterDeleteMany || sendResponse,
-        middlewares?.beforeDeleteMany && middlewares?.afterDeleteMany
-          ? middlewares?.afterDeleteMany
-          : sendResponse,
-        sendResponse
+        ...[
+          safeCatchAsync(middlewares?.beforeDeleteMany) ||
+            controller.deleteMany,
+          safeCatchAsync(middlewares?.beforeDeleteMany)
+            ? controller.deleteMany
+            : safeCatchAsync(middlewares?.afterDeleteMany) || sendResponse,
+          safeCatchAsync(middlewares?.beforeDeleteMany) &&
+          safeCatchAsync(middlewares?.afterDeleteMany)
+            ? safeCatchAsync(middlewares?.afterDeleteMany)
+            : sendResponse,
+          sendResponse,
+        ].filter((middleware) => !!middleware)
       );
     }
 
@@ -264,14 +287,17 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findOne"
         ),
-        middlewares?.beforeFindOne || controller.findOne,
-        middlewares?.beforeFindOne
-          ? controller.findOne
-          : middlewares?.afterFindOne || sendResponse,
-        middlewares?.beforeFindOne && middlewares?.afterFindOne
-          ? middlewares?.afterFindOne
-          : sendResponse,
-        sendResponse
+        ...[
+          safeCatchAsync(middlewares?.beforeFindOne) || controller.findOne,
+          safeCatchAsync(middlewares?.beforeFindOne)
+            ? controller.findOne
+            : safeCatchAsync(middlewares?.afterFindOne) || sendResponse,
+          safeCatchAsync(middlewares?.beforeFindOne) &&
+          safeCatchAsync(middlewares?.afterFindOne)
+            ? safeCatchAsync(middlewares?.afterFindOne)
+            : sendResponse,
+          sendResponse,
+        ].filter((m) => !!m)
       );
     }
 
@@ -298,13 +324,16 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateOne"
         ),
-        middlewares?.beforeUpdateOne || controller.updateOne,
-        middlewares?.beforeUpdateOne
-          ? controller.updateOne
-          : middlewares?.afterUpdateOne || sendResponse,
-        middlewares?.beforeUpdateOne && middlewares?.afterUpdateOne
-          ? middlewares?.afterUpdateOne
-          : sendResponse,
+        ...[
+          safeCatchAsync(middlewares?.beforeUpdateOne) || controller.updateOne,
+          safeCatchAsync(middlewares?.beforeUpdateOne)
+            ? controller.updateOne
+            : safeCatchAsync(middlewares?.afterUpdateOne) || sendResponse,
+          safeCatchAsync(middlewares?.beforeUpdateOne) &&
+          safeCatchAsync(middlewares?.afterUpdateOne)
+            ? safeCatchAsync(middlewares?.afterUpdateOne)
+            : sendResponse,
+        ].filter((m) => !!m),
         sendResponse
       );
     }
@@ -332,14 +361,17 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteOne"
         ),
-        middlewares?.beforeDeleteOne || controller.deleteOne,
-        middlewares?.beforeDeleteOne
-          ? controller.deleteOne
-          : middlewares?.afterDeleteOne || sendResponse,
-        middlewares?.beforeDeleteOne && middlewares?.afterDeleteOne
-          ? middlewares?.afterDeleteOne
-          : sendResponse,
-        sendResponse
+        ...[
+          safeCatchAsync(middlewares?.beforeDeleteOne) || controller.deleteOne,
+          safeCatchAsync(middlewares?.beforeDeleteOne)
+            ? controller.deleteOne
+            : safeCatchAsync(middlewares?.afterDeleteOne) || sendResponse,
+          safeCatchAsync(middlewares?.beforeDeleteOne) &&
+          safeCatchAsync(middlewares?.afterDeleteOne)
+            ? safeCatchAsync(middlewares?.afterDeleteOne)
+            : sendResponse,
+          sendResponse,
+        ].filter((m) => !!m)
       );
     }
   });
