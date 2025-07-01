@@ -3,6 +3,7 @@ import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import authService from "../../auth/auth.service";
 import { handleRelationFieldsInBody } from "../utils/helpers/base.service.helpers";
 import { getPrismaModelRelations } from "../../../utils/helpers/models.helpers";
+import AppError from "../../error-handler/utils/app-error";
 
 // Mock dependencies
 jest.mock("fs", () => ({
@@ -161,28 +162,6 @@ describe("BaseService", () => {
       );
     });
   });
-
-  // describe("createMany", () => {
-  //   it("should create multiple records and return count", async () => {
-  //     const body = [{ title: "Post 1" }, { title: "Post 2" }];
-
-  //     mockPrisma.post.createMany.mockResolvedValue({ count: 2 });
-  //     mockPrisma.post.count.mockResolvedValue(5);
-
-  //     const result = await baseService.createMany(body);
-
-  //     expect(mockPrisma.post.count).toHaveBeenCalledWith({
-  //       data: body,
-  //     });
-  //     expect(mockPrisma.post.count).toHaveBeenCalled();
-  //     expect(result).toEqual({ total: 5, data: { count: 2 } });
-  //   });
-
-  //   it("should throw error if body is not an array", async () => {
-  //     await expect(baseService.createMany({} as any)).rejects.toThrow(AppError);
-  //     await expect(baseService.createMany([] as any)).rejects.toThrow(AppError);
-  //   });
-  // });
 
   describe("findMany", () => {
     it("should find records based on filters", async () => {
@@ -367,13 +346,15 @@ describe("BaseService", () => {
       );
     });
 
-    // it("should throw error if record not found", async () => {
-    //   mockPrisma.post.update.mockResolvedValue(null);
+    it("should return null if record not found", async () => {
+      mockPrisma.post.update.mockResolvedValue(null);
+      const result = await baseService.updateOne(
+        { id: "999" },
+        { title: "Test" }
+      );
 
-    //   await expect(
-    //     baseService.updateOne({ id: "999" }, { title: "Test" })
-    //   ).rejects.toThrow(AppError);
-    // });
+      expect(result).toBeNull();
+    });
   });
 
   describe("updateMany", () => {

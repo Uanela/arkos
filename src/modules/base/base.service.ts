@@ -80,9 +80,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    ModelDelegate["create"] extends (args: { data: any } & TOptions) => infer R
-      ? R
-      : any
+    ModelDelegate["create"] extends (args: { data: any }) => infer R ? R : any
   > {
     // user uer Password123 true false Promise { true }
     if (kebabCase(this.modelName) === "user" && (data as any).password)
@@ -107,7 +105,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
           data: dataWithRelationFieldsHandled,
         },
         (queryOptions as {}) || {}
-      ) as { data: any } & TOptions
+      ) as { data: any }
     );
   }
 
@@ -129,9 +127,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    ModelDelegate["createMany"] extends (
-      args: { data: any } & TOptions
-    ) => infer R
+    ModelDelegate["createMany"] extends (args: { data: any }) => infer R
       ? R
       : any
   > {
@@ -157,7 +153,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
     return await (prisma[this.modelName] as ModelDelegate).createMany(
       deepmerge({ data }, (queryOptions as {}) || {}) as {
         data: any;
-      } & TOptions
+      }
     );
   }
 
@@ -228,9 +224,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
     id: string | number,
     queryOptions?: TOptions
   ): Promise<
-    ModelDelegate["findUnique"] extends (
-      args: { where: any } & TOptions
-    ) => infer R
+    ModelDelegate["findUnique"] extends (args: { where: any }) => infer R
       ? R
       : any
   > {
@@ -242,7 +236,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
           where: { id },
         },
         queryOptions || {}
-      ) as { where: { id: string | number } } & TOptions
+      ) as { where: { id: string | number } }
     );
   }
 
@@ -290,7 +284,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
             where: filters,
           },
           (queryOptions as {}) || {}
-        ) as { where: any } & TOptions
+        ) as { where: any }
       );
 
     return await (prisma[this.modelName] as ModelDelegate).findFirst(
@@ -299,7 +293,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
           where: filters,
         },
         (queryOptions as {}) || {}
-      ) as { where: any } & TOptions
+      ) as { where: any }
     );
   }
 
@@ -331,9 +325,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    ModelDelegate["update"] extends (
-      args: { where: any; data: any } & TOptions
-    ) => infer R
+    ModelDelegate["update"] extends (args: { where: any; data: any }) => infer R
       ? R
       : any
   > {
@@ -360,7 +352,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
           data: dataWithRelationFieldsHandled,
         },
         (queryOptions as {}) || {}
-      ) as { where: any; data: any } & TOptions
+      ) as { where: any; data: any }
     );
   }
 
@@ -392,9 +384,10 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
       : any,
     queryOptions?: TOptions
   ): Promise<
-    ModelDelegate["updateMany"] extends (
-      args: { where: any; data: any } & TOptions
-    ) => infer R
+    ModelDelegate["updateMany"] extends (args: {
+      where: any;
+      data: any;
+    }) => infer R
       ? R
       : any
   > {
@@ -417,7 +410,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
       deepmerge({ where: filters }, firstMerge) as {
         where: any;
         data: any;
-      } & TOptions
+      }
     );
   }
 
