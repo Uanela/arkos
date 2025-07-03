@@ -22,7 +22,7 @@ export function fullCleanCwd(path: string): string {
   if (typeof path !== "string") throw new Error("Path must be a string");
 
   const cwd = process.cwd().replace(/\/+$/, ""); // remove trailing slashes
-  return path.replace(new RegExp(`^${cwd}/?`), ""); // remove cwd + optional slash
+  return path.replace(new RegExp(`${cwd}/?`, "g"), ""); // remove cwd + optional slash
 }
 
 export let userFileExtension: "ts" | "js" | undefined;

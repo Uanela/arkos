@@ -39,6 +39,7 @@ jest.mock("path", () => ({
 
 jest.mock("../../helpers/fs.helpers", () => ({
   getUserFileExtension: jest.fn(),
+  fullCleanCwd: jest.fn((path) => path),
 }));
 
 jest.mock("../../dotenv.helpers", () => ({
@@ -386,7 +387,10 @@ describe("buildCommand", () => {
 
     it("should handle package.json errors gracefully", () => {
       (fs.readFileSync as jest.Mock).mockImplementation((path) => {
-        if (path.includes("package.json")) {
+        if (
+          path.includes("package.json") &&
+          !path.includes("../../../../../package.json")
+        ) {
           throw new Error("Failed to read package.json");
         }
         return "";
@@ -450,7 +454,7 @@ describe("buildCommand", () => {
 
       expect(loadEnvironmentVariables).toHaveBeenCalled();
       expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Using env variables from .env")
+        expect.stringContaining("Environments")
       );
     });
   });

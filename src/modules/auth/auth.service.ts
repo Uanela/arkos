@@ -45,7 +45,12 @@ export class AuthService {
       !process.env.JWT_SECRET &&
       !configs?.jwt?.secret
     )
-      throw new AppError("Missing JWT secret on production!", 500);
+      throw new AppError(
+        "Missing JWT secret on production!",
+        500,
+        {},
+        "MissingJWTOnProduction"
+      );
 
     secret =
       secret ||
@@ -298,7 +303,9 @@ export class AuthService {
     if (!token)
       throw new AppError(
         "You are not logged in! please log in to get access",
-        401
+        401,
+        {},
+        "LoginRequired"
       );
 
     let decoded: AuthJwtPayload | undefined;
@@ -307,14 +314,18 @@ export class AuthService {
     } catch (err) {
       throw new AppError(
         "Your auth token is invalid, please login again.",
-        401
+        401,
+        {},
+        "InvalidAuthToken"
       );
     }
 
     if (!decoded?.id)
       throw new AppError(
         "Your auth token is invalid, please login again.",
-        401
+        401,
+        {},
+        "InvalidAuthToken"
       );
 
     const user: any | null = await (prisma as any).user.findUnique({
@@ -340,7 +351,9 @@ export class AuthService {
     )
       throw new AppError(
         "User recently changed password! Please log in again.",
-        401
+        401,
+        {},
+        "PasswordChanged"
       );
 
     return user;

@@ -1,19 +1,10 @@
 // src/utils/cli/index.ts
 import { Command } from "commander";
 import { buildCommand } from "./build";
-import path from "path";
-import fs from "fs";
 import { devCommand } from "./dev";
 import { startCommand } from "./start";
 import { generateCommand } from "./generate";
-
-export function getVersion() {
-  const packageJson = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "../../../../package.json"), "utf8")
-  );
-
-  return packageJson.version || "1.0.0";
-}
+import { getVersion } from "./utils/cli.helpers";
 
 const program = new Command();
 
@@ -39,7 +30,6 @@ program
   .option("-h, --host <host>", "Host to bind to")
   .action(startCommand);
 
-// Generate command with alias 'g'
 const generate = program
   .command("generate")
   .alias("g")

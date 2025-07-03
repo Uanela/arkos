@@ -132,26 +132,36 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
       : any
   > {
     const prisma = getPrismaInstance();
+    const dataWithRelationFieldsHandled: any[] = [];
 
     if (Array.isArray(data))
-      (data as { [x: string]: any; password?: string }[]).forEach(
-        async (curr, i) => {
-          if ("password" in curr && this.modelName === "user")
-            if (!authService.isPasswordHashed(curr.password!))
-              curr.password = await authService.hashPassword(curr?.password!);
+      await new Promise((resolve) => {
+        (data as { [x: string]: any; password?: string }[]).forEach(
+          async (curr, i) => {
+            if ("password" in curr && this.modelName === "user")
+              if (!authService.isPasswordHashed(curr.password!))
+                data[i].password = await authService.hashPassword(
+                  curr?.password!
+                );
 
-          data[i] = handleRelationFieldsInBody(
-            data[i] as Record<string, any>,
-            {
-              ...this.relationFields,
-            },
-            ["delete", "disconnect", "update"]
-          );
-        }
-      );
+            dataWithRelationFieldsHandled[i] = handleRelationFieldsInBody(
+              data[i] as Record<string, any>,
+              {
+                ...this.relationFields,
+              },
+              ["delete", "disconnect", "update"]
+            );
+
+            if (i === data.length - 1) resolve(null);
+          }
+        );
+      });
 
     return await (prisma[this.modelName] as ModelDelegate).createMany(
-      deepmerge({ data }, (queryOptions as {}) || {}) as {
+      deepmerge(
+        { data: dataWithRelationFieldsHandled },
+        (queryOptions as {}) || {}
+      ) as {
         data: any;
       }
     );
@@ -394,15 +404,19 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
     const prisma = getPrismaInstance();
 
     if (Array.isArray(data) && this.modelName === "user")
-      (data as { [x: string]: any; password?: string }[]).forEach(
-        async (curr, i) => {
-          if ("password" in data[i])
-            if (!authService.isPasswordHashed(curr.password!))
-              (data[i] as any).password = await authService.hashPassword(
-                curr.password!
-              );
-        }
-      );
+      await new Promise((resolve) => {
+        (data as { [x: string]: any; password?: string }[]).forEach(
+          async (curr, i) => {
+            if ("password" in data[i])
+              if (!authService.isPasswordHashed(curr.password!))
+                (data[i] as any).password = await authService.hashPassword(
+                  curr.password!
+                );
+
+            if (i === data.length - 1) resolve(undefined);
+          }
+        );
+      });
 
     const firstMerge = deepmerge({ data }, (queryOptions as {}) || {});
 

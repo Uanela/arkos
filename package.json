@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.1.97-test",
+  "version": "1.2.0-test",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/es2020/exports/index.js",
@@ -95,7 +95,7 @@
     "test:create": "ts-node src/scripts/create-test.ts",
     "publish:test": "npm publish --tag test",
     "publish:beta": "npm publish --tag beta",
-    "publish": "npm publish "
+    "publish": "npm publish"
   },
   "keywords": [
     "auto API routes",

@@ -7,24 +7,6 @@ export interface PrismaError {
   name?: string; // Error name
 }
 
-// const handleCastErrorDB = (err: AppError) => {
-//   const message = `Invalid ${err?.path}: ${err?.value}`
-//   return new AppError(message, 400)
-// }
-
-// const handleDuplicateFieldDB = (err: AppError) => {
-//   const value = err?.keyValue.name
-//   const message = `Duplicate fiedl value: ${value}. Please use another value!`
-
-//   return new AppError(message, 400)
-// }
-
-// const handleValidationErrorDB = (err: AppError) => {
-//   const errors = Object.values(err?.errors).map((el) => el.message)
-//   const message = `Ivalid input data. ${errors.join('. ')}`
-//   return new AppError(message, 400)
-// }
-
 export function handleJWTError() {
   return new AppError("Invalid token. Please log in again!", 401);
 }

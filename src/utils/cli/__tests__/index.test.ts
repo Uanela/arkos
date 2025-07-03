@@ -4,7 +4,7 @@ import path from "path";
 import { buildCommand } from "../build";
 import { devCommand } from "../dev";
 import { startCommand } from "../start";
-import { getVersion } from "../index";
+import { getVersion } from "../utils/cli.helpers";
 
 // Mock dependencies
 jest.mock("commander", () => {
@@ -77,7 +77,7 @@ describe("CLI Index", () => {
       );
       expect(path.join).toHaveBeenCalledWith(
         expect.any(String),
-        "../../../../package.json"
+        "../../../../../package.json"
       );
       expect(version).toBe("1.2.3");
     });
@@ -184,7 +184,6 @@ describe("CLI Index", () => {
       expect(exports).toHaveProperty("buildCommand");
       expect(exports).toHaveProperty("devCommand");
       expect(exports).toHaveProperty("startCommand");
-      expect(exports).toHaveProperty("getVersion");
     });
   });
 });

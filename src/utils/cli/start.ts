@@ -1,23 +1,26 @@
 // src/utils/cli/start.ts
 import path from "path";
 import fs from "fs";
-import { spawn } from "child_process";
-import { getArkosConfig } from "../../server";
-import { getVersion } from ".";
+import { ChildProcess, spawn } from "child_process";
+import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { importModule } from "../helpers/global.helpers";
+import { fullCleanCwd } from "../helpers/fs.helpers";
 
 interface StartOptions {
   port?: string;
   host?: string;
 }
 
+let child: ChildProcess | null = null;
+let envFiles: string[] | undefined;
+
 /**
  * Production start command for the arkos CLI
  */
 export async function startCommand(options: StartOptions = {}) {
   process.env.NODE_ENV = "production";
-  const envFiles = loadEnvironmentVariables();
+  envFiles = loadEnvironmentVariables();
 
   try {
     const { port, host } = options;
@@ -42,7 +45,7 @@ export async function startCommand(options: StartOptions = {}) {
     };
 
     // Start the application
-    const child = spawn("node", [entryPoint], {
+    child = spawn("node", [entryPoint], {
       stdio: "inherit",
       env,
       shell: true,
@@ -72,12 +75,7 @@ export async function startCommand(options: StartOptions = {}) {
             }:${env.CLI_PORT || config.port || env.PORT || "8000"}`
           );
           console.info(
-            `  - Environments: ${envFiles
-              ?.join(", ")
-              .replaceAll(`${process.cwd()}/`, "")
-              .replaceAll(`/${process.cwd()}`, "")
-              .replaceAll(`/${process.cwd()}/`, "")
-              .replaceAll(`${process.cwd()}`, "")}\n`
+            `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "").replaceAll("/", "")}\n`
           );
           return true;
         }
@@ -123,4 +121,12 @@ export async function startCommand(options: StartOptions = {}) {
     console.error("❌ Production server failed to start:", error);
     process.exit(1);
   }
+}
+
+/**
+ * Help function to help other processes to terminate the production server child process
+ */
+export function killProductionServerChildProcess() {
+  (child as ChildProcess)?.kill?.();
+  child = null;
 }

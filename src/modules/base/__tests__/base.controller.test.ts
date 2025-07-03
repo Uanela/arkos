@@ -7,15 +7,12 @@ import {
   getModelModules,
   getModels,
 } from "../../../utils/helpers/models.helpers";
-import {
-  kebabCase,
-  pascalCase,
-} from "../../../utils/helpers/change-case.helpers";
 
 // Mock dependencies
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
+  readFileSync: jest.fn(),
 }));
 jest.mock("../base.service");
 jest.mock("../../error-handler/utils/app-error");
@@ -81,13 +78,13 @@ describe("BaseController", () => {
 
     it("should initialize with empty middlewares when model modules return null", () => {
       (getModelModules as jest.Mock).mockReturnValue(null);
-      const controller = new BaseController("User");
+      new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
     });
 
     it("should initialize with empty middlewares when model modules return undefined middlewares", () => {
       (getModelModules as jest.Mock).mockReturnValue({});
-      const controller = new BaseController("User");
+      new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
     });
   });

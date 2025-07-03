@@ -8,6 +8,7 @@ import {
 import { crd, getUserFileExtension } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 import { AuthConfigs } from "../../types/auth";
+import { killServerChildProcess } from "../cli/utils/cli.helpers";
 
 export let prismaModelsModules: Record<
   string,
@@ -149,6 +150,7 @@ export function validateNamingConventions(
 ): void {
   if (key === "prismaQueryOptions") {
     if (result.prismaQueryOptions) {
+      killServerChildProcess();
       throw new Error(
         `\n Cannot use both ${fileName} and ${fileName.replace(
           "prisma-query-options",
@@ -158,6 +160,7 @@ export function validateNamingConventions(
     }
   } else if (key === "prismaQueryOptionsNew") {
     if (result.prismaQueryOptions) {
+      killServerChildProcess();
       throw new Error(
         `\n Cannot use both ${fileName} and ${fileName.replace(
           "query",
@@ -167,6 +170,7 @@ export function validateNamingConventions(
     }
   } else if (key === "authConfigs") {
     if (result.authConfigs) {
+      killServerChildProcess();
       throw new Error(
         `\n Cannot use both ${fileName} and ${fileName.replace(
           "auth-configs",
@@ -176,6 +180,7 @@ export function validateNamingConventions(
     }
   } else if (key === "authConfigsNew") {
     if (result.authConfigs) {
+      killServerChildProcess();
       throw new Error(
         `\n Cannot use both ${fileName} and ${fileName.replace(
           "auth",
@@ -236,6 +241,7 @@ export async function importPrismaModelModules(
           if (!err.message.includes("Cannot find module")) {
             console.error(`Failed to import ${fileName}: \n`);
             console.error(err);
+            killServerChildProcess();
             process.exit(1);
           }
         });
@@ -250,6 +256,7 @@ export async function importPrismaModelModules(
       } catch (err: any) {
         if (err.message.includes("Cannot use both")) throw err;
         console.error(err);
+        killServerChildProcess();
       }
     })
   );
