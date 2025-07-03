@@ -1,4 +1,3 @@
-// src/utils/cli/__tests__/start.test.ts
 import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";

@@ -118,9 +118,6 @@ export function handleRequestLogs(
 
     // Get the current date and time
     const now = new Date();
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const dayName = dayNames[now.getDay()];
-    const dayOfMonth = now.getDate();
     const time = now.toTimeString().split(" ")[0]; // Format as HH:MM:SS
 
     const methodColor =
@@ -134,10 +131,6 @@ export function handleRequestLogs(
         res.statusCode
       }\x1b[0m \x1b[35m${duration}ms\x1b[0m`
     );
-    // Keep the commented-out example as it is
-    // console.info(
-    //   `[\x1b[36mINFO\x1b[0m] ${dayName} ${dayOfMonth} ${time} ${methodColor}${req.method}\x1b[0m ${req.originalUrl} \x1b[32m${res.statusCode}\x1b[0m \x1b[35m${duration}ms\x1b[0m`
-    // );
   });
 
   next(); // Pass control to the next middleware or route handler

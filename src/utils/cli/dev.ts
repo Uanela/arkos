@@ -1,166 +1,31 @@
-// // src/utils/cli/dev.ts
-// import { spawn } from "child_process";
-// import { getUserFileExtension } from "../helpers/fs.helpers";
-// import { getVersion } from ".";
-// import { loadEnvironmentVariables } from "../dotenv.helpers";
-// import { importModule } from "../helpers/global.helpers";
-
-// interface DevOptions {
-//   port?: string;
-//   host?: string;
-// }
-
-// /**
-//  * Dev server command for the arkos CLI
-//  */
-// export async function devCommand(options: DevOptions = {}) {
-//   process.env.NODE_ENV = "development";
-
-//   const envFiles = loadEnvironmentVariables();
-
-//   try {
-//     const { port, host } = options;
-
-//     // Detect if project uses TypeScript or JavaScript
-//     const fileExt = getUserFileExtension();
-
-//     // Find the application entry point
-//     const entryPoint = `src/app.${fileExt}`;
-
-//     if (!entryPoint) {
-//       console.error("❌ Could not find application entry point.");
-//       process.exit(1);
-//     }
-
-//     // Set environment variables
-//     const env: { [x: string]: string } = {
-//       NODE_ENV: "development",
-//       ...process.env,
-//       ...(port && { CLI_PORT: port }),
-//       ...(host && { CLI_HOST: host }),
-//     };
-
-//     // Start the application with the appropriate runner
-//     let child;
-
-//     // Setup file watching if enabled
-//     if (fileExt === "ts") {
-//       child = spawn("npx", ["ts-node-dev", "--respawn", entryPoint], {
-//         stdio: "inherit",
-//         env,
-//         shell: true,
-//       });
-//     } else {
-//       child = spawn("npx", ["nodemon", entryPoint], {
-//         stdio: "inherit",
-//         env,
-//         shell: true,
-//       });
-//     }
-
-//     const checkConfig = async () => {
-//       try {
-//         // Import the config getter
-
-//         const { getArkosConfig } = await importModule("../../server");
-
-//         const config = getArkosConfig();
-
-//         if (config && config.available) {
-//           // Config is ready, display the info with actual values
-//           console.info("\n");
-//           console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-//           console.info(
-//             `  - Local:        http://${
-//               env.CLI_HOST || config.host || env.HOST || "localhost"
-//             }:${env.CLI_PORT || config.port || env.PORT || "8000"}`
-//           );
-//           console.info(
-//             `  - Environments: ${envFiles
-//               ?.join(", ")
-//               .replaceAll(`${process.cwd()}/`, "")}\n`
-//           );
-//           return true;
-//         }
-//         return false;
-//       } catch (error) {
-//         return false;
-//       }
-//     };
-
-//     // Try to get config periodically
-//     const waitForConfig = async () => {
-//       let attempts = 0;
-//       const maxAttempts = 15;
-
-//       while (attempts < maxAttempts) {
-//         const ready = await checkConfig();
-//         if (ready) break;
-
-//         await new Promise((resolve) => setTimeout(resolve, 300));
-//         attempts++;
-//       }
-
-//       // Fall back to defaults if config never became available
-//       if (attempts >= maxAttempts) {
-//         console.info("\n");
-//         console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-//         console.info(
-//           `  - Local:        http://${
-//             env.CLI_HOST || env.HOST || "localhost"
-//           }:${env.CLI_PORT || env.PORT || "8000"}`
-//         );
-//         console.info(
-//           `  - Environments: ${envFiles
-//             ?.join(", ")
-//             .replaceAll(`${process.cwd()}/`, "")}\n`
-//         );
-//       }
-//     };
-
-//     waitForConfig();
-
-//     // Handle process exit
-//     process.on("SIGINT", () => {
-//       if (child) {
-//         child.kill();
-//       }
-//       process.exit(0);
-//     });
-//   } catch (error) {
-//     console.error("❌ Development server failed to start:", error);
-//     process.exit(1);
-//   }
-// }
-
-// src/utils/cli/dev.ts
 import { spawn, ChildProcess } from "child_process";
 import { watch } from "chokidar";
-import { getUserFileExtension } from "../helpers/fs.helpers";
-import { getVersion } from ".";
+import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
+import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { importModule } from "../helpers/global.helpers";
 import fs from "fs";
-import path from "path";
 
 interface DevOptions {
   port?: string;
   host?: string;
-  watch?: boolean; // Add option to disable custom watching
 }
+
+let child: ChildProcess | null = null;
+let envFiles: string[] | undefined;
 
 /**
  * Dev server command for the arkos CLI
  */
 export async function devCommand(options: DevOptions = {}) {
   process.env.NODE_ENV = "development";
-  let envFiles = loadEnvironmentVariables();
-  let child: ChildProcess | null = null;
+  envFiles = loadEnvironmentVariables();
+  child = null;
   let restartTimeout: NodeJS.Timeout | null = null;
 
   try {
-    const { port, host, watch: enableWatch = true } = options;
-
+    const { port, host } = options;
+    let isRestarting = false;
     // Detect if project uses TypeScript or JavaScript
     const fileExt = getUserFileExtension();
 
@@ -197,7 +62,6 @@ export async function devCommand(options: DevOptions = {}) {
           [
             "ts-node-dev",
             "--respawn",
-            // "--clear", // Clear console on restart
             "--notify=false", // Disable desktop notifications
             "--ignore-watch",
             "node_modules",
@@ -257,9 +121,9 @@ export async function devCommand(options: DevOptions = {}) {
         });
 
         child.on("exit", (code, signal) => {
-          if (signal !== "SIGTERM" && signal !== "SIGINT") {
+          if (!isRestarting && signal !== "SIGTERM" && signal !== "SIGINT") {
             console.info(`Server exited with code ${code}, restarting...`);
-            setTimeout(startServer, 1000);
+            startServer();
           }
         });
       }
@@ -268,9 +132,18 @@ export async function devCommand(options: DevOptions = {}) {
     // Function to handle server restart with debouncing
     const scheduleRestart = (reason: string) => {
       if (restartTimeout) clearTimeout(restartTimeout);
+      const now = new Date();
+      const time = now.toTimeString().split(" ")[0];
 
-      console.info(`\n${reason}, restarting server...`);
+      console.info(
+        `[\x1b[36mINFO\x1b[0m] \x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`
+      );
 
+      isRestarting = true;
+      if (child) {
+        child.kill();
+        child = null;
+      }
       restartTimeout = setTimeout(() => {
         startServer();
         restartTimeout = null;
@@ -279,34 +152,40 @@ export async function devCommand(options: DevOptions = {}) {
 
     // Setup environment file watching
     const setupEnvWatcher = () => {
-      const envWatcher = watch(".env*", {
-        ignoreInitial: true,
-        persistent: true,
-      });
+      const envWatcher = watch(
+        fullCleanCwd(envFiles?.join(",") || "")
+          .replaceAll("/", "")
+          .split(",") || [],
+        {
+          ignoreInitial: true,
+          persistent: true,
+        }
+      );
 
       envWatcher.on("all", (event, filePath) => {
-        // console.info(`Environment file ${event}: ${filePath}`);
-
-        // Reload environment variables
         try {
           envFiles = loadEnvironmentVariables();
-          console.info(`Reloaded environment variables from ${filePath}`);
 
           // Restart server to pick up new env vars
-          scheduleRestart("Environment file changed");
+          scheduleRestart("Environments files changed");
         } catch (error) {
           console.error(`Error reloading ${filePath}:`, error);
         }
       });
 
-      // console.info("Watching .env* files for changes...");
       return envWatcher;
     };
 
     // Setup additional file watching for better new file detection
     const setupAdditionalWatcher = () => {
       const additionalWatcher = watch(
-        ["src/**/*", "package.json", "tsconfig.json", "arkos.config.*"],
+        [
+          "src",
+          "package.json",
+          "tsconfig.json",
+          "arkos.config.ts",
+          "arkos.config.js",
+        ],
         {
           ignoreInitial: true,
           ignored: [
@@ -322,21 +201,13 @@ export async function devCommand(options: DevOptions = {}) {
       );
 
       additionalWatcher.on("add", (filePath) => {
-        console.info(`New file detected: ${filePath}`);
-        scheduleRestart("New file added");
+        scheduleRestart(`${fullCleanCwd(filePath)} has been created`);
       });
 
       additionalWatcher.on("unlink", (filePath) => {
-        console.info(`File deleted: ${filePath}`);
-        scheduleRestart("File deleted");
+        scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
       });
 
-      additionalWatcher.on("addDir", (dirPath) => {
-        console.info(`New directory detected: ${dirPath}`);
-        // Don't restart for new directories, but.info them
-      });
-
-      console.info("Enhanced file watching enabled...");
       return additionalWatcher;
     };
 
@@ -363,13 +234,11 @@ export async function devCommand(options: DevOptions = {}) {
             }:${env.CLI_PORT || config.port || env.PORT || "8000"}`
           );
           console.info(
-            `  - Environments: ${envFiles
-              ?.join(", ")
-              .replaceAll(`${process.cwd()}/`, "")}`
+            `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
+              .replaceAll(`${process.cwd()}/`, "")
+              .replaceAll("/", "")}`
           );
-          console.info(
-            `  - File watching: ${enableWatch ? "enabled" : "disabled"}\n`
-          );
+          console.info("\n");
           return true;
         }
         return false;
@@ -400,10 +269,11 @@ export async function devCommand(options: DevOptions = {}) {
           }:${env.CLI_PORT || env.PORT || "8000"}`
         );
         console.info(
-          `  - Environments: ${envFiles
-            ?.join(", ")
-            .replaceAll(`${process.cwd()}/`, "")}`
+          `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
+            .replaceAll(`${process.cwd()}/`, "")
+            .replaceAll("/", "")}`
         );
+        console.info("\n");
       }
     };
 
@@ -413,17 +283,11 @@ export async function devCommand(options: DevOptions = {}) {
     const cleanup = () => {
       console.info("\nShutting down development server...");
 
-      if (restartTimeout) {
-        clearTimeout(restartTimeout);
-      }
+      if (restartTimeout) clearTimeout(restartTimeout);
 
-      if (envWatcher) {
-        envWatcher.close();
-      }
+      if (envWatcher) envWatcher.close();
 
-      if (additionalWatcher) {
-        additionalWatcher.close();
-      }
+      if (additionalWatcher) additionalWatcher.close();
 
       if (child) {
         child.kill("SIGTERM");
@@ -450,67 +314,20 @@ export async function devCommand(options: DevOptions = {}) {
     });
   } catch (error) {
     console.error("Development server failed to start:", error);
+
+    if (child) {
+      (child as ChildProcess)?.kill?.();
+      child = null;
+    }
+
     process.exit(1);
   }
 }
 
-// Optional: Create configuration files for better watching
-
 /**
- * Create nodemon.json configuration for JavaScript projects
+ * Help function to help other processes to terminate the development server child process
  */
-export function createNodemonConfig() {
-  const nodemonConfig = {
-    watch: ["src", ".env*"],
-    ext: "js,json,env",
-    ignore: [
-      "node_modules/",
-      "dist/",
-      "build/",
-      ".dist/",
-      ".build/",
-      "coverage/",
-      "*.info",
-    ],
-    delay: "1000",
-    env: {
-      NODE_ENV: "development",
-    },
-    verbose: false,
-    restartable: "rs",
-  };
-
-  fs.writeFileSync("nodemon.json", JSON.stringify(nodemonConfig, null, 2));
-  console.info("Created nodemon.json configuration");
-}
-
-/**
- * Create ts-node-dev configuration
- */
-export function createTsNodeDevConfig() {
-  // ts-node-dev uses package.json configuration
-  const packageJsonPath = path.join(process.cwd(), "package.json");
-
-  if (fs.existsSync(packageJsonPath)) {
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-
-    packageJson["ts-node-dev"] = {
-      ignore: [
-        "node_modules/",
-        "dist/",
-        "build/",
-        ".dist/",
-        ".build/",
-        "coverage/",
-        "*.info",
-      ],
-      watch: ["src", ".env*"],
-      clear: true,
-      notify: false,
-      respawn: true,
-    };
-
-    fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-    console.info("Updated package.json with ts-node-dev configuration");
-  }
+export function killDevelopmentServerChildProcess() {
+  (child as ChildProcess)?.kill?.();
+  child = null;
 }

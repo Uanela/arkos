@@ -14,6 +14,7 @@ const config: Config = {
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov"],
   silent: false,
+  setupFiles: ["<rootDir>/jest.setup.ts"],
 };
 
 export default config;

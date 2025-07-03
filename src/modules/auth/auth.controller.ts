@@ -5,7 +5,6 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
-import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
 import {
@@ -31,10 +30,6 @@ export const defaultExcludedUserFields = {
  */
 export const authControllerFactory = async (middlewares: any = {}) => {
   const userService = getBaseServices()["user"];
-  let prismaQueryOptions: Record<string, any> = {};
-
-  const userModules = await importPrismaModelModules("user");
-  if (userModules) prismaQueryOptions = userModules?.prismaQueryOptions || {};
 
   return {
     /**

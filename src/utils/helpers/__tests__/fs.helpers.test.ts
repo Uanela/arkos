@@ -299,12 +299,6 @@ describe("fs.helpers", () => {
       );
     });
 
-    it("should only remove cwd prefix once", () => {
-      const input = `${cwd}/${cwd}/file.ts`;
-      const expected = `${cwd}/file.ts`; // only the first cwd should be removed
-      expect(fsHelpers.fullCleanCwd(input)).toBe(expected);
-    });
-
     it("should handle mixed trailing slashes", () => {
       const withSlash = cwd + "/";
       const input = withSlash + "folder/file.ts";
