@@ -300,7 +300,9 @@ describe("generateCommand", () => {
 
       await generateCommand.authConfigs(options);
 
-      expect(mockedGenerateTemplate).toHaveBeenCalledWith("auth-configs");
+      expect(mockedGenerateTemplate).toHaveBeenCalledWith("auth-configs", {
+        modelName: { camel: "user", kebab: "user", pascal: "User" },
+      });
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
         `${mockCwd}/src/modules/user/user.auth.ts`,
         mockTemplateContent
@@ -316,7 +318,9 @@ describe("generateCommand", () => {
       await generateCommand.authConfigs(options);
 
       // Should still work as it uses empty model name
-      expect(mockedGenerateTemplate).toHaveBeenCalledWith("auth-configs");
+      expect(mockedGenerateTemplate).toHaveBeenCalledWith("auth-configs", {
+        modelName: { camel: "", kebab: "", pascal: "" },
+      });
       expect(mockedFs.writeFileSync).toHaveBeenCalled();
     });
 

@@ -67,13 +67,13 @@ describe("generateTemplate", () => {
     });
 
     it("should throw error for unknown template type", () => {
-      expect(() => generateTemplate("unknown")).toThrow(
-        "Unknown template type: unknown"
-      );
+      expect(() =>
+        generateTemplate("unknown", { modelName: {} as any })
+      ).toThrow("Unknown template type: unknown");
     });
 
-    it("should handle empty options", () => {
-      expect(() => generateTemplate("controller")).toThrow(
+    it("should handle throw an error when missing modelName", () => {
+      expect(() => generateTemplate("controller", {} as any)).toThrow(
         "Model name is required for controller template"
       );
     });
@@ -107,7 +107,7 @@ describe("generateTemplate", () => {
     });
 
     it("should throw error without model name", () => {
-      expect(() => generateTemplate("controller", {})).toThrow(
+      expect(() => generateTemplate("controller", {} as any)).toThrow(
         "Model name is required for controller template"
       );
     });
@@ -146,7 +146,7 @@ describe("generateTemplate", () => {
     });
 
     it("should throw error without model name", () => {
-      expect(() => generateTemplate("service", {})).toThrow(
+      expect(() => generateTemplate("service", {} as any)).toThrow(
         "Model name is required for service template"
       );
     });
@@ -256,7 +256,7 @@ describe("generateTemplate", () => {
     });
 
     it("should throw error without model name", () => {
-      expect(() => generateTemplate("router", {})).toThrow(
+      expect(() => generateTemplate("router", {} as any)).toThrow(
         "Model name is required for router template"
       );
     });
@@ -286,7 +286,7 @@ describe("generateTemplate", () => {
     });
 
     it("should throw error without model name", () => {
-      expect(() => generateTemplate("auth-configs", {})).toThrow(
+      expect(() => generateTemplate("auth-configs", {} as any)).toThrow(
         "Model name is required for auth config template"
       );
     });
@@ -336,7 +336,7 @@ describe("generateTemplate", () => {
     });
 
     it("should throw error without model name", () => {
-      expect(() => generateTemplate("query-options", {})).toThrow(
+      expect(() => generateTemplate("query-options", {} as any)).toThrow(
         "Model name is required for query config template"
       );
     });
@@ -418,7 +418,7 @@ describe("generateTemplate", () => {
     });
 
     it("should throw error without model name", () => {
-      expect(() => generateTemplate("middlewares", {})).toThrow(
+      expect(() => generateTemplate("middlewares", {} as any)).toThrow(
         "Model name is required for middleware template"
       );
     });

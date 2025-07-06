@@ -186,7 +186,7 @@ export const generateCommand = {
     try {
       ensureDirectoryExists(configPath);
 
-      const content = generateTemplate("auth-configs");
+      const content = generateTemplate("auth-configs", { modelName: names });
 
       fs.writeFileSync(filePath, content);
       console.log(

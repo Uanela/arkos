@@ -18,14 +18,14 @@ interface MiddlewareName {
 }
 
 export interface TemplateOptions {
-  modelName?: ModelName;
+  modelName: ModelName;
   middlewareName?: MiddlewareName;
   imports?: Record<string, string>;
 }
 
 export function generateTemplate(
   type: string,
-  options: TemplateOptions = {}
+  options: TemplateOptions
 ): string {
   switch (type) {
     case "controller":
