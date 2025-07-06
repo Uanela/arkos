@@ -63,7 +63,8 @@ generate
   .command("auth-configs")
   .alias("a")
   .description("Generate auth configuration")
-  .option("--path <path>", "Custom path for auth config", "src/modules")
+  .requiredOption("-m, --model <name>", "Model name")
+  .option("-p, --path <path>", "Custom path for the router", "src/modules")
   .action(generateCommand.authConfigs);
 
 generate
