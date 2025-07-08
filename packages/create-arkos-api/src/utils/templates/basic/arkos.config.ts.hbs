@@ -1,0 +1,10 @@
+{{#if TYPECSRIPT_ENABLED}}
+import { ArkosConfig } from 'arkos'
+
+const config: ArkosConfig = {}
+{{else}}
+/** @type {import('arkos').ArkosConfig} */
+const config = {}
+{{/if}}
+
+export default config

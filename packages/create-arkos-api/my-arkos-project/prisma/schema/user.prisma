@@ -1,0 +1,24 @@
+model User {
+  id                   String    @id @default(uuid())
+  email  String   @unique
+  password             String
+  passwordChangedAt    DateTime?
+  lastLoginAt          DateTime?
+  isSuperUser          Boolean   @default(false)
+  isStaff              Boolean   @default(false)
+  deletedSelfAccountAt DateTime?
+  isActive             Boolean   @default(true)
+  roles                UserRole[]
+  
+  // other fields for your application
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now())
+}
+
+
+enum UserRole {
+  Admin
+  User
+  // change or add new roles
+}
+
