@@ -1,0 +1,34 @@
+model AuthRole {
+  id          String          {{idDatabaseType}}
+  name        String          @unique
+  description String?
+  permissions AuthPermission[]
+  users       UserRole[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+{{#eq prisma.provider "sqlite"}}
+enum AuthPermissionAction {
+  View
+  Create
+  Update
+  Delete
+ // custom action
+}
+{{/eq}}
+
+model AuthPermission {
+  id        String               {{idDatabaseType}}
+  resource  String
+  action    AuthPermissionAction @default(View) // When using sqlite, this can be a plain String
+  roleId    String
+  role      AuthRole @relation(fields: [roleId], references: [id])
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@unique([resource, action, roleId])
+}
+
+

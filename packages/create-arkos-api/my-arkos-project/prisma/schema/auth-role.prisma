@@ -1,0 +1,25 @@
+model AuthRole {
+  id          String          
+  name        String          @unique
+  description String?
+  permissions AuthPermission[]
+  users       UserRole[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+false
+model AuthPermission {
+  id        String               
+  resource  String
+  action    AuthPermissionAction @default(View) // When using sqlite, this can be a plain String
+  roleId    String
+  role      AuthRole @relation(fields: [roleId], references: [id])
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@unique([resource, action, roleId])
+}
+
+

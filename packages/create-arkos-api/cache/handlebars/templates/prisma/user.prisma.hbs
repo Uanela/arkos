@@ -1,0 +1,64 @@
+model User {
+  id                   String    {{prisma.idDatabaseType}}
+  {{authentication.usernameField}}  String   @unique
+  password             String
+  passwordChangedAt    DateTime?
+  lastLoginAt          DateTime?
+  isSuperUser          Boolean   @default(false)
+  isStaff              Boolean   @default(false)
+  deletedSelfAccountAt DateTime?
+  isActive             Boolean   @default(true)
+  {{#if authentication.multipleRoles}}
+  {{#if (eq prisma.provider "sqlite")}}
+  roles                String[] // Roles examples: Admin, User
+  {{else}}
+  roles                UserRole[]
+  {{/if}}
+  {{else}}
+  {{#if (eq authentication.type "dynamic")}}
+  role                 UserRole?
+  {{else}}
+  {{#if (eq prisma.provider "sqlite")}}
+  role                 String // Roles examples: Admin, User
+  {{else}}
+  role                 UserRole
+  {{/if}}
+  {{/if}}
+  {{/if}}
+  
+  // other fields for your application
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now())
+}
+
+{{#if (eq authentication.type "dynamic")}}
+model UserRole {
+  id        String     {{prisma.idDatabaseType}}
+  {{#if authentication.multipleRoles}}
+  userId    String     
+  {{else}}
+  userId    String     @unique
+  {{/if}}
+  user      User       @relation(fields: [userId], references: [id])
+  roleId    String
+  role      AuthRole   @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  {{#if authentication.multipleRoles}}
+
+  @@unique([userId, roleId])
+  {{/if}}
+}
+{{/if}}
+
+{{#if (eq authentication.type "static")}}
+{{#if (eq prisma.provider "sqlite")}}
+{{else}}
+enum UserRole {
+  Admin
+  User
+  // change or add new roles
+}
+{{/if}}
+{{/if}}
+
