@@ -1,0 +1,30 @@
+model User {
+  id                   String    @db @default(uuid())
+  email  String   @unique
+  password             String
+  passwordChangedAt    DateTime?
+  lastLoginAt          DateTime?
+  isSuperUser          Boolean   @default(false)
+  isStaff              Boolean   @default(false)
+  deletedSelfAccountAt DateTime?
+  isActive             Boolean   @default(true)
+  roles                UserRole[]
+  
+  // other fields for your application
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now())
+}
+
+model UserRole {
+  id        String     @db @default(uuid())
+  userId    String     
+  user      User       @relation(fields: [userId], references: [id])
+  roleId    String
+  role      AuthRole   @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@unique([userId, roleId])
+}
+
+

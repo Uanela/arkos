@@ -6,7 +6,7 @@ import {
   extractRequestInfo,
   processFile,
   processImage,
-} from "../file-uploader.helpers";
+} from "../file-upload.helpers";
 import { getArkosConfig } from "../../../../../server";
 
 // Mock dependencies
@@ -16,13 +16,16 @@ jest.mock("sharp");
 jest.mock("util");
 jest.mock("../../../../../server");
 
-describe("File Uploader Helpers", () => {
+describe("File Upload Helpers", () => {
   let mockReq = {
     params: {
       fileType: "images",
     },
     get: (() => "example.com") as any,
-  };
+    headers: {
+      "x-forwarded-proto": "https",
+    },
+  } as any;
 
   beforeEach(() => {
     jest.clearAllMocks();

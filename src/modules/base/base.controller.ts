@@ -9,24 +9,72 @@ import { getAppRoutes } from "./utils/helpers/base.controller.helpers";
 import pluralize from "pluralize";
 
 /**
- * BaseController class providing standardized RESTful API endpoints for any prisma model
+ * The `BaseController` class provides standardized RESTful API endpoints
+ * for any Prisma model based on its name. It supports automatic integration
+ * with Prisma services and dynamic middleware hooks for extending behaviors.
+ *
+ * This controller includes:
+ * - `createOne` / `createMany`
+ * - `findOne` / `findMany`
+ * - `updateOne` / `updateMany`
+ * - `deleteOne` / `deleteMany`
+ *
+ * It handles:
+ * - Prisma query options
+ * - APIFeatures: filtering, sorting, pagination, field limiting
+ * - Middleware hooks: `afterCreateOne`, `afterUpdateMany`, etc.
+ *
  * @class BaseController
+ * @example
  *
- * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-controller-class}
- *
- * **Example:**
+ * **Extending the Controller**
  *
  * ```ts
+ * // src/modules/product/product.controller.ts
  *
+ * class ProductController extends BaseController {}
+ *
+ * const productController = new ProcutController("product")
+ *
+ * export default productController
  *
  * ```
+ * **Using in custom Router**
+ *
+ * ```ts
+ * // src/modules/product/product.router.ts
+ *
+ * import { Router } from "express";
+ * import productController from "./product.controller";
+ *
+ * const productRouter = Router();
+ *
+ * // Arkos handles this base endpoints by default it
+ * // is just an example
+ *
+ * productRouter.post("/", productController.createOne);
+ * productRouter.get("/", productController.findMany);
+ * productRouter.get("/:id", productController.findOne);
+ * productRouter.patch("/:id", productController.updateOne);
+ * productRouter.delete("/:id", productController.deleteOne);
+ *
+ * export default productRouter
+ * ```
+ *
+ * @param {string} modelName - The Prisma model name this controller handles.
+ *
+ * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-controller-class}
+ *--
+ *
+ * **See about how Arkos handles routers**
+ * @see {@link https://www.arkosjs.com/docs/guide/adding-custom-routers}
  */
 export class BaseController {
   /**
    * Service instance to handle business logic operations
    * @private
    */
-  private service: BaseService;
+  private service: BaseService<any>;
 
   /**
    * Name of the model this controller handles
@@ -135,10 +183,10 @@ export class BaseController {
         .paginate();
 
       // Execute both operations separately
-      const [data, total] = await Promise.all([
+      const [data, total] = (await Promise.all([
         this.service.findMany(where, queryOptions),
         this.service.count(where),
-      ]);
+      ])) as [Record<string, any>[], number];
 
       if (this.middlewares.afterFindMany) {
         req.responseData = { total, results: data.length, data };
@@ -267,23 +315,24 @@ export class BaseController {
       }
 
       req.query.filterMode = req.query?.filterMode || "AND";
-      const features = new APIFeatures(req, this.modelName).filter().sort();
-      delete features.filters.include;
+      const {
+        filters: { where, ...queryOptions },
+      } = new APIFeatures(req, this.modelName).filter().sort();
+      delete queryOptions.include;
 
-      const data = await this.service.updateMany(
-        features.filters,
+      const data = (await this.service.updateMany(
+        where,
         req.body,
-        req.prismaQueryOptions
-      );
+        queryOptions
+      )) as { count: number };
 
-      if (!data || data.count === 0) {
+      if (!data || data.count === 0)
         return next(
           new AppError(
             `${pluralize(pascalCase(String(this.modelName)))} not found`,
             404
           )
         );
-      }
 
       if (this.middlewares.afterUpdateMany) {
         req.responseData = { results: data.count, data };

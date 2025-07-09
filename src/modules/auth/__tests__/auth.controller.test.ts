@@ -8,7 +8,7 @@ import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
 import { getArkosConfig } from "../../../server";
 
-jest.mock("bcrypt", () => ({
+jest.mock("bcryptjs", () => ({
   default: {
     compare: jest.fn(),
     hash: jest.fn(),
@@ -547,6 +547,152 @@ describe("Auth Controller Factory", () => {
       expect(req.responseStatus).toBe(201);
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("updateMe", () => {
+    it("should return 400 if password field is included in request body", async () => {
+      // Setup
+      req.body = {
+        username: "updateduser",
+        password: "NewPassword123", // This should trigger the error
+      };
+
+      // Execute
+      await authController.updateMe(req, res, next);
+
+      // Verify
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 400,
+          message:
+            "In order to update password use the update-password endpoint.",
+          code: "InvalidFieldPassword",
+        })
+      );
+    });
+
+    it("should update user data and return 200 on success", async () => {
+      // Setup
+      req.body = {
+        username: "updateduser",
+        email: "updated@example.com",
+      };
+
+      const updatedUser = {
+        id: "user-id-123",
+        username: "updateduser",
+        email: "updated@example.com",
+        password: "hashedPassword",
+        passwordChangedAt: new Date(),
+        active: true,
+      };
+
+      userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
+
+      // Execute
+      await authController.updateMe(req, res, next);
+
+      // Verify
+      expect(userService.updateOne).toHaveBeenCalledWith(
+        { id: "user-id-123" },
+        req.body,
+        {}
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+
+      // Check that excluded fields are removed from response
+      const responseUser = res.json.mock.calls[0][0].data;
+      Object.keys(defaultExcludedUserFields).forEach((field) => {
+        expect(responseUser[field]).toBeUndefined();
+      });
+    });
+
+    it("should use prismaQueryOptions from request when available", async () => {
+      // Setup
+      req.body = {
+        username: "updateduser",
+      };
+      req.prismaQueryOptions = {
+        include: { profile: true },
+      };
+
+      const updatedUser = {
+        id: "user-id-123",
+        username: "updateduser",
+        email: "test@example.com",
+      };
+
+      userService.updateOne.mockResolvedValueOnce(updatedUser);
+
+      // Execute
+      await authController.updateMe(req, res, next);
+
+      // Verify
+      expect(userService.updateOne).toHaveBeenCalledWith(
+        { id: "user-id-123" },
+        req.body,
+        { include: { profile: true } }
+      );
+    });
+
+    it("should call next middleware when afterUpdateMe is provided", async () => {
+      // Setup
+      const controllerWithMiddleware = await authControllerFactory({
+        afterUpdateMe: true,
+      });
+
+      req.body = {
+        username: "updateduser",
+        email: "updated@example.com",
+      };
+
+      const updatedUser = {
+        id: "user-id-123",
+        username: "updateduser",
+        email: "updated@example.com",
+      };
+
+      userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
+
+      // Execute
+      await controllerWithMiddleware.updateMe(req, res, next);
+
+      // Verify
+      expect(req.responseData).toEqual({ data: updatedUser });
+      expect(req.responseStatus).toBe(200);
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it("should remove excluded fields from user object before responding", async () => {
+      // Setup
+      req.body = {
+        username: "updateduser",
+      };
+
+      const updatedUserWithSensitiveData = {
+        id: "user-id-123",
+        username: "updateduser",
+        email: "test@example.com",
+        password: "hashedPassword",
+        passwordChangedAt: new Date(),
+        active: true,
+      };
+
+      userService.updateOne.mockResolvedValueOnce({
+        ...updatedUserWithSensitiveData,
+      });
+
+      // Execute
+      await authController.updateMe(req, res, next);
+
+      // Verify that sensitive fields are removed
+      const responseUser = res.json.mock.calls[0][0].data;
+      expect(responseUser.password).toBeUndefined();
+      expect(responseUser.username).toBe("updateduser");
+      expect(responseUser.email).toBe("test@example.com");
+      expect(responseUser.id).toBe("user-id-123");
     });
   });
 

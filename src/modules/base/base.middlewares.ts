@@ -15,6 +15,7 @@ import validateSchema from "../../utils/validate-schema";
 import { ZodSchema } from "zod";
 import { ClassConstructor } from "class-transformer";
 import { ValidatorOptions } from "class-validator";
+import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
 
 export function callNext(req: Request, res: Response, next: NextFunction) {
   next();
@@ -23,7 +24,7 @@ export function callNext(req: Request, res: Response, next: NextFunction) {
 export function sendResponse(
   req: ArkosRequest,
   res: ArkosResponse,
-  next: NextFunction
+  next: ArkosNextFunction
 ) {
   if (Number(req?.responseStatus) === 204)
     res.status(Number(req?.responseStatus)).send();
@@ -62,36 +63,25 @@ export function addPrismaQueryOptionsToRequest<T extends Record<string, any>>(
   return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
     const configs = getArkosConfig();
 
-    // Check if the action exists in the provided options object
-    if (prismaQueryOptions && action in prismaQueryOptions) {
-      const firstMerge = deepmerge(
-        (prismaQueryOptions as any)?.queryOptions || {},
-        (prismaQueryOptions as any)[action] || {}
-      ) as Record<string, any>;
+    // Resolve and merge all applicable options using the helper
+    const resolvedOptions = resolvePrismaQueryOptions(
+      prismaQueryOptions,
+      action
+    );
 
-      req.prismaQueryOptions = deepmerge(
-        firstMerge,
-        JSON.parse(
-          configs?.request?.parameters?.allowDangerousPrismaQueryOptions
-            ? (req.query?.prismaQueryOptions as string) || "{}"
-            : "{}"
-        )
-      );
-    } else {
-      // If no specific options for this action, just use the general queryOptions
-      req.prismaQueryOptions = deepmerge(
-        (prismaQueryOptions as any)?.queryOptions || {},
-        JSON.parse(
-          configs?.request?.parameters?.allowDangerousPrismaQueryOptions
-            ? (req.query?.prismaQueryOptions as string) || "{}"
-            : "{}"
-        )
-      );
-    }
+    // Parse and merge any dangerous query options from request if allowed
+    const requestQueryOptions = configs?.request?.parameters
+      ?.allowDangerousPrismaQueryOptions
+      ? JSON.parse((req.query?.prismaQueryOptions as string) || "{}")
+      : {};
+
+    // Final merge with request options having the highest priority
+    req.prismaQueryOptions = deepmerge(resolvedOptions, requestQueryOptions);
 
     next();
   };
 }
+
 /**
  * Logs request events with colored text such as errors, requests responses.
  *
@@ -101,7 +91,6 @@ export function handleRequestLogs(
   res: Response,
   next: NextFunction
 ) {
-  // if (process.env.NODE_ENV === "production") return next()
   const startTime = Date.now(); // Capture the start time
 
   // Define colors for each HTTP method
@@ -129,9 +118,6 @@ export function handleRequestLogs(
 
     // Get the current date and time
     const now = new Date();
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const dayName = dayNames[now.getDay()];
-    const dayOfMonth = now.getDate();
     const time = now.toTimeString().split(" ")[0]; // Format as HH:MM:SS
 
     const methodColor =
@@ -145,10 +131,6 @@ export function handleRequestLogs(
         res.statusCode
       }\x1b[0m \x1b[35m${duration}ms\x1b[0m`
     );
-    // Keep the commented-out example as it is
-    // console.info(
-    //   `[\x1b[36mINFO\x1b[0m] ${dayName} ${dayOfMonth} ${time} ${methodColor}${req.method}\x1b[0m ${req.originalUrl} \x1b[32m${res.statusCode}\x1b[0m \x1b[35m${duration}ms\x1b[0m`
-    // );
   });
 
   next(); // Pass control to the next middleware or route handler

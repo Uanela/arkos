@@ -1,6 +1,5 @@
 import fs from "fs";
-import path from "path";
-import { execSync, spawn } from "child_process";
+import { execSync } from "child_process";
 import { buildCommand } from "../build";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../../dotenv.helpers";
@@ -40,6 +39,7 @@ jest.mock("path", () => ({
 
 jest.mock("../../helpers/fs.helpers", () => ({
   getUserFileExtension: jest.fn(),
+  fullCleanCwd: jest.fn((path) => path),
 }));
 
 jest.mock("../../dotenv.helpers", () => ({
@@ -229,7 +229,7 @@ describe("buildCommand", () => {
 
       // Verify TypeScript compilation command
       expect(execSync).toHaveBeenCalledWith(
-        "npx tsc -p /mock/project/tsconfig.arkos-build.json",
+        "npx rimraf .build && npx tsc -p /mock/project/tsconfig.arkos-build.json",
         expect.any(Object)
       );
 
@@ -387,7 +387,10 @@ describe("buildCommand", () => {
 
     it("should handle package.json errors gracefully", () => {
       (fs.readFileSync as jest.Mock).mockImplementation((path) => {
-        if (path.includes("package.json")) {
+        if (
+          path.includes("package.json") &&
+          !path.includes("../../../../../package.json")
+        ) {
           throw new Error("Failed to read package.json");
         }
         return "";
@@ -451,7 +454,7 @@ describe("buildCommand", () => {
 
       expect(loadEnvironmentVariables).toHaveBeenCalled();
       expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Using env variables from .env")
+        expect.stringContaining("Environments")
       );
     });
   });

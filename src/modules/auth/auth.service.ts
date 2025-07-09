@@ -14,7 +14,6 @@ import {
   ArkosRequestHandler,
 } from "../../types";
 import {
-  AuthConfigs,
   AuthJwtPayload,
   AccessAction,
   AccessControlConfig,
@@ -43,9 +42,15 @@ export class AuthService {
 
     if (
       process.env.NODE_ENV === "production" &&
-      (!process.env.JWT_SECRET || !configs?.jwt?.secret)
+      !process.env.JWT_SECRET &&
+      !configs?.jwt?.secret
     )
-      throw new AppError("Missing JWT secret on production!", 500);
+      throw new AppError(
+        "Missing JWT secret on production!",
+        500,
+        {},
+        "MissingJWTOnProduction"
+      );
 
     secret =
       secret ||
@@ -61,6 +66,21 @@ export class AuthService {
     return jwt.sign({ id }, secret, {
       expiresIn: expiresIn as MsDuration,
     });
+  }
+
+  /**
+   * Is used by default internally by Arkos under `BaseService` class to check if the password is already hashed.
+   *
+   * This was just added to prevent unwanted errors when someone just forgets that the `BaseService` class will automatically hash the password field using `authService.hashPassword` by default.
+   *
+   * So now before `BaseService` hashes it will test it.
+   *
+   *
+   * @param password The password to be tested if is hashed
+   * @returns
+   */
+  isPasswordHashed(password: string) {
+    return !Number.isNaN(bcrypt.getRounds(password) * 1);
   }
 
   /**
@@ -283,7 +303,9 @@ export class AuthService {
     if (!token)
       throw new AppError(
         "You are not logged in! please log in to get access",
-        401
+        401,
+        {},
+        "LoginRequired"
       );
 
     let decoded: AuthJwtPayload | undefined;
@@ -292,14 +314,18 @@ export class AuthService {
     } catch (err) {
       throw new AppError(
         "Your auth token is invalid, please login again.",
-        401
+        401,
+        {},
+        "InvalidAuthToken"
       );
     }
 
     if (!decoded?.id)
       throw new AppError(
         "Your auth token is invalid, please login again.",
-        401
+        401,
+        {},
+        "InvalidAuthToken"
       );
 
     const user: any | null = await (prisma as any).user.findUnique({
@@ -325,7 +351,9 @@ export class AuthService {
     )
       throw new AppError(
         "User recently changed password! Please log in again.",
-        401
+        401,
+        {},
+        "PasswordChanged"
       );
 
     return user;

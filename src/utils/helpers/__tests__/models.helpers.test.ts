@@ -26,9 +26,6 @@ jest.mock("../fs.helpers", () => ({
   getUserFileExtension: jest.fn(() => "js"),
   crd: jest.fn(),
 }));
-// jest.mock("../models.helpers", () => ({
-//   ...jest.requireActual("../models.helpers"),
-// }));
 
 describe("Dynamic Prisma Model Loader", () => {
   beforeEach(() => {
@@ -40,6 +37,190 @@ describe("Dynamic Prisma Model Loader", () => {
 
     // Setup process.cwd mock
     jest.spyOn(process, "cwd").mockReturnValue("/project");
+
+    // Mock console.error to suppress logs during testing
+    jest.spyOn(console, "error").mockImplementation(() => {});
+
+    // Make existsSync return true by default
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+    // Create mocks for the dynamic imports
+    jest.mock(
+      "/mocked/path/user.middlewares.js",
+      () => ({ middleware: jest.fn() }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/user.auth-configs.js",
+      () => ({ default: { auth: "config" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/user.auth.js",
+      () => ({ default: { auth: "config" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/user.prisma-query-options.js",
+      () => ({ default: { query: "options" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/user.query.js",
+      () => ({ default: { query: "options" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/dtos/user.dto.js",
+      () => ({ UserDto: { structure: "model" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/dtos/create-user.dto.js",
+      () => ({ CreateUserDto: { structure: "create" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/dtos/update-user.dto.js",
+      () => ({ UpdateUserDto: { structure: "update" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/dtos/query-user.dto.js",
+      () => ({ QueryUserDto: { structure: "query" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/schemas/user.schema.js",
+      () => ({ UserSchema: { schema: "model" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/schemas/create-user.schema.js",
+      () => ({ CreateUserSchema: { schema: "create" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/schemas/update-user.schema.js",
+      () => ({ UpdateUserSchema: { schema: "update" } }),
+      { virtual: true }
+    );
+    jest.mock(
+      "/mocked/path/schemas/query-user.schema.js",
+      () => ({ QueryUserSchema: { schema: "query" } }),
+      { virtual: true }
+    );
+
+    // Set up a mock implementation for importPrismaModelModules to avoid actual dynamic imports
+    jest
+      .spyOn(dynamicLoader, "importPrismaModelModules")
+      .mockImplementation(async (modelName) => {
+        // console.log(modelName);
+
+        const result: any = {
+          dtos: {},
+          schemas: {},
+        };
+
+        // Simulate the validation logic for conflicts
+        let hasOldPrismaQuery = false;
+        let hasNewPrismaQuery = false;
+        let hasOldAuthConfig = false;
+        let hasNewAuthConfig = false;
+
+        if (fs.existsSync("/mocked/path/user.prisma-query-options.js")) {
+          hasOldPrismaQuery = true;
+        }
+        if (fs.existsSync("/mocked/path/user.query.js")) {
+          hasNewPrismaQuery = true;
+        }
+        if (fs.existsSync("/mocked/path/user.auth-configs.js")) {
+          hasOldAuthConfig = true;
+        }
+        if (fs.existsSync("/mocked/path/user.auth.js")) {
+          hasNewAuthConfig = true;
+        }
+
+        // Simulate validation errors
+        if (hasOldPrismaQuery && hasNewPrismaQuery) {
+          throw new Error(
+            "Cannot use both user.query.js and user.prisma-query-options.js at once"
+          );
+        }
+        if (hasOldAuthConfig && hasNewAuthConfig) {
+          throw new Error(
+            "Cannot use both user.auth.js and user.auth-configs.js at once"
+          );
+        }
+
+        // Assign modules following the new logic
+        if (fs.existsSync("/mocked/path/user.middlewares.js")) {
+          result.middlewares = { middleware: jest.fn() };
+        }
+
+        if (hasOldAuthConfig || hasNewAuthConfig) {
+          result.authConfigs = { auth: "config" };
+        }
+
+        if (hasOldPrismaQuery || hasNewPrismaQuery) {
+          result.prismaQueryOptions = { query: "options" };
+        }
+
+        if (fs.existsSync("/mocked/path/user.middlewares.js")) {
+          result.middlewares = { middleware: jest.fn() };
+        }
+
+        if (fs.existsSync("/mocked/path/user.auth-configs.js")) {
+          result.authConfigs = { auth: "config" };
+        }
+        if (fs.existsSync("/mocked/path/user.auth.js")) {
+          result.authConfigs = { auth: "config" };
+        }
+
+        if (fs.existsSync("/mocked/path/user.prisma-query-options.js")) {
+          result.prismaQueryOptions = { query: "options" };
+        }
+
+        if (fs.existsSync("/mocked/path/user.query.js")) {
+          result.prismaQueryOptions = { query: "options" };
+        }
+
+        if (fs.existsSync("/mocked/path/dtos/user.dto.js")) {
+          result.dtos.model = { structure: "model" };
+        }
+
+        if (fs.existsSync("/mocked/path/dtos/create-user.dto.js")) {
+          result.dtos.create = { structure: "create" };
+        }
+
+        if (fs.existsSync("/mocked/path/dtos/update-user.dto.js")) {
+          result.dtos.update = { structure: "update" };
+        }
+
+        if (fs.existsSync("/mocked/path/dtos/query-user.dto.js")) {
+          result.dtos.query = { structure: "query" };
+        }
+
+        if (fs.existsSync("/mocked/path/schemas/user.schema.js")) {
+          result.schemas.model = { schema: "model" };
+        }
+
+        if (fs.existsSync("/mocked/path/schemas/create-user.schema.js")) {
+          result.schemas.create = { schema: "create" };
+        }
+
+        if (fs.existsSync("/mocked/path/schemas/update-user.schema.js")) {
+          result.schemas.update = { schema: "update" };
+        }
+
+        if (fs.existsSync("/mocked/path/schemas/query-user.schema.js")) {
+          result.schemas.query = { schema: "query" };
+        }
+
+        (dynamicLoader.prismaModelsModules as any)[modelName] = result;
+        // console.log(result, modelName);
+        return result;
+      });
   });
 
   describe("getModelModules", () => {
@@ -59,131 +240,13 @@ describe("Dynamic Prisma Model Loader", () => {
   });
 
   describe("importPrismaModelModules", () => {
-    let importPrismaModelModulesSpy: any;
+    it("should import all available modules for a model with old newest names conventions", async () => {
+      (fs.existsSync as jest.Mock).mockImplementation((path) => {
+        if (path.includes("user.prisma-query-options.js")) return false;
+        if (path.includes("user.auth-configs.js")) return false;
+        return true;
+      });
 
-    beforeEach(() => {
-      // Mock console.error to suppress logs during testing
-      jest.spyOn(console, "error").mockImplementation(() => {});
-
-      // Make existsSync return true by default
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-      // Create mocks for the dynamic imports
-      jest.mock(
-        "/mocked/path/user.middlewares.js",
-        () => ({ middleware: jest.fn() }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/user.auth-configs.js",
-        () => ({ default: { auth: "config" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/user.prisma-query-options.js",
-        () => ({ default: { query: "options" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/dtos/user.dto.js",
-        () => ({ UserDto: { structure: "model" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/dtos/create-user.dto.js",
-        () => ({ CreateUserDto: { structure: "create" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/dtos/update-user.dto.js",
-        () => ({ UpdateUserDto: { structure: "update" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/dtos/query-user.dto.js",
-        () => ({ QueryUserDto: { structure: "query" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/schemas/user.schema.js",
-        () => ({ UserSchema: { schema: "model" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/schemas/create-user.schema.js",
-        () => ({ CreateUserSchema: { schema: "create" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/schemas/update-user.schema.js",
-        () => ({ UpdateUserSchema: { schema: "update" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/schemas/query-user.schema.js",
-        () => ({ QueryUserSchema: { schema: "query" } }),
-        { virtual: true }
-      );
-
-      // Set up a mock implementation for importPrismaModelModules to avoid actual dynamic imports
-      importPrismaModelModulesSpy = jest
-        .spyOn(dynamicLoader, "importPrismaModelModules")
-        .mockImplementation(async (modelName) => {
-          const result: any = {
-            dtos: {},
-            schemas: {},
-          };
-
-          if (fs.existsSync("/mocked/path/user.middlewares.js")) {
-            result.middlewares = { middleware: jest.fn() };
-          }
-
-          if (fs.existsSync("/mocked/path/user.auth-configs.js")) {
-            result.authConfigs = { auth: "config" };
-          }
-
-          if (fs.existsSync("/mocked/path/user.prisma-query-options.js")) {
-            result.prismaQueryOptions = { query: "options" };
-          }
-
-          if (fs.existsSync("/mocked/path/dtos/user.dto.js")) {
-            result.dtos.model = { structure: "model" };
-          }
-
-          if (fs.existsSync("/mocked/path/dtos/create-user.dto.js")) {
-            result.dtos.create = { structure: "create" };
-          }
-
-          if (fs.existsSync("/mocked/path/dtos/update-user.dto.js")) {
-            result.dtos.update = { structure: "update" };
-          }
-
-          if (fs.existsSync("/mocked/path/dtos/query-user.dto.js")) {
-            result.dtos.query = { structure: "query" };
-          }
-
-          if (fs.existsSync("/mocked/path/schemas/user.schema.js")) {
-            result.schemas.model = { schema: "model" };
-          }
-
-          if (fs.existsSync("/mocked/path/schemas/create-user.schema.js")) {
-            result.schemas.create = { schema: "create" };
-          }
-
-          if (fs.existsSync("/mocked/path/schemas/update-user.schema.js")) {
-            result.schemas.update = { schema: "update" };
-          }
-
-          if (fs.existsSync("/mocked/path/schemas/query-user.schema.js")) {
-            result.schemas.query = { schema: "query" };
-          }
-
-          (dynamicLoader.prismaModelsModules as any)[modelName] = result;
-          return result;
-        });
-    });
-
-    it("should import all available modules for a model", async () => {
       // Act
       const result = await dynamicLoader.importPrismaModelModules("User");
 
@@ -201,6 +264,8 @@ describe("Dynamic Prisma Model Loader", () => {
           console.error("Error importing");
           return false;
         }
+        if (path.includes("user.prisma-query-options.js")) return false;
+        if (path.includes("user.auth-configs.js")) return false;
         return true;
       });
 
@@ -215,14 +280,14 @@ describe("Dynamic Prisma Model Loader", () => {
     });
 
     it("should return the existing prisma model modules", async () => {
-      jest
-        .mock(dynamicLoader, "prismaModelsModules")
-        .mockImplementationOnce((m) => {
-          console.log(m);
-          return "some modules" as any;
-        });
+      // jest
+      //   .mock(dynamicLoader, "prismaModelsModules")
+      //   .mockImplementationOnce((m) => {
+      //     console.log(m);
+      //     return "some modules" as any;
+      //   });
 
-      importPrismaModelModulesSpy.mockRestore();
+      // importPrismaModelModulesSpy.mockRestore();
 
       // (dynamicLoader.getModelModules as jest.Mock)
 
@@ -308,20 +373,6 @@ describe("Dynamic Prisma Model Loader", () => {
     // });
   });
 
-  describe("getModelUniqueFields", () => {
-    it("should return unique fields for a model", () => {
-      // Setup
-      const uniqueFields = [{ name: "email", type: "String", isUnique: true }];
-      (dynamicLoader.prismaModelsUniqueFields as any) = { user: uniqueFields };
-
-      // Act
-      const result = dynamicLoader.getModelUniqueFields("user");
-
-      // Assert
-      expect(result).toEqual(uniqueFields);
-    });
-  });
-
   describe("getAllPrismaFiles", () => {
     beforeEach(() => {
       jest.resetAllMocks();
@@ -363,8 +414,8 @@ describe("Dynamic Prisma Model Loader", () => {
 
       // Mock fs.statSync to identify directories and files
       (fs.statSync as jest.Mock).mockImplementation((filePath) => {
-        const fileName = filePath.split("/").pop();
-        const dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
+        // const fileName = filePath.split("/").pop();
+        // const dirPath = filePath.substring(0, filePath.lastIndexOf("/"));
 
         const isDirectory = mockDirectoryStructure[filePath] !== undefined;
 
@@ -440,307 +491,418 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(result).toEqual([]);
     });
   });
-});
 
-describe("Prisma Models Helpers - Additional Tests", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Setup path mocks
-    (path.resolve as jest.Mock).mockReturnValue("/mocked/path");
-    (path.join as jest.Mock).mockImplementation((...args) => args.join("/"));
-
-    // Setup process.cwd mock
-    jest.spyOn(process, "cwd").mockReturnValue("/project");
-  });
-
-  describe("getFileModelModulesFileStructure", () => {
-    it("should return the correct file structure for regular models", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("js");
-      // Act
-      const result = dynamicLoader.getFileModelModulesFileStructure("User");
-
-      // Assert
-      expect(result.core).toEqual({
-        service: "user.service.js",
-        controller: "user.controller.js",
-        middlewares: "user.middlewares.js",
-        authConfigs: "user.auth-configs.js",
-        prismaQueryOptions: "user.prisma-query-options.js",
-        router: "user.router.js",
+  describe("importPrismaModelModules - Naming Convention Conflicts", () => {
+    it("should throw error when both prismaQueryOptions files exist", async () => {
+      // Setup both files to exist
+      (fs.existsSync as jest.Mock).mockImplementation((path) => {
+        return (
+          path.includes("prisma-query-options") ||
+          path.includes("user.query.js")
+        );
       });
 
-      expect(result.dtos).toEqual({
-        model: "user.dto.js",
-        create: "create-user.dto.js",
-        createMany: "create-many-user.dto.js",
-        update: "update-user.dto.js",
-        query: "query-user.dto.js",
-        updateMany: "update-many-user.dto.js",
-      });
-
-      expect(result.schemas).toEqual({
-        model: "user.schema.js",
-        create: "create-user.schema.js",
-        createMany: "create-many-user.schema.js",
-        update: "update-user.schema.js",
-        query: "query-user.schema.js",
-        updateMany: "update-many-user.schema.js",
-      });
+      await expect(
+        dynamicLoader.importPrismaModelModules("User")
+      ).rejects.toThrow("Cannot use both");
     });
 
-    it("should return the correct file structure for auth model", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("js");
-      // Act
-      const result = dynamicLoader.getFileModelModulesFileStructure("Auth");
-
-      // Assert
-      expect(result.core).toEqual({
-        service: "auth.service.js",
-        controller: "auth.controller.js",
-        middlewares: "auth.middlewares.js",
-        authConfigs: "auth.auth-configs.js",
-        prismaQueryOptions: "auth.prisma-query-options.js",
-        router: "auth.router.js",
+    it("should throw error when both authConfigs files exist", async () => {
+      // Setup both files to exist
+      (fs.existsSync as jest.Mock).mockImplementation((path) => {
+        return path.includes("auth-configs") || path.includes("user.auth.js");
       });
 
-      expect(result.dtos).toEqual({
-        login: "login.dto.js",
-        signup: "signup.dto.js",
-        updateMe: "update-me.dto.js",
-        updatePassword: "update-password.dto.js",
-      });
-
-      expect(result.schemas).toEqual({
-        login: "login.schema.js",
-        signup: "signup.schema.js",
-        updateMe: "update-me.schema.js",
-        updatePassword: "update-password.schema.js",
-      });
+      await expect(
+        dynamicLoader.importPrismaModelModules("User")
+      ).rejects.toThrow("Cannot use both");
     });
   });
 
-  describe("processSubdir", () => {
-    it("should process DTOs and schemas correctly", async () => {
-      // Setup
-      const mockResult = {
-        dtos: {},
-        schemas: {},
-      };
-
-      const accessSpy = jest
-        .spyOn(fs.promises, "access")
-        .mockResolvedValue(undefined);
-
-      // Mock dynamic imports to return test modules
-      jest.mock(
-        "/mocked/path/dtos/user.dto.js",
-        () => ({ default: { test: "dto" } }),
-        { virtual: true }
-      );
-      jest.mock(
-        "/mocked/path/schemas/user.schema.js",
-        () => ({ default: { test: "schema" } }),
-        { virtual: true }
-      );
-
-      const importSpy = jest
-        .spyOn(Promise, "all")
-        .mockResolvedValue([undefined]);
-
-      // Act
-      await dynamicLoader.processSubdir("User", "dtos", mockResult);
-      await dynamicLoader.processSubdir("User", "schemas", mockResult);
-
-      // Assert
-      expect(accessSpy).toHaveBeenCalledTimes(2);
-      expect(importSpy).toHaveBeenCalledTimes(2);
-    });
-
-    it("should handle non-existent directories gracefully", async () => {
-      // Setup
-      const mockResult = {
-        dtos: {},
-        schemas: {},
-      };
-
-      // Mock access to reject (directory doesn't exist)
-      jest
-        .spyOn(fs.promises, "access")
-        .mockRejectedValue(new Error("Directory not found"));
-
-      // Act
-      await dynamicLoader.processSubdir("User", "dtos", mockResult);
-
-      // Assert
-      expect(mockResult.dtos).toEqual({});
-    });
-  });
-
-  describe("initializePrismaModels", () => {
+  describe("Prisma Models Helpers - Additional Tests", () => {
     beforeEach(() => {
-      // Reset models and prismaModelsUniqueFields before each test
-      dynamicLoader.models.length = 0;
-      Object.keys(dynamicLoader.prismaModelsUniqueFields).forEach((key) => {
-        delete dynamicLoader.prismaModelsUniqueFields[key];
+      jest.clearAllMocks();
+
+      // Setup path mocks
+      (path.resolve as jest.Mock).mockReturnValue("/mocked/path");
+      (path.join as jest.Mock).mockImplementation((...args) => args.join("/"));
+
+      // Setup process.cwd mock
+      jest.spyOn(process, "cwd").mockReturnValue("/project");
+    });
+
+    describe("getFileModelModulesFileStructure", () => {
+      it("should return the correct file structure for regular models", () => {
+        (getUserFileExtension as jest.Mock).mockReturnValue("js");
+        // Act
+        const result = dynamicLoader.getFileModelModulesFileStructure("User");
+
+        // Assert
+        expect(result.core).toEqual({
+          service: "user.service.js",
+          controller: "user.controller.js",
+          middlewares: "user.middlewares.js",
+          authConfigs: "user.auth-configs.js",
+          authConfigsNew: "user.auth.js",
+          prismaQueryOptions: "user.prisma-query-options.js",
+          prismaQueryOptionsNew: "user.query.js",
+          router: "user.router.js",
+        });
+
+        expect(result.dtos).toEqual({
+          model: "user.dto.js",
+          create: "create-user.dto.js",
+          createMany: "create-many-user.dto.js",
+          update: "update-user.dto.js",
+          query: "query-user.dto.js",
+          updateMany: "update-many-user.dto.js",
+        });
+
+        expect(result.schemas).toEqual({
+          model: "user.schema.js",
+          create: "create-user.schema.js",
+          createMany: "create-many-user.schema.js",
+          update: "update-user.schema.js",
+          query: "query-user.schema.js",
+          updateMany: "update-many-user.schema.js",
+        });
       });
 
-      // Clear prismaModelRelationFields
-      Object.keys(dynamicLoader.prismaModelRelationFields).forEach((key) => {
-        delete dynamicLoader.prismaModelRelationFields[key];
-      });
-      // jest.spyOn(fs, "readdirSync").mockReturnValue();
+      it("should return the correct file structure for auth model", () => {
+        (getUserFileExtension as jest.Mock).mockReturnValue("js");
+        // Act
+        const result = dynamicLoader.getFileModelModulesFileStructure("Auth");
 
-      (fs.readdirSync as jest.Mock).mockImplementation((dirPath) => {
-        return ["user.prisma", "post.prisma"] as any;
+        // Assert
+        expect(result.core).toEqual({
+          service: "auth.service.js",
+          controller: "auth.controller.js",
+          middlewares: "auth.middlewares.js",
+          authConfigs: "auth.auth-configs.js",
+          authConfigsNew: "auth.auth.js",
+          prismaQueryOptions: "auth.prisma-query-options.js",
+          prismaQueryOptionsNew: "auth.query.js",
+          router: "auth.router.js",
+        });
+
+        expect(result.dtos).toEqual({
+          login: "login.dto.js",
+          signup: "signup.dto.js",
+          updateMe: "update-me.dto.js",
+          updatePassword: "update-password.dto.js",
+        });
+
+        expect(result.schemas).toEqual({
+          login: "login.schema.js",
+          signup: "signup.schema.js",
+          updateMe: "update-me.schema.js",
+          updatePassword: "update-password.schema.js",
+        });
       });
     });
 
-    it("should parse Prisma schema files and extract models", () => {
-      // Setup
-      const mockPrismaSchema = `
-        model User {
-          id        String   @id @default(uuid())
-          email     String   @unique
-          posts     Post[]
-          profile   Profile?
-        }
-        
-        model Post {
-          id        String   @id @default(uuid())
-          title     String
-          author    User     @relation(fields: [authorId], references: [id])
-          authorId  String
-        }
-      `;
+    describe("processSubdir", () => {
+      it("should process DTOs and schemas correctly", async () => {
+        // Setup
+        const mockResult = {
+          dtos: {},
+          schemas: {},
+        };
 
-      jest
-        .spyOn(dynamicLoader, "getAllPrismaFiles")
-        .mockReturnValue(["prisma/schema.prisma"]);
-      jest.spyOn(fs, "readFileSync").mockReturnValue(mockPrismaSchema);
-      jest.spyOn(fs, "statSync").mockReturnValue({
-        isFile: () => true,
-        isDirectory: () => false,
-      } as any);
+        const accessSpy = jest
+          .spyOn(fs.promises, "access")
+          .mockResolvedValue(undefined);
 
-      // Act
-      dynamicLoader.initializePrismaModels();
+        // Mock dynamic imports to return test modules
+        jest.mock(
+          "/mocked/path/dtos/user.dto.js",
+          () => ({ default: { test: "dto" } }),
+          { virtual: true }
+        );
+        jest.mock(
+          "/mocked/path/schemas/user.schema.js",
+          () => ({ default: { test: "schema" } }),
+          { virtual: true }
+        );
 
-      // Assert
-      expect(dynamicLoader.models).toContain("user");
-      expect(dynamicLoader.models).toContain("post");
-      expect(dynamicLoader.prismaModelsUniqueFields.user).toBeDefined();
-      expect(dynamicLoader.prismaModelRelationFields.User).toBeDefined();
-      expect(dynamicLoader.prismaModelRelationFields.Post).toBeDefined();
+        const importSpy = jest
+          .spyOn(Promise, "all")
+          .mockResolvedValue([undefined]);
+
+        // Act
+        await dynamicLoader.processSubdir("User", "dtos", mockResult);
+        await dynamicLoader.processSubdir("User", "schemas", mockResult);
+
+        // Assert
+        expect(accessSpy).toHaveBeenCalledTimes(2);
+        expect(importSpy).toHaveBeenCalledTimes(2);
+      });
+
+      it("should handle non-existent directories gracefully", async () => {
+        // Setup
+        const mockResult = {
+          dtos: {},
+          schemas: {},
+        };
+
+        // Mock access to reject (directory doesn't exist)
+        jest
+          .spyOn(fs.promises, "access")
+          .mockRejectedValue(new Error("Directory not found"));
+
+        // Act
+        await dynamicLoader.processSubdir("User", "dtos", mockResult);
+
+        // Assert
+        expect(mockResult.dtos).toEqual({});
+      });
     });
 
-    it("should correctly identify unique fields", () => {
-      // Setup
-      const mockPrismaSchema = `
-        model User {
-          id        String   @id @default(uuid())
-          email     String   @unique
-          username  String   @unique
-        }
+    describe("initializePrismaModels", () => {
+      beforeEach(() => {
+        // Reset models and prismaModelsUniqueFields before each test
+        dynamicLoader.models.length = 0;
+        Object.keys(dynamicLoader.prismaModelsUniqueFields).forEach((key) => {
+          delete dynamicLoader.prismaModelsUniqueFields[key];
+        });
 
-        model Post {
-          id String @id @default(uuid())
-        }
-      `;
+        // Clear prismaModelRelationFields
+        Object.keys(dynamicLoader.prismaModelRelationFields).forEach((key) => {
+          delete dynamicLoader.prismaModelRelationFields[key];
+        });
+        // jest.spyOn(fs, "readdirSync").mockReturnValue();
 
-      jest
-        .spyOn(dynamicLoader, "getAllPrismaFiles")
-        .mockReturnValue(["prisma/schema.prisma"]);
-      jest.spyOn(fs, "readFileSync").mockReturnValue(mockPrismaSchema);
-      jest.spyOn(fs, "statSync").mockReturnValue({
-        isFile: () => true,
-        isDirectory: () => false,
-      } as any);
+        (fs.readdirSync as jest.Mock).mockImplementation((dirPath) => {
+          return ["user.prisma", "post.prisma"] as any;
+        });
+      });
 
-      // Act
-      dynamicLoader.initializePrismaModels();
+      it("should parse Prisma schema files and extract models", () => {
+        // Setup
+        const mockPrismaSchema = `
+          model User {
+            id        String   @id @default(uuid())
+            email     String   @unique
+            posts     Post[]
+            profile   Profile?
+          }
+          
+          model Post {
+            id        String   @id @default(uuid())
+            title     String
+            author    User     @relation(fields: [authorId], references: [id])
+            authorId  String
+          }
+        `;
 
-      // Assert
-      expect(dynamicLoader.prismaModelsUniqueFields.user).toHaveLength(2);
-      expect(dynamicLoader.prismaModelsUniqueFields.user[0].name).toBe("email");
-      expect(dynamicLoader.prismaModelsUniqueFields.user[1].name).toBe(
-        "username"
-      );
+        jest
+          .spyOn(dynamicLoader, "getAllPrismaFiles")
+          .mockReturnValue(["prisma/schema.prisma"]);
+        jest.spyOn(fs, "readFileSync").mockReturnValue(mockPrismaSchema);
+        jest.spyOn(fs, "statSync").mockReturnValue({
+          isFile: () => true,
+          isDirectory: () => false,
+        } as any);
+
+        // Act
+        dynamicLoader.initializePrismaModels();
+
+        // Assert
+        expect(dynamicLoader.models).toContain("user");
+        expect(dynamicLoader.models).toContain("post");
+        expect(dynamicLoader.prismaModelsUniqueFields.user).toBeDefined();
+        expect(dynamicLoader.prismaModelRelationFields.User).toBeDefined();
+        expect(dynamicLoader.prismaModelRelationFields.Post).toBeDefined();
+      });
+
+      it("should correctly identify unique fields", () => {
+        // Setup
+        const mockPrismaSchema = `
+          model User {
+            id        String   @id @default(uuid())
+            email     String   @unique
+            username  String   @unique
+          }
+  
+          model Post {
+            id String @id @default(uuid())
+          }
+        `;
+
+        jest
+          .spyOn(dynamicLoader, "getAllPrismaFiles")
+          .mockReturnValue(["prisma/schema.prisma"]);
+        jest.spyOn(fs, "readFileSync").mockReturnValue(mockPrismaSchema);
+        jest.spyOn(fs, "statSync").mockReturnValue({
+          isFile: () => true,
+          isDirectory: () => false,
+        } as any);
+
+        // Act
+        dynamicLoader.initializePrismaModels();
+
+        // Assert
+        expect(dynamicLoader.prismaModelsUniqueFields.user).toHaveLength(2);
+        expect(dynamicLoader.prismaModelsUniqueFields.user[0].name).toBe(
+          "email"
+        );
+        expect(dynamicLoader.prismaModelsUniqueFields.user[1].name).toBe(
+          "username"
+        );
+      });
+
+      it("should correctly identify relation fields", () => {
+        // Setup
+        dynamicLoader.models.length = 0;
+
+        const mockPrismaSchema = `
+          model User {
+            id        String   @id @default(uuid())
+            posts     Post[]
+            profile   Profile?
+          }
+  
+          model Profile {
+          }
+        `;
+
+        jest
+          .spyOn(dynamicLoader, "getAllPrismaFiles")
+          .mockReturnValue(["prisma/schema.prisma"]);
+        jest.spyOn(fs, "readFileSync").mockReturnValue(mockPrismaSchema);
+        jest.spyOn(fs, "statSync").mockReturnValue({
+          isFile: () => true,
+          isDirectory: () => false,
+        } as any);
+
+        // Act
+        dynamicLoader.initializePrismaModels();
+
+        // Assert
+        expect(
+          dynamicLoader.prismaModelRelationFields.User.singular
+        ).toHaveLength(1);
+        expect(
+          dynamicLoader.prismaModelRelationFields.User.singular[0].name
+        ).toBe("profile");
+        expect(
+          dynamicLoader.prismaModelRelationFields.User.singular[0].type
+        ).toBe("Profile");
+
+        expect(dynamicLoader.prismaModelRelationFields.User.list).toHaveLength(
+          1
+        );
+        expect(dynamicLoader.prismaModelRelationFields.User.list[0].name).toBe(
+          "posts"
+        );
+        expect(dynamicLoader.prismaModelRelationFields.User.list[0].type).toBe(
+          "Post"
+        );
+      });
     });
 
-    it("should correctly identify relation fields", () => {
-      // Setup
-      dynamicLoader.models.length = 0;
+    describe("getModels", () => {
+      it("should return all models", () => {
+        // Setup
+        dynamicLoader.models.length = 0; // Clears the array in-place
+        dynamicLoader.models.push("user", "post", "profile");
 
-      const mockPrismaSchema = `
-        model User {
-          id        String   @id @default(uuid())
-          posts     Post[]
-          profile   Profile?
-        }
+        // Act
+        const result = dynamicLoader.getModels();
 
-        model Profile {
-        }
-      `;
+        // Assert
+        expect(result).toEqual(["user", "post", "profile"]);
+      });
+    });
 
-      jest
-        .spyOn(dynamicLoader, "getAllPrismaFiles")
-        .mockReturnValue(["prisma/schema.prisma"]);
-      jest.spyOn(fs, "readFileSync").mockReturnValue(mockPrismaSchema);
-      jest.spyOn(fs, "statSync").mockReturnValue({
-        isFile: () => true,
-        isDirectory: () => false,
-      } as any);
+    describe("getModelUniqueFields", () => {
+      it("should return unique fields for a model", () => {
+        // Setup
+        const uniqueFields = [
+          { name: "email", type: "String", isUnique: true },
+        ];
+        dynamicLoader.prismaModelsUniqueFields.user = uniqueFields;
 
-      // Act
-      dynamicLoader.initializePrismaModels();
+        // Act
+        const result = dynamicLoader.getModelUniqueFields("user");
 
-      // Assert
-      expect(
-        dynamicLoader.prismaModelRelationFields.User.singular
-      ).toHaveLength(1);
-      expect(
-        dynamicLoader.prismaModelRelationFields.User.singular[0].name
-      ).toBe("profile");
-      expect(
-        dynamicLoader.prismaModelRelationFields.User.singular[0].type
-      ).toBe("Profile");
-
-      expect(dynamicLoader.prismaModelRelationFields.User.list).toHaveLength(1);
-      expect(dynamicLoader.prismaModelRelationFields.User.list[0].name).toBe(
-        "posts"
-      );
-      expect(dynamicLoader.prismaModelRelationFields.User.list[0].type).toBe(
-        "Post"
-      );
+        // Assert
+        expect(result).toEqual(uniqueFields);
+      });
     });
   });
 
-  describe("getModels", () => {
-    it("should return all models", () => {
-      // Setup
-      dynamicLoader.models.length = 0; // Clears the array in-place
-      dynamicLoader.models.push("user", "post", "profile");
+  describe("validateNamingConventions", () => {
+    it("should throw error when both prismaQueryOptions naming conventions exist", () => {
+      const result = { prismaQueryOptions: { existing: "config" } } as any;
 
-      // Act
-      const result = dynamicLoader.getModels();
+      expect(() =>
+        dynamicLoader.validateNamingConventions(
+          "prismaQueryOptionsNew",
+          "user.query.js",
+          result
+        )
+      ).toThrow(
+        "Cannot use both user.query.js and user.prisma-query-options.js at once"
+      );
+    });
 
-      // Assert
-      expect(result).toEqual(["user", "post", "profile"]);
+    it("should throw error when both authConfigs naming conventions exist", () => {
+      const result = { authConfigs: { existing: "config" } } as any;
+
+      expect(() =>
+        dynamicLoader.validateNamingConventions(
+          "authConfigsNew",
+          "user.auth.js",
+          result
+        )
+      ).toThrow(
+        "Cannot use both user.auth.js and user.auth-configs.js at once"
+      );
+    });
+
+    it("should not throw error when no conflicts exist", () => {
+      const result = {} as any;
+
+      expect(() =>
+        dynamicLoader.validateNamingConventions(
+          "prismaQueryOptions",
+          "user.prisma-query-options.js",
+          result
+        )
+      ).not.toThrow();
     });
   });
 
-  describe("getModelUniqueFields", () => {
-    it("should return unique fields for a model", () => {
-      // Setup
-      const uniqueFields = [{ name: "email", type: "String", isUnique: true }];
-      dynamicLoader.prismaModelsUniqueFields.user = uniqueFields;
+  describe("assignModuleToResult", () => {
+    let result: any;
 
-      // Act
-      const result = dynamicLoader.getModelUniqueFields("user");
+    beforeEach(() => {
+      result = { dtos: {}, schemas: {} };
+    });
 
-      // Assert
-      expect(result).toEqual(uniqueFields);
+    it("should assign prismaQueryOptions correctly", () => {
+      const module = { default: { query: "options" } };
+
+      dynamicLoader.assignModuleToResult("prismaQueryOptions", module, result);
+
+      expect(result.prismaQueryOptions).toEqual({ query: "options" });
+    });
+
+    it("should assign authConfigs correctly", () => {
+      const module = { default: { auth: "config" } };
+
+      dynamicLoader.assignModuleToResult("authConfigs", module, result);
+
+      expect(result.authConfigs).toEqual({ auth: "config" });
+    });
+
+    it("should assign middlewares without default extraction", () => {
+      const module = { middleware: jest.fn() };
+
+      dynamicLoader.assignModuleToResult("middlewares", module, result);
+
+      expect(result.middlewares).toBe(module);
     });
   });
 });

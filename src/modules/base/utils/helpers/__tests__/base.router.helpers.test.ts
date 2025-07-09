@@ -3,7 +3,9 @@ import { setupRouters } from "../base.router.helpers"; // Adjust the import path
 import * as importHelpers from "../../../../../utils/helpers/models.helpers";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
+import catchAsync from "../../../../error-handler/utils/catch-async";
 
+jest.mock("../../../../error-handler/utils/catch-async");
 // Mocks
 jest.mock("express", () => {
   const mockRouter = {
@@ -34,10 +36,6 @@ jest.mock("../../../../auth/auth.service", () => ({
   handleAuthenticationControl: jest.fn(() => "authMiddleware"),
   handleAccessControl: jest.fn(() => "accessControlMiddleware"),
 }));
-
-// jest.mock("../../../base.middlewares", () => ({
-//   ,
-// }));
 
 jest.mock("../../../base.middlewares", () => ({
   addPrismaQueryOptionsToRequest: jest.fn(() => "queryOptionsMiddleware"),
@@ -81,6 +79,8 @@ describe("setupRouters", () => {
     };
 
     (BaseController as jest.Mock).mockImplementation(() => mockBaseController);
+
+    (catchAsync as jest.Mock).mockImplementation((fn) => fn);
   });
 
   it("should register all routes for a model with no customization", async () => {

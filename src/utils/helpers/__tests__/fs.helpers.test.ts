@@ -211,4 +211,99 @@ describe("fs.helpers", () => {
       expect(fsHelpers.userFileExtension).toBe("js");
     });
   });
+
+  describe("crd", () => {
+    it("should return the correct the build folder when project is built through arkos build", () => {
+      process.env.ARKOS_BUILD = "true";
+
+      expect(fsHelpers.crd()).toContain("/.build/");
+    });
+
+    it("should return only the process.cwd when project not built", () => {
+      process.env.ARKOS_BUILD = "true";
+
+      expect(fsHelpers.crd()).not.toContain("./build/");
+    });
+  });
+
+  describe("checkFileExists", () => {
+    beforeEach(() => {
+      (path.resolve as jest.Mock).mockImplementation((...args) =>
+        args.join("/").replace(/\/+/g, "/")
+      );
+    });
+
+    it("should return true when file exists", () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      const result = fsHelpers.checkFileExists("existing-file.ts");
+
+      expect(result).toBe(true);
+      expect(fs.existsSync).toHaveBeenCalledWith("existing-file.ts");
+    });
+
+    it("should return false when file does not exist", () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+      const result = fsHelpers.checkFileExists("non-existent-file.ts");
+
+      expect(result).toBe(false);
+      expect(fs.existsSync).toHaveBeenCalledWith("non-existent-file.ts");
+    });
+
+    it("should return false when fs.existsSync throws an error", () => {
+      (fs.existsSync as jest.Mock).mockImplementation(() => {
+        throw new Error("File system error");
+      });
+
+      const result = fsHelpers.checkFileExists("error-file.ts");
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("fullCleanCwd", () => {
+    const originalCwd = process.cwd();
+    const cwd = originalCwd.replace(/\/+$/, "");
+
+    it("should remove the cwd from the start of a path", () => {
+      const input = `${cwd}/src/index.ts`;
+      const expected = "src/index.ts";
+      expect(fsHelpers.fullCleanCwd(input)).toBe(expected);
+    });
+
+    it("should return empty string when path is exactly cwd", () => {
+      const input = cwd;
+      expect(fsHelpers.fullCleanCwd(input)).toBe("");
+    });
+
+    it("should return empty string when path is cwd with trailing slash", () => {
+      const input = cwd + "/";
+      expect(fsHelpers.fullCleanCwd(input)).toBe("");
+    });
+
+    it("should not alter a path that does not start with cwd", () => {
+      const input = "/some/other/path/file.ts";
+      expect(fsHelpers.fullCleanCwd(input)).toBe(input);
+    });
+
+    it("should throw if path is not a string", () => {
+      expect(() => fsHelpers.fullCleanCwd(null as any)).toThrow(
+        "Path must be a string"
+      );
+      expect(() => fsHelpers.fullCleanCwd(undefined as any)).toThrow(
+        "Path must be a string"
+      );
+      expect(() => fsHelpers.fullCleanCwd(123 as any)).toThrow(
+        "Path must be a string"
+      );
+    });
+
+    it("should handle mixed trailing slashes", () => {
+      const withSlash = cwd + "/";
+      const input = withSlash + "folder/file.ts";
+      const expected = "folder/file.ts";
+      expect(fsHelpers.fullCleanCwd(input)).toBe(expected);
+    });
+  });
 });
