@@ -11,7 +11,7 @@ export function generateAuthConfigsTemplate(options: TemplateOptions): string {
 
   // Generate imports for TypeScript
   const imports = isTypeScript
-    ? `import { AuthConfigs } from 'arkos/prisma';\n`
+    ? `import { AuthConfigs } from 'arkos/auth';\n`
     : "";
 
   // Generate type annotation for TypeScript

@@ -25,10 +25,9 @@ model User {
   {{/if}}
   {{/if}}
   {{/if}}
-  
-  // other fields for your application
   createdAt            DateTime @default(now())
   updatedAt            DateTime @default(now())
+  // other fields for your application
 }
 
 {{#if (eq authentication.type "dynamic")}}
@@ -42,8 +41,8 @@ model UserRole {
   user      User       @relation(fields: [userId], references: [id])
   roleId    String
   role      AuthRole   @relation(fields: [roleId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @default(now())
   {{#if authentication.multipleRoles}}
 
   @@unique([userId, roleId])

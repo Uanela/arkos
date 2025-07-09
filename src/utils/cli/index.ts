@@ -1,4 +1,3 @@
-// src/utils/cli/index.ts
 import { Command } from "commander";
 import { buildCommand } from "./build";
 import { devCommand } from "./dev";
