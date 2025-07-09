@@ -1,0 +1,28 @@
+{{#if (neq prisma.provider "sqlite")}}
+enum AuthPermissionAction {
+  View
+  Create
+  Update
+  Delete
+ // Add more custom actions
+}
+{{/if}}
+
+model AuthPermission {
+  id        String   {{idDatabaseType}}
+  resource  String
+  {{#if (eq prisma.provider "sqlite")}}
+  action    String   @default("View") 
+  {{else}}
+  action    AuthPermissionAction @default(View) 
+  {{/if}}
+  roleId    String
+  role      AuthRole  @relation(fields: [roleId], references: [id])
+  description String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+
+  @@unique([resource, action, roleId])
+}
+
+

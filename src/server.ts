@@ -7,7 +7,7 @@ import deepmerge from "./utils/helpers/deepmerge.helper";
 import http from "http";
 
 process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT EXCEPTION! SHUTTING DOWN...");
+  console.error("\nUNCAUGHT EXCEPTION! SHUTTING DOWN...\n");
   console.error(err.name, err.message);
   console.error(err);
   process.exit(1);
@@ -57,7 +57,7 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
     server.listen(port, _arkosConfig.host!, () => {
       const time = new Date().toTimeString().split(" ")[0];
       console.info(
-        `[\x1b[32mREADY\x1b[0m] \x1b[90m${time}\x1b[0m server waiting on http://localhost:${port}`
+        `[\x1b[32mREADY\x1b[0m] \x1b[90m${time}\x1b[0m server waiting on http://${_arkosConfig.host || "localhost"}:${port}`
       );
     });
   }
@@ -74,7 +74,23 @@ process.on("unhandledRejection", (err: AppError) => {
   });
 });
 
-export function getArkosConfig() {
+/**
+ * Terminates the current running express application, server and process.
+ *
+ * @returns {void}
+ */
+export function terminateApplicationRunningProcessAndServer(): void {
+  server?.close(() => {
+    process.exit(1);
+  });
+}
+
+/**
+ * Gives access to the underlying current configurations being used by **Arkos** by default and also passed through `arkos.init()`
+ *
+ * @returns {ArkosConfig}
+ */
+export function getArkosConfig(): ArkosConfig {
   return _arkosConfig;
 }
 

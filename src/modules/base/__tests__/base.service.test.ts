@@ -1,6 +1,5 @@
 import { BaseService } from "../base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
-import AppError from "../../error-handler/utils/app-error";
 import authService from "../../auth/auth.service";
 import { handleRelationFieldsInBody } from "../utils/helpers/base.service.helpers";
 import { getPrismaModelRelations } from "../../../utils/helpers/models.helpers";
@@ -9,6 +8,7 @@ import { getPrismaModelRelations } from "../../../utils/helpers/models.helpers";
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
+  readFileSync: jest.fn(),
 }));
 jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../auth/auth.service");
@@ -34,7 +34,7 @@ jest.mock("../../../server", () => ({
 }));
 
 describe("BaseService", () => {
-  let baseService: BaseService;
+  let baseService: BaseService<any>;
   let mockPrisma: any;
 
   beforeEach(() => {
@@ -61,7 +61,15 @@ describe("BaseService", () => {
       },
       user: {
         create: jest.fn(),
+        createMany: jest.fn(),
+        findMany: jest.fn(),
+        findFirst: jest.fn(),
+        findUnique: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
+        delete: jest.fn(),
+        deleteMany: jest.fn(),
+        count: jest.fn(),
       },
     };
 
@@ -95,11 +103,6 @@ describe("BaseService", () => {
 
       mockPrisma.post.create.mockResolvedValue(expectedResult);
 
-      // (getPrismaModelRelations as jest.Mock).mockReturnValue({
-      //   singular: [{ name: "category" }],
-      //   list: [{ name: "tags" }],
-      // });
-
       const result = await baseService.createOne(body);
 
       expect(getPrismaInstance).toHaveBeenCalled();
@@ -112,10 +115,6 @@ describe("BaseService", () => {
       expect(mockPrisma.post.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: body,
-          // include: expect.objectContaining({
-          //   category: true,
-          //   tags: true,
-          // }),
         })
       );
       expect(result).toEqual(expectedResult);
@@ -163,27 +162,74 @@ describe("BaseService", () => {
     });
   });
 
-  // describe("createMany", () => {
-  //   it("should create multiple records and return count", async () => {
-  //     const body = [{ title: "Post 1" }, { title: "Post 2" }];
+  describe("createMany", () => {
+    it("should create many records and return it", async () => {
+      const body = [{ title: "Test Post", content: "Test Content" }];
+      const expectedResult = { id: "1", ...body };
 
-  //     mockPrisma.post.createMany.mockResolvedValue({ count: 2 });
-  //     mockPrisma.post.count.mockResolvedValue(5);
+      mockPrisma.post.createMany.mockResolvedValue(expectedResult);
 
-  //     const result = await baseService.createMany(body);
+      const result = await baseService.createMany(body);
 
-  //     expect(mockPrisma.post.count).toHaveBeenCalledWith({
-  //       data: body,
-  //     });
-  //     expect(mockPrisma.post.count).toHaveBeenCalled();
-  //     expect(result).toEqual({ total: 5, data: { count: 2 } });
-  //   });
+      expect(getPrismaInstance).toHaveBeenCalled();
+      expect(handleRelationFieldsInBody).toHaveBeenCalledWith(
+        body[0],
+        baseService.relationFields,
+        ["delete", "disconnect", "update"]
+      );
 
-  //   it("should throw error if body is not an array", async () => {
-  //     await expect(baseService.createMany({} as any)).rejects.toThrow(AppError);
-  //     await expect(baseService.createMany([] as any)).rejects.toThrow(AppError);
-  //   });
-  // });
+      expect(mockPrisma.post.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: body,
+        })
+      );
+      expect(result).toEqual(expectedResult);
+    });
+
+    it("should hash password when creating many users", async () => {
+      baseService = new BaseService("user");
+      const body = [
+        {
+          name: "Test User",
+          email: "test@example.com",
+          password: "password123",
+        },
+      ];
+      const hashedPassword = "hashed_password";
+
+      (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
+      (authService.hashPassword as jest.Mock).mockResolvedValue(hashedPassword);
+      mockPrisma.user.createMany.mockResolvedValue({
+        id: "1",
+        ...body,
+        password: hashedPassword,
+      });
+
+      await baseService.createMany(body);
+
+      expect(authService.hashPassword).toHaveBeenCalledWith("password123");
+      expect(mockPrisma.user.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: [{ ...body[0], password: hashedPassword }],
+        })
+      );
+    });
+
+    it("should use provided query options", async () => {
+      const body = [{ title: "Test Post" }];
+      const queryOptions = {
+        select: { title: true, id: true },
+      };
+
+      await baseService.createMany(body, queryOptions);
+
+      expect(mockPrisma.post.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({ title: true, id: true }),
+        })
+      );
+    });
+  });
 
   describe("findMany", () => {
     it("should find records based on filters", async () => {
@@ -225,7 +271,6 @@ describe("BaseService", () => {
           where: { published: true },
           select: expect.objectContaining({
             title: true,
-            // category: true,
           }),
         })
       );
@@ -244,22 +289,26 @@ describe("BaseService", () => {
       expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { ...filters, id: "1" },
-          // include: expect.objectContaining({
-          //   category: true,
-          //   tags: true,
-          // }),
         })
       );
       expect(result).toEqual(expectedData);
     });
 
-    // it("should throw error if record not found", async () => {
-    //   mockPrisma.post.findFirst.mockResolvedValue(null);
+    it("should find a record by non id field", async () => {
+      const filters = { title: "Test Post" };
+      const expectedData = { id: "1", title: "Test Post" };
 
-    //   await expect(baseService.findOne({ id: "999" })).rejects.toThrow(
-    //     AppError
-    //   );
-    // });
+      mockPrisma.post.findFirst.mockResolvedValue(expectedData);
+
+      const result = await baseService.findOne(filters);
+
+      expect(mockPrisma.post.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { ...filters },
+        })
+      );
+      expect(result).toEqual(expectedData);
+    });
 
     it("should use select if provided in query options", async () => {
       const filters = { id: "1" };
@@ -275,11 +324,63 @@ describe("BaseService", () => {
         expect.objectContaining({
           select: expect.objectContaining({
             title: true,
-            // category: true,
-            // tags: true,
           }),
         })
       );
+    });
+  });
+
+  describe("findById", () => {
+    it("should find a record by id", async () => {
+      const id = "1";
+      const expectedData = { id: "1", title: "Test Post" };
+
+      mockPrisma.post.findUnique.mockResolvedValue(expectedData);
+
+      const result = await baseService.findById(id);
+
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "1" },
+        })
+      );
+      expect(result).toEqual(expectedData);
+    });
+
+    it("should use select if provided in query options", async () => {
+      const id = "1";
+      const queryOptions = {
+        select: { title: true },
+      };
+
+      mockPrisma.post.findUnique.mockResolvedValue({ id: "1", title: "Test" });
+
+      await baseService.findById(id, queryOptions);
+
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "1" },
+          select: expect.objectContaining({
+            title: true,
+          }),
+        })
+      );
+    });
+
+    it("should handle numeric id", async () => {
+      const id = 1;
+      const expectedData = { id: 1, title: "Test Post" };
+
+      mockPrisma.post.findUnique.mockResolvedValue(expectedData);
+
+      const result = await baseService.findById(id);
+
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 1 },
+        })
+      );
+      expect(result).toEqual(expectedData);
     });
   });
 
@@ -301,10 +402,6 @@ describe("BaseService", () => {
         expect.objectContaining({
           where: { ...filters, id: "1" },
           data: body,
-          // include: expect.objectContaining({
-          //   category: true,
-          //   tags: true,
-          // }),
         })
       );
       expect(result).toEqual(expectedData);
@@ -333,13 +430,15 @@ describe("BaseService", () => {
       );
     });
 
-    // it("should throw error if record not found", async () => {
-    //   mockPrisma.post.update.mockResolvedValue(null);
+    it("should return null if record not found", async () => {
+      mockPrisma.post.update.mockResolvedValue(null);
+      const result = await baseService.updateOne(
+        { id: "999" },
+        { title: "Test" }
+      );
 
-    //   await expect(
-    //     baseService.updateOne({ id: "999" }, { title: "Test" })
-    //   ).rejects.toThrow(AppError);
-    // });
+      expect(result).toBeNull();
+    });
   });
 
   describe("updateMany", () => {
@@ -416,6 +515,17 @@ describe("BaseService", () => {
     //     AppError
     //   );
     // });
+  });
+
+  describe("count", () => {
+    it("should return the count when to filters are passed", async () => {
+      const expectedCount = 7;
+      mockPrisma.post.count.mockResolvedValue(expectedCount);
+      const result = await baseService.count({});
+
+      expect(mockPrisma.post.count).toHaveBeenCalledWith({ where: {} });
+      expect(result).toEqual(expectedCount);
+    });
   });
 
   describe("getBaseServices", () => {

@@ -4,7 +4,7 @@ import path from "path";
 import { buildCommand } from "../build";
 import { devCommand } from "../dev";
 import { startCommand } from "../start";
-import { getVersion, program } from "../index";
+import { getVersion } from "../utils/cli.helpers";
 
 // Mock dependencies
 jest.mock("commander", () => {
@@ -16,6 +16,8 @@ jest.mock("commander", () => {
     option: jest.fn().mockReturnThis(),
     action: jest.fn().mockReturnThis(),
     parse: jest.fn().mockReturnThis(),
+    alias: jest.fn().mockReturnThis(),
+    requiredOption: jest.fn().mockReturnThis(),
   };
   return {
     Command: jest.fn().mockImplementation(() => mockCommand),
@@ -35,6 +37,7 @@ jest.mock("../start", () => ({
 }));
 
 jest.mock("fs", () => ({
+  ...jest.requireActual("fs"),
   readFileSync: jest.fn(() => '{ "version": "1.2.3"}'),
 }));
 
@@ -74,7 +77,7 @@ describe("CLI Index", () => {
       );
       expect(path.join).toHaveBeenCalledWith(
         expect.any(String),
-        "../../../../package.json"
+        "../../../../../package.json"
       );
       expect(version).toBe("1.2.3");
     });
@@ -181,7 +184,6 @@ describe("CLI Index", () => {
       expect(exports).toHaveProperty("buildCommand");
       expect(exports).toHaveProperty("devCommand");
       expect(exports).toHaveProperty("startCommand");
-      expect(exports).toHaveProperty("getVersion");
     });
   });
 });

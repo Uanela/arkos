@@ -8,6 +8,7 @@ import {
 import { crd, getUserFileExtension } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 import { AuthConfigs } from "../../types/auth";
+import { killServerChildProcess } from "../cli/utils/cli.helpers";
 
 export let prismaModelsModules: Record<
   string,
@@ -29,7 +30,9 @@ export function getFileModelModulesFileStructure(modelName: string) {
       controller: `${kebabModelName}.controller.${ext}`,
       middlewares: `${kebabModelName}.middlewares.${ext}`,
       authConfigs: `${kebabModelName}.auth-configs.${ext}`,
+      authConfigsNew: `${kebabModelName}.auth.${ext}`,
       prismaQueryOptions: `${kebabModelName}.prisma-query-options.${ext}`,
+      prismaQueryOptionsNew: `${kebabModelName}.query.${ext}`,
       router: `${kebabModelName}.router.${ext}`,
     },
     dtos: isAuthModule
@@ -125,11 +128,90 @@ type importPrismaModelModulesReturnType = {
   controller?: any;
   middlewares?: any;
   authConfigs?: AuthConfigs;
+  authConfigsNew?: AuthConfigs;
   prismaQueryOptions?: any;
+  prismaQueryOptionsNew?: any;
   router?: any;
   dtos: Record<string, any>;
   schemas: Record<string, any>;
 };
+
+/**
+ * Validates naming convention conflicts for prismaQueryOptions and authConfigs
+ * @param {string} key - The current file key being processed
+ * @param {string} fileName - The filename being imported
+ * @param {importPrismaModelModulesReturnType} result - The current result object
+ * @throws {Error} When conflicting naming conventions are detected
+ */
+export function validateNamingConventions(
+  key: string,
+  fileName: string,
+  result: importPrismaModelModulesReturnType
+): void {
+  if (key === "prismaQueryOptions") {
+    if (result.prismaQueryOptions) {
+      killServerChildProcess();
+      throw new Error(
+        `\n Cannot use both ${fileName} and ${fileName.replace(
+          "prisma-query-options",
+          "query"
+        )} at once, please choose only one name convention. \n`
+      );
+    }
+  } else if (key === "prismaQueryOptionsNew") {
+    if (result.prismaQueryOptions) {
+      killServerChildProcess();
+      throw new Error(
+        `\n Cannot use both ${fileName} and ${fileName.replace(
+          "query",
+          "prisma-query-options"
+        )} at once, please choose only one name convention. \n`
+      );
+    }
+  } else if (key === "authConfigs") {
+    if (result.authConfigs) {
+      killServerChildProcess();
+      throw new Error(
+        `\n Cannot use both ${fileName} and ${fileName.replace(
+          "auth-configs",
+          "auth"
+        )} at once, please choose only one name convention. \n`
+      );
+    }
+  } else if (key === "authConfigsNew") {
+    if (result.authConfigs) {
+      killServerChildProcess();
+      throw new Error(
+        `\n Cannot use both ${fileName} and ${fileName.replace(
+          "auth",
+          "auth-configs"
+        )} at once, please choose only one name convention. \n`
+      );
+    }
+  }
+}
+
+/**
+ * Processes and assigns module to the result object based on the key
+ * @param {string} key - The file key being processed
+ * @param {any} module - The imported module
+ * @param {importPrismaModelModulesReturnType} result - The result object to modify
+ */
+export function assignModuleToResult(
+  key: string,
+  module: any,
+  result: importPrismaModelModulesReturnType
+): void {
+  if (key === "prismaQueryOptions" || key === "prismaQueryOptionsNew") {
+    result.prismaQueryOptions = module.default || module;
+  } else if (key === "authConfigs" || key === "authConfigsNew") {
+    result.authConfigs = module.default || module;
+  } else if (key === "middlewares" || key === "router") {
+    result[key] = module;
+  } else {
+    result[key as keyof typeof result] = module.default || module;
+  }
+}
 
 /**
  * Dynamically imports model-specific modules for a given model with optimized file handling.
@@ -153,20 +235,32 @@ export async function importPrismaModelModules(
   if (getModelModules(modelName)) return getModelModules(modelName);
 
   const fileStructure = getFileModelModulesFileStructure(modelName);
+
   // Batch process core files
   await Promise.all(
     Object.entries(fileStructure.core).map(async ([key, fileName]) => {
       const filePath = path.join(moduleDir, fileName);
       try {
-        const module = await importModule(filePath).catch(() => null);
+        const module = await importModule(filePath).catch((err) => {
+          if (!err.message.includes("Cannot find module")) {
+            console.error(`Failed to import ${fileName}: \n`);
+            console.error(err);
+            killServerChildProcess();
+            process.exit(1);
+          }
+        });
 
         if (module) {
-          if (key === "middlewares") result[key] = module;
-          else if (key === "router") result[key] = module;
-          else result[key as keyof typeof result] = module.default || module;
+          // Validate naming conventions before assignment
+          validateNamingConventions(key, fileName, result);
+
+          // Assign module to result
+          assignModuleToResult(key, module, result);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.message.includes("Cannot use both")) throw err;
         console.error(err);
+        killServerChildProcess();
       }
     })
   );

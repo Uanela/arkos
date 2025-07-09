@@ -1,9 +1,9 @@
-// src/utils/cli/build.ts
 import path from "path";
 import fs from "fs";
 import { execSync } from "child_process";
-import { getUserFileExtension } from "../helpers/fs.helpers";
+import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
+import { getVersion } from "./utils/cli.helpers";
 
 // Constants
 const BUILD_DIR = ".build";
@@ -13,6 +13,20 @@ type ModuleType = (typeof MODULE_TYPES)[number];
 interface BuildOptions {
   config?: string;
   module?: string;
+}
+
+function detectPackageManagerFromUserAgent() {
+  const userAgent = process.env.npm_config_user_agent || "";
+
+  if (userAgent.includes("pnpm")) return "pnpm";
+  if (userAgent.includes("yarn")) return "yarn";
+  if (userAgent.includes("npm")) return "npm";
+  if (userAgent.includes("bun")) return "bun";
+  if (userAgent.includes("cnpm")) return "cnpm";
+  if (userAgent.includes("corepack")) return "corepack";
+  if (userAgent.includes("deno")) return "deno";
+
+  return "npm";
 }
 
 /**
@@ -27,10 +41,14 @@ export function buildCommand(options: BuildOptions = {}) {
   const moduleType = validateModuleType(options.module);
 
   try {
-    console.info(`🛠️ Using env variables from ${envFiles?.join(", ")}...`);
+    console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
     console.info(
-      `🚀 Building an optimized production ready project with ${moduleType} format...\n`
+      `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
+        .replaceAll(`${process.cwd()}/`, "")
+        .replaceAll("/", "")}`
     );
+
+    console.info(`\n  Creating an optimized production build...`);
 
     ensureBuildDir();
 
@@ -42,9 +60,13 @@ export function buildCommand(options: BuildOptions = {}) {
       buildJavaScriptProject(options, moduleType);
     }
 
-    console.info(`✅ Build complete! \n`);
-    console.info(`Next step:\n`);
-    console.info(`Run the generated build with the start command.\n`);
+    const packageManger = detectPackageManagerFromUserAgent();
+
+    console.info(`\n\x1b[1m\x1b[32m  Build complete!\x1b[0m\n`);
+    console.info(`  \x1b[1mNext step:\x1b[0m`);
+    console.info(
+      `  Run it using \x1b[1m\x1b[36m${packageManger} run start\x1b[0m\n`
+    );
   } catch (error) {
     console.info("\n");
     console.error("❌ Build failed:", error);
@@ -119,6 +141,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
     ...tsconfig,
     compilerOptions: {
       ...(tsconfig.compilerOptions || {}),
+      rootDir: ".",
       outDir: path.join(`./${BUILD_DIR}`),
       // module: moduleType === "esm" ? "ESNext" : "CommonJS",
     },
@@ -132,7 +155,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
 
   try {
     // Run TypeScript compiler
-    execSync(`npx tsc -p ${tempTsconfigPath}`, {
+    execSync(`npx rimraf ${BUILD_DIR} && npx tsc -p ${tempTsconfigPath}`, {
       stdio: "inherit",
       cwd: process.cwd(),
     });
@@ -209,7 +232,7 @@ function copyAllNonSourceFiles(
   moduleType: ModuleType,
   skipExtensions: string[]
 ) {
-  const targetDir = path.join(BUILD_DIR, moduleType);
+  const targetDir = path.join(BUILD_DIR);
   const sourceDir = "src";
 
   try {
@@ -268,7 +291,7 @@ function copyAllNonSourceFiles(
       }
     }
 
-    console.info(`📦 Copied all non-source files to ${targetDir}`);
+    // console.info(`Copied all non-source files to ${targetDir}`);
   } catch (error) {
     console.warn("Warning: Error copying project files:", error);
     console.error(error);

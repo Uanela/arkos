@@ -1,7 +1,7 @@
 import {
-  getFileUploaderServices,
-  FileUploaderService,
-} from "../../modules/file-uploader/file-uploader.service";
+  getFileUploadServices,
+  FileUploadService,
+} from "../../modules/file-upload/file-upload.service";
 import { EmailOptions } from "../../modules/email/email.service";
 import authService, { AuthService } from "../../modules/auth/auth.service";
 import emailService, { EmailService } from "../../modules/email/email.service";
@@ -25,4 +25,4 @@ export { emailService, EmailService, EmailOptions };
 /**
  * File upload services.
  */
-export { getFileUploaderServices, FileUploaderService };
+export { getFileUploadServices, FileUploadService };

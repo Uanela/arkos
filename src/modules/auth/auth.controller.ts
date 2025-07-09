@@ -5,8 +5,6 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import authService from "./auth.service";
 import { getBaseServices } from "../base/base.service";
 import { User } from "../../types";
-import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
-import deepmerge from "../../utils/helpers/deepmerge.helper";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
 import {
@@ -32,10 +30,6 @@ export const defaultExcludedUserFields = {
  */
 export const authControllerFactory = async (middlewares: any = {}) => {
   const userService = getBaseServices()["user"];
-  let prismaQueryOptions: Record<string, any> = {};
-
-  const userModules = await importPrismaModelModules("user");
-  if (userModules) prismaQueryOptions = userModules?.prismaQueryOptions || {};
 
   return {
     /**
@@ -47,10 +41,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const user = await userService.findOne(
+        const user = (await userService.findOne(
           { id: req.user!.id },
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
           if (user) delete user[key as keyof User];
@@ -80,20 +74,20 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             "In order to update password use the update-password endpoint.",
             400,
             {},
-            "invalid_field_password"
+            "InvalidFieldPassword"
           );
 
-        const user = await userService.updateOne(
+        const user = (await userService.updateOne(
           { id: req.user!.id },
           req.body,
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         Object.keys(defaultExcludedUserFields).forEach((key) => {
           if (user) delete user[key as keyof User];
         });
 
-        if (middlewares?.afterGetMe) {
+        if (middlewares?.afterUpdateMe) {
           req.responseData = { data: user };
           req.responseStatus = 200;
           return next();
@@ -130,6 +124,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
     /**
      * Authenticates a user using configurable username field and password
      * Username field can be specified in query parameter or config
+     *
      * Supports nested fields and array queries (e.g., "profile.nickname", "phones.some.number")
      */
     login: catchAsync(
@@ -171,10 +166,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         }
 
         // Use findFirst instead of findUnique for complex queries
-        const user = await userService.findOne(
+        const user = (await userService.findOne(
           whereClause,
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         if (
           !user ||
@@ -207,10 +202,12 @@ export const authControllerFactory = async (middlewares: any = {}) => {
             req.headers["x-forwarded-proto"] === "https",
           sameSite:
             authConfigs?.jwt?.cookie?.sameSite ||
-            process.env.JWT_COOKIE_SAME_SITE ||
-            process.env.NODE_ENV === "production"
-              ? "none"
-              : "lax",
+            (process.env.JWT_COOKIE_SAME_SITE as
+              | "none"
+              | "lax"
+              | "strict"
+              | undefined) ||
+            (process.env.NODE_ENV === "production" ? "none" : "lax"),
         };
 
         if (
@@ -258,10 +255,10 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const user = await userService.createOne(
+        const user = (await userService.createOne(
           req.body,
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         if (middlewares?.afterSignup) {
           req.responseData = { data: user };
@@ -287,13 +284,13 @@ export const authControllerFactory = async (middlewares: any = {}) => {
       ) => {
         const userId = req.user!.id; // Assuming the authenticated user's ID is available in req.user
 
-        const updatedUser = await userService.updateOne(
+        const updatedUser = (await userService.updateOne(
           { id: userId },
           {
             deletedSelfAccountAt: new Date().toISOString(),
           },
           req.prismaQueryOptions || {}
-        );
+        )) as Record<string, any>;
 
         if (middlewares?.afterDeleteMe) {
           req.responseData = { data: updatedUser };

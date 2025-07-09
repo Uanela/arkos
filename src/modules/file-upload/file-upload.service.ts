@@ -7,17 +7,14 @@ import { promisify } from "util";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { ArkosRequest, ArkosResponse } from "../../types";
-import {
-  processFile,
-  processImage,
-} from "./utils/helpers/file-uploader.helpers";
+import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { removeBothSlashes } from "../../utils/helpers/text.helpers";
 
 /**
  * Service to handle file uploads, including single and multiple file uploads,
  * file validation (type, size), and file deletion.
  */
-export class FileUploaderService {
+export class FileUploadService {
   public readonly uploadDir: string;
   private fileSizeLimit: number;
   private allowedFileTypes: RegExp;
@@ -82,7 +79,7 @@ export class FileUploaderService {
    * Returns the multer upload configuration.
    * @returns {multer.Instance} The multer instance configured for file uploads.
    */
-  public getUploader() {
+  public getUpload() {
     return multer({
       storage: this.storage,
       fileFilter: this.fileFilter,
@@ -97,7 +94,7 @@ export class FileUploaderService {
    */
   public handleSingleUpload(oldFilePath?: string) {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
-      const upload = this.getUploader().single(this.getFieldName());
+      const upload = this.getUpload().single(this.getFieldName());
       upload(req, res, async (err) => {
         if (err instanceof multer.MulterError) {
           return next(err);
@@ -133,10 +130,7 @@ export class FileUploaderService {
    */
   public handleMultipleUpload() {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
-      const upload = this.getUploader().array(
-        this.getFieldName(),
-        this.maxCount
-      );
+      const upload = this.getUpload().array(this.getFieldName(), this.maxCount);
       upload(req, res, (err) => {
         if (err instanceof multer.MulterError) return next(err);
         else if (err) return next(err);
@@ -226,25 +220,25 @@ export class FileUploaderService {
 
       // Get the appropriate uploader service based on file type
       const {
-        documentUploaderService,
-        fileUploaderService,
-        imageUploaderService,
-        videoUploaderService,
-      } = getFileUploaderServices();
+        documentUploadService,
+        fileUploadService,
+        imageUploadService,
+        videoUploadService,
+      } = getFileUploadServices();
 
       let filePath: string;
       switch (fileType) {
         case "images":
-          filePath = path.join(imageUploaderService.uploadDir, fileName);
+          filePath = path.join(imageUploadService.uploadDir, fileName);
           break;
         case "videos":
-          filePath = path.join(videoUploaderService.uploadDir, fileName);
+          filePath = path.join(videoUploadService.uploadDir, fileName);
           break;
         case "documents":
-          filePath = path.join(documentUploaderService.uploadDir, fileName);
+          filePath = path.join(documentUploadService.uploadDir, fileName);
           break;
         case "files":
-          filePath = path.join(fileUploaderService.uploadDir, fileName);
+          filePath = path.join(fileUploadService.uploadDir, fileName);
           break;
         default:
           throw new AppError(`Unsupported file type: ${fileType}`, 400);
@@ -313,8 +307,8 @@ export class FileUploaderService {
 
       // Use appropriate upload handler
       const uploadHandler = isMultiple
-        ? this.getUploader().array(this.getFieldName(), this.maxCount)
-        : this.getUploader().single(this.getFieldName());
+        ? this.getUpload().array(this.getFieldName(), this.maxCount)
+        : this.getUpload().single(this.getFieldName());
 
       uploadHandler(req, res, async (err) => {
         if (err) return reject(err);
@@ -337,8 +331,8 @@ export class FileUploaderService {
           let data;
           if (req.files && Array.isArray(req.files) && req.files.length > 0) {
             // Process multiple files
-            const isImageUploader = this.uploadDir?.includes?.("/images");
-            if (isImageUploader) {
+            const isImageUpload = this.uploadDir?.includes?.("/images");
+            if (isImageUpload) {
               data = await Promise.all(
                 req.files.map((file) => processImage(req, file.path, options))
               );
@@ -351,8 +345,8 @@ export class FileUploaderService {
             data = data.filter((url) => url !== null);
           } else if (req.file) {
             // Process a single file
-            const isImageUploader = this.uploadDir?.includes?.("/images");
-            if (isImageUploader) {
+            const isImageUpload = this.uploadDir?.includes?.("/images");
+            if (isImageUpload) {
               data = await processImage(req, req.file.path, options);
             } else {
               data = await processFile(req, req.file.path);
@@ -368,26 +362,86 @@ export class FileUploaderService {
       });
     });
   }
+
+  /**
+   * Deletes a file based on filename and file type from request parameters
+   * @param {string} fileName - The name of the file to delete
+   * @param {ArkosRequest} req - Arkos request object containing params.fileType
+   * @returns {Promise<boolean>} - True if deletion successful, false otherwise
+   */
+  public async deleteFileByName(
+    fileName: string,
+    fileType: "images" | "videos" | "documents" | "files"
+  ): Promise<boolean> {
+    try {
+      if (!fileType) throw new AppError("File type parameter is required", 400);
+
+      // Validate file type
+      const validFileTypes = ["images", "videos", "documents", "files"];
+      if (!validFileTypes.includes(fileType)) {
+        throw new AppError(
+          `Invalid file type: ${fileType}. Must be one of: ${validFileTypes.join(
+            ", "
+          )}`,
+          400
+        );
+      }
+
+      // Get the appropriate uploader service based on file type
+      const {
+        documentUploadService,
+        fileUploadService,
+        imageUploadService,
+        videoUploadService,
+      } = getFileUploadServices();
+
+      let targetService: FileUploadService;
+      switch (fileType) {
+        case "images":
+          targetService = imageUploadService;
+          break;
+        case "videos":
+          targetService = videoUploadService;
+          break;
+        case "documents":
+          targetService = documentUploadService;
+          break;
+        case "files":
+          targetService = fileUploadService;
+          break;
+        default:
+          throw new AppError(`Unsupported file type: ${fileType}`, 400);
+      }
+
+      // Construct the full file path
+      const filePath = path.join(targetService.uploadDir, fileName);
+
+      // Check if file exists and delete it
+      await promisify(fs.stat)(filePath);
+      await promisify(fs.unlink)(filePath);
+
+      return true;
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      if (error.code === "ENOENT") {
+        throw new AppError("File not found", 404);
+      }
+
+      throw new AppError(`Failed to delete file: ${error.message}`, 500);
+    }
+  }
 }
 
 /**
  * Creates and returns all file uploader services based on config
  * @returns Object containing all specialized file uploader services
  */
-export const getFileUploaderServices = () => {
+export const getFileUploadServices = () => {
   const { fileUpload } = getArkosConfig();
   const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
-
-  // Default regex patterns for each file type
-  const defaultRegexPatterns = {
-    images:
-      /jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif|heic|ico|jfif|raw|cr2|nef|orf|sr2|arw|dng|pef|raf|rw2|psd|ai|eps|xcf|jxr|wdp|hdp|jp2|j2k|jpf|jpx|jpm|mj2|avif/,
-    videos:
-      /mp4|avi|mov|mkv|flv|wmv|webm|mpg|mpeg|3gp|m4v|ts|rm|rmvb|vob|ogv|dv|qt|asf|m2ts|mts|divx|f4v|swf|mxf|roq|nsv|mvb|svi|mpe|m2v|mp2|mpv|h264|h265|hevc/,
-    documents:
-      /pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odg|odp|txt|rtf|csv|epub|md|tex|pages|numbers|key|xml|json|yaml|yml|ini|cfg|conf|log|html|htm|xhtml|djvu|mobi|azw|azw3|fb2|lit|ps|wpd|wps|dot|dotx|xlt|xltx|pot|potx|oft|one|onetoc2|opf|oxps|hwp/,
-    files: /.*/,
-  };
 
   // Default upload restrictions
   const defaultRestrictions = {
@@ -424,7 +478,7 @@ export const getFileUploaderServices = () => {
   /**
    * Specialized file uploader service for handling image uploads.
    */
-  const imageUploaderService = new FileUploaderService(
+  const imageUploadService = new FileUploadService(
     `${baseUploadDir}/images`,
     restrictions.images.maxSize,
     restrictions.images.supportedFilesRegex,
@@ -434,7 +488,7 @@ export const getFileUploaderServices = () => {
   /**
    * Specialized file uploader service for handling video uploads.
    */
-  const videoUploaderService = new FileUploaderService(
+  const videoUploadService = new FileUploadService(
     `${baseUploadDir}/videos`,
     restrictions.videos.maxSize,
     restrictions.videos.supportedFilesRegex,
@@ -444,7 +498,7 @@ export const getFileUploaderServices = () => {
   /**
    * Specialized file uploader service for handling document uploads.
    */
-  const documentUploaderService = new FileUploaderService(
+  const documentUploadService = new FileUploadService(
     `${baseUploadDir}/documents`,
     restrictions.documents.maxSize,
     restrictions.documents.supportedFilesRegex,
@@ -454,7 +508,7 @@ export const getFileUploaderServices = () => {
   /**
    * Generic file uploader service for handling all file uploads.
    */
-  const fileUploaderService = new FileUploaderService(
+  const fileUploadService = new FileUploadService(
     `${baseUploadDir}/files`,
     restrictions.files.maxSize,
     restrictions.files.supportedFilesRegex,
@@ -462,9 +516,9 @@ export const getFileUploaderServices = () => {
   );
 
   return {
-    imageUploaderService,
-    videoUploaderService,
-    documentUploaderService,
-    fileUploaderService,
+    imageUploadService,
+    videoUploadService,
+    documentUploadService,
+    fileUploadService,
   };
 };

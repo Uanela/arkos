@@ -1,0 +1,15 @@
+import arkos from 'arkos';
+
+arkos.init({
+  {{#if authentication.type}}
+  authentication: {
+    mode: '{{authentication.type}}',
+    allowedUsernameFields: ['{{authentication.usernameField}}'],
+  },
+  {{/if}}
+  {{#if validation.type}}
+  validation: {
+    resolver: '{{validation.type}}'
+  },
+  {{/if}}
+});

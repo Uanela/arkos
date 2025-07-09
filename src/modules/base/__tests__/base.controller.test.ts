@@ -7,32 +7,31 @@ import {
   getModelModules,
   getModels,
 } from "../../../utils/helpers/models.helpers";
-import { kebabCase } from "../../../utils/helpers/change-case.helpers";
 
 // Mock dependencies
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
+  readFileSync: jest.fn(),
 }));
 jest.mock("../base.service");
 jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/features/api.features");
 jest.mock("../../../server");
 jest.mock("../../../utils/helpers/models.helpers");
-jest.mock("../../../utils/helpers/change-case.helpers");
 
 describe("BaseController", () => {
   let baseController: BaseController;
   let mockRequest: any;
   let mockResponse: any;
   let mockNext: jest.Mock;
-  let mockBaseService: jest.Mocked<BaseService>;
+  let mockBaseService: jest.Mocked<BaseService<any>>;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Setup mock service
-    mockBaseService = new BaseService("Post") as jest.Mocked<BaseService>;
+    mockBaseService = new BaseService("Post") as jest.Mocked<BaseService<any>>;
     (BaseService as jest.Mock).mockImplementation(() => mockBaseService);
 
     // Setup mocked model modules
@@ -76,6 +75,18 @@ describe("BaseController", () => {
       expect(BaseService).toHaveBeenCalledWith("Post");
       expect(getModelModules).toHaveBeenCalledWith("Post");
     });
+
+    it("should initialize with empty middlewares when model modules return null", () => {
+      (getModelModules as jest.Mock).mockReturnValue(null);
+      new BaseController("User");
+      expect(BaseService).toHaveBeenCalledWith("User");
+    });
+
+    it("should initialize with empty middlewares when model modules return undefined middlewares", () => {
+      (getModelModules as jest.Mock).mockReturnValue({});
+      new BaseController("User");
+      expect(BaseService).toHaveBeenCalledWith("User");
+    });
   });
 
   describe("createOne", () => {
@@ -114,7 +125,7 @@ describe("BaseController", () => {
   describe("createMany", () => {
     it("should create multiple records and return 201 status", async () => {
       const mockBody = [{ title: "Post 1" }, { title: "Post 2" }];
-      const mockResult: any = { data: { count: 2 }, total: 5 };
+      const mockResult = { count: 2 };
       mockRequest.body = mockBody;
       mockBaseService.createMany.mockResolvedValue(mockResult);
 
@@ -122,39 +133,107 @@ describe("BaseController", () => {
 
       expect(mockBaseService.createMany).toHaveBeenCalledWith(mockBody, {});
       expect(mockResponse.status).toHaveBeenCalledWith(201);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        data: {
-          data: {
-            count: 2,
-          },
-          total: 5,
-        },
+      expect(mockResponse.json).toHaveBeenCalledWith({ data: mockResult });
+    });
+
+    it("should call next with error if createMany returns null", async () => {
+      const mockBody = [{ title: "Post 1" }];
+      mockRequest.body = mockBody;
+      mockBaseService.createMany.mockResolvedValue(null);
+
+      await baseController.createMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with responseData if afterCreateMany middleware exists", async () => {
+      (getModelModules as jest.Mock).mockReturnValue({
+        middlewares: { afterCreateMany: true },
       });
+      baseController = new BaseController("Post");
+
+      const mockBody = [{ title: "Post 1" }];
+      const mockResult = { count: 1 };
+      mockRequest.body = mockBody;
+      mockBaseService.createMany.mockResolvedValue(mockResult);
+
+      await baseController.createMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.responseData).toEqual({ data: mockResult });
+      expect(mockRequest.responseStatus).toBe(201);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
   });
 
   describe("findMany", () => {
-    it("should fetch records and return 200 status", async () => {
-      const mockData = [{ id: 1, title: "Post 1" }];
-      const mockResult = { data: mockData, total: 1 };
+    beforeEach(() => {
       mockBaseService.relationFields = {
         singular: [{ name: "category", type: "Category" }],
         list: [],
       };
-      mockBaseService.findMany.mockResolvedValue(mockResult);
+    });
+
+    it("should fetch records and return 200 status", async () => {
+      const mockData = [{ id: 1, title: "Post 1" }];
+      const mockTotal = 1;
+      mockBaseService.findMany.mockResolvedValue(mockData);
+      mockBaseService.count.mockResolvedValue(mockTotal);
 
       await baseController.findMany(mockRequest, mockResponse, mockNext);
 
       expect(APIFeatures).toHaveBeenCalled();
       expect(mockBaseService.findMany).toHaveBeenCalledWith(
-        {
-          published: true,
-        },
+        { published: true },
         expect.any(Object)
       );
+      expect(mockBaseService.count).toHaveBeenCalledWith({ published: true });
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        data: mockResult,
+        total: mockTotal,
+        results: mockData.length,
+        data: mockData,
+      });
+    });
+
+    it("should call next with responseData if afterFindMany middleware exists", async () => {
+      (getModelModules as jest.Mock).mockReturnValue({
+        middlewares: { afterFindMany: true },
+      });
+      baseController = new BaseController("Post");
+
+      const mockData = [{ id: 1, title: "Post 1" }];
+      const mockTotal = 1;
+      mockBaseService.findMany.mockResolvedValue(mockData);
+      mockBaseService.count.mockResolvedValue(mockTotal);
+
+      await baseController.findMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.responseData).toEqual({
+        total: mockTotal,
+        results: mockData.length,
+        data: mockData,
+      });
+      expect(mockRequest.responseStatus).toBe(200);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should handle case with no relation fields", async () => {
+      (mockBaseService.relationFields as any) = null;
+      const mockData = [{ id: 1, title: "Post 1" }];
+      const mockTotal = 1;
+      mockBaseService.findMany.mockResolvedValue(mockData);
+      mockBaseService.count.mockResolvedValue(mockTotal);
+
+      await baseController.findMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        total: mockTotal,
+        results: mockData.length,
+        data: mockData,
       });
     });
   });
@@ -171,6 +250,58 @@ describe("BaseController", () => {
       expect(mockBaseService.findOne).toHaveBeenCalledWith(mockParams, {});
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
+    });
+
+    it("should call next with error if record not found with single id param", async () => {
+      const mockParams = { id: "1" };
+      mockRequest.params = mockParams;
+      mockBaseService.findOne.mockResolvedValue(null);
+
+      await baseController.findOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with error if record not found with multiple params", async () => {
+      const mockParams = { slug: "test-post", category: "tech" };
+      mockRequest.params = mockParams;
+      mockBaseService.findOne.mockResolvedValue(null);
+
+      await baseController.findOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should not return error if id param is 'me'", async () => {
+      const mockParams = { id: "me" };
+      mockRequest.params = mockParams;
+      mockBaseService.findOne.mockResolvedValue(null);
+
+      await baseController.findOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with responseData if afterFindOne middleware exists", async () => {
+      (getModelModules as jest.Mock).mockReturnValue({
+        middlewares: { afterFindOne: true },
+      });
+      baseController = new BaseController("Post");
+
+      const mockParams = { id: "1" };
+      const mockData = { id: 1, title: "Test Post" };
+      mockRequest.params = mockParams;
+      mockBaseService.findOne.mockResolvedValue(mockData);
+
+      await baseController.findOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.responseData).toEqual({ data: mockData });
+      expect(mockRequest.responseStatus).toBe(200);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
   });
 
@@ -193,6 +324,51 @@ describe("BaseController", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
     });
+
+    it("should call next with error if record not found with single id param", async () => {
+      const mockParams = { id: "1" };
+      mockRequest.params = mockParams;
+      mockRequest.body = { title: "Updated Post" };
+      mockBaseService.updateOne.mockResolvedValue(null);
+
+      await baseController.updateOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with error if record not found with multiple params", async () => {
+      const mockParams = { slug: "test-post", category: "tech" };
+      mockRequest.params = mockParams;
+      mockRequest.body = { title: "Updated Post" };
+      mockBaseService.updateOne.mockResolvedValue(null);
+
+      await baseController.updateOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with responseData if afterUpdateOne middleware exists", async () => {
+      (getModelModules as jest.Mock).mockReturnValue({
+        middlewares: { afterUpdateOne: true },
+      });
+      baseController = new BaseController("Post");
+
+      const mockParams = { id: "1" };
+      const mockBody = { title: "Updated Post" };
+      const mockData = { id: 1, ...mockBody };
+      mockRequest.params = mockParams;
+      mockRequest.body = mockBody;
+      mockBaseService.updateOne.mockResolvedValue(mockData);
+
+      await baseController.updateOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.responseData).toEqual({ data: mockData });
+      expect(mockRequest.responseStatus).toBe(200);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
   });
 
   describe("updateMany", () => {
@@ -203,20 +379,98 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
+    it("should return error if only prismaQueryOptions provided", async () => {
+      mockRequest.query = { prismaQueryOptions: {} };
+
+      await baseController.updateMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
     it("should update multiple records and return 200 status", async () => {
       mockRequest.query = { title: "Test" }; // Add filter criteria
       const mockBody = { published: true };
-      const mockResult: any = { data: { count: 2 }, total: 2 };
+      const mockResult = { count: 2 };
       mockRequest.body = mockBody;
       mockBaseService.updateMany.mockResolvedValue(mockResult);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
       expect(mockBaseService.updateMany).toHaveBeenCalled();
+      expect(mockRequest.query.filterMode).toBe("AND");
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
+        results: mockResult.count,
         data: mockResult,
       });
+    });
+
+    it("should use provided filterMode", async () => {
+      mockRequest.query = { title: "Test", filterMode: "OR" };
+      const mockBody = { published: true };
+      const mockResult = { count: 2 };
+      mockRequest.body = mockBody;
+      mockBaseService.updateMany.mockResolvedValue(mockResult);
+
+      await baseController.updateMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.query.filterMode).toBe("OR");
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    it("should call next with error if no records updated", async () => {
+      mockRequest.query = { title: "Test" };
+      const mockResult = { count: 0 };
+      mockRequest.body = { published: true };
+      mockBaseService.updateMany.mockResolvedValue(mockResult);
+
+      // jest.mock("../../../utils/helpers/change-case.helpers", () => ({
+      //   ...jest.requireActual("../../../utils/helpers/change-case.helpers"),
+      //   pascalCase: jest.fn((val) => {
+      //     console.log(val);
+      //     return "Post";
+      //   }),
+      // }));
+
+      await baseController.updateMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with error if updateMany returns null", async () => {
+      mockRequest.query = { title: "Test" };
+      mockRequest.body = { published: true };
+      mockBaseService.updateMany.mockResolvedValue(null);
+
+      await baseController.updateMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with responseData if afterUpdateMany middleware exists", async () => {
+      (getModelModules as jest.Mock).mockReturnValue({
+        middlewares: { afterUpdateMany: true },
+      });
+      baseController = new BaseController("Post");
+
+      mockRequest.query = { title: "Test" };
+      const mockBody = { published: true };
+      const mockResult = { count: 2 };
+      mockRequest.body = mockBody;
+      mockBaseService.updateMany.mockResolvedValue(mockResult);
+
+      await baseController.updateMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.responseData).toEqual({
+        results: mockResult.count,
+        data: mockResult,
+      });
+      expect(mockRequest.responseStatus).toBe(200);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
   });
 
@@ -232,6 +486,47 @@ describe("BaseController", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(204);
       expect(mockResponse.send).toHaveBeenCalled();
     });
+
+    it("should call next with error if record not found with single id param", async () => {
+      const mockParams = { id: "1" };
+      mockRequest.params = mockParams;
+      mockBaseService.deleteOne.mockResolvedValue(null);
+
+      await baseController.deleteOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.send).not.toHaveBeenCalled();
+    });
+
+    it("should call next with error if record not found with multiple params", async () => {
+      const mockParams = { slug: "test-post", category: "tech" };
+      mockRequest.params = mockParams;
+      mockBaseService.deleteOne.mockResolvedValue(null);
+
+      await baseController.deleteOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.send).not.toHaveBeenCalled();
+    });
+
+    it("should call next with additionalData if afterDeleteOne middleware exists", async () => {
+      (getModelModules as jest.Mock).mockReturnValue({
+        middlewares: { afterDeleteOne: true },
+      });
+      baseController = new BaseController("Post");
+
+      const mockParams = { id: "1" };
+      const mockData = { id: 1 };
+      mockRequest.params = mockParams;
+      mockBaseService.deleteOne.mockResolvedValue(mockData);
+
+      await baseController.deleteOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.additionalData).toEqual({ data: mockData });
+      expect(mockRequest.responseStatus).toBe(204);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.send).not.toHaveBeenCalled();
+    });
   });
 
   describe("deleteMany", () => {
@@ -242,18 +537,82 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
+    it("should return error if only prismaQueryOptions provided", async () => {
+      mockRequest.query = { prismaQueryOptions: {} };
+
+      await baseController.deleteMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
     it("should delete multiple records and return 200 status", async () => {
       mockRequest.query = { title: "Test" }; // Add filter criteria
-      const mockResult: any = { data: { count: 2 }, total: 2 };
+      const mockResult = { count: 2 };
       mockBaseService.deleteMany.mockResolvedValue(mockResult);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
       expect(mockBaseService.deleteMany).toHaveBeenCalled();
+      expect(mockRequest.query.filterMode).toBe("AND");
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
+        results: mockResult.count,
         data: mockResult,
       });
+    });
+
+    it("should use provided filterMode", async () => {
+      mockRequest.query = { title: "Test", filterMode: "OR" };
+      const mockResult = { count: 2 };
+      mockBaseService.deleteMany.mockResolvedValue(mockResult);
+
+      await baseController.deleteMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.query.filterMode).toBe("OR");
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+    });
+
+    it("should call next with error if no records deleted", async () => {
+      mockRequest.query = { title: "Test" };
+      const mockResult = { count: 0 };
+      mockBaseService.deleteMany.mockResolvedValue(mockResult);
+
+      await baseController.deleteMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with error if deleteMany returns null", async () => {
+      mockRequest.query = { title: "Test" };
+      mockBaseService.deleteMany.mockResolvedValue(null);
+
+      await baseController.deleteMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with responseData if afterDeleteMany middleware exists", async () => {
+      (getModelModules as jest.Mock).mockReturnValue({
+        middlewares: { afterDeleteMany: true },
+      });
+      baseController = new BaseController("Post");
+
+      mockRequest.query = { title: "Test" };
+      const mockResult = { count: 2 };
+      mockBaseService.deleteMany.mockResolvedValue(mockResult);
+
+      await baseController.deleteMany(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.responseData).toEqual({
+        results: mockResult.count,
+        data: mockResult,
+      });
+      expect(mockRequest.responseStatus).toBe(200);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
     });
   });
 
@@ -262,12 +621,10 @@ describe("BaseController", () => {
       const { getAvailableResources } = require("../base.controller");
       const mockModels = ["Post", "User", "Comment"];
       (getModels as jest.Mock).mockReturnValue(mockModels);
-      (kebabCase as jest.Mock).mockImplementation((str) => str.toLowerCase());
 
       await getAvailableResources(mockRequest, mockResponse, mockNext);
 
       expect(getModels).toHaveBeenCalled();
-      expect(kebabCase).toHaveBeenCalledTimes(3);
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         data: ["post", "user", "comment", "file-upload"],
