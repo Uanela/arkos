@@ -268,7 +268,7 @@ describe("generateTemplate", () => {
         modelName: mockModelName,
       });
 
-      expect(result).toContain("import { AuthConfigs } from 'arkos/prisma'");
+      expect(result).toContain("import { AuthConfigs } from 'arkos/auth'");
       expect(result).toContain("const userAuthConfigs: AuthConfigs = {");
       expect(result).toContain("authenticationControl:");
       expect(result).toContain("accessControl:");
