@@ -9,7 +9,7 @@ export interface ProjectConfig {
     type?: "zod" | "class-validator";
   };
   authentication: {
-    type?: "static" | "dynamic";
+    type?: "static" | "dynamic" | "define later";
     usernameField?: "username" | "email" | "custom";
     multipleRoles: boolean;
   };

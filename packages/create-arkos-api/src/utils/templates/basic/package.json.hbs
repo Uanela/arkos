@@ -9,18 +9,19 @@
     "arkos": "arkos"
   },
   "prisma": {
-    "schema": "prisma/schema/",
+    "schema": "prisma/schema/"
   },
   "devDependencies": {
     {{#if typescript}}
     "typescript": "^5.7.3",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "@types/node": "^24.0.12",
     {{/if}}
-    "prisma": "^6.4.1"
+    "prisma": "^6.11.1"
   },
   "dependencies": {
-    "arkos": "{{arkosLatestVersion}}", 
-    "@prisma/client": "^6.4.1"
+    "arkos": "^1.2.0-beta", 
+    "@prisma/client": "^6.11.1"
   }
 }

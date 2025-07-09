@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.2.1-test",
+  "version": "1.2.2-test",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/es2020/exports/index.js",

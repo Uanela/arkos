@@ -3,6 +3,7 @@ import path from "path";
 import handlebars from "handlebars";
 import { ProjectConfig } from "../project-config-inquirer";
 handlebars.registerHelper("eq", (a, b) => a === b);
+handlebars.registerHelper("neq", (a, b) => a !== b);
 
 (() => {
   const templatesDir = `${process.cwd()}/cache/handlebars/templates`;

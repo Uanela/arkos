@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "fs-extra";
+import path from "path";
 import chalk from "chalk";
 import { execSync } from "child_process";
 import projectConfigInquirer from "./utils/project-config-inquirer";
@@ -7,30 +8,30 @@ import templateCompiler from "./utils/template-compiler";
 import Handlebars from "handlebars";
 
 Handlebars.registerHelper("eq", (a, b) => a === b);
+Handlebars.registerHelper("neq", (a, b) => a !== b);
 
 async function main() {
   const config = await projectConfigInquirer.run();
 
-  try {
-    const projectPath = config.projectPath;
+  const projectPath = config.projectPath;
 
-    fs.mkdirSync(projectPath, { recursive: true });
+  fs.mkdirSync(projectPath, { recursive: true });
 
-    console.info(
-      `\nCreating a new ${chalk.bold(chalk.cyan("Arkos.js"))} project in ${chalk.green(`./${config.projectName}`)}`
-    );
+  console.info(
+    `\nCreating a new ${chalk.bold(chalk.cyan("Arkos.js"))} project in ${chalk.green(`./${config.projectName}`)}`
+  );
 
-    const templatesDir = `${process.cwd()}/src/utils/templates/basic`;
-    await templateCompiler.compile(templatesDir, config);
+  const templatesDir = path.resolve(`./src/utils/templates/basic`);
+  await templateCompiler.compile(templatesDir, config);
 
-    process.chdir(projectPath);
+  process.chdir(projectPath);
 
-    console.info("\nInstalling dependencies...");
-    console.info("\Using npm.\n");
+  console.info("\nInstalling dependencies...");
+  console.info("\nUsing npm.\n");
 
-    execSync("npm install", { stdio: "inherit" });
+  execSync("npm install", { stdio: "inherit" });
 
-    console.info(`
+  console.info(`
   ${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
 
   Next steps:
@@ -40,13 +41,6 @@ async function main() {
   4. npx prisma generate
   5. npm run dev
     `);
-  } catch (err) {
-    console.error(err);
-    if (fs.existsSync(config.projectPath)) {
-      console.info(`\nCleaning up created project folder...`);
-      fs.unlinkSync(config.projectPath);
-    }
-  }
 }
 
 main().catch(console.error);

@@ -2,9 +2,25 @@ import { ProjectConfig } from "./project-config-inquirer";
 import path from "path";
 import fs from "fs-extra";
 import handlebars from "handlebars";
-import { getLatestVersion } from "./helpers";
+// import { getLatestVersion } from "./helpers";
 
 class TemplateCompiler {
+  async canCompileAuthenticationTemplates(config: ProjectConfig) {
+    return !!config.authentication;
+  }
+
+  filesToBeSkipped(config: ProjectConfig) {
+    const files: string[] = [];
+
+    if (config.authentication.type !== "define later") {
+      files.concat(["user.prisma.hbs"]);
+    }
+
+    if (config.authentication?.type === "static") {
+      files.concat(["auth-role.prisma.hbs", "auth-permission.prisma.hbs"]);
+    }
+    return files;
+  }
   /**
    * Compiles the Arkos.js project with handlebars templates
    *
@@ -15,9 +31,12 @@ class TemplateCompiler {
   async compile(templatesDir: string, config: ProjectConfig) {
     const outputDir = config.projectPath;
     const isTypescript = config.typescript;
+    const filesToBeSkipped = this.filesToBeSkipped(config);
 
     function processTemplates(dir: string, relativeDir = "") {
       fs.readdirSync(dir, { withFileTypes: true }).forEach(async (dirent) => {
+        if (filesToBeSkipped.includes(dirent.name)) return;
+
         const fullPath = path.join(dir, dirent.name);
         const relativePath = path.join(relativeDir, dirent.name);
 
@@ -30,11 +49,9 @@ class TemplateCompiler {
           );
 
           let arkosLatestVersion = "1.0.0.";
-          if (dirent.name.endsWith("package.json.hbs"))
-            arkosLatestVersion = await getLatestVersion("arkos");
 
           const content = template({ ...config, arkosLatestVersion });
-          const ext = isTypescript ? ".ts" : ".js";
+          const ext = isTypescript ? ".ts" : ".mjs";
 
           let outputPath = path.join(
             outputDir,

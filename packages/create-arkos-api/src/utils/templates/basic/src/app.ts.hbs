@@ -1,11 +1,10 @@
 import arkos from 'arkos';
 
 arkos.init({
-  port: 8000,
   {{#if authentication.type}}
   authentication: {
     mode: '{{authentication.type}}',
-    usernameField: '{{authentication.usernameField}}'
+    allowedUsernameFields: ['{{authentication.usernameField}}'],
   },
   {{/if}}
   {{#if validation.type}}
