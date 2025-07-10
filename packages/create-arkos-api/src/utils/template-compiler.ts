@@ -48,10 +48,10 @@ class TemplateCompiler {
             fs.readFileSync(templatePath, "utf8")
           );
 
-          let arkosLatestVersion = "1.0.0.";
+          let arkosLatestVersion = "1.0.0";
 
           const content = template({ ...config, arkosLatestVersion });
-          const ext = isTypescript ? ".ts" : ".mjs";
+          const ext = isTypescript ? ".ts" : ".js";
 
           let outputPath = path.join(
             outputDir,

@@ -40,7 +40,7 @@ export function setupRouters(
     const isCompletelyDisabled = disableConfig === true;
 
     // Check if custom implementation exists
-    const customRouter = (customRouterModule?.default as Router) || {};
+    const customRouter = (customRouterModule as Router) || {};
     const hasCustomImplementation = (path: string, method: string) => {
       return customRouter.stack?.some(
         (layer) =>
@@ -72,7 +72,7 @@ export function setupRouters(
     };
 
     // If the custom router has its own routes, add them
-    if (customRouterModule?.default && !customRouterModule?.config?.disable)
+    if (customRouterModule && !customRouterModule?.config?.disable)
       router.use(`/${routeName}`, customRouterModule.default);
 
     function safeCatchAsync(middleware: any) {

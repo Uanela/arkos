@@ -425,14 +425,6 @@ describe("BaseController", () => {
       mockRequest.body = { published: true };
       mockBaseService.updateMany.mockResolvedValue(mockResult);
 
-      // jest.mock("../../../utils/helpers/change-case.helpers", () => ({
-      //   ...jest.requireActual("../../../utils/helpers/change-case.helpers"),
-      //   pascalCase: jest.fn((val) => {
-      //     console.log(val);
-      //     return "Post";
-      //   }),
-      // }));
-
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));

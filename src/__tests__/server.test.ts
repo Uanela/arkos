@@ -7,7 +7,7 @@ import http from "http";
 
 // Mock dependencies
 jest.mock("../app", () => ({
-  bootstrap: jest.fn().mockResolvedValue({}),
+  bootstrap: jest.fn().mockResolvedValue({ port: 8000 }),
 }));
 
 // Mock the http module
@@ -54,7 +54,7 @@ describe("Server Module", () => {
 
   describe("initApp", () => {
     it("initializes app with default config when no config is provided", async () => {
-      const app = await initApp();
+      await initApp({ port: 8000 });
 
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({

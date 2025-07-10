@@ -4,7 +4,9 @@ arkos.init({
   {{#if authentication.type}}
   authentication: {
     mode: '{{authentication.type}}',
-    allowedUsernameFields: ['{{authentication.usernameField}}'],
+    login: {
+      allowedUsernames: ['{{authentication.usernameField}}'],
+    }
   },
   {{/if}}
   {{#if validation.type}}

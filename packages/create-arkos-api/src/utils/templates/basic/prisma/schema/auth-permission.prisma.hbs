@@ -9,7 +9,7 @@ enum AuthPermissionAction {
 {{/if}}
 
 model AuthPermission {
-  id        String   {{idDatabaseType}}
+  id        String   {{prisma.idDatabaseType}}
   resource  String
   {{#if (eq prisma.provider "sqlite")}}
   action    String   @default("View") 

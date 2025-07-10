@@ -45,7 +45,9 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
   _arkosConfig.available = true;
   _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
 
-  const port = _arkosConfig.port;
+  const port =
+    process.env.CLI_PORT || arkosConfig.port || process.env.PORT || undefined;
+
   _app = await bootstrap(_arkosConfig);
 
   if (port) {
@@ -54,7 +56,7 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
     if (_arkosConfig?.configureServer)
       await _arkosConfig.configureServer(server);
 
-    server.listen(port, _arkosConfig.host!, () => {
+    server.listen(Number(port), _arkosConfig.host!, () => {
       const time = new Date().toTimeString().split(" ")[0];
       console.info(
         `[\x1b[32mREADY\x1b[0m] \x1b[90m${time}\x1b[0m server waiting on http://${_arkosConfig.host || "localhost"}:${port}`
