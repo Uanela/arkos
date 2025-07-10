@@ -76,9 +76,7 @@ export async function processSubdir(
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
   const subdir = path.join(moduleDir, type);
-  const pascalModelName = pascalCase(modelName);
   const fileStructure = getFileModelModulesFileStructure(modelName);
-  const isAuthModule = modelName.toLowerCase() === "auth";
 
   // Skip if directory doesn't exist
   try {
@@ -91,26 +89,7 @@ export async function processSubdir(
         const filePath = path.join(subdir, fileName);
         try {
           const module = await import(filePath).catch(() => null);
-          if (module) {
-            if (isAuthModule) {
-              // Auth module uses different naming conventions
-              const pascalKey = key.charAt(0).toUpperCase() + key.slice(1);
-              const expectedName = `${pascalKey}${
-                type === "dtos" ? "Dto" : "Schema"
-              }`;
-              result[type][key] = module.default;
-            } else {
-              // Standard modules
-              const expectedName =
-                key === "model"
-                  ? `${pascalModelName}${type === "dtos" ? "Dto" : "Schema"}`
-                  : `${
-                      key.charAt(0).toUpperCase() + key.slice(1)
-                    }${pascalModelName}${type === "dtos" ? "Dto" : "Schema"}`;
-
-              result[type][key] = module.default;
-            }
-          }
+          if (module) result[type][key] = module.default;
         } catch (error) {
           // Silent fail - file might not exist
           console.error(error);
@@ -229,9 +208,7 @@ export async function importPrismaModelModules(
     dtos: {},
     schemas: {},
   };
-  // return "123" as any;
 
-  console.log(getModelModules(modelName));
   if (getModelModules(modelName)) return getModelModules(modelName);
 
   const fileStructure = getFileModelModulesFileStructure(modelName);

@@ -26,11 +26,11 @@ export async function startCommand(options: StartOptions = {}) {
     const { port, host } = options;
 
     // Check for built app file
-    const entryPoint = path.join(".build", "src", "app.js");
+    const entryPoint = path.join(process.cwd(), ".build", "src", "app.js");
 
-    if (!fs.existsSync(path.join(process.cwd(), entryPoint))) {
+    if (!fs.existsSync(path.join(entryPoint))) {
       console.error(
-        `❌ Could not find built application entry point at ${entryPoint}`
+        `❌ Could not find built application entry point at ${fullCleanCwd(entryPoint)}`
       );
       process.exit(1);
     }

@@ -25,6 +25,7 @@ jest.mock("express", () => {
     set: jest.fn(),
   }));
 
+  (mockExpress as any).static = jest.fn(() => mockRouter);
   (mockExpress as any).Router = jest.fn(() => mockRouter);
   (mockExpress as any).json = jest.fn(() => "express.json");
 

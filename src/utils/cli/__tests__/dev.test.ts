@@ -180,7 +180,7 @@ describe("devCommand", () => {
         ".build",
         "--watch",
         "src",
-        "src/app.ts",
+        `${process.cwd()}/src/app.ts`,
       ],
       expect.objectContaining({
         stdio: "inherit",
@@ -236,7 +236,7 @@ describe("devCommand", () => {
         ".build/",
         "--delay",
         "1000ms",
-        "src/app.js",
+        `${process.cwd()}/src/app.js`,
       ],
       expect.objectContaining({
         stdio: "inherit",

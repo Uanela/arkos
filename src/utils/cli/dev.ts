@@ -5,6 +5,7 @@ import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { importModule } from "../helpers/global.helpers";
 import fs from "fs";
+import path from "path";
 
 interface DevOptions {
   port?: string;
@@ -30,7 +31,7 @@ export async function devCommand(options: DevOptions = {}) {
     const fileExt = getUserFileExtension();
 
     // Find the application entry point
-    const entryPoint = `src/app.${fileExt}`;
+    const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
 
     if (!fs.existsSync(entryPoint)) {
       console.error("Could not find application entry point.");

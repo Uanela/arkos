@@ -132,7 +132,12 @@ describe("startCommand", () => {
     startCommand({ port: "3000", host: "localhost" });
 
     // Check path.join was called correctly
-    expect(path.join).toHaveBeenCalledWith(".build", "src", "app.js");
+    expect(path.join).toHaveBeenCalledWith(
+      process.cwd(),
+      ".build",
+      "src",
+      "app.js"
+    );
 
     // Check fs.existsSync was called with full path
     expect(fs.existsSync).toHaveBeenCalledWith(
@@ -142,7 +147,7 @@ describe("startCommand", () => {
     // Check if spawn was called with correct arguments
     expect(spawn).toHaveBeenCalledWith(
       "node",
-      [".build/src/app.js"],
+      [`${process.cwd()}/.build/src/app.js`],
       expect.objectContaining({
         stdio: "inherit",
         env: expect.objectContaining({
@@ -167,7 +172,12 @@ describe("startCommand", () => {
     startCommand({ port: "3000", host: "localhost" });
 
     // Check path.join was called correctly
-    expect(path.join).toHaveBeenCalledWith(".build", "src", "app.js");
+    expect(path.join).toHaveBeenCalledWith(
+      process.cwd(),
+      ".build",
+      "src",
+      "app.js"
+    );
 
     // Check fs.existsSync was called with full path
     expect(fs.existsSync).toHaveBeenCalledWith(
@@ -177,7 +187,7 @@ describe("startCommand", () => {
     // Check if spawn was called with correct arguments
     expect(spawn).toHaveBeenCalledWith(
       "node",
-      [".build/src/app.js"],
+      [`${process.cwd()}/.build/src/app.js`],
       expect.objectContaining({
         stdio: "inherit",
         env: expect.objectContaining({
@@ -236,7 +246,7 @@ describe("startCommand", () => {
     // Check environment variables were set correctly
     expect(spawn).toHaveBeenCalledWith(
       "node",
-      [".build/src/app.js"],
+      [`${process.cwd()}/.build/src/app.js`],
       expect.objectContaining({
         env: expect.objectContaining({
           NODE_ENV: "production",
@@ -306,7 +316,7 @@ describe("startCommand", () => {
     // Check environment variables contain custom PORT and HOST
     expect(spawn).toHaveBeenCalledWith(
       "node",
-      [".build/src/app.js"],
+      [`${process.cwd()}/.build/src/app.js`],
       expect.objectContaining({
         env: expect.objectContaining({
           CLI_PORT: "5000",

@@ -30,8 +30,10 @@ jest.mock("express", () => {
     use: jest.fn(),
     listen: jest.fn(),
     set: jest.fn(),
+    static: jest.fn().mockReturnThis(),
   }));
 
+  (mockExpress as any).static = jest.fn(() => mockRouter);
   (mockExpress as any).Router = jest.fn(() => mockRouter);
   (mockExpress as any).json = jest.fn(() => "express.json");
 
@@ -127,7 +129,7 @@ describe("App Bootstrap", () => {
       expect(express.json).toHaveBeenCalled();
       expect(cookieParser).toHaveBeenCalled();
       expect(queryParser).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledTimes(12);
+      expect(app.use).toHaveBeenCalledTimes(13);
     });
 
     it("skips disabled middlewares", async () => {
