@@ -7,6 +7,8 @@ import deepmerge from "./utils/helpers/deepmerge.helper";
 import http from "http";
 
 process.on("uncaughtException", (err) => {
+  if (err.message.includes("EPIPE")) return;
+
   console.error("\nUNCAUGHT EXCEPTION! SHUTTING DOWN...\n");
   console.error(err.name, err.message);
   console.error(err);
