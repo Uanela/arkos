@@ -201,13 +201,55 @@ export async function devCommand(options: DevOptions = {}) {
         }
       );
 
+      const pendingDeletes = new Map();
+      const RENAME_DETECTION_WINDOW = 100; // 100ms window to detect renames
+
       additionalWatcher.on("add", (filePath) => {
-        scheduleRestart(`${fullCleanCwd(filePath)} has been created`);
+        const now = Date.now();
+
+        // Check if there's a recent delete that could be part of a rename
+        let wasRenamed = false;
+        for (const [deletedPath, timestamp] of pendingDeletes.entries()) {
+          if (now - timestamp < RENAME_DETECTION_WINDOW) {
+            // This looks like a rename operation
+            scheduleRestart(
+              `${fullCleanCwd(deletedPath)} has been renamed to ${fullCleanCwd(filePath)}`
+            );
+            pendingDeletes.delete(deletedPath);
+            wasRenamed = true;
+            break;
+          }
+        }
+
+        if (!wasRenamed) {
+          scheduleRestart(`${fullCleanCwd(filePath)} has been created`);
+        }
       });
 
       additionalWatcher.on("unlink", (filePath) => {
-        scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
+        const now = Date.now();
+
+        // Store the delete with timestamp, but don't immediately schedule restart
+        pendingDeletes.set(filePath, now);
+
+        // Schedule a delayed check - if no corresponding add event comes, it's a real delete
+        setTimeout(() => {
+          if (pendingDeletes.has(filePath)) {
+            pendingDeletes.delete(filePath);
+            scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
+          }
+        }, RENAME_DETECTION_WINDOW);
       });
+
+      // Clean up old entries periodically to prevent memory leaks
+      setInterval(() => {
+        const now = Date.now();
+        for (const [path, timestamp] of pendingDeletes.entries()) {
+          if (now - timestamp > RENAME_DETECTION_WINDOW * 2) {
+            pendingDeletes.delete(path);
+          }
+        }
+      }, RENAME_DETECTION_WINDOW * 10);
 
       return additionalWatcher;
     };
@@ -282,7 +324,7 @@ export async function devCommand(options: DevOptions = {}) {
 
     // Enhanced cleanup function
     const cleanup = () => {
-      console.info("\nShutting down development server...");
+      // console.info("\nShutting down development server...");
 
       if (restartTimeout) clearTimeout(restartTimeout);
 

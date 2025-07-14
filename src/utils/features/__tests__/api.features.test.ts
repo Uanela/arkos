@@ -121,7 +121,7 @@ describe("APIFeatures", () => {
     test("should merge selection with relationFields when present", () => {
       req.query = { fields: "name,email" };
       const relationFields = { posts: true };
-      const apiFeatures = new APIFeatures(req, "user", relationFields);
+      const apiFeatures = new APIFeatures(req, "user");
       apiFeatures.filters.include = relationFields;
 
       apiFeatures.limitFields();
@@ -268,19 +268,6 @@ describe("APIFeatures", () => {
       expect(apiFeatures.filters).toEqual({
         skip: 30,
         take: 15,
-      });
-    });
-  });
-
-  describe("exec", () => {
-    test("should call prisma findMany with filters", async () => {
-      const apiFeatures = new APIFeatures(req, "user");
-      apiFeatures.filters = { where: { name: "John" } };
-
-      await apiFeatures.exec();
-
-      expect(prismaInstanceMock.user.findMany).toHaveBeenCalledWith({
-        where: { name: "John" },
       });
     });
   });

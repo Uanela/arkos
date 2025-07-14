@@ -424,6 +424,7 @@ describe("devCommand", () => {
 
     await devCommand();
 
+    jest.advanceTimersByTime(1000); // advance by 1000ms
     // Get the environment watcher callback
     const envWatcherCallback = mockWatcher.on.mock.calls.find(
       (call) => call[0] === "all"
@@ -454,6 +455,9 @@ describe("devCommand", () => {
       (call) => call[0] === "unlink"
     )[1];
 
+    // Move time forward
+    jest.advanceTimersByTime(1000); // advance by 1000ms
+
     // Simulate file addition
     addCallback("src/new-file.js");
     expect(console.info).toHaveBeenCalledWith(
@@ -462,6 +466,7 @@ describe("devCommand", () => {
 
     // Simulate file deletion
     unlinkCallback("src/old-file.js");
+    jest.advanceTimersByTime(1000); // advance by 1000ms
     expect(console.info).toHaveBeenCalledWith(
       expect.stringContaining("src/old-file.js has been deleted".toLowerCase())
     );

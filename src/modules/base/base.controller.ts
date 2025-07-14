@@ -166,17 +166,7 @@ export class BaseController {
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       const {
         filters: { where, ...queryOptions },
-      } = new APIFeatures(
-        req,
-        this.modelName,
-        this.service.relationFields?.singular.reduce(
-          (acc: Record<string, boolean>, curr) => {
-            acc[curr.name] = true;
-            return acc;
-          },
-          {}
-        )
-      )
+      } = new APIFeatures(req, this.modelName)
         .filter()
         .sort()
         .limitFields()
