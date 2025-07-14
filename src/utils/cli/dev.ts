@@ -130,38 +130,27 @@ export async function devCommand(options: DevOptions = {}) {
       }
     };
 
-    const pendingDeletes = new Map();
-    const RENAME_DETECTION_WINDOW = 100; // 100ms window to detect renames
-
     // Function to handle server restart with debouncing
     const scheduleRestart = (reason: string) => {
-      if (isRestarting) return; // Ignore if already restarting
       if (restartTimeout) clearTimeout(restartTimeout);
+      const now = new Date();
+      const time = now.toTimeString().split(" ")[0];
 
+      console.info(
+        `[\x1b[36mINFO\x1b[0m] \x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`
+      );
+
+      isRestarting = true;
+      if (child) {
+        child.kill();
+        child = null;
+      }
       restartTimeout = setTimeout(() => {
-        const now = new Date();
-        const time = now.toTimeString().split(" ")[0];
-
-        console.info(
-          `[\x1b[36mINFO\x1b[0m] \x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`
-        );
-
-        isRestarting = true;
-        if (child) {
-          // Wait for the process to actually exit
-          child.on("exit", () => {
-            child = null;
-            startServer();
-            isRestarting = false;
-          });
-
-          child.kill();
-        } else {
-          startServer();
-          isRestarting = false;
-        }
-      }, 100); // 50ms debounce
+        startServer();
+        restartTimeout = null;
+      }, 1000);
     };
+
     // Setup environment file watching
     const setupEnvWatcher = () => {
       const envWatcher = watch(
@@ -219,16 +208,6 @@ export async function devCommand(options: DevOptions = {}) {
       additionalWatcher.on("unlink", (filePath) => {
         scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
       });
-
-      // Clean up old entries periodically to prevent memory leaks
-      setInterval(() => {
-        const now = Date.now();
-        for (const [path, timestamp] of pendingDeletes.entries()) {
-          if (now - timestamp > RENAME_DETECTION_WINDOW * 2) {
-            pendingDeletes.delete(path);
-          }
-        }
-      }, RENAME_DETECTION_WINDOW * 10);
 
       return additionalWatcher;
     };
