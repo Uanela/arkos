@@ -425,7 +425,7 @@ describe("Error Handler Middleware", () => {
       const sigTermHandler = sigTermListeners[sigTermListeners.length - 1];
       (sigTermHandler as any)();
 
-      expect(mockProcessExit).not.toHaveBeenCalled();
+      expect(mockProcessExit).toHaveBeenCalled();
       expect(server.close).toHaveBeenCalled();
     });
 
@@ -437,7 +437,7 @@ describe("Error Handler Middleware", () => {
       const sigTermHandler = sigTermListeners[sigTermListeners.length - 1];
       (sigTermHandler as any)();
 
-      expect(mockProcessExit).not.toHaveBeenCalled();
+      expect(mockProcessExit).toHaveBeenCalled();
       expect(server.close).toHaveBeenCalled();
     });
   });

@@ -187,6 +187,7 @@ process.on("SIGTERM", () => {
 
     server.close(() => {
       console.error("Process terminated!!!");
+      process.exit();
     });
   }
 });

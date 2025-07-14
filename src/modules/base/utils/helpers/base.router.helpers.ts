@@ -72,7 +72,7 @@ export function setupRouters(
     };
 
     // If the custom router has its own routes, add them
-    if (customRouterModule && !customRouterModule?.config?.disable)
+    if (customRouterModule?.default && !customRouterModule?.config?.disable)
       router.use(`/${routeName}`, customRouterModule.default);
 
     function safeCatchAsync(middleware: any) {

@@ -8,12 +8,11 @@ import { ArkosRequest } from "../../types";
 type ModelName = string;
 
 export default class APIFeatures {
-  req: ArkosRequest;
+  req?: ArkosRequest;
   searchParams: any; // The query string parameters from the request
   searchParamsWithModifiers: any; // The query string parameters from the request
   filters: any = {};
-  modelName: ModelName;
-  // relationFields: Record<string, boolean>;
+  modelName?: ModelName;
   excludedFields = [
     "page",
     "sort",
@@ -29,18 +28,29 @@ export default class APIFeatures {
     "ignoredFields",
   ];
 
-  constructor(
-    req: Request,
-    modelName: ModelName,
-    relationFields?: Record<string, boolean>
-  ) {
-    this.req = req;
-    this.modelName = modelName;
-    this.searchParams = parseQueryParamsWithModifiers(req.query);
+  constructor(req?: Request, modelName?: ModelName) {
+    if (req) {
+      this.req = req;
+      this.searchParams = parseQueryParamsWithModifiers(req.query);
+    }
+    if (modelName) this.modelName = modelName;
     this.filters = { ...this.filters };
   }
 
+  setup(req: Request, modelName?: ModelName) {
+    this.req = req;
+    this.searchParams = parseQueryParamsWithModifiers(req.query);
+    if (modelName) this.modelName = modelName;
+    this.filters = { ...this.filters };
+
+    return this;
+  }
+
   filter() {
+    if (!this.req)
+      throw new Error(
+        "Trying to use APIFeatures.filter() without passing request on class constructor or APIFeatures.setup() method. read more about at www.arkosjs.com/docs/advanced-guide/api-features-class"
+      );
     const searchableFields: Record<string, any>[] = [];
 
     const queryObj = { ...this.searchParams };
@@ -63,24 +73,25 @@ export default class APIFeatures {
     if (!!this.searchParams.search) {
       const prisma = getPrismaInstance();
 
-      Object.keys((prisma as any)[this.modelName].fields).forEach((key) => {
-        const field = ((prisma as any)[this.modelName].fields as any)[key];
-        if (
-          field.typeName === "String" &&
-          key !== "id" &&
-          key !== "password" &&
-          !field.isList &&
-          !key?.includes?.("Id") &&
-          !key?.includes?.("ID")
-        ) {
-          searchableFields.push({
-            [`${key}`]: {
-              contains: this.searchParams.search,
-              mode: "insensitive",
-            },
-          });
-        }
-      });
+      if (this.modelName)
+        Object.keys((prisma as any)[this.modelName].fields).forEach((key) => {
+          const field = ((prisma as any)[this.modelName!].fields as any)[key];
+          if (
+            field.typeName === "String" &&
+            key !== "id" &&
+            key !== "password" &&
+            !field.isList &&
+            !key?.includes?.("Id") &&
+            !key?.includes?.("ID")
+          ) {
+            searchableFields.push({
+              [`${key}`]: {
+                contains: this.searchParams.search,
+                mode: "insensitive",
+              },
+            });
+          }
+        });
 
       whereOptions = deepmerge(
         {
@@ -124,81 +135,6 @@ export default class APIFeatures {
 
     return this;
   }
-
-  // limitFields() {
-  //   if (
-  //     this.searchParams?.fields &&
-  //     !this.searchParams?.addFields &&
-  //     !this.searchParams?.removeFields
-  //   ) {
-  //     const fieldsToSelect = this.searchParams.fields
-  //       .split(",")
-  //       .filter(
-  //         (field: string) => !field.startsWith("+") && !field.startsWith("-")
-  //       );
-
-  //     this.filters = {
-  //       ...this.filters,
-  //       select: fieldsToSelect.reduce((acc: any, field: string) => {
-  //         acc[field] = true;
-  //         return acc;
-  //       }, {}),
-  //     };
-  //     this.filters.select = { ...this.filters.select, ...this.filters.include };
-  //     delete this.filters.include;
-  //   } else if (
-  //     this.searchParams?.fields &&
-  //     (this.searchParams?.addFields || this.searchParams?.removeFields)
-  //   )
-  //     throw new AppError(
-  //       "Cannot use fields in the same query with addFields or removeFields.",
-  //       400
-  //     );
-
-  //   if (this.searchParams?.addFields && !this.searchParams?.fields) {
-  //     const fieldsToAdd = this.searchParams.addFields
-  //       .split(",")
-  //       .filter((field: string) => field.startsWith("+"));
-
-  //     this.filters = {
-  //       ...this.filters,
-  //       select: {
-  //         ...this.filters.include,
-  //         ...fieldsToAdd.reduce((acc: any, field: string) => {
-  //           acc[field.replace("+", "")] = true;
-  //           return acc;
-  //         }, {}),
-  //       },
-  //     };
-  //   } else if (this.searchParams?.fields && this.searchParams?.addFields)
-  //     throw new AppError(
-  //       "Cannot use addFields in the same query with fields.",
-  //       400
-  //     );
-
-  //   if (this.searchParams?.removeFields && !this.searchParams?.fields) {
-  //     const fieldsToRemove = this.searchParams.removeFields
-  //       .split(",")
-  //       .filter((field: string) => field.startsWith("-"));
-
-  //     this.filters = {
-  //       ...this.filters,
-  //       select: {
-  //         ...this.filters.include,
-  //         ...fieldsToRemove.reduce((acc: any, field: string) => {
-  //           acc[field.replace("-", "")] = false;
-  //           return acc;
-  //         }, {}),
-  //       },
-  //     };
-  //   } else if (this.searchParams?.removeFields && this.searchParams?.addFields)
-  //     throw new AppError(
-  //       "Cannot use removeFields in the same query with fields.",
-  //       400
-  //     );
-
-  //   return this;
-  // }
 
   limitFields() {
     if (this.searchParams?.fields) {
@@ -279,9 +215,6 @@ export default class APIFeatures {
     };
     return this;
   }
-
-  async exec() {
-    const prisma = getPrismaInstance();
-    return await (prisma as any)[this.modelName].findMany(this.filters);
-  }
 }
+
+export const apiFeatures = new APIFeatures();
