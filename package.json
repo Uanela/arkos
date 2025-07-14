@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.2.9-test",
+  "version": "1.2.15-test.1",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/es2020/exports/index.js",
@@ -174,7 +174,7 @@
     "html-to-text": "^9.0.5",
     "jsonwebtoken": "^9.0.2",
     "mimetype": "^0.0.8",
-    "multer": "1.4.5-lts.1",
+    "multer": "2.0.1",
     "nodemailer": "^6.10.0",
     "sharp": "^0.33.5",
     "zod": "^3.24.2"
