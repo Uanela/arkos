@@ -130,27 +130,38 @@ export async function devCommand(options: DevOptions = {}) {
       }
     };
 
+    const pendingDeletes = new Map();
+    const RENAME_DETECTION_WINDOW = 100; // 100ms window to detect renames
+
     // Function to handle server restart with debouncing
     const scheduleRestart = (reason: string) => {
+      if (isRestarting) return; // Ignore if already restarting
       if (restartTimeout) clearTimeout(restartTimeout);
-      const now = new Date();
-      const time = now.toTimeString().split(" ")[0];
 
-      console.info(
-        `[\x1b[36mINFO\x1b[0m] \x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`
-      );
-
-      isRestarting = true;
-      if (child) {
-        child.kill();
-        child = null;
-      }
       restartTimeout = setTimeout(() => {
-        startServer();
-        restartTimeout = null;
-      }, 1000);
-    };
+        const now = new Date();
+        const time = now.toTimeString().split(" ")[0];
 
+        console.info(
+          `[\x1b[36mINFO\x1b[0m] \x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`
+        );
+
+        isRestarting = true;
+        if (child) {
+          // Wait for the process to actually exit
+          child.on("exit", () => {
+            child = null;
+            startServer();
+            isRestarting = false;
+          });
+
+          child.kill();
+        } else {
+          startServer();
+          isRestarting = false;
+        }
+      }, 100); // 50ms debounce
+    };
     // Setup environment file watching
     const setupEnvWatcher = () => {
       const envWatcher = watch(
@@ -201,44 +212,12 @@ export async function devCommand(options: DevOptions = {}) {
         }
       );
 
-      const pendingDeletes = new Map();
-      const RENAME_DETECTION_WINDOW = 100; // 100ms window to detect renames
-
       additionalWatcher.on("add", (filePath) => {
-        const now = Date.now();
-
-        // Check if there's a recent delete that could be part of a rename
-        let wasRenamed = false;
-        for (const [deletedPath, timestamp] of pendingDeletes.entries()) {
-          if (now - timestamp < RENAME_DETECTION_WINDOW) {
-            // This looks like a rename operation
-            scheduleRestart(
-              `${fullCleanCwd(deletedPath)} has been renamed to ${fullCleanCwd(filePath)}`
-            );
-            pendingDeletes.delete(deletedPath);
-            wasRenamed = true;
-            break;
-          }
-        }
-
-        if (!wasRenamed) {
-          scheduleRestart(`${fullCleanCwd(filePath)} has been created`);
-        }
+        scheduleRestart(`${fullCleanCwd(filePath)} has been created`);
       });
 
       additionalWatcher.on("unlink", (filePath) => {
-        const now = Date.now();
-
-        // Store the delete with timestamp, but don't immediately schedule restart
-        pendingDeletes.set(filePath, now);
-
-        // Schedule a delayed check - if no corresponding add event comes, it's a real delete
-        setTimeout(() => {
-          if (pendingDeletes.has(filePath)) {
-            pendingDeletes.delete(filePath);
-            scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
-          }
-        }, RENAME_DETECTION_WINDOW);
+        scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
       });
 
       // Clean up old entries periodically to prevent memory leaks
