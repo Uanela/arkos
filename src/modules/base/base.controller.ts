@@ -39,27 +39,6 @@ import pluralize from "pluralize";
  * export default productController
  *
  * ```
- * **Using in custom Router**
- *
- * ```ts
- * // src/modules/product/product.router.ts
- *
- * import { Router } from "express";
- * import productController from "./product.controller";
- *
- * const productRouter = Router();
- *
- * // Arkos handles this base endpoints by default it
- * // is just an example
- *
- * productRouter.post("/", productController.createOne);
- * productRouter.get("/", productController.findMany);
- * productRouter.get("/:id", productController.findOne);
- * productRouter.patch("/:id", productController.updateOne);
- * productRouter.delete("/:id", productController.deleteOne);
- *
- * export default productRouter
- * ```
  *
  * @param {string} modelName - The Prisma model name this controller handles.
  *
@@ -136,14 +115,15 @@ export class BaseController {
         req.prismaQueryOptions
       );
 
-      if (!data) {
+      if (!data)
         return next(
           new AppError(
             "Failed to create the resources. Please check your input.",
-            400
+            400,
+            {},
+            "MissingRequestBody"
           )
         );
-      }
 
       if (this.middlewares.afterCreateMany) {
         req.responseData = { data };
@@ -177,6 +157,14 @@ export class BaseController {
         this.service.findMany(where, queryOptions),
         this.service.count(where),
       ])) as [Record<string, any>[], number];
+
+      if (total === 0)
+        throw new AppError(
+          `${kebabCase(pluralize(String(this.modelName))).replaceAll("-", "")}`,
+          404,
+          { query: req?.query },
+          "NotFound"
+        );
 
       if (this.middlewares.afterFindMany) {
         req.responseData = { total, results: data.length, data };
@@ -215,7 +203,7 @@ export class BaseController {
               } not found`,
               404,
               {},
-              "not_found"
+              "NotFound"
             )
           );
         } else {
@@ -224,7 +212,7 @@ export class BaseController {
               `${pascalCase(String(this.modelName))} not found`,
               404,
               {},
-              "not_found"
+              "NotFound"
             )
           );
         }
@@ -264,7 +252,7 @@ export class BaseController {
               } not found`,
               404,
               {},
-              "not_found"
+              "NotFound"
             )
           );
         } else {
@@ -273,7 +261,7 @@ export class BaseController {
               `${pascalCase(String(this.modelName))} not found`,
               404,
               {},
-              "not_found"
+              "NotFound"
             )
           );
         }
@@ -300,7 +288,12 @@ export class BaseController {
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       if (!Object.keys(req.query).some((key) => key !== "prismaQueryOptions")) {
         return next(
-          new AppError("Filter criteria not provided for bulk update.", 400)
+          new AppError(
+            "Filter criteria not provided for bulk update.",
+            400,
+            {},
+            "MissingRequestQueryParameters"
+          )
         );
       }
 
@@ -354,7 +347,7 @@ export class BaseController {
               } not found`,
               404,
               {},
-              "not_found"
+              "NotFound"
             )
           );
         } else {
@@ -363,7 +356,7 @@ export class BaseController {
               `${pascalCase(String(this.modelName))} not found`,
               404,
               {},
-              "not_found"
+              "NotFound"
             )
           );
         }
@@ -390,7 +383,12 @@ export class BaseController {
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       if (!Object.keys(req.query).some((key) => key !== "prismaQueryOptions")) {
         return next(
-          new AppError("Filter criteria not provided for bulk deletion.", 400)
+          new AppError(
+            "Filter criteria not provided for bulk deletion.",
+            400,
+            {},
+            "MissingRequestQueryParameters"
+          )
         );
       }
 
@@ -402,7 +400,9 @@ export class BaseController {
       const data = await this.service.deleteMany(where);
 
       if (!data || data.count === 0) {
-        return next(new AppError(`No records found to delete`, 404));
+        return next(
+          new AppError(`No records found to delete`, 404, {}, "NotFound")
+        );
       }
 
       if (this.middlewares.afterDeleteMany) {

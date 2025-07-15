@@ -76,17 +76,8 @@ export default function errorHandler(
   if (err.code === "P3003")
     error = errorControllerHelper.handleVersionMismatchError(err);
 
-  // Handle general error types (e.g., syntax errors, type errors, etc.)
-  // if (err.name === "SyntaxError")
-  //   error = errorControllerHelper.handleSchemaSyntaxError(err);
-  // if (err.name === "TypeError")
-  //   error = errorControllerHelper.handleClientTypeError(err);
-  // if (err.name === "BinaryError")
-  //   error = errorControllerHelper.handleBinaryError(err);
   if (err.name === "NetworkError")
     error = errorControllerHelper.handleNetworkError(err);
-  // if (err.name === "UnhandledPromiseRejection")
-  //   error = errorControllerHelper.handleUnhandledPromiseError(err);
   if (!error.isOperational) error = new AppError("Something went wrong!", 500);
 
   // Send the error response for production environment

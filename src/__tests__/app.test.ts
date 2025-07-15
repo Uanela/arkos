@@ -15,6 +15,12 @@ import {
 import { getFileUploadRouter } from "../modules/file-upload/file-upload.router";
 import deepmerge from "../utils/helpers/deepmerge.helper";
 
+jest.mock("fs", () => ({
+  ...jest.requireActual("fs"),
+  readdirSync: jest.fn(),
+  readFileSync: jest.fn(),
+}));
+
 // Mock dependencies
 jest.mock("express", () => {
   const mockRouter = {
@@ -434,7 +440,7 @@ describe("App Bootstrap", () => {
     });
   });
 
-  it("registers error handler last", async () => {
+  it("registers error handler as last but one", async () => {
     await bootstrap({
       welcomeMessage: "Test API",
       port: 3000,
@@ -442,11 +448,25 @@ describe("App Bootstrap", () => {
 
     // Mock app.use to capture the calls
     const useCalls = (app.use as jest.Mock).mock.calls;
-    const lastUseCall = useCalls[useCalls.length - 1];
+    const lastButOneCall = useCalls[useCalls.length - 2];
 
     // Check if the last middleware is the error handler
-    expect(lastUseCall[0]).toBe(errorHandler);
+    expect(lastButOneCall[0]).toBe(errorHandler);
   });
+
+  // it("registers not found last", async () => {
+  //   await bootstrap({
+  //     welcomeMessage: "Test API",
+  //     port: 3000,
+  //   });
+
+  //   // Mock app.use to capture the calls
+  //   const useCalls = (app.use as jest.Mock).mock.calls;
+  //   const lastUseCall = useCalls[useCalls.length - 1];
+
+  //   // Check if the last middleware is the error handler
+  //   expect(lastUseCall[0]).toBe(any.Function);
+  // });
 
   it("returns the configured express app", async () => {
     const result = await bootstrap({
