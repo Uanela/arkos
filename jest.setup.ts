@@ -1,3 +1,9 @@
+// jest.mock("fs", () => ({
+//   ...jest.requireActual("fs"),
+//   readdirSync: jest.fn(),
+//   readFileSync: jest.fn(),
+// }));
+
 jest.mock("commander", () => {
   const mockCommand: any = {
     name: jest.fn().mockReturnThis(),

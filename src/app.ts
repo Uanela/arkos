@@ -188,18 +188,21 @@ export async function bootstrap(
 
   app.use("/api", getAvailableResourcesAndRoutesRouter());
 
-  app.use("/api", getSwaggerRouter(arkosConfig));
+  if (arkosConfig.swagger) app.use("/api", await getSwaggerRouter(arkosConfig));
 
   // Additional custom routers
-  if (routersConfig?.additional) {
+  if (routersConfig?.additional)
     routersConfig.additional.forEach((router) => {
       app.use(router);
     });
-  }
 
   // Global error handler middleware (must be last)
   if (!disabledMiddlewares?.includes?.("global-error-handler"))
     app.use(replacedMiddlewares.globalErrorHandler || errorHandler);
+
+  app.use("*", (req, res) => {
+    res.status(404).json({ message: "Route not found on this server" });
+  });
 
   return app;
 }

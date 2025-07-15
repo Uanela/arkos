@@ -48,6 +48,8 @@ export function getFileModelModulesFileStructure(modelName: string) {
           createMany: `create-many-${kebabModelName}.dto.${ext}`,
           update: `update-${kebabModelName}.dto.${ext}`,
           updateMany: `update-many-${kebabModelName}.dto.${ext}`,
+          findOne: `find-one-${kebabModelName}.dto.${ext}`,
+          findMany: `find-many-${kebabModelName}.dto.${ext}`,
           query: `query-${kebabModelName}.dto.${ext}`,
         },
     schemas: isAuthModule
@@ -63,6 +65,8 @@ export function getFileModelModulesFileStructure(modelName: string) {
           createMany: `create-many-${kebabModelName}.schema.${ext}`,
           update: `update-${kebabModelName}.schema.${ext}`,
           updateMany: `update-many-${kebabModelName}.schema.${ext}`,
+          findOne: `find-one-${kebabModelName}.schema.${ext}`,
+          findMany: `find-many-${kebabModelName}.schema.${ext}`,
           query: `query-${kebabModelName}.schema.${ext}`,
         },
   };
@@ -298,6 +302,7 @@ export function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
 
 const modelRegex = /model\s+(\w+)\s*{/g;
 export const models: string[] = [];
+export let prismaSchemasContent: string;
 export const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
   [] as any;
 
@@ -312,6 +317,7 @@ export function initializePrismaModels() {
     if (!prismaContent?.includes?.(content)) prismaContent.push(content);
   }
 
+  // Gather the content of all *.prisma files into single one
   const content = prismaContent
     .join("\n")
     .replace(modelRegex, (_, modelName) => {
@@ -319,6 +325,8 @@ export function initializePrismaModels() {
         models.push(camelCase(modelName.trim()));
       return `model ${modelName} {`;
     });
+
+  prismaSchemasContent = content;
 
   for (const model of models) {
     const modelName = pascalCase(model);
@@ -420,7 +428,9 @@ initializePrismaModels();
  * @param {string} modelName - The name of the model (e.g., "User").
  * @returns {RelationFields|undefined} The relation fields for the model, or `undefined` if no relations are found.
  */
-export function getPrismaModelRelations(modelName: string) {
+export function getPrismaModelRelations(
+  modelName: string
+): RelationFields | undefined {
   modelName = pascalCase(modelName);
 
   if (!(modelName in prismaModelRelationFields)) return;
@@ -432,15 +442,24 @@ export function getPrismaModelRelations(modelName: string) {
  *
  * @returns {string[]} An array of model names (e.g., ["User", "Post"]).
  */
-function getModels() {
+function getModels(): string[] {
   return models;
+}
+
+/**
+ * Returns all content of all .prisma files gathered together
+ *
+ * @returns {string}
+ */
+export function getPrismaSchemasContent(): string {
+  return prismaSchemasContent;
 }
 
 /** Retuns a given model unique fields
  * @param {string} modelName - The name of model in PascalCase
  * @returns {string[]} An array of all unique fields,
  */
-function getModelUniqueFields(modelName: string) {
+function getModelUniqueFields(modelName: string): ModelFieldDefition[] {
   return prismaModelsUniqueFields[modelName];
 }
 

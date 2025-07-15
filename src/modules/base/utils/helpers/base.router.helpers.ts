@@ -34,10 +34,7 @@ export function setupRouters(
     const routeName = plural(modelNameInKebab);
     const controller = new BaseController(model);
 
-    // Check for router customization/disabling
-    const routerConfig: RouterConfig = customRouterModule?.config;
-    const disableConfig = routerConfig?.disable || {};
-    const isCompletelyDisabled = disableConfig === true;
+    const routerConfig: RouterConfig = customRouterModule?.config || {};
 
     // Check if custom implementation exists
     const customRouter = (customRouterModule as Router) || {};
@@ -50,12 +47,6 @@ export function setupRouters(
             layer.path === `/api/${path}/`) &&
           layer.method.toLowerCase() === method.toLowerCase()
       );
-    };
-
-    // Helper to determine if an endpoint should be disabled
-    const isEndpointDisabled = (endpoint: RouterEndpoint): boolean => {
-      if (isCompletelyDisabled) return true;
-      return typeof disableConfig === "object" && !!disableConfig[endpoint];
     };
 
     // Helper to get the correct schema or DTO based on Arkos Config
@@ -72,7 +63,7 @@ export function setupRouters(
     };
 
     // If the custom router has its own routes, add them
-    if (customRouterModule?.default && !customRouterModule?.config?.disable)
+    if (customRouterModule?.default && !routerConfig?.disable)
       router.use(`/${routeName}`, customRouterModule.default);
 
     function safeCatchAsync(middleware: any) {
@@ -81,7 +72,7 @@ export function setupRouters(
 
     // POST /{routeName} - Create One
     if (
-      !isEndpointDisabled("createOne") &&
+      !isEndpointDisabled(routerConfig, "createOne") &&
       !hasCustomImplementation(`/${routeName}`, "post")
     ) {
       router.post(
@@ -118,7 +109,7 @@ export function setupRouters(
 
     // GET /{routeName} - Find Many
     if (
-      !isEndpointDisabled("findMany") &&
+      !isEndpointDisabled(routerConfig, "findMany") &&
       !hasCustomImplementation(`/${routeName}`, "get")
     ) {
       router.get(
@@ -152,7 +143,7 @@ export function setupRouters(
 
     // POST /{routeName}/many - Create Many
     if (
-      !isEndpointDisabled("createMany") &&
+      !isEndpointDisabled(routerConfig, "createMany") &&
       !hasCustomImplementation(`/${routeName}/many`, "post")
     ) {
       router.post(
@@ -190,7 +181,7 @@ export function setupRouters(
 
     // PATCH /{routeName}/many - Update Many
     if (
-      !isEndpointDisabled("updateMany") &&
+      !isEndpointDisabled(routerConfig, "updateMany") &&
       !hasCustomImplementation(`/${routeName}/many`, "patch")
     ) {
       router.patch(
@@ -228,7 +219,7 @@ export function setupRouters(
 
     // DELETE /{routeName}/many - Delete Many
     if (
-      !isEndpointDisabled("deleteMany") &&
+      !isEndpointDisabled(routerConfig, "deleteMany") &&
       !hasCustomImplementation(`/${routeName}/many`, "delete")
     ) {
       router.delete(
@@ -266,7 +257,7 @@ export function setupRouters(
 
     // GET /{routeName}/:id - Find One
     if (
-      !isEndpointDisabled("findOne") &&
+      !isEndpointDisabled(routerConfig, "findOne") &&
       !hasCustomImplementation(`/${routeName}/:id`, "get")
     ) {
       router.get(
@@ -303,7 +294,7 @@ export function setupRouters(
 
     // PATCH /{routeName}/:id - Update One
     if (
-      !isEndpointDisabled("updateOne") &&
+      !isEndpointDisabled(routerConfig, "updateOne") &&
       !hasCustomImplementation(`/${routeName}/:id`, "patch")
     ) {
       router.patch(
@@ -340,7 +331,7 @@ export function setupRouters(
 
     // DELETE /{routeName}/:id - Delete One
     if (
-      !isEndpointDisabled("deleteOne") &&
+      !isEndpointDisabled(routerConfig, "deleteOne") &&
       !hasCustomImplementation(`/${routeName}/:id`, "delete")
     ) {
       router.delete(
@@ -375,4 +366,31 @@ export function setupRouters(
       );
     }
   });
+}
+
+export function isEndpointDisabled(
+  routerConfig: RouterConfig,
+  endpoint: RouterEndpoint
+): boolean {
+  if (!routerConfig?.disable) return false;
+
+  if (routerConfig.disable === true) return true;
+
+  if (typeof routerConfig.disable === "object")
+    return routerConfig.disable[endpoint] === true;
+
+  return false;
+}
+
+export function isParentEndpointAllowed(
+  routerConfig: any,
+  endpoint: string
+): boolean {
+  if (!routerConfig?.parent) return false;
+
+  const parentEndpoints = routerConfig.parent.endpoints;
+  if (parentEndpoints === "*") return true;
+  if (Array.isArray(parentEndpoints)) return parentEndpoints.includes(endpoint);
+
+  return true; // Default to allow if not specified
 }

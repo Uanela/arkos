@@ -7,6 +7,7 @@ import compression from "compression";
 import { Options as QueryParserOptions } from "../utils/helpers/query-parser.helpers";
 import { ValidatorOptions } from "class-validator";
 import { MsDuration } from "../modules/auth/utils/helpers/auth.controller.helpers";
+import { OpenAPIV3 } from "openapi-types";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
@@ -620,15 +621,13 @@ export type ArkosConfig = {
    *  }
    * })
    * ```
-   *
-   *
    * @see {@link https://www.arkosjs.com/docs/core-concepts/swagger-api-documentation}
    */
   swagger?: {
     /**
      * Endpoint where the Swagger UI will be available.
      *
-     * @default "/api/docs"
+     * @default "/api/api-docs"
      */
     endpoint?: string;
     /**
@@ -636,18 +635,17 @@ export type ArkosConfig = {
      *
      * - "prisma": Generates schemas based on Prisma models
      * - "class-validator": Uses class-validator and class-transformer DTO classes
-     * - "zod`": Uses OpenAPI-compliant schemas directly
-     * - "json-schema": Uses OpenAPI-compliant schemas directly
+     * - "zod": Uses OpenAPI-compliant schemas directly
      */
-    mode: "prisma" | "class-validator" | "zod" | "json-schema";
+    mode: "prisma" | "class-validator" | "zod";
     /**
      *
      */
-    options: {
+    options?: {
       /**
        * Swagger definition according to OpenAPI Specification.
        */
-      definition: {
+      definition?: {
         /**
          * OpenAPI version.
          *
@@ -687,7 +685,7 @@ export type ArkosConfig = {
         /**
          * Server configurations for the API.
          *
-         * @default [{ url: "http://localhost:8000", description: "Local server" }]
+         * @default [{ url: "http://localhost:8000", description: "Development server" }]
          *
          * This can be overridden automatically by Arkos based on CLI, .env, or `arkos.init()`.
          */
@@ -704,9 +702,13 @@ export type ArkosConfig = {
            *
            * @example "Development Server"
            */
-          description: string;
+          description?: string;
         }[];
-
+        /**
+         * Allows adding more paths for your OpenAPI documentation
+         *
+         * */
+        paths?: OpenAPIV3.PathsObject;
         /**
          * (Optional) Additional metadata such as terms of service, contact, or license.
          *
