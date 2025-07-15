@@ -188,7 +188,12 @@ export async function bootstrap(
 
   app.use("/api", getAvailableResourcesAndRoutesRouter());
 
-  if (arkosConfig.swagger) app.use("/api", await getSwaggerRouter(arkosConfig));
+  if (
+    arkosConfig.swagger &&
+    (process.env.ARKOS_BUILD !== "true" ||
+      arkosConfig.swagger.enableAfterBuild === true)
+  )
+    app.use("/api", await getSwaggerRouter(arkosConfig));
 
   // Additional custom routers
   if (routersConfig?.additional)

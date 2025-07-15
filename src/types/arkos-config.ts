@@ -625,6 +625,10 @@ export type ArkosConfig = {
    */
   swagger?: {
     /**
+     * By default Arkos will disable API Documentation when the project is built `npm run build`, it does not matter what node environment is set. If you want to use it even after the `arkos build` command just set this to `true`.
+     * */
+    enableAfterBuild?: boolean;
+    /**
      * Endpoint where the Swagger UI will be available.
      *
      * @default "/api/api-docs"
