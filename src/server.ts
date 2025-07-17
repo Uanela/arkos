@@ -70,10 +70,9 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
         `${sheu.gray(time)} server waiting on http://${_arkosConfig.host || "localhost"}:${port}`
       );
     });
-  }
-  {
+  } else {
     sheu.warn(
-      `${sheu.gray(time)} port not provided, hence no internal http server was setup.`
+      `${sheu.gray(time)} port set to undefined, hence no internal http server was setup.`
     );
   }
 

@@ -137,9 +137,7 @@ export async function devCommand(options: DevOptions = {}) {
       const now = new Date();
       const time = now.toTimeString().split(" ")[0];
 
-      console.info(
-        `${sheu.blue("[INFO]")} \x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`
-      );
+      sheu.info(`\x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`);
 
       isRestarting = true;
       if (child) {
