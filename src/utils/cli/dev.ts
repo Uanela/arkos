@@ -6,6 +6,7 @@ import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { importModule } from "../helpers/global.helpers";
 import fs from "fs";
 import path from "path";
+import sheu from "../sheu";
 
 interface DevOptions {
   port?: string;
@@ -137,7 +138,7 @@ export async function devCommand(options: DevOptions = {}) {
       const time = now.toTimeString().split(" ")[0];
 
       console.info(
-        `[\x1b[36mINFO\x1b[0m] \x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`
+        `${sheu.blue("[INFO]")} \x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`
       );
 
       isRestarting = true;
