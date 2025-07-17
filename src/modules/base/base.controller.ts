@@ -158,13 +158,13 @@ export class BaseController {
         this.service.count(where),
       ])) as [Record<string, any>[], number];
 
-      if (total === 0)
-        throw new AppError(
-          `${kebabCase(pluralize(String(this.modelName))).replaceAll("-", "")}`,
-          404,
-          { query: req?.query },
-          "NotFound"
-        );
+      // if (total === 0)
+      //   throw new AppError(
+      //     `${kebabCase(pluralize(String(this.modelName))).replaceAll("-", "")}`,
+      //     404,
+      //     { query: req?.query },
+      //     "NotFound"
+      //   );
 
       if (this.middlewares.afterFindMany) {
         req.responseData = { total, results: data.length, data };

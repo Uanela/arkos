@@ -1,6 +1,6 @@
 import { ProjectConfig } from "./project-config-inquirer";
 import path from "path";
-import fs from "fs-extra";
+import fs from "fs";
 import handlebars from "handlebars";
 // import { getLatestVersion } from "./helpers";
 

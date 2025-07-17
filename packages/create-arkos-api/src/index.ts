@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import fs from "fs-extra";
+import fs from "fs";
 import path from "path";
 import chalk from "chalk";
 import { execSync } from "child_process";
@@ -21,7 +21,7 @@ async function main() {
     `\nCreating a new ${chalk.bold(chalk.cyan("Arkos.js"))} project in ${chalk.green(`./${config.projectName}`)}`
   );
 
-  const templatesDir = path.resolve(`./src/utils/templates/basic`);
+  const templatesDir = path.resolve(`./templates/basic`);
   await templateCompiler.compile(templatesDir, config);
 
   process.chdir(projectPath);
