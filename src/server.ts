@@ -5,6 +5,7 @@ import { bootstrap } from "./app";
 import { ArkosConfig } from "./types/arkos-config";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import http from "http";
+import sheu from "./utils/sheu";
 
 process.on("uncaughtException", (err) => {
   if (err.message.includes("EPIPE")) return;
@@ -48,9 +49,15 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
   _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
 
   const port =
-    process.env.CLI_PORT || arkosConfig.port || process.env.PORT || undefined;
+    process.env.CLI_PORT ||
+    _arkosConfig.port ||
+    process.env.PORT ||
+    "port" in _arkosConfig
+      ? _arkosConfig.port
+      : 8000;
 
   _app = await bootstrap(_arkosConfig);
+  const time = new Date().toTimeString().split(" ")[0];
 
   if (port) {
     server = http.createServer(_app);
@@ -59,11 +66,15 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
       await _arkosConfig.configureServer(server);
 
     server.listen(Number(port), _arkosConfig.host!, () => {
-      const time = new Date().toTimeString().split(" ")[0];
-      console.info(
-        `[\x1b[32mREADY\x1b[0m] \x1b[90m${time}\x1b[0m server waiting on http://${_arkosConfig.host || "localhost"}:${port}`
+      sheu.ready(
+        `${sheu.gray(time)} server waiting on http://${_arkosConfig.host || "localhost"}:${port}`
       );
     });
+  }
+  {
+    sheu.warn(
+      `${sheu.gray(time)} port not provided, hence no internal http server was setup.`
+    );
   }
 
   return _app;
