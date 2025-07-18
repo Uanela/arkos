@@ -26,29 +26,10 @@ model User {
   {{/if}}
   {{/if}}
   createdAt            DateTime @default(now())
-  updatedAt            DateTime @default(now())
+  updatedAt            DateTime {{#if (eq prisma.provider "mongodb")}}@updatedAt{{else}}@default(now()){{/if}}
+
   // other fields for your application
 }
-
-{{#if (eq authentication.type "dynamic")}}
-model UserRole {
-  id        String     {{prisma.idDatabaseType}}
-  {{#if authentication.multipleRoles}}
-  userId    String     
-  {{else}}
-  userId    String     @unique
-  {{/if}}
-  user      User       @relation(fields: [userId], references: [id])
-  roleId    String
-  role      AuthRole   @relation(fields: [roleId], references: [id])
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @default(now())
-  {{#if authentication.multipleRoles}}
-
-  @@unique([userId, roleId])
-  {{/if}}
-}
-{{/if}}
 
 {{#if (eq authentication.type "static")}}
 {{#if (eq prisma.provider "sqlite")}}

@@ -26,20 +26,6 @@ export function fullCleanCwd(path: string): string {
   return path.replace(new RegExp(`${escapedCwd}/?`, "g"), ""); // remove cwd + optional slash
 }
 
-// /**
-//  * Removes the current working directory prefix from the given path.
-//  * Handles cases with or without a trailing slash in cwd.
-//  *
-//  * @param path - The path to clean
-//  * @returns The path without the cwd prefix
-//  */
-// export function fullCleanCwd(path: string): string {
-//   if (typeof path !== "string") throw new Error("Path must be a string");
-
-//   const cwd = process.cwd().replace(/\/+$/, ""); // remove trailing slashes
-//   return path.replace(new RegExp(`${cwd}/`, "g"), ""); // remove cwd + optional slash
-// }
-
 export let userFileExtension: "ts" | "js" | undefined;
 
 /**
@@ -56,15 +42,19 @@ export const getUserFileExtension = (): "ts" | "js" => {
     // Check for tsconfig.json in current directory
     const hasTsConfig = fs.existsSync(path.join(currentDir, "tsconfig.json"));
 
+    // Check for main app files
+    const hasAppTs = fs.existsSync(path.join(currentDir, "src", "app.ts"));
+    const hasAppJs = fs.existsSync(path.join(currentDir, "src", "app.js"));
+
     // Check environment variable for build mode
     const isBuildMode = process.env.ARKOS_BUILD === "true";
 
-    // If tsconfig exists and not in build mode, use TypeScript
-    if (hasTsConfig && !isBuildMode) {
-      userFileExtension = "ts";
-    } else {
-      userFileExtension = "js";
-    }
+    // Decision logic (prioritized)
+    if (isBuildMode) userFileExtension = "js";
+    else if (hasTsConfig) userFileExtension = "ts";
+    else if (hasAppTs && !hasAppJs) userFileExtension = "ts";
+    else if (hasAppJs) userFileExtension = "js";
+    else userFileExtension = "js";
 
     return userFileExtension;
   } catch (e) {

@@ -206,7 +206,7 @@ export async function bootstrap(
     app.use(replacedMiddlewares.globalErrorHandler || errorHandler);
 
   app.use("*", (req, res) => {
-    res.status(404).json({ message: "Route not found on this server" });
+    res.status(404).json({ message: "Route not found!" });
   });
 
   return app;

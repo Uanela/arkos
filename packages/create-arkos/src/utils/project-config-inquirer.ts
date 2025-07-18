@@ -93,9 +93,24 @@ class ProjectConfigInquirer {
         ],
       },
     ]);
+
+    // Set the correct idDatabaseType based on provider
+    let idDatabaseType: string;
+
+    switch (prismaProvider) {
+      case "mongodb":
+        idDatabaseType = '@id @default(auto()) @map("_id") @db.ObjectId';
+        break;
+      case "sqlite":
+        idDatabaseType = "@id @default(cuid())";
+        break;
+      default:
+        idDatabaseType = "@id @default(uuid())";
+    }
+
     this.config.prisma = {
       provider: prismaProvider,
-      idDatabaseType: "@id @default(uuid())",
+      idDatabaseType: idDatabaseType,
     };
   }
 

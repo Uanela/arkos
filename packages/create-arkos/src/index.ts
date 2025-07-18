@@ -21,7 +21,7 @@ async function main() {
     `\nCreating a new ${chalk.bold(chalk.cyan("Arkos.js"))} project in ${chalk.green(`./${config.projectName}`)}`
   );
 
-  const templatesDir = path.resolve(`./templates/basic`);
+  const templatesDir = path.join(__dirname, `../templates/basic`);
   await templateCompiler.compile(templatesDir, config);
 
   process.chdir(projectPath);
