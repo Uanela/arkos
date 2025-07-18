@@ -16,11 +16,11 @@ model AuthPermission {
   {{else}}
   action    AuthPermissionAction @default(View) 
   {{/if}}
-  roleId    String
+  roleId    String    {{#if (eq prisma.provider "mongodb")}}@db.ObjectId{{/if}}
   role      AuthRole  @relation(fields: [roleId], references: [id])
   description String?
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @default(now())
+  updatedAt DateTime  {{#if (eq prisma.provider "mongodb")}}@updatedAt{{else}}@default(now()){{/if}}
 
   @@unique([resource, action, roleId])
 }

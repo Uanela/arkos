@@ -1,6 +1,6 @@
 {
   "name": "create-arkos",
-  "version": "0.0.4",
+  "version": "0.0.8",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com/docs",
   "bin": {
     "create-arkos": "./dist/index.js"
@@ -20,7 +20,7 @@
   "bugs": {
     "url": "https://github.com/uanela/arkos/issues"
   },
-  "homepage": "https://www.arkosjs.com",
+  "homepage": "https://www.arkosjs.com/docs/api-reference/create-arkos-cli",
   "files": ["dist", "templates", "cli.js", "README.md"],
   "devDependencies": {
     "@types/inquirer": "^8.1.0",

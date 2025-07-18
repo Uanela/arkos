@@ -5,6 +5,6 @@ model AuthRole {
   permissions AuthPermission[]
   users       UserRole[]
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  updatedAt DateTime {{#if (eq prisma.provider "mongodb")}}@updatedAt{{else}}@default(now()){{/if}}
 }
 

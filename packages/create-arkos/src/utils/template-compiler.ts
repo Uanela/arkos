@@ -2,7 +2,6 @@ import { ProjectConfig } from "./project-config-inquirer";
 import path from "path";
 import fs from "fs";
 import handlebars from "handlebars";
-// import { getLatestVersion } from "./helpers";
 
 class TemplateCompiler {
   async canCompileAuthenticationTemplates(config: ProjectConfig) {
@@ -12,13 +11,14 @@ class TemplateCompiler {
   filesToBeSkipped(config: ProjectConfig) {
     const files: string[] = [];
 
-    if (config.authentication.type !== "define later") {
+    if (config.authentication.type !== "define later")
       files.concat(["user.prisma.hbs"]);
-    }
 
-    if (config.authentication?.type === "static") {
+    if (config.authentication?.type === "static")
       files.concat(["auth-role.prisma.hbs", "auth-permission.prisma.hbs"]);
-    }
+
+    if (!config.typescript) files.concat(["tsconfig.json.hbs"]);
+
     return files;
   }
   /**
