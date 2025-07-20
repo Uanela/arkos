@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Deploy Documentation to VPS
 
 on:
   push:
