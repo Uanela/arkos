@@ -1,0 +1,88 @@
+import {
+  Code,
+  Shield,
+  Layers,
+  CheckSquare,
+  Database,
+  Upload,
+  GitMerge,
+  Mail,
+  FileText,
+} from "lucide-react";
+
+export const arkosFeatures = [
+  {
+    title: "Automatic API Generation",
+    description: "Instantly create RESTful API routes for Prisma models.",
+    icon: <Code className="md:size-24 size-20 text-sky-500" />,
+    outline: "hover:outline-sky-500/50",
+    titleHover: "group-hover:text-sky-500/80",
+    to: "/docs/core-concepts/endpoints-auto-generation",
+  },
+  {
+    title: "Built-in Authentication",
+    description: "Supports JWT-based authentication with effortless setup.",
+    icon: <Shield className="md:size-24 size-20 text-green-500" />,
+    outline: "hover:outline-green-500/50",
+    titleHover: "group-hover:text-green-500/80",
+    to: "/docs/core-concepts/built-in-authentication-system",
+  },
+  {
+    title: "Express Middlewares",
+    description:
+      "Pre-configured security, request parsing, and error handling.",
+    icon: <Layers className="md:size-24 size-20 text-yellow-500" />,
+    outline: "hover:outline-yellow-500/50",
+    titleHover: "group-hover:text-yellow-500/80",
+    to: "/docs/guide/built-in-middlewares",
+  },
+  {
+    title: "Built-in Data Validation",
+    description: "Using class-validator and class-transformer or zod.",
+    icon: <CheckSquare className="md:size-24 size-20 text-purple-500" />,
+    outline: "hover:outline-purple-500/50",
+    titleHover: "group-hover:text-purple-500/80",
+    to: "/docs/core-concepts/request-data-validation",
+  },
+  {
+    title: "Prisma Integration",
+    description: "Seamless connection with Prisma ORM for database management.",
+    icon: <Database className="md:size-24 size-20 text-indigo-500" />,
+    outline: "hover:outline-indigo-500/50",
+    titleHover: "group-hover:text-indigo-500/80",
+    to: "/docs/advanced-guide/custom-prisma-query-options",
+  },
+  {
+    title: "File Upload & Optimization",
+    description: "Efficient image, video, docs, raw-file handling.",
+    icon: <Upload className="md:size-24 size-20 text-red-500" />,
+    outline: "hover:outline-red-500/50",
+    titleHover: "group-hover:text-red-500/80",
+    to: "/docs/core-concepts/file-uploads",
+  },
+  {
+    title: "Interceptors Middlewares",
+    description:
+      "Tailor as you want, intercept, customize your middleware flow.",
+    icon: <GitMerge className="md:size-24 size-20 text-teal-500" />,
+    outline: "hover:outline-teal-500/50",
+    titleHover: "group-hover:text-teal-500/80",
+    to: "/docs/core-concepts/interceptor-middlewares",
+  },
+  {
+    title: "Nodemailer Integration",
+    description: "Seamless nodemailer integration for sending emails.",
+    icon: <Mail className="md:size-24 size-20 text-pink-500" />,
+    outline: "hover:outline-pink-500/50",
+    titleHover: "group-hover:text-pink-500/80",
+    to: "/docs/core-concepts/sending-emails",
+  },
+  {
+    title: "Swagger API Documentation",
+    description: "Seamless generate an api documentation.",
+    icon: <FileText className="md:size-24 size-20 text-orange-500" />,
+    outline: "hover:outline-orange-500/50",
+    titleHover: "group-hover:text-orange-500/80",
+    to: "/docs/core-concepts/swagger-api-documentation",
+  },
+];

@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .container {
+    @apply lg:mx-10;
+  }
+
+  * {
+    @apply transition-all;
+  }
+
+  a {
+    @apply hover:no-underline;
+  }
+
+  footer {
+    @apply flex justify-center;
+  }
+
+  .docMainContainer_TGxA {
+    @apply flex justify-center;
+  }
+
+  /* .container,
+  .navbar__inner {
+    @apply mx-auto max-w-6xl;
+  } */
+}
+
+.container {
+  margin-inline: auto;
+  max-width: 1536px;
+}
+
+.docMainContainer_TGxA {
+  display: flex;
+  justify-content: center;
+}
+
+/* @layer base {
+  .tailwind {
+    @tailwind base;
+  }
+}
+
+
+
+@layer utilities {
+  .tailwind {
+    @tailwind utilities;
+  }
+} */
+
+/* Outline Color Classes with 40% opacity */
+.outline-sky-500 {
+  outline-color: rgba(14, 165, 233, 0.4); /* sky-500 with 40% opacity */
+}
+
+.outline-green-500 {
+  outline-color: rgba(34, 197, 94, 0.4); /* green-500 with 40% opacity */
+}
+
+.outline-yellow-500 {
+  outline-color: rgba(234, 179, 8, 0.4); /* yellow-500 with 40% opacity */
+}
+
+.outline-purple-500 {
+  outline-color: rgba(168, 85, 247, 0.4); /* purple-500 with 40% opacity */
+}
+
+.outline-indigo-500 {
+  outline-color: rgba(99, 102, 241, 0.4); /* indigo-500 with 40% opacity */
+}
+
+.outline-red-500 {
+  outline-color: rgba(239, 68, 68, 0.4); /* red-500 with 40% opacity */
+}
+
+.outline-teal-500 {
+  outline-color: rgba(20, 184, 166, 0.4); /* teal-500 with 40% opacity */
+}
+
+.outline-pink-500 {
+  outline-color: rgba(236, 72, 153, 0.4); /* pink-500 with 40% opacity */
+}
+
+.outline-orange-500 {
+  outline-color: rgba(249, 115, 22, 0.4); /* orange-500 with 40% opacity */
+}
+:root {
+  --ifm-color-primary: #0ea5e9; /* sky-500 */
+  --ifm-color-primary-dark: #0284c7; /* sky-600 */
+  --ifm-color-primary-darker: #0369a1; /* sky-700 */
+  --ifm-color-primary-darkest: #075985; /* sky-800 */
+  --ifm-color-primary-light: #38bdf8; /* sky-400 */
+  --ifm-color-primary-lighter: #7dd3fc; /* sky-300 */
+  --ifm-color-primary-lightest: #bae6fd; /* sky-200 */
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(
+    14,
+    165,
+    233,
+    0.1
+  ); /* sky-500 with opacity */
+}
+
+/* body {
+  background-color: #050b1e;
+} */
+
+[data-theme="dark"],
+[data-theme="dark"] .navbar-sidebar {
+  background-color: #090e1f;
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme="dark"] {
+  --ifm-color-primary: #38bdf8; /* sky-400 */
+  --ifm-color-primary-dark: #0ea5e9; /* sky-500 */
+  --ifm-color-primary-darker: #0284c7; /* sky-600 */
+  --ifm-color-primary-darkest: #0369a1; /* sky-700 */
+  --ifm-color-primary-light: #7dd3fc; /* sky-300 */
+  --ifm-color-primary-lighter: #bae6fd; /* sky-200 */
+  --ifm-color-primary-lightest: #e0f2fe; /* sky-100 */
+  --docusaurus-highlighted-code-line-bg: rgba(
+    56,
+    189,
+    248,
+    0.3
+  ); /* sky-400 with opacity */
+}
+
+/* Change navbar background */
+.footer {
+  background-color: #0f1732; /* Your custom color */
+}
+
+/* Change navbar background */
+[data-theme="dark"] .navbar {
+  background-color: #0f1732; /* Your custom color */
+}
+
+/* Style the doc cards in generated index pages */
+[data-theme="dark"] .card {
+  background-color: #0f1732; /* Your custom color */
+  border: 1px solid rgb(87, 95, 129);
+  border-radius: 10px;
+}
+
+[data-theme="dark"] .card:hover {
+  background-color: #172142;
+}
+
+[data-theme="dark"] .card h2,
+[data-theme="dark"] .card h3 {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .card p {
+  color: #acb0bf;
+}
+
+[data-theme="light"] .DocSearch {
+  /* --docsearch-primary-color: var(--ifm-color-primary); */
+  /* --docsearch-text-color: var(--ifm-font-color-base); */
+  --docsearch-muted-color: var(--ifm-color-secondary-darkest);
+  --docsearch-container-background: rgba(94, 100, 112, 0.7);
+  /* Modal */
+  --docsearch-modal-background: var(--ifm-color-secondary-lighter);
+  /* Search box */
+  --docsearch-searchbox-background: var(--ifm-color-secondary);
+  --docsearch-searchbox-focus-background: var(--ifm-color-white);
+  /* Hit */
+  --docsearch-hit-color: var(--ifm-font-color-base);
+  --docsearch-hit-active-color: var(--ifm-color-white);
+  --docsearch-hit-background: var(--ifm-color-white);
+  /* Footer */
+  --docsearch-footer-background: var(--ifm-color-white);
+}
+
+[data-theme="dark"] .DocSearch {
+  --docsearch-text-color: var(--ifm-font-color-base);
+  --docsearch-muted-color: var(--ifm-color-secondary-darkest);
+  --docsearch-container-background: rgba(47, 55, 69, 0.7);
+  /* Modal */
+  --docsearch-modal-background: var(--ifm-background-color);
+  /* Search box */
+  --docsearch-searchbox-background: var(--ifm-background-color);
+  --docsearch-searchbox-focus-background: var(--ifm-color-black);
+  /* Hit */
+  --docsearch-hit-color: var(--ifm-font-color-base);
+  --docsearch-hit-active-color: var(--ifm-color-white);
+  --docsearch-hit-background: var(--ifm-color-emphasis-100);
+  /* Footer */
+  --docsearch-footer-background: var(--ifm-background-surface-color);
+  --docsearch-key-gradient: linear-gradient(
+    -26.5deg,
+    var(--ifm-color-emphasis-200) 0%,
+    var(--ifm-color-emphasis-100) 100%
+  );
+}

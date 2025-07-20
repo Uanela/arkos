@@ -1,0 +1,158 @@
+---
+sidebar_position: 2
+---
+
+# Request Handling Pipeline
+
+In **Arkos**, each incoming request goes through a **modular middleware pipeline** that is dynamically constructed based on the Prisma model and its configuration. This allows you to hook into every stage of the request lifecycle without rewriting boilerplate or logic.
+
+This pipeline is automatically applied per route for every registered model and operation (e.g., `createOne`, `findMany`, `deleteMany`, etc.), ensuring that every request is authenticated (if desired), validated, processed, and responded to in a consistent and customizable way.
+
+:::note
+This is an explanation on how **Arkos** handles each prisma model request, this is not something you need to implement by yourself unless you want, but by doing this you would not being levarage **Arkos** and it's core features.
+:::
+
+## 1. Route Middleware Structure
+
+Each route in **Arkos** is composed of a **chain of middlewares** that execute sequentially. Here's how the flow is constructed:
+
+```ts
+// some code here
+router.post('/api/posts', middleware1, middleware2, ..., finalHandler);
+```
+
+Arkos does this programmatically for every route generated based on your prisma models.
+
+### Example:
+
+For a `POST /api/users` request, the flow might look like:
+
+1. `Authentication Middleware`
+2. `Access Control Middleware`
+3. `Validation & Transformation Middleware`
+4. `Query Parsing Middleware`
+5. `Pre-handler Middleware` (optional)
+6. `Main Handler`
+7. `Post-handler Middleware` (optional)
+8. `Response Sender`
+
+## 2. Execution Order
+
+For every endpoint, **Arkos** evaluates and composes middleware like so:
+
+### 2.1. **Authentication**
+
+Ensures the request is coming from a valid, authenticated user if request is activated for the current route, [read more](/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior) about how to customize.
+
+```ts
+authService.handleAuthenticationControl(...)
+```
+
+### 2.2. **Authorization**
+
+Checks if the authenticated user has permission to perform the action on the specific model, [read more](/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior) about how to customize.
+
+```ts
+authService.handleAccessControl(...)
+```
+
+### 2.3. **Validation & Transformation**
+
+Validates the request body using either `Zod` or `class-validator` and transforms it accordingly, [read more](/docs/core-concepts/request-data-validation) about how to work with validation in **Arkos**.
+
+```ts
+handleRequestBodyValidationAndTransformation(...)
+```
+
+### 2.4. **Custom Prisma Query Options Injection**
+
+Injects your Prisma-specific options like filtering, ordering, pagination, etc., into the request, [read more](/docs/advanced-guide/custom-prisma-query-options) about how to inject your own custom prisma query options on the generated api routes.
+
+```ts
+addPrismaQueryOptionsToRequestQuery(...)
+```
+
+### 2.5. **Custom Model-Specific Interceptor Middlewares**
+
+Each model can define `before*` and `after*` middlewares for custom logic. **Arkos** checks and applies them automatically:
+
+```ts
+middlewares?.beforeCreateOne;
+middlewares?.afterCreateOne;
+```
+
+These interceptors middlewares let you inject logic such as business rules, analytics, or external service calls **before or after** the core handler runs, [read more](/docs/core-concepts/interceptor-middlewares) how to implement this.
+
+### 2.6. **Core Handler**
+
+The default database operation (e.g., `createOne`, `findMany`, etc.) is executed by the `BaseController` which you can read more about [clicking here](/docs/api-reference/the-base-controller-class).
+
+```ts
+createOne, findOne, updateMany, etc.
+```
+
+### 2.7. **sendResponse**
+
+This is the fallback and final middleware. If no custom response is sent earlier, it will format and send the standard Arkos response format.
+
+```ts
+sendResponse;
+```
+
+## 3. Dynamic Route Assembly
+
+All routes are auto-generated from your models. For each model:
+
+- Resource paths are automatically pluralized
+- CRUD operations are scaffolded using the Prisma client
+- Custom middlewares per model are loaded
+- Full security, validation, and query parsing pipelines are constructed
+
+Example route:
+
+```
+POST /api/users;
+```
+
+Becomes automatically:
+
+```ts
+router.post(
+  "/api/users",
+  authService.handleAuthenticationControl(...),
+  authService.handleAccessControl(...),
+  handleRequestBodyValidationAndTransformation(...),
+  addPrismaQueryOptionsToRequestQuery(...),
+  middlewares?.beforeCreateOne ?? createOne,
+  middlewares?.beforeCreateOne ? createOne : middlewares?.afterCreateOne ?? sendResponse,
+  middlewares?.afterCreateOne ?? sendResponse,
+  sendResponse
+);
+```
+
+This above is an **Arkos** inner implementation if you want to add your own routers, see how to add your own routes endpoints that goes beyond the auto generated by **Arkos**, reading [Adding Custom Routers Guide](/docs/guide/adding-custom-routers).
+
+## 4. Interceptor Middleware For Override & Extension
+
+You can fully customize the pipeline by defining any of the following interpcetor middlewares in your model module:
+
+```ts
+// src/modules/[model-name]/[mode-name].middlewares.ts
+import { catchAsync } from "arkos/error-handler"
+
+export const beforeCreateOne = catchAsync(async (req, res, next) => { ... })
+export const afterCreateOne = catchAsync(async (req, res, next) => { ... })
+```
+
+See exactly how it works [here](/docs/core-concepts/interceptor-middlewares).
+
+## Summary
+
+**Arkos** provides a **structured, extensible request handling pipeline** for every route:
+
+- Consistent across models
+- Customizable with interceptor middlewares
+- Security-first with built-in auth
+- Integrated with Prisma query features
+
+This system enables you to scale your API with confidence while maintaining complete control over every request.
