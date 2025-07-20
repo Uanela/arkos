@@ -1,6 +1,10 @@
-node_modules
-dist
-coverage
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.local
+*.log
 .DS_Store
-data/pgadmin
-data/postgres
+**/node_modules/
+node_modules/
