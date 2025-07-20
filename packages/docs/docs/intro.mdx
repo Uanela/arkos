@@ -1,0 +1,89 @@
+---
+sidebar_position: 1
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import ArkosFeaturesCardsDocs from "./components/arkos-features-card-docs";
+import { arkosFeatures } from "../src/utils/arkos-features";
+
+# Introduction to Arkos
+
+**Arkos** is a powerful, fast and lightweight backend framework built on top of Express.js and Prisma that simplifies RESTful API development. It automates common backend tasks while providing the flexibility developers need for custom solutions.
+
+### Key Features
+
+<!-- <ArkosFeaturesCardsDocs /> -->
+
+<div
+  id="tailwind"
+  className="tailwind grid grid-cols-1 md:grid-cols-3 md:gap-4 p-2  mx-auto max-w-3xl md:max-w-6xl z-10 gap-3"
+>
+  {arkosFeatures.map((feature) => (
+    <ArkosFeaturesCardsDocs {...feature} />
+  ))}
+</div>
+
+### Why Arkos?
+
+Arkos eliminates repetitive setup tasks and boilerplate code, allowing developers to focus on building features rather than infrastructure. It's perfect for:
+
+- Rapid RESTful API Development
+- Enterprise Solutions
+- MVPs and Prototypes
+- Full-Stack Applications
+- Anything You Can Do With Express
+
+### Origin of the Name
+
+The name "Arkos" comes from the Greek word "ἀρχή" (Arkhē), meaning "beginning" or "foundation". This reflects our goal of providing a solid foundation for backend development.
+
+## As Simples As This
+
+<Tabs>
+  <TabItem value="js" label="JavaScript" >
+
+    ```js
+    // src/app.js
+    const arkos = require("arkos");
+
+    arkos.init({ port: 8000 });
+    ```
+
+  </TabItem>
+  <TabItem value="ts" label="TypeScript" default>
+
+    ```ts
+    // src/app.ts
+    import arkos from "arkos";
+
+    arkos.init({ port: 8000 });
+    ```
+
+  </TabItem>
+</Tabs>
+
+<Tabs>
+  <TabItem value="npm" label="Npm" >
+
+    ```bash
+    npm run dev
+    ```
+
+  </TabItem>
+
+  <TabItem value="pnpm" label="Pnpm" default>
+    ```bash
+    pnpm run dev
+    ```
+
+  </TabItem>
+</Tabs>
+Ready to build your API? Let's get started! 🚀
+
+## Next Steps
+
+- [Getting Started](/docs/getting-started) - Set up your first Arkos project
+- [Project Structure](/docs/project-structure) - See the the **Arkos** project structure
+- [How Does It Works](/docs/how-does-arkos-works) - Learn about **Arkos** behind the scene work
+- [Core Concepts](/docs/category/core-concepts) - Catch up with arkos core
