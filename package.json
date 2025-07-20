@@ -3,12 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "The Express & Prisma Framework For RESTful API",
+  "license": "MIT",
   "workspaces": ["packages/*"],
-
-  "scripts": {
-    "build": "pnpm run build --workspaces",
-    "test": "pnpm run test --workspaces"
-  },
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
