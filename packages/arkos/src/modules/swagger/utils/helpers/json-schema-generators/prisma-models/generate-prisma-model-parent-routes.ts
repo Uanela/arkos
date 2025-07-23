@@ -1,5 +1,5 @@
 import { OpenAPIV3 } from "openapi-types";
-import { plural } from "pluralize";
+import pluralize from "pluralize";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import { getSchemaRef, kebabToHuman } from "../../swagger.router.helpers";
 import { isParentEndpointAllowed } from "../../../../../base/utils/helpers/base.router.helpers";
@@ -14,7 +14,7 @@ export async function generatePrismaModelParentRoutePaths(
   mode: string
 ) {
   const parentModel = routerConfig.parent.model;
-  const parentRouteName = plural(kebabCase(parentModel));
+  const parentRouteName = pluralize.plural(kebabCase(parentModel));
   const parentHumanName = kebabToHuman(kebabCase(parentModel));
   // const foreignKeyField =
   //   routerConfig.parent.foreignKeyField || `${kebabCase(parentModel)}Id`;
@@ -86,7 +86,7 @@ export async function generatePrismaModelParentRoutePaths(
       tags: [humanReadableNamePlural],
       summary: `Get ${humanReadableNamePlural} for ${parentHumanName}`,
       description: `Retrieves all ${humanReadableNamePlural} associated with the specified ${parentHumanName}`,
-      operationId: `get${plural(pascalModelName)}For${pascalCase(parentModel)}`,
+      operationId: `get${pluralize.plural(pascalModelName)}For${pascalCase(parentModel)}`,
       parameters: [
         {
           name: "id",

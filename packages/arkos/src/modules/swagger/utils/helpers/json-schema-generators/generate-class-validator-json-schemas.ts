@@ -12,7 +12,7 @@ export async function generateClassValidatorJsonSchemas() {
   const schemas: Record<string, any> = {};
 
   const { defaultMetadataStorage } = await importModule(
-    "class-transformer/cjs/storage"
+    "class-transformer/cjs/storage.js"
   );
 
   const jsonSchema = validationMetadatasToSchemas({

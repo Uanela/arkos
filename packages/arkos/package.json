@@ -2,62 +2,63 @@
   "name": "arkos",
   "version": "1.2.4-beta",
   "description": "The Express & Prisma Framework For RESTful API",
+  "type": "module",
   "main": "dist/cjs/exports/index.js",
-  "module": "dist/es2020/exports/index.js",
+  "module": "dist/esm/exports/index.js",
   "types": "dist/types/exports/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/types/exports/index.d.ts",
-      "import": "./dist/es2020/exports/index.js",
+      "import": "./dist/esm/exports/index.js",
       "require": "./dist/cjs/exports/index.js"
     },
     "./prisma": {
       "types": "./dist/types/exports/prisma/index.d.ts",
-      "import": "./dist/es2020/exports/prisma/index.js",
+      "import": "./dist/esm/exports/prisma/index.js",
       "require": "./dist/cjs/exports/prisma/index.js"
     },
     "./auth": {
       "types": "./dist/types/exports/auth/index.d.ts",
-      "import": "./dist/es2020/exports/auth/index.js",
+      "import": "./dist/esm/exports/auth/index.js",
       "require": "./dist/cjs/exports/auth/index.js"
     },
     "./services": {
       "types": "./dist/types/exports/services/index.d.ts",
-      "import": "./dist/es2020/exports/services/index.js",
+      "import": "./dist/esm/exports/services/index.js",
       "require": "./dist/cjs/exports/services/index.js"
     },
     "./controllers": {
       "types": "./dist/types/exports/controllers/index.d.ts",
-      "import": "./dist/es2020/exports/controllers/index.js",
+      "import": "./dist/esm/exports/controllers/index.js",
       "require": "./dist/cjs/exports/controllers/index.js"
     },
     "./middlewares": {
       "types": "./dist/types/exports/middlewares/index.d.ts",
-      "import": "./dist/es2020/exports/middlewares/index.js",
+      "import": "./dist/esm/exports/middlewares/index.js",
       "require": "./dist/cjs/exports/middlewares/index.js"
     },
     "./validation": {
       "types": "./dist/types/exports/validation/index.d.ts",
-      "import": "./dist/es2020/exports/validation/index.js",
+      "import": "./dist/esm/exports/validation/index.js",
       "require": "./dist/cjs/exports/validation/index.js"
     },
     "./error-handler": {
       "types": "./dist/types/exports/error-handler/index.d.ts",
-      "import": "./dist/es2020/exports/error-handler/index.js",
+      "import": "./dist/esm/exports/error-handler/index.js",
       "require": "./dist/cjs/exports/error-handler/index.js"
     },
     "./utils": {
       "types": "./dist/types/exports/utils/index.d.ts",
-      "import": "./dist/es2020/exports/utils/index.js",
+      "import": "./dist/esm/exports/utils/index.js",
       "require": "./dist/cjs/exports/utils/index.js"
     },
     "./cli": {
-      "import": "./dist/es2020/utils/cli/index.js",
+      "import": "./dist/esm/utils/cli/index.js",
       "require": "./dist/cjs/utils/cli/index.js"
     },
     "./*": {
       "types": "./dist/types/exports/*.d.ts",
-      "import": "./dist/es2020/exports/*.js",
+      "import": "./dist/esm/exports/*.js",
       "require": "./dist/cjs/exports/*.js"
     }
   },
@@ -77,11 +78,12 @@
     }
   },
   "scripts": {
-    "build:es2020": "tsc -p tsconfig.es2020.json",
+    "build:esm": "tsc -p tsconfig.esm.json && ts-node scripts/fix-esm-imports.ts",
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "postbuilda": "echo {\\\"type\":\"commonjs\\\"} > dist/cjs/package.json",
-    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:es2020 && pnpm run build:types && pnpm run minify",
+    "postbuilda:cjs": "echo {\\\"type\":\"commonjs\\\"} > dist/cjs/package.json",
+    "postbuilda:esm": "echo {\\\"type\":\"module\\\"} > dist/esm/package.json",
+    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && pnpm run minify",
     "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "clean": "rm -r dist",
     "dev": "ts-node --watch",
@@ -161,7 +163,8 @@
     "pluralize": "^8.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "zod-to-json-schema": "^3.24.6"
+    "zod-to-json-schema": "^3.24.6",
+    "@arkos/shared": "workspaces:*"
   },
   "peerDependencies": {
     "@prisma/client": "^6.4.1",

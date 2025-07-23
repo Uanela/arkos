@@ -5,7 +5,7 @@ import {
 } from "../../../../utils/helpers/models.helpers";
 import { kebabCase, pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
-import { plural } from "pluralize";
+import pluralize from "pluralize";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
 import { getAuthenticationJsonSchemaPaths } from "./get-authentication-json-schema-paths";
 import { generateZodJsonSchemas } from "./json-schema-generators/generate-zod-json-schema";
@@ -87,10 +87,10 @@ export async function generatePathsForModels(
 
   for (const model of models) {
     const modelName = kebabCase(model);
-    const routeName = plural(modelName);
+    const routeName = pluralize.plural(modelName);
     const pascalModelName = pascalCase(model);
     const humanReadableName = kebabToHuman(modelName);
-    const humanReadableNamePlural = plural(humanReadableName);
+    const humanReadableNamePlural = pluralize.plural(humanReadableName);
 
     // Import model modules to get router config
     const modelModules = await importPrismaModelModules(model);
