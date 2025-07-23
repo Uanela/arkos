@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { singular, plural } from "pluralize";
+import pluralize from "pluralize";
 import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
@@ -31,7 +31,7 @@ export function setupRouters(
       schemas,
     } = modelModules;
 
-    const routeName = plural(modelNameInKebab);
+    const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);
 
     const routerConfig: RouterConfig = customRouterModule?.config || {};
@@ -83,7 +83,7 @@ export function setupRouters(
         ),
         authService.handleAccessControl(
           "Create",
-          kebabCase(singular(modelNameInKebab)),
+          kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
@@ -120,7 +120,7 @@ export function setupRouters(
         ),
         authService.handleAccessControl(
           "View",
-          kebabCase(singular(modelNameInKebab)),
+          kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
         addPrismaQueryOptionsToRequest<any>(
@@ -154,7 +154,7 @@ export function setupRouters(
         ),
         authService.handleAccessControl(
           "Create",
-          kebabCase(singular(modelNameInKebab)),
+          kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
@@ -192,7 +192,7 @@ export function setupRouters(
         ),
         authService.handleAccessControl(
           "Update",
-          kebabCase(singular(modelNameInKebab)),
+          kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
@@ -230,7 +230,7 @@ export function setupRouters(
         ),
         authService.handleAccessControl(
           "Delete",
-          kebabCase(singular(modelNameInKebab)),
+          kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
@@ -268,7 +268,7 @@ export function setupRouters(
         ),
         authService.handleAccessControl(
           "View",
-          kebabCase(singular(modelNameInKebab)),
+          kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
@@ -305,7 +305,7 @@ export function setupRouters(
         ),
         authService.handleAccessControl(
           "Update",
-          kebabCase(singular(modelNameInKebab)),
+          kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
@@ -342,7 +342,7 @@ export function setupRouters(
         ),
         authService.handleAccessControl(
           "Delete",
-          kebabCase(singular(modelNameInKebab)),
+          kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(

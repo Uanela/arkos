@@ -126,30 +126,30 @@ export async function getSwaggerRouter(
   );
 
   // Serve raw OpenAPI spec as JSON
-  swaggerRouter.get(`${swaggerConfigs.endpoint}/json`, (req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    res.json(swaggerSpecification);
-  });
+  // swaggerRouter.get(`${swaggerConfigs.endpoint}/json`, (req, res) => {
+  //   res.setHeader("Content-Type", "application/json");
+  //   res.json(swaggerSpecification);
+  // });
 
-  // Serve raw OpenAPI spec as YAML (optional)
-  swaggerRouter.get(`${swaggerConfigs.endpoint}/yaml`, (req, res) => {
-    const yaml = require("js-yaml");
-    res.setHeader("Content-Type", "text/yaml");
-    res.send(yaml.dump(swaggerSpecification));
-  });
+  // // Serve raw OpenAPI spec as YAML (optional)
+  // swaggerRouter.get(`${swaggerConfigs.endpoint}/yaml`, (req, res) => {
+  //   const yaml = require("js-yaml");
+  //   res.setHeader("Content-Type", "text/yaml");
+  //   res.send(yaml.dump(swaggerSpecification));
+  // });
 
-  // Health check endpoint for Swagger itself
-  swaggerRouter.get(`${swaggerConfigs.endpoint}/health`, (req, res) => {
-    res.json({
-      status: "ok",
-      swagger: {
-        version: swaggerConfigs?.options?.definition?.openapi,
-        title: swaggerConfigs?.options?.definition?.info?.title,
-        endpoint: swaggerConfigs.endpoint,
-        mode: swaggerConfigs.mode,
-      },
-    });
-  });
+  // // Health check endpoint for Swagger itself
+  // swaggerRouter.get(`${swaggerConfigs.endpoint}/health`, (req, res) => {
+  //   res.json({
+  //     status: "ok",
+  //     swagger: {
+  //       version: swaggerConfigs?.options?.definition?.openapi,
+  //       title: swaggerConfigs?.options?.definition?.info?.title,
+  //       endpoint: swaggerConfigs.endpoint,
+  //       mode: swaggerConfigs.mode,
+  //     },
+  //   });
+  // });
 
   return swaggerRouter;
 }

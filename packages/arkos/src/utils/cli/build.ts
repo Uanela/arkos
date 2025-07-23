@@ -4,6 +4,7 @@ import { execSync } from "child_process";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { getVersion } from "./utils/cli.helpers";
+import { detectPackageManagerFromUserAgent } from "@arkos/shared";
 
 // Constants
 const BUILD_DIR = ".build";
@@ -13,20 +14,6 @@ type ModuleType = (typeof MODULE_TYPES)[number];
 interface BuildOptions {
   config?: string;
   module?: string;
-}
-
-function detectPackageManagerFromUserAgent() {
-  const userAgent = process.env.npm_config_user_agent || "";
-
-  if (userAgent.includes("pnpm")) return "pnpm";
-  if (userAgent.includes("yarn")) return "yarn";
-  if (userAgent.includes("npm")) return "npm";
-  if (userAgent.includes("bun")) return "bun";
-  if (userAgent.includes("cnpm")) return "cnpm";
-  if (userAgent.includes("corepack")) return "corepack";
-  if (userAgent.includes("deno")) return "deno";
-
-  return "npm";
 }
 
 /**

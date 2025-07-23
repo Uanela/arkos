@@ -7,7 +7,7 @@
     let useEsm = false;
 
     try {
-      const pkgPath = join("..", process.cwd(), "package.json");
+      const pkgPath = join(process.cwd(), "package.json");
       if (existsSync(pkgPath)) {
         const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
         useEsm = pkg.type === "module";
@@ -17,7 +17,7 @@
     }
 
     if (useEsm) {
-      await import("./dist/es2020/utils/cli/index.js");
+      await import("./dist/esm/utils/cli/index.js");
     } else {
       await import("./dist/cjs/utils/cli/index.js");
     }

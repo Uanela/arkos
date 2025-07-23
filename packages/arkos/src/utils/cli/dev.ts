@@ -107,6 +107,7 @@ export async function devCommand(options: DevOptions = {}) {
             ".build/",
             "--delay",
             "1000ms",
+            "--no-stdin",
             entryPoint,
           ],
           {

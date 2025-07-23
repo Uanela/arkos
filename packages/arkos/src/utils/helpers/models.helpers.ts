@@ -251,8 +251,8 @@ export async function importPrismaModelModules(
     processSubdir(modelName, "schemas", result),
   ]);
 
-  // Cache the result
-  prismaModelsModules[modelName] = result;
+  // Cache the result making shallow copy to not cause problems after build
+  prismaModelsModules[modelName] = JSON.parse(JSON.stringify(result));
 
   return result;
 }

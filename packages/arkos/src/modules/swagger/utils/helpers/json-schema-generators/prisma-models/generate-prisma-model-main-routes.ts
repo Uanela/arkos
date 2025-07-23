@@ -1,6 +1,6 @@
 import { OpenAPIV3 } from "openapi-types";
 import { getSchemaRef } from "../../swagger.router.helpers";
-import { plural } from "pluralize";
+import pluralize from "pluralize";
 import { isEndpointDisabled } from "../../../../../base/utils/helpers/base.router.helpers";
 
 export async function generatePrismaModelMainRoutesPaths(
@@ -63,7 +63,7 @@ export async function generatePrismaModelMainRoutesPaths(
       tags: [humanReadableNamePlural],
       summary: `Get ${humanReadableNamePlural}`,
       description: `Retrieves a paginated list of ${humanReadableNamePlural} with optional filtering and sorting`,
-      operationId: `get${plural(pascalModelName)}`,
+      operationId: `get${pluralize.plural(pascalModelName)}`,
       parameters: [
         {
           name: "filter",
