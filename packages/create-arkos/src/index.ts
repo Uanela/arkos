@@ -6,6 +6,7 @@ import { execSync } from "child_process";
 import projectConfigInquirer from "./utils/project-config-inquirer";
 import templateCompiler from "./utils/template-compiler";
 import Handlebars from "handlebars";
+import { detectPackageManagerFromUserAgent } from "@arkos/shared";
 
 Handlebars.registerHelper("eq", (a, b) => a === b);
 Handlebars.registerHelper("neq", (a, b) => a !== b);
@@ -26,10 +27,15 @@ async function main() {
 
   process.chdir(projectPath);
 
-  console.info("\nInstalling dependencies...");
-  console.info("\nUsing npm.\n");
+  const packageManager = detectPackageManagerFromUserAgent();
 
-  execSync("npm install", { stdio: "inherit" });
+  console.info("\nInstalling dependencies...");
+  console.info(`\nUsing ${packageManager}.\n`);
+
+  execSync(`${packageManager} install`, { stdio: "inherit" });
+
+  console.info("\nRunning: npx prisma generate");
+  execSync(`npx prisma generate`, { stdio: "inherit" });
 
   console.info(`
   ${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!

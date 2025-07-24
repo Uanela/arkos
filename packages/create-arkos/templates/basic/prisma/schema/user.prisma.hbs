@@ -10,7 +10,7 @@ model User {
   isActive             Boolean   @default(true)
   {{#if authentication.multipleRoles}}
   {{#if (eq prisma.provider "sqlite")}}
-  roles                String[] // Roles examples: Admin, User
+  role                String // Roles examples: Admin, User
   {{else}}
   roles                UserRole[]
   {{/if}}

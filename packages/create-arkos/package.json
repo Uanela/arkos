@@ -1,15 +1,16 @@
 {
   "name": "create-arkos",
-  "version": "0.0.8",
-  "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com/docs",
+  "version": "0.0.12",
+  "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
     "create-arkos": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "dev": "ts-node src/index.ts",
     "test:hbs": "ts-node src/utils/helpers/hbs-tester.helpers.ts",
-    "prepublishOnly": "pnpm run build"
+    "prebuild": "pnpm --filter @arkos/shared build",
+    "prepublishOnly": "pnpm build"
   },
   "author": "Uanela Como",
   "license": "MIT",
@@ -20,19 +21,21 @@
   "bugs": {
     "url": "https://github.com/uanela/arkos/issues"
   },
-  "homepage": "https://www.arkosjs.com/docs/api-reference/create-arkos-cli",
+  "homepage": "https://www.arkosjs.com/docs/cli/create-arkos",
   "files": ["dist", "templates", "cli.js", "README.md"],
   "devDependencies": {
     "@types/inquirer": "^8.1.0",
     "@types/node": "^16.18.126",
     "ts-node": "^10.9.2",
-    "typescript": "^4.9.5"
+    "tsup": "^8.5.0",
+    "typescript": "^4.9.5",
+    "@arkos/shared": "workspace:*"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
     "@inquirer/prompts": "^7.6.0",
-    "inquirer": "^8.2.6",
     "chalk": "^5.4.1",
-    "handlebars": "^4.7.8"
+    "handlebars": "^4.7.8",
+    "inquirer": "^8.2.6"
   }
 }

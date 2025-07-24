@@ -17,11 +17,28 @@
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "@types/node": "^24.0.12",
+    "@types/express": "^5.0.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    {{else}}
+    "nodemon": "^2.0.12",
     {{/if}}
     "prisma": "^6.11.1"
   },
   "dependencies": {
-    "arkos": "^1.2.0-beta", 
-    "@prisma/client": "^6.11.1"
+    "arkos": "^1.2.6-beta", 
+    "express": "^4.21.2",
+    "@prisma/client": "^6.4.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    {{#if (eq validation.type "class-validator")}}
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "class-validator-jsonschema": "^5.0.2",
+    {{/if}}
+    {{#if (eq validation.type "zod")}}
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.24.6"
+    {{/if}}
   }
 }
