@@ -12,12 +12,15 @@ class TemplateCompiler {
     const files: string[] = [];
 
     if (config.authentication.type !== "define later")
-      files.concat(["user.prisma.hbs"]);
+      files.concat(...["user.prisma.hbs"]);
 
     if (config.authentication?.type === "static")
-      files.concat(["auth-role.prisma.hbs", "auth-permission.prisma.hbs"]);
+      files.concat(...["auth-role.prisma.hbs", "auth-permission.prisma.hbs"]);
 
-    if (!config.typescript) files.concat(["tsconfig.json.hbs"]);
+    if (!config.typescript) files.concat(...["tsconfig.json.hbs"]);
+
+    if (config.authentication.type === "dynamic")
+      files.concat(...["user-role.prisma.hbs"]);
 
     return files;
   }

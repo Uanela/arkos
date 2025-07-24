@@ -4,7 +4,6 @@
     "moduleResolution": "node",
     "target": "ES2016",
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "sourceMap": true,
     "inlineSources": true,
@@ -12,7 +11,10 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@arkos/shared": ["../shared/src"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "dist", "src/**/__tests__/**", "src/**/*.test.ts"]

@@ -159,7 +159,10 @@ class ProjectConfigInquirer {
         },
       ]);
 
-      if (authenticationType !== "define later") {
+      if (
+        authenticationType !== "define later" &&
+        this.config.prisma.provider !== "sqlite"
+      ) {
         const { multipleRoles } = await inquirer.prompt([
           {
             type: "confirm",
@@ -184,6 +187,10 @@ class ProjectConfigInquirer {
             usernameField === "define later" ? "custom" : usernameField,
           multipleRoles,
         };
+      } else if (this.config.prisma.provider === "sqlite") {
+        console.info(
+          `Skipping multiple roles options because provider is sqlite...`
+        );
       }
     }
   }
