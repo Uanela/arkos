@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import { createRequire } from "module";
+import { pathToFileURL } from "url";
 
 export function getPackageJson() {
   try {
@@ -40,6 +42,15 @@ export async function importModule(
       correctedPath = modulePath + ".js";
     }
   }
+
+  if (!options.fixExtension) return await import(modulePath);
+
+  // When importing user modules:
+  const userRequire = createRequire(
+    pathToFileURL(process.cwd() + "/package.json")
+  );
+  const resolved = userRequire.resolve(modulePath);
+  return await import(pathToFileURL(resolved) as any);
 
   return await import(correctedPath);
 }

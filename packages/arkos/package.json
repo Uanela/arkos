@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.2.8-beta",
+  "version": "1.2.9-beta",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -80,7 +80,7 @@
     "build:esm": "tsc -p tsconfig.esm.json && ts-node scripts/fix-esm-imports.ts",
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && pnpm run minify",
+    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && pnpm run minify && ts-node scripts/post-build-scripts.ts",
     "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "clean": "rm -r dist",
     "dev": "ts-node --watch",
@@ -94,6 +94,7 @@
     "test:create": "ts-node src/scripts/create-test.ts",
     "publish:test": "npm publish --tag test",
     "publish:beta": "npm publish --tag beta",
+    "publish:betaAsLatest": "npm publish --tag latest",
     "publish": "npm publish"
   },
   "keywords": [
@@ -184,16 +185,5 @@
   },
   "engines": {
     "node": ">=14.16"
-  },
-  "pnpm": {
-    "overrides": {},
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "@scarf/scarf",
-      "esbuild",
-      "prisma",
-      "sharp"
-    ]
   }
 }
