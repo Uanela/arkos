@@ -22,6 +22,7 @@ handlebars.registerHelper("neq", (a, b) => a !== b);
     prisma: {
       provider: "mongodb",
       idDatabaseType: "@db @default(uuid())",
+      defaultDBurl: "@db @default(uuid())",
     },
     projectPath: outputDir,
   };

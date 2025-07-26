@@ -2,6 +2,7 @@ import { ProjectConfig } from "./project-config-inquirer";
 import path from "path";
 import fs from "fs";
 import handlebars from "handlebars";
+import { getNpmPackageVersion } from "./helpers/npm.helpers";
 
 class TemplateCompiler {
   async canCompileAuthenticationTemplates(config: ProjectConfig) {
@@ -11,7 +12,7 @@ class TemplateCompiler {
   filesToBeSkipped(config: ProjectConfig) {
     const files: string[] = [];
 
-    if (config.authentication.type === "define later")
+    if (config.authentication?.type === "define later")
       files.push(...["user.prisma.hbs"]);
 
     if (config.authentication?.type === "static")
@@ -24,6 +25,8 @@ class TemplateCompiler {
       );
 
     if (!config.typescript) files.push(...["tsconfig.json.hbs"]);
+
+    if (config?.typescript) files.push(...["jsconfig.json.hbs"]);
 
     return files;
   }
@@ -54,9 +57,9 @@ class TemplateCompiler {
             fs.readFileSync(templatePath, "utf8")
           );
 
-          let arkosLatestVersion = "1.0.0";
+          let arkosCurrentVersion = getNpmPackageVersion("arkos");
 
-          const content = template({ ...config, arkosLatestVersion });
+          const content = template({ ...config, arkosCurrentVersion });
           const ext = isTypescript ? ".ts" : ".js";
 
           let outputPath = path.join(

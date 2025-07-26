@@ -26,7 +26,7 @@ model User {
   {{/if}}
   {{/if}}
   createdAt            DateTime @default(now())
-  updatedAt            DateTime {{#if (eq prisma.provider "mongodb")}}@updatedAt{{else}}@default(now()){{/if}}
+  updatedAt            DateTime @updatedAt
 
   // other fields for your application
 }

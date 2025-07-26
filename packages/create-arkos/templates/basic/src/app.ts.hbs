@@ -16,5 +16,10 @@ arkos.init({
   validation: {
     resolver: '{{validation.type}}'
   },
+  {{#if (neq validation.type "")}}
+  swagger: {
+    mode: '{{validation.type}}'
+  }
+  {{/if}}
   {{/if}}
 });
