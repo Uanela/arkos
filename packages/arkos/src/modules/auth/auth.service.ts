@@ -330,13 +330,6 @@ export class AuthService {
 
     const user: any | null = await (prisma as any).user.findUnique({
       where: { id: String(decoded.id) },
-      select: {
-        id: true,
-        passwordChangedAt: true,
-        isActive: true,
-        deletedSelfAccountAt: true,
-        isSuperUser: true,
-      },
     });
 
     if (!user)

@@ -30,75 +30,65 @@ import { catchAsync } from "arkos/error-handler";`
   if (isAuth) {
     return `${baseImports}
 
-// export const beforeGetMe = catchAsync(
+// export const beforeGetMe = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterGetMe = catchAsync(
+// export const afterGetMe = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeLogin = catchAsync(
+// export const beforeLogin = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterLogin = catchAsync(
+// export const afterLogin = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeLogout = catchAsync(
+// export const beforeLogout = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterLogout = catchAsync(
+// export const afterLogout = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeSignup = catchAsync(
+// export const beforeSignup = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterSignup = catchAsync(
+// export const afterSignup = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeUpdatePassword = catchAsync(
+// export const beforeUpdatePassword = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterUpdatePassword = catchAsync(
+// export const afterUpdatePassword = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 `;
   }
 
@@ -106,172 +96,149 @@ import { catchAsync } from "arkos/error-handler";`
     return `${baseImports}
 
 
-// export const beforeFindFile = catchAsync(
+// export const beforeFindFile = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
 // There is not afterFindFile: because the main handler is handleded by express.static()
 
-// export const beforeUploadFile = catchAsync(
+// export const beforeUploadFile = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterUploadFile = catchAsync(
+// export const afterUploadFile = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeUpdateFile = catchAsync(
+// export const beforeUpdateFile = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterUpdateFile = catchAsync(
+// export const afterUpdateFile = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeDeleteFile = catchAsync(
+// export const beforeDeleteFile = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterDeleteFile = catchAsync(
+// export const afterDeleteFile = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 `;
   }
 
   // Regular model middlewares
   return `${baseImports}
 
-// export const beforeCreateOne = catchAsync(
+// export const beforeCreateOne = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterCreateOne = catchAsync(
+// export const afterCreateOne = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeFindOne = catchAsync(
+// export const beforeFindOne = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterFindOne = catchAsync(
+// export const afterFindOne = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeFindMany = catchAsync(
+// export const beforeFindMany = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterFindMany = catchAsync(
+// export const afterFindMany = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeUpdateOne = catchAsync(
+// export const beforeUpdateOne = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterUpdateOne = catchAsync(
+// export const afterUpdateOne = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeDeleteOne = catchAsync(
+// export const beforeDeleteOne = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterDeleteOne = catchAsync(
+// export const afterDeleteOne = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeCreateMany = catchAsync(
+// export const beforeCreateMany = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterCreateMany = catchAsync(
+// export const afterCreateMany = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeUpdateMany = catchAsync(
+// export const beforeUpdateMany = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterUpdateMany = catchAsync(
+// export const afterUpdateMany = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const beforeDeleteMany = catchAsync(
+// export const beforeDeleteMany = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 
-// export const afterDeleteMany = catchAsync(
+// export const afterDeleteMany = 
 //   async (${functionParams}) => {
 //     // Your logic here
 //     next();
 //   }
-// );
 `;
 }

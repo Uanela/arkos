@@ -7,6 +7,7 @@ import projectConfigInquirer from "./utils/project-config-inquirer";
 import templateCompiler from "./utils/template-compiler";
 import Handlebars from "handlebars";
 import { detectPackageManagerFromUserAgent } from "@arkos/shared";
+import { getProcjetPackageJsonDependecies } from "./utils/helpers";
 
 Handlebars.registerHelper("eq", (a, b) => a === b);
 Handlebars.registerHelper("neq", (a, b) => a !== b);
@@ -19,7 +20,7 @@ async function main() {
   fs.mkdirSync(projectPath, { recursive: true });
 
   console.info(
-    `\nCreating a new ${chalk.bold(chalk.cyan("Arkos.js"))} project in ${chalk.green(`./${config.projectName}`)}`
+    `\nCreating a new ${chalk.bold(chalk.cyan("Arkos.js"))} project under ${chalk.green(`./${config.projectName}`)}`
   );
 
   const templatesDir = path.join(__dirname, `../templates/basic`);
@@ -28,13 +29,24 @@ async function main() {
   process.chdir(projectPath);
 
   const packageManager = detectPackageManagerFromUserAgent();
+  const { dependencies, devDependencies } =
+    getProcjetPackageJsonDependecies(projectPath);
+
+  console.info(chalk.bold("\ndependencies:"));
+  dependencies.forEach((dependency) => console.info(`- ${dependency}`));
+
+  console.info(chalk.bold("\ndevDependencies:"));
+  devDependencies.forEach((devDependency) =>
+    console.info(`- ${devDependency}`)
+  );
 
   console.info("\nInstalling dependencies...");
-  console.info(`\nUsing ${packageManager}.\n`);
+  console.info(`Using ${packageManager}.\n`);
 
   execSync(`${packageManager} install`, { stdio: "inherit" });
 
-  console.info("\nRunning: npx prisma generate");
+  process.chdir(projectPath);
+  console.info("\nRunning npx prisma generate...");
   execSync(`npx prisma generate`, { stdio: "inherit" });
 
   console.info(`
@@ -44,8 +56,7 @@ async function main() {
   1. cd ${config.projectName}
   2. setup your ${chalk.cyan("DATABASE_URL")} under .env
   3. npx prisma db push
-  4. npx prisma generate
-  5. npm run dev
+  4. ${packageManager} run dev
     `);
 }
 

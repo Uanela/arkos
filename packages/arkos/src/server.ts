@@ -6,6 +6,7 @@ import { ArkosConfig } from "./types/arkos-config";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import http from "http";
 import sheu from "./utils/sheu";
+import { initializePrismaModels } from "./utils/helpers/models.helpers";
 
 process.on("uncaughtException", (err) => {
   if (err.message.includes("EPIPE")) return;
@@ -45,6 +46,7 @@ let _arkosConfig: ArkosConfig & { available?: boolean } = {
  *
  */
 async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
+  initializePrismaModels();
   _arkosConfig.available = true;
   _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
 

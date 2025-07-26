@@ -1,0 +1,13 @@
+{
+  "name": "@arkos/shared",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "module": "src/index.js",
+  "private": true,
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0"
+  }
+}

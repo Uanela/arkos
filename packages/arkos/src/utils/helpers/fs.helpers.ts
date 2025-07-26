@@ -74,7 +74,7 @@ export const getUserFileExtension = (): "ts" | "js" => {
  * ```ts
  * const exists = checkFileExists('./path/to/file.txt');
  * if (exists) {
- *   console.log('File exists!');
+ *   console.info('File exists!');
  * }
  * ```
  */

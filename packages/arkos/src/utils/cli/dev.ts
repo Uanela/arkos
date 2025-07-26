@@ -107,7 +107,6 @@ export async function devCommand(options: DevOptions = {}) {
             ".build/",
             "--delay",
             "1000ms",
-            "--no-stdin",
             entryPoint,
           ],
           {
@@ -198,6 +197,9 @@ export async function devCommand(options: DevOptions = {}) {
             /build/,
             /\.env.*/,
           ],
+          awaitWriteFinish: {
+            stabilityThreshold: 1000,
+          },
         }
       );
 
@@ -255,7 +257,7 @@ export async function devCommand(options: DevOptions = {}) {
       while (attempts < maxAttempts) {
         const ready = await checkConfig();
         if (ready) break;
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         attempts++;
       }
 

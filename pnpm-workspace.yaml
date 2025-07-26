@@ -1,0 +1,11 @@
+packages:
+  - packages/*
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@scarf/scarf'
+  - core-js
+  - core-js-pure
+  - esbuild
+  - prisma
+  - sharp
