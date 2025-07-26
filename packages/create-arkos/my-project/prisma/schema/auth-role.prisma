@@ -1,5 +1,5 @@
 model AuthRole {
-  id          String          {{prisma.idDatabaseType}}
+  id          String          @id @default(cuid())
   name        String          @unique
   description String?
   permissions AuthPermission[]

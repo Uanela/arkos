@@ -20,7 +20,7 @@ model AuthPermission {
   role      AuthRole  @relation(fields: [roleId], references: [id])
   description String?
   createdAt DateTime  @default(now())
-  updatedAt DateTime  {{#if (eq prisma.provider "mongodb")}}@updatedAt{{else}}@default(now()){{/if}}
+  updatedAt DateTime  @updatedAt
 
   @@unique([resource, action, roleId])
 }

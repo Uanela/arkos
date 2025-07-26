@@ -22,6 +22,7 @@ export interface ProjectConfig {
       | "cockroachdb"
       | "mongodb";
     idDatabaseType: string;
+    defaultDBurl: string;
   };
   projectPath: string;
 }
@@ -49,6 +50,11 @@ class ProjectConfigInquirer {
   private async promptProjectName() {
     let projectName = process.argv[2];
 
+    // If user passed ".", use current directory name
+    if (projectName === ".") {
+      projectName = path.basename(process.cwd());
+    }
+
     if (!projectName) {
       const result = await inquirer.prompt([
         {
@@ -56,13 +62,54 @@ class ProjectConfigInquirer {
           name: "projectName",
           message: "What is the name of your project?",
           default: "my-arkos-project",
-          validate: (input) =>
-            input.length > 0 ? true : "Project name cannot be empty",
+          validate: this.validateProjectName,
         },
       ]);
       projectName = result.projectName;
+    } else {
+      // Validate the project name from command line args
+      const validation = this.validateProjectName(projectName);
+      if (validation !== true) {
+        console.error(chalk.red(`Error: ${validation}`));
+        process.exit(1);
+      }
     }
+
     this.config.projectName = projectName;
+  }
+
+  private validateProjectName(input: string): boolean | string {
+    if (!input || input.length === 0) {
+      return "Project name cannot be empty";
+    }
+
+    // Check for valid characters (letters, numbers, hyphens, underscores)
+    if (!/^[a-zA-Z0-9_-]+$/.test(input)) {
+      return "Project name can only contain letters, numbers, hyphens, and underscores";
+    }
+
+    // Check if it starts with a letter or number (not hyphen or underscore)
+    if (!/^[a-zA-Z0-9]/.test(input)) {
+      return "Project name must start with a letter or number";
+    }
+
+    // Check if it ends with a letter or number (not hyphen or underscore)
+    if (!/[a-zA-Z0-9]$/.test(input)) {
+      return "Project name must end with a letter or number";
+    }
+
+    // Check length (reasonable limits)
+    if (input.length > 50) {
+      return "Project name must be 50 characters or less";
+    }
+
+    // Check for reserved names
+    const reservedNames = ["node_modules"];
+    if (reservedNames.includes(input.toLowerCase())) {
+      return "Project name cannot be a reserved name";
+    }
+
+    return true;
   }
 
   private async promptTypescript() {
@@ -96,21 +143,42 @@ class ProjectConfigInquirer {
 
     // Set the correct idDatabaseType based on provider
     let idDatabaseType: string;
+    let defaultDBurl: string;
 
     switch (prismaProvider) {
       case "mongodb":
         idDatabaseType = '@id @default(auto()) @map("_id") @db.ObjectId';
+        defaultDBurl = `mongodb://localhost:27017/${this.config.projectName}`;
         break;
       case "sqlite":
         idDatabaseType = "@id @default(cuid())";
+        defaultDBurl = "file:../file.db";
+        break;
+      case "mysql":
+        idDatabaseType = "@id @default(uuid())";
+        defaultDBurl = `mysql://username:password@localhost:3306/${this.config.projectName}`;
+        break;
+      case "postgresql":
+        idDatabaseType = "@id @default(uuid())";
+        defaultDBurl = `postgresql://username:password@localhost:5432/${this.config.projectName}`;
+        break;
+      case "sqlserver":
+        idDatabaseType = "@id @default(uuid())";
+        defaultDBurl = `sqlserver://localhost:1433;database=${this.config.projectName};username=sa;password=password;encrypt=DANGER_PLAINTEXT`;
+        break;
+      case "cockroachdb":
+        idDatabaseType = "@id @default(uuid())";
+        defaultDBurl = `postgresql://username:password@localhost:26257/${this.config.projectName}?sslmode=require`;
         break;
       default:
         idDatabaseType = "@id @default(uuid())";
+        defaultDBurl = `postgresql://username:password@localhost:5432/${this.config.projectName}`;
     }
 
     this.config.prisma = {
       provider: prismaProvider,
       idDatabaseType: idDatabaseType,
+      defaultDBurl: defaultDBurl,
     };
   }
 

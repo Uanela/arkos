@@ -1,6 +1,6 @@
 {
   "name": "create-arkos",
-  "version": "0.0.13",
+  "version": "0.0.15",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
     "create-arkos": "./dist/index.js"
