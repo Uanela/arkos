@@ -4,7 +4,7 @@ import { execSync } from "child_process";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { getVersion } from "./utils/cli.helpers";
-import { detectPackageManagerFromUserAgent } from "@arkos/shared";
+import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
 
 // Constants
 const BUILD_DIR = ".build";

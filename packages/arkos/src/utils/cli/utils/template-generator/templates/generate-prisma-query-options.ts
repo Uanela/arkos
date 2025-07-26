@@ -47,16 +47,22 @@ export default ${modelName.camel}QueryOptions;
     return `${prismaImport}${imports};
 
 const ${modelName.camel}QueryOptions${typeAnnotation} = {
-  // for all queries
-  queryOptions: {},
-  findOne: {},
-  findMany: {},
-  deleteMany: {},
-  updateMany: {},
-  createMany: {},
-  createOne: {},
-  updateOne: {},
-  deleteOne: {},
+    global: {},
+    find: {},
+    findOne: {},
+    findMany: {},
+    udpate: {},
+    updateMany: {},
+    updateOne: {},
+    create: {},
+    createMany: {},
+    createOne: {},
+    save: {},
+    saveMany: {},
+    saveOne: {},
+    delete: {},
+    deleteMany: {},
+    deleteOne: {},
 }
 
 export default ${modelName.camel}QueryOptions;

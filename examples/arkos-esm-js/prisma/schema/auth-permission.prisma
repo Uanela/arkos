@@ -1,0 +1,15 @@
+
+model AuthPermission {
+  id        String   @id @default(cuid())
+  resource  String
+  action    String   @default("View") 
+  roleId    String    
+  role      AuthRole  @relation(fields: [roleId], references: [id])
+  description String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now())
+
+  @@unique([resource, action, roleId])
+}
+
+

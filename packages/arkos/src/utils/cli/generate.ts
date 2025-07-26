@@ -45,8 +45,8 @@ export const generateCommand = {
       });
 
       fs.writeFileSync(filePath, content);
-      console.log(
-        `\nController generated: ${filePath.replace(process.cwd(), "")}`
+      console.info(
+        `\nntroller generated: ${filePath.replace(process.cwd(), "")}`
       );
     } catch (error) {
       console.error(`❌ Failed to generate controller:`, error);
@@ -84,7 +84,7 @@ export const generateCommand = {
       });
 
       fs.writeFileSync(filePath, content);
-      console.log(`\n✅ Service generated: ${filePath}`);
+      console.info(`\n✅ Service generated: ${filePath}`);
     } catch (error) {
       console.error(`❌ Failed to generate service:`, error);
       process.exit(1);
@@ -122,8 +122,8 @@ export const generateCommand = {
       });
 
       fs.writeFileSync(filePath, content);
-      console.log(
-        `\n✅ Router generated: ${filePath.replace(process.cwd(), "")}`
+      console.info(
+        `\nRouter generated: ${filePath.replace(process.cwd(), "")}`
       );
     } catch (error) {
       console.error(`❌ Failed to generate router:`, error);
@@ -162,7 +162,7 @@ export const generateCommand = {
       });
 
       fs.writeFileSync(filePath, content);
-      console.log(`\n✅ Middleware generated: ${filePath}`);
+      console.info(`\nMiddlewares generated: ${filePath}`);
     } catch (error) {
       console.error(`❌ Failed to generate middleware:`, error);
       process.exit(1);
@@ -189,8 +189,8 @@ export const generateCommand = {
       const content = generateTemplate("auth-configs", { modelName: names });
 
       fs.writeFileSync(filePath, content);
-      console.log(
-        `\n✅ Auth config generated: ${filePath.replace(process.cwd(), "")}`
+      console.info(
+        `\nAuth config generated: ${filePath.replace(process.cwd(), "")}`
       );
     } catch (error) {
       console.error(`❌ Failed to generate auth config:`, error);
@@ -230,8 +230,8 @@ export const generateCommand = {
       const content = generateTemplate("query-options", { modelName: names });
 
       fs.writeFileSync(filePath, content);
-      console.log(
-        `\n✅ Query config generated: ${filePath.replace(process.cwd(), "")}`
+      console.info(
+        `\nQuery config generated: ${filePath.replace(process.cwd(), "")}`
       );
     } catch (error) {
       console.error(`❌ Failed to generate query config:`, error);

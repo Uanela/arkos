@@ -1,12 +1,12 @@
 {
   "name": "create-arkos",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
     "create-arkos": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsc",
     "dev": "ts-node src/index.ts",
     "test:hbs": "ts-node src/utils/helpers/hbs-tester.helpers.ts",
     "prebuild": "pnpm --filter @arkos/shared build",

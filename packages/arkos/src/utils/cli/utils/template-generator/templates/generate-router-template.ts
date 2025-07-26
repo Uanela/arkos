@@ -15,6 +15,10 @@ export function generateRouterTemplate(options: TemplateOptions): string {
   const controllerPath =
     imports?.controller || `./${modelName.kebab}.controller.${ext}`;
 
+  const routerConfigTsType = ext === "ts" ? ": RouterConfig" : "";
+  const routerConfigTsTypeImport =
+    ext === "ts" ? "import { RouterConfig } from 'arkos'" : "";
+
   const controllerExists = checkFileExists(controllerPath);
 
   const controllerImportLine = controllerExists
@@ -32,6 +36,9 @@ export function generateRouterTemplate(options: TemplateOptions): string {
   return `import { Router } from 'express'
 import { authService } from 'arkos/services'
 ${controllerImportLine}
+${routerConfigTsTypeImport}
+
+export const config${routerConfigTsType} = { }
 
 const ${modelName.camel}Router = Router()
 

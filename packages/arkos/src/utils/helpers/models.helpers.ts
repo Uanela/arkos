@@ -10,7 +10,8 @@ import { importModule } from "./global.helpers";
 import { AuthConfigs } from "../../types/auth";
 import { killServerChildProcess } from "../cli/utils/cli.helpers";
 
-export let prismaModelsModules: Record<
+// Must be exported to not cause problems on cjs
+let prismaModelsModules: Record<
   string,
   Awaited<ReturnType<typeof importPrismaModelModules>>
 > = {};
@@ -92,7 +93,7 @@ export async function processSubdir(
       Object.entries(fileStructure[type]).map(async ([key, fileName]) => {
         const filePath = path.join(subdir, fileName);
         try {
-          const module = await import(filePath).catch(() => null);
+          const module = await importModule(filePath).catch(() => null);
           if (module) result[type][key] = module.default;
         } catch (error) {
           // Silent fail - file might not exist
@@ -251,8 +252,10 @@ export async function importPrismaModelModules(
     processSubdir(modelName, "schemas", result),
   ]);
 
+  // Removed because caused problems with cached ZObjects
   // Cache the result making shallow copy to not cause problems after build
-  prismaModelsModules[modelName] = JSON.parse(JSON.stringify(result));
+  // prismaModelsModules[modelName] = JSON.parse(JSON.stringify(result));
+  prismaModelsModules[modelName] = result;
 
   return result;
 }
@@ -326,14 +329,15 @@ export function initializePrismaModels() {
       return `model ${modelName} {`;
     });
 
+  const copiedContent = content;
   prismaSchemasContent = content;
 
   for (const model of models) {
     const modelName = pascalCase(model);
 
-    const modelStart = content.indexOf(`model ${modelName} {`);
-    const modelEnd = content.indexOf("}", modelStart);
-    const modelDefinition = content.slice(modelStart, modelEnd);
+    const modelStart = copiedContent.indexOf(`model ${modelName} {`);
+    const modelEnd = copiedContent.indexOf("}", modelStart);
+    const modelDefinition = copiedContent.slice(modelStart, modelEnd);
 
     const relations: RelationFields = {
       singular: [],
@@ -380,8 +384,8 @@ export function initializePrismaModels() {
         trimmedLine.match(/\s+\w+(\[\])?(\s+@|$)/) ||
         models?.includes?.(camelCase(cleanType || ""))
       ) {
-        const enumStart = content.indexOf(`enum ${cleanType} {`);
-        const typeStart = content.indexOf(`type ${cleanType} {`);
+        const enumStart = copiedContent.indexOf(`enum ${cleanType} {`);
+        const typeStart = copiedContent.indexOf(`type ${cleanType} {`);
 
         if (
           !cleanType ||
@@ -396,8 +400,6 @@ export function initializePrismaModels() {
           cleanType === "Decimal" ||
           cleanType === "BigInt" ||
           cleanType === "Json"
-
-          // && !content.includes?.(`model ${cleanType} {`)
         ) {
           continue;
         }
@@ -420,7 +422,7 @@ export function initializePrismaModels() {
   }
 }
 
-initializePrismaModels();
+// initializePrismaModels();
 
 /**
  * Retrieves the relations for a given Prisma model.

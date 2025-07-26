@@ -1,8 +1,7 @@
 {
   "name": "arkos",
-  "version": "1.2.4-beta",
+  "version": "1.2.8-beta",
   "description": "The Express & Prisma Framework For RESTful API",
-  "type": "module",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
   "types": "dist/types/exports/index.d.ts",
@@ -81,8 +80,6 @@
     "build:esm": "tsc -p tsconfig.esm.json && ts-node scripts/fix-esm-imports.ts",
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "postbuilda:cjs": "echo {\\\"type\":\"commonjs\\\"} > dist/cjs/package.json",
-    "postbuilda:esm": "echo {\\\"type\":\"module\\\"} > dist/esm/package.json",
     "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && pnpm run minify",
     "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "clean": "rm -r dist",
@@ -115,7 +112,8 @@
     "dynamic API routes",
     "Prisma ORM",
     "image upload",
-    "API middleware"
+    "API middleware",
+    "create-arkos"
   ],
   "author": "Uanela Como",
   "license": "MIT",
@@ -163,8 +161,7 @@
     "pluralize": "^8.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "zod-to-json-schema": "^3.24.6",
-    "@arkos/shared": "workspaces:*"
+    "zod-to-json-schema": "^3.24.6"
   },
   "peerDependencies": {
     "@prisma/client": "^6.4.1",

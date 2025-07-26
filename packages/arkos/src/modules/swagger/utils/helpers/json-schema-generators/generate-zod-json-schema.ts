@@ -6,11 +6,11 @@ import zodToJsonSchema from "zod-to-json-schema";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
 
 export async function generateZodJsonSchemas() {
-  const models = getModels();
+  const models = [...getModels(), "file-upload", "auth"];
+  const schemas: Record<string, any> = {};
 
   models.forEach((modelName) => {
     const modelModules = getModelModules(modelName);
-    const schemas: Record<string, any> = {};
 
     if (modelModules?.schemas)
       Object.entries(modelModules.schemas).forEach(
@@ -23,7 +23,6 @@ export async function generateZodJsonSchemas() {
                 modelName,
                 "Schema"
               );
-
               schemas[schemaName] = jsonSchema;
             } catch (error) {
               console.warn(
@@ -34,4 +33,6 @@ export async function generateZodJsonSchemas() {
         }
       );
   });
+
+  return schemas;
 }

@@ -11,16 +11,19 @@ class TemplateCompiler {
   filesToBeSkipped(config: ProjectConfig) {
     const files: string[] = [];
 
-    if (config.authentication.type !== "define later")
-      files.concat(...["user.prisma.hbs"]);
+    if (config.authentication.type === "define later")
+      files.push(...["user.prisma.hbs"]);
 
     if (config.authentication?.type === "static")
-      files.concat(...["auth-role.prisma.hbs", "auth-permission.prisma.hbs"]);
+      files.push(
+        ...[
+          "auth-role.prisma.hbs",
+          "auth-permission.prisma.hbs",
+          "user-role.prisma.hbs",
+        ]
+      );
 
-    if (!config.typescript) files.concat(...["tsconfig.json.hbs"]);
-
-    if (config.authentication.type === "dynamic")
-      files.concat(...["user-role.prisma.hbs"]);
+    if (!config.typescript) files.push(...["tsconfig.json.hbs"]);
 
     return files;
   }
