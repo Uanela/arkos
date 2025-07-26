@@ -67,13 +67,13 @@ The **Arkos** auth router implements a sophisticated conditional middleware exec
 
 1. Before anything incoming data is validated through DTO's or schemas according to you configs, see [Authentication Data Validation Guide](/docs/guide/authentication-system/authentication-data-validation) to understand.
 2. Arkos checks if a `before` middleware exists:
-   - If it exists, it runs before the controller action
-   - If not, the controller action runs immediately
+    - If it exists, it runs before the controller action
+    - If not, the controller action runs immediately
 3. After the controller action:
-   - If both `before` and `after` middlewares exist, the `after` middleware runs
-   - If only the `before` middleware exists, the response is sent directly
-   - If only the `after` middleware exists, it runs after the controller
-   - If no middlewares exist, the response is sent directly
+    - If both `before` and `after` middlewares exist, the `after` middleware runs
+    - If only the `before` middleware exists, the response is sent directly
+    - If only the `after` middleware exists, it runs after the controller
+    - If no middlewares exist, the response is sent directly
 4. Finally, the `sendResponse` middleware sends the prepared response
 
 This flow ensures that interceptors can work independently or together as needed.
@@ -89,41 +89,41 @@ import { catchAsync, AppError } from "arkos/error-handler";
 
 // Before Middleware Example
 export const beforeLogin = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Custom pre-login logic
-    console.log("Login attempt:", req.body.username || req.body.email);
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Custom pre-login logic
+        console.log("Login attempt:", req.body.username || req.body.email);
 
-    // Example: Add rate limiting by IP or additional validation
-    if (someCondition) {
-      throw new AppError("Custom login validation failed", 400);
+        // Example: Add rate limiting by IP or additional validation
+        if (someCondition) {
+            throw new AppError("Custom login validation failed", 400);
+        }
+
+        // Always call next() to proceed to the controller
+        next();
     }
-
-    // Always call next() to proceed to the controller
-    next();
-  }
 );
 
 // After Middleware Example
 export const afterLogin = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // The controller has already run at this point
-    // req.responseData contains the data that will be sent to the client
-    // req.responseStatus contains the status code
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // The controller has already run at this point
+        // req.responseData contains the data that will be sent to the client
+        // req.responseStatus contains the status code
 
-    // Example: Add additional data to the response
-    // This one is already done behind the scenes
-    req.responseData.lastLogin = new Date();
+        // Example: Add additional data to the response
+        // This one is already done behind the scenes
+        req.responseData.lastLogin = new Date();
 
-    // Example: Log successful logins
-    await logSuccessfulLogin(req.responseData);
-    // Avoid awaiting something that will not affect the responseData
-    // Or the user does not need to wait it finish to procced
-    // Try to always use then().catch() for better UX.
+        // Example: Log successful logins
+        await logSuccessfulLogin(req.responseData);
+        // Avoid awaiting something that will not affect the responseData
+        // Or the user does not need to wait it finish to procced
+        // Try to always use then().catch() for better UX.
 
-    // Always call next() to proceed to sendResponse
-    // or send the response by yourself
-    next();
-  }
+        // Always call next() to proceed to sendResponse
+        // or send the response by yourself
+        next();
+    }
 );
 ```
 
@@ -155,7 +155,19 @@ my-arkos-project/
             └── auth.middlewares.ts
 ```
 
-Arkos automatically detects and loads these middlewares and uses on the built-in auth router.
+Arkos automatically detects and loads these middlewares and uses on the built-in auth router. Is also worth mentioning that you can quickly generate authentication interceptor middlewares by using Arkos built-in cli commands:
+
+```bash
+npx arkos generate middlwares --model auth
+```
+
+**Shorthand**
+
+```bash
+npx arkos g m -m auth
+```
+
+> You can, if you wish read more about the built-in Arkos.js cli that was introduced at v1.2-beta at [Built-in Arkos Cli](/docs/cli/built-in-cli).
 
 ## Advanced Examples
 
@@ -170,43 +182,43 @@ import { emailService } from "../email/email.services.ts";
 
 // Before Signup: Validate and prepare data
 export const beforeSignup = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Validate email format
-    const { email } = req.body;
-    if (!isValidEmail(email)) {
-      throw new AppError("Invalid email format", 400);
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Validate email format
+        const { email } = req.body;
+        if (!isValidEmail(email)) {
+            throw new AppError("Invalid email format", 400);
+        }
+
+        // Generate verification token
+        req.body.verificationToken = crypto.randomBytes(32).toString("hex");
+        req.body.verificationTokenExpires = new Date(
+            Date.now() + 24 * 60 * 60 * 1000
+        ); // 24 hours
+
+        next();
     }
-
-    // Generate verification token
-    req.body.verificationToken = crypto.randomBytes(32).toString("hex");
-    req.body.verificationTokenExpires = new Date(
-      Date.now() + 24 * 60 * 60 * 1000
-    ); // 24 hours
-
-    next();
-  }
 );
 
 // After Signup: Send verification email
 export const afterSignup = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const { email, verificationToken } = req.responseData.data;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const { email, verificationToken } = req.responseData.data;
 
-    // Send verification email
-    // The built-in emailService provides a `send()` method
-    // You must implement the method `sendVerificationEmail`
-    await emailService.sendVerificationEmail(email, verificationToken);
+        // Send verification email
+        // The built-in emailService provides a `send()` method
+        // You must implement the method `sendVerificationEmail`
+        await emailService.sendVerificationEmail(email, verificationToken);
 
-    // Modify response to hide sensitive data
-    delete req.responseData.data.verificationToken;
-    delete req.responseData.data.verificationTokenExpires;
+        // Modify response to hide sensitive data
+        delete req.responseData.data.verificationToken;
+        delete req.responseData.data.verificationTokenExpires;
 
-    // Add message to response
-    req.responseData.message =
-      "Signup successful! Please check your email to verify your account.";
+        // Add message to response
+        req.responseData.message =
+            "Signup successful! Please check your email to verify your account.";
 
-    next();
-  }
+        next();
+    }
 );
 ```
 
@@ -215,43 +227,43 @@ export const afterSignup = catchAsync(
 ```ts
 // Before Login: Track login attempts
 export const beforeLogin = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const { email, username } = req.body;
-    const identifier = email || username;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const { email, username } = req.body;
+        const identifier = email || username;
 
-    // Track login attempts in Redis or database
-    const attempts = await incrementLoginAttempts(identifier, req.ip);
+        // Track login attempts in Redis or database
+        const attempts = await incrementLoginAttempts(identifier, req.ip);
 
-    // Block if too many failed attempts
-    if (attempts > 5) {
-      throw new AppError(
-        "Too many failed login attempts. Try again later.",
-        429
-      );
+        // Block if too many failed attempts
+        if (attempts > 5) {
+            throw new AppError(
+                "Too many failed login attempts. Try again later.",
+                429
+            );
+        }
+
+        next();
     }
-
-    next();
-  }
 );
 
 // After Login: Reset login attempts and log activity
 export const afterLogin = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const user = req.responseData;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const user = req.responseData;
 
-    // Reset failed login attempts
-    await resetLoginAttempts(user.email);
+        // Reset failed login attempts
+        await resetLoginAttempts(user.email);
 
-    // Log successful login
-    await createLoginAuditLog({
-      userId: user.id,
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
-      timestamp: new Date(),
-    });
+        // Log successful login
+        await createLoginAuditLog({
+            userId: user.id,
+            ip: req.ip,
+            userAgent: req.headers["user-agent"],
+            timestamp: new Date(),
+        });
 
-    next();
-  }
+        next();
+    }
 );
 ```
 

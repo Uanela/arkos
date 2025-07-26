@@ -11,16 +11,19 @@ sidebar_position: 5
 The file upload system in Arkos allows you to:
 
 - Upload multiple files at once
+- Update existing files with automatic old file cleanup
 - Define file size limits and supported file types
 - Process and optimize images (resize, format conversion)
 - Delete uploaded files
 - Configure custom upload directories
+- Use interceptor middlewares for custom processing logic
 
-## Basic Usage
+## Available Endpoints
 
 By default, Arkos exposes the following file upload endpoints:
 
 - `POST /api/uploads/:fileType` - Upload files of a specific type
+- `PATCH /api/uploads/:fileType/:fileName` - Update/replace existing files
 - `DELETE /api/uploads/:fileType/:fileName` - Delete a specific file
 
 Where `:fileType` can be one of:
@@ -30,7 +33,9 @@ Where `:fileType` can be one of:
 - `documents` - For document files
 - `files` - For any other file type
 
-### Example: Uploading Images
+## Basic File Operations
+
+### Uploading Files
 
 ```ts
 // Using fetch API
@@ -46,29 +51,54 @@ fetch("http://localhost:8000/api/uploads/images", {
 ```
 
 :::info FormData Fields
-Pay attention to the FormData fields, even though we want to upload only one single image we must the field as `images` and the same applies for other supported by default files (`videos`, `documents`) and overall `files`.
+Pay attention to the FormData fields, even though we want to upload only one single image we must use the field as `images` and the same applies for other supported by default files (`videos`, `documents`) and overall `files`.
 :::
 
-:::tip
-To upload and manipulate other file types only changes from `images` to other file types for example `videos`.
-:::
+### Updating/Replacing Files
 
-### Example: Uploading Videos
+The `PATCH /api/uploads/:fileType/:fileName` endpoint provides intelligent file replacement:
 
 ```ts
-// Using fetch API
+// Replace an existing image
 const formData = new FormData();
-formData.append("videos", videoFile);
+formData.append("images", newImageFile);
 
-fetch("http://localhost:8000/api/uploads/videos", {
-  method: "POST",
+fetch("http://localhost:8000/api/uploads/images/old-image.jpg", {
+  method: "PATCH",
   body: formData,
 })
   .then((response) => response.json())
   .then((data) => console.log(data));
 ```
 
-### Example: Deleting a File
+**How the Auto-Update Endpoint Works:**
+
+1. **Automatic Cleanup**: Deletes the old file (if it exists) before uploading the new one
+2. **Intelligent Processing**: Processes the new file with the same logic as regular uploads
+3. **Multiple File Support**: Supports both single and multiple file replacements
+4. **Universal File Type Support**: Works with images, videos, documents, and general files
+5. **Error Handling**: Provides appropriate error messages for missing old files
+6. **Smart Response**: Returns different success messages based on whether it replaced an existing file or created a new one
+
+**Response Examples:**
+
+```json
+// When replacing an existing file
+{
+  "success": true,
+  "message": "File replaced successfully",
+  "urls": ["http://localhost:8000/uploads/images/new-image.jpg"]
+}
+
+// When the old file doesn't exist (acts like regular upload)
+{
+  "success": true,
+  "message": "File uploaded successfully",
+  "urls": ["http://localhost:8000/uploads/images/new-image.jpg"]
+}
+```
+
+### Deleting Files
 
 ```ts
 fetch("http://localhost:8000/api/uploads/images/1234567890-image.jpg", {
@@ -93,7 +123,225 @@ fetch("http://localhost:8000/api/uploads/images?width=500&format=webp", {
   method: "POST",
   body: formData,
 });
+
+// Example: Update an image with processing
+fetch("http://localhost:8000/api/uploads/images/old-image.jpg?resizeTo=800&format=webp", {
+  method: "PATCH",
+  body: formData,
+});
 ```
+
+## File Upload Interceptor Middlewares
+
+Arkos provides a powerful middleware system that gives you complete control over the file upload request processing flow. These interceptors allow you to execute custom logic before and after each file operation.
+
+### Available Interceptors
+
+The middleware system provides interceptors for all file operations:
+
+#### Upload Interceptors
+- `beforeUploadFile` - Execute logic before file upload
+- `afterUploadFile` - Execute logic after file upload
+
+#### Update Interceptors  
+- `beforeUpdateFile` - Execute logic before file update/replacement
+- `afterUpdateFile` - Execute logic after file update/replacement
+
+#### Delete Interceptors
+- `beforeDeleteFile` - Execute logic before file deletion
+- `afterDeleteFile` - Execute logic after file deletion
+
+#### Find Interceptors
+- `beforeFindFile` - Execute logic before file serving/retrieval
+
+### How Interceptor Middlewares Work
+
+The middleware system automatically chains your custom interceptors with the core file upload controller methods. Here's the execution flow:
+
+```
+Request → beforeUploadFile → Core Upload Logic → afterUploadFile → Response
+```
+
+### Implementing Interceptor Middlewares
+
+Create interceptor middlewares in your file upload module:
+
+```ts
+// src/modules/file-upload/file-upload.middlewares.ts
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const beforeUploadFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  // Custom validation before upload
+  console.log("About to upload files:", req.files);
+  
+  // Add custom headers or modify request
+  req.uploadMetadata = {
+    uploadedBy: req.user?.id,
+    uploadedAt: new Date(),
+  };
+  
+  next();
+};
+
+export const afterUploadFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  // Custom logic after successful upload
+  console.log("Files uploaded successfully:", req.responseData?.data);
+  
+  // Log to database, send notifications, etc.
+  await logFileUpload(req.responseData?.data, req.user?.id); // your custom function
+  
+  next();
+};
+
+export const beforeUpdateFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  const { fileName } = req.params;
+  
+  // Check permissions or backup old file
+  console.log(`About to replace file: ${fileName}`);
+  
+  // Store old file info for cleanup or rollback
+  req.oldFileInfo = await getFileInfo(fileName);
+  
+  next();
+};
+
+export const afterUpdateFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  // Custom logic after file replacement
+  console.log("File replacement completed");
+  
+  // Update database references or send notifications
+  await updateFileReferences(req.oldFileInfo, req.responseData?.data);
+  
+  next();
+};
+
+export const beforeDeleteFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  const { fileName } = req.params;
+  
+  // Check if file is still referenced in database
+  const isReferenced = await checkFileReferences(fileName);
+  if (isReferenced) {
+    return res.status(400).json({
+      error: "Cannot delete file: still referenced in database"
+    });
+  }
+  
+  next();
+};
+
+export const afterDeleteFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  // Log deletion or clean up related data
+  console.log("File deleted successfully");
+  
+  next();
+};
+
+export const beforeFindFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  // Add download tracking or access control
+  console.log("File access requested:", req.params.fileName);
+  
+  // Track downloads
+  await trackFileAccess(req.params.fileName, req.user?.id);
+  
+  next();
+};
+```
+
+### Advanced Interceptor Examples
+
+#### File Validation and Processing
+
+```ts
+export const beforeUploadFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  const files = req.files as Express.Multer.File[];
+  
+  // Custom file validation
+  for (const file of files) {
+    // Check file content (not just extension)
+    if (file.mimetype.startsWith('image/')) {
+      const isValidImage = await validateImageContent(file.buffer);
+      if (!isValidImage) {
+        return res.status(400).json({
+          error: `Invalid image file: ${file.originalname}`
+        });
+      }
+    }
+    
+    // Virus scanning
+    const isSafe = await scanForViruses(file.buffer); // your custom function
+    if (!isSafe) {
+      return res.status(400).json({
+        error: `Security threat detected in: ${file.originalname}`
+      });
+    }
+  }
+  
+  next();
+};
+```
+
+#### Database Integration
+
+```ts
+export const afterUploadFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  const uploadedFiles = req.responseData?.data;
+  
+  // Save file metadata to database
+  const fileRecords = uploadedFiles.map(url => ({
+    url,
+    uploadedBy: req.user?.id,
+    fileType: req.params.fileType,
+    originalName: req.files?.[0]?.originalname,
+    size: req.files?.[0]?.size,
+    uploadedAt: new Date(),
+  }));
+  
+  await prisma.fileUpload.createMany({
+    data: fileRecords
+  });
+  
+  next();
+};
+```
+
+#### Automatic Backup and Rollback
+
+```ts
+export const beforeUpdateFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  const { fileName } = req.params;
+  
+  // Create backup before replacement
+  try {
+    await createFileBackup(fileName); // your custom logic
+    req.backupCreated = true;
+  } catch (error) {
+    console.warn("Could not create backup:", error);
+    req.backupCreated = false;
+  }
+  
+  next();
+};
+```
+
+## Working with File Upload Services
+
+For programmatic file operations within your controllers and services, you can use the file upload services directly. See the [File Upload Services Function Guide](/docs/api-reference/file-upload-services-function-guide) for detailed usage examples.
+
+```ts
+import { getFileUploadServices } from "arkos/services";
+
+// Inside your controller or service
+const imageUrl = await getFileUploadServices().imageUploadService.upload(
+  req,
+  res,
+  {
+    format: "webp",
+    resizeTo: 500,
+  }
+);
+```
+
+For a complete API reference of the file upload controller methods, see the [File Upload Controller Object](/docs/api-reference/file-upload-controller-object).
 
 ## Custom Configuration
 
@@ -123,107 +371,115 @@ arkos.init({
 });
 ```
 
-### Best Practices for File Updates
+## Best Practices for File Management
 
-When implementing file updates in your application:
+### 1. Use the Auto-Update Endpoint
 
-1. If you're replacing a file that's referenced by a model, update the model reference first after successful upload of the new file
-2. Delete the old file only after confirming the model reference has been successfully updated because of storage concerns (up to your server) and also makes no sense to keep a file that will no longer be used
-3. Consider implementing a transaction-like pattern to ensure atomicity of these operations
+Instead of manually deleting old files and uploading new ones, use the `PATCH` endpoint:
 
-#### Handling File And Model Relation On Frontend
+```ts
+// Good: Use auto-update endpoint
+const formData = new FormData();
+formData.append("images", newImageFile);
 
-1. You can first upload the new images making a post request to the images upload endpoint
-2. Then take the provided URL and try to update the desired post (just an example)
-3. If everything goes right make a DELETE request to delete the old image
-4. If it fails to update the post, makes and DELETE request to the new uploaded image file
+fetch("http://localhost:8000/api/uploads/images/old-image.jpg", {
+  method: "PATCH",
+  body: formData,
+});
+```
 
-#### Handling File And Model Relation On Server
+### 2. Implement Proper Error Handling
+
+```ts
+try {
+  const response = await fetch("/api/uploads/images/old-image.jpg", {
+    method: "PATCH",
+    body: formData,
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Upload failed: ${response.statusText}`);
+  }
+  
+  const result = await response.json();
+  // Handle success
+} catch (error) {
+  // Handle error - old file is still intact
+  console.error("File update failed:", error);
+}
+```
+
+### 3. Model Integration with Interceptor Middlewares
 
 ```ts
 // src/modules/post/post.middlewares.ts
 import { getFileUploadServices } from "arkos/services";
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
-import { catchAsync } from "arkos/error-handler";
 import { prisma } from "../../utils/prisma";
 
-export const beforeUpdateOne = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Uploads the image if it haves anything in request
-    // NB: always call the getFileUploadServices inside a function not outside
-    const imageUrl = await getFileUploadServices().imageUploadService.upload(
-      req,
-      res,
-      {
-        format: "webp",
-        resizeTo: 500,
-      }
-    );
-
-    // Checks if a image was uploaded, if yest attach it to the body
-    if (imageUrl) {
-      req.body.image = imageUrl;
-
-      const { image } = await prisma.post.findUnique({
-        where: {
-          id: req.params.id,
-        },
-        select: {
-          image: true,
-        },
-      });
-
-      // When want to pass data to afterX middleware you can do this
-      req.query.ignoredFields = {
-        oldImage: image,
-      };
+export const beforeUpdateOne = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  // Upload new image if provided
+  const imageUrl = await getFileUploadServices().imageUploadService.upload(
+    req,
+    res,
+    {
+      format: "webp",
+      resizeTo: 500,
     }
+  );
 
-    next();
+  if (imageUrl) {
+    req.body.image = imageUrl;
+
+    // Get old image for cleanup
+    const { image } = await prisma.post.findUnique({
+      where: { id: req.params.id },
+      select: { image: true },
+    });
+
+    req.query.ignoredFields = {
+      oldImage: image,
+    };
   }
-);
 
-export const afterUpdateOne = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Checks if a file was uploaded by checking the req.body.image field
-    // If yes delete the old one
-    if (req.body.image)
-      getFileUploadServices()
-        .imageUploadService.deleteByUrl(req.query.ignoreFields.oldImage)
-        .catch((err) => {
-          console.log(err);
-        });
+  next();
+};
 
-    next();
+export const afterUpdateOne = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  // Clean up old image after successful update
+  if (req.body.image && req.query.ignoredFields?.oldImage) {
+    getFileUploadServices()
+      .imageUploadService.deleteByUrl(req.query.ignoredFields.oldImage)
+      .catch((err) => {
+        console.log("Failed to delete old image:", err);
+      });
   }
-);
+
+  next();
+};
 ```
 
-You can refer to the [getFileUploadServices Function Guide](/docs/api-reference/file-upload-services-function-guide) for more guidance.
-
-:::tip important
-You could even revert the updated post and throw an error if failed to delete the old image, but here we just let it go because it was already changed and if old was delete or not only matters to the admin of the server.
-:::
 
 ## Authentication & Authorization
 
-File upload endpoints respect the authentication and authorization rules you define in your prisma models. You can control access to file uploads using the same pattern as other API endpoints in **Arkos**, read the full guide at [File Upload Authentication Upload Guide](/docs/advanced-guide/file-uploads-authentication.md).
+File upload endpoints respect the authentication and authorization rules you define. You can control access to file uploads using the same pattern as other API endpoints in **Arkos**.
 
-### Key Differences In File Upload Authentication From Prisma Models
+### Key Differences In File Upload Authentication
 
-#### 1. Static Role-Based Acess Control
+#### 1. Static Role-Based Access Control
 
-In Static RBAC ([See Guide](/docs/advanced-guide/static-rbac-authentication)) you define the `AuthConfigs` under `src/modules/[model-name]/[model-name].auth-configs.ts` you put it under `src/modules/file-upload/file-upload.auth-configs.ts` and apply the same rules, see [Static RBAC Auth Configs Guide](/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior).
+In Static RBAC, define the `AuthConfigs` under `src/modules/file-upload/file-upload.auth.ts` and apply the same rules. See [Static RBAC Auth Configs Guide](/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior).
 
-#### 2. Dynamic Role-Based Acess Control
+#### 2. Dynamic Role-Based Access Control
 
-In Dynamic RBAC ([See Guide](/docs/advanced-guide/dynamic-rbac-authentication)) you define the `AuthPermission` with `resource` (for prisma model name) and `action` (create, view, update, delete). So on `resource` field of `AuthPermission` you pass `file-upload` and the rest is the same rules, see [Dynamic RBAC Auth Configs Guide](/docs/advanced-guide/dynamic-rbac-authentication#using-auth-config-to-customize-endpoint-behavior).
+In Dynamic RBAC, define the `AuthPermission` with `resource` set to `file-upload` and the appropriate `action` (create, view, update, delete). See [Dynamic RBAC Auth Configs Guide](/docs/advanced-guide/dynamic-rbac-authentication#using-auth-config-to-customize-endpoint-behavior).
 
 ## Next Steps
 
-For more detailed information on specific file types, check the API reference:
+For more detailed information on specific file types and advanced features:
 
 - [Image Uploads](/docs/advanced-guide/images-uploads)
-- [Video Uploads](/docs/advanced-guide/videos-uploads)
+- [Video Uploads](/docs/advanced-guide/videos-uploads)  
 - [Document Uploads](/docs/advanced-guide/documents-uploads)
 - [Other Files Uploads](/docs/advanced-guide/other-files-uploads)
+- [File Upload Authentication Guide](/docs/advanced-guide/file-uploads-authentication)
