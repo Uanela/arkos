@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { createRequire } from "module";
 import { pathToFileURL } from "url";
+import { getUserFileExtension } from "./fs.helpers";
 
 export function getPackageJson() {
   try {
@@ -27,6 +28,13 @@ export async function importModule(
   let correctedPath = modulePath;
 
   if (
+    !options.fixExtension ||
+    modulePath.endsWith(".ts") ||
+    getUserFileExtension() === "ts"
+  )
+    return await import(modulePath);
+
+  if (
     options?.fixExtension &&
     isEsm() &&
     modulePath.startsWith(".") &&
@@ -42,8 +50,6 @@ export async function importModule(
       correctedPath = modulePath + ".js";
     }
   }
-
-  if (!options.fixExtension) return await import(modulePath);
 
   // When importing user modules:
   const userRequire = createRequire(
