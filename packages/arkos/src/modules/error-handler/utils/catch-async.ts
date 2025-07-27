@@ -24,9 +24,13 @@ import {
  */
 const catchAsync =
   (fn: ArkosRequestHandler) =>
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  async (
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ): Promise<void> => {
     try {
-      return await fn(req, res, next);
+      return (await fn(req, res, next)) as void;
     } catch (err) {
       next(err);
     }
