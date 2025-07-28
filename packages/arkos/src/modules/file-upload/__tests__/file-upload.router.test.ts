@@ -86,7 +86,10 @@ describe("File Upload Router", () => {
 
     // Assert
     expect(Router).toHaveBeenCalled();
-    expect(importPrismaModelModules).toHaveBeenCalledWith("file-upload");
+    expect(importPrismaModelModules).toHaveBeenCalledWith(
+      "file-upload",
+      mockArkosConfig
+    );
 
     // Check static file middleware setup
     expect(path.resolve).toHaveBeenCalledWith(process.cwd(), "uploads");

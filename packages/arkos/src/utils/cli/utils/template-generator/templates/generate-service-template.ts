@@ -11,7 +11,7 @@ export function generateServiceTemplate(options: TemplateOptions): string {
 
   // Generate imports
   const prismaImport = isTypeScript
-    ? `import { prisma } from "../../utils/prisma";\n`
+    ? `import prisma from "../../utils/prisma";\n`
     : "";
 
   const baseServiceImport = isTypeScript

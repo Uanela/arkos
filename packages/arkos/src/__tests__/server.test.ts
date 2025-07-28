@@ -25,6 +25,8 @@ jest.mock("http", () => {
   };
 });
 
+jest.mock("fs");
+
 // Spy on console methods
 const consoleInfoSpy = jest.spyOn(console, "info").mockImplementation();
 const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();

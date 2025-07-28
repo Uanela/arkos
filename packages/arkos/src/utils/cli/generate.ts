@@ -46,7 +46,7 @@ export const generateCommand = {
 
       fs.writeFileSync(filePath, content);
       console.info(
-        `\nntroller generated: ${filePath.replace(process.cwd(), "")}`
+        `\nController generated: ${filePath.replace(process.cwd(), "")}`
       );
     } catch (error) {
       console.error(`❌ Failed to generate controller:`, error);

@@ -118,7 +118,7 @@ describe("generateTemplate", () => {
       mockedGetUserFileExtension.mockReturnValue("ts");
       const result = generateTemplate("service", { modelName: mockModelName });
 
-      expect(result).toContain('import { prisma } from "../../utils/prisma"');
+      expect(result).toContain('import prisma from "../../utils/prisma"');
       expect(result).toContain(
         "class UserService extends BaseService<typeof prisma.user>"
       );
@@ -128,9 +128,7 @@ describe("generateTemplate", () => {
       mockedGetUserFileExtension.mockReturnValue("js");
       const result = generateTemplate("service", { modelName: mockModelName });
 
-      expect(result).not.toContain(
-        'import { prisma } from "../../utils/prisma"'
-      );
+      expect(result).not.toContain('import prisma from "../../utils/prisma"');
       expect(result).toContain("class UserService extends BaseService");
       expect(result).not.toContain("<typeof prisma.user>");
     });

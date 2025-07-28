@@ -9,7 +9,7 @@ import sheu from "./utils/sheu";
 import { initializePrismaModels } from "./utils/helpers/models.helpers";
 
 process.on("uncaughtException", (err) => {
-  if (err.message.includes("EPIPE")) return;
+  // if (err.message.includes("EPIPE")) return;
 
   console.error("\nUNCAUGHT EXCEPTION! SHUTTING DOWN...\n");
   console.error(err.name, err.message);

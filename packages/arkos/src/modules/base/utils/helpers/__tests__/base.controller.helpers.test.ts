@@ -60,8 +60,6 @@ describe("handleRequestBodyValidationAndTransformation", () => {
 
   it("should call validateDto when validation resolver is class-validator", async () => {
     // Arrange
-    const modelName = "TestModel";
-    const action = "create";
     const transformedBody = { name: "transformed test" };
 
     (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({
@@ -79,7 +77,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     (validateDtoModule.default as jest.Mock).mockResolvedValue(transformedBody);
 
     const middleware = handleRequestBodyValidationAndTransformation(
-      modelsHelpers.getModelModules("user").dtos.create
+      modelsHelpers.getModelModules("user")?.dtos?.create
     );
 
     // Act
@@ -88,7 +86,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     // Assert
     expect(validateDtoModule.default).toHaveBeenCalledTimes(1);
     expect(validateDtoModule.default).toHaveBeenCalledWith(
-      modelsHelpers.getModelModules("user").dtos.create,
+      modelsHelpers.getModelModules("user")?.dtos?.create,
       { name: "test" },
       {
         whitelist: true,
@@ -139,8 +137,6 @@ describe("handleRequestBodyValidationAndTransformation", () => {
 
   it("should not validate when no validation resolver is configured", async () => {
     // Arrange
-    const modelName = "TestModel";
-    const action = "create";
     const originalBody = { name: "test" };
 
     (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({
@@ -166,8 +162,6 @@ describe("handleRequestBodyValidationAndTransformation", () => {
 
   it("should not validate when validator is configured but no schema/dto exists", async () => {
     // Arrange
-    const modelName = "TestModel";
-    const action = "create";
     const originalBody = { name: "test" };
 
     (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({

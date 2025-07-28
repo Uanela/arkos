@@ -17,7 +17,7 @@ const router: Router = Router();
 
 export async function getAuthRouter(arkosConfigs: ArkosConfig) {
   const { middlewares, dtos, schemas, prismaQueryOptions } =
-    await importPrismaModelModules("auth");
+    await importPrismaModelModules("auth", arkosConfigs);
   const authController = await authControllerFactory(middlewares);
 
   // Helper to get the correct schema or DTO based on Arkos Config

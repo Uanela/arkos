@@ -202,3 +202,13 @@ export function handleEmptyResultError(err: AppError) {
   const message = `Empty result: No data was found for the given query. Ensure the query criteria are correct.`;
   return new AppError(message, 404);
 }
+
+export function handleNonExistingRecord(err: {
+  meta?: Record<string, any>;
+  [x: string]: any;
+}) {
+  const message =
+    err?.meta?.cause ||
+    `Operation could not be completed as the required record was not found`;
+  return new AppError(message, 404, err.meta || {}, "PrismaRecordNotFound");
+}

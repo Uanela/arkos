@@ -67,6 +67,8 @@ export default function errorHandler(
     error = errorControllerHelper.handleForeignKeyConstraintError(err);
   if (err.code === "P2004")
     error = errorControllerHelper.handleConstraintFailedError(err);
+  if (err.code === "P2025")
+    error = errorControllerHelper.handleNonExistingRecord(err);
   if (err.code === "P3000")
     error = errorControllerHelper.handleSchemaCreationFailedError(err);
   if (err.code === "P3001")

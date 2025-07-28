@@ -1,5 +1,5 @@
 import fs from "fs";
-import { ensureDirectoryExists } from "../cli.helpers";
+import { ensureDirectoryExists, getVersion } from "../cli.helpers";
 
 // Mock the fs module
 jest.mock("fs");
@@ -8,6 +8,13 @@ const mockedFs = fs as jest.Mocked<typeof fs>;
 describe("ensureDirectoryExists", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe("getVersion", () => {
+    it("should return default version placeholder", () => {
+      const version = getVersion();
+      expect(version).toBe("{{version}}");
+    });
   });
 
   describe("happy path", () => {

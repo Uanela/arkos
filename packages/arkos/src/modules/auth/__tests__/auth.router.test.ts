@@ -126,7 +126,10 @@ describe("Auth Router", () => {
 
     // Assert
     expect(Router).toHaveBeenCalled();
-    expect(importPrismaModelModules).toHaveBeenCalledWith("auth");
+    expect(importPrismaModelModules).toHaveBeenCalledWith(
+      "auth",
+      mockArkosConfig
+    );
     expect(authControllerFactory).toHaveBeenCalled();
 
     // Check routes are defined with the new middleware

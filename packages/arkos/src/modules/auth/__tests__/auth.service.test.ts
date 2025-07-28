@@ -404,13 +404,6 @@ describe("AuthService", () => {
       expect(authService.verifyJwtToken).toHaveBeenCalledWith(token);
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: "user-123" },
-        select: {
-          id: true,
-          passwordChangedAt: true,
-          isActive: true,
-          deletedSelfAccountAt: true,
-          isSuperUser: true,
-        },
       });
       expect(result).toEqual(mockUser);
     });
