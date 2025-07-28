@@ -66,30 +66,14 @@
   },
   "typesVersions": {
     "*": {
-      "*": [
-        "./dist/types/exports/*/index.d.ts"
-      ],
-      "services": [
-        "./dist/types/exports/services/index.d.ts"
-      ],
-      "validation": [
-        "./dist/types/exports/validation/index.d.ts"
-      ],
-      "error-handler": [
-        "./dist/types/exports/error-handler/index.d.ts"
-      ],
-      "prisma": [
-        "./dist/types/exports/prisma/index.d.ts"
-      ],
-      "auth": [
-        "./dist/types/exports/auth/index.d.ts"
-      ],
-      "middlewares": [
-        "./dist/types/exports/middlewares/index.d.ts"
-      ],
-      "utils": [
-        "./dist/types/exports/utils/index.d.ts"
-      ]
+      "*": ["./dist/types/exports/*/index.d.ts"],
+      "services": ["./dist/types/exports/services/index.d.ts"],
+      "validation": ["./dist/types/exports/validation/index.d.ts"],
+      "error-handler": ["./dist/types/exports/error-handler/index.d.ts"],
+      "prisma": ["./dist/types/exports/prisma/index.d.ts"],
+      "auth": ["./dist/types/exports/auth/index.d.ts"],
+      "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
+      "utils": ["./dist/types/exports/utils/index.d.ts"]
     }
   },
   "scripts": {
@@ -142,11 +126,7 @@
     "url": "https://github.com/uanela/arkos/issues"
   },
   "homepage": "https://www.arkosjs.com",
-  "files": [
-    "dist",
-    "cli.js",
-    "README.md"
-  ],
+  "files": ["dist", "cli.js", "README.md"],
   "devDependencies": {
     "@prisma/client": "^6.4.1",
     "@types/bcrypt": "^5.0.2",
@@ -158,7 +138,7 @@
     "@types/html-to-text": "^9.0.4",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.9",
-    "@types/multer": "^1.4.12",
+    "@types/multer": "2.0.0",
     "@types/node": "^22.13.13",
     "@types/nodemailer": "^6.4.17",
     "@types/pluralize": "^0.0.33",
