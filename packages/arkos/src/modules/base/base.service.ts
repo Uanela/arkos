@@ -198,7 +198,7 @@ export class BaseService<ModelDelegate extends Record<string, any> = any> {
   async findMany<
     TOptions extends Omit<Parameters<ModelDelegate["findMany"]>[0], "where">,
   >(
-    filters: Parameters<ModelDelegate["findMany"]>[0] extends {
+    filters?: Parameters<ModelDelegate["findMany"]>[0] extends {
       where?: infer W;
       [x: string]: any;
     }

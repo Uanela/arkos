@@ -4,7 +4,6 @@ import * as dbUtils from "../prisma.helpers";
 import AppError from "../../../modules/error-handler/utils/app-error";
 import { getUserFileExtension } from "../fs.helpers";
 import { importModule } from "../global.helpers";
-import { cwd } from "process";
 
 // Mock external dependencies
 jest.mock("fs");
@@ -69,7 +68,9 @@ describe("prisma.helpers", () => {
 
       // Assert expected behavior
       expect(fs.existsSync).toHaveBeenCalledWith(mockPrismaJsPath);
-      expect(importModule).toHaveBeenCalledWith(mockPrismaJsPath);
+      expect(importModule).toHaveBeenCalledWith(mockPrismaJsPath, {
+        fixExtension: false,
+      });
       expect(result).toBe(mockPrismaModule.default);
     });
 
@@ -89,8 +90,10 @@ describe("prisma.helpers", () => {
 
       // Assert expected behavior
       expect(fs.existsSync).toHaveBeenCalledWith(mockPrismaJsPath);
-      expect(fs.existsSync).not.toHaveBeenCalledWith(mockPrismaIndexJsPath);
-      expect(importModule).toHaveBeenCalledWith(mockPrismaIndexJsPath);
+      expect(fs.existsSync).toHaveBeenCalledWith(mockPrismaIndexJsPath);
+      expect(importModule).toHaveBeenCalledWith(mockPrismaIndexJsPath, {
+        fixExtension: false,
+      });
       expect(result).toBe(mockPrismaModule.default);
     });
 

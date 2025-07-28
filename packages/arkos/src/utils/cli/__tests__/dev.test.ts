@@ -203,6 +203,7 @@ describe("devCommand", () => {
         "src",
         "package.json",
         "tsconfig.json",
+        "jsconfig.json",
         "arkos.config.ts",
         "arkos.config.js",
       ],
@@ -219,23 +220,21 @@ describe("devCommand", () => {
     expect(spawn).toHaveBeenCalledWith(
       "npx",
       [
-        "nodemon",
+        "node-dev",
+        "--respawn",
+        "--notify=false",
+        "--ignore-watch",
+        "node_modules",
+        "--ignore-watch",
+        "dist",
+        "--ignore-watch",
+        "build",
+        "--ignore-watch",
+        ".dist",
+        "--ignore-watch",
+        ".build",
         "--watch",
         "src",
-        "--ext",
-        "js,json",
-        "--ignore",
-        "node_modules/",
-        "--ignore",
-        "dist/",
-        "--ignore",
-        "build/",
-        "--ignore",
-        ".dist/",
-        "--ignore",
-        ".build/",
-        "--delay",
-        "1000ms",
         `${process.cwd()}/src/app.js`,
       ],
       expect.objectContaining({
@@ -266,6 +265,7 @@ describe("devCommand", () => {
         "src",
         "package.json",
         "tsconfig.json",
+        "jsconfig.json",
         "arkos.config.ts",
         "arkos.config.js",
       ],
@@ -280,6 +280,9 @@ describe("devCommand", () => {
           /build/,
           /\.env.*/,
         ],
+        awaitWriteFinish: {
+          stabilityThreshold: 3000,
+        },
       }
     );
 
@@ -306,7 +309,7 @@ describe("devCommand", () => {
     await devCommand();
 
     expect(console.error).toHaveBeenCalledWith(
-      "Could not find application entry point."
+      expect.stringContaining(`Could not find application entry point at`)
     );
     expect(mockExit).toHaveBeenCalledWith(1);
   });

@@ -21,7 +21,10 @@ export function setupRouters(
 ) {
   return models.map(async (model) => {
     const modelNameInKebab = kebabCase(model);
-    const modelModules = await importPrismaModelModules(modelNameInKebab);
+    const modelModules = await importPrismaModelModules(
+      modelNameInKebab,
+      arkosConfigs
+    );
     const {
       middlewares,
       authConfigs,
@@ -50,9 +53,7 @@ export function setupRouters(
     };
 
     // Helper to get the correct schema or DTO based on Arkos Config
-    const getValidationSchemaOrDto = (
-      key: keyof typeof dtos | keyof typeof schemas
-    ) => {
+    const getValidationSchemaOrDto = (key: string) => {
       const validationConfigs = arkosConfigs?.validation;
       if (validationConfigs?.resolver === "class-validator") {
         return dtos?.[key];

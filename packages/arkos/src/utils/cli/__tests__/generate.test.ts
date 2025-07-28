@@ -33,14 +33,14 @@ describe("generateCommand", () => {
   const mockCwd = "/test/project";
   const mockTemplateContent = "mock template content";
   let consoleErrorSpy: jest.SpyInstance,
-    consoleLogSpy: jest.SpyInstance,
+    consoleInfoSpy: jest.SpyInstance,
     processExitSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-    consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
+    consoleInfoSpy = jest.spyOn(console, "info").mockImplementation();
     processExitSpy = jest.spyOn(process, "exit").mockImplementation();
 
     // Setup default mocks
@@ -61,7 +61,7 @@ describe("generateCommand", () => {
   afterEach(() => {
     jest.restoreAllMocks();
     consoleErrorSpy.mockRestore();
-    consoleLogSpy.mockRestore();
+    consoleInfoSpy.mockRestore();
     processExitSpy.mockRestore();
     mockedEnsureDirectoryExists.mockRestore();
     mockedFs.writeFileSync.mockImplementation();
@@ -92,7 +92,7 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/user/user.controller.ts`,
         mockTemplateContent
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
         expect.stringContaining("Controller generated:")
       );
     });
@@ -177,7 +177,7 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/user/user.service.js`,
         mockTemplateContent
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
         expect.stringContaining("Service generated:")
       );
     });
@@ -263,8 +263,8 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/auth/auth.middlewares.ts`,
         mockTemplateContent
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Middleware generated:")
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Middlewares generated:")
       );
     });
 
@@ -307,7 +307,7 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/user/user.auth.ts`,
         mockTemplateContent
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
         expect.stringContaining("Auth config generated:")
       );
     });
@@ -358,7 +358,7 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/product/product.query.ts`,
         mockTemplateContent
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
         expect.stringContaining("Query config generated:")
       );
     });
@@ -421,7 +421,7 @@ describe("generateCommand", () => {
 
       await generateCommand.controller(options);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect(consoleInfoSpy).toHaveBeenCalledWith(
         expect.stringContaining("/src/modules/user/user.controller.ts")
       );
     });

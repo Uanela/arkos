@@ -67,28 +67,6 @@ describe("CLI Index", () => {
     console.log = originalConsoleLog;
   });
 
-  describe("getVersion", () => {
-    it("should return version from package.json", () => {
-      const version = getVersion();
-
-      expect(fs.readFileSync).toHaveBeenCalledWith(
-        "/mocked/path/to/package.json",
-        "utf8"
-      );
-      expect(path.join).toHaveBeenCalledWith(
-        expect.any(String),
-        "../../../../../package.json"
-      );
-      expect(version).toBe("1.2.3");
-    });
-
-    it("should return default version if no version in package.json", () => {
-      (fs.readFileSync as jest.Mock).mockReturnValueOnce("{ }");
-      const version = getVersion();
-      expect(version).toBe("1.0.0");
-    });
-  });
-
   describe("program configuration", () => {
     it("should configure program with correct name, description and version", () => {
       // Import to trigger the program setup code

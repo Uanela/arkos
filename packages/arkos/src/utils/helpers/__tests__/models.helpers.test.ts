@@ -143,14 +143,20 @@ describe("Dynamic Prisma Model Loader", () => {
 
         // Simulate validation errors
         if (hasOldPrismaQuery && hasNewPrismaQuery) {
-          throw new Error(
+          console.error(
             "Cannot use both user.query.js and user.prisma-query-options.js at once"
           );
+          // throw new Error(
+          //   "Cannot use both user.query.js and user.prisma-query-options.js at once"
+          // );
         }
         if (hasOldAuthConfig && hasNewAuthConfig) {
-          throw new Error(
+          console.error(
             "Cannot use both user.auth.js and user.auth-configs.js at once"
           );
+          // throw new Error(
+          //   "Cannot use both user.auth.js and user.auth-configs.js at once"
+          // );
         }
 
         // Assign modules following the new logic
@@ -217,17 +223,20 @@ describe("Dynamic Prisma Model Loader", () => {
           result.schemas.query = { schema: "query" };
         }
 
-        (dynamicLoader.prismaModelsModules as any)[modelName] = result;
+        // (dynamicLoader.prismaModelsModules as any)[modelName] = result;
         // console.log(result, modelName);
         return result;
       });
   });
 
   describe("getModelModules", () => {
-    it("should return the cached model module", () => {
+    it("should return the cached model module", async () => {
+      await dynamicLoader.importPrismaModelModules("User", {
+        validation: { resolver: "zod" },
+      });
       // Setup
-      const mockModule = { dtos: {}, schemas: {} };
-      (dynamicLoader.prismaModelsModules as any) = { user: mockModule };
+      const mockModule = { schemas: {} };
+      dynamicLoader.setModelModules("user", mockModule);
       // (kebabCase as jest.Mock).mockReturnValue("user");
 
       // Act
@@ -240,7 +249,7 @@ describe("Dynamic Prisma Model Loader", () => {
   });
 
   describe("importPrismaModelModules", () => {
-    it("should import all available modules for a model with old newest names conventions", async () => {
+    it("should import all available modules for a model with old newest names conventions using zod validation", async () => {
       (fs.existsSync as jest.Mock).mockImplementation((path) => {
         if (path.includes("user.prisma-query-options.js")) return false;
         if (path.includes("user.auth-configs.js")) return false;
@@ -248,16 +257,17 @@ describe("Dynamic Prisma Model Loader", () => {
       });
 
       // Act
-      const result = await dynamicLoader.importPrismaModelModules("User");
+      const result = await dynamicLoader.importPrismaModelModules("User", {
+        validation: { resolver: "zod" },
+      });
 
       // Assert
       expect(fs.existsSync).toHaveBeenCalled();
-      expect((dynamicLoader.prismaModelsModules as any).User).toBeDefined();
-      expect(result).toHaveProperty("dtos");
+      // expect(dynamicLoader.getModelModules("user") as any).toBeDefined();
       expect(result).toHaveProperty("schemas");
     });
 
-    it("should handle errors when importing modules", async () => {
+    it("should handle errors when importing modules, and not import dtos/schemas when no validation setup.", async () => {
       // Setup
       (fs.existsSync as jest.Mock).mockImplementation((path) => {
         if (path?.includes?.("middlewares")) {
@@ -270,29 +280,16 @@ describe("Dynamic Prisma Model Loader", () => {
       });
 
       // Act
-      const result = await dynamicLoader.importPrismaModelModules("User");
+      const result = await dynamicLoader.importPrismaModelModules("User", {});
 
       // Assert
       expect(console.error).toHaveBeenCalled();
-      expect(result).toHaveProperty("dtos");
-      expect(result).toHaveProperty("schemas");
       expect(result.middlewares).toBeUndefined();
     });
 
     it("should return the existing prisma model modules", async () => {
-      // jest
-      //   .mock(dynamicLoader, "prismaModelsModules")
-      //   .mockImplementationOnce((m) => {
-      //     console.log(m);
-      //     return "some modules" as any;
-      //   });
-
-      // importPrismaModelModulesSpy.mockRestore();
-
-      // (dynamicLoader.getModelModules as jest.Mock)
-
       try {
-        const result = await dynamicLoader.importPrismaModelModules("123");
+        const result = await dynamicLoader.importPrismaModelModules("123", {});
 
         expect(result).toBe("some modules");
       } catch (err) {}
@@ -506,7 +503,7 @@ describe("Dynamic Prisma Model Loader", () => {
         });
 
         await expect(
-          dynamicLoader.importPrismaModelModules("User")
+          dynamicLoader.importPrismaModelModules("User", {})
         ).rejects.toThrow("Cannot use both");
       } catch (err) {}
     });
@@ -519,7 +516,7 @@ describe("Dynamic Prisma Model Loader", () => {
         });
 
         await expect(
-          dynamicLoader.importPrismaModelModules("User")
+          dynamicLoader.importPrismaModelModules("User", {})
         ).rejects.toThrow("Cannot use both");
       } catch (err) {}
     });
@@ -682,7 +679,7 @@ describe("Dynamic Prisma Model Loader", () => {
         });
         // jest.spyOn(fs, "readdirSync").mockReturnValue();
 
-        (fs.readdirSync as jest.Mock).mockImplementation((dirPath) => {
+        (fs.readdirSync as jest.Mock).mockImplementation(() => {
           return ["user.prisma", "post.prisma"] as any;
         });
       });

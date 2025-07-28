@@ -16,7 +16,7 @@ export async function getSwaggerRouter(
   const defaultJsonSchemas = await getOpenAPIJsonSchemasByConfigMode(
     arkosConfig.swagger
   );
-  const defaultModelsPaths = await generatePathsForModels(arkosConfig.swagger);
+  const defaultModelsPaths = await generatePathsForModels(arkosConfig);
 
   const defaultSwaggerConfig: ArkosConfig["swagger"] = {
     endpoint: "/api-docs",

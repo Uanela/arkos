@@ -9,12 +9,16 @@ import { crd, getUserFileExtension } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 import { AuthConfigs } from "../../types/auth";
 import { killServerChildProcess } from "../cli/utils/cli.helpers";
+import { ArkosConfig } from "../../exports";
+
+type ModeModules = Awaited<ReturnType<typeof importPrismaModelModules>>;
 
 // Must be exported to not cause problems on cjs
-let prismaModelsModules: Record<
-  string,
-  Awaited<ReturnType<typeof importPrismaModelModules>>
-> = {};
+let prismaModelsModules: Record<string, ModeModules> = {};
+
+export function setModelModules(modelName: string, modules: ModeModules) {
+  prismaModelsModules[kebabCase(modelName)] = modules;
+}
 
 export function getModelModules(modelName: string) {
   return prismaModelsModules[kebabCase(modelName)];
@@ -76,7 +80,7 @@ export function getFileModelModulesFileStructure(modelName: string) {
 export async function processSubdir(
   modelName: string,
   type: "dtos" | "schemas",
-  result: Record<string, any>
+  result: Record<string, any> = {}
 ) {
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
@@ -94,7 +98,7 @@ export async function processSubdir(
         const filePath = path.join(subdir, fileName);
         try {
           const module = await importModule(filePath).catch(() => null);
-          if (module) result[type][key] = module.default;
+          if (module) result[key] = module.default;
         } catch (error) {
           // Silent fail - file might not exist
           console.error(error);
@@ -105,6 +109,8 @@ export async function processSubdir(
     // Directory doesn't exist, continue silently
     console.error(error);
   }
+
+  return result;
 }
 
 type importPrismaModelModulesReturnType = {
@@ -116,8 +122,8 @@ type importPrismaModelModulesReturnType = {
   prismaQueryOptions?: any;
   prismaQueryOptionsNew?: any;
   router?: any;
-  dtos: Record<string, any>;
-  schemas: Record<string, any>;
+  dtos?: Record<string, any>;
+  schemas?: Record<string, any>;
 };
 
 /**
@@ -205,7 +211,8 @@ export function assignModuleToResult(
  * @returns {Promise<Object>} An object containing the imported modules
  */
 export async function importPrismaModelModules(
-  modelName: string
+  modelName: string,
+  arkosConfig: ArkosConfig
 ): Promise<importPrismaModelModulesReturnType> {
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
@@ -247,15 +254,25 @@ export async function importPrismaModelModules(
     })
   );
 
-  await Promise.all([
-    processSubdir(modelName, "dtos", result),
-    processSubdir(modelName, "schemas", result),
-  ]);
+  const validationSubdir = arkosConfig.validation?.resolver
+    ? arkosConfig.validation.resolver === "zod"
+      ? "schemas"
+      : "dtos"
+    : null;
+
+  let validators = {};
+  if (validationSubdir)
+    validators = await processSubdir(modelName, validationSubdir);
 
   // Removed because caused problems with cached ZObjects
   // Cache the result making shallow copy to not cause problems after build
   // prismaModelsModules[modelName] = JSON.parse(JSON.stringify(result));
-  prismaModelsModules[modelName] = result;
+  prismaModelsModules[modelName] = {
+    ...result,
+    ...(validationSubdir && { [validationSubdir]: validators }),
+  };
+
+  // setModelModules(modelName, prismaModelsModules[modelName]);
 
   return result;
 }
@@ -421,8 +438,6 @@ export function initializePrismaModels() {
     }
   }
 }
-
-// initializePrismaModels();
 
 /**
  * Retrieves the relations for a given Prisma model.

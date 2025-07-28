@@ -77,8 +77,10 @@ export function getSchemaRef(schemaName: string, mode: string): string {
 }
 
 export async function generatePathsForModels(
-  swaggerConfig: ArkosConfig["swagger"]
+  arkosConfig: ArkosConfig
 ): Promise<OpenAPIV3.PathsObject> {
+  const swaggerConfig = arkosConfig?.swagger;
+
   if (!swaggerConfig) return {};
 
   let paths: OpenAPIV3.PathsObject = {};
@@ -93,7 +95,7 @@ export async function generatePathsForModels(
     const humanReadableNamePlural = pluralize.plural(humanReadableName);
 
     // Import model modules to get router config
-    const modelModules = await importPrismaModelModules(model);
+    const modelModules = await importPrismaModelModules(model, arkosConfig);
     const routerConfig = modelModules.router?.config;
 
     // Skip if router is completely disabled

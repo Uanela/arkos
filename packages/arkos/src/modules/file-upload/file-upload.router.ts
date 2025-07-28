@@ -11,8 +11,13 @@ import { sendResponse } from "../base/base.middlewares";
 
 const router: Router = Router();
 
-export async function getFileUploadRouter({ fileUpload }: ArkosConfig) {
-  const modelModules = await importPrismaModelModules("file-upload");
+export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
+  const { fileUpload } = arkosConfig;
+
+  const modelModules = await importPrismaModelModules(
+    "file-upload",
+    arkosConfig
+  );
   let { middlewares = {} as any, authConfigs = {} as AuthConfigs } = {};
 
   if (modelModules) {

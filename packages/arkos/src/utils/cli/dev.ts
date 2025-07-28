@@ -35,7 +35,7 @@ export async function devCommand(options: DevOptions = {}) {
     const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
 
     if (!fs.existsSync(entryPoint)) {
-      console.error("Could not find application entry point.");
+      console.error(`Could not find application entry point at ${entryPoint}`);
       process.exit(1);
     }
 
@@ -87,26 +87,25 @@ export async function devCommand(options: DevOptions = {}) {
         );
       } else {
         // Enhanced nodemon configuration
+
         child = spawn(
           "npx",
           [
-            "nodemon",
+            "node-dev",
+            "--respawn",
+            "--notify=false",
+            "--ignore-watch",
+            "node_modules",
+            "--ignore-watch",
+            "dist",
+            "--ignore-watch",
+            "build",
+            "--ignore-watch",
+            ".dist",
+            "--ignore-watch",
+            ".build",
             "--watch",
             "src",
-            "--ext",
-            "js,json",
-            "--ignore",
-            "node_modules/",
-            "--ignore",
-            "dist/",
-            "--ignore",
-            "build/",
-            "--ignore",
-            ".dist/",
-            "--ignore",
-            ".build/",
-            "--delay",
-            "1000ms",
             entryPoint,
           ],
           {
@@ -115,6 +114,34 @@ export async function devCommand(options: DevOptions = {}) {
             shell: true,
           }
         );
+        // child = spawn(
+        //   "npx",
+        //   [
+        //     "nodemon",
+        //     "--watch",
+        //     "src",
+        //     "--ext",
+        //     "js,json",
+        //     "--ignore",
+        //     "node_modules/",
+        //     "--ignore",
+        //     "dist/",
+        //     "--ignore",
+        //     "build/",
+        //     "--ignore",
+        //     ".dist/",
+        //     "--ignore",
+        //     ".build/",
+        //     "--delay",
+        //     "1000ms",
+        //     entryPoint,
+        //   ],
+        //   {
+        //     stdio: "inherit",
+        //     env,
+        //     shell: true,
+        //   }
+        // );
       }
 
       if (child) {
@@ -183,6 +210,7 @@ export async function devCommand(options: DevOptions = {}) {
           "src",
           "package.json",
           "tsconfig.json",
+          "jsconfig.json",
           "arkos.config.ts",
           "arkos.config.js",
         ],
@@ -198,7 +226,7 @@ export async function devCommand(options: DevOptions = {}) {
             /\.env.*/,
           ],
           awaitWriteFinish: {
-            stabilityThreshold: 1000,
+            stabilityThreshold: 3000,
           },
         }
       );
@@ -209,6 +237,10 @@ export async function devCommand(options: DevOptions = {}) {
 
       additionalWatcher.on("unlink", (filePath) => {
         scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
+      });
+
+      additionalWatcher.on("change", (filePath) => {
+        console.log(`file changed`, filePath);
       });
 
       return additionalWatcher;
