@@ -41,7 +41,7 @@ async function main() {
     console.info(`- ${devDependency}`)
   );
 
-  console.info("\nInstalling dependencies...");
+  console.info(chalk.bold("\nInstalling dependencies..."));
   console.info(`Using ${packageManager}.\n`);
 
   execSync(`${packageManager} install`, { stdio: "inherit" });
