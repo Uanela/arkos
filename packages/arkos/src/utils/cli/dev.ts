@@ -94,15 +94,15 @@ export async function devCommand(options: DevOptions = {}) {
             "node-dev",
             "--respawn",
             "--notify=false",
-            "--ignore-watch",
+            "--ignore",
             "node_modules",
-            "--ignore-watch",
+            "--ignore",
             "dist",
-            "--ignore-watch",
+            "--ignore",
             "build",
-            "--ignore-watch",
+            "--ignore",
             ".dist",
-            "--ignore-watch",
+            "--ignore",
             ".build",
             "--watch",
             "src",
@@ -114,34 +114,6 @@ export async function devCommand(options: DevOptions = {}) {
             shell: true,
           }
         );
-        // child = spawn(
-        //   "npx",
-        //   [
-        //     "nodemon",
-        //     "--watch",
-        //     "src",
-        //     "--ext",
-        //     "js,json",
-        //     "--ignore",
-        //     "node_modules/",
-        //     "--ignore",
-        //     "dist/",
-        //     "--ignore",
-        //     "build/",
-        //     "--ignore",
-        //     ".dist/",
-        //     "--ignore",
-        //     ".build/",
-        //     "--delay",
-        //     "1000ms",
-        //     entryPoint,
-        //   ],
-        //   {
-        //     stdio: "inherit",
-        //     env,
-        //     shell: true,
-        //   }
-        // );
       }
 
       if (child) {

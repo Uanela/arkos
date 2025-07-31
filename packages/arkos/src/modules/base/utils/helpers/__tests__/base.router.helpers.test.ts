@@ -106,20 +106,16 @@ describe("setupRouters", () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      expect.anything(),
+      "queryOptionsMiddleware",
       "createOneHandler",
-      "sendResponseMiddleware",
-      "sendResponseMiddleware",
       "sendResponseMiddleware"
     );
     expect(router.get).toHaveBeenCalledWith(
       "/users",
       expect.anything(),
       expect.anything(),
-      expect.anything(),
+      "queryOptionsMiddleware",
       "findManyHandler",
-      "sendResponseMiddleware",
-      "sendResponseMiddleware",
       "sendResponseMiddleware"
     );
     expect(router.post).toHaveBeenCalledWith(
@@ -129,8 +125,6 @@ describe("setupRouters", () => {
       expect.anything(),
       "queryOptionsMiddleware",
       "createManyHandler",
-      "sendResponseMiddleware",
-      "sendResponseMiddleware",
       "sendResponseMiddleware"
     );
     expect(router.patch).toHaveBeenCalledWith(
@@ -140,8 +134,6 @@ describe("setupRouters", () => {
       expect.anything(),
       "queryOptionsMiddleware",
       "updateManyHandler",
-      "sendResponseMiddleware",
-      "sendResponseMiddleware",
       "sendResponseMiddleware"
     );
     expect(router.delete).toHaveBeenCalledWith(
@@ -151,8 +143,6 @@ describe("setupRouters", () => {
       expect.anything(),
       "queryOptionsMiddleware",
       "deleteManyHandler",
-      "sendResponseMiddleware",
-      "sendResponseMiddleware",
       "sendResponseMiddleware"
     );
     expect(router.get).toHaveBeenCalledWith(
@@ -162,8 +152,6 @@ describe("setupRouters", () => {
       expect.anything(),
       "queryOptionsMiddleware",
       "findOneHandler",
-      "sendResponseMiddleware",
-      "sendResponseMiddleware",
       "sendResponseMiddleware"
     );
     expect(router.patch).toHaveBeenCalledWith(
@@ -173,8 +161,6 @@ describe("setupRouters", () => {
       expect.anything(),
       "queryOptionsMiddleware",
       "updateOneHandler",
-      "sendResponseMiddleware",
-      "sendResponseMiddleware",
       "sendResponseMiddleware"
     );
     expect(router.delete).toHaveBeenCalledWith(
@@ -184,8 +170,6 @@ describe("setupRouters", () => {
       expect.anything(),
       "queryOptionsMiddleware",
       "deleteOneHandler",
-      "sendResponseMiddleware",
-      "sendResponseMiddleware",
       "sendResponseMiddleware"
     );
   });
@@ -221,25 +205,21 @@ describe("setupRouters", () => {
     // Verify other routes are registered
     expect(router.post).toHaveBeenCalledWith(
       "/users/many",
-      expect.anything(),
-      expect.anything(),
+      "authMiddleware",
+      "accessControlMiddleware",
       expect.anything(),
       "queryOptionsMiddleware",
       "createManyHandler",
-      expect.anything(),
-      expect.anything(),
-      expect.anything()
+      "sendResponseMiddleware"
     );
     expect(router.get).toHaveBeenCalledWith(
       "/users/:id",
-      expect.anything(),
-      expect.anything(),
+      "authMiddleware",
+      "accessControlMiddleware",
       expect.anything(),
       "queryOptionsMiddleware",
       "findOneHandler",
-      expect.anything(),
-      expect.anything(),
-      expect.anything()
+      "sendResponseMiddleware"
     );
   });
 
@@ -343,15 +323,13 @@ describe("setupRouters", () => {
 
     // Verify other routes are still registered
     expect(router.post).toHaveBeenCalledWith(
-      "/users",
+      "/users/many",
+      "authMiddleware",
+      "accessControlMiddleware",
       expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything()
+      "queryOptionsMiddleware",
+      "createManyHandler",
+      "sendResponseMiddleware"
     );
   });
 

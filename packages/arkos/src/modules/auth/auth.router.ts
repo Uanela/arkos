@@ -11,7 +11,7 @@ import {
 import { ArkosConfig } from "../../types/arkos-config";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthPrismaQueryOptions } from "../../types";
-import catchAsync from "../error-handler/utils/catch-async";
+import { processMiddleware } from "../../utils/helpers/routers.helpers";
 
 const router: Router = Router();
 
@@ -31,11 +31,6 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     return undefined;
   };
 
-  // Helper to conditionally wrap middleware with catchAsync
-  const safeCatchAsync = (middleware: any) => {
-    return middleware ? catchAsync(middleware) : undefined;
-  };
-
   router
     .get(
       "/users/me",
@@ -44,17 +39,10 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "getMe"
       ),
-      ...[
-        safeCatchAsync(middlewares?.beforeGetMe) || authController.getMe,
-        safeCatchAsync(middlewares?.beforeGetMe)
-          ? authController.getMe
-          : safeCatchAsync(middlewares?.afterGetMe) || sendResponse,
-        safeCatchAsync(middlewares?.beforeGetMe) &&
-        safeCatchAsync(middlewares?.afterGetMe)
-          ? safeCatchAsync(middlewares?.afterGetMe)
-          : sendResponse,
-        sendResponse,
-      ].filter((middleware) => !!middleware)
+      ...processMiddleware(middlewares?.beforeGetMe),
+      authController.getMe,
+      ...processMiddleware(middlewares?.afterGetMe),
+      sendResponse
     )
     .patch(
       "/users/me",
@@ -66,17 +54,10 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "updateMe"
       ),
-      ...[
-        safeCatchAsync(middlewares?.beforeUpdateMe) || authController.updateMe,
-        safeCatchAsync(middlewares?.beforeUpdateMe)
-          ? authController.updateMe
-          : safeCatchAsync(middlewares?.afterUpdateMe) || sendResponse,
-        safeCatchAsync(middlewares?.beforeUpdateMe) &&
-        safeCatchAsync(middlewares?.afterUpdateMe)
-          ? safeCatchAsync(middlewares?.afterUpdateMe)
-          : sendResponse,
-        sendResponse,
-      ].filter((middleware) => !!middleware)
+      ...processMiddleware(middlewares?.beforeUpdateMe),
+      authController.updateMe,
+      ...processMiddleware(middlewares?.afterUpdateMe),
+      sendResponse
     )
     .delete(
       "/users/me",
@@ -85,17 +66,10 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "deleteMe"
       ),
-      ...[
-        safeCatchAsync(middlewares?.beforeDeleteMe) || authController.deleteMe,
-        safeCatchAsync(middlewares?.beforeDeleteMe)
-          ? authController.deleteMe
-          : safeCatchAsync(middlewares?.afterDeleteMe) || sendResponse,
-        safeCatchAsync(middlewares?.beforeDeleteMe) &&
-        safeCatchAsync(middlewares?.afterDeleteMe)
-          ? safeCatchAsync(middlewares?.afterDeleteMe)
-          : sendResponse,
-        sendResponse,
-      ].filter((middleware) => !!middleware)
+      ...processMiddleware(middlewares?.beforeDeleteMe),
+      authController.deleteMe,
+      ...processMiddleware(middlewares?.afterDeleteMe),
+      sendResponse
     );
 
   router.use(
@@ -127,33 +101,19 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       prismaQueryOptions as AuthPrismaQueryOptions<any>,
       "login"
     ),
-    ...[
-      safeCatchAsync(middlewares?.beforeLogin) || authController.login,
-      safeCatchAsync(middlewares?.beforeLogin)
-        ? authController.login
-        : safeCatchAsync(middlewares?.afterLogin) || sendResponse,
-      safeCatchAsync(middlewares?.beforeLogin) &&
-      safeCatchAsync(middlewares?.afterLogin)
-        ? safeCatchAsync(middlewares?.afterLogin)
-        : sendResponse,
-      sendResponse,
-    ].filter((middleware) => !!middleware)
+    ...processMiddleware(middlewares?.beforeLogin),
+    authController.login,
+    ...processMiddleware(middlewares?.afterLogin),
+    sendResponse
   );
 
   router.delete(
     "/auth/logout",
     authService.authenticate,
-    ...[
-      safeCatchAsync(middlewares?.beforeLogout) || authController.logout,
-      safeCatchAsync(middlewares?.beforeLogout)
-        ? authController.logout
-        : safeCatchAsync(middlewares?.afterLogout) || sendResponse,
-      safeCatchAsync(middlewares?.beforeLogout) &&
-      safeCatchAsync(middlewares?.afterLogout)
-        ? safeCatchAsync(middlewares?.afterLogout)
-        : sendResponse,
-      sendResponse,
-    ].filter((middleware) => !!middleware)
+    ...processMiddleware(middlewares?.beforeLogout),
+    authController.logout,
+    ...processMiddleware(middlewares?.afterLogout),
+    sendResponse
   );
 
   router.post(
@@ -165,17 +125,10 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       prismaQueryOptions as AuthPrismaQueryOptions<any>,
       "signup"
     ),
-    ...[
-      safeCatchAsync(middlewares?.beforeSignup) || authController.signup,
-      safeCatchAsync(middlewares?.beforeSignup)
-        ? authController.signup
-        : safeCatchAsync(middlewares?.afterSignup) || sendResponse,
-      safeCatchAsync(middlewares?.beforeSignup) &&
-      safeCatchAsync(middlewares?.afterSignup)
-        ? safeCatchAsync(middlewares?.afterSignup)
-        : sendResponse,
-      sendResponse,
-    ].filter((middleware) => !!middleware)
+    ...processMiddleware(middlewares?.beforeSignup),
+    authController.signup,
+    ...processMiddleware(middlewares?.afterSignup),
+    sendResponse
   );
 
   router.post(
@@ -188,18 +141,10 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       prismaQueryOptions as AuthPrismaQueryOptions<any>,
       "updatePassword"
     ),
-    ...[
-      safeCatchAsync(middlewares?.beforeUpdatePassword) ||
-        authController.updatePassword,
-      safeCatchAsync(middlewares?.beforeUpdatePassword)
-        ? authController.updatePassword
-        : safeCatchAsync(middlewares?.afterUpdatePassword) || sendResponse,
-      safeCatchAsync(middlewares?.beforeUpdatePassword) &&
-      safeCatchAsync(middlewares?.afterUpdatePassword)
-        ? safeCatchAsync(middlewares?.afterUpdatePassword)
-        : sendResponse,
-      sendResponse,
-    ].filter((middleware) => !!middleware)
+    ...processMiddleware(middlewares?.beforeUpdatePassword),
+    authController.updatePassword,
+    ...processMiddleware(middlewares?.afterUpdatePassword),
+    sendResponse
   );
 
   return router;

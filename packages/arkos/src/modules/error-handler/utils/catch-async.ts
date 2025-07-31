@@ -36,4 +36,6 @@ const catchAsync =
     }
   };
 
+export type CatchAsyncReturnType = ReturnType<typeof catchAsync>;
+
 export default catchAsync;

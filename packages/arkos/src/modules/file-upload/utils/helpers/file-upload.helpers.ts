@@ -4,8 +4,26 @@ import sharp from "sharp";
 import { promisify } from "util";
 import { getArkosConfig } from "../../../../server";
 import mimetype from "mimetype";
-import { ArkosRequest } from "../../../../types";
+import {
+  ArkosNextFunction,
+  ArkosRequest,
+  ArkosResponse,
+} from "../../../../types";
 import { fullCleanCwd } from "../../../../utils/helpers/fs.helpers";
+
+export function adjustRequestUrl(
+  req: ArkosRequest,
+  _: ArkosResponse,
+  next: ArkosNextFunction
+) {
+  const { fileUpload } = getArkosConfig();
+  req.url = req.url.replace(
+    fileUpload?.baseRoute + "/" || "/api/uploads/",
+    "/"
+  );
+  req.url = req.url.replace(fileUpload?.baseRoute || "/api/uploads/", "/");
+  next();
+}
 
 export function extractRequestInfo(req: ArkosRequest) {
   const { fileUpload } = getArkosConfig();

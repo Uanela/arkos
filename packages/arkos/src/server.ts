@@ -5,8 +5,8 @@ import { bootstrap } from "./app";
 import { ArkosConfig } from "./types/arkos-config";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import http from "http";
-import sheu from "./utils/sheu";
 import { initializePrismaModels } from "./utils/helpers/models.helpers";
+import sheu from "./utils/sheu";
 
 process.on("uncaughtException", (err) => {
   // if (err.message.includes("EPIPE")) return;
