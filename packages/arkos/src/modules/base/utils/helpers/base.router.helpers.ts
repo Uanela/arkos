@@ -12,7 +12,7 @@ import {
   handleRequestBodyValidationAndTransformation,
   sendResponse,
 } from "../../base.middlewares";
-import catchAsync from "../../../error-handler/utils/catch-async";
+import { processMiddleware } from "../../../../utils/helpers/routers.helpers";
 
 export function setupRouters(
   models: string[],
@@ -67,10 +67,6 @@ export function setupRouters(
     if (customRouterModule?.default && !routerConfig?.disable)
       router.use(`/${routeName}`, customRouterModule.default);
 
-    function safeCatchAsync(middleware: any) {
-      return middleware ? catchAsync(middleware) : undefined;
-    }
-
     // POST /{routeName} - Create One
     if (
       !isEndpointDisabled(routerConfig, "createOne") &&
@@ -94,16 +90,9 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createOne"
         ),
-        ...[
-          safeCatchAsync(middlewares?.beforeCreateOne) || controller.createOne,
-          safeCatchAsync(middlewares?.beforeCreateOne)
-            ? controller.createOne
-            : safeCatchAsync(middlewares?.afterCreateOne) || sendResponse,
-          safeCatchAsync(middlewares?.beforeCreateOne) &&
-          safeCatchAsync(middlewares?.afterCreateOne)
-            ? safeCatchAsync(middlewares?.afterCreateOne)
-            : sendResponse,
-        ].filter((m) => !!m),
+        ...processMiddleware(middlewares?.beforeCreateOne),
+        controller.createOne,
+        ...processMiddleware(middlewares?.afterCreateOne),
         sendResponse
       );
     }
@@ -128,17 +117,10 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findMany"
         ),
-        ...[
-          safeCatchAsync(middlewares?.beforeFindMany) || controller.findMany,
-          safeCatchAsync(middlewares?.beforeFindMany)
-            ? controller.findMany
-            : safeCatchAsync(middlewares?.afterFindMany) || sendResponse,
-          safeCatchAsync(middlewares?.beforeFindMany) &&
-          safeCatchAsync(middlewares?.afterFindMany)
-            ? safeCatchAsync(middlewares?.afterFindMany)
-            : sendResponse,
-          sendResponse,
-        ].filter((m) => !!m)
+        ...processMiddleware(middlewares?.beforeFindMany),
+        controller.findMany,
+        ...processMiddleware(middlewares?.afterFindMany),
+        sendResponse
       );
     }
 
@@ -165,18 +147,10 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createMany"
         ),
-        ...[
-          safeCatchAsync(middlewares?.beforeCreateMany) ||
-            controller.createMany,
-          safeCatchAsync(middlewares?.beforeCreateMany)
-            ? controller.createMany
-            : safeCatchAsync(middlewares?.afterCreateMany) || sendResponse,
-          safeCatchAsync(middlewares?.beforeCreateMany) &&
-          safeCatchAsync(middlewares?.afterCreateMany)
-            ? safeCatchAsync(middlewares?.afterCreateMany)
-            : sendResponse,
-          sendResponse,
-        ].filter((m) => !!m)
+        ...processMiddleware(middlewares?.beforeCreateMany),
+        controller.createMany,
+        ...processMiddleware(middlewares?.afterCreateMany),
+        sendResponse
       );
     }
 
@@ -203,18 +177,10 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
         ),
-        ...[
-          safeCatchAsync(middlewares?.beforeUpdateMany) ||
-            controller.updateMany,
-          safeCatchAsync(middlewares?.beforeUpdateMany)
-            ? controller.updateMany
-            : safeCatchAsync(middlewares?.afterUpdateMany) || sendResponse,
-          safeCatchAsync(middlewares?.beforeUpdateMany) &&
-          safeCatchAsync(middlewares?.afterUpdateMany)
-            ? safeCatchAsync(middlewares?.afterUpdateMany)
-            : sendResponse,
-          sendResponse,
-        ].filter((m) => !!m)
+        ...processMiddleware(middlewares?.beforeUpdateMany),
+        controller.updateMany,
+        ...processMiddleware(middlewares?.afterUpdateMany),
+        sendResponse
       );
     }
 
@@ -241,18 +207,10 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteMany"
         ),
-        ...[
-          safeCatchAsync(middlewares?.beforeDeleteMany) ||
-            controller.deleteMany,
-          safeCatchAsync(middlewares?.beforeDeleteMany)
-            ? controller.deleteMany
-            : safeCatchAsync(middlewares?.afterDeleteMany) || sendResponse,
-          safeCatchAsync(middlewares?.beforeDeleteMany) &&
-          safeCatchAsync(middlewares?.afterDeleteMany)
-            ? safeCatchAsync(middlewares?.afterDeleteMany)
-            : sendResponse,
-          sendResponse,
-        ].filter((middleware) => !!middleware)
+        ...processMiddleware(middlewares?.beforeDeleteMany),
+        controller.deleteMany,
+        ...processMiddleware(middlewares?.afterDeleteMany),
+        sendResponse
       );
     }
 
@@ -279,17 +237,10 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findOne"
         ),
-        ...[
-          safeCatchAsync(middlewares?.beforeFindOne) || controller.findOne,
-          safeCatchAsync(middlewares?.beforeFindOne)
-            ? controller.findOne
-            : safeCatchAsync(middlewares?.afterFindOne) || sendResponse,
-          safeCatchAsync(middlewares?.beforeFindOne) &&
-          safeCatchAsync(middlewares?.afterFindOne)
-            ? safeCatchAsync(middlewares?.afterFindOne)
-            : sendResponse,
-          sendResponse,
-        ].filter((m) => !!m)
+        ...processMiddleware(middlewares?.beforeFindOne),
+        controller.findOne,
+        ...processMiddleware(middlewares?.afterFindOne),
+        sendResponse
       );
     }
 
@@ -316,16 +267,9 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateOne"
         ),
-        ...[
-          safeCatchAsync(middlewares?.beforeUpdateOne) || controller.updateOne,
-          safeCatchAsync(middlewares?.beforeUpdateOne)
-            ? controller.updateOne
-            : safeCatchAsync(middlewares?.afterUpdateOne) || sendResponse,
-          safeCatchAsync(middlewares?.beforeUpdateOne) &&
-          safeCatchAsync(middlewares?.afterUpdateOne)
-            ? safeCatchAsync(middlewares?.afterUpdateOne)
-            : sendResponse,
-        ].filter((m) => !!m),
+        ...processMiddleware(middlewares?.beforeUpdateOne),
+        controller.updateOne,
+        ...processMiddleware(middlewares?.afterUpdateOne),
         sendResponse
       );
     }
@@ -353,17 +297,10 @@ export function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteOne"
         ),
-        ...[
-          safeCatchAsync(middlewares?.beforeDeleteOne) || controller.deleteOne,
-          safeCatchAsync(middlewares?.beforeDeleteOne)
-            ? controller.deleteOne
-            : safeCatchAsync(middlewares?.afterDeleteOne) || sendResponse,
-          safeCatchAsync(middlewares?.beforeDeleteOne) &&
-          safeCatchAsync(middlewares?.afterDeleteOne)
-            ? safeCatchAsync(middlewares?.afterDeleteOne)
-            : sendResponse,
-          sendResponse,
-        ].filter((m) => !!m)
+        ...processMiddleware(middlewares?.beforeDeleteOne),
+        controller.deleteOne,
+        ...processMiddleware(middlewares?.afterDeleteOne),
+        sendResponse
       );
     }
   });

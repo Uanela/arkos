@@ -1,266 +1,251 @@
 /**
- * Sheu - Terminal color utility class for styling console output
- * Provides chainable methods for colors and text formatting
+ * Sheu - Simplified terminal color utility for styling console output
  */
 class Sheu {
-  codes: string[];
-
-  constructor() {
-    this.codes = [];
+  /**
+   * Get current timestamp in HH:MM:SS format
+   */
+  private getTimestamp(): string {
+    return new Date().toTimeString().split(" ")[0];
   }
 
   /**
-   * Apply text to the current styling codes
-   * @param {string} text - The text to style
-   * @returns {string} The styled text with ANSI codes
+   * Apply timestamp and bold formatting if requested
    */
-  _apply(text: string): string {
-    const openCodes = this.codes.join("");
-    return `${openCodes}${text}\x1b[0m`;
-  }
+  private formatText(
+    text: string = "",
+    options: {
+      timestamp?: boolean | string;
+      bold?: boolean;
+      label?: string;
+    } = {}
+  ): string {
+    const label = options?.label
+      ? text
+        ? options?.label + " "
+        : options?.label
+      : "";
+    let result = `${label}${text}`;
 
-  /**
-   * Create a new instance with the current codes
-   * @returns {Sheu} New Sheu instance
-   */
-  _chain(): Sheu {
-    const newInstance = new Sheu();
-    newInstance.codes = [...this.codes];
-    return newInstance;
-  }
-
-  /**
-   * Red color (Tailwind red-500: #ef4444)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
-   */
-  red(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[31m${text}\x1b[0m`;
+    // Apply timestamp if requested
+    if (options.timestamp) {
+      const timestamp = this.getTimestamp();
+      if (options.timestamp === true)
+        result = `${label}\x1b[90m${timestamp}\x1b[0m ${text}`;
+      else if (typeof options.timestamp === "string") {
+        const colorCode = this.getColorCode(options.timestamp);
+        result = `${label}${colorCode}${timestamp}\x1b[0m ${text}`;
+      }
     }
-    const instance = this._chain();
-    instance.codes.push("\x1b[31m");
-    return instance;
+
+    if (options.bold) result = `\x1b[1m${result}\x1b[0m`;
+
+    return result;
   }
 
   /**
-   * Blue color (Tailwind blue-500: #3b82f6)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * Get ANSI color code for color name
    */
-  blue(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[34m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[34m");
-    return instance;
+  private getColorCode(color: string): string {
+    const colorMap: { [key: string]: string } = {
+      red: "\x1b[31m",
+      blue: "\x1b[34m",
+      green: "\x1b[32m",
+      yellow: "\x1b[33m",
+      cyan: "\x1b[36m",
+      magenta: "\x1b[35m",
+      white: "\x1b[37m",
+      black: "\x1b[30m",
+      gray: "\x1b[90m",
+      orange: "\x1b[91m",
+    };
+    return colorMap[color] || "\x1b[90m"; // Default to gray if color not found
   }
 
   /**
-   * Green color (Tailwind green-500: #22c55e)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * Red color
    */
-  green(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[32m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[32m");
-    return instance;
+  red(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[31m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
   }
 
   /**
-   * Yellow color (Tailwind yellow-500: #eab308)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * Blue color
    */
-  yellow(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[33m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[33m");
-    return instance;
+  blue(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[34m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
   }
 
   /**
-   * Cyan color (Tailwind cyan-500: #06b6d4)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * Green color
    */
-  cyan(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[36m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[36m");
-    return instance;
+  green(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[32m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
   }
 
   /**
-   * Magenta color (Tailwind fuchsia-500: #d946ef)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * Yellow color
    */
-  magenta(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[35m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[35m");
-    return instance;
+  yellow(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[33m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
   }
 
   /**
-   * White color (Tailwind white: #ffffff)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * Cyan color
    */
-  white(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[37m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[37m");
-    return instance;
+  cyan(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[36m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
   }
 
   /**
-   * Black color (Tailwind black: #000000)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * Magenta color
    */
-  black(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[30m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[30m");
-    return instance;
+  magenta(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[35m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
   }
 
   /**
-   * Gray color (Tailwind gray-500: #6b7280)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * White color
    */
-  gray(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[90m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[90m");
-    return instance;
+  white(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[37m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
   }
 
   /**
-   * Orange color (Tailwind orange-500: #f97316)
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
+   * Black color
    */
-  orange(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[91m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[91m");
-    return instance;
+  black(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[30m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
+  }
+
+  /**
+   * Gray color
+   */
+  gray(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[90m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
+  }
+
+  /**
+   * Orange color
+   */
+  orange(
+    text: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const coloredText = `\x1b[91m${text}\x1b[0m`;
+    return this.formatText(coloredText, options || {});
   }
 
   /**
    * Bold text formatting
-   * @param {string} [text] - Optional text to style immediately
-   * @returns {string|Sheu} Styled text or chainable instance
    */
-  bold(text?: string): string | Sheu {
-    if (text !== undefined) {
-      return `\x1b[1m${text}\x1b[0m`;
-    }
-    const instance = this._chain();
-    instance.codes.push("\x1b[1m");
-    return instance;
-  }
-
-  /**
-   * Apply all accumulated styles to text
-   * @param {string} text - The text to style
-   * @returns {string} The styled text
-   */
-  apply(text: string): string {
-    return this._apply(text);
+  bold(text: string, options?: { timestamp?: boolean | string }): string {
+    const boldText = `\x1b[1m${text}\x1b[0m`;
+    return this.formatText(boldText, { ...options, bold: false }); // Don't double-bold
   }
 
   /**
    * Info label with cyan color [INFO]
-   * @param {string} [message] - Optional message to append
-   * @returns {string} Formatted info label
    */
-  info(message?: string): string {
+  info(
+    message: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
     const label = `[\x1b[36mINFO\x1b[0m]`;
-    const content = message ? `${label} ${message}` : label;
-    console.info(content);
-    return content;
+    const result = this.formatText(message, { ...options, label });
+    console.info(result);
+    return result;
   }
 
   /**
    * Error label with red color [ERROR]
-   * @param {string} [message] - Optional message to append
-   * @returns {string} Formatted error label
    */
-  error(message?: string): string {
+  error(
+    message: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
     const label = `[\x1b[31mERROR\x1b[0m]`;
-    const content = message ? `${label} ${message}` : label;
-    console.info(content);
-    return content;
+    const result = this.formatText(message, { ...options, label });
+    console.error(result);
+    return result;
   }
 
   /**
    * Ready label with green color [READY]
-   * @param {string} [message] - Optional message to append
-   * @returns {string} Formatted ready label
    */
-  ready(message?: string): string {
+  ready(
+    message: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
     const label = `[\x1b[32mREADY\x1b[0m]`;
-    const content = message ? `${label} ${message}` : label;
-    console.info(content);
-    return content;
+    const result = this.formatText(message, { ...options, label });
+    console.info(result);
+    return result;
   }
 
   /**
    * Done label with green color [DONE]
-   * @param {string} [message] - Optional message to append
-   * @returns {string} Formatted done label
    */
-  done(message?: string): string {
+  done(
+    message: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
     const label = `[\x1b[32mDONE\x1b[0m]`;
-    const content = message ? `${label} ${message}` : label;
-    console.info(content);
-    return content;
+    const result = this.formatText(message, { ...options, label });
+    console.info(result);
+    return result;
   }
 
   /**
    * Warning label with yellow color [WARN]
-   * @param {string} [message] - Optional message to append
-   * @returns void
    */
-  warn(message?: string) {
+  warn(
+    message: string,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
     const label = `[\x1b[33mWARN\x1b[0m]`;
-    console.info(message ? `${label} ${message}` : label);
+    const result = this.formatText(message, { ...options, label });
+    console.warn(result);
+    return result;
   }
 }
 
-// Create default instance
 const sheu = new Sheu();
-
-// Add static methods to the default instance for direct usage
-Object.getOwnPropertyNames(Sheu.prototype).forEach((method) => {
-  if (method !== "constructor" && method !== "_apply" && method !== "_chain") {
-    (sheu as any)[method] = Sheu.prototype[method as keyof Object].bind(
-      new Sheu()
-    );
-  }
-});
 
 export default sheu;

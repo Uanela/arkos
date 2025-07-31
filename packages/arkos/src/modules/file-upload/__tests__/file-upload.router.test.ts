@@ -114,7 +114,7 @@ describe("File Upload Router", () => {
       "/api/uploads/*",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      expect.any(Function), // authService.handleAccessControl
+      expect.any(Function), // helper middlware for handling params corrections
       "mockedStaticMiddleware" // express.static middleware
     );
 
@@ -124,9 +124,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
       fileUploadController.uploadFile, // First middleware (no beforeUploadFile)
-      sendResponse, // Second middleware (no afterUploadFile)
-      sendResponse, // Third middleware
-      sendResponse // Final middleware
+      sendResponse // Second middleware (no afterUploadFile)
     );
 
     // Check update route setup
@@ -135,9 +133,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
       fileUploadController.updateFile, // First middleware (no beforeUpdateFile)
-      sendResponse, // Second middleware (no afterUpdateFile)
-      sendResponse, // Third middleware
-      sendResponse // Final middleware
+      sendResponse // Second middleware (no afterUpdateFile)
     );
 
     // Check Delete route setup
@@ -146,9 +142,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
       fileUploadController.deleteFile, // First middleware (no beforeDeleteFile)
-      sendResponse, // Second middleware (no afterDeleteFile)
-      sendResponse, // Third middleware
-      sendResponse // Final middleware
+      sendResponse // Second middleware (no afterDeleteFile)
     );
 
     // Expect the router to be returned
@@ -175,9 +169,8 @@ describe("File Upload Router", () => {
       "/api/uploads/:fileType",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      beforeUploadFile, // First middleware (beforeUploadFile)
+      expect.any(Function), // First middleware (beforeUploadFile)
       fileUploadController.uploadFile, // Second middleware (controller)
-      sendResponse, // Third middleware
       sendResponse // Final middleware
     );
   });
@@ -203,8 +196,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
       fileUploadController.uploadFile, // First middleware (controller, no beforeUploadFile)
-      afterUploadFile, // Second middleware (afterUploadFile)
-      sendResponse, // Third middleware
+      expect.any(Function), // Second middleware (afterUploadFile)
       sendResponse // Final middleware
     );
   });
@@ -231,9 +223,9 @@ describe("File Upload Router", () => {
       "/api/uploads/:fileType",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      beforeUploadFile, // First middleware (beforeUploadFile)
+      expect.any(Function), // First middleware (beforeUploadFile)
       fileUploadController.uploadFile, // Second middleware (controller)
-      afterUploadFile, // Third middleware (afterUploadFile)
+      expect.any(Function), // Third middleware (afterUploadFile)
       sendResponse // Final middleware
     );
   });
@@ -260,9 +252,9 @@ describe("File Upload Router", () => {
       "/api/uploads/:fileType/:fileName",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      beforeUpdateFile, // First middleware (beforeUpdateFile)
+      expect.any(Function), // First middleware (beforeUpdateFile)
       fileUploadController.updateFile, // Second middleware (controller)
-      afterUpdateFile, // Third middleware (afterUpdateFile)
+      expect.any(Function), // Third middleware (afterUpdateFile)
       sendResponse // Final middleware
     );
   });
@@ -289,9 +281,9 @@ describe("File Upload Router", () => {
       "/api/uploads/:fileType/:fileName",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      beforeDeleteFile, // First middleware (beforeDeleteFile)
+      expect.any(Function), // First middleware (beforeDeleteFile)
       fileUploadController.deleteFile, // Second middleware (controller)
-      afterDeleteFile, // Third middleware (afterDeleteFile)
+      expect.any(Function), // Third middleware (afterDeleteFile)
       sendResponse // Final middleware
     );
   });
@@ -316,8 +308,8 @@ describe("File Upload Router", () => {
       "/api/uploads/*",
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
-      beforeFindFile, // beforeFindFile middleware instead of express.static,
-      expect.any(Function), // authService.handleAccessControl
+      expect.any(Function), // before mw
+      expect.any(Function), // url corrector
       "mockedStaticMiddleware"
     );
   });
@@ -350,8 +342,8 @@ describe("File Upload Router", () => {
       "/api/uploads/*",
       expect.any(Function),
       expect.any(Function),
-      beforeFindFile,
       expect.any(Function),
+      expect.any(Function), // after mw
       "mockedStaticMiddleware"
     );
 
@@ -360,9 +352,8 @@ describe("File Upload Router", () => {
       "/api/uploads/:fileType",
       expect.any(Function),
       expect.any(Function),
-      beforeUploadFile,
+      expect.any(Function),
       fileUploadController.uploadFile,
-      sendResponse,
       sendResponse
     );
 
@@ -372,8 +363,7 @@ describe("File Upload Router", () => {
       expect.any(Function),
       expect.any(Function),
       fileUploadController.updateFile,
-      afterUpdateFile,
-      sendResponse,
+      expect.any(Function), // after mw
       sendResponse
     );
 
@@ -382,9 +372,8 @@ describe("File Upload Router", () => {
       "/api/uploads/:fileType/:fileName",
       expect.any(Function),
       expect.any(Function),
-      beforeDeleteFile,
+      expect.any(Function), // before mw
       fileUploadController.deleteFile,
-      sendResponse,
       sendResponse
     );
   });
@@ -433,8 +422,6 @@ describe("File Upload Router", () => {
         expect.any(Function),
         expect.any(Function),
         fileUploadController.uploadFile,
-        sendResponse,
-        sendResponse,
         sendResponse
       );
 
@@ -443,8 +430,6 @@ describe("File Upload Router", () => {
         expect.any(Function),
         expect.any(Function),
         fileUploadController.updateFile,
-        sendResponse,
-        sendResponse,
         sendResponse
       );
 
@@ -453,8 +438,6 @@ describe("File Upload Router", () => {
         expect.any(Function),
         expect.any(Function),
         fileUploadController.deleteFile,
-        sendResponse,
-        sendResponse,
         sendResponse
       );
     }

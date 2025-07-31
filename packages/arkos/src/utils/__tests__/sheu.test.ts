@@ -4,13 +4,18 @@ const sheu: any = innerSheu;
 
 describe("Sheu Terminal Color Utility", () => {
   let consoleSpy: any;
+  let consoleWarnSpy: any;
+  let consoleErrorSpy: any;
 
   beforeEach(() => {
     consoleSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
     consoleSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   describe("Color Methods - Direct Usage", () => {
@@ -70,73 +75,6 @@ describe("Sheu Terminal Color Utility", () => {
     });
   });
 
-  describe("Color Methods - Chaining", () => {
-    test("red() without text should return chainable instance", () => {
-      const result = sheu.red();
-      expect(result).toBeInstanceOf(Object);
-      expect(typeof result.apply).toBe("function");
-    });
-
-    test("blue() without text should return chainable instance", () => {
-      const result = sheu.blue();
-      expect(result).toBeInstanceOf(Object);
-      expect(typeof result.apply).toBe("function");
-    });
-
-    test("bold() without text should return chainable instance", () => {
-      const result = sheu.bold();
-      expect(result).toBeInstanceOf(Object);
-      expect(typeof result.apply).toBe("function");
-    });
-  });
-
-  describe("Chaining Functionality", () => {
-    test("should chain red and bold", () => {
-      const result = sheu.red().bold().apply("Hello");
-      expect(result).toBe("\x1b[31m\x1b[1mHello\x1b[0m");
-    });
-
-    test("should chain blue and bold", () => {
-      const result = sheu.blue().bold().apply("World");
-      expect(result).toBe("\x1b[34m\x1b[1mWorld\x1b[0m");
-    });
-
-    test("should chain multiple colors (last one should take precedence)", () => {
-      const result = sheu.red().blue().apply("Test");
-      expect(result).toBe("\x1b[31m\x1b[34mTest\x1b[0m");
-    });
-
-    test("should chain bold and green", () => {
-      const result = sheu.bold().green().apply("Success");
-      expect(result).toBe("\x1b[1m\x1b[32mSuccess\x1b[0m");
-    });
-
-    test("should maintain separate instances when chaining", () => {
-      const redInstance = sheu.red();
-      const blueInstance = sheu.blue();
-
-      const redResult = redInstance.apply("Red Text");
-      const blueResult = blueInstance.apply("Blue Text");
-
-      expect(redResult).toBe("\x1b[31mRed Text\x1b[0m");
-      expect(blueResult).toBe("\x1b[34mBlue Text\x1b[0m");
-    });
-  });
-
-  describe("Apply Method", () => {
-    test("apply() should work with accumulated codes", () => {
-      const instance = sheu.red().bold();
-      const result = instance.apply("Styled Text");
-      expect(result).toBe("\x1b[31m\x1b[1mStyled Text\x1b[0m");
-    });
-
-    test("apply() should work with empty codes", () => {
-      const instance = new sheu.constructor();
-      const result = instance.apply("Plain Text");
-      expect(result).toBe("Plain Text\x1b[0m");
-    });
-  });
-
   describe("Label Methods", () => {
     test("info() should log and return formatted info label", () => {
       const result = sheu.info();
@@ -155,13 +93,13 @@ describe("Sheu Terminal Color Utility", () => {
     test("error() should log and return formatted error label", () => {
       const result = sheu.error();
       expect(result).toBe("[\x1b[31mERROR\x1b[0m]");
-      expect(consoleSpy).toHaveBeenCalledWith("[\x1b[31mERROR\x1b[0m]");
+      expect(consoleErrorSpy).toHaveBeenCalledWith("[\x1b[31mERROR\x1b[0m]");
     });
 
     test("error() with message should log and return formatted error label with message", () => {
       const result = sheu.error("Connection failed");
       expect(result).toBe("[\x1b[31mERROR\x1b[0m] Connection failed");
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
         "[\x1b[31mERROR\x1b[0m] Connection failed"
       );
     });
@@ -196,33 +134,14 @@ describe("Sheu Terminal Color Utility", () => {
 
     test("warn() should log formatted warning label", () => {
       sheu.warn();
-      expect(consoleSpy).toHaveBeenCalledWith("[\x1b[33mWARN\x1b[0m]");
+      expect(consoleWarnSpy).toHaveBeenCalledWith("[\x1b[33mWARN\x1b[0m]");
     });
 
     test("warn() with message should log formatted warning label with message", () => {
       sheu.warn("Deprecated feature used");
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
         "[\x1b[33mWARN\x1b[0m] Deprecated feature used"
       );
-    });
-  });
-
-  describe("Instance Creation and Isolation", () => {
-    test("should create independent instances", () => {
-      const instance1 = sheu.red();
-      const instance2 = sheu.blue();
-
-      expect(instance1).not.toBe(instance2);
-      expect(instance1.apply("Test")).toBe("\x1b[31mTest\x1b[0m");
-      expect(instance2.apply("Test")).toBe("\x1b[34mTest\x1b[0m");
-    });
-
-    test("chaining should not affect original instance", () => {
-      const redInstance = sheu.red();
-      const redBoldInstance = redInstance.bold();
-
-      expect(redInstance.apply("Test")).toBe("\x1b[31mTest\x1b[0m");
-      expect(redBoldInstance.apply("Test")).toBe("\x1b[31m\x1b[1mTest\x1b[0m");
     });
   });
 
@@ -230,11 +149,6 @@ describe("Sheu Terminal Color Utility", () => {
     test("should handle empty strings", () => {
       const result = sheu.red("");
       expect(result).toBe("\x1b[31m\x1b[0m");
-    });
-
-    test("should handle undefined text parameter", () => {
-      const result = sheu.red(undefined);
-      expect(result).toBeInstanceOf(Object);
     });
 
     test("should handle special characters in text", () => {
@@ -264,12 +178,6 @@ describe("Sheu Terminal Color Utility", () => {
 
     test("should use correct ANSI code for bold", () => {
       expect(sheu.bold("test")).toContain("\x1b[1m");
-    });
-
-    test("should always end with reset code", () => {
-      expect(sheu.red("test")).toContain("\x1b[0m");
-      expect(sheu.bold("test")).toContain("\x1b[0m");
-      expect(sheu.red().bold().apply("test")).toContain("\x1b[0m");
     });
   });
 });

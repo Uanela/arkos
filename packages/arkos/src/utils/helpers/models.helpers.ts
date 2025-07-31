@@ -272,8 +272,6 @@ export async function importPrismaModelModules(
     ...(validationSubdir && { [validationSubdir]: validators }),
   };
 
-  // setModelModules(modelName, prismaModelsModules[modelName]);
-
   return result;
 }
 

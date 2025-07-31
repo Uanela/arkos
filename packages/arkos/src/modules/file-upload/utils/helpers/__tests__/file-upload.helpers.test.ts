@@ -6,6 +6,7 @@ import {
   extractRequestInfo,
   processFile,
   processImage,
+  adjustRequestUrl,
 } from "../file-upload.helpers";
 import { getArkosConfig } from "../../../../../server";
 
@@ -15,6 +16,53 @@ jest.mock("path");
 jest.mock("sharp");
 jest.mock("util");
 jest.mock("../../../../../server");
+
+describe("adjustRequestUrl middleware", () => {
+  const next = jest.fn();
+
+  beforeEach(() => {
+    next.mockClear();
+  });
+
+  it('should replace the baseRoute in the request URL with "/"', () => {
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      fileUpload: { baseRoute: "/custom/uploads" },
+    });
+
+    const req = { url: "/custom/uploads/image.png" };
+    const res = {};
+
+    adjustRequestUrl(req as any, res as any, next);
+
+    expect(req.url).toBe("/image.png");
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('should default to replacing "/api/uploads" if no baseRoute is defined', () => {
+    (getArkosConfig as jest.Mock).mockReturnValue({ fileUpload: {} });
+
+    const req = { url: "/api/uploads/file.jpg" };
+    const res = {};
+
+    adjustRequestUrl(req as any, res as any, next);
+
+    expect(req.url).toBe("/file.jpg");
+    expect(next).toHaveBeenCalled();
+  });
+
+  it("should call next function after adjusting the URL", () => {
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      fileUpload: { baseRoute: "/anything" },
+    });
+
+    const req = { url: "/anything/file.doc" };
+    const res = {};
+
+    adjustRequestUrl(req as any, res as any, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("File Upload Helpers", () => {
   let mockReq = {
