@@ -12,9 +12,11 @@ export default class APIFeatures {
   searchParams: any; // The query string parameters from the request
   searchParamsWithModifiers: any; // The query string parameters from the request
   filters: any = {};
+  reqFiltersSearchParam: any = {};
   modelName?: ModelName;
   excludedFields = [
     "page",
+    "filters",
     "sort",
     "limit",
     "fields",
@@ -30,16 +32,26 @@ export default class APIFeatures {
 
   constructor(req?: Request, modelName?: ModelName) {
     if (req) {
+      const { filters = "{}", ...restOfQuery } = req.query;
       this.req = req;
-      this.searchParams = parseQueryParamsWithModifiers(req.query);
+      this.searchParams = deepmerge(
+        parseQueryParamsWithModifiers(restOfQuery),
+        JSON.parse(filters as string)
+      );
     }
     if (modelName) this.modelName = modelName;
     this.filters = { ...this.filters };
   }
 
   setup(req: Request, modelName?: ModelName) {
-    this.req = req;
-    this.searchParams = parseQueryParamsWithModifiers(req.query);
+    if (req) {
+      const { filters = "{}", ...restOfQuery } = req.query;
+      this.req = req;
+      this.searchParams = deepmerge(
+        parseQueryParamsWithModifiers(restOfQuery),
+        JSON.parse(filters as string)
+      );
+    }
     if (modelName) this.modelName = modelName;
     this.filters = { ...this.filters };
 
