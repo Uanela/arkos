@@ -1,0 +1,46 @@
+import { z } from "zod"
+import apiActions from "../../../utils/validation/api-actions"
+{{#if (eq authentication.type "static")}}
+{{#if (neq prisma.provider "sqlite")}}
+import { UserRole } from "@prisma/client"
+{{/if}}
+{{/if}}
+
+const CreateUserSchema = z.object({
+  {{authentication.usernameField}}: z.string()
+    .min(1, "{{authentication.usernameField}} is required"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters long")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter"),
+  isSuperUser: z.boolean().optional().default(false),
+  isStaff: z.boolean().optional().default(false),
+  isActive: z.boolean().optional().default(true),
+  {{#if (eq authentication.type "static")}}
+  {{#if (eq prisma.provider "sqlite")}}
+  role: z.string(),
+  {{else}}
+  {{#if authentication.multipleRoles}}
+  roles: z.array(z.nativeEnum(UserRole)),
+  {{else}}
+  role: z.nativeEnum(UserRole),
+  {{/if}}
+  {{/if}}
+  {{else}}
+  {{#if authentication.multipleRoles}}
+  roles: z.array(z.object({
+    role: z.object({
+      id: z.string(),
+    })
+  })).optional(),
+  {{else}}
+  role: z.object({
+    role: z.object({
+      id: z.string(),
+    })
+  }).optional(),
+  {{/if}}
+  {{/if}}
+})
+
+export default CreateUserSchema

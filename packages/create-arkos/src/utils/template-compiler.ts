@@ -11,11 +11,59 @@ class TemplateCompiler {
 
   filesToBeSkipped(config: ProjectConfig) {
     const files: string[] = [];
+    const zodAuthSchemaFiles = [
+      "login.schema.ts.hbs",
+      "signup.schema.ts.hbs",
+      "update-password.schema.ts.hbs",
+    ];
 
+    const classValidatorAuthDtoFiles = [
+      "login.dto.ts.hbs",
+      "signup.dto.ts.hbs",
+      "update-password.dto.ts.hbs",
+    ];
+
+    const zodUserSchemaFiles = [
+      "create-user.schema.ts.hbs",
+      "update-user.schema.ts.hbs",
+    ];
+
+    const classValidatorUserSchemaFiles = [
+      "create-user.dto.ts.hbs",
+      "update-user.dto.ts.hbs",
+    ];
+
+    const userComponents = [
+      "user.middlewares.ts.hbs",
+      "user.query.ts.hbs",
+      "user.service.ts.hbs",
+      "user.prisma.hbs",
+    ];
+
+    const authComponents = [
+      "auth.middlewares.ts.hbs",
+      "auth.query.ts.hbs",
+      "auth-role.prisma.hbs",
+      "auth-permission.prisma.hbs",
+      "user-role.prisma.hbs",
+    ];
+
+    // Ignoring auth relation files when auth is set to define later
     if (config.authentication?.type === "define later")
-      files.push(...["user.prisma.hbs"]);
+      files.push(
+        ...userComponents,
+        ...authComponents,
+        ...zodAuthSchemaFiles,
+        ...classValidatorAuthDtoFiles,
+        ...zodUserSchemaFiles,
+        ...classValidatorUserSchemaFiles
+      );
 
-    if (config.authentication?.type === "static")
+    // Ignoring prisma models required only on dynamic authentication
+    if (
+      config.authentication?.type === "static" ||
+      config.authentication?.type === "define later"
+    )
       files.push(
         ...[
           "auth-role.prisma.hbs",
@@ -24,8 +72,21 @@ class TemplateCompiler {
         ]
       );
 
+    // Ignore zod related files when validation is class-validator
+    if (config.validation.type !== "zod")
+      files.push(...zodUserSchemaFiles, ...zodAuthSchemaFiles);
+
+    // Ignore class-validator related files when validation is zod
+    if (config.validation.type !== "class-validator")
+      files.push(
+        ...classValidatorUserSchemaFiles,
+        ...classValidatorAuthDtoFiles
+      );
+
+    // Ignoring typescript related files when typescript false
     if (!config.typescript) files.push(...["tsconfig.json.hbs"]);
 
+    // Ignoring javascript related files when typescript true
     if (config?.typescript) files.push(...["jsconfig.json.hbs"]);
 
     return files;

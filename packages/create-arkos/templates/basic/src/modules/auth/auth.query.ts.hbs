@@ -1,0 +1,21 @@
+{{#if typescript}}
+import prisma from "../../utils/prisma";
+import { AuthPrismaQueryOptions } from 'arkos/prisma';
+
+const authQueryOptions: AuthPrismaQueryOptions<typeof prisma.user> = {
+{{else}}
+const authQueryOptions = {
+{{/if}}
+  getMe: {
+    include: {
+      password: false,
+    },
+  },
+  updateMe: {},
+  deleteMe: {},
+  login: {},
+  signup: {},
+  updatePassword: {},
+}
+
+export default authQueryOptions;

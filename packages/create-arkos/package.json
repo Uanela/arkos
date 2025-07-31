@@ -1,15 +1,14 @@
 {
   "name": "create-arkos",
-  "version": "0.0.15",
+  "version": "0.0.22-beta",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
     "create-arkos": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rimraf dist && tsc",
     "dev": "ts-node src/index.ts",
     "test:hbs": "ts-node src/utils/helpers/hbs-tester.helpers.ts",
-    "prebuild": "pnpm --filter @arkos/shared build",
     "prepublishOnly": "pnpm build"
   },
   "author": "Uanela Como",
@@ -27,9 +26,7 @@
     "@types/inquirer": "^8.1.0",
     "@types/node": "^16.18.126",
     "ts-node": "^10.9.2",
-    "tsup": "^8.5.0",
-    "typescript": "^4.9.5",
-    "@arkos/shared": "workspace:*"
+    "typescript": "^4.9.5"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",

@@ -6,8 +6,8 @@ import { execSync } from "child_process";
 import projectConfigInquirer from "./utils/project-config-inquirer";
 import templateCompiler from "./utils/template-compiler";
 import Handlebars from "handlebars";
-import { detectPackageManagerFromUserAgent } from "@arkos/shared";
 import { getProcjetPackageJsonDependecies } from "./utils/helpers";
+import { detectPackageManagerFromUserAgent } from "./utils/helpers/npm.helpers";
 
 Handlebars.registerHelper("eq", (a, b) => a === b);
 Handlebars.registerHelper("neq", (a, b) => a !== b);
@@ -23,6 +23,7 @@ async function main() {
     `\nCreating a new ${chalk.bold(chalk.cyan("Arkos.js"))} project under ${chalk.green(`./${config.projectName}`)}`
   );
 
+  console.log(JSON.stringify(config));
   const templatesDir = path.join(__dirname, `../templates/basic`);
   await templateCompiler.compile(templatesDir, config);
 
