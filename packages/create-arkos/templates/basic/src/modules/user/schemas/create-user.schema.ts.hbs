@@ -1,5 +1,4 @@
 import { z } from "zod"
-import apiActions from "../../../utils/validation/api-actions"
 {{#if (eq authentication.type "static")}}
 {{#if (neq prisma.provider "sqlite")}}
 import { UserRole } from "@prisma/client"

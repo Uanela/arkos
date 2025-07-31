@@ -244,8 +244,9 @@ class ProjectConfigInquirer {
       };
 
       if (
-        authenticationType !== "define later" &&
-        this.config.prisma.provider !== "sqlite"
+        authenticationType !== "define later" ||
+        (this.config.prisma.provider !== "sqlite" &&
+          authenticationType !== "static")
       ) {
         const { multipleRoles } = await inquirer.prompt([
           {
@@ -262,7 +263,7 @@ class ProjectConfigInquirer {
         };
       } else if (this.config.prisma.provider === "sqlite") {
         console.info(
-          `\nSkipping multiple roles option because it is not supported with sqlite prisma provider...`
+          `\nSkipping multiple roles option because it is not supported with sqlite prisma provider and static authentication...`
         );
       }
     }

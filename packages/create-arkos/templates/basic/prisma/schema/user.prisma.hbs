@@ -9,25 +9,26 @@ model User {
   deletedSelfAccountAt DateTime?
   isActive             Boolean   @default(true)
   {{#if authentication.multipleRoles}}
-  {{#if (eq prisma.provider "sqlite")}}
+    {{#if (eq prisma.provider "sqlite")}}
+      {{#if (eq authentication.type "static")}}
   role                String     @default("User") // Roles examples: Admin, User
-  {{else}}
+      {{else}}
   roles                UserRole[]
-  {{/if}}
+      {{/if}}
+    {{/if}}
   {{else}}
-  {{#if (eq authentication.type "dynamic")}}
+    {{#if (eq authentication.type "dynamic")}}
   role                 UserRole?
-  {{else}}
-  {{#if (eq prisma.provider "sqlite")}}
+    {{else}}
+      {{#if (eq prisma.provider "sqlite")}}
   role                String     @default("User") // Roles examples: Admin, User
-  {{else}}
+      {{else}}
   role                 UserRole  @default(User)
-  {{/if}}
-  {{/if}}
+      {{/if}}
+    {{/if}}
   {{/if}}
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
-
   // other fields for your application
 }
 
