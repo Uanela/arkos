@@ -30,7 +30,6 @@ function main() {
         const projectPath = config.projectPath;
         fs_1.default.mkdirSync(projectPath, { recursive: true });
         console.info(`\nCreating a new ${chalk_1.default.bold(chalk_1.default.cyan("Arkos.js"))} project under ${chalk_1.default.green(`./${config.projectName}`)}`);
-        console.log(JSON.stringify(config));
         const templatesDir = path_1.default.join(__dirname, `../templates/basic`);
         yield template_compiler_1.default.compile(templatesDir, config);
         process.chdir(projectPath);
@@ -40,7 +39,7 @@ function main() {
         dependencies.forEach((dependency) => console.info(`- ${dependency}`));
         console.info(chalk_1.default.bold("\ndevDependencies:"));
         devDependencies.forEach((devDependency) => console.info(`- ${devDependency}`));
-        console.info("\nInstalling dependencies...");
+        console.info(chalk_1.default.bold("\nInstalling dependencies..."));
         console.info(`Using ${packageManager}.\n`);
         (0, child_process_1.execSync)(`${packageManager} install`, { stdio: "inherit" });
         process.chdir(projectPath);
