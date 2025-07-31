@@ -1,0 +1,95 @@
+import 'reflect-metadata'
+import { 
+  IsString, 
+  MinLength, 
+  Matches, 
+  IsNotEmpty, 
+  IsBoolean, 
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  Type,
+  IsEnum
+} from 'class-validator'
+import apiActions from "../../../utils/validation/api-actions"
+{{#if (eq authentication.type "static")}}
+{{#if (neq prisma.provider "sqlite")}}
+import { UserRole } from "@prisma/client"
+{{/if}}
+{{/if}}
+
+{{#if (eq authentication.type "dynamic")}}
+class RoleConnectDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  id: string
+}
+
+class RoleConnectionDto {
+  @IsString()
+  @IsOptional()
+  id: string
+
+  @IsEnum(apiActions)
+  @IsOptional()
+  apiAction: string
+
+  @ValidateNested()
+  @Type(() => RoleConnectDto)
+  @IsOptional()
+  role: RoleConnectDto
+}
+{{/if}}
+
+export default class UpdateUserDto {
+  @IsString()
+  @IsNotEmpty({ message: '{{authentication.usernameField}} is required' })
+  @IsOptional()
+  {{authentication.usernameField}}: string
+
+  @IsBoolean()
+  @IsOptional()
+  isSuperUser?: boolean = false
+
+  @IsBoolean()
+  @IsOptional()
+  isStaff?: boolean = false
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean = true
+
+  {{#if (eq authentication.type "static")}}
+  {{#if (eq prisma.provider "sqlite")}}
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  role: string
+  {{else}}
+  {{#if authentication.multipleRoles}}
+  @IsArray()
+  @IsEnum(UserRole, { each: true })
+  @IsOptional()
+  roles: UserRole[]
+  {{else}}
+  @IsEnum(UserRole)
+  @IsOptional()
+  role: UserRole
+  {{/if}}
+  {{/if}}
+  {{else}}
+  {{#if authentication.multipleRoles}}
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RoleConnectionDto)
+  @IsOptional()
+  roles?: RoleConnectionDto[]
+  {{else}}
+  @ValidateNested()
+  @Type(() => RoleConnectionDto)
+  @IsOptional()
+  role?: RoleConnectionDto
+  {{/if}}
+  {{/if}}
+}

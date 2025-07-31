@@ -18,14 +18,13 @@
   "devDependencies": {
     {{#if typescript}}
     "typescript": "^5.7.3",
-    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "@types/node": "^24.0.12",
     "@types/express": "^5.0.0",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     {{else}}
-    "nodemon": "^2.0.12",
+    "node-dev": "^8.0.0",
     {{/if}}
     "prisma": "^6.11.1"
   },
@@ -36,6 +35,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     {{#if (eq validation.type "class-validator")}}
+    "reflect-metadata": "^0.2.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "class-validator-jsonschema": "^5.0.2",

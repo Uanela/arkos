@@ -117,7 +117,7 @@ class ProjectConfigInquirer {
       {
         type: "confirm",
         name: "typescript",
-        message: `Would you like to use ${chalk.cyan("TypeScript")}?`,
+        message: `Would you like to use ${chalk.blue("TypeScript")}?`,
         default: false,
       },
     ]);
@@ -129,7 +129,7 @@ class ProjectConfigInquirer {
       {
         type: "list",
         name: "prismaProvider",
-        message: `What db provider will be used for ${chalk.cyan("Prisma")}?`,
+        message: `What db provider will be used for ${chalk.blue("Prisma")}?`,
         choices: [
           "postgresql",
           "mongodb",
@@ -152,7 +152,7 @@ class ProjectConfigInquirer {
         break;
       case "sqlite":
         idDatabaseType = "@id @default(cuid())";
-        defaultDBurl = "file:../file.db";
+        defaultDBurl = "file:../../file.db";
         break;
       case "mysql":
         idDatabaseType = "@id @default(uuid())";
@@ -187,7 +187,7 @@ class ProjectConfigInquirer {
       {
         type: "confirm",
         name: "useValidation",
-        message: `Would you like to set up ${chalk.cyan("Validation")}?`,
+        message: `Would you like to set up ${chalk.blue("Validation")}?`,
         default: true,
       },
     ]);
@@ -212,7 +212,7 @@ class ProjectConfigInquirer {
       {
         type: "confirm",
         name: "useAuthentication",
-        message: `Would you like to set up ${chalk.cyan("Authentication")}?`,
+        message: `Would you like to set up ${chalk.blue("Authentication")}?`,
         default: true,
       },
     ]);
@@ -227,6 +227,22 @@ class ProjectConfigInquirer {
         },
       ]);
 
+      const { usernameField } = await inquirer.prompt([
+        {
+          type: "list",
+          name: "usernameField",
+          message: "Choose default username field for login:",
+          choices: ["email", "username", "define later"],
+        },
+      ]);
+
+      this.config.authentication = {
+        type: authenticationType,
+        usernameField:
+          usernameField === "define later" ? "custom" : usernameField,
+        multipleRoles: false,
+      };
+
       if (
         authenticationType !== "define later" &&
         this.config.prisma.provider !== "sqlite"
@@ -236,28 +252,17 @@ class ProjectConfigInquirer {
             type: "confirm",
             name: "multipleRoles",
             default: true,
-            message: `Would you like to use authentication with ${chalk.cyan("Multiple Roles")}?`,
-          },
-        ]);
-
-        const { usernameField } = await inquirer.prompt([
-          {
-            type: "list",
-            name: "usernameField",
-            message: "Choose default username field for login:",
-            choices: ["email", "username", "define later"],
+            message: `Would you like to use authentication with ${chalk.blue("Multiple Roles")}?`,
           },
         ]);
 
         this.config.authentication = {
-          type: authenticationType,
-          usernameField:
-            usernameField === "define later" ? "custom" : usernameField,
+          ...this.config.authentication,
           multipleRoles,
         };
       } else if (this.config.prisma.provider === "sqlite") {
         console.info(
-          `Skipping multiple roles options because provider is sqlite...`
+          `\nSkipping multiple roles option because it is not supported with sqlite prisma provider...`
         );
       }
     }

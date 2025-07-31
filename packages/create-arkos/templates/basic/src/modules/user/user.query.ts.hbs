@@ -1,0 +1,35 @@
+{{#if typescript}}
+import prisma from "../../utils/prisma";
+import { PrismaQueryOptions } from 'arkos/prisma';
+
+const userQueryOptions: PrismaQueryOptions<typeof prisma.user> = {
+{{else}}
+const userQueryOptions = {
+{{/if}}
+    global: {},
+    find: {
+      include: {
+        password: false,
+      },
+    },
+    findOne: {},
+    findMany: {},
+    udpate: {},
+    updateMany: {},
+    updateOne: {},
+    create: {},
+    createMany: {},
+    createOne: {},
+    save: {
+      include: {
+        password: false,
+      },
+    },
+    saveMany: {},
+    saveOne: {},
+    delete: {},
+    deleteMany: {},
+    deleteOne: {},
+}
+
+export default userQueryOptions;

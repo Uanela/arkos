@@ -1,0 +1,46 @@
+import { z } from "zod"
+import apiActions from "../../../utils/validation/api-actions"
+{{#if (eq authentication.type "static")}}
+{{#if (neq prisma.provider "sqlite")}}
+import { UserRole } from "@prisma/client"
+{{/if}}
+{{/if}}
+
+const UpdateUserSchema = z.object({
+  {{authentication.usernameField}}: z.string()
+    .optional(),
+  isSuperUser: z.boolean().optional(),
+  isStaff: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  {{#if (eq authentication.type "static")}}
+  {{#if (eq prisma.provider "sqlite")}}
+  role: z.string().optional(),
+  {{else}}
+  {{#if authentication.multipleRoles}}
+  roles: z.array(z.nativeEnum(UserRole)).optional(),
+  {{else}}
+  role: z.nativeEnum(UserRole).optional(),
+  {{/if}}
+  {{/if}}
+  {{else}}
+  {{#if authentication.multipleRoles}}
+  roles: z.array(z.object({
+    id: z.string().optional(),
+    apiAction: z.enum(apiActions).optional(),
+    role: z.object({
+      id: z.string(),
+    }).optional()
+  })).optional(),
+  {{else}}
+  role: z.object({
+    id: z.string().optional(),
+    apiAction: z.enum(apiActions).optional(),
+    role: z.object({
+      id: z.string(),
+    })
+  }).optional(),
+  {{/if}}
+  {{/if}}
+})
+
+export default UpdateUserSchema
