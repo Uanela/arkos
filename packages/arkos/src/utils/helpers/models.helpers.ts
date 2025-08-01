@@ -79,13 +79,13 @@ export function getFileModelModulesFileStructure(modelName: string) {
 
 export async function processSubdir(
   modelName: string,
-  type: "dtos" | "schemas",
-  result: Record<string, any> = {}
+  type: "dtos" | "schemas"
 ) {
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
   const subdir = path.join(moduleDir, type);
   const fileStructure = getFileModelModulesFileStructure(modelName);
+  const result: Record<string, any> = {};
 
   // Skip if directory doesn't exist
   try {
@@ -266,13 +266,15 @@ export async function importPrismaModelModules(
 
   // Removed because caused problems with cached ZObjects
   // Cache the result making shallow copy to not cause problems after build
-  // prismaModelsModules[modelName] = JSON.parse(JSON.stringify(result));
   prismaModelsModules[modelName] = {
     ...result,
     ...(validationSubdir && { [validationSubdir]: validators }),
   };
 
-  return result;
+  return {
+    ...result,
+    ...(validationSubdir && { [validationSubdir]: validators }),
+  };
 }
 
 export type ModelFieldDefition = {

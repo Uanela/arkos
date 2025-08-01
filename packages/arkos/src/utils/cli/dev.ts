@@ -250,6 +250,7 @@ export async function devCommand(options: DevOptions = {}) {
         }
         return false;
       } catch (error) {
+        console.info(error);
         return false;
       }
     };
@@ -301,9 +302,7 @@ export async function devCommand(options: DevOptions = {}) {
 
         // Force kill after 5 seconds if still running
         setTimeout(() => {
-          if (child && !child.killed) {
-            child.kill("SIGKILL");
-          }
+          if (child && !child.killed) child.kill("SIGKILL");
         }, 5000);
       }
 

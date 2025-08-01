@@ -7,6 +7,7 @@ import {
   generatePathsForModels,
   getOpenAPIJsonSchemasByConfigMode,
 } from "./utils/helpers/swagger.router.helpers";
+import { capitalize } from "../../utils/helpers/text.helpers";
 
 const swaggerRouter = Router();
 
@@ -19,7 +20,7 @@ export async function getSwaggerRouter(
   const defaultModelsPaths = await generatePathsForModels(arkosConfig);
 
   const defaultSwaggerConfig: ArkosConfig["swagger"] = {
-    endpoint: "/api-docs",
+    endpoint: "/docs",
     mode: "prisma",
     options: {
       definition: {
@@ -33,7 +34,7 @@ export async function getSwaggerRouter(
         servers: [
           {
             url: `http://${arkosConfig.host}:${arkosConfig.port}`,
-            description: "Development server",
+            description: `Local ${capitalize(process.env.NODE_ENV || "development")} server`,
           },
         ],
         paths: defaultModelsPaths,
