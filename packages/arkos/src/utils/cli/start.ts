@@ -94,8 +94,7 @@ export async function startCommand(options: StartOptions = {}) {
       while (attempts < maxAttempts) {
         const ready = await checkConfig();
         if (ready) break;
-
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         attempts++;
       }
 

@@ -24,14 +24,10 @@ export async function importModule(
   modulePath: string,
   options: { fixExtension: boolean } = { fixExtension: true }
 ) {
-  if (
-    !options.fixExtension ||
-    modulePath.endsWith(".ts") ||
-    getUserFileExtension() === "ts"
-  )
+  if (!options.fixExtension || modulePath.endsWith(".ts") || !isEsm())
     return await import(modulePath);
 
-  // When importing user modules:
+  // When importing user modules: mainly on ESM environment
   const userRequire = createRequire(
     pathToFileURL(process.cwd() + "/package.json")
   );

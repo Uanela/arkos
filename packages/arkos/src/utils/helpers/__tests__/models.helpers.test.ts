@@ -114,9 +114,7 @@ describe("Dynamic Prisma Model Loader", () => {
     // Set up a mock implementation for importPrismaModelModules to avoid actual dynamic imports
     jest
       .spyOn(dynamicLoader, "importPrismaModelModules")
-      .mockImplementation(async (modelName) => {
-        // console.log(modelName);
-
+      .mockImplementation(async () => {
         const result: any = {
           dtos: {},
           schemas: {},
@@ -611,10 +609,6 @@ describe("Dynamic Prisma Model Loader", () => {
     describe("processSubdir", () => {
       it("should process DTOs and schemas correctly", async () => {
         // Setup
-        const mockResult = {
-          dtos: {},
-          schemas: {},
-        };
 
         const accessSpy = jest
           .spyOn(fs.promises, "access")
@@ -637,8 +631,8 @@ describe("Dynamic Prisma Model Loader", () => {
           .mockResolvedValue([undefined]);
 
         // Act
-        await dynamicLoader.processSubdir("User", "dtos", mockResult);
-        await dynamicLoader.processSubdir("User", "schemas", mockResult);
+        await dynamicLoader.processSubdir("User", "dtos");
+        await dynamicLoader.processSubdir("User", "schemas");
 
         // Assert
         expect(accessSpy).toHaveBeenCalledTimes(2);
@@ -658,7 +652,7 @@ describe("Dynamic Prisma Model Loader", () => {
           .mockRejectedValue(new Error("Directory not found"));
 
         // Act
-        await dynamicLoader.processSubdir("User", "dtos", mockResult);
+        await dynamicLoader.processSubdir("User", "dtos");
 
         // Assert
         expect(mockResult.dtos).toEqual({});
