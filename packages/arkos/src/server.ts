@@ -7,6 +7,7 @@ import deepmerge from "./utils/helpers/deepmerge.helper";
 import http from "http";
 import { initializePrismaModels } from "./utils/helpers/models.helpers";
 import sheu from "./utils/sheu";
+import { capitalize } from "./utils/helpers/text.helpers";
 
 process.on("uncaughtException", (err) => {
   // if (err.message.includes("EPIPE")) return;
@@ -72,7 +73,7 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
 
     server.listen(Number(port), _arkosConfig.host!, () => {
       sheu.ready(
-        `${sheu.gray(time)} ${(process.env.NODE_ENV || "development").toLowerCase()} server waiting on http://${_arkosConfig.host || "localhost"}:${port}`
+        `${sheu.gray(time)} ${capitalize(process.env.NODE_ENV || "development")} server waiting on http://${_arkosConfig.host || "localhost"}:${port}`
       );
     });
   } else {

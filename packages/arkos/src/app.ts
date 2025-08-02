@@ -51,7 +51,7 @@ export async function bootstrap(
               limit: 500,
               standardHeaders: "draft-7",
               legacyHeaders: false,
-              handler: (req, res) => {
+              handler: (_, res) => {
                 res.status(429).json({
                   message: "Too many requests, please try again later",
                 });
@@ -154,7 +154,7 @@ export async function bootstrap(
     app.get(
       "/api",
       replacedRouters.welcomeEndpoint ||
-        ((req, res) => {
+        ((_, res) => {
           res.status(200).json({ message: arkosConfig.welcomeMessage });
         })
     );
@@ -205,7 +205,7 @@ export async function bootstrap(
   if (!disabledMiddlewares?.includes?.("global-error-handler"))
     app.use(replacedMiddlewares.globalErrorHandler || errorHandler);
 
-  app.use("*", (req, res) => {
+  app.use("*", (_, res) => {
     res.status(404).json({ message: "Route not found!" });
   });
 

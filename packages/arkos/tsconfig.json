@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "ES2021",
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "sourceMap": true,
+    "skipLibCheck": true,
     "inlineSources": true,
     "removeComments": true,
     "esModuleInterop": true,

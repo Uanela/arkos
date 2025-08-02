@@ -161,7 +161,7 @@ export async function devCommand(options: DevOptions = {}) {
         }
       );
 
-      envWatcher.on("all", (event, filePath) => {
+      envWatcher.on("all", (_, filePath) => {
         try {
           envFiles = loadEnvironmentVariables();
 
@@ -211,10 +211,6 @@ export async function devCommand(options: DevOptions = {}) {
         scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
       });
 
-      additionalWatcher.on("change", (filePath) => {
-        console.log(`file changed`, filePath);
-      });
-
       return additionalWatcher;
     };
 
@@ -249,8 +245,8 @@ export async function devCommand(options: DevOptions = {}) {
           return true;
         }
         return false;
-      } catch (error) {
-        console.info(error);
+      } catch (err: any) {
+        if (!err.message.includes("../../server")) console.info(err);
         return false;
       }
     };
@@ -262,7 +258,7 @@ export async function devCommand(options: DevOptions = {}) {
       while (attempts < maxAttempts) {
         const ready = await checkConfig();
         if (ready) break;
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 150));
         attempts++;
       }
 
@@ -289,8 +285,6 @@ export async function devCommand(options: DevOptions = {}) {
 
     // Enhanced cleanup function
     const cleanup = () => {
-      // console.info("\nShutting down development server...");
-
       if (restartTimeout) clearTimeout(restartTimeout);
 
       if (envWatcher) envWatcher.close();
