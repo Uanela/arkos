@@ -60,7 +60,7 @@ export async function getSwaggerRouter(
       persistAuthorization: false,
     },
     scalarApiReferenceConfiguration: {
-      theme: "purple",
+      theme: "deepSpace",
       darkMode: true,
       layout: "modern",
       showSidebar: true,
