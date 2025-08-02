@@ -80,8 +80,8 @@ export async function startCommand(options: StartOptions = {}) {
           return true;
         }
         return false;
-      } catch (error) {
-        console.info(error);
+      } catch (err: any) {
+        if (!err.message.includes("../../server")) console.info(err);
         return false;
       }
     };
@@ -94,7 +94,7 @@ export async function startCommand(options: StartOptions = {}) {
       while (attempts < maxAttempts) {
         const ready = await checkConfig();
         if (ready) break;
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 150));
         attempts++;
       }
 

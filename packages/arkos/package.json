@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.2.32-test",
+  "version": "1.2.13-beta",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -66,21 +66,37 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/types/exports/*/index.d.ts"],
-      "services": ["./dist/types/exports/services/index.d.ts"],
-      "validation": ["./dist/types/exports/validation/index.d.ts"],
-      "error-handler": ["./dist/types/exports/error-handler/index.d.ts"],
-      "prisma": ["./dist/types/exports/prisma/index.d.ts"],
-      "auth": ["./dist/types/exports/auth/index.d.ts"],
-      "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
-      "utils": ["./dist/types/exports/utils/index.d.ts"]
+      "*": [
+        "./dist/types/exports/*/index.d.ts"
+      ],
+      "services": [
+        "./dist/types/exports/services/index.d.ts"
+      ],
+      "validation": [
+        "./dist/types/exports/validation/index.d.ts"
+      ],
+      "error-handler": [
+        "./dist/types/exports/error-handler/index.d.ts"
+      ],
+      "prisma": [
+        "./dist/types/exports/prisma/index.d.ts"
+      ],
+      "auth": [
+        "./dist/types/exports/auth/index.d.ts"
+      ],
+      "middlewares": [
+        "./dist/types/exports/middlewares/index.d.ts"
+      ],
+      "utils": [
+        "./dist/types/exports/utils/index.d.ts"
+      ]
     }
   },
   "scripts": {
     "build:esm": "tsc -p tsconfig.esm.json && ts-node scripts/fix-esm-imports.ts",
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && pnpm run minify && ts-node scripts/post-build-scripts.ts",
+    "build": "npx rimraf dist && pnpm run build:esm && pnpm run build:esm && pnpm run build:types && pnpm run minify && ts-node scripts/post-build-scripts.ts",
     "minify": "esbuild dist/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "clean": "rm -r dist",
     "dev": "ts-node --watch",
@@ -126,9 +142,14 @@
     "url": "https://github.com/uanela/arkos/issues"
   },
   "homepage": "https://www.arkosjs.com",
-  "files": ["dist", "cli.js", "README.md"],
+  "files": [
+    "dist",
+    "cli.js",
+    "README.md"
+  ],
   "devDependencies": {
     "@prisma/client": "^6.4.1",
+    "@scalar/express-api-reference": "^0.8.13",
     "@types/bcrypt": "^5.0.2",
     "@types/body-parser": "^1.19.5",
     "@types/compression": "^1.7.5",
@@ -152,6 +173,7 @@
     "openapi-types": "^12.1.3",
     "prisma": "^6.4.1",
     "ts-jest": "^29.3.1",
+    "type-fest": "^4.41.0",
     "typescript": "^5.8.2"
   },
   "dependencies": {
@@ -165,6 +187,7 @@
   },
   "peerDependencies": {
     "@prisma/client": "^6.4.1",
+    "@scalar/express-api-reference": "^0.8.13",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",

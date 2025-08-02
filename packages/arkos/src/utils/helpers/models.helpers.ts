@@ -10,6 +10,7 @@ import { importModule } from "./global.helpers";
 import { AuthConfigs } from "../../types/auth";
 import { killServerChildProcess } from "../cli/utils/cli.helpers";
 import { ArkosConfig } from "../../exports";
+import sheu from "../sheu";
 
 type ModeModules = Awaited<ReturnType<typeof importPrismaModelModules>>;
 
@@ -97,7 +98,15 @@ export async function processSubdir(
       Object.entries(fileStructure[type]).map(async ([key, fileName]) => {
         const filePath = path.join(subdir, fileName);
         try {
-          const module = await importModule(filePath).catch(() => null);
+          const module = await importModule(filePath).catch((err) => {
+            if (!err.message.includes("Cannot find module")) {
+              sheu.error(`Failed to import ${fileName}:`);
+              console.error(err);
+              killServerChildProcess();
+              process.exit(1);
+            }
+          });
+
           if (module) result[key] = module.default;
         } catch (error) {
           // Silent fail - file might not exist
@@ -232,7 +241,7 @@ export async function importPrismaModelModules(
       try {
         const module = await importModule(filePath).catch((err) => {
           if (!err.message.includes("Cannot find module")) {
-            console.error(`Failed to import ${fileName}: \n`);
+            sheu.error(`Failed to import ${fileName}:`);
             console.error(err);
             killServerChildProcess();
             process.exit(1);
@@ -264,8 +273,6 @@ export async function importPrismaModelModules(
   if (validationSubdir)
     validators = await processSubdir(modelName, validationSubdir);
 
-  // Removed because caused problems with cached ZObjects
-  // Cache the result making shallow copy to not cause problems after build
   prismaModelsModules[modelName] = {
     ...result,
     ...(validationSubdir && { [validationSubdir]: validators }),

@@ -89,7 +89,7 @@ export default class APIFeatures {
         Object.keys((prisma as any)[this.modelName].fields).forEach((key) => {
           const field = ((prisma as any)[this.modelName!].fields as any)[key];
           if (
-            field.typeName === "String" &&
+            field?.typeName === "String" &&
             key !== "id" &&
             key !== "password" &&
             !field.isList &&
