@@ -603,6 +603,8 @@ export type ArkosConfig = {
   /**
    * Defines Swagger and OpenApi specifications for auto generating swagger documentation UI using whether it is Prisma Schemas, Class-validator DTOs, Zod Schemas or JSON-Schemas.
    *
+   * **Important**: Is worth mentioning that this works alongside `@scalar/express-api-reference` npm package, you define it's ApiReferenceConfiguration under ``. also consider checking the package documentation at []
+   *
    * **Usage**
    *
    * ```ts
@@ -651,9 +653,9 @@ export type ArkosConfig = {
      * Allows `Arkos.js` to fallback to prisma schema and use them as json schema for defining request body and response data
      * when a given zod Schema or class-validator Class is not found to be transformed to json schema.
      *
-     * @default true
+     * @default false
      */
-    fallBackToPrisma: boolean;
+    strict: boolean;
     /**
      * Defines your swagger configurations
      */

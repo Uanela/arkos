@@ -23,7 +23,7 @@ function replaceVersionPlaceholder() {
       process.exit(1);
     }
 
-    console.log(`Found version: ${version}`);
+    console.info(`Found version: ${version}`);
 
     // Define target file paths
     const targetFiles = [
@@ -54,10 +54,10 @@ function replaceVersionPlaceholder() {
         // Write back only if content changed
         if (content !== originalContent) {
           fs.writeFileSync(fullPath, content, "utf8");
-          console.log(`✓ Updated: ${filePath}`);
+          console.info(`✓ Updated: ${filePath}`);
           filesUpdated++;
         } else {
-          console.log(`- No changes needed: ${filePath}`);
+          console.info(`- No changes needed: ${filePath}`);
         }
 
         filesProcessed++;
@@ -66,7 +66,7 @@ function replaceVersionPlaceholder() {
       }
     });
 
-    console.log(
+    console.info(
       `\nSummary: ${filesProcessed} files processed, ${filesUpdated} files updated`
     );
   } catch (error) {

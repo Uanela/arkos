@@ -60,7 +60,7 @@ export function addPrismaQueryOptionsToRequest<T extends Record<string, any>>(
   prismaQueryOptions: PrismaQueryOptions<T> | AuthPrismaQueryOptions<T>,
   action: ControllerActions
 ) {
-  return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
+  return (req: ArkosRequest, _: ArkosResponse, next: NextFunction) => {
     const configs = getArkosConfig();
 
     // Resolve and merge all applicable options using the helper
@@ -153,7 +153,7 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
   classValidatorValidationOptions?: ValidatorOptions
 ) {
   return catchAsync(
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       const validationConfigs = getArkosConfig()?.validation;
       let body = req.body;
 

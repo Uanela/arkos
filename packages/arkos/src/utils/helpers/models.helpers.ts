@@ -25,6 +25,17 @@ export function getModelModules(modelName: string) {
   return prismaModelsModules[kebabCase(modelName)];
 }
 
+/**
+ * To be reused on other part of code for correct typing
+ *
+ * @param key
+ * @param fileName
+ * @param result
+ */
+export type ValidationFileMappingKey = keyof ReturnType<
+  typeof getFileModelModulesFileStructure
+>["dtos"];
+
 export function getFileModelModulesFileStructure(modelName: string) {
   const kebabModelName = kebabCase(modelName).toLowerCase();
   const isAuthModule = modelName.toLowerCase() === "auth";
@@ -45,35 +56,43 @@ export function getFileModelModulesFileStructure(modelName: string) {
       ? {
           login: `login.dto.${ext}`,
           signup: `signup.dto.${ext}`,
+          getMe: `get-me.dto.${ext}`,
           updateMe: `update-me.dto.${ext}`,
           updatePassword: `update-password.dto.${ext}`,
         }
       : {
           model: `${kebabModelName}.dto.${ext}`,
           create: `create-${kebabModelName}.dto.${ext}`,
+          createOne: `create-${kebabModelName}.dto.${ext}`, // just for sake of completion and reusability around other parts of code
           createMany: `create-many-${kebabModelName}.dto.${ext}`,
           update: `update-${kebabModelName}.dto.${ext}`,
+          updateOne: `update-${kebabModelName}.dto.${ext}`, // same as createOne
           updateMany: `update-many-${kebabModelName}.dto.${ext}`,
+          query: `query-${kebabModelName}.dto.${ext}`,
+          // looking for some better naming convetion
           findOne: `find-one-${kebabModelName}.dto.${ext}`,
           findMany: `find-many-${kebabModelName}.dto.${ext}`,
-          query: `query-${kebabModelName}.dto.${ext}`,
         },
     schemas: isAuthModule
       ? {
           login: `login.schema.${ext}`,
           signup: `signup.schema.${ext}`,
+          getMe: `get-me.schema.${ext}`,
           updateMe: `update-me.schema.${ext}`,
           updatePassword: `update-password.schema.${ext}`,
         }
       : {
           model: `${kebabModelName}.schema.${ext}`,
           create: `create-${kebabModelName}.schema.${ext}`,
-          createMany: `create-many-${kebabModelName}.schema.${ext}`,
+          createOne: `create-${kebabModelName}.schema.${ext}`,
+          createMany: `create-many-${kebabModelName}.schema.${ext}`, // just for sake of completion and reusability around other parts of code
           update: `update-${kebabModelName}.schema.${ext}`,
+          updateOne: `update-${kebabModelName}.schema.${ext}`, // same as createOne
           updateMany: `update-many-${kebabModelName}.schema.${ext}`,
+          query: `query-${kebabModelName}.schema.${ext}`,
+          // looking for some better naming convetion
           findOne: `find-one-${kebabModelName}.schema.${ext}`,
           findMany: `find-many-${kebabModelName}.schema.${ext}`,
-          query: `query-${kebabModelName}.schema.${ext}`,
         },
   };
 }
@@ -294,9 +313,6 @@ export type ModelFieldDefition = {
  * Represents the structure of relation fields for Prisma models.
  * It includes both singular (one-to-one) and list (one-to-many) relationships.
  *
- * @typedef {Object} RelationFields
- * @property {Array<{name: string, type: string}>} singular - List of singular relationships.
- * @property {Array<{name: string, type: string}>} list - List of list relationships.
  */
 export type RelationFields = {
   singular: Omit<ModelFieldDefition, "isUnique">[];
@@ -334,27 +350,7 @@ export const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
   [] as any;
 
 export function initializePrismaModels() {
-  const prismaContent: string[] = [];
-
-  const files = getAllPrismaFiles("./prisma");
-
-  for (const file of files) {
-    const content = fs.readFileSync(file, "utf-8");
-
-    if (!prismaContent?.includes?.(content)) prismaContent.push(content);
-  }
-
-  // Gather the content of all *.prisma files into single one
-  const content = prismaContent
-    .join("\n")
-    .replace(modelRegex, (_, modelName) => {
-      if (!models?.includes?.(modelName))
-        models.push(camelCase(modelName.trim()));
-      return `model ${modelName} {`;
-    });
-
-  const copiedContent = content;
-  prismaSchemasContent = content;
+  const copiedContent = getPrismaSchemasContent();
 
   for (const model of models) {
     const modelName = pascalCase(model);
@@ -476,7 +472,27 @@ function getModels(): string[] {
  * @returns {string}
  */
 export function getPrismaSchemasContent(): string {
-  return prismaSchemasContent;
+  if (prismaSchemasContent) return prismaSchemasContent;
+
+  const prismaContent: string[] = [];
+
+  const files = getAllPrismaFiles("./prisma");
+
+  for (const file of files) {
+    const content = fs.readFileSync(file, "utf-8");
+    if (!prismaContent?.includes?.(content)) prismaContent.push(content);
+  }
+
+  // Gather the content of all *.prisma files into single one
+  const content = prismaContent
+    .join("\n")
+    .replace(modelRegex, (_, modelName) => {
+      if (!models?.includes?.(modelName))
+        models.push(camelCase(modelName.trim()));
+      return `model ${modelName} {`;
+    });
+
+  return content;
 }
 
 /** Retuns a given model unique fields
@@ -485,6 +501,26 @@ export function getPrismaSchemasContent(): string {
  */
 function getModelUniqueFields(modelName: string): ModelFieldDefition[] {
   return prismaModelsUniqueFields[modelName];
+}
+
+/**
+ * Helps in finding out whether a given dto/schema file exits under the user project according to the validation arkos configuration.
+ *
+ * @param action {ValidationFileMappingKey} - the action of the dto, e.g: create, findMany.
+ * @param modelName {string} - the model to be checked
+ * @param arkosConfig {ArkosConfig} - the arkos.js configuration
+ * @returns boolean
+ */
+export async function localValidatorFileExists(
+  action: ValidationFileMappingKey,
+  modelName: string,
+  arkosConfig: ArkosConfig
+) {
+  const modelModules = await importPrismaModelModules(modelName, arkosConfig);
+
+  return !!modelModules?.[
+    arkosConfig.validation?.resolver === "zod" ? "schemas" : "dtos"
+  ]?.[camelCase(action)];
 }
 
 export { getModels, getModelUniqueFields };
