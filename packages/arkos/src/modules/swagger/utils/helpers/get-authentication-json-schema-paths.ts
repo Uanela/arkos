@@ -1,13 +1,45 @@
 import { OpenAPIV3 } from "openapi-types";
 import { getSchemaRef } from "./swagger.router.helpers";
-import { getArkosConfig } from "../../../../server";
+import { ArkosConfig } from "../../../../exports";
+import { localValidatorFileExists } from "../../../../utils/helpers/models.helpers";
 
-export function getAuthenticationJsonSchemaPaths() {
-  const mode = getArkosConfig().swagger?.mode;
+export async function getAuthenticationJsonSchemaPaths(
+  arkosConfig: ArkosConfig
+) {
   const paths: OpenAPIV3.PathsObject = {};
 
-  if (!mode) return paths;
+  // Helper function to determine the correct mode for schema ref
+  const getSchemaMode = async (
+    action: string
+  ): Promise<"prisma" | "zod" | "class-validator"> => {
+    const swaggerMode = arkosConfig.swagger?.mode;
+    const isStrict = arkosConfig.swagger?.strict;
+
+    if (!swaggerMode) return "prisma";
+
+    if (isStrict) {
+      return swaggerMode;
+    }
+
+    const actionKey = action as any;
+    // For auth endpoints, we don't have a specific model, so we use "user" as the model name
+    const localFileExists = await localValidatorFileExists(
+      actionKey,
+      "user",
+      arkosConfig
+    );
+
+    if (!localFileExists) {
+      return "prisma";
+    }
+
+    return swaggerMode;
+  };
+
+  if (!arkosConfig.swagger?.mode) return paths;
+
   // Add login endpoint
+  const loginMode = await getSchemaMode("login");
   paths["/api/auth/login"] = {
     post: {
       tags: ["Authentication"],
@@ -20,7 +52,7 @@ export function getAuthenticationJsonSchemaPaths() {
         content: {
           "application/json": {
             schema: {
-              $ref: getSchemaRef("Login", mode),
+              $ref: getSchemaRef("Login", loginMode),
             },
           },
         },
@@ -72,6 +104,8 @@ export function getAuthenticationJsonSchemaPaths() {
   };
 
   // Add signup endpoint
+  const signupMode = await getSchemaMode("signup");
+  const userMode = await getSchemaMode("user");
   paths["/api/auth/signup"] = {
     post: {
       tags: ["Authentication"],
@@ -84,7 +118,7 @@ export function getAuthenticationJsonSchemaPaths() {
         content: {
           "application/json": {
             schema: {
-              $ref: getSchemaRef("Signup", mode),
+              $ref: getSchemaRef("Signup", signupMode),
             },
           },
         },
@@ -95,7 +129,7 @@ export function getAuthenticationJsonSchemaPaths() {
           content: {
             "application/json": {
               schema: {
-                $ref: getSchemaRef("User", mode),
+                $ref: getSchemaRef("User", userMode),
               },
             },
           },
@@ -111,6 +145,7 @@ export function getAuthenticationJsonSchemaPaths() {
   };
 
   // Add update password endpoint
+  const updatePasswordMode = await getSchemaMode("updatePassword");
   paths["/api/auth/update-password"] = {
     post: {
       tags: ["Authentication"],
@@ -124,7 +159,7 @@ export function getAuthenticationJsonSchemaPaths() {
         content: {
           "application/json": {
             schema: {
-              $ref: getSchemaRef("UpdatePassword", mode),
+              $ref: getSchemaRef("UpdatePassword", updatePasswordMode),
             },
           },
         },
@@ -161,9 +196,10 @@ export function getAuthenticationJsonSchemaPaths() {
   };
 
   // Add get current user endpoint
-  paths["/users/me"] = {
+  const findMeMode = await getSchemaMode("getMe");
+  paths["/api/users/me"] = {
     get: {
-      tags: ["Users"],
+      tags: ["Authentication"],
       summary: "Get current user information",
       description:
         "Retrieves information about the currently authenticated user",
@@ -175,7 +211,7 @@ export function getAuthenticationJsonSchemaPaths() {
           content: {
             "application/json": {
               schema: {
-                $ref: getSchemaRef("FindMe", mode),
+                $ref: getSchemaRef("GetMe", findMeMode),
               },
             },
           },
@@ -188,73 +224,72 @@ export function getAuthenticationJsonSchemaPaths() {
   };
 
   // Add update current user endpoint
-  paths["/users/me"] = {
-    patch: {
-      tags: ["Users"],
-      summary: "Update current user information",
-      description: "Updates information for the currently authenticated user",
-      operationId: "updateCurrentUser",
-      security: [{ BearerAuth: [] }],
-      requestBody: {
-        description: "User data to update",
-        required: true,
+  const updateMeMode = await getSchemaMode("updateMe");
+  if (!paths["/api/users/me"]) paths["/api/users/me"] = {};
+  paths["/api/users/me"]!.patch = {
+    tags: ["Authentication"],
+    summary: "Update current user information",
+    description: "Updates information for the currently authenticated user",
+    operationId: "updateCurrentUser",
+    security: [{ BearerAuth: [] }],
+    requestBody: {
+      description: "User data to update",
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            $ref: getSchemaRef("UpdateMe", updateMeMode),
+          },
+        },
+      },
+    },
+    responses: {
+      "200": {
+        description: "User updated successfully",
         content: {
           "application/json": {
             schema: {
-              $ref: getSchemaRef("UpdateMe", mode),
+              $ref: getSchemaRef("User", userMode),
             },
           },
         },
       },
-      responses: {
-        "200": {
-          description: "User updated successfully",
-          content: {
-            "application/json": {
-              schema: {
-                $ref: getSchemaRef("User", mode),
-              },
-            },
-          },
-        },
-        "400": {
-          description: "Invalid input data",
-        },
-        "401": {
-          description: "Authentication required",
-        },
+      "400": {
+        description: "Invalid input data",
+      },
+      "401": {
+        description: "Authentication required",
       },
     },
   };
 
   // Add delete current user endpoint
-  paths["/users/me"] = {
-    delete: {
-      tags: ["Users"],
-      summary: "Delete current user account",
-      description: "Marks the current user's account as deleted",
-      operationId: "deleteCurrentUser",
-      security: [{ BearerAuth: [] }],
-      responses: {
-        "200": {
-          description: "Account deleted successfully",
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                    example: "Account deleted successfully",
-                  },
+  if (!paths["/api/users/me"]) paths["/api/users/me"] = {};
+  paths["/api/users/me"]!.delete = {
+    tags: ["Authentication"],
+    summary: "Delete current user account",
+    description: "Marks the current user's account as deleted",
+    operationId: "deleteCurrentUser",
+    security: [{ BearerAuth: [] }],
+    responses: {
+      "200": {
+        description: "Account deleted successfully",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                message: {
+                  type: "string",
+                  example: "Account deleted successfully",
                 },
               },
             },
           },
         },
-        "401": {
-          description: "Authentication required",
-        },
+      },
+      "401": {
+        description: "Authentication required",
       },
     },
   };

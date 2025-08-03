@@ -1,11 +1,7 @@
 import { ArkosConfig } from "../../../../exports";
-import {
-  getModels,
-  importPrismaModelModules,
-} from "../../../../utils/helpers/models.helpers";
-import { kebabCase, pascalCase } from "../../../../exports/utils";
+import { getModels } from "../../../../utils/helpers/models.helpers";
+import { pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
-import pluralize from "pluralize";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
 import { getAuthenticationJsonSchemaPaths } from "./get-authentication-json-schema-paths";
 import { generateZodJsonSchemas } from "./json-schema-generators/generate-zod-json-schema";
@@ -13,13 +9,17 @@ import { generateClassValidatorJsonSchemas } from "./json-schema-generators/gene
 import { generatePrismaJsonSchemas } from "./json-schema-generators/generate-prisma-json-schemas";
 import { generatePrismaModelMainRoutesPaths } from "./json-schema-generators/prisma-models/generate-prisma-model-main-routes";
 import { generatePrismaModelParentRoutePaths } from "./json-schema-generators/prisma-models/generate-prisma-model-parent-routes";
+import sheu from "../../../../utils/sheu";
 
+/**
+ * Helps choosing the right json schemas according to swagger configurations
+ */
 export async function getOpenAPIJsonSchemasByConfigMode(
-  swaggerConfig: ArkosConfig["swagger"]
+  arkosConfig: ArkosConfig
 ) {
-  switch (swaggerConfig!.mode) {
+  switch (arkosConfig?.swagger!.mode) {
     case "prisma":
-      return await generatePrismaJsonSchemas();
+      return await generatePrismaJsonSchemas(arkosConfig);
     case "class-validator":
       return await generateClassValidatorJsonSchemas();
     case "zod":
@@ -64,15 +64,40 @@ export function kebabToHuman(kebabStr: string): string {
     .join(" ");
 }
 
-export function getSchemaRef(schemaName: string, mode: string): string {
+export function getSchemaRef(
+  schemaName: string,
+  mode: "prisma" | "zod" | "class-validator"
+): string {
+  // Check if schemaName (lowercase) contains any of the specified keywords
+  const lowerSchemaName = schemaName.toLowerCase();
+  const specialCases = [
+    "getme",
+    "updateme",
+    "login",
+    "signup",
+    "updatepassword",
+  ];
+  const isSpecialCase = specialCases.some((keyword) =>
+    lowerSchemaName.includes(keyword)
+  );
+
+  // If it's a special case and mode is prisma, return zod style instead
+  if (isSpecialCase && mode === "prisma") {
+    return `#/components/schemas/${schemaName}Schema`;
+  }
+
   switch (mode) {
     case "prisma":
+      return `#/components/schemas/${schemaName}ModelSchema`;
     case "zod":
       return `#/components/schemas/${schemaName}Schema`;
     case "class-validator":
       return `#/components/schemas/${schemaName}Dto`;
     default:
-      return `#/components/schemas/${schemaName}`;
+      sheu.error(
+        `Unknown Arkos.js swagger documentation provided, available options are prisma, zod or class-validator but received ${mode}`
+      );
+      return "";
   }
 }
 
@@ -85,51 +110,26 @@ export async function generatePathsForModels(
 
   let paths: OpenAPIV3.PathsObject = {};
   const models = getModels();
-  const mode = swaggerConfig!.mode;
 
   for (const model of models) {
-    const modelName = kebabCase(model);
-    const routeName = pluralize.plural(modelName);
-    const pascalModelName = pascalCase(model);
-    const humanReadableName = kebabToHuman(modelName);
-    const humanReadableNamePlural = pluralize.plural(humanReadableName);
-
-    // Import model modules to get router config
-    const modelModules = await importPrismaModelModules(model, arkosConfig);
-    const routerConfig = modelModules.router?.config;
-
-    // Skip if router is completely disabled
-    if (routerConfig?.disable === true) continue;
-
     // Generate main routes
-    await generatePrismaModelMainRoutesPaths(
-      paths,
-      routeName,
-      pascalModelName,
-      humanReadableName,
-      humanReadableNamePlural,
-      routerConfig,
-      mode
-    );
+    await generatePrismaModelMainRoutesPaths(model, paths, arkosConfig);
 
     // Generate parent routes if configured
-    if (routerConfig?.parent)
-      await generatePrismaModelParentRoutePaths(
-        paths,
-        routeName,
-        pascalModelName,
-        humanReadableName,
-        humanReadableNamePlural,
-        routerConfig,
-        mode
-      );
+    await generatePrismaModelParentRoutePaths(model, paths, arkosConfig);
   }
 
   // Add system routes
-  paths = { ...paths, ...getSystemJsonSchemaPaths() };
+  paths = {
+    ...paths,
+    ...getSystemJsonSchemaPaths(),
+  };
 
   // Add authentication routes
-  paths = { ...paths, ...getAuthenticationJsonSchemaPaths() };
+  paths = {
+    ...paths,
+    ...((await getAuthenticationJsonSchemaPaths(arkosConfig)) || {}),
+  };
 
   return paths;
 }

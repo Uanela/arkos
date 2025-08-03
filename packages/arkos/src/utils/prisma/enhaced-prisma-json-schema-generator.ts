@@ -1,12 +1,9 @@
-import fs from "fs";
 import { ArkosConfig, RouterConfig } from "../../exports";
 import { AuthPrismaQueryOptions, PrismaQueryOptions } from "../../types";
-import { camelCase } from "../helpers/change-case.helpers";
 import deepmerge from "../helpers/deepmerge.helper";
-import { crd } from "../helpers/fs.helpers";
 import {
-  getFileModelModulesFileStructure,
   importPrismaModelModules,
+  localValidatorFileExists,
   ValidationFileMappingKey,
 } from "../helpers/models.helpers";
 import prismaSchemaParser from "./prisma-schema-parser";
@@ -16,12 +13,12 @@ import {
   JsonSchema,
   JsonSchemaProperty,
 } from "./types";
-import path from "path";
 
 // Add these types to your existing types file
 export interface SchemaGenerationConfig {
   modelName: string;
   arkosConfig: ArkosConfig;
+  schemasToGenerate?: ValidationFileMappingKey[];
 }
 
 export interface GeneratedSchemas {
@@ -40,12 +37,32 @@ export class EnhancedPrismaJsonSchemaGenerator {
   async generateModelSchemas(
     config: SchemaGenerationConfig
   ): Promise<GeneratedSchemas> {
-    const { modelName, arkosConfig } = config;
+    const {
+      modelName,
+      arkosConfig,
+      schemasToGenerate = [
+        "model",
+        "login",
+        "signup",
+        "getMe",
+        "updateMe",
+        "updatePassword",
+        "create",
+        "createOne",
+        "createMany",
+        "update",
+        "updateOne",
+        "updateMany",
+        "query",
+        "findOne",
+        "findMany",
+      ],
+    } = config;
 
     const modelModules = await importPrismaModelModules(modelName, arkosConfig);
     const routerConfig = modelModules?.router?.config || {};
     const prismaQueryOptions = modelModules?.prismaQueryOptions || {};
-    const isAuthModule = modelName === "auth";
+    const isAuthModule = modelName.toLowerCase() === "auth";
 
     // Check if generation should be skipped
     if (arkosConfig?.swagger?.strict && arkosConfig.swagger.mode !== "prisma")
@@ -64,19 +81,21 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     if (isAuthModule) {
       // Generate auth-specific schemas
-      this.generateAuthSchemas(
+      await this.generateAuthSchemas(
         this.schema.models.find((m) => m.name.toLowerCase() === "user")!,
         schemas,
         arkosConfig,
+        schemasToGenerate,
         prismaQueryOptions as AuthPrismaQueryOptions<any>
       );
     } else {
       // Generate standard CRUD schemas
       if (model)
-        this.generateCrudSchemas(
+        await this.generateCrudSchemas(
           model,
           schemas,
           arkosConfig,
+          schemasToGenerate,
           prismaQueryOptions as PrismaQueryOptions<any>,
           routerConfig
         );
@@ -88,10 +107,11 @@ export class EnhancedPrismaJsonSchemaGenerator {
   /**
    * Generate auth-specific schemas
    */
-  private generateAuthSchemas(
+  private async generateAuthSchemas(
     model: PrismaModel,
     schemas: { [key: string]: JsonSchema },
     arkosConfig: ArkosConfig,
+    schemasToGenerate: ValidationFileMappingKey[],
     queryOptions?: AuthPrismaQueryOptions<any>,
     routerConfig?: RouterConfig
   ) {
@@ -102,16 +122,18 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // Login schema (input)
     if (
+      schemasToGenerate.includes("login") &&
       !this.isEndpointDisabled("login", routerConfig) &&
-      !this.localValidatorFileExists("login", modelName, arkosConfig)
+      !(await localValidatorFileExists("login", modelName, arkosConfig))
     ) {
       schemas[`LoginSchema`] = this.generateLoginSchema(arkosConfig);
     }
 
     // Signup schema (input)
     if (
+      schemasToGenerate.includes("signup") &&
       !this.isEndpointDisabled("signup", routerConfig) &&
-      !this.localValidatorFileExists("signup", modelName, arkosConfig)
+      !(await localValidatorFileExists("signup", modelName, arkosConfig))
     ) {
       schemas[`SignupSchema`] = this.generateSignupSchema(
         model,
@@ -121,8 +143,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // UpdateMe schema (input)
     if (
+      schemasToGenerate.includes("updateMe") &&
       !this.isEndpointDisabled("updateMe", routerConfig) &&
-      !this.localValidatorFileExists("updateMe", modelName, arkosConfig)
+      !(await localValidatorFileExists("updateMe", modelName, arkosConfig))
     ) {
       schemas[`UpdateMeSchema`] = this.generateUpdateMeSchema(
         model,
@@ -132,8 +155,13 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // UpdatePassword schema (input)
     if (
+      schemasToGenerate.includes("updatePassword") &&
       !this.isEndpointDisabled("updatePassword", routerConfig) &&
-      !this.localValidatorFileExists("updatePassword", modelName, arkosConfig)
+      !(await localValidatorFileExists(
+        "updatePassword",
+        modelName,
+        arkosConfig
+      ))
     ) {
       schemas[`UpdatePasswordSchema`] = this.generateUpdatePasswordSchema(
         model,
@@ -143,8 +171,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // GetMe response schema
     if (
+      schemasToGenerate.includes("getMe") &&
       !this.isEndpointDisabled("getMe", routerConfig) &&
-      !this.localValidatorFileExists("getMe", modelName, arkosConfig)
+      !(await localValidatorFileExists("getMe", modelName, arkosConfig))
     ) {
       schemas[`GetMeSchema`] = this.generateResponseSchema(
         model,
@@ -157,10 +186,11 @@ export class EnhancedPrismaJsonSchemaGenerator {
   /**
    * Generate standard CRUD schemas
    */
-  private generateCrudSchemas(
+  private async generateCrudSchemas(
     model: PrismaModel,
     schemas: { [key: string]: JsonSchema },
     arkosConfig: ArkosConfig,
+    schemasToGenerate: ValidationFileMappingKey[],
     queryOptions?: PrismaQueryOptions<any>,
     routerConfig?: RouterConfig
   ) {
@@ -168,8 +198,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // Create schemas
     if (
+      schemasToGenerate.includes("createOne") &&
       !this.isEndpointDisabled("createOne", routerConfig) &&
-      !this.localValidatorFileExists("createOne", modelName, arkosConfig)
+      !(await localValidatorFileExists("createOne", modelName, arkosConfig))
     ) {
       schemas[`Create${modelName}ModelSchema`] = this.generateCreateSchema(
         model,
@@ -178,8 +209,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
     }
 
     if (
+      schemasToGenerate.includes("createMany") &&
       !this.isEndpointDisabled("createMany", routerConfig) &&
-      !this.localValidatorFileExists("createMany", modelName, arkosConfig)
+      !(await localValidatorFileExists("createMany", modelName, arkosConfig))
     ) {
       schemas[`CreateMany${modelName}ModelSchema`] = {
         type: "array",
@@ -189,8 +221,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // Update schemas
     if (
+      schemasToGenerate.includes("updateOne") &&
       !this.isEndpointDisabled("updateOne", routerConfig) &&
-      !this.localValidatorFileExists("updateOne", modelName, arkosConfig)
+      !(await localValidatorFileExists("updateOne", modelName, arkosConfig))
     ) {
       schemas[`Update${modelName}ModelSchema`] = this.generateUpdateSchema(
         model,
@@ -199,8 +232,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
     }
 
     if (
+      schemasToGenerate.includes("updateMany") &&
       !this.isEndpointDisabled("updateMany", routerConfig) &&
-      !this.localValidatorFileExists("updateMany", modelName, arkosConfig)
+      !(await localValidatorFileExists("updateMany", modelName, arkosConfig))
     ) {
       schemas[`UpdateMany${modelName}ModelSchema`] = {
         type: "object",
@@ -217,8 +251,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // Response schemas
     if (
+      schemasToGenerate.includes("findOne") &&
       !this.isEndpointDisabled("findOne", routerConfig) &&
-      !this.localValidatorFileExists("findOne", modelName, arkosConfig)
+      !(await localValidatorFileExists("findOne", modelName, arkosConfig))
     ) {
       schemas[`FindOne${modelName}ModelSchema`] = this.generateResponseSchema(
         model,
@@ -228,8 +263,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
     }
 
     if (
+      schemasToGenerate.includes("findMany") &&
       !this.isEndpointDisabled("findMany", routerConfig) &&
-      !this.localValidatorFileExists("findMany", modelName, arkosConfig)
+      !(await localValidatorFileExists("findMany", modelName, arkosConfig))
     ) {
       schemas[`FindMany${modelName}ModelSchema`] = {
         type: "array",
@@ -251,11 +287,23 @@ export class EnhancedPrismaJsonSchemaGenerator {
   ): JsonSchema {
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const required: string[] = [];
-    const autoFillFields = ["createdAt", "updatedAt", "deletedAt", "id"];
+    const restrictedFields = ["createdAt", "updatedAt", "deletedAt", "id"];
+
+    if (model.name.toLowerCase() === "auth")
+      restrictedFields.push(
+        "roles",
+        "role",
+        "isActive",
+        "isStaff",
+        "isSuperUser",
+        "passwordChangedAt",
+        "deletedSelfAccountAt",
+        "lastLoginAt"
+      );
 
     for (const field of model.fields) {
       // Skip ID fields
-      if (field.isId || autoFillFields.includes(field.name)) continue;
+      if (field.isId || restrictedFields.includes(field.name)) continue;
 
       // Handle relations
       if (this.isModelRelation(field.type)) {
@@ -309,10 +357,8 @@ export class EnhancedPrismaJsonSchemaGenerator {
       // Handle relations
       if (this.isModelRelation(field.type)) {
         // For single relations, include only the ID field
-        if (!field.isArray) {
-          const relationIdField = `${field.name}Id`;
-          properties[relationIdField] = { type: "string" };
-        }
+        if (!field.isArray) properties[field.name] = { type: "string" };
+
         // Skip array relations in update schema
         continue;
       }
@@ -344,6 +390,11 @@ export class EnhancedPrismaJsonSchemaGenerator {
     const includeRelations = options?.include;
 
     for (const field of model.fields) {
+      // Skip password fields
+      if (field.name.toLowerCase().includes("password")) {
+        continue;
+      }
+
       // If select is specified, only include selected fields
       if (selectFields && !selectFields[field.name]) {
         continue;
@@ -361,16 +412,14 @@ export class EnhancedPrismaJsonSchemaGenerator {
               relationModel,
               includeRelations[field.name]
             );
-
             properties[field.name] = field.isArray
               ? { type: "array", items: relationSchema }
               : relationSchema;
           }
         } else {
-          // Include relation ID field
-          const relationIdField = `${field.name}Id`;
-          if (!selectFields || selectFields[relationIdField]) {
-            properties[relationIdField] = { type: "string" };
+          // Use the actual field name as-is, don't concatenate "Id"
+          if (!selectFields || selectFields[field.name]) {
+            properties[field.name] = { type: "string" };
           }
         }
         continue;
@@ -407,6 +456,11 @@ export class EnhancedPrismaJsonSchemaGenerator {
     const nestedIncludes = includeOptions?.include;
 
     for (const field of model.fields) {
+      // Skip password fields
+      if (field.name.toLowerCase().includes("password")) {
+        continue;
+      }
+
       if (selectFields && !selectFields[field.name]) {
         continue;
       }
@@ -483,17 +537,12 @@ export class EnhancedPrismaJsonSchemaGenerator {
     if (userNameFields.length > 0) {
       const usernameDisplayNames = userNameFields.map(getDisplayName);
 
-      // Option 1: Require at least one username field (using anyOf)
       return {
         ...baseSchema,
-        anyOf: usernameDisplayNames.map((name) => ({
-          required: [...baseSchema.required!, name],
+        anyOf: usernameDisplayNames.map(() => ({
+          required: [...baseSchema.required!],
         })),
       };
-
-      // Option 2: Alternative approach - make all username fields optional
-      // but add custom validation logic elsewhere
-      // return baseSchema;
     }
 
     return baseSchema;
@@ -503,7 +552,23 @@ export class EnhancedPrismaJsonSchemaGenerator {
     options?: Record<string, any>
   ): JsonSchema {
     // Similar to create but might have specific required fields
-    return this.generateCreateSchema(model, options || {});
+    const singupSchema = this.generateCreateSchema(model, options || {});
+
+    const restrictedFields = [
+      "roles",
+      "role",
+      "isActive",
+      "isStaff",
+      "isSuperUser",
+      "passwordChangedAt",
+      "deletedSelfAccountAt",
+      "lastLoginAt",
+    ];
+    restrictedFields.forEach((field) => {
+      delete singupSchema?.properties?.[field];
+    });
+
+    return singupSchema;
   }
 
   private generateUpdateMeSchema(
@@ -515,10 +580,15 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // Remove sensitive fields that users shouldn't update themselves
     const restrictedFields = [
+      "roles",
       "role",
-      "permissions",
       "isActive",
-      "emailVerified",
+      "isStaff",
+      "isSuperUser",
+      "passwordChangedAt",
+      "deletedSelfAccountAt",
+      "password",
+      "lastLoginAt",
     ];
     restrictedFields.forEach((field) => {
       delete updateSchema?.properties?.[field];
@@ -536,7 +606,6 @@ export class EnhancedPrismaJsonSchemaGenerator {
       properties: {
         currentPassword: { type: "string" },
         newPassword: { type: "string", minLength: 8 },
-        confirmPassword: { type: "string", minLength: 8 },
       },
       required: ["currentPassword", "newPassword"],
     };
@@ -656,45 +725,17 @@ export class EnhancedPrismaJsonSchemaGenerator {
       Bytes: "string",
     };
 
-    if (typeMap[prismaType]) {
-      return typeMap[prismaType];
-    }
+    if (typeMap[prismaType]) return typeMap[prismaType];
 
-    if (this.isEnum(prismaType)) {
-      return "string";
-    }
+    if (this.isEnum(prismaType)) return "string";
 
-    if (this.isModelRelation(prismaType)) {
-      return "object";
-    }
+    if (this.isModelRelation(prismaType)) return "object";
 
     return "string";
   }
 
   private isEnum(typeName: string): boolean {
     return this.schema.enums.some((e) => e.name === typeName);
-  }
-
-  private localValidatorFileExists(
-    action: ValidationFileMappingKey,
-    modelName: string,
-    arkosConfig: ArkosConfig
-  ) {
-    // just to ensure correct casing
-    let actionKebab = camelCase(action) as ValidationFileMappingKey;
-
-    const { dtos, schemas } = getFileModelModulesFileStructure(modelName);
-    const fileNameMappings =
-      arkosConfig?.validation?.resolver === "zod" ? schemas : dtos;
-    const fileName = fileNameMappings[actionKebab];
-
-    const localFilePath = path.resolve(crd(), "modules", fileName!);
-
-    try {
-      return fs.existsSync(localFilePath);
-    } catch (err) {
-      return false;
-    }
   }
 }
 

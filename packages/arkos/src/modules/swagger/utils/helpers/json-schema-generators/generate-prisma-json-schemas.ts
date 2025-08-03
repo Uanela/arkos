@@ -1,29 +1,31 @@
-import { pascalCase } from "../../../../../exports/utils";
-import {
-  getModels,
-  getPrismaSchemasContent,
-} from "../../../../../utils/helpers/models.helpers";
+import { ArkosConfig } from "../../../../../exports";
+import { getModels } from "../../../../../utils/helpers/models.helpers";
+import enhancedPrismaJsonSchemaGenerator from "../../../../../utils/prisma/enhaced-prisma-json-schema-generator";
 
-export async function generatePrismaJsonSchemas() {
-  const schemas: Record<string, any> = {};
-  const prismaContent = getPrismaSchemasContent();
-  const models = getModels();
+export async function generatePrismaJsonSchemas(arkosConfig: ArkosConfig) {
+  const models = [...getModels(), "auth"];
 
-  models.forEach((modelName) => {
-    const pascalModelName = pascalCase(modelName);
+  try {
+    // Use Promise.all to handle all async operations properly
+    const modelSchemasArray = await Promise.all(
+      models.map(async (modelName) => {
+        const modelSchemas =
+          await enhancedPrismaJsonSchemaGenerator.generateModelSchemas({
+            modelName,
+            arkosConfig,
+          });
+        return modelSchemas;
+      })
+    );
 
-    schemas[`Create${pascalModelName}Schema`] = {
-      type: "object",
-      properties: {
-        // Omit auto-generated fields like id, createdAt, updatedAt
-      },
-    };
+    // Merge all schemas into a single object
+    const schemas = modelSchemasArray.reduce((acc, modelSchemas) => {
+      return { ...acc, ...modelSchemas };
+    }, {});
 
-    schemas[`Update${pascalModelName}Schema`] = {
-      type: "object",
-      properties: {
-        // Make all fields optional for updates
-      },
-    };
-  });
+    return schemas;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
 }

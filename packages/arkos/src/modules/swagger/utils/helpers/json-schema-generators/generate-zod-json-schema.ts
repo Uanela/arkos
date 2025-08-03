@@ -6,7 +6,7 @@ import zodToJsonSchema from "zod-to-json-schema";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
 
 export async function generateZodJsonSchemas() {
-  const models = [...getModels(), "file-upload", "auth"];
+  const models = [...getModels(), "auth"];
   const schemas: Record<string, any> = {};
 
   models.forEach((modelName) => {

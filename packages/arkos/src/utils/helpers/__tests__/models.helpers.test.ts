@@ -221,8 +221,6 @@ describe("Dynamic Prisma Model Loader", () => {
           result.schemas.query = { schema: "query" };
         }
 
-        // (dynamicLoader.prismaModelsModules as any)[modelName] = result;
-        // console.log(result, modelName);
         return result;
       });
   });
