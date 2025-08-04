@@ -28,7 +28,6 @@ jest.mock("path", () => ({
 }));
 
 // Mock console methods
-const originalConsoleLog = console.log;
 const originalConsoleInfo = console.info;
 const originalConsoleError = console.error;
 const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
@@ -95,7 +94,6 @@ describe("startCommand", () => {
     jest.clearAllMocks();
 
     // Mock console methods to prevent output during tests
-    console.log = jest.fn();
     console.info = jest.fn();
     console.error = jest.fn();
 
@@ -111,7 +109,6 @@ describe("startCommand", () => {
 
   afterEach(() => {
     // Restore console methods
-    console.log = originalConsoleLog;
     console.info = originalConsoleInfo;
     console.error = originalConsoleError;
 

@@ -17,15 +17,11 @@ import { ClassConstructor } from "class-transformer";
 import { ValidatorOptions } from "class-validator";
 import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
 
-export function callNext(req: Request, res: Response, next: NextFunction) {
+export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
 }
 
-export function sendResponse(
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
-) {
+export function sendResponse(req: ArkosRequest, res: ArkosResponse) {
   if (Number(req?.responseStatus) === 204)
     res.status(Number(req?.responseStatus)).send();
   else if (req.responseData && req?.responseStatus)

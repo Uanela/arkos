@@ -104,8 +104,6 @@ export async function devCommand(options: DevOptions = {}) {
             ".dist",
             "--ignore",
             ".build",
-            "--watch",
-            "src",
             entryPoint,
           ],
           {
@@ -246,7 +244,12 @@ export async function devCommand(options: DevOptions = {}) {
         }
         return false;
       } catch (err: any) {
-        if (!err.message.includes("../../server")) console.info(err);
+        const message = err?.message;
+        if (
+          !message.includes("../../server") &&
+          !message.includes("cjs/server")
+        )
+          console.info(err);
         return false;
       }
     };

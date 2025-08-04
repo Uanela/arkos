@@ -200,6 +200,7 @@ export class PrismaSchemaParser {
     const isArray = typeWithArray.endsWith("[]");
     const type = isArray ? typeWithArray.slice(0, -2) : typeWithArray;
     const isOptional = line.includes("?");
+
     const attributes = attributesStr
       .split(/\s+/)
       .filter((attr) => attr.startsWith("@"));
@@ -211,6 +212,16 @@ export class PrismaSchemaParser {
       defaultValue = this.parseDefaultValue(defaultMatch[1]);
     }
 
+    // Extract connection field from @relation
+    let connectionField = "";
+    const relationMatch = attributesStr.match(
+      /@relation\([^)]*fields:\s*\[([^\]]+)\]/
+    );
+    if (relationMatch) {
+      // Extract the field name and clean it up (remove quotes and whitespace)
+      connectionField = relationMatch[1].trim().replace(/['"]/g, "");
+    }
+
     const isId = attributes.some((attr) => attr.startsWith("@id"));
     const isUnique = attributes.some((attr) => attr.startsWith("@unique"));
 
@@ -219,6 +230,7 @@ export class PrismaSchemaParser {
       type,
       isOptional,
       isArray,
+      connectionField,
       defaultValue,
       isId,
       isUnique,

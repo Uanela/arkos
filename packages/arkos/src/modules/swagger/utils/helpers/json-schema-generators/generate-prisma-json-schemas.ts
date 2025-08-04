@@ -25,7 +25,7 @@ export async function generatePrismaJsonSchemas(arkosConfig: ArkosConfig) {
 
     return schemas;
   } catch (err) {
-    console.log(err);
+    console.error(err);
     throw err;
   }
 }

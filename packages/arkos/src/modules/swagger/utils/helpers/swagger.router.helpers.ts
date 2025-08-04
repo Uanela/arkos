@@ -76,9 +76,11 @@ export function getSchemaRef(
     "login",
     "signup",
     "updatepassword",
+    "password",
+    "me",
   ];
-  const isSpecialCase = specialCases.some((keyword) =>
-    lowerSchemaName.includes(keyword)
+  const isSpecialCase = specialCases.some(
+    (keyword) => keyword === lowerSchemaName
   );
 
   // If it's a special case and mode is prisma, return zod style instead

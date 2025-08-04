@@ -10,7 +10,7 @@ import sheu from "./utils/sheu";
 import { capitalize } from "./utils/helpers/text.helpers";
 
 process.on("uncaughtException", (err) => {
-  // if (err.message.includes("EPIPE")) return;
+  if (err.message.includes("EPIPE")) return;
 
   sheu.error("\nUNCAUGHT EXCEPTION! SHUTTING DOWN...\n", {
     timestamp: true,
