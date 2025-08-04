@@ -20,7 +20,6 @@ function fixImports(dir: string) {
             // Check if it's a directory import (ends with folder name)
             const fullImportPath = path.resolve(dir, importPath);
             const indexPath = fullImportPath + "/index.js";
-            const directPath = fullImportPath + ".js";
 
             // If index.js exists, append /index.js, otherwise append .js
             if (fs.existsSync(indexPath)) {
@@ -57,3 +56,4 @@ function fixImports(dir: string) {
 }
 
 fixImports("./dist/esm");
+fixImports("./dist/cjs");

@@ -62,7 +62,8 @@ export class EnhancedPrismaJsonSchemaGenerator {
     const modelModules = await importPrismaModelModules(modelName, arkosConfig);
     const routerConfig = modelModules?.router?.config || {};
     const prismaQueryOptions = modelModules?.prismaQueryOptions || {};
-    const isAuthModule = modelName.toLowerCase() === "auth";
+    const authModuleModel = ["auth", "me", "password", "signup", "login"];
+    const isAuthModule = authModuleModel.includes(modelName.toLowerCase());
 
     // Check if generation should be skipped
     if (arkosConfig?.swagger?.strict && arkosConfig.swagger.mode !== "prisma")
@@ -74,8 +75,8 @@ export class EnhancedPrismaJsonSchemaGenerator {
     const model = this.schema.models.find(
       (m) => m.name.toLowerCase() === modelName.toLowerCase()
     );
-    if (!model && modelName !== "auth")
-      throw new Error(`Model ${modelName} not found in schema`);
+    if (!model && !isAuthModule) return {};
+    // throw new Error(`Model ${modelName} not found in schema`);
 
     const schemas: { [key: string]: JsonSchema } = {};
 
@@ -196,7 +197,102 @@ export class EnhancedPrismaJsonSchemaGenerator {
   ) {
     const modelName = model.name;
 
-    // Create schemas
+    // // Create schemas
+    // if (
+    //   schemasToGenerate.includes("createOne") &&
+    //   !this.isEndpointDisabled("createOne", routerConfig) &&
+    //   !(await localValidatorFileExists("createOne", modelName, arkosConfig))
+    // ) {
+    //   schemas[`Create${modelName}ModelSchema`] = this.generateCreateSchema(
+    //     model,
+    //     this.resolvePrismaQueryOptions(queryOptions, "createOne")
+    //   );
+    // }
+
+    // if (
+    //   schemasToGenerate.includes("createMany") &&
+    //   !this.isEndpointDisabled("createMany", routerConfig) &&
+    //   !(await localValidatorFileExists("createMany", modelName, arkosConfig))
+    // ) {
+    //   schemas[`CreateMany${modelName}ModelSchema`] = {
+    //     type: "array",
+    //     items: { $ref: `#/components/schemas/Create${modelName}ModelSchema` },
+    //   };
+    // }
+
+    // // Update schemas
+    // if (
+    //   schemasToGenerate.includes("updateOne") &&
+    //   !this.isEndpointDisabled("updateOne", routerConfig) &&
+    //   !(await localValidatorFileExists("updateOne", modelName, arkosConfig))
+    // ) {
+    //   schemas[`Update${modelName}ModelSchema`] = this.generateUpdateSchema(
+    //     model,
+    //     this.resolvePrismaQueryOptions(queryOptions, "updateOne")
+    //   );
+    // }
+
+    // if (
+    //   schemasToGenerate.includes("updateMany") &&
+    //   !this.isEndpointDisabled("updateMany", routerConfig) &&
+    //   !(await localValidatorFileExists("updateMany", modelName, arkosConfig))
+    // ) {
+    //   schemas[`UpdateMany${modelName}ModelSchema`] = {
+    //     type: "object",
+    //     properties: {
+    //       data: {
+    //         type: "object",
+    //         $ref: `#/components/schemas/Update${modelName}ModelSchema`,
+    //       },
+    //       where: { type: "object" },
+    //     },
+    //     required: ["data"],
+    //   };
+    // }
+    // Helper function to ensure base schema exists
+
+    const ensureBaseSchemaReference = async (
+      operation: string,
+      modelName: string
+    ) => {
+      const suffix =
+        arkosConfig.validation?.resolver === "zod" ? "Schema" : "Dto";
+
+      // Check if local validator file exists for single operation
+      const singleOpName = operation === "Create" ? "createOne" : "updateOne";
+      const hasLocalValidator = await localValidatorFileExists(
+        singleOpName,
+        modelName,
+        arkosConfig
+      );
+
+      if (hasLocalValidator) {
+        // Point to local validator schema (Schema or Dto)
+        return `${operation}${modelName}${suffix}`;
+      } else {
+        // Point to ModelSchema, generate if doesn't exist
+        const modelSchemaKey = `${operation}${modelName}ModelSchema`;
+
+        if (!schemas[modelSchemaKey]) {
+          // Generate ModelSchema as fallback
+          if (operation === "Create") {
+            schemas[modelSchemaKey] = this.generateCreateSchema(
+              model,
+              this.resolvePrismaQueryOptions(queryOptions, "createOne")
+            );
+          } else if (operation === "Update") {
+            schemas[modelSchemaKey] = this.generateUpdateSchema(
+              model,
+              this.resolvePrismaQueryOptions(queryOptions, "updateOne")
+            );
+          }
+        }
+
+        return modelSchemaKey;
+      }
+    };
+
+    // Create schemas (unchanged)
     if (
       schemasToGenerate.includes("createOne") &&
       !this.isEndpointDisabled("createOne", routerConfig) &&
@@ -213,13 +309,18 @@ export class EnhancedPrismaJsonSchemaGenerator {
       !this.isEndpointDisabled("createMany", routerConfig) &&
       !(await localValidatorFileExists("createMany", modelName, arkosConfig))
     ) {
+      // Only fix the reference
+      const baseSchemaKey = await ensureBaseSchemaReference(
+        "Create",
+        modelName
+      );
       schemas[`CreateMany${modelName}ModelSchema`] = {
         type: "array",
-        items: { $ref: `#/components/schemas/Create${modelName}ModelSchema` },
+        items: { $ref: `#/components/schemas/${baseSchemaKey}` },
       };
     }
 
-    // Update schemas
+    // Update schemas (unchanged)
     if (
       schemasToGenerate.includes("updateOne") &&
       !this.isEndpointDisabled("updateOne", routerConfig) &&
@@ -236,19 +337,24 @@ export class EnhancedPrismaJsonSchemaGenerator {
       !this.isEndpointDisabled("updateMany", routerConfig) &&
       !(await localValidatorFileExists("updateMany", modelName, arkosConfig))
     ) {
+      // Only fix the reference
+
+      const baseSchemaKey = await ensureBaseSchemaReference(
+        "Update",
+        modelName
+      );
       schemas[`UpdateMany${modelName}ModelSchema`] = {
         type: "object",
         properties: {
           data: {
             type: "object",
-            $ref: `#/components/schemas/Update${modelName}ModelSchema`,
+            $ref: `#/components/schemas/${baseSchemaKey}`,
           },
           where: { type: "object" },
         },
         required: ["data"],
       };
     }
-
     // Response schemas
     if (
       schemasToGenerate.includes("findOne") &&
@@ -309,8 +415,13 @@ export class EnhancedPrismaJsonSchemaGenerator {
       if (this.isModelRelation(field.type)) {
         // For single relations, include only the ID field
         if (!field.isArray) {
-          // const relationIdField = `${field.name}Id`;
-          properties[field.name] = { type: "string" };
+          properties[field.connectionField] = {
+            type: this.mapPrismaTypeToJsonSchema(
+              model.fields.find(
+                (_field) => _field.name === field.connectionField
+              )?.type || "String"
+            ),
+          };
 
           // Check if relation ID is required
           if (!field.isOptional && field.defaultValue === undefined)
@@ -357,7 +468,14 @@ export class EnhancedPrismaJsonSchemaGenerator {
       // Handle relations
       if (this.isModelRelation(field.type)) {
         // For single relations, include only the ID field
-        if (!field.isArray) properties[field.name] = { type: "string" };
+        if (!field.isArray)
+          properties[field.connectionField] = {
+            type: this.mapPrismaTypeToJsonSchema(
+              model.fields.find(
+                (_field) => _field.name === field.connectionField
+              )?.type || "String"
+            ),
+          };
 
         // Skip array relations in update schema
         continue;
@@ -391,14 +509,10 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     for (const field of model.fields) {
       // Skip password fields
-      if (field.name.toLowerCase().includes("password")) {
-        continue;
-      }
+      if (field.name.toLowerCase().includes("password")) continue;
 
       // If select is specified, only include selected fields
-      if (selectFields && !selectFields[field.name]) {
-        continue;
-      }
+      if (selectFields && !selectFields[field.name]) continue;
 
       // Handle relations
       if (this.isModelRelation(field.type)) {
@@ -416,11 +530,6 @@ export class EnhancedPrismaJsonSchemaGenerator {
               ? { type: "array", items: relationSchema }
               : relationSchema;
           }
-        } else {
-          // Use the actual field name as-is, don't concatenate "Id"
-          if (!selectFields || selectFields[field.name]) {
-            properties[field.name] = { type: "string" };
-          }
         }
         continue;
       }
@@ -429,9 +538,7 @@ export class EnhancedPrismaJsonSchemaGenerator {
       properties[field.name] = property;
 
       // Field is required if not optional (for response schemas, we include all by default)
-      if (!field.isOptional) {
-        required.push(field.name);
-      }
+      if (!field.isOptional) required.push(field.name);
     }
 
     return {
@@ -643,6 +750,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
     return mergedOptions;
   }
 
+  /**
+   * Helps in remmaping those prisma query options that combines many operations for example find, save...
+   */
   private getGeneralOptionsForAction(
     options: any,
     action: ValidationFileMappingKey

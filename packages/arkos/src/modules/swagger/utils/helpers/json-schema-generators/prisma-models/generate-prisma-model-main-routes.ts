@@ -47,9 +47,7 @@ export async function generatePrismaModelMainRoutesPaths(
       arkosConfig
     );
 
-    if (!localFileExists) {
-      return "prisma"; // Fallback to prisma when no local file exists and not strict
-    }
+    if (!localFileExists) return "prisma"; // Fallback to prisma when no local file exists and not strict
 
     return swaggerMode || "prisma";
   };
@@ -107,7 +105,7 @@ export async function generatePrismaModelMainRoutesPaths(
       tags: [humanReadableNamePlural],
       summary: `Get ${humanReadableNamePlural}`,
       description: `Retrieves a paginated list of ${humanReadableNamePlural} with optional filtering and sorting`,
-      operationId: `get${pluralize.plural(pascalModelName)}`,
+      operationId: `find${pluralize.plural(pascalModelName)}`,
       parameters: [
         {
           name: "filter",
@@ -213,7 +211,7 @@ export async function generatePrismaModelMainRoutesPaths(
                 type: "array",
                 items: {
                   $ref: getSchemaRef(
-                    `Create${pascalModelName}`,
+                    `CreateMany${pascalModelName}`,
                     createManyMode
                   ),
                 },
@@ -279,7 +277,10 @@ export async function generatePrismaModelMainRoutesPaths(
         content: {
           "application/json": {
             schema: {
-              $ref: getSchemaRef(`Update${pascalModelName}`, updateManyMode),
+              $ref: getSchemaRef(
+                `UpdateMany${pascalModelName}`,
+                updateManyMode
+              ),
             },
           },
         },
@@ -373,7 +374,7 @@ export async function generatePrismaModelMainRoutesPaths(
         tags: [humanReadableNamePlural],
         summary: `Get ${humanReadableName} by ID`,
         description: `Retrieves a single ${humanReadableName} record by its unique identifier`,
-        operationId: `get${pascalModelName}ById`,
+        operationId: `find${pascalModelName}ById`,
         parameters: [
           {
             name: "id",

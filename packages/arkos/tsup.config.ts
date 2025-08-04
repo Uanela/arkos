@@ -1,27 +1,41 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig([
+  // CommonJS build
   {
-    entry: ["src/exports/index.ts"],
-    format: ["esm"],
-    outDir: "dist/es2020",
-    dts: {
-      entry: "src/exports/index.ts",
-    },
-    splitting: true,
-    sourcemap: false,
-    clean: true,
-    minify: true,
-    target: "es2020",
-  },
-  {
-    entry: ["src/exports/index.ts"],
+    entry: ["src/**/*.ts", "!src/**/*.test.ts", "!src/**/*.spec.ts"],
     format: ["cjs"],
+    target: "es2021",
     outDir: "dist/cjs",
-    splitting: true,
-    sourcemap: false,
-    clean: false,
-    minify: true,
-    target: "es2020",
+    dts: true,
+    sourcemap: true,
+    clean: true,
+    splitting: false,
+    treeshake: true,
+    minify: false,
+    keepNames: true,
+    bundle: false,
+    outExtension: () => ({ js: ".js" }),
+    esbuildOptions(options) {
+      options.conditions = ["module"];
+    },
+  },
+  // ESM build
+  {
+    entry: ["src/**/*.ts", "!src/**/*.test.ts", "!src/**/*.spec.ts"],
+    format: ["esm"],
+    target: "es2021",
+    outDir: "dist/esm",
+    dts: true,
+    sourcemap: true,
+    splitting: false,
+    treeshake: true,
+    minify: false,
+    keepNames: true,
+    bundle: false,
+    outExtension: () => ({ js: ".js" }),
+    esbuildOptions(options) {
+      options.conditions = ["module"];
+    },
   },
 ]);

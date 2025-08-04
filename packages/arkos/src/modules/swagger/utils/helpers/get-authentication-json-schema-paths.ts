@@ -203,7 +203,7 @@ export async function getAuthenticationJsonSchemaPaths(
       summary: "Get current user information",
       description:
         "Retrieves information about the currently authenticated user",
-      operationId: "getCurrentUser",
+      operationId: "getMe",
       security: [{ BearerAuth: [] }],
       responses: {
         "200": {
@@ -230,7 +230,7 @@ export async function getAuthenticationJsonSchemaPaths(
     tags: ["Authentication"],
     summary: "Update current user information",
     description: "Updates information for the currently authenticated user",
-    operationId: "updateCurrentUser",
+    operationId: "updateMe",
     security: [{ BearerAuth: [] }],
     requestBody: {
       description: "User data to update",
@@ -269,7 +269,7 @@ export async function getAuthenticationJsonSchemaPaths(
     tags: ["Authentication"],
     summary: "Delete current user account",
     description: "Marks the current user's account as deleted",
-    operationId: "deleteCurrentUser",
+    operationId: "deleteMe",
     security: [{ BearerAuth: [] }],
     responses: {
       "200": {

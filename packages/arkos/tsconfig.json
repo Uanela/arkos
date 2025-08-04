@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "ESNext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "target": "ES2021",
     "outDir": "./dist",
     "rootDir": "./src",
@@ -13,7 +13,8 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2021"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": [

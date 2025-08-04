@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { apiReference } from "@scalar/express-api-reference";
+// import * as scalar from "@scalar/express-api-reference";
 import swaggerJsdoc from "swagger-jsdoc";
 import { ArkosConfig } from "../../types/arkos-config";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
@@ -8,15 +8,23 @@ import {
   getOpenAPIJsonSchemasByConfigMode,
 } from "./utils/helpers/swagger.router.helpers";
 import { capitalize } from "../../utils/helpers/text.helpers";
+import missingJsonSchemaGenerator from "./utils/helpers/missing-json-schemas-generator";
 
 const swaggerRouter = Router();
 
 export async function getSwaggerRouter(
   arkosConfig: ArkosConfig
 ): Promise<Router> {
-  const defaultJsonSchemas =
-    await getOpenAPIJsonSchemasByConfigMode(arkosConfig);
+  let defaultJsonSchemas = await getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const defaultModelsPaths = await generatePathsForModels(arkosConfig);
+  defaultJsonSchemas = {
+    ...defaultJsonSchemas,
+    ...(await missingJsonSchemaGenerator.generateMissingJsonSchemas(
+      defaultModelsPaths,
+      defaultJsonSchemas,
+      arkosConfig
+    )),
+  };
 
   const defaultSwaggerConfig: ArkosConfig["swagger"] = {
     endpoint: "/docs",
@@ -86,10 +94,13 @@ export async function getSwaggerRouter(
     ...options,
   });
 
+  const importFn = new Function("path", "return import(path)");
+  const scalar = await importFn("@scalar/express-api-reference");
+
   // Serve Scalar API documentation
   swaggerRouter.use(
     swaggerConfigs!.endpoint!,
-    apiReference({
+    scalar.apiReference({
       content: swaggerSpecification,
       ...swaggerConfigs?.scalarApiReferenceConfiguration,
     })

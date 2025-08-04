@@ -516,6 +516,7 @@ export async function localValidatorFileExists(
   modelName: string,
   arkosConfig: ArkosConfig
 ) {
+  if (arkosConfig?.swagger?.mode === "prisma") return false;
   const modelModules = await importPrismaModelModules(modelName, arkosConfig);
 
   return !!modelModules?.[

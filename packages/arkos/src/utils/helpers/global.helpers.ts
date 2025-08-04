@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import { createRequire } from "module";
 import { pathToFileURL } from "url";
-import { getUserFileExtension } from "./fs.helpers";
 
 export function getPackageJson() {
   try {

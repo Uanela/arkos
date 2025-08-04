@@ -49,7 +49,6 @@ jest.mock("../../dotenv.helpers", () => ({
 describe("buildCommand", () => {
   // Store original console methods
   const originalConsole = {
-    log: console.log,
     info: console.info,
     error: console.error,
     warn: console.warn,
@@ -65,7 +64,6 @@ describe("buildCommand", () => {
     jest.clearAllMocks();
 
     // Mock console methods
-    console.log = jest.fn();
     console.info = jest.fn();
     console.error = jest.fn();
     console.warn = jest.fn();
@@ -99,7 +97,6 @@ describe("buildCommand", () => {
 
   afterEach(() => {
     // Restore console methods
-    console.log = originalConsole.log;
     console.info = originalConsole.info;
     console.error = originalConsole.error;
     console.warn = originalConsole.warn;
@@ -338,7 +335,6 @@ describe("buildCommand", () => {
 
       // Should skip .cjs files for ESM build
       const copyCommand = (execSync as jest.Mock).mock.calls[0][0];
-      // console.log(copyCommand);
       expect(copyCommand).toContain("src/**/*.js");
       expect(copyCommand).toContain("src/**/*.jsx");
       expect(copyCommand).toContain("src/**/*.mjs");

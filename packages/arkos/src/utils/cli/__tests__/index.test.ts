@@ -1,6 +1,4 @@
 import { Command } from "commander";
-import fs from "fs";
-import path from "path";
 import { buildCommand } from "../build";
 import { devCommand } from "../dev";
 import { startCommand } from "../start";
@@ -45,9 +43,6 @@ jest.mock("path", () => ({
   join: jest.fn().mockReturnValue("/mocked/path/to/package.json"),
 }));
 
-// Mock console methods
-const originalConsoleLog = console.log;
-
 describe("CLI Index", () => {
   let mockProgram: any;
 
@@ -55,16 +50,8 @@ describe("CLI Index", () => {
     // Clear all mocks
     jest.clearAllMocks();
 
-    // Mock console methods to prevent output during tests
-    console.log = jest.fn();
-
     // Get mock program from Commander
     mockProgram = new Command();
-  });
-
-  afterEach(() => {
-    // Restore console methods
-    console.log = originalConsoleLog;
   });
 
   describe("program configuration", () => {

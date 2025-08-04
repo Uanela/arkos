@@ -1,3 +1,7 @@
+// require("ts-node").register({
+//   esm: true,
+//   experimentalSpecifierResolution: "node",
+// });
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";

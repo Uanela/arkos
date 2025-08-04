@@ -267,7 +267,7 @@ export async function generatePrismaModelParentRoutePaths(
                 type: "array",
                 items: {
                   $ref: getSchemaRef(
-                    `Create${pascalModelName}`,
+                    `CreateMany${pascalModelName}`,
                     createManyMode
                   ),
                 },
@@ -345,7 +345,10 @@ export async function generatePrismaModelParentRoutePaths(
         content: {
           "application/json": {
             schema: {
-              $ref: getSchemaRef(`Update${pascalModelName}`, updateManyMode),
+              $ref: getSchemaRef(
+                `UpdateMany${pascalModelName}`,
+                updateManyMode
+              ),
             },
           },
         },

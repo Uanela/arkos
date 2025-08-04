@@ -8,7 +8,7 @@ import { Options as QueryParserOptions } from "../utils/helpers/query-parser.hel
 import { ValidatorOptions } from "class-validator";
 import { MsDuration } from "../modules/auth/utils/helpers/auth.controller.helpers";
 import { OpenAPIV3 } from "openapi-types";
-import { ApiReferenceConfiguration } from "@scalar/express-api-reference";
+import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with { "resolution-mode": "import" };
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
