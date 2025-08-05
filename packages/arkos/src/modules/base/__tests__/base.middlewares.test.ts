@@ -88,11 +88,7 @@ describe("Express Middleware Functions", () => {
       (mockRequest as any).responseStatus = 200;
       (mockRequest as any).responseData = { success: true };
 
-      sendResponse(
-        mockRequest as ArkosRequest,
-        mockResponse as ArkosResponse,
-        nextFunction
-      );
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ success: true });
@@ -102,11 +98,7 @@ describe("Express Middleware Functions", () => {
       (mockRequest as any).responseStatus = 200;
       (mockRequest as any).responseData = null;
 
-      sendResponse(
-        mockRequest as ArkosRequest,
-        mockResponse as ArkosResponse,
-        nextFunction
-      );
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.send).toHaveBeenCalled();
@@ -115,21 +107,13 @@ describe("Express Middleware Functions", () => {
     it("should send empty response with status when only status is provided", () => {
       (mockRequest as any).responseStatus = 204;
 
-      sendResponse(
-        mockRequest as ArkosRequest,
-        mockResponse as ArkosResponse,
-        nextFunction
-      );
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(204);
       expect(mockResponse.send).toHaveBeenCalled();
     });
     it("should send 500 error when no status or data is attached", () => {
-      sendResponse(
-        mockRequest as ArkosRequest,
-        mockResponse as ArkosResponse,
-        nextFunction
-      );
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({

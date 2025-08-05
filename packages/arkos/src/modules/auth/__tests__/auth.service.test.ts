@@ -17,6 +17,7 @@ jest.mock("../../../utils/helpers/models.helpers", () => ({
   getModelFields: jest.fn().mockReturnValue([]),
   getPrismaModels: jest.fn().mockReturnValue([]),
   getModelModules: jest.fn().mockReturnValue([]),
+  getPrismaSchemasContent: jest.fn().mockReturnValue(""),
 }));
 
 describe("AuthService", () => {
