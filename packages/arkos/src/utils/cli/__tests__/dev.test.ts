@@ -233,8 +233,6 @@ describe("devCommand", () => {
         ".dist",
         "--ignore",
         ".build",
-        "--watch",
-        "src",
         `${process.cwd()}/src/app.js`,
       ],
       expect.objectContaining({

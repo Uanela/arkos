@@ -45,7 +45,7 @@ export class PrismaSchemaParser {
    */
   private extractEnums(): PrismaEnum[] {
     const enums: PrismaEnum[] = [];
-    const schema = getPrismaSchemasContent();
+    const schema = getPrismaSchemasContent() || "";
     const enumBlocks = schema.match(/enum\s+\w+\s*\{[^}]*\}/g) || [];
 
     for (const block of enumBlocks) {
@@ -113,7 +113,7 @@ export class PrismaSchemaParser {
    */
   private extractModelBlocks(): string[] {
     const modelRegex = /model\s+\w+\s*\{[^}]*\}/g;
-    const schema = getPrismaSchemasContent();
+    const schema = getPrismaSchemasContent() || "";
     return schema.match(modelRegex) || [];
   }
 

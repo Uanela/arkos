@@ -28,6 +28,7 @@ export async function devCommand(options: DevOptions = {}) {
   try {
     const { port, host } = options;
     let isRestarting = false;
+    let restartingFiles: string[] = [];
     // Detect if project uses TypeScript or JavaScript
     const fileExt = getUserFileExtension();
 
@@ -87,7 +88,6 @@ export async function devCommand(options: DevOptions = {}) {
         );
       } else {
         // Enhanced nodemon configuration
-
         child = spawn(
           "npx",
           [
@@ -129,21 +129,23 @@ export async function devCommand(options: DevOptions = {}) {
     };
 
     // Function to handle server restart with debouncing
-    const scheduleRestart = (reason: string) => {
+    const scheduleRestart = (reason: string, filePath?: string) => {
       if (restartTimeout) clearTimeout(restartTimeout);
       const now = new Date();
       const time = now.toTimeString().split(" ")[0];
-
-      sheu.info(`\x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`);
 
       isRestarting = true;
       if (child) {
         child.kill();
         child = null;
       }
+
+      if (filePath) restartingFiles.push(filePath);
       restartTimeout = setTimeout(() => {
+        sheu.info(`\x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`);
         startServer();
         restartTimeout = null;
+        restartingFiles = restartingFiles.filter((file) => file !== filePath);
       }, 1000);
     };
 
@@ -164,7 +166,7 @@ export async function devCommand(options: DevOptions = {}) {
           envFiles = loadEnvironmentVariables();
 
           // Restart server to pick up new env vars
-          scheduleRestart("Environments files changed");
+          scheduleRestart("Environments files changed", filePath);
         } catch (error) {
           console.error(`Error reloading ${filePath}:`, error);
         }
@@ -202,11 +204,19 @@ export async function devCommand(options: DevOptions = {}) {
       );
 
       additionalWatcher.on("add", (filePath) => {
-        scheduleRestart(`${fullCleanCwd(filePath)} has been created`);
+        if (!restartingFiles.includes(filePath))
+          scheduleRestart(
+            `${fullCleanCwd(filePath)} has been created`,
+            filePath
+          );
       });
 
       additionalWatcher.on("unlink", (filePath) => {
-        scheduleRestart(`${fullCleanCwd(filePath)} has been deleted`);
+        if (!restartingFiles.includes(filePath))
+          scheduleRestart(
+            `${fullCleanCwd(filePath)} has been deleted`,
+            filePath
+          );
       });
 
       return additionalWatcher;

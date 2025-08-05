@@ -551,23 +551,27 @@ describe("Dynamic Prisma Model Loader", () => {
         expect(result.dtos).toEqual({
           model: "user.dto.js",
           create: "create-user.dto.js",
+          createOne: "create-user.dto.js",
           createMany: "create-many-user.dto.js",
           findMany: "find-many-user.dto.js",
           findOne: "find-one-user.dto.js",
           update: "update-user.dto.js",
           query: "query-user.dto.js",
           updateMany: "update-many-user.dto.js",
+          updateOne: "update-user.dto.js",
         });
 
         expect(result.schemas).toEqual({
           model: "user.schema.js",
           create: "create-user.schema.js",
+          createOne: "create-user.schema.js",
           createMany: "create-many-user.schema.js",
           findMany: "find-many-user.schema.js",
           findOne: "find-one-user.schema.js",
           update: "update-user.schema.js",
           query: "query-user.schema.js",
           updateMany: "update-many-user.schema.js",
+          updateOne: "update-user.schema.js",
         });
       });
 
@@ -589,6 +593,7 @@ describe("Dynamic Prisma Model Loader", () => {
         });
 
         expect(result.dtos).toEqual({
+          getMe: "get-me.dto.js",
           login: "login.dto.js",
           signup: "signup.dto.js",
           updateMe: "update-me.dto.js",
@@ -596,6 +601,7 @@ describe("Dynamic Prisma Model Loader", () => {
         });
 
         expect(result.schemas).toEqual({
+          getMe: "get-me.schema.js",
           login: "login.schema.js",
           signup: "signup.schema.js",
           updateMe: "update-me.schema.js",
