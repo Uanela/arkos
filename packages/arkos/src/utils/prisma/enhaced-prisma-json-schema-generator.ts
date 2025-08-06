@@ -29,7 +29,7 @@ export interface GeneratedSchemas {
  * Enhanced JSON Schema generator that creates schemas based on Prisma models and query options
  */
 export class EnhancedPrismaJsonSchemaGenerator {
-  private schema = prismaSchemaParser.parse();
+  schema = prismaSchemaParser.parse();
 
   /**
    * Main method to generate all schemas for a model

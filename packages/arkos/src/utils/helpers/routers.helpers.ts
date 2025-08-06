@@ -1,5 +1,6 @@
-import { catchAsync } from "../../exports/error-handler";
-import { CatchAsyncReturnType } from "../../modules/error-handler/utils/catch-async";
+import catchAsync, {
+  CatchAsyncReturnType,
+} from "../../modules/error-handler/utils/catch-async";
 
 export const safeCatchAsync = (middleware: any) => {
   return middleware ? catchAsync(middleware) : undefined;
