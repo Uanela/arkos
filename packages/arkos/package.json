@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.2.14-beta",
+  "version": "1.2.14-test.1",
   "description": "The Express & Prisma Framework For RESTful API",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -62,7 +62,7 @@
     }
   },
   "bin": {
-    "arkos": "./cli.js"
+    "arkos": "cli.js"
   },
   "typesVersions": {
     "*": {
@@ -121,7 +121,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/uanela/arkos.git"
+    "url": "git+https://github.com/uanela/arkos.git"
   },
   "bugs": {
     "url": "https://github.com/uanela/arkos/issues"
@@ -161,15 +161,12 @@
   },
   "dependencies": {
     "chokidar": "^4.0.3",
-    "class-validator-jsonschema": "^5.0.2",
     "commander": "^13.1.0",
-    "pluralize": "^8.0.0",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "zod-to-json-schema": "^3.24.6"
+    "pluralize": "^8.0.0"
   },
   "peerDependencies": {
     "@prisma/client": "^6.4.1",
+    "class-validator-jsonschema": "^5.0.2",
     "@scalar/express-api-reference": "^0.8.13",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
@@ -186,7 +183,10 @@
     "multer": "2.0.1",
     "nodemailer": "^6.10.0",
     "sharp": "^0.33.5",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "zod-to-json-schema": "^3.24.6"
   },
   "engines": {
     "node": ">=14.16"

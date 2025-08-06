@@ -259,32 +259,25 @@ export class PrismaSchemaParser {
     defaultStr = defaultStr.trim();
 
     // Handle string values
-    if (defaultStr.startsWith('"') && defaultStr.endsWith('"')) {
+    if (defaultStr.startsWith('"') && defaultStr.endsWith('"'))
       return defaultStr.slice(1, -1);
-    }
 
     // Handle boolean values
     if (defaultStr === "true") return true;
     if (defaultStr === "false") return false;
 
     // Handle numeric values
-    if (/^\d+$/.test(defaultStr)) {
-      return parseInt(defaultStr, 10);
-    }
-    if (/^\d+\.\d+$/.test(defaultStr)) {
-      return parseFloat(defaultStr);
-    }
+    if (/^\d+$/.test(defaultStr)) return parseInt(defaultStr, 10);
+
+    if (/^\d+\.\d+$/.test(defaultStr)) return parseFloat(defaultStr);
 
     // Handle enum values (no quotes, not a function)
-    if (!defaultStr.includes("(")) {
-      return defaultStr;
-    }
+    if (!defaultStr.includes("(")) return defaultStr;
 
     // Handle functions (like now(), auto(), etc.)
-    if (defaultStr.includes("(")) {
+    if (defaultStr.includes("("))
       // For MongoDB, we'll skip function defaults as they're handled by the DB
       return undefined;
-    }
 
     return defaultStr;
   }
