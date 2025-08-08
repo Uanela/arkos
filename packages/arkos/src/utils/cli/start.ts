@@ -1,4 +1,3 @@
-// src/utils/cli/start.ts
 import path from "path";
 import fs from "fs";
 import { ChildProcess, spawn } from "child_process";
@@ -6,6 +5,8 @@ import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { importModule } from "../helpers/global.helpers";
 import { fullCleanCwd } from "../helpers/fs.helpers";
+import portAndHostAllocator from "../features/port-and-host-allocator";
+import watermarkStamper from "./utils/watermark-stamper";
 
 interface StartOptions {
   port?: string;
@@ -66,22 +67,25 @@ export async function startCommand(options: StartOptions = {}) {
         const config = getArkosConfig();
 
         if (config && config.available) {
-          // Config is ready, display the info with actual values
-          console.info("\n");
-          console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-          console.info(
-            `  - Local:        http://${
-              env.CLI_HOST || config.host || env.HOST || "localhost"
-            }:${env.CLI_PORT || config.port || env.PORT || "8000"}`
-          );
-          console.info(
-            `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "").replaceAll("/", "")}\n`
-          );
+          const hostAndPort =
+            await portAndHostAllocator.getHostAndAvailablePort(env, {
+              ...config,
+              logWarning: true,
+            });
+
+          watermarkStamper.stamp({
+            envFiles,
+            port:
+              "port" in config && config?.port !== undefined
+                ? hostAndPort.port
+                : undefined,
+            host: hostAndPort.host,
+          });
           return true;
         }
         return false;
       } catch (err: any) {
-        if (!err.message.includes("../../server")) console.info(err);
+        if (!err?.message?.includes("../../server")) console.error(err);
         return false;
       }
     };
@@ -94,24 +98,19 @@ export async function startCommand(options: StartOptions = {}) {
       while (attempts < maxAttempts) {
         const ready = await checkConfig();
         if (ready) break;
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         attempts++;
       }
 
       // Fall back to defaults if config never became available
       if (attempts >= maxAttempts) {
-        console.info("\n");
-        console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-        console.info(
-          `  - Local:        http://${
-            env.CLI_HOST || env.HOST || "localhost"
-          }:${env.CLI_PORT || env.PORT || "8000"}`
-        );
-        console.info(
-          `  - Environments: ${envFiles
-            ?.join(", ")
-            .replaceAll(`${process.cwd()}/`, "")}\n`
-        );
+        if (env.CLI_PORT || env.PORT) portAndHostAllocator.logWarnings();
+
+        watermarkStamper.stamp({
+          envFiles,
+          host: env.CLI_HOST || env.HOST,
+          port: env.CLI_PORT || env.PORT,
+        });
       }
     };
 

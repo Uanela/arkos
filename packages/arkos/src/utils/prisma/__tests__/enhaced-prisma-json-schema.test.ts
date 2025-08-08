@@ -12,6 +12,7 @@ import prismaSchemaParser from "../prisma-schema-parser";
 jest.mock("../../helpers/deepmerge.helper");
 jest.mock("../../helpers/models.helpers");
 jest.mock("../prisma-schema-parser");
+jest.mock("fs");
 
 describe("EnhancedPrismaJsonSchemaGenerator", () => {
   let generator: EnhancedPrismaJsonSchemaGenerator;

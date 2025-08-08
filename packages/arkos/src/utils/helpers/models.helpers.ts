@@ -442,6 +442,8 @@ export function initializePrismaModels() {
   }
 }
 
+initializePrismaModels();
+
 /**
  * Retrieves the relations for a given Prisma model.
  *

@@ -8,6 +8,7 @@ import http from "http";
 import { initializePrismaModels } from "./utils/helpers/models.helpers";
 import sheu from "./utils/sheu";
 import { capitalize } from "./utils/helpers/text.helpers";
+import portAndHostAllocator from "./utils/features/port-and-host-allocator";
 
 process.on("uncaughtException", (err) => {
   if (err.message.includes("EPIPE")) return;
@@ -50,35 +51,45 @@ export let _arkosConfig: ArkosConfig & { available?: boolean } = {
  *
  */
 async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
-  initializePrismaModels();
   _arkosConfig.available = true;
-  _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
 
-  const port =
-    process.env.CLI_PORT ||
-    _arkosConfig.port ||
-    process.env.PORT ||
-    "port" in _arkosConfig
-      ? _arkosConfig.port
-      : 8000;
+  const portAndHost = await portAndHostAllocator.getHostAndAvailablePort(
+    process.env,
+    arkosConfig
+  );
+
+  initializePrismaModels();
+  _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
 
   _app = await bootstrap(_arkosConfig);
   const time = new Date().toTimeString().split(" ")[0];
 
-  if (port) {
+  if (
+    ("port" in arkosConfig && arkosConfig?.port !== undefined) ||
+    !("port" in arkosConfig)
+  ) {
     server = http.createServer(_app);
 
     if (_arkosConfig?.configureServer)
       await _arkosConfig.configureServer(server);
 
-    server.listen(Number(port), _arkosConfig.host!, () => {
+    server.listen(Number(portAndHost?.port), portAndHost.host!, () => {
+      const message = `${sheu.gray(time)} {{server}} waiting on http://${portAndHost?.host}:${portAndHost?.port}`;
+
       sheu.ready(
-        `${sheu.gray(time)} ${capitalize(process.env.NODE_ENV || "development")} server waiting on http://${_arkosConfig.host || "localhost"}:${port}`
+        message.replace(
+          "{{server}}",
+          `${capitalize(process.env.NODE_ENV || "development")} server`
+        )
       );
+      if (_arkosConfig?.swagger?.mode)
+        sheu.ready(
+          `${message.replace("{{server}}", "Documentation")}${_arkosConfig?.swagger?.endpoint || "/api/docs"}`
+        );
     });
   } else {
     sheu.warn(
-      `${sheu.gray(time)} port set to undefined, hence no internal http server was setup.`
+      `${sheu.gray(time)} Port set to undefined, hence no internal http server was setup.`
     );
   }
 

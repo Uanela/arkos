@@ -38,7 +38,9 @@ export default class APIFeatures {
         parseQueryParamsWithModifiers(restOfQuery),
         JSON.parse(filters as string)
       );
+      (req as any).finalPrismaQueryOptions = this.searchParams;
     }
+
     if (modelName) this.modelName = modelName;
     this.filters = { ...this.filters };
   }
@@ -51,6 +53,7 @@ export default class APIFeatures {
         parseQueryParamsWithModifiers(restOfQuery),
         JSON.parse(filters as string)
       );
+      (req as any).finalPrismaQueryOptions = this.searchParams;
     }
     if (modelName) this.modelName = modelName;
     this.filters = { ...this.filters };

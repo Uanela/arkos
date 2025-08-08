@@ -78,69 +78,69 @@ describe("Sheu Terminal Color Utility", () => {
   describe("Label Methods", () => {
     test("info() should log and return formatted info label", () => {
       const result = sheu.info();
-      expect(result).toBe("[\x1b[36mINFO\x1b[0m]");
-      expect(consoleSpy).toHaveBeenCalledWith("[\x1b[36mINFO\x1b[0m]");
+      expect(result).toBe("[\x1b[36mInfo\x1b[0m]");
+      expect(consoleSpy).toHaveBeenCalledWith("[\x1b[36mInfo\x1b[0m]");
     });
 
     test("info() with message should log and return formatted info label with message", () => {
       const result = sheu.info("Application started");
-      expect(result).toBe("[\x1b[36mINFO\x1b[0m] Application started");
+      expect(result).toBe("[\x1b[36mInfo\x1b[0m] Application started");
       expect(consoleSpy).toHaveBeenCalledWith(
-        "[\x1b[36mINFO\x1b[0m] Application started"
+        "[\x1b[36mInfo\x1b[0m] Application started"
       );
     });
 
     test("error() should log and return formatted error label", () => {
       const result = sheu.error();
-      expect(result).toBe("[\x1b[31mERROR\x1b[0m]");
-      expect(consoleErrorSpy).toHaveBeenCalledWith("[\x1b[31mERROR\x1b[0m]");
+      expect(result).toBe("[\x1b[31mError\x1b[0m]");
+      expect(consoleErrorSpy).toHaveBeenCalledWith("[\x1b[31mError\x1b[0m]");
     });
 
     test("error() with message should log and return formatted error label with message", () => {
       const result = sheu.error("Connection failed");
-      expect(result).toBe("[\x1b[31mERROR\x1b[0m] Connection failed");
+      expect(result).toBe("[\x1b[31mError\x1b[0m] Connection failed");
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "[\x1b[31mERROR\x1b[0m] Connection failed"
+        "[\x1b[31mError\x1b[0m] Connection failed"
       );
     });
 
     test("ready() should log and return formatted ready label", () => {
       const result = sheu.ready();
-      expect(result).toBe("[\x1b[32mREADY\x1b[0m]");
-      expect(consoleSpy).toHaveBeenCalledWith("[\x1b[32mREADY\x1b[0m]");
+      expect(result).toBe("[\x1b[32mReady\x1b[0m]");
+      expect(consoleSpy).toHaveBeenCalledWith("[\x1b[32mReady\x1b[0m]");
     });
 
     test("ready() with message should log and return formatted ready label with message", () => {
       const result = sheu.ready("Server is running");
-      expect(result).toBe("[\x1b[32mREADY\x1b[0m] Server is running");
+      expect(result).toBe("[\x1b[32mReady\x1b[0m] Server is running");
       expect(consoleSpy).toHaveBeenCalledWith(
-        "[\x1b[32mREADY\x1b[0m] Server is running"
+        "[\x1b[32mReady\x1b[0m] Server is running"
       );
     });
 
     test("done() should log and return formatted done label", () => {
       const result = sheu.done();
-      expect(result).toBe("[\x1b[32mDONE\x1b[0m]");
-      expect(consoleSpy).toHaveBeenCalledWith("[\x1b[32mDONE\x1b[0m]");
+      expect(result).toBe("[\x1b[32mDone\x1b[0m]");
+      expect(consoleSpy).toHaveBeenCalledWith("[\x1b[32mDone\x1b[0m]");
     });
 
     test("done() with message should log and return formatted done label with message", () => {
       const result = sheu.done("Build completed");
-      expect(result).toBe("[\x1b[32mDONE\x1b[0m] Build completed");
+      expect(result).toBe("[\x1b[32mDone\x1b[0m] Build completed");
       expect(consoleSpy).toHaveBeenCalledWith(
-        "[\x1b[32mDONE\x1b[0m] Build completed"
+        "[\x1b[32mDone\x1b[0m] Build completed"
       );
     });
 
     test("warn() should log formatted warning label", () => {
       sheu.warn();
-      expect(consoleWarnSpy).toHaveBeenCalledWith("[\x1b[33mWARN\x1b[0m]");
+      expect(consoleWarnSpy).toHaveBeenCalledWith("[\x1b[33mWarn\x1b[0m]");
     });
 
     test("warn() with message should log formatted warning label with message", () => {
       sheu.warn("Deprecated feature used");
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        "[\x1b[33mWARN\x1b[0m] Deprecated feature used"
+        "[\x1b[33mWarn\x1b[0m] Deprecated feature used"
       );
     });
   });

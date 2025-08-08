@@ -7,6 +7,7 @@ import { importModule } from "../helpers/global.helpers";
 import fs from "fs";
 import path from "path";
 import sheu from "../sheu";
+import portAndHostAllocator from "../features/port-and-host-allocator";
 
 interface DevOptions {
   port?: string;
@@ -28,7 +29,7 @@ export async function devCommand(options: DevOptions = {}) {
   try {
     const { port, host } = options;
     let isRestarting = false;
-    let restartingFiles: string[] = [];
+    let restartingFiles = new Set<string>();
     // Detect if project uses TypeScript or JavaScript
     const fileExt = getUserFileExtension();
 
@@ -130,6 +131,8 @@ export async function devCommand(options: DevOptions = {}) {
 
     // Function to handle server restart with debouncing
     const scheduleRestart = (reason: string, filePath?: string) => {
+      if (filePath) restartingFiles.add(filePath);
+
       if (restartTimeout) clearTimeout(restartTimeout);
       const now = new Date();
       const time = now.toTimeString().split(" ")[0];
@@ -140,12 +143,11 @@ export async function devCommand(options: DevOptions = {}) {
         child = null;
       }
 
-      if (filePath) restartingFiles.push(filePath);
       restartTimeout = setTimeout(() => {
         sheu.info(`\x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`);
         startServer();
         restartTimeout = null;
-        restartingFiles = restartingFiles.filter((file) => file !== filePath);
+        restartingFiles.delete(filePath!);
       }, 1000);
     };
 
@@ -164,7 +166,6 @@ export async function devCommand(options: DevOptions = {}) {
       envWatcher.on("all", (_, filePath) => {
         try {
           envFiles = loadEnvironmentVariables();
-
           // Restart server to pick up new env vars
           scheduleRestart("Environments files changed", filePath);
         } catch (error) {
@@ -202,22 +203,29 @@ export async function devCommand(options: DevOptions = {}) {
           },
         }
       );
+      // additionalWatcher.on("change", (filePath) => {
+      //   if (!restartingFiles.has(filePath))
+      //     scheduleRestart(
+      //       `${fullCleanCwd(filePath)} has been modified`,
+      //       filePath
+      //     );
+      // });
 
       additionalWatcher.on("add", (filePath) => {
-        if (!restartingFiles.includes(filePath))
+        if (!restartingFiles.has(filePath))
           scheduleRestart(
             `${fullCleanCwd(filePath)} has been created`,
             filePath
           );
       });
 
-      additionalWatcher.on("unlink", (filePath) => {
-        if (!restartingFiles.includes(filePath))
-          scheduleRestart(
-            `${fullCleanCwd(filePath)} has been deleted`,
-            filePath
-          );
-      });
+      // additionalWatcher.on("unlink", (filePath) => {
+      //   if (!restartingFiles.has(filePath))
+      //     scheduleRestart(
+      //       `${fullCleanCwd(filePath)} has been deleted`,
+      //       filePath
+      //     );
+      // });
 
       return additionalWatcher;
     };
@@ -235,21 +243,24 @@ export async function devCommand(options: DevOptions = {}) {
         const { getArkosConfig } = await importModule("../../server");
         const config = getArkosConfig();
         if (config && config.available) {
-          // Config is ready, display the info with actual values
           const env = getEnv();
-          console.info("\n");
-          console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-          console.info(
-            `  - Local:        http://${
-              env.CLI_HOST || config.host || env.HOST || "localhost"
-            }:${env.CLI_PORT || config.port || env.PORT || "8000"}`
-          );
+          const hostAndPort =
+            await portAndHostAllocator.getHostAndAvailablePort(env, {
+              ...config,
+              logWarning: true,
+              caller: "dev",
+            });
+          // Config is ready, display the info with actual values
+          console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+          if (config?.port !== undefined)
+            console.info(
+              `  - Local:        http://${hostAndPort.host}:${hostAndPort.port}`
+            );
           console.info(
             `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
               .replaceAll(`${process.cwd()}/`, "")
-              .replaceAll("/", "")}`
+              .replaceAll("/", "")}\n`
           );
-          console.info("\n");
           return true;
         }
         return false;
@@ -271,26 +282,27 @@ export async function devCommand(options: DevOptions = {}) {
       while (attempts < maxAttempts) {
         const ready = await checkConfig();
         if (ready) break;
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         attempts++;
       }
 
       // Fall back to defaults if config never became available
       if (attempts >= maxAttempts) {
         const env = getEnv();
-        console.info("\n");
-        console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+        const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
+          env,
+          { logWarning: true }
+        );
+
+        console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
         console.info(
-          `  - Local:        http://${
-            env.CLI_HOST || env.HOST || "localhost"
-          }:${env.CLI_PORT || env.PORT || "8000"}`
+          `  - Local:        http://${hostAndPort?.host}:${hostAndPort?.port}`
         );
         console.info(
           `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
             .replaceAll(`${process.cwd()}/`, "")
-            .replaceAll("/", "")}`
+            .replaceAll("/", "")}\n`
         );
-        console.info("\n");
       }
     };
 
