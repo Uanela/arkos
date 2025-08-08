@@ -1,0 +1,25 @@
+{{#if typescript}}
+import { AuthConfigs } from "arkos/auth"
+
+const authPermissionAuthConfigs: AuthConfigs = {
+{{else}}
+/** @type {import('arkos/auth').AuthConfigs} */
+const authPermissionAuthConfigs = {
+{{/if}}
+  authenticationControl: {
+    Create: true,
+    Update: true,
+    Delete: true,
+    View: true,
+  },
+  {{#if (eq authentication.type "static")}}
+  accessControl: {
+    // Create: ["Admin"],
+    // Update: ["Admin", "Manager"],
+    // Delete: ["Admin"],
+    // View: ["User", "Admin", "Guest"],
+  },
+  {{/if}}
+};
+
+export default authPermissionAuthConfigs;

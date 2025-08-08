@@ -1,0 +1,12 @@
+import { z } from "zod"
+
+const UpdateMeSchema = z.object({
+  {{authentication.usernameField}}: z.string()
+    .optional(),
+})
+
+export default UpdateMeSchema
+
+{{#if typescript}}
+export type UpdateMeSchemaType = z.infer<typeof UpdateMeSchema>
+{{/if}}

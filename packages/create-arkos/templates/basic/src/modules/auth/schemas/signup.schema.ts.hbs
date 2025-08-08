@@ -10,3 +10,7 @@ const SignupSchema = z.object({
 })
 
 export default SignupSchema
+
+{{#if typescript}}
+export type SignupSchemaType = z.infer<typeof SignupSchema>
+{{/if}}

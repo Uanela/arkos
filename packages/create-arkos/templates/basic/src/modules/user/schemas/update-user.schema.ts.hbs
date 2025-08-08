@@ -48,3 +48,7 @@ const UpdateUserSchema = z.object({
 })
 
 export default UpdateUserSchema
+
+{{#if typescript}}
+export type UpdateUserSchemaType = z.infer<typeof UpdateUserSchema>
+{{/if}}

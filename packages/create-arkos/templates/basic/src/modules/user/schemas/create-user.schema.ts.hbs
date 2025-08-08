@@ -43,3 +43,7 @@ const CreateUserSchema = z.object({
 })
 
 export default CreateUserSchema
+
+{{#if typescript}}
+export type CreateUserSchemaType = z.infer<typeof CreateUserSchema>
+{{/if}}

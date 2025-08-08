@@ -1,0 +1,20 @@
+import 'reflect-metadata'
+import { 
+  IsString, 
+  MinLength, 
+  Matches, 
+  IsNotEmpty, 
+  IsBoolean, 
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  Type,
+  IsEnum
+} from 'class-validator'
+
+export default class UpdateUserDto {
+  @IsString()
+  @IsNotEmpty({ message: '{{authentication.usernameField}} is required' })
+  @IsOptional()
+  {{authentication.usernameField}}!: string
+}

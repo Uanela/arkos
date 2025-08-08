@@ -4,7 +4,7 @@ The official CLI tool to quickly scaffold new Arkos.js API projects with interac
 
 ## Overview
 
-`create-arkos` is the scaffolding tool for the Arkos.js framework (v1.2.3-beta). It provides an interactive setup experience to generate a complete, production-ready RESTful API project with automatic CRUD operations, authentication, validation, and more - all built on top of Express.js and Prisma.
+`create-arkos` is the scaffolding tool for the Arkos.js framework (v1.2.14-beta). It provides an interactive setup experience to generate a complete, production-ready RESTful API project with automatic CRUD operations, authentication, validation, and more - all built on top of Express.js and Prisma.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ pnpm create arkos
 The CLI will guide you through an interactive setup process:
 
 ```bash
-> create-arkos@1.0 dev
+> create-arkos@1.0
 
 ? What is the name of your project? my-arkos-project
 ? Would you like to use TypeScript? Yes
@@ -109,7 +109,6 @@ my-arkos-project/
 
     ```bash
     npx prisma db push
-    npx prisma generate
     ```
 
 4. **Start development**:
@@ -138,7 +137,7 @@ DATABASE_URL="mongodb://localhost:27017/mydb"
 DATABASE_URL="mysql://username:password@localhost:3306/mydb"
 
 # SQLite
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:../../file.db"
 ```
 
 ## Authentication Setup
@@ -179,7 +178,7 @@ arkos generate component-name -m model-name # generate components like controlle
 
 ## Version
 
-Current version: 1.2.3-beta
+Arkos.js version used on this `create-arkos` cli: v1.2.14-beta
 
 ## License
 
@@ -187,6 +186,6 @@ MIT License
 
 ---
 
-**Built with ❤️ by the Arkos.js Team**
+**Built with ❤️ by Uanela Como and the Arkos.js Contribuitors**
 
-_From the Greek "ἀρχή" (Arkhē) - your foundation for backend development_
+_From the Greek "ἀρχή" (Arkhē) - your foundation for Express and Prisma backend development_

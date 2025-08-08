@@ -1,0 +1,25 @@
+import { z } from 'zod';
+{{#if (eq prisma.provider "sqlite")}}
+
+export const AuthPermissionActionEnum = z.enum([
+  'View',
+  'Create', 
+  'Update',
+  'Delete'
+]);
+{{else}}
+import { AuthPermissionAction } from "@prisma/client"
+export const AuthPermissionActionEnum = z.nativeEnum(AuthPermissionAction);
+{{/if}}
+
+const UpdateAuthPermissionSchema = z.object({
+  resource: z.string().optional(),
+  action: AuthPermissionActionEnum.default('View'),
+  description: z.string().optional(),
+});
+
+export default UpdateAuthPermissionSchema
+
+{{#if typescript}}
+export type UpdateAuthPermissionSchemaType = z.infer<typeof UpdateAuthPermissionSchema>;
+{{/if}}

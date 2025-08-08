@@ -4,6 +4,7 @@ import chalk from "chalk";
 
 export interface ProjectConfig {
   projectName: string;
+  argProjectName?: string;
   typescript: boolean;
   validation: {
     type?: "zod" | "class-validator";
@@ -41,19 +42,22 @@ class ProjectConfigInquirer {
     await this.promptValidation();
     await this.promptAuthentication();
 
-    const projectPath = path.resolve(process.cwd(), this.config.projectName);
-    this.config.projectPath = projectPath;
+    // If user passed ".", use current directory name
+    if (this.config.projectName === ".") {
+      this.config.projectName = path.basename(process.cwd());
+      this.config.projectPath = path.resolve(process.cwd());
+    } else
+      this.config.projectPath = path.resolve(
+        process.cwd(),
+        this.config.projectName
+      );
 
     return this.config;
   }
 
   private async promptProjectName() {
-    let projectName = process.argv[2];
-
-    // If user passed ".", use current directory name
-    if (projectName === ".") {
-      projectName = path.basename(process.cwd());
-    }
+    let projectName = process?.argv?.[2];
+    this.config.argProjectName = process?.argv?.[2];
 
     if (!projectName) {
       const result = await inquirer.prompt([
@@ -70,7 +74,7 @@ class ProjectConfigInquirer {
       // Validate the project name from command line args
       const validation = this.validateProjectName(projectName);
       if (validation !== true) {
-        console.error(chalk.red(`Error: ${validation}`));
+        console.error(chalk.red(`\nError: ${validation}`));
         process.exit(1);
       }
     }
@@ -79,6 +83,8 @@ class ProjectConfigInquirer {
   }
 
   private validateProjectName(input: string): boolean | string {
+    if (input === ".") return true;
+
     if (!input || input.length === 0) {
       return "Project name cannot be empty";
     }
@@ -117,7 +123,7 @@ class ProjectConfigInquirer {
       {
         type: "confirm",
         name: "typescript",
-        message: `Would you like to use ${chalk.blue("TypeScript")}?`,
+        message: `Would you like to use ${chalk.cyan("TypeScript")}?`,
         default: false,
       },
     ]);
@@ -129,7 +135,7 @@ class ProjectConfigInquirer {
       {
         type: "list",
         name: "prismaProvider",
-        message: `What db provider will be used for ${chalk.blue("Prisma")}?`,
+        message: `What db provider will be used for ${chalk.cyan("Prisma")}?`,
         choices: [
           "postgresql",
           "mongodb",
@@ -187,23 +193,34 @@ class ProjectConfigInquirer {
       {
         type: "confirm",
         name: "useValidation",
-        message: `Would you like to set up ${chalk.blue("Validation")}?`,
+        message: `Would you like to set up ${chalk.cyan("Validation")}?`,
         default: true,
       },
     ]);
 
     if (useValidation) {
-      const { validationType } = await inquirer.prompt([
-        {
-          type: "list",
-          name: "validationType",
-          message: "Choose validation library:",
-          choices: ["zod", "class-validator"],
-        },
-      ]);
+      let validationTypeResponse: {
+        validationType: "zod" | "class-validator";
+      } = { validationType: "zod" };
+
+      if (this.config.typescript)
+        validationTypeResponse = await inquirer.prompt([
+          {
+            type: "list",
+            name: "validationType",
+            message: "Choose validation library:",
+            choices: ["zod", "class-validator"],
+          },
+        ]);
+      else {
+        console.info(
+          `${chalk.bold(chalk.green("?"))} Validation library set to ${chalk.cyan("zod")} (class-validator is not supported on JavaScript).`
+        );
+      }
       this.config.validation = {
-        type: validationType,
+        type: validationTypeResponse.validationType,
       };
+    } else if (!this.config.typescript) {
     }
   }
 
@@ -212,7 +229,7 @@ class ProjectConfigInquirer {
       {
         type: "confirm",
         name: "useAuthentication",
-        message: `Would you like to set up ${chalk.blue("Authentication")}?`,
+        message: `Would you like to set up ${chalk.cyan("Authentication")}?`,
         default: true,
       },
     ]);
@@ -253,7 +270,7 @@ class ProjectConfigInquirer {
             type: "confirm",
             name: "multipleRoles",
             default: true,
-            message: `Would you like to use authentication with ${chalk.blue("Multiple Roles")}?`,
+            message: `Would you like to use authentication with ${chalk.cyan("Multiple Roles")}?`,
           },
         ]);
 
@@ -263,7 +280,7 @@ class ProjectConfigInquirer {
         };
       } else if (this.config.prisma.provider === "sqlite") {
         console.info(
-          `\nSkipping multiple roles option because it is not supported with sqlite prisma provider and static authentication...`
+          `\nSkipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
         );
       }
     }

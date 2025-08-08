@@ -11,76 +11,115 @@ class TemplateCompiler {
 
   filesToBeSkipped(config: ProjectConfig) {
     const files: string[] = [];
-    const zodAuthSchemaFiles = [
+    const authSharedPrismaFiles = ["user.prisma.hbs"];
+
+    const dynamicAuthPrismaFiles = [
+      "auth-permission.prisma.hbs",
+      "auth-role.prisma.hbs",
+      "user-role.prisma.hbs",
+    ];
+
+    const sharedAuthZodSchemaFiles = [
       "login.schema.ts.hbs",
       "signup.schema.ts.hbs",
       "update-password.schema.ts.hbs",
+      "update-me.schema.ts.hbs",
     ];
 
-    const classValidatorAuthDtoFiles = [
-      "login.dto.ts.hbs",
-      "signup.dto.ts.hbs",
-      "update-password.dto.ts.hbs",
+    const dynamicAuthZodSchemaFiles = [
+      "create-auth-permission.schema.ts.hbs",
+      "update-auth-permission.schema.ts.hbs",
+      "create-auth-role.schema.ts.hbs",
+      "update-auth-role.schema.ts.hbs",
     ];
 
-    const zodUserSchemaFiles = [
+    const userZodSchemaFiles = [
       "create-user.schema.ts.hbs",
       "update-user.schema.ts.hbs",
     ];
 
-    const classValidatorUserSchemaFiles = [
+    const userClassValidatorDtoFiles = [
       "create-user.dto.ts.hbs",
       "update-user.dto.ts.hbs",
     ];
 
-    const userComponents = [
+    const sharedAuthClassValidatorDtoFiles = [
+      "login.dto.ts.hbs",
+      "signup.dto.ts.hbs",
+      "update-password.dto.ts.hbs",
+      "update-me.dto.ts.hbs",
+    ];
+
+    const dynamicAuthClassValidatorDtoFiles = [
+      "create-auth-permission.dto.ts.hbs",
+      "update-auth-permission.dto.ts.hbs",
+      "create-auth-role.dto.ts.hbs",
+      "update-auth-role.dto.ts.hbs",
+    ];
+
+    const authModuleComponents = [
+      "auth.middlewares.ts.hbs",
+      "auth.query.ts.hbs",
+    ];
+
+    const authPermissionModuleComponents = [
+      "auth-permission.auth.ts.hbs",
+      "auth-permission.query.ts.hbs",
+      "auth-permission.service.ts.hbs",
+    ];
+
+    const authRoleModuleComponents = [
+      "auth-role.auth.ts.hbs",
+      "auth-role.query.ts.hbs",
+      "auth-role.service.ts.hbs",
+    ];
+
+    const userModuleComponents = [
       "user.middlewares.ts.hbs",
       "user.query.ts.hbs",
       "user.service.ts.hbs",
-      "user.prisma.hbs",
-    ];
-
-    const authComponents = [
-      "auth.middlewares.ts.hbs",
-      "auth.query.ts.hbs",
-      "auth-role.prisma.hbs",
-      "auth-permission.prisma.hbs",
-      "user-role.prisma.hbs",
+      "user.auth.ts.hbs",
     ];
 
     // Ignoring auth relation files when auth is set to define later
     if (config.authentication?.type === "define later")
       files.push(
-        ...userComponents,
-        ...authComponents,
-        ...zodAuthSchemaFiles,
-        ...classValidatorAuthDtoFiles,
-        ...zodUserSchemaFiles,
-        ...classValidatorUserSchemaFiles
+        ...authSharedPrismaFiles,
+        ...dynamicAuthPrismaFiles,
+        ...sharedAuthZodSchemaFiles,
+        ...dynamicAuthZodSchemaFiles,
+        ...sharedAuthClassValidatorDtoFiles,
+        ...dynamicAuthClassValidatorDtoFiles,
+        ...userModuleComponents,
+        ...authModuleComponents,
+        ...authPermissionModuleComponents,
+        ...authRoleModuleComponents
       );
 
-    // Ignoring prisma models required only on dynamic authentication
-    if (
-      config.authentication?.type === "static" ||
-      config.authentication?.type === "define later"
-    )
+    // Ignoring files that are not required on static authentication
+    if (config.authentication?.type === "static")
       files.push(
-        ...[
-          "auth-role.prisma.hbs",
-          "auth-permission.prisma.hbs",
-          "user-role.prisma.hbs",
-        ]
+        ...dynamicAuthPrismaFiles,
+        ...dynamicAuthZodSchemaFiles,
+        ...dynamicAuthClassValidatorDtoFiles,
+        ...authPermissionModuleComponents,
+        ...authRoleModuleComponents
       );
 
     // Ignore zod related files when validation is class-validator
     if (config.validation.type !== "zod")
-      files.push(...zodUserSchemaFiles, ...zodAuthSchemaFiles);
+      files.push(
+        ...sharedAuthZodSchemaFiles,
+        ...dynamicAuthZodSchemaFiles,
+        ...userZodSchemaFiles
+      );
 
     // Ignore class-validator related files when validation is zod
     if (config.validation.type !== "class-validator")
       files.push(
-        ...classValidatorUserSchemaFiles,
-        ...classValidatorAuthDtoFiles
+        ...sharedAuthClassValidatorDtoFiles,
+        ...dynamicAuthClassValidatorDtoFiles,
+        ...userClassValidatorDtoFiles
       );
 
     // Ignoring typescript related files when typescript false
@@ -118,7 +157,7 @@ class TemplateCompiler {
             fs.readFileSync(templatePath, "utf8")
           );
 
-          let arkosCurrentVersion = getNpmPackageVersion("arkos");
+          let arkosCurrentVersion = "{{arkosCurrentVersion}}";
 
           const content = template({ ...config, arkosCurrentVersion });
           const ext = isTypescript ? ".ts" : ".js";

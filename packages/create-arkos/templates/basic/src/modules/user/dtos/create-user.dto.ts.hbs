@@ -21,7 +21,7 @@ import { UserRole } from "@prisma/client"
 class RoleConnectDto {
   @IsString()
   @IsNotEmpty()
-  id: string
+  id!: string
 }
 
 class RoleConnectionDto {

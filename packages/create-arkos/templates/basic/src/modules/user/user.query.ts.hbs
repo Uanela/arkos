@@ -1,18 +1,64 @@
 {{#if typescript}}
-import prisma from "../../utils/prisma";
+import prisma from "../../utils/prisma/index.js";
 import { PrismaQueryOptions } from 'arkos/prisma';
 
 const userQueryOptions: PrismaQueryOptions<typeof prisma.user> = {
 {{else}}
+/**
+ * @type {import("arkos/prisma").PrismaQueryOptions<typeof import('../../utils/prisma/index.js').prisma.user>}
+ */
 const userQueryOptions = {
 {{/if}}
     global: {},
     find: {
+      omit: {
+        password: true,
+      }, 
       include: {
-        password: false,
+        {{#if (eq authentication.type "dynamic")}}
+          {{#if authentication.multipleRoles}}
+        roles: {
+          include: {
+            role: true,
+          }
+        },
+          {{else}}
+        role: {
+          include: {
+            role: true,
+          }
+        },
+          {{/if}}
+        {{/if}}
       },
     },
-    findOne: {},
+    findOne: {
+      include: {
+        {{#if (eq authentication.type "dynamic")}}
+          {{#if authentication.multipleRoles}}
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: true
+              }
+            }
+          }
+        },
+          {{else}}
+        role: {
+          include: {
+            role: {
+              include: {
+                permissions: true
+              }
+            }
+          }
+        },
+          {{/if}}
+        {{/if}}
+      },
+    },
     findMany: {},
     udpate: {},
     updateMany: {},
@@ -21,8 +67,8 @@ const userQueryOptions = {
     createMany: {},
     createOne: {},
     save: {
-      include: {
-        password: false,
+      omit: {
+        password: true,
       },
     },
     saveMany: {},

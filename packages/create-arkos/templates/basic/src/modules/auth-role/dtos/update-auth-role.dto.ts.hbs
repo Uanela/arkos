@@ -1,0 +1,55 @@
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import 'reflect-metadata'
+{{#if (eq prisma.provider "sqlite")}}
+
+export enum AuthPermissionAction {
+  View = 'View',
+  Create = 'Create',
+  Update = 'Update',
+  Delete = 'Delete'
+}
+{{else}}
+import { AuthPermissionAction } from "@prisma/client"
+{{/if}}
+
+export enum ApiAction {
+  connect = 'connect',
+  delete = 'delete'
+}
+
+class UpdatePermissionForRoleDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Resource is required' })
+  resource!: string;
+
+  @IsEnum(AuthPermissionAction)
+  @Transform(({ value }) => value || AuthPermissionAction.View)
+  action!: AuthPermissionAction = AuthPermissionAction.View;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value || "Allows to create a permission for a given role.")
+  description?: string = "Allows to create a permission for a given role.";
+
+  @IsEnum(ApiAction)
+  @IsOptional()
+  apiAction!: ApiAction;
+}
+
+export default class UpdateAuthRoleDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Role name is required' })
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdatePermissionForRoleDto)
+  @Transform(({ value }) => value || [])
+  permissions?: UpdatePermissionForRoleDto[] = [];
+}

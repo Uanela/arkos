@@ -1,20 +1,56 @@
 {{#if typescript}}
-import prisma from "../../utils/prisma";
+import prisma from "../../utils/prisma/index.js";
 import { AuthPrismaQueryOptions } from 'arkos/prisma';
 
 const authQueryOptions: AuthPrismaQueryOptions<typeof prisma.user> = {
 {{else}}
+/**
+ * @type {import("arkos/prisma").PrismaQueryOptions<typeof import('../../utils/prisma/index.js').prisma.user>}
+ */
 const authQueryOptions = {
 {{/if}}
   getMe: {
+    omit: {
+      password: true,
+    }, 
     include: {
-      password: false,
+      {{#if (eq authentication.type "dynamic")}}
+        {{#if authentication.multipleRoles}}
+      roles: {
+        include: {
+          role: {
+            include: {
+              permissions: true
+            }
+          }
+        }
+      },
+        {{else}}
+      role: {
+        include: {
+          role: {
+            include: {
+              permissions: true
+            }
+          }
+        }
+      },
+        {{/if}}
+      {{/if}}
     },
   },
-  updateMe: {},
+  updateMe: {
+    omit: {
+      password: true,
+    }, 
+  },
   deleteMe: {},
   login: {},
-  signup: {},
+  signup: {
+    omit: {
+      password: true,
+    },
+  },
   updatePassword: {},
 }
 

@@ -1,0 +1,34 @@
+{{#if typescript}}
+import prisma from "../../utils/prisma/index.js";
+import { PrismaQueryOptions } from 'arkos/prisma';
+
+const authRoleQueryOptions: PrismaQueryOptions<typeof prisma.authRole> = {
+{{else}}
+/**
+ * @type {import("arkos/prisma").PrismaQueryOptions<typeof import('../../utils/prisma/index.js').prisma.authRole>}
+ */
+const authRoleQueryOptions = {
+{{/if}}
+    global: {},
+    find: {},
+    findOne: {
+        include: {
+          permissions: true
+        },
+    },
+    findMany: {},
+    udpate: {},
+    updateMany: {},
+    updateOne: {},
+    create: {},
+    createMany: {},
+    createOne: {},
+    save: {},
+    saveMany: {},
+    saveOne: {},
+    delete: {},
+    deleteMany: {},
+    deleteOne: {},
+}
+
+export default authRoleQueryOptions;
