@@ -234,5 +234,37 @@ describe("parseQueryParamsWithModifiers", () => {
       const result = parseQueryParamsWithModifiers(query);
       expect(result).toEqual({ name: { contains: "john", mode: "sensitive" } });
     });
+
+    it("should handle nested field and deepmerge", () => {
+      const query = {
+        user__roles__some__role__icontains: "Admin",
+        user__roles__none__role__icontains: "Applicant",
+        createdAt__gte: "2023-05-01T17:04:00.000Z",
+        createdAt__lte: "2023-05-02T22:44:09.000Z",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          roles: {
+            some: {
+              role: {
+                contains: "Admin",
+                mode: "insensitive",
+              },
+            },
+            none: {
+              role: {
+                contains: "Applicant",
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+        createdAt: {
+          gte: new Date("2023-05-01T17:04:00.000Z"),
+          lte: new Date("2023-05-02T22:44:09.000Z"),
+        },
+      });
+    });
   });
 });

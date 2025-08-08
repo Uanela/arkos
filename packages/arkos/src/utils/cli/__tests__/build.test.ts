@@ -3,6 +3,7 @@ import { execSync } from "child_process";
 import { buildCommand } from "../build";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../../dotenv.helpers";
+import sheu from "../../sheu";
 
 // Mock dependencies
 jest.mock("child_process", () => ({
@@ -11,7 +12,7 @@ jest.mock("child_process", () => ({
     kill: jest.fn(),
   })),
 }));
-
+jest.mock("../../sheu");
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   existsSync: jest.fn(),
@@ -273,10 +274,10 @@ describe("buildCommand", () => {
 
       buildCommand({});
 
-      expect(console.error).toHaveBeenCalledWith(
-        "❌ Build failed:",
-        expect.any(Error)
+      expect(sheu.error).toHaveBeenCalledWith(
+        expect.stringContaining("Build failed:")
       );
+      expect(console.error).toHaveBeenCalledWith(expect.any(Error));
 
       expect(fs.unlinkSync).toHaveBeenCalled();
     });
@@ -414,10 +415,10 @@ describe("buildCommand", () => {
         "Process.exit called with code 1"
       );
 
-      expect(console.error).toHaveBeenCalledWith(
-        "❌ Build failed:",
-        expect.any(Error)
+      expect(sheu.error).toHaveBeenCalledWith(
+        expect.stringContaining("Build failed:")
       );
+      expect(console.error).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it("should handle file copy errors gracefully", () => {

@@ -450,7 +450,7 @@ describe("Express Middleware Functions", () => {
 
       // Since we can't easily test the exact string with ANSI colors, let's check for key elements
       const consoleCall = (console.info as jest.Mock).mock.calls[0][0];
-      expect(consoleCall).toContain("INFO");
+      expect(consoleCall).toContain("Info");
       expect(consoleCall).toContain("GET");
       expect(consoleCall).toContain("/test");
       expect(consoleCall).toContain("200"); // Status code

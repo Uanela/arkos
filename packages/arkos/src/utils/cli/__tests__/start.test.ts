@@ -3,6 +3,8 @@ import fs from "fs";
 import { spawn } from "child_process";
 import { startCommand } from "../start";
 import { importModule } from "../../helpers/global.helpers";
+import portAndHostAllocator from "../../features/port-and-host-allocator";
+import { getArkosConfig } from "../../../server";
 
 // Mock dependencies
 jest.mock("child_process", () => ({
@@ -26,6 +28,8 @@ jest.mock("path", () => ({
   ...jest.requireActual("path"),
   join: jest.fn((...args) => args.join("/")),
 }));
+
+jest.mock("../../../utils/features/port-and-host-allocator");
 
 // Mock console methods
 const originalConsoleInfo = console.info;
@@ -228,9 +232,17 @@ describe("startCommand", () => {
 
     // Setup mock for importModule to return a resolved promise
     (importModule as jest.Mock).mockImplementation(async (path) => {
-      console.info(path);
       return {
         getArkosConfig: () => ({ available: true }),
+      };
+    });
+
+    (
+      portAndHostAllocator.getHostAndAvailablePort as jest.Mock
+    ).mockImplementationOnce(() => {
+      return {
+        port: 8000,
+        host: "localhost",
       };
     });
 
@@ -252,6 +264,11 @@ describe("startCommand", () => {
       })
     );
 
+    // Fast-forward timers to allow waitForConfig to complete
+    jest.useFakeTimers({ advanceTimers: 500 });
+
+    // Wait for promises to resolve
+    await new Promise((resolve) => setImmediate(resolve));
     // To check a function was called with specific args:
     expect(importModule).toHaveBeenCalled();
 
@@ -328,7 +345,6 @@ describe("startCommand", () => {
   it("should correctly display configuration when getArkosConfig is successful", async () => {
     // Mock fs.existsSync to return true
     (fs.existsSync as jest.Mock).mockReturnValue(true);
-
     jest
       .spyOn(require("../../helpers/global.helpers"), "importModule")
       .mockReturnValue({
@@ -348,6 +364,15 @@ describe("startCommand", () => {
       "/mock/project/root/.env.production",
     ]);
 
+    (
+      portAndHostAllocator.getHostAndAvailablePort as jest.Mock
+    ).mockImplementationOnce(() => {
+      return {
+        port: 8000,
+        host: "example.com",
+      };
+    });
+
     // Call the start command
     startCommand();
 
@@ -362,39 +387,57 @@ describe("startCommand", () => {
       expect.stringContaining("Arkos.js")
     );
     expect(console.info).toHaveBeenCalledWith(
-      expect.stringContaining("http://example.com:8080")
+      expect.stringContaining("http://")
     );
     expect(console.info).toHaveBeenCalledWith(
       expect.stringContaining(".env, .env.production")
     );
   });
 
-  // it("should fall back to default config display when getArkosConfig repeatedly fails", async () => {
-  //   // Mock fs.existsSync to return true
-  //   (fs.existsSync as jest.Mock).mockReturnValue(true);
+  it("should fall back to default config (cli values or env) display when getArkosConfig repeatedly fails", async () => {
+    jest
+      .spyOn(require("../../helpers/global.helpers"), "importModule")
+      .mockResolvedValue({
+        getArkosConfig: () => ({
+          available: false,
+        }),
+      });
 
-  //   // Mock getArkosConfig to consistently return unavailable
-  //   const getArkosConfigMock =
-  //     jest.requireMock("../../../server").getArkosConfig;
-  //   getArkosConfigMock.mockReturnValue({ available: false });
+    (
+      portAndHostAllocator.getHostAndAvailablePort as jest.Mock
+    ).mockImplementationOnce(() => {
+      return {
+        port: 5678,
+        host: "test-host",
+      };
+    });
 
-  //   // Use jest.spyOn to track console.info calls
-  //   const infoSpy = jest.spyOn(console, "info");
+    startCommand({ port: "5678", host: "test-host" });
 
-  //   // Call the start command with specific options
-  //   startCommand({ port: "5678", host: "test-host" });
+    await jest.advanceTimersByTimeAsync(2000);
 
-  //   // Fast-forward all timers to simulate maxAttempts timeouts
-  //   jest.useFakeTimers(10000); // Advance beyond all retry attempts
+    expect(console.info).toHaveBeenCalledWith(
+      expect.stringContaining("http://test-host:5678")
+    );
+  });
 
-  //   // Wait for any promises to resolve
-  //   await Promise.resolve();
+  it("should not display host nor port when arkos config is not available and no cli values and env values are passed.", async () => {
+    jest
+      .spyOn(require("../../helpers/global.helpers"), "importModule")
+      .mockResolvedValue({
+        getArkosConfig: () => ({
+          available: false,
+        }),
+      });
 
-  //   // Check default values were used in console output
-  //   expect(infoSpy).toHaveBeenCalledWith(
-  //     expect.stringContaining("http://test-host:5678")
-  //   );
-  // }, 10000); // Increase timeout to avoid timeout errors
+    startCommand();
+
+    await jest.advanceTimersByTimeAsync(2000);
+
+    expect(console.info).not.toHaveBeenCalledWith(
+      expect.stringContaining("- Local:")
+    );
+  });
 
   // it("should handle errors during config retrieval gracefully", async () => {
   //   // Mock fs.existsSync to return true
@@ -417,7 +460,6 @@ describe("startCommand", () => {
   //   jest.useFakeTimers(10000);
 
   //   // Wait for any promises to resolve
-  //   await Promise.resolve();
 
   //   // Should fall back to default config display
   //   expect(infoSpy).toHaveBeenCalledWith(

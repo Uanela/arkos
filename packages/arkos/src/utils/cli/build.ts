@@ -5,6 +5,7 @@ import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { getVersion } from "./utils/cli.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
+import sheu from "../sheu";
 
 // Constants
 const BUILD_DIR = ".build";
@@ -54,9 +55,10 @@ export function buildCommand(options: BuildOptions = {}) {
     console.info(
       `  Run it using \x1b[1m\x1b[36m${packageManger} run start\x1b[0m\n`
     );
-  } catch (error) {
-    console.info("\n");
-    console.error("❌ Build failed:", error);
+  } catch (err: any) {
+    console.info("");
+    sheu.error(`Build failed: ${err?.message}`);
+    console.error(err);
     process.exit(1);
   }
 }
@@ -162,7 +164,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
 /**
  * Build a JavaScript project
  */
-function buildJavaScriptProject(options: BuildOptions, moduleType: ModuleType) {
+function buildJavaScriptProject(_: BuildOptions, moduleType: ModuleType) {
   // Target directory
   const targetDir = path.join(BUILD_DIR);
 
@@ -215,10 +217,7 @@ function buildJavaScriptProject(options: BuildOptions, moduleType: ModuleType) {
  * Copy all non-source code files to the build directory
  * This function will copy everything except the specified source file extensions
  */
-function copyAllNonSourceFiles(
-  moduleType: ModuleType,
-  skipExtensions: string[]
-) {
+function copyAllNonSourceFiles(_: ModuleType, skipExtensions: string[]) {
   const targetDir = path.join(BUILD_DIR);
   const sourceDir = "src";
 

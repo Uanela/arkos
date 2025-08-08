@@ -121,7 +121,7 @@ export function handleRequestLogs(
     const statusColor = getStatusColor(res.statusCode); // Get the color for the status code
 
     console.info(
-      `[\x1b[36mINFO\x1b[0m] \x1b[90m${time}\x1b[0m ${methodColor}${
+      `[\x1b[36mInfo\x1b[0m] \x1b[90m${time}\x1b[0m ${methodColor}${
         req.method
       }\x1b[0m ${decodeURIComponent(req.originalUrl)} ${statusColor}${
         res.statusCode

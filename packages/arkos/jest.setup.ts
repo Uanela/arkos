@@ -1,9 +1,3 @@
-// jest.mock("fs", () => ({
-//   ...jest.requireActual("fs"),
-//   readdirSync: jest.fn(),
-//   readFileSync: jest.fn(),
-// }));
-
 jest.mock("commander", () => {
   const mockCommand: any = {
     name: jest.fn().mockReturnThis(),
@@ -44,3 +38,21 @@ jest.mock("express", () => {
 
   return mockExpress;
 });
+
+// const portAndHostAllocator = jest.requireActual(
+//   "./src/utils/features/port-and-host-allocator"
+// );
+
+// jest.mock("./src/utils/features/port-and-host-allocator", () => ({
+//   __esModule: true,
+//   ...jest.requireActual("./src/utils/features/port-and-host-allocator").default,
+//   default: {
+//     ...jest.requireActual("./src/utils/features/port-and-host-allocator")
+//       .default,
+//     getHostAndAvailablePort: (env: any, config: any) =>
+//       (portAndHostAllocator as any).default.getCorrectHostAndPortToUse(
+//         env,
+//         config
+//       ),
+//   },
+// }));

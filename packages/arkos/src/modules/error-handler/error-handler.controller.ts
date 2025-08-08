@@ -22,9 +22,9 @@ export default function errorHandler(
   err: AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _: NextFunction
 ): void {
-  console.error("[\x1b[31mERROR\x1b[0m]:", err);
+  console.error("[\x1b[31mError\x1b[0m]:", err);
   // Default error status
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";

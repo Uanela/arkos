@@ -4,16 +4,20 @@ import { initApp, getArkosConfig, getExpressApp } from "../server";
 import { ArkosConfig } from "../types/arkos-config";
 import { bootstrap } from "../app";
 import http from "http";
+import portAndHostAllocator from "../utils/features/port-and-host-allocator";
+
+jest.mock("../utils/features/port-and-host-allocator");
 
 // Mock dependencies
 jest.mock("../app", () => ({
   bootstrap: jest.fn().mockResolvedValue({ port: 8000 }),
 }));
 
+jest.mock("../utils/sheu");
 // Mock the http module
 jest.mock("http", () => {
   const mockServer = {
-    listen: jest.fn().mockImplementation((port, host, callback) => {
+    listen: jest.fn().mockImplementation((_, _1, callback) => {
       if (typeof callback === "function") callback();
       return mockServer;
     }),
@@ -28,8 +32,8 @@ jest.mock("http", () => {
 jest.mock("fs");
 
 // Spy on console methods
-const consoleInfoSpy = jest.spyOn(console, "info").mockImplementation();
-const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+jest.spyOn(console, "info").mockImplementation();
+jest.spyOn(console, "error").mockImplementation();
 
 describe("Server Module", () => {
   let mockServer: Partial<
@@ -46,6 +50,10 @@ describe("Server Module", () => {
     mockApp = {};
 
     (bootstrap as jest.Mock).mockResolvedValue(mockApp);
+
+    (
+      portAndHostAllocator.getHostAndAvailablePort as any as jest.Mock
+    ).mockResolvedValue({ port: 8000, host: "localhost" });
   });
 
   afterEach(() => {
@@ -56,6 +64,10 @@ describe("Server Module", () => {
 
   describe("initApp", () => {
     it("initializes app with default config when no config is provided", async () => {
+      (
+        portAndHostAllocator.getHostAndAvailablePort as any as jest.Mock
+      ).mockResolvedValue({ port: 8000, host: "localhost" });
+
       await initApp({ port: 8000 });
 
       expect(bootstrap).toHaveBeenCalledWith(
@@ -80,16 +92,20 @@ describe("Server Module", () => {
     });
 
     it("merges provided config with default config", async () => {
+      (
+        portAndHostAllocator.getHostAndAvailablePort as any as jest.Mock
+      ).mockResolvedValue({ port: 9000, host: "localhost" });
+
       const customConfig: ArkosConfig = {
         port: 9000,
-        welcomeMessage: "Custom welcome message",
+        welcomeMessage: "Welcome Sheu",
       };
 
       await initApp(customConfig);
 
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({
-          welcomeMessage: "Custom welcome message",
+          welcomeMessage: "Welcome Sheu",
           port: 9000,
           host: "localhost",
           fileUpload: {
@@ -108,6 +124,10 @@ describe("Server Module", () => {
     });
 
     it("starts server with host when provided", async () => {
+      (
+        portAndHostAllocator.getHostAndAvailablePort as any as jest.Mock
+      ).mockResolvedValue({ port: 9000, host: "0.0.0.0" });
+
       const customConfig: ArkosConfig = {
         port: 9000,
         host: "0.0.0.0",
@@ -123,6 +143,9 @@ describe("Server Module", () => {
     });
 
     it("does not start server when port is undefined", async () => {
+      // (
+      //   portAndHostAllocator.getHostAndAvailablePort as any as jest.Mock
+      // ).mockResolvedValue({ port: undefined, host: "localhost" });
       // Reset the createServer mock to ensure it's not called
       (http.createServer as jest.Mock).mockClear();
 
@@ -153,6 +176,10 @@ describe("Server Module", () => {
 
   describe("getArkosConfig", () => {
     it("returns the current config", async () => {
+      (
+        portAndHostAllocator.getHostAndAvailablePort as any as jest.Mock
+      ).mockResolvedValue({ port: 9000, host: "0.0.0.0" });
+
       const customConfig: ArkosConfig = {
         port: 9000,
         host: "0.0.0.0", // Match the expected host

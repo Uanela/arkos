@@ -187,7 +187,7 @@ class Sheu {
     message: string,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const label = `[\x1b[36mINFO\x1b[0m]`;
+    const label = `[\x1b[36mInfo\x1b[0m]`;
     const result = this.formatText(message, { ...options, label });
     console.info(result);
     return result;
@@ -200,7 +200,7 @@ class Sheu {
     message: string,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const label = `[\x1b[31mERROR\x1b[0m]`;
+    const label = `[\x1b[31mError\x1b[0m]`;
     const result = this.formatText(message, { ...options, label });
     console.error(result);
     return result;
@@ -213,7 +213,8 @@ class Sheu {
     message: string,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const label = `[\x1b[32mREADY\x1b[0m]`;
+    // const label = `\x1b[32m✓\x1b[0m`;
+    const label = `[\x1b[32mReady\x1b[0m]`;
     const result = this.formatText(message, { ...options, label });
     console.info(result);
     return result;
@@ -226,7 +227,7 @@ class Sheu {
     message: string,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const label = `[\x1b[32mDONE\x1b[0m]`;
+    const label = `[\x1b[32mDone\x1b[0m]`;
     const result = this.formatText(message, { ...options, label });
     console.info(result);
     return result;
@@ -239,7 +240,7 @@ class Sheu {
     message: string,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const label = `[\x1b[33mWARN\x1b[0m]`;
+    const label = `[\x1b[33mWarn\x1b[0m]`;
     const result = this.formatText(message, { ...options, label });
     console.warn(result);
     return result;
