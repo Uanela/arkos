@@ -1,6 +1,6 @@
 {
   "name": "create-arkos",
-  "version": "0.0.24-beta",
+  "version": "1.2.14-beta",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
     "create-arkos": "./dist/index.js"
@@ -8,8 +8,11 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "dev": "ts-node src/index.ts",
+    "postbuild": "ts-node scripts/postbuild/index.ts",
+    "postpublish": "ts-node scripts/postpublish/index.ts",
     "test:hbs": "ts-node src/utils/helpers/hbs-tester.helpers.ts",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnlyBak": "pnpm build",
+    "publish": "ts-node scripts/postbuild/index.ts && pnpm build && npm publish --tag latest"
   },
   "author": "Uanela Como",
   "license": "MIT",

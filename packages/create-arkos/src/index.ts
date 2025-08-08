@@ -9,11 +9,12 @@ import Handlebars from "handlebars";
 import { getProcjetPackageJsonDependecies } from "./utils/helpers";
 import { detectPackageManagerFromUserAgent } from "./utils/helpers/npm.helpers";
 
-Handlebars.registerHelper("eq", (a, b) => a === b);
-Handlebars.registerHelper("neq", (a, b) => a !== b);
+Handlebars.registerHelper("eq", (a: any, b: any) => a === b);
+Handlebars.registerHelper("neq", (a: any, b: any) => a !== b);
 
 async function main() {
   const config = await projectConfigInquirer.run();
+  const argProjectName = config.argProjectName;
 
   const projectPath = config.projectPath;
 
@@ -32,10 +33,10 @@ async function main() {
   const { dependencies, devDependencies } =
     getProcjetPackageJsonDependecies(projectPath);
 
-  console.info(chalk.bold("\ndependencies:"));
+  console.info(chalk.cyan(chalk.bold("\ndependencies:")));
   dependencies.forEach((dependency) => console.info(`- ${dependency}`));
 
-  console.info(chalk.bold("\ndevDependencies:"));
+  console.info(chalk.cyan(chalk.bold("\ndevDependencies:")));
   devDependencies.forEach((devDependency) =>
     console.info(`- ${devDependency}`)
   );
@@ -52,11 +53,19 @@ async function main() {
   console.info(`
   ${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
 
-  Next steps:
-  1. cd ${config.projectName}
+  ${chalk.bold("Next Steps:")}
+  ${
+    argProjectName === "."
+      ? `1. cd ${config.projectName}
   2. setup your ${chalk.cyan("DATABASE_URL")} under .env
   3. npx prisma db push
   4. ${packageManager} run dev
+`
+      : `1. setup your ${chalk.cyan("DATABASE_URL")} under .env
+  2. npx prisma db push
+  3. ${packageManager} run dev
+`
+  }
     `);
 }
 

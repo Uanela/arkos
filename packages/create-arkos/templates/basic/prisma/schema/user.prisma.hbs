@@ -1,3 +1,4 @@
+{{#if (neq authentication.type "define later")}}
 model User {
   id                   String    {{prisma.idDatabaseType}}
   {{authentication.usernameField}}  String   @unique
@@ -40,6 +41,7 @@ enum UserRole {
   User
   // change or add new roles
 }
+{{/if}}
 {{/if}}
 {{/if}}
 

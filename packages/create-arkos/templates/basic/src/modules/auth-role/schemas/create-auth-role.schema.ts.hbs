@@ -1,13 +1,18 @@
 import { z } from 'zod';
+{{#if typescript}}
+import CreateAuthPermissionSchema from "../../auth-permission/schemas/create-auth-permission"
+{{else}}
+import CreateAuthPermissionSchema from "../../auth-permission/schemas/create-auth-permission.js"
+{{/if}}
 
 const CreateAuthRoleSchema = z.object({
   name: z.string().min(1, 'Role name is required'),
   description: z.string().optional(),
-  permissions: z.array(CreatePermissionSchema.omit({ role: true })).optional().default([]),
+  permissions: z.array(CreateAuthPermissionSchema.omit({ role: true })).optional().default([]),
 });
 
 export default CreateAuthRoleSchema
 
 {{#if typescript}}
-export type CreateAuthRoleType = z.infer<typeof CreateAuthRoleSchema>;
+export type CreateAuthRoleSchemaType = z.infer<typeof CreateAuthRoleSchema>;
 {{/if}}

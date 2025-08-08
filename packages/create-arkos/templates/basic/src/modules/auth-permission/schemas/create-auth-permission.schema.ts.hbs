@@ -1,12 +1,16 @@
 import { z } from 'zod';
+{{#if (eq prisma.provider "sqlite")}}
 
-{{#if (eq prisma.provider)}}
 export const AuthPermissionActionEnum = z.enum([
   'View',
   'Create', 
   'Update',
   'Delete'
 ]);
+{{else}}
+import { AuthPermissionAction } from "@prisma/client"
+export const AuthPermissionActionEnum = z.nativeEnum(AuthPermissionAction);
+{{/if}}
 
 const CreateAuthPermissionSchema = z.object({
   resource: z.string().min(1, 'Resource is required'),
@@ -14,11 +18,11 @@ const CreateAuthPermissionSchema = z.object({
   role: z.object({
     id: z.string().min(1, 'Role ID is required'),
   }),
-  description: z.string().optional(),
+  description: z.string().optional().default("Allows to create a permission for a given role."),
 });
 
 export default CreateAuthPermissionSchema
 
 {{#if typescript}}
-export type CreateAuthPermissionType = z.infer<typeof CreateAuthPermissionSchema>;
+export type CreateAuthPermissionSchemaType = z.infer<typeof CreateAuthPermissionSchema>;
 {{/if}}
