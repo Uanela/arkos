@@ -214,7 +214,10 @@ class ProjectConfigInquirer {
         ]);
       else {
         console.info(
-          `${chalk.bold(chalk.green("?"))} Validation library set to ${chalk.cyan("zod")} (class-validator is not supported on JavaScript).`
+          chalk.bold(
+            `${chalk.greenBright("?")} Validation library set to zod (class-validator is not supported on JavaScript):`
+          ),
+          chalk.cyan("zod")
         );
       }
       this.config.validation = {

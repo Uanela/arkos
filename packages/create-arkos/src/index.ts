@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import fs from "fs";
-import path from "path";
+import path, { dirname } from "path";
 import chalk from "chalk";
 import { execSync } from "child_process";
 import projectConfigInquirer from "./utils/project-config-inquirer";
@@ -8,9 +8,12 @@ import templateCompiler from "./utils/template-compiler";
 import Handlebars from "handlebars";
 import { getProcjetPackageJsonDependecies } from "./utils/helpers";
 import { detectPackageManagerFromUserAgent } from "./utils/helpers/npm.helpers";
+import { fileURLToPath } from "url";
 
 Handlebars.registerHelper("eq", (a: any, b: any) => a === b);
 Handlebars.registerHelper("neq", (a: any, b: any) => a !== b);
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function main() {
   const config = await projectConfigInquirer.run();
@@ -51,11 +54,11 @@ async function main() {
   execSync(`npx prisma generate`, { stdio: "inherit" });
 
   console.info(`
-  ${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
+  \n${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
 
   ${chalk.bold("Next Steps:")}
   ${
-    argProjectName === "."
+    argProjectName !== "."
       ? `1. cd ${config.projectName}
   2. setup your ${chalk.cyan("DATABASE_URL")} under .env
   3. npx prisma db push

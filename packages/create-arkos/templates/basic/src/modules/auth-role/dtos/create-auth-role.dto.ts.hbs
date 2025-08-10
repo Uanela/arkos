@@ -16,7 +16,7 @@ import { AuthPermissionAction } from "@prisma/client"
 class CreatePermissionForRoleDto {
   @IsString()
   @IsNotEmpty({ message: 'Resource is required' })
-  resource: string;
+  resource!: string;
 
   @IsEnum(AuthPermissionAction)
   @Transform(({ value }) => value || AuthPermissionAction.View)
@@ -31,7 +31,7 @@ class CreatePermissionForRoleDto {
 export default class CreateAuthRoleDto {
   @IsString()
   @IsNotEmpty({ message: 'Role name is required' })
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()

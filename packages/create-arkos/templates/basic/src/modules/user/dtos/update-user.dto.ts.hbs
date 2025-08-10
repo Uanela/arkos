@@ -8,9 +8,9 @@ import {
   IsOptional,
   IsArray,
   ValidateNested,
-  Type,
   IsEnum
 } from 'class-validator'
+import { Type } from 'class-transformer'
 {{#if typescript}}
 import apiActions from "../../../utils/validation/api-actions"
 {{else}}
@@ -27,22 +27,22 @@ class RoleConnectDto {
   @IsString()
   @IsNotEmpty()
   @IsOptional()
-  id: string
+  id?: string
 }
 
 class RoleConnectionDto {
   @IsString()
   @IsOptional()
-  id: string
+  id!: string
 
   @IsEnum(apiActions)
   @IsOptional()
-  apiAction: string
+  apiAction?: string
 
   @ValidateNested()
   @Type(() => RoleConnectDto)
   @IsOptional()
-  role: RoleConnectDto
+  role?: RoleConnectDto
 }
 {{/if}}
 
@@ -51,6 +51,13 @@ export default class UpdateUserDto {
   @IsNotEmpty({ message: '{{authentication.usernameField}} is required' })
   @IsOptional()
   {{authentication.usernameField}}: string
+
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @Matches(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+  @Matches(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+  @IsOptional()
+  password?: string
 
   @IsBoolean()
   @IsOptional()

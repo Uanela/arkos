@@ -25,7 +25,7 @@ class UpdatePermissionForRoleDto {
 
   @IsEnum(AuthPermissionAction)
   @Transform(({ value }) => value || AuthPermissionAction.View)
-  action!: AuthPermissionAction = AuthPermissionAction.View;
+  action: AuthPermissionAction = AuthPermissionAction.View;
 
   @IsOptional()
   @IsString()

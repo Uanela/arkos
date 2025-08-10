@@ -8,9 +8,8 @@ import {
   IsOptional,
   IsArray,
   ValidateNested,
-  Type,
-  IsEnum
 } from 'class-validator'
+import { Type } from "class-transformer";
 {{#if (eq authentication.type "static")}}
 {{#if (neq prisma.provider "sqlite")}}
 import { UserRole } from "@prisma/client"
@@ -27,20 +26,20 @@ class RoleConnectDto {
 class RoleConnectionDto {
   @ValidateNested()
   @Type(() => RoleConnectDto)
-  role: RoleConnectDto
+  role!: RoleConnectDto
 }
 {{/if}}
 
 export default class CreateUserDto {
   @IsString()
   @IsNotEmpty({ message: '{{authentication.usernameField}} is required' })
-  {{authentication.usernameField}}: string
+  {{authentication.usernameField}}!: string
 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   @Matches(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
   @Matches(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
-  password: string
+  password!: string
 
   @IsBoolean()
   @IsOptional()
