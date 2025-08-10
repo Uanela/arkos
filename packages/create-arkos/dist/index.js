@@ -34,7 +34,7 @@ async function main() {
     console.info("\nRunning npx prisma generate...");
     execSync(`npx prisma generate`, { stdio: "inherit" });
     console.info(`
-  ${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
+  \n${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
 
   ${chalk.bold("Next Steps:")}
   ${argProjectName !== "."
