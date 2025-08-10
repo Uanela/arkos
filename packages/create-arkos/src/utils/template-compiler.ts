@@ -2,7 +2,6 @@ import { ProjectConfig } from "./project-config-inquirer";
 import path from "path";
 import fs from "fs";
 import handlebars from "handlebars";
-import { getNpmPackageVersion } from "./helpers/npm.helpers";
 
 class TemplateCompiler {
   async canCompileAuthenticationTemplates(config: ProjectConfig) {

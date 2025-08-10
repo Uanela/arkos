@@ -4,7 +4,7 @@ The official CLI tool to quickly scaffold new Arkos.js API projects with interac
 
 ## Overview
 
-`create-arkos` is the scaffolding tool for the Arkos.js framework (v1.2.14-beta). It provides an interactive setup experience to generate a complete, production-ready RESTful API project with automatic CRUD operations, authentication, validation, and more - all built on top of Express.js and Prisma.
+`create-arkos` is the scaffolding tool for the Arkos.js framework. It provides an interactive setup experience to generate a complete, production-ready RESTful API project with automatic CRUD operations, authentication, validation, and more - all built on top of Express.js and Prisma.
 
 ## Requirements
 
@@ -175,10 +175,6 @@ arkos generate component-name -m model-name # generate components like controlle
 - **Documentation**: [www.arkosjs.com](https://www.arkosjs.com)
 - **GitHub**: [uanela/arkos](https://github.com/uanela/arkos)
 - **WhatsApp Community**: [Join our WhatsApp group](https://chat.whatsapp.com/EJ8cjb9hxau0EcOnI4fdpD)
-
-## Version
-
-Arkos.js version used on this `create-arkos` cli: v1.2.14-beta
 
 ## License
 

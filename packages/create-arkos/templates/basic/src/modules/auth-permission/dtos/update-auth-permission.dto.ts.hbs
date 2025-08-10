@@ -21,7 +21,7 @@ export default class UpdateAuthPermissionDto {
   @IsOptional()
   @IsEnum(AuthPermissionAction)
   @Transform(({ value }) => value || AuthPermissionAction.View)
-  action?: AuthPermissionAction = AuthPermissionAction.View;
+  action: AuthPermissionAction = AuthPermissionAction.View;
 
   @IsOptional()
   @IsString()
