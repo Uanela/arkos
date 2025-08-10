@@ -33,7 +33,7 @@ class RoleConnectDto {
 class RoleConnectionDto {
   @IsString()
   @IsOptional()
-  id!: string
+  id?: string
 
   @IsEnum(apiActions)
   @IsOptional()
@@ -50,7 +50,7 @@ export default class UpdateUserDto {
   @IsString()
   @IsNotEmpty({ message: '{{authentication.usernameField}} is required' })
   @IsOptional()
-  {{authentication.usernameField}}: string
+  {{authentication.usernameField}}?: string
 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
