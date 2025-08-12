@@ -7,15 +7,14 @@ configDotenv();
 
 const config: Config = {
   title: "Arkos.js",
-  tagline: "The Express And Prisma Framework For RESTful API",
+  tagline: "The Express And Prisma RESTful Framework",
   favicon: "img/favicon.ico",
   url: "https://www.arkosjs.com",
   baseUrl: "/",
   organizationName: "SuperM7.com", // Usually your GitHub org/user name.
-  projectName: "Arkos.js", // Usually your repo name.
+  projectName: "Arkosjs", // Usually your repo name.
   onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "warn",
-
   i18n: {
     defaultLocale: "en",
     locales: ["en", "pt"],
@@ -32,16 +31,12 @@ const config: Config = {
       };
     },
   ],
-
   presets: [
     [
       "classic",
       {
         docs: {
           sidebarPath: "./sidebars.ts",
-
-          // editUrl:
-          //   "https://github.com/supmer7/docusaurus/tree/main/packages/create-docusaurus/templates/shared/",
         },
         blog: {
           showReadingTime: true,
@@ -49,8 +44,7 @@ const config: Config = {
             type: ["rss", "atom"],
             xslt: true,
           },
-
-          editUrl: "https://github.com/supmer7-com/arkos-docs/blog",
+          editUrl: "https://github.com/uanela/arkos/packages/arkos",
           onInlineTags: "warn",
           onInlineAuthors: "warn",
           onUntruncatedBlogPosts: "warn",
@@ -64,8 +58,10 @@ const config: Config = {
   themeConfig: {
     image: "img/arkos-social-card.webp",
     navbar: {
+      style: "dark",
+      hideOnScroll: true,
       logo: {
-        alt: "Arkos js Logo",
+        alt: "Arkosjs Logo",
         src: "img/arkos-js-logo.svg",
         srcDark: "img/arkos-js-logo-dark.svg",
       },

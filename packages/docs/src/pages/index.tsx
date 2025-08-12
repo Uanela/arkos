@@ -1,121 +1,47 @@
 import React from "react";
 import Layout from "@theme/Layout";
 import Link from "@docusaurus/Link";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
-import { faBook } from "@fortawesome/free-solid-svg-icons";
 import ArkosFeatureCard from "./components/arkos-feature-card";
 import { arkosFeatures } from "../utils/arkos-features";
+import HeroSection from "./components/hero-section";
+import CompaniesLogos from "./components/companies-logos";
 
 export default function Home() {
   return (
     <div className="tailwind overflow-hidden max-w-[100vw]">
       <Layout description="Node.js backend framework for simplifying API development with automatic route generation, authentication, and minimal configuration.">
-        {/* Hero Section */}
-        <header
-          id="tailwind"
-          className="bg-[#020d1f] text-white tailwind flex justify-center"
-        >
-          <div className="container mx-auto px-4 py-12">
-            {/* Hero Content */}
-            <div
-              id="tailwind"
-              className="max-w-6xl mx-auto text-center md:mb-24 lg:mt-24 md:mt-20 mt-10 relative h-[100%] md:max-h-[800px]"
-            >
-              <div className="absolute md:size-[500px] size-[200px] bg-sky-500 rounded-full opacity-30 blur-3xl z-0"></div>
-              <div className="absolute bottom-full left-full md:size-[500px] size-[200px] bg-sky-500 rounded-full opacity-50 blur-3xl"></div>
-
-              <div
-                id="tailwind"
-                className="bg-white  text-zinc-900 py-1 px-4 rounded-full w-fit mx-auto text-center mb-2 text-xs font-bold z-10"
-              >
-                BETA VERSION
-              </div>
-              <h1 className="lg:text-7xl md:text-5xl text-3xl font-bold mb-8 z-10">
-                The Express & Prisma Framework For RESTful API
-              </h1>
-              <p className="mb-8 text-base text-gray-300 lg:text-lg capitalize z-10 max-w-5xl text-center mx-auto">
-                Used to simplify the development of a{" "}
-                <span className="font-bold text-white">
-                  secure and scalable RESTful API with minimal configuration
-                </span>
-                , allowing developers to focus on what really matters for the
-                business
-              </p>
-              <div className="flex justify-center md:mt-16 z-10 flex-col items-center gap-2 md:flex-row">
-                <Link
-                  to="/docs/intro"
-                  className="bg-sky-500 hover:bg-sky-600 text-white font-medium py-2 px-6 rounded-md w-[200px] md:w-[180px] flex items-center gap-2 justify-center z-10"
-                >
-                  <span>Learn More</span>
-                  <FontAwesomeIcon icon={faBook} className="size-[17px]" />
-                </Link>
-                <Link
-                  to="https://github.com/uanela/arkos"
-                  className="bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-6 rounded-md w-[200px] md:w-[180px] flex items-center gap-2 justify-center"
-                >
-                  <span>GitHub</span>
-                  <FontAwesomeIcon icon={faGithub} className="size-5" />
-                </Link>
-              </div>
-              <div className="mt-3 text-center">
-                <div
-                  className="rounded-md bg-sky-500/10 px-3 py-2.5 max-w-[370px] mx-auto relative group cursor-pointer"
-                  onClick={() =>
-                    navigator.clipboard.writeText("npx create-arkos@latest")
-                  }
-                >
-                  <p className="text-sky-100 py-0 my-0 font-mono text-sm">
-                    npx create-arkos@latest
-                  </p>
-                  <div className="absolute right-3 top-[55%] transform -translate-y-1/2  group-hover:opacity-100 transition-opacity text-sky-100">
-                    <svg
-                      className="w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+        <HeroSection />
+        <CompaniesLogos />
 
         {/* Features Section */}
         <section
           id="tailwind"
-          className="bg-[#0f1732] text-white py-16 tailwind  flex justify-center"
+          className="text-white md:py-24 pt-11 pb-8 tailwind  flex justify-center"
         >
           <div className="container mx-auto relative max-w-6xl">
             <div className="absolute top-[25%] left-[70%] md:size-[700px] size-[200px] bg-sky-500 rounded-full opacity-20 blur-3xl z-[1]"></div>
-            <h2 className="md:text-3xl text-xl font-bold mb-8">
-              What Does Arkos Do?{" "}
-              <span className="text-gray-400 text-base md:text-lg font-normal">
-                Provides a Set Of Tools To Allow Developers To Skip Standardized
-                RESTful API Development Tasks
-              </span>
+            <h2 className="md:text-3xl text-xl font-bold  text-center">
+              Build With Confidence From Day One
             </h2>
+            <p className="text-gray-400 md:text-base text-sm text-justify font-normal sm:text-center max-w-2xl mx-auto mb-8 md:mt-6 mt-4">
+              With our Express-based architecture and seamless integrations, we
+              created a REST framework that lets you ship features that scale as
+              fast as your application grows without worrying about standard
+              patterns.
+            </p>
 
             <div
               id="tailwind"
-              className="tailwind grid grid-cols-1 md:grid-cols-3 md:gap-4 p-2  mx-auto max-w-3xl md:max-w-6xl z-10 gap-3"
+              className="tailwind grid md:gap-12 gap-8 p-2  mx-auto max-w-3xl md:max-w-6xl z-10 items-start md:mt-32 mt-16"
             >
-              {arkosFeatures.map((feature) => (
-                <ArkosFeatureCard {...feature} />
+              {arkosFeatures.map((feature, i) => (
+                <ArkosFeatureCard {...feature} reverse={!!(i % 2 == 0)} />
               ))}
             </div>
           </div>
         </section>
 
-        <section className="mx-auto flex items-center justify-center mt-8 bg-gray-90 flex-col p-4 py-8 max-w-3xl relative">
+        <section className="mx-auto flex items-center justify-center md:mt-8 bg-gray-90 flex-col p-4 md:py-8 max-w-3xl relative">
           <div className="absolute md:size-[400px] size-[200px] bg-sky-500 rounded-full opacity-20 blur-3xl z-0"></div>
           <p className="font-semibold text-lg md:text-4xl text-center capitalize text-gray-800 dark:text-zinc-400 z-10">
             {
@@ -138,7 +64,7 @@ export default function Home() {
           </Link>
         </section>
 
-        <div className="bg-[#090e1f] z-10 text-white py-20 px-6">
+        <div className="bg-[#090e1f] z-10 text-white md:py-20 py-12 px-6">
           <h1 className="md:text-4xl text-center text-2xl font-bold z-10 mx-auto md:mb-16 mb-8">
             Built On Top Of Well Estabilished And{" "}
             <span className="text-sky-500">Production Ready</span> Tools
@@ -181,7 +107,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="bg-[#0f1732] rounded-lg p-4 md:p-6 outline-[#307bb3] outline-2 outline-none relative [box-shadow:0px_0px_15px_#307bb3]">
+              <div className="bg-[#0f1732] rounded-lg p-4 md:p-6 outline-[#36a394] outline-2 outline-none relative [box-shadow:0px_0px_15px_#307bb3]">
                 <div>
                   <img
                     src="/img/prisma-logo.webp"
@@ -189,7 +115,7 @@ export default function Home() {
                     className="size-12"
                   />
                 </div>
-                <div className="text-[#307bb3] text-lg md:text-2xl mb-2">
+                <div className="text-[#36a394] text-lg md:text-2xl mb-2">
                   Prisma ↗
                 </div>
                 <p className="text-zinc-400 text-sm">
