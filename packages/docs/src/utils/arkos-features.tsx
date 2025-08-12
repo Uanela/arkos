@@ -5,84 +5,255 @@ import {
   CheckSquare,
   Database,
   Upload,
-  GitMerge,
   Mail,
   FileText,
 } from "lucide-react";
 
 export const arkosFeatures = [
   {
-    title: "Automatic API Generation",
-    description: "Instantly create RESTful API routes for Prisma models.",
-    icon: <Code className="md:size-24 size-20 text-sky-500" />,
+    title: "Instant API Generation",
+    description: (
+      <>
+        Transform your{" "}
+        <strong>Prisma models into production-ready REST endpoints</strong> in
+        seconds.
+        <br />
+        Includes <em>authentication, validation, and file uploads</em>
+        —everything you need to ship fast.
+      </>
+    ),
+    Icon: Code,
     outline: "hover:outline-sky-500/50",
     titleHover: "group-hover:text-sky-500/80",
     to: "/docs/core-concepts/endpoints-auto-generation",
+    sideContent: (
+      <div className="">
+        <img
+          src="/img/feats/instant-api-generation.webp"
+          className="border-8 border-zinc-500 rounded-md  "
+        />
+      </div>
+    ),
   },
   {
-    title: "Built-in Authentication",
-    description: "Supports JWT-based authentication with effortless setup.",
-    icon: <Shield className="md:size-24 size-20 text-green-500" />,
-    outline: "hover:outline-green-500/50",
-    titleHover: "group-hover:text-green-500/80",
-    to: "/docs/core-concepts/built-in-authentication-system",
-  },
-  {
-    title: "Express Middlewares",
-    description:
-      "Pre-configured security, request parsing, and error handling.",
-    icon: <Layers className="md:size-24 size-20 text-yellow-500" />,
-    outline: "hover:outline-yellow-500/50",
-    titleHover: "group-hover:text-yellow-500/80",
-    to: "/docs/guide/built-in-middlewares",
-  },
-  {
-    title: "Built-in Data Validation",
-    description: "Using class-validator and class-transformer or zod.",
-    icon: <CheckSquare className="md:size-24 size-20 text-purple-500" />,
-    outline: "hover:outline-purple-500/50",
-    titleHover: "group-hover:text-purple-500/80",
-    to: "/docs/core-concepts/request-data-validation",
-  },
-  {
-    title: "Prisma Integration",
-    description: "Seamless connection with Prisma ORM for database management.",
-    icon: <Database className="md:size-24 size-20 text-indigo-500" />,
+    title: "Unmatched Prisma Integration",
+    description: (
+      <>
+        <strong>Database management</strong> built on{" "}
+        <a
+          href="https://prisma.io"
+          target="_blank"
+          className="text-[#50a496] underline"
+        >
+          <strong>Prisma's</strong>
+        </a>{" "}
+        rock-solid foundation with seamless ORM integration.
+        <br />
+        Write less Prisma, <em>build more data</em>.
+      </>
+    ),
+    Icon: Database,
+    iconColor: "#50a496",
     outline: "hover:outline-indigo-500/50",
     titleHover: "group-hover:text-indigo-500/80",
     to: "/docs/advanced-guide/custom-prisma-query-options",
+    sideContent: (
+      <div className="">
+        <img
+          src="/img/feats/unmatched-prisma-integration.webp"
+          className="border-8 border-zinc-500 rounded-md  "
+        />
+      </div>
+    ),
   },
   {
-    title: "File Upload & Optimization",
-    description: "Efficient image, video, docs, raw-file handling.",
-    icon: <Upload className="md:size-24 size-20 text-red-500" />,
+    title: "Enterprise-Ready Authentication",
+    description: (
+      <>
+        <strong>
+          <a
+            href="https://jwt.io"
+            target="_blank"
+            className="text-[#f43f5e] underline"
+          >
+            JWT
+          </a>{" "}
+          authentication that just works.
+        </strong>{" "}
+        Password hashing, token management,
+        <br />
+        and role-based access control—all{" "}
+        <em>production-ready out of the box</em>.
+      </>
+    ),
+    Icon: Shield,
+    iconColor: "#f43f5e",
+    outline: "hover:outline-green-500/50",
+    titleHover: "group-hover:text-green-500/80",
+    to: "/docs/core-concepts/built-in-authentication-system",
+    sideContent: (
+      <div className="">
+        <img
+          src="/img/feats/enterprise-ready-authentication.webp"
+          className="border-8 border-zinc-500 rounded-md  "
+        />
+      </div>
+    ),
+  },
+  {
+    title: "Bulletproof Security Stack",
+    description: (
+      <>
+        <strong>Enterprise-grade protection</strong> with rate limiting, CORS,
+        input sanitization,
+        <br />
+        and comprehensive error handling. <em>Deploy with confidence</em> from
+        day one.
+      </>
+    ),
+    Icon: Layers,
+    iconColor: "#dc2626",
     outline: "hover:outline-red-500/50",
     titleHover: "group-hover:text-red-500/80",
-    to: "/docs/core-concepts/file-uploads",
+    to: "/docs/guide/built-in-middlewares",
+    sideContent: (
+      <div className="">
+        <img
+          src="/img/feats/bulletproof-security-stack.webp"
+          className="border-8 border-zinc-500 rounded-md  "
+        />
+      </div>
+    ),
   },
   {
-    title: "Interceptors Middlewares",
-    description:
-      "Tailor as you want, intercept, customize your middleware flow.",
-    icon: <GitMerge className="md:size-24 size-20 text-teal-500" />,
-    outline: "hover:outline-teal-500/50",
-    titleHover: "group-hover:text-teal-500/80",
-    to: "/docs/core-concepts/interceptor-middlewares",
+    title: "Smart Data Validation",
+    description: (
+      <>
+        <strong>Automatic request validation</strong> using your favourite
+        validation libraries.
+        <br />
+        Generate{" "}
+        <em>
+          JSON schemas from Zod, class-validator, or directly from Prisma models
+        </em>
+        —zero configuration required.
+      </>
+    ),
+    Icon: CheckSquare,
+    iconColor: "#a855f7",
+    outline: "hover:outline-purple-500/50",
+    titleHover: "group-hover:text-purple-500/80",
+    to: "/docs/core-concepts/request-data-validation",
+    sideContent: (
+      <div className="">
+        <img
+          src="/img/feats/smart-data-validation.webp"
+          className="border-8 border-zinc-500 rounded-md  "
+        />
+      </div>
+    ),
   },
   {
-    title: "Nodemailer Integration",
-    description: "Seamless nodemailer integration for sending emails.",
-    icon: <Mail className="md:size-24 size-20 text-pink-500" />,
-    outline: "hover:outline-pink-500/50",
-    titleHover: "group-hover:text-pink-500/80",
-    to: "/docs/core-concepts/sending-emails",
-  },
-  {
-    title: "Swagger API Documentation",
-    description: "Seamless generate an api documentation.",
-    icon: <FileText className="md:size-24 size-20 text-orange-500" />,
-    outline: "hover:outline-orange-500/50",
-    titleHover: "group-hover:text-orange-500/80",
+    title: "Self-Documenting APIs",
+    description: (
+      <>
+        <strong>Interactive documentation</strong> with beautiful{" "}
+        <a
+          href="https://scalar.com"
+          target="_blank"
+          className="text-[#eab308] underline"
+        >
+          <strong>Scalar UI</strong>
+        </a>{" "}
+        and{" "}
+        <a
+          href="https://scalar.com"
+          target="_blank"
+          className="text-[#eab308] underline"
+        >
+          <strong>OpenAPI</strong>
+        </a>{" "}
+        specifications.
+        <br />
+        Auto generate json schemas from your zod schemas, class-validator dtos
+        or directly from your Prisma models.
+      </>
+    ),
+    Icon: FileText,
+    iconColor: "#eab308",
+    outline: "hover:outline-yellow-500/50",
+    titleHover: "group-hover:text-yellow-500/80",
     to: "/docs/core-concepts/swagger-api-documentation",
+    sideContent: (
+      <div className="">
+        <img
+          src="/img/feats/self-documenting-apis.webp"
+          className="border-8 border-zinc-500 rounded-md  "
+        />
+      </div>
+    ),
+  },
+  {
+    title: "Intelligent File Processing",
+    description: (
+      <>
+        <strong>Advanced file upload capabilities</strong> powered by{" "}
+        <a
+          href="https://github.com/expressjs/multer"
+          target="_blank"
+          className="text-[#fb7185] underline"
+        >
+          <strong>Multer</strong>
+        </a>{" "}
+        with automatic optimization.
+        <br />
+        Easy local storage and smart type validation.{" "}
+        <em>Images, videos, docs—handled effortlessly</em>.
+      </>
+    ),
+    Icon: Upload,
+    iconColor: "#fb7185",
+    outline: "hover:outline-rose-500/50",
+    titleHover: "group-hover:text-rose-500/80",
+    to: "/docs/core-concepts/file-uploads",
+    sideContent: (
+      <div className="">
+        <img
+          src="/img/feats/intelligent-file-processing.webp"
+          className="border-8 border-zinc-500 rounded-md  "
+        />
+      </div>
+    ),
+  },
+  {
+    title: "Effortless Email Integration",
+    description: (
+      <>
+        <strong>Built-in emailService object</strong> powered by{" "}
+        <a
+          href="https://nodemailer.com"
+          target="_blank"
+          className="text-[#06b6d4] underline"
+        >
+          <strong>Nodemailer</strong>
+        </a>{" "}
+        that lets you send emails effortlessly.
+        <br />
+        <em>Clean, simple API</em>—just focus on your content.
+      </>
+    ),
+    Icon: Mail,
+    iconColor: "#06b6d4",
+    outline: "hover:outline-cyan-500/50",
+    titleHover: "group-hover:text-cyan-500/80",
+    to: "/docs/core-concepts/sending-emails",
+    sideContent: (
+      <div className="">
+        <img
+          src="/img/feats/effortless-email-integration.webp"
+          className="border-8 border-zinc-500 rounded-md  "
+        />
+      </div>
+    ),
   },
 ];
