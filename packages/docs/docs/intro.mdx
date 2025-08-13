@@ -7,83 +7,60 @@ import TabItem from "@theme/TabItem";
 import ArkosFeaturesCardsDocs from "./components/arkos-features-card-docs";
 import { arkosFeatures } from "../src/utils/arkos-features";
 
-# Introduction to Arkos
+# Introduction 
 
-**Arkos** is a powerful, fast and lightweight backend framework built on top of Express.js and Prisma that simplifies RESTful API development. It automates common backend tasks while providing the flexibility developers need for custom solutions.
+**Arkos.js** is a fast and lightweight framework for quickly building secure and scalable [**Node.js**](https://nodejs.org) server-side RESTful applications. It uses progressive JavaScript (just like [**NestJS**](https://nestjs.com)), backed with and have full support for [**TypeScript**](https://typsecriptlang.org) (but still allows developers to code using vanilla JavaScript). It combines the world 2 most used programming paradigms FP (Functional Programming) and OOP (Object Oriented Programming).
 
-### Key Features
+Behind the scenes, Arkos uses the undisputed and most used JavaScript Server-Side Framework [**Express**](https://expressjs.com) altogether with most modern and type-safe ORM [**Prisma**](https://prisma.io) for database integration.
 
-<!-- <ArkosFeaturesCardsDocs /> -->
+Arkos introduces a new way of developing RESTful APIs in JavaScript world, by combining Node.js most used framework (Express), Prisma ORM for database management and the modular architecture from NestJS, for creating a level of abstraction of well estabilished and standardized RESTful APIs principles and offering many tools out of the box just like like [**Django**](https://djangoproject.com) in Python and [**Laravel**](https://laravel.com) in PHP.
 
-<div
-  id="tailwind"
-  className="tailwind grid grid-cols-1 md:grid-cols-3 md:gap-4 p-2  mx-auto max-w-3xl md:max-w-6xl z-10 gap-3"
->
-  {arkosFeatures.map((feature) => (
-    <ArkosFeaturesCardsDocs {...feature} />
-  ))}
-</div>
+Even though Arkos creates a level of abstraction on top of Express and Prisma, it still allows developers to fully access their APIs directly and write plain Express or Prisma code as needed. This gives developers to leverage all of what Arkos offers out of the box while still be able to everything they can do with pure Express and Prisma.
 
-### Why Arkos?
+## Philosophy
 
-Arkos eliminates repetitive setup tasks and boilerplate code, allowing developers to focus on building features rather than infrastructure. It's perfect for:
+For long years, thanks to [**Ryan Dahl**](https://github.com/ry) building Node.js, JavaScript has become almost the default language on the web both for Client-Side and Server-Side Applications. Then we watched Client-Side frameworks like [**Angular**](https://angularjs.org), [**React**](https://react.dev), [**Vue**](https://vuejs.org) and others, and also the rise of JavaScript Server-Side frameworks suchs as Express and [**Fastify**](https://fastify.io) all minimalistics. Time went by and we saw the rise of frameworks just like NestJS and [**AdonisJS**](https://adonisjs.com) trying to improve the experience of the development of JavaScript Server-Side applications.
 
-- Rapid RESTful API Development
-- Enterprise Solutions
-- MVPs and Prototypes
-- Full-Stack Applications
-- Anything You Can Do With Express
+Although both successed very well on their own focused niches Nest with strong OOP and Angular like experience and Adonis with the Fullstack MVC vision just like PHP, **Arkos.js** introduces a different proposal for RESTful APIs by **Safeguarding ExpressJS Paradigms** and **Enhacing Developer Experience** by providing a lot of common tools that developers have been creating from scratch, simply out of the box and letting them to still write any type of code they write when using Express, despite Arkos.js tools and focus on RESTful APIs.
 
-### Origin of the Name
+## Why Prisma ORM
+On the past [**Uanela Como**](https://github.com/uanela) _(The creator)_ initially favored Mongoose ORM and became skeptical when first encountering Prisma's different approach. However, deeper exploration revealed Prisma's key strengths: superior separation of concerns, type safety, and intuitive querying that focuses on what an ORM should excel at.
 
-The name "Arkos" comes from the Greek word "ἀρχή" (Arkhē), meaning "beginning" or "foundation". This reflects our goal of providing a solid foundation for backend development.
+Rather than building a custom ORM, Arkos.js strategically integrates with Prisma - one of the most modern and widely adopted ORMs in JavaScript. Combined with Arkos.js's BaseService Class, this creates what Uanela describes as "an unmatched Prisma integration" that enhances established tools while adding enterprise-level patterns for RESTful API development.
 
-## As Simples As This
+## Quickly Scaffolding
 
 <Tabs>
-  <TabItem value="js" label="JavaScript" >
+<TabItem value="npm" label="npm">
+```bash
+npm create arkos@latest my-first-project
+```
+</TabItem>
 
-    ```js
-    // src/app.js
-    const arkos = require("arkos");
+<TabItem value="pnpm" label="pnpm" default>
+```bash
+pnpm create arkos@latest my-first-project
+```
+</TabItem>
 
-    arkos.init({ port: 8000 });
-    ```
+<TabItem value="deno" label="deno">
+```bash
+deno run -A npm:create-arkos@latest my-first-project
+```
+</TabItem>
 
-  </TabItem>
-  <TabItem value="ts" label="TypeScript" default>
+<TabItem value="bun" label="bun">
+```bash
+bunx create-arkos@latest my-first-projec
+```
+</TabItem>
 
-    ```ts
-    // src/app.ts
-    import arkos from "arkos";
-
-    arkos.init({ port: 8000 });
-    ```
-
-  </TabItem>
 </Tabs>
-
-<Tabs>
-  <TabItem value="npm" label="Npm" >
-
-    ```bash
-    npm run dev
-    ```
-
-  </TabItem>
-
-  <TabItem value="pnpm" label="Pnpm" default>
-    ```bash
-    pnpm run dev
-    ```
-
-  </TabItem>
-</Tabs>
-Ready to build your API? Let's get started! 🚀
 
 ## Next Steps
 
 - [Getting Started](/docs/getting-started) - Set up your first Arkos project
 - [Project Structure](/docs/project-structure) - See the the **Arkos** project structure
 - [How Does It Works](/docs/how-does-arkos-works) - Learn about **Arkos** behind the scene work
-- [Core Concepts](/docs/category/core-concepts) - Catch up with arkos core
+
+> The name "Arkos" comes from the Greek word "ἀρχή" (Arkhē), meaning "beginning" or "foundation". This reflects our goal of providing a solid foundation for backend development.
