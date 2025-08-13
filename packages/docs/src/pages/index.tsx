@@ -21,7 +21,7 @@ export default function Home() {
           <div className="container mx-auto relative max-w-6xl">
             <div className="absolute top-[25%] left-[70%] md:size-[700px] size-[200px] bg-sky-500 rounded-full opacity-20 blur-3xl z-[1]"></div>
             <h2 className="md:text-3xl text-xl font-bold  text-center">
-              Build With Confidence From Day One
+              Build Fast And With Confidence From Day One
             </h2>
             <p className="text-gray-400 md:text-base text-sm text-justify font-normal sm:text-center max-w-2xl mx-auto mb-8 md:mt-6 mt-4">
               With our Express-based architecture and seamless integrations, we

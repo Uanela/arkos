@@ -11,7 +11,7 @@ export default function HeroSection(): ReactElement {
   return (
     <header
       id="tailwind"
-      className="bg-[#020d1f] text-white tailwind flex justify-center"
+      className="bg-[#020d1f] text-white tailwind flex justify-center hero-section"
     >
       <div className="container mx-auto px-4 md:pt-6 pt-12">
         {/* Hero Content */}
@@ -29,11 +29,11 @@ export default function HeroSection(): ReactElement {
           >
             BETA VERSION
           </div>
-          <h1 className="lg:text-7xl md:text-5xl text-3xl font-bold z-10">
+          <h2 className="lg:text-7xl md:text-5xl text-3xl font-bold z-10">
             The <span className="text-sky-400 ">Express</span> &{" "}
             <span className="text-[#36a394]">Prisma</span> RESTful
             Framework{" "}
-          </h1>
+          </h2>
           <p className="my-12 md:text-base text-sm text-gray-300 lg:text-lg capitalize z-10 max-w-4xl text-center mx-auto">
             Build{" "}
             <span className="font-bold text-white">secure and scalable</span>{" "}
