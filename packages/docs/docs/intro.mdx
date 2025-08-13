@@ -17,6 +17,7 @@ Arkos introduces a new way of developing RESTful APIs in JavaScript world, by co
 
 Even though Arkos creates a level of abstraction on top of Express and Prisma, it still allows developers to fully access their APIs directly and write plain Express or Prisma code as needed. This gives developers to leverage all of what Arkos offers out of the box while still be able to everything they can do with pure Express and Prisma.
 
+
 ## Philosophy
 
 For long years, thanks to [**Ryan Dahl**](https://github.com/ry) building Node.js, JavaScript has become almost the default language on the web both for Client-Side and Server-Side Applications. Then we watched Client-Side frameworks like [**Angular**](https://angularjs.org), [**React**](https://react.dev), [**Vue**](https://vuejs.org) and others, and also the rise of JavaScript Server-Side frameworks suchs as Express and [**Fastify**](https://fastify.io) all minimalistics. Time went by and we saw the rise of frameworks just like NestJS and [**AdonisJS**](https://adonisjs.com) trying to improve the experience of the development of JavaScript Server-Side applications.
@@ -27,6 +28,24 @@ Although both successed very well on their own focused niches Nest with strong O
 On the past [**Uanela Como**](https://github.com/uanela) _(The creator)_ initially favored Mongoose ORM and became skeptical when first encountering Prisma's different approach. However, deeper exploration revealed Prisma's key strengths: superior separation of concerns, type safety, and intuitive querying that focuses on what an ORM should excel at.
 
 Rather than building a custom ORM, Arkos.js strategically integrates with Prisma - one of the most modern and widely adopted ORMs in JavaScript. Combined with Arkos.js's BaseService Class, this creates what Uanela describes as "an unmatched Prisma integration" that enhances established tools while adding enterprise-level patterns for RESTful API development.
+
+## Key Features Overview
+
+**1. Automatic RESTful Endpoints Generation** - Generate complete CRUD operations for Prisma models with zero boilerplate code and full customize the whole flow using interceptor middlewares.
+
+**2. Built-in Authentication System** - JWT-based auth with user management, password hashing, and role-based access control.
+
+**3. Enterprise-Grade Middlewares** - Security headers, CORS, compression, request parsing, and error handling pre-configured.
+
+**4. Type-Safe Data Validation** - Automatic request/response validation using [**Class-Validator**](https://npmjs.com/packages/class-validator) or [ **Zod** ](https://zod.dev) with TypeScript and JavaScript integration.
+
+**5. Advanced File Management** - Easy file uploads with different file type processing and image optimization.
+
+**6. Email Service Tool** - Quickly send emails with minimal configuration, using for favorite Node.js mailing tool [**Nodemailer**](https://npmjs.com/packages/nodemailer).
+
+**7. Performance Optimization** - Built-in caching, rate limiting, and database query optimization with prisma.
+
+**8. Developer Experience** - Auto-generated Swagger docs, structured logging, hot reload, and comprehensive CLI tools for scaffolding and creating components like controllers, routers, services and many more.
 
 ## Quickly Scaffolding
 
