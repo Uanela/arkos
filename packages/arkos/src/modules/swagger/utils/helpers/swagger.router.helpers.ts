@@ -3,12 +3,12 @@ import { getModels } from "../../../../utils/helpers/models.helpers";
 import { pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
-import { getAuthenticationJsonSchemaPaths } from "./get-authentication-json-schema-paths";
-import { generateZodJsonSchemas } from "./json-schema-generators/generate-zod-json-schema";
+import getAuthenticationJsonSchemaPaths from "./get-authentication-json-schema-paths";
+import generateZodJsonSchemas from "./json-schema-generators/generate-zod-json-schemas";
 import { generateClassValidatorJsonSchemas } from "./json-schema-generators/generate-class-validator-json-schemas";
 import { generatePrismaJsonSchemas } from "./json-schema-generators/generate-prisma-json-schemas";
-import { generatePrismaModelMainRoutesPaths } from "./json-schema-generators/prisma-models/generate-prisma-model-main-routes";
-import { generatePrismaModelParentRoutePaths } from "./json-schema-generators/prisma-models/generate-prisma-model-parent-routes";
+import { generatePrismaModelMainRoutesPaths } from "./json-schema-generators/prisma-models/generate-prisma-model-main-routes-paths";
+import generatePrismaModelParentRoutePaths from "./json-schema-generators/prisma-models/generate-prisma-model-parent-routes-paths";
 import sheu from "../../../../utils/sheu";
 
 /**
@@ -68,8 +68,8 @@ export function getSchemaRef(
   schemaName: string,
   mode: "prisma" | "zod" | "class-validator"
 ): string {
+  schemaName = pascalCase(schemaName);
   // Check if schemaName (lowercase) contains any of the specified keywords
-  const lowerSchemaName = schemaName.toLowerCase();
   const specialCases = [
     "getme",
     "updateme",
@@ -80,13 +80,12 @@ export function getSchemaRef(
     "me",
   ];
   const isSpecialCase = specialCases.some(
-    (keyword) => keyword === lowerSchemaName
+    (keyword) => keyword === schemaName.toLowerCase()
   );
 
   // If it's a special case and mode is prisma, return zod style instead
-  if (isSpecialCase && mode === "prisma") {
+  if (isSpecialCase && mode === "prisma")
     return `#/components/schemas/${schemaName}Schema`;
-  }
 
   switch (mode) {
     case "prisma":

@@ -297,7 +297,7 @@ describe("generateTemplate", () => {
         modelName: mockModelName,
       });
 
-      expect(result).toContain('import { prisma } from "../../utils/prisma"');
+      expect(result).toContain('import prisma from "../../utils/prisma"');
       expect(result).toContain(
         "import { PrismaQueryOptions } from 'arkos/prisma'"
       );
@@ -328,7 +328,7 @@ describe("generateTemplate", () => {
         modelName: mockModelName,
       });
 
-      expect(result).not.toContain("import { prisma }");
+      expect(result).not.toContain("import prisma ");
       expect(result).not.toContain(": PrismaQueryOptions");
       expect(result).toContain("const userQueryOptions = {");
     });
@@ -477,7 +477,7 @@ describe("generateTemplate", () => {
       const result = generateTemplate("service", { modelName: mockModelName });
 
       // Should treat as JavaScript (not TypeScript)
-      expect(result).not.toContain("import { prisma }");
+      expect(result).not.toContain("import prisma ");
       expect(result).not.toContain("<typeof prisma.user>");
     });
   });

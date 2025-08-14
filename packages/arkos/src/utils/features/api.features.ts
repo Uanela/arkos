@@ -36,7 +36,7 @@ export default class APIFeatures {
       this.req = req;
       this.searchParams = deepmerge(
         parseQueryParamsWithModifiers(restOfQuery),
-        JSON.parse(filters as string)
+        parseQueryParamsWithModifiers(JSON.parse(filters as string))
       );
       (req as any).finalPrismaQueryOptions = this.searchParams;
     }
@@ -51,7 +51,7 @@ export default class APIFeatures {
       this.req = req;
       this.searchParams = deepmerge(
         parseQueryParamsWithModifiers(restOfQuery),
-        JSON.parse(filters as string)
+        parseQueryParamsWithModifiers(JSON.parse(filters as string))
       );
       (req as any).finalPrismaQueryOptions = this.searchParams;
     }

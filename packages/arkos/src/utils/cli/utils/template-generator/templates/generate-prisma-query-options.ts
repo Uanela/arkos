@@ -24,7 +24,7 @@ export function generateQueryOptionsTemplate(options: TemplateOptions): string {
 
   // Generate prisma import if TypeScript
   const prismaImport = isTypeScript
-    ? `import { prisma } from "../../utils/prisma";\n`
+    ? `import prisma from "../../utils/prisma";\n`
     : "";
 
   if (isAuth) {
@@ -51,7 +51,7 @@ const ${modelName.camel}QueryOptions${typeAnnotation} = {
     find: {},
     findOne: {},
     findMany: {},
-    udpate: {},
+    update: {},
     updateMany: {},
     updateOne: {},
     create: {},
