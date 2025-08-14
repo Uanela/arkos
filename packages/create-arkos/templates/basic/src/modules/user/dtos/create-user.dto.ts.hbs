@@ -57,15 +57,15 @@ export default class CreateUserDto {
   {{#if (eq prisma.provider "sqlite")}}
   @IsString()
   @IsNotEmpty()
-  role: string
+  role!: string
   {{else}}
   {{#if authentication.multipleRoles}}
   @IsArray()
   @IsEnum(UserRole, { each: true })
-  roles: UserRole[]
+  roles?: UserRole[]
   {{else}}
   @IsEnum(UserRole)
-  role: UserRole
+  role!: UserRole
   {{/if}}
   {{/if}}
   {{else}}
