@@ -26,7 +26,7 @@ export default class CreateAuthPermissionDto {
 
   @IsEnum(AuthPermissionAction)
   @Transform(({ value }) => value || AuthPermissionAction.View)
-  action: AuthPermissionAction = AuthPermissionAction.View;
+  action?: AuthPermissionAction = AuthPermissionAction.View;
 
   @ValidateNested()
   @Type(() => RoleConnectDto)
@@ -34,6 +34,6 @@ export default class CreateAuthPermissionDto {
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value || "Allows to create a permission for a given role.")
-  description?: string = "Allows to create a permission for a given role.";
+  @Transform(({ value }) => value)
+  description?: string;
 }

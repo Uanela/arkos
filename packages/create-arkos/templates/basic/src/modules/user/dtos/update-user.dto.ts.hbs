@@ -61,32 +61,32 @@ export default class UpdateUserDto {
 
   @IsBoolean()
   @IsOptional()
-  isSuperUser?: boolean = false
+  isSuperUser?: boolean
 
   @IsBoolean()
   @IsOptional()
-  isStaff?: boolean = false
+  isStaff?: boolean
 
   @IsBoolean()
   @IsOptional()
-  isActive?: boolean = true
+  isActive?: boolean
 
   {{#if (eq authentication.type "static")}}
   {{#if (eq prisma.provider "sqlite")}}
   @IsString()
   @IsNotEmpty()
   @IsOptional()
-  role: string
+  role?: string
   {{else}}
   {{#if authentication.multipleRoles}}
   @IsArray()
   @IsEnum(UserRole, { each: true })
   @IsOptional()
-  roles: UserRole[]
+  roles?: UserRole[]
   {{else}}
   @IsEnum(UserRole)
   @IsOptional()
-  role: UserRole
+  role?: UserRole
   {{/if}}
   {{/if}}
   {{else}}

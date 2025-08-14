@@ -24,8 +24,8 @@ class CreatePermissionForRoleDto {
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value || "Allows to create a permission for a given role.")
-  description?: string = "Allows to create a permission for a given role.";
+  @Transform(({ value }) => value)
+  description?: string;
 }
 
 export default class CreateAuthRoleDto {
@@ -42,5 +42,5 @@ export default class CreateAuthRoleDto {
   @ValidateNested({ each: true })
   @Type(() => CreatePermissionForRoleDto)
   @Transform(({ value }) => value || [])
-  permissions?: CreatePermissionForRoleDto[] = [];
+  permissions: CreatePermissionForRoleDto[] = [];
 }
