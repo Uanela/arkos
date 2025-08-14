@@ -152,6 +152,9 @@ describe("handleRelationFieldsInBody", () => {
         name: "John Doe",
         profile: {
           update: {
+            where: {
+              id: "123",
+            },
             data: {
               bio: "Updated Bio",
               avatarUrl: "https://example.com/new-avatar.jpg",
@@ -183,6 +186,53 @@ describe("handleRelationFieldsInBody", () => {
           connect: {
             id: "123",
           },
+        },
+      });
+    });
+    it("should handle delete operation for singular relation with apiAction: 'delete'", () => {
+      const body = {
+        name: "John Doe",
+        profile: {
+          id: "123",
+          apiAction: "delete",
+        },
+      };
+
+      const relationFields = {
+        singular: [{ name: "profile", type: "Profile" }],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "John Doe",
+        profile: {
+          delete: true,
+        },
+      });
+    });
+
+    it("should handle disconnect operation for singular relation with apiAction: 'disconnect'", () => {
+      const body = {
+        name: "John Doe",
+        profile: {
+          id: "123",
+          apiAction: "disconnect",
+        },
+      };
+
+      const relationFields = {
+        singular: [{ name: "profile", type: "Profile" }],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "John Doe",
+        profile: {
+          disconnect: true,
         },
       });
     });
@@ -444,6 +494,87 @@ describe("handleRelationFieldsInBody", () => {
         },
       });
     });
+
+    it("should handle deeply nested array relations with multiple levels", () => {
+      const body = {
+        name: "John Doe",
+        posts: [
+          {
+            title: "My First Post",
+            comments: [
+              {
+                content: "Great post!",
+                author: {
+                  email: "user1@example.com",
+                  posts: [
+                    {
+                      title: "Nested Post",
+                      category: { name: "Nested Category" },
+                    },
+                  ],
+                },
+              },
+              {
+                id: "comment-123",
+                content: "Updated comment",
+                author: { id: "user-456" },
+              },
+            ],
+          },
+        ],
+      };
+
+      const relationFields = {
+        singular: [],
+        list: [{ name: "posts", type: "Post" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "John Doe",
+        posts: {
+          create: [
+            {
+              title: "My First Post",
+              comments: {
+                create: [
+                  {
+                    content: "Great post!",
+                    author: {
+                      create: {
+                        email: "user1@example.com",
+                        posts: {
+                          create: [
+                            {
+                              title: "Nested Post",
+                              category: {
+                                connect: { name: "Nested Category" },
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  },
+                ],
+                update: [
+                  {
+                    where: { id: "comment-123" },
+                    data: {
+                      content: "Updated comment",
+                      author: {
+                        connect: { id: "user-456" },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+    });
   });
 
   describe("Edge Cases", () => {
@@ -486,6 +617,173 @@ describe("handleRelationFieldsInBody", () => {
         posts: null,
       });
     });
+
+    it("should skip list relation fields that are not arrays", () => {
+      const body = {
+        title: "My Post",
+        tags: { someProperty: "not an array" }, // This should be skipped
+        comments: [{ content: "Valid array" }], // This should be processed
+      };
+
+      const relationFields = {
+        singular: [],
+        list: [
+          { name: "tags", type: "Tag" },
+          { name: "comments", type: "Comment" },
+        ],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        title: "My Post",
+        tags: { someProperty: "not an array" }, // Unchanged
+        comments: {
+          create: [{ content: "Valid array" }],
+        },
+      });
+    });
+  });
+});
+
+describe("IgnoreActions Parameter", () => {
+  it("should ignore specified apiActions in ignoreActions array", () => {
+    const body = {
+      title: "My Post",
+      tags: [
+        { id: "1", apiAction: "delete" },
+        { id: "2", apiAction: "ignore-me" },
+        { name: "New Tag", apiAction: "create" },
+      ],
+    };
+
+    const relationFields = {
+      singular: [],
+      list: [{ name: "tags", type: "Tag" }],
+    };
+
+    const result = handleRelationFieldsInBody(body, relationFields, [
+      "ignore-me",
+    ]);
+
+    expect(result).toEqual({
+      title: "My Post",
+      tags: {
+        create: [{ name: "New Tag" }],
+        deleteMany: { id: { in: ["1"] } },
+        // The item with "ignore-me" should be completely ignored
+      },
+    });
+  });
+
+  it("should ignore specified apiActions in singular relations", () => {
+    const body = {
+      name: "John Doe",
+      profile: {
+        id: "123",
+        apiAction: "skip-this",
+      },
+    };
+
+    const relationFields = {
+      singular: [{ name: "profile", type: "Profile" }],
+      list: [],
+    };
+
+    const result = handleRelationFieldsInBody(body, relationFields, [
+      "skip-this",
+    ]);
+
+    expect(result).toEqual({
+      name: "John Doe",
+      // profile should be completely ignored
+    });
+  });
+});
+
+describe("Unknown apiAction Error Handling", () => {
+  it("should throw error for unknown apiAction in list relations", () => {
+    const body = {
+      title: "My Post",
+      tags: [
+        { id: "1", apiAction: "unknown-action" },
+        { name: "Valid Tag" }, // This should be fine
+      ],
+    };
+
+    const relationFields = {
+      singular: [],
+      list: [{ name: "tags", type: "Tag" }],
+    };
+
+    expect(() => {
+      handleRelationFieldsInBody(body, relationFields);
+    }).toThrow();
+  });
+
+  it("should throw error for unknown apiAction in singular relations", () => {
+    const body = {
+      name: "John Doe",
+      profile: {
+        id: "123",
+        apiAction: "invalid-action",
+      },
+    };
+
+    const relationFields = {
+      singular: [{ name: "profile", type: "Profile" }],
+      list: [],
+    };
+
+    expect(() => {
+      handleRelationFieldsInBody(body, relationFields);
+    }).toThrow();
+  });
+
+  it("should throw error for unknown apiAction in nested relations", () => {
+    const body = {
+      name: "John Doe",
+      posts: [
+        {
+          title: "My Post",
+          category: {
+            id: "cat-123",
+            apiAction: "weird-action",
+          },
+        },
+      ],
+    };
+
+    const relationFields = {
+      singular: [],
+      list: [{ name: "posts", type: "Post" }],
+    };
+
+    expect(() => {
+      handleRelationFieldsInBody(body, relationFields);
+    }).toThrow();
+  });
+
+  it("should allow known apiActions without throwing", () => {
+    const body = {
+      title: "My Post",
+      tags: [
+        { id: "1", apiAction: "delete" },
+        { id: "2", apiAction: "disconnect" },
+        { id: "3", apiAction: "connect" },
+        { name: "New Tag", apiAction: "create" },
+      ],
+    };
+
+    const relationFields = {
+      singular: [],
+      list: [{ name: "tags", type: "Tag" }],
+    };
+
+    // Should not throw
+    expect(() => {
+      handleRelationFieldsInBody(body, relationFields);
+    }).not.toThrow();
   });
 });
 
@@ -546,24 +844,6 @@ describe("canBeUsedToConnect", () => {
     expect(canBeUsedToConnect(modelName, undefined)).toBe(false);
   });
 });
-
-// describe("isListFieldAnArray", () => {
-//   it("should return true for arrays", () => {
-//     expect(isListFieldAnArray([])).toBe(true);
-//     expect(isListFieldAnArray([1, 2, 3])).toBe(true);
-//     expect(isListFieldAnArray(new Array())).toBe(true);
-//   });
-
-//   it("should return false for non-arrays", () => {
-//     expect(isListFieldAnArray({})).toBe(false);
-//     expect(isListFieldAnArray("array")).toBe(false);
-//     expect(isListFieldAnArray(123)).toBe(false);
-//     expect(isListFieldAnArray(null)).toBe(false);
-//     expect(isListFieldAnArray(undefined)).toBe(false);
-//   });
-// });
-
-// Existing mocks should still be in place
 
 describe("isPrismaRelationFormat", () => {
   it("should return true for objects with Prisma operations", () => {

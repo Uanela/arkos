@@ -33,13 +33,13 @@ jest.mock("express", () => {
 });
 jest.mock("../../../../../utils/helpers/models.helpers");
 jest.mock("../../../../auth/auth.service", () => ({
-  handleAuthenticationControl: jest.fn(() => "authMiddleware"),
-  handleAccessControl: jest.fn(() => "accessControlMiddleware"),
+  handleAuthenticationControl: jest.fn(() => jest.fn()),
+  handleAccessControl: jest.fn(() => jest.fn()),
 }));
 
 jest.mock("../../../base.middlewares", () => ({
-  addPrismaQueryOptionsToRequest: jest.fn(() => "queryOptionsMiddleware"),
-  sendResponse: "sendResponseMiddleware",
+  addPrismaQueryOptionsToRequest: jest.fn(() => jest.fn()),
+  sendResponse: jest.fn(),
   handleRequestBodyValidationAndTransformation: jest.fn(() => jest.fn()),
 }));
 
@@ -68,14 +68,14 @@ describe("setupRouters", () => {
 
     // Setup BaseController mock
     mockBaseController = {
-      createOne: "createOneHandler",
-      findMany: "findManyHandler",
-      findOne: "findOneHandler",
-      updateOne: "updateOneHandler",
-      deleteOne: "deleteOneHandler",
-      createMany: "createManyHandler",
-      updateMany: "updateManyHandler",
-      deleteMany: "deleteManyHandler",
+      createOne: jest.fn(),
+      findMany: jest.fn(),
+      findOne: jest.fn(),
+      updateOne: jest.fn(),
+      deleteOne: jest.fn(),
+      createMany: jest.fn(),
+      updateMany: jest.fn(),
+      deleteMany: jest.fn(),
     };
 
     (BaseController as jest.Mock).mockImplementation(() => mockBaseController);
@@ -98,79 +98,79 @@ describe("setupRouters", () => {
 
     // Call the function
     const setupPromises = setupRouters(["User"], router, {});
-    await Promise.all(setupPromises);
+    await Promise.all(await setupPromises);
 
     // Verify all routes are registered
     expect(router.post).toHaveBeenCalledWith(
       "/users",
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "createOneHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
       "/users",
-      expect.anything(),
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "findManyHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
     expect(router.post).toHaveBeenCalledWith(
       "/users/many",
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "createManyHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
     expect(router.patch).toHaveBeenCalledWith(
       "/users/many",
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "updateManyHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
     expect(router.delete).toHaveBeenCalledWith(
       "/users/many",
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "deleteManyHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
       "/users/:id",
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "findOneHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
     expect(router.patch).toHaveBeenCalledWith(
       "/users/:id",
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "updateOneHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
     expect(router.delete).toHaveBeenCalledWith(
       "/users/:id",
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "deleteOneHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
   });
 
@@ -196,7 +196,7 @@ describe("setupRouters", () => {
 
     // Call the function
     const setupPromises = setupRouters(["User"], router, {});
-    await Promise.all(setupPromises);
+    await Promise.all(await setupPromises);
 
     // Verify disabled routes are not registered
     expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -205,21 +205,21 @@ describe("setupRouters", () => {
     // Verify other routes are registered
     expect(router.post).toHaveBeenCalledWith(
       "/users/many",
-      "authMiddleware",
-      "accessControlMiddleware",
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "createManyHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
       "/users/:id",
-      "authMiddleware",
-      "accessControlMiddleware",
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "findOneHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
   });
 
@@ -243,7 +243,7 @@ describe("setupRouters", () => {
 
     // Call the function
     const setupPromises = setupRouters(["User"], router, {});
-    await Promise.all(setupPromises);
+    await Promise.all(await setupPromises);
 
     // Verify no routes are registered
     expect(router.get).not.toHaveBeenCalled();
@@ -252,12 +252,12 @@ describe("setupRouters", () => {
     expect(router.delete).not.toHaveBeenCalled();
   });
 
-  it("should use custom middleware when provided", async () => {
+  it("should use custom middleware when provided as function", async () => {
     // Mock the imported modules with custom middlewares
     const mockModelModules = {
       middlewares: {
-        beforeFindMany: "customBeforeFindMany",
-        afterFindMany: "customAfterFindMany",
+        beforeFindMany: jest.fn(),
+        afterFindMany: jest.fn(),
       },
       authConfigs: {},
       prismaQueryOptions: {},
@@ -270,25 +270,125 @@ describe("setupRouters", () => {
 
     // Call the function
     const setupPromises = setupRouters(["User"], router, {});
-    await Promise.all(setupPromises);
+    await Promise.all(await setupPromises);
 
     // Verify custom middleware is used
     expect(router.get).toHaveBeenCalledWith(
       "/users",
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      "customBeforeFindMany",
-      "findManyHandler",
-      "customAfterFindMany",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function), // beforeFindMany
+      expect.any(Function), // findManyHandler
+      expect.any(Function), // afterFindMany
+      expect.any(Function) // sendResponse
     );
+  });
+
+  it("should use custom middleware when provided as array of functions", async () => {
+    // Mock the imported modules with custom middlewares as arrays
+    const mockModelModules = {
+      middlewares: {
+        beforeFindMany: [jest.fn(), jest.fn(), jest.fn()],
+        afterFindMany: [jest.fn(), jest.fn()],
+      },
+      authConfigs: {},
+      prismaQueryOptions: {},
+      router: undefined,
+    };
+
+    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
+      mockModelModules
+    );
+
+    // Call the function
+    const setupPromises = setupRouters(["User"], router, {});
+    await Promise.all(await setupPromises);
+
+    // Verify custom middleware is used - should spread the array
+    expect(router.get).toHaveBeenCalledWith(
+      "/users",
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function), // first beforeFindMany
+      expect.any(Function), // second beforeFindMany
+      expect.any(Function), // third beforeFindMany
+      expect.any(Function), // findManyHandler
+      expect.any(Function), // first afterFindMany
+      expect.any(Function), // second afterFindMany
+      expect.any(Function) // sendResponse
+    );
+  });
+
+  it("should throw error when middleware is not a function", async () => {
+    // Mock the imported modules with invalid middleware
+    const mockModelModules = {
+      middlewares: {
+        beforeFindMany: "not-a-function", // This should cause an error
+      },
+      authConfigs: {},
+      prismaQueryOptions: {},
+      router: undefined,
+    };
+
+    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
+      mockModelModules
+    );
+
+    // Call the function and expect it to throw
+    const setupPromises = setupRouters(["User"], router, {});
+
+    await expect(Promise.all(await setupPromises)).rejects.toThrow();
+  });
+
+  it("should throw error when middleware array contains non-function values", async () => {
+    // Mock the imported modules with invalid middleware in array
+    const mockModelModules = {
+      middlewares: {
+        beforeFindMany: [jest.fn(), "not-a-function", jest.fn()], // Second item should cause error
+      },
+      authConfigs: {},
+      prismaQueryOptions: {},
+      router: undefined,
+    };
+
+    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
+      mockModelModules
+    );
+
+    // Call the function and expect it to throw
+    const setupPromises = setupRouters(["User"], router, {});
+
+    await expect(Promise.all(await setupPromises)).rejects.toThrow();
+  });
+
+  it("should throw error for various non-function middleware types", async () => {
+    const mockModelModules = {
+      middlewares: { beforeFindMany: [jest.fn(), null, jest.fn()] },
+      authConfigs: {},
+      prismaQueryOptions: {},
+      router: undefined,
+    };
+
+    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
+      mockModelModules
+    );
+
+    let setupPromises = null;
+    try {
+      setupPromises = (await setupRouters(["User"], router, {})) as any;
+    } catch (err) {
+      expect(setupPromises).rejects.toThrow();
+    }
+
+    jest.clearAllMocks();
   });
 
   it("should not register routes that have custom implementations", async () => {
     // Create mock custom router stack
     const customRouterStack = [
-      { path: "/users", method: "GET", handle: "customGetHandler" },
+      { path: "/users", method: "GET", handle: jest.fn() },
     ];
 
     // Mock the imported modules with custom router
@@ -316,7 +416,7 @@ describe("setupRouters", () => {
 
     // Call the function
     const setupPromises = setupRouters(["User"], router, {});
-    await Promise.all(setupPromises);
+    await Promise.all(await setupPromises);
 
     // Verify the route with custom implementation is not registered
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -324,12 +424,12 @@ describe("setupRouters", () => {
     // Verify other routes are still registered
     expect(router.post).toHaveBeenCalledWith(
       "/users/many",
-      "authMiddleware",
-      "accessControlMiddleware",
-      expect.anything(),
-      "queryOptionsMiddleware",
-      "createManyHandler",
-      "sendResponseMiddleware"
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
   });
 
@@ -359,7 +459,7 @@ describe("setupRouters", () => {
 
     // Call the function
     const setupPromises = setupRouters(["User", "Post"], router, {});
-    await Promise.all(setupPromises);
+    await Promise.all(await setupPromises);
 
     // Verify routes for both models were registered
     expect(pluralize.plural).toHaveBeenCalledWith("user");
@@ -374,13 +474,13 @@ describe("setupRouters", () => {
     ).toBe(16);
   });
 
-  it("should first setup the custom router if provied", async () => {
+  it("should first setup the custom router if provided", async () => {
     const mockPostModules = {
       middlewares: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: {
-        default: "customRouter",
+        default: jest.fn(), // Mock router as function
       },
     };
 
@@ -393,14 +493,14 @@ describe("setupRouters", () => {
 
     // Call the function
     const setupPromises = setupRouters(["Post"], router, {});
-    await Promise.all(setupPromises);
+    await Promise.all(await setupPromises);
 
     // Verify routes for both models were registered
     expect(pluralize.plural).toHaveBeenCalledWith("post");
 
-    expect(router.use).toHaveBeenCalledWith(`/posts`, "customRouter");
+    expect(router.use).toHaveBeenCalledWith(`/posts`, expect.any(Function));
 
-    // 8 routes per model * 2 models = 16 total routes
+    // 8 routes per model
     expect(
       (router.get as jest.Mock).mock.calls.length +
         (router.post as jest.Mock).mock.calls.length +

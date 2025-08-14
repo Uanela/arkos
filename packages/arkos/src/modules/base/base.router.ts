@@ -8,7 +8,7 @@ import { setupRouters } from "./utils/helpers/base.router.helpers";
 export async function getPrismaModelsRouter(arkosConfigs: ArkosConfig) {
   const router: Router = Router();
 
-  await Promise.all(setupRouters(getModels(), router, arkosConfigs));
+  await Promise.all(await setupRouters(getModels(), router, arkosConfigs));
 
   return router;
 }

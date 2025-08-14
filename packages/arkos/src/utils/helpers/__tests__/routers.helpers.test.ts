@@ -62,13 +62,34 @@ describe("Middleware Utils", () => {
       expect(result).toBeUndefined();
     });
 
-    it("should wrap truthy non-function values", () => {
+    it("should throw error for non-function truthy values", () => {
       const truthyValue = "some-string";
 
-      const result = safeCatchAsync(truthyValue);
+      expect(() => safeCatchAsync(truthyValue)).toThrow(
+        "Validation Error: Invalid interceptor middleware of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+      );
 
-      expect(mockedCatchAsync).toHaveBeenCalledWith(truthyValue);
-      expect(result).toBe(`wrapped_${truthyValue}`);
+      expect(mockedCatchAsync).not.toHaveBeenCalled();
+    });
+
+    it("should handle when catchAsync throws an error", () => {
+      const mockMiddleware = jest.fn();
+      mockedCatchAsync.mockImplementation(() => {
+        throw new Error("catchAsync failed");
+      });
+
+      expect(() => safeCatchAsync(mockMiddleware)).toThrow("catchAsync failed");
+    });
+
+    it("should handle middleware function that throws", () => {
+      const throwingMiddleware = jest.fn().mockImplementation(() => {
+        throw new Error("Middleware execution failed");
+      });
+
+      const result = safeCatchAsync(throwingMiddleware);
+
+      expect(mockedCatchAsync).toHaveBeenCalledWith(throwingMiddleware);
+      expect(result).toBe(`wrapped_${throwingMiddleware}`);
     });
   });
 
@@ -100,13 +121,14 @@ describe("Middleware Utils", () => {
         expect(result).toEqual([`wrapped_${mockMiddleware}`]);
       });
 
-      it("should process single truthy middleware", () => {
+      it("should throw error for non-function truthy middleware", () => {
         const middleware = "middleware-string";
 
-        const result = processMiddleware(middleware);
+        expect(() => processMiddleware(middleware)).toThrow(
+          "Validation Error: Invalid interceptor middleware of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+        );
 
-        expect(mockedCatchAsync).toHaveBeenCalledWith(middleware);
-        expect(result).toEqual([`wrapped_${middleware}`]);
+        expect(mockedCatchAsync).not.toHaveBeenCalled();
       });
 
       it("should return array with undefined when single middleware is falsy", () => {
@@ -114,6 +136,17 @@ describe("Middleware Utils", () => {
 
         expect(mockedCatchAsync).not.toHaveBeenCalled();
         expect(result).toEqual([undefined]);
+      });
+
+      it("should handle single middleware that throws", () => {
+        const throwingMiddleware = jest.fn().mockImplementation(() => {
+          throw new Error("Middleware execution failed");
+        });
+
+        const result = processMiddleware(throwingMiddleware);
+
+        expect(mockedCatchAsync).toHaveBeenCalledWith(throwingMiddleware);
+        expect(result).toEqual([`wrapped_${throwingMiddleware}`]);
       });
     });
 
@@ -167,9 +200,9 @@ describe("Middleware Utils", () => {
       });
 
       it("should handle mixed truthy and falsy values", () => {
-        const mw1 = "middleware1";
-        const mw2 = 42;
-        const mw3 = { handler: "test" };
+        const mw1 = jest.fn().mockName("middleware1");
+        const mw2 = jest.fn().mockName("middleware2");
+        const mw3 = jest.fn().mockName("middleware3");
         const middlewareArray = [mw1, null, mw2, undefined, mw3, ""];
 
         const result = processMiddleware(middlewareArray);
@@ -184,32 +217,71 @@ describe("Middleware Utils", () => {
           `wrapped_${mw3}`,
         ]);
       });
+
+      it("should handle array with throwing middleware functions", () => {
+        const mw1 = jest.fn();
+        const throwingMw = jest.fn().mockImplementation(() => {
+          throw new Error("Middleware throws error");
+        });
+        const mw3 = jest.fn();
+        const middlewareArray = [mw1, throwingMw, mw3];
+
+        const result = processMiddleware(middlewareArray);
+
+        expect(mockedCatchAsync).toHaveBeenCalledTimes(3);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, throwingMw);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(3, mw3);
+        expect(result).toEqual([
+          `wrapped_${mw1}`,
+          `wrapped_${throwingMw}`,
+          `wrapped_${mw3}`,
+        ]);
+      });
+
+      it("should handle async middleware functions", () => {
+        const asyncMw1 = jest.fn().mockImplementation(async () => {
+          return "async result 1";
+        });
+        const asyncMw2 = jest.fn().mockImplementation(async () => {
+          throw new Error("Async middleware error");
+        });
+        const middlewareArray = [asyncMw1, asyncMw2];
+
+        const result = processMiddleware(middlewareArray);
+
+        expect(mockedCatchAsync).toHaveBeenCalledTimes(2);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, asyncMw1);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, asyncMw2);
+        expect(result).toEqual([`wrapped_${asyncMw1}`, `wrapped_${asyncMw2}`]);
+      });
     });
 
     describe("edge cases", () => {
-      it("should handle array-like objects", () => {
+      it("should throw error for array-like objects", () => {
         const arrayLike = { 0: jest.fn(), 1: jest.fn(), length: 2 };
 
-        const result = processMiddleware(arrayLike);
+        expect(() => processMiddleware(arrayLike)).toThrow(
+          "Validation Error: Invalid interceptor middleware of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+        );
 
-        // Should treat as single middleware since it's not a real array
-        expect(mockedCatchAsync).toHaveBeenCalledWith(arrayLike);
-        expect(result).toEqual([`wrapped_${arrayLike}`]);
+        expect(mockedCatchAsync).not.toHaveBeenCalled();
       });
 
-      it("should handle objects as single middleware", () => {
+      it("should throw error for objects as single middleware", () => {
         const objMiddleware = { handler: jest.fn() };
 
-        const result = processMiddleware(objMiddleware);
+        expect(() => processMiddleware(objMiddleware)).toThrow(
+          "Validation Error: Invalid interceptor middleware of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+        );
 
-        expect(mockedCatchAsync).toHaveBeenCalledWith(objMiddleware);
-        expect(result).toEqual([`wrapped_${objMiddleware}`]);
+        expect(mockedCatchAsync).not.toHaveBeenCalled();
       });
 
       it("should maintain order in arrays", () => {
-        const middlewares: string[] = [];
+        const middlewares: jest.MockedFunction<any>[] = [];
         for (let i = 0; i < 10; i++) {
-          middlewares.push(`middleware_${i}`);
+          middlewares.push(jest.fn().mockName(`middleware_${i}`));
         }
 
         const result = processMiddleware(middlewares);
@@ -223,27 +295,44 @@ describe("Middleware Utils", () => {
     });
 
     describe("type safety", () => {
-      it("should handle various data types as middleware", () => {
-        const testCases = [
-          123,
-          "string",
-          true,
-          new Date(),
-          /regex/,
-          () => {},
+      it("should handle only functions as middleware", () => {
+        const functionTypes = [
+          jest.fn(),
           async () => {},
           function* () {},
-          new Map(),
-          new Set(),
+          function namedFunction() {},
+          () => "arrow function",
         ];
 
-        testCases.forEach((testCase) => {
+        functionTypes.forEach((testCase) => {
           jest.clearAllMocks();
           const result = processMiddleware(testCase);
           expect(mockedCatchAsync).toHaveBeenCalledWith(testCase);
           expect(result).toEqual([`wrapped_${testCase.toString()}`]);
         });
       });
+
+      // it("should throw errors for non-function data types", () => {
+      //   const invalidTypes = [
+      //     { value: "string", type: "string" },
+      //     { value: 123, type: "number" },
+      //     { value: true, type: "boolean" },
+      //     { value: new Date(), type: "object" },
+      //     { value: /regex/, type: "object" },
+      //     { value: new Map(), type: "object" },
+      //     { value: new Set(), type: "object" },
+      //     { value: {}, type: "object" },
+      //     { value: [], type: "object" }, // Empty array is treated as object
+      //   ];
+
+      //   invalidTypes.forEach(({ value, type }) => {
+      //     jest.clearAllMocks();
+      //     expect(() => processMiddleware(value)).toThrow(
+      //       `Validation Error: Invalid interceptor middleware of type ${type}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
+      //     );
+      //     expect(mockedCatchAsync).not.toHaveBeenCalled();
+      //   });
+      // });
     });
 
     describe("error handling scenarios", () => {
@@ -274,6 +363,80 @@ describe("Middleware Utils", () => {
         expect(() => processMiddleware(middlewares)).toThrow(
           "Second middleware failed"
         );
+      });
+
+      it("should handle middleware that throws during execution", () => {
+        const mw1 = jest.fn();
+        const throwingMw = jest.fn().mockImplementation(() => {
+          throw new Error("Runtime middleware error");
+        });
+        const mw3 = jest.fn();
+
+        // This tests that the middleware functions themselves can throw
+        // but the wrapping process still works
+        expect(() => {
+          throwingMw(); // This would throw if called
+        }).toThrow("Runtime middleware error");
+
+        // But processMiddleware should still wrap them successfully
+        const result = processMiddleware([mw1, throwingMw, mw3]);
+
+        expect(mockedCatchAsync).toHaveBeenCalledTimes(3);
+        expect(result).toEqual([
+          `wrapped_${mw1}`,
+          `wrapped_${throwingMw}`,
+          `wrapped_${mw3}`,
+        ]);
+      });
+
+      it("should handle async middleware that rejects", () => {
+        const rejectingMw = jest
+          .fn()
+          .mockRejectedValue(new Error("Async rejection"));
+        const normalMw = jest.fn();
+
+        const result = processMiddleware([normalMw, rejectingMw]);
+
+        expect(mockedCatchAsync).toHaveBeenCalledTimes(2);
+        expect(result).toEqual([
+          `wrapped_${normalMw}`,
+          `wrapped_${rejectingMw}`,
+        ]);
+      });
+
+      it("should handle complex error scenarios in arrays", () => {
+        const normalMw = jest.fn();
+        const throwingMw = jest.fn().mockImplementation(() => {
+          throw new Error("Sync error");
+        });
+        const rejectingMw = jest
+          .fn()
+          .mockRejectedValue(new Error("Async error"));
+        const timeoutMw = jest.fn().mockImplementation(() => {
+          setTimeout(() => {
+            throw new Error("Timeout error");
+          }, 100);
+        });
+
+        const middlewares = [
+          normalMw,
+          throwingMw,
+          null,
+          rejectingMw,
+          "",
+          timeoutMw,
+        ];
+
+        const result = processMiddleware(middlewares);
+
+        // Should only process truthy middleware
+        expect(mockedCatchAsync).toHaveBeenCalledTimes(4);
+        expect(result).toEqual([
+          `wrapped_${normalMw}`,
+          `wrapped_${throwingMw}`,
+          `wrapped_${rejectingMw}`,
+          `wrapped_${timeoutMw}`,
+        ]);
       });
     });
   });

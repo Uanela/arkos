@@ -38,6 +38,12 @@ jest.mock("express", () => {
 
   return mockExpress;
 });
+
 jest.mock("@scalar/express-api-reference", () => ({
   apiReference: jest.fn(),
 }));
+
+// jest.mock("./src/utils/helpers/global.helpers", () => ({
+//   ...jest.requireActual("./src/utils/helpers/global.helpers"),
+//   importEsmPreventingTsTransformation: jest.fn(),
+// }));
