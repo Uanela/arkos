@@ -505,11 +505,15 @@ export class EnhancedPrismaJsonSchemaGenerator {
 
     // Get select and include options
     const selectFields = options?.select;
+    const omittedFields = options?.omit;
     const includeRelations = options?.include;
 
     for (const field of model.fields) {
       // Skip password fields
-      if (field.name.toLowerCase().includes("password")) continue;
+      if (field.name === "password") continue;
+
+      // Skip ommited fields
+      if (omittedFields && omittedFields[field.name]) continue;
 
       // If select is specified, only include selected fields
       if (selectFields && !selectFields[field.name]) continue;

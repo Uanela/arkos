@@ -11,7 +11,7 @@ import {
 
 export async function generatePrismaModelMainRoutesPaths(
   model: string,
-  paths: OpenAPIV3.PathsObject,
+  paths: OpenAPIV3.PathsObject = {},
   arkosConfig: ArkosConfig
 ) {
   const modelName = kebabCase(model);
@@ -25,7 +25,7 @@ export async function generatePrismaModelMainRoutesPaths(
   const routerConfig = modelModules?.router?.config;
 
   // Skip if router is completely disabled
-  if (routerConfig?.disable === true) return;
+  if (routerConfig?.disable === true) return paths;
 
   // Helper function to determine the correct mode for schema ref
   const getSchemaMode = async (
@@ -108,7 +108,7 @@ export async function generatePrismaModelMainRoutesPaths(
       operationId: `find${pluralize.plural(pascalModelName)}`,
       parameters: [
         {
-          name: "filter",
+          name: "filters",
           in: "query",
           description: "Filter criteria in JSON format",
           schema: {
@@ -262,7 +262,7 @@ export async function generatePrismaModelMainRoutesPaths(
       operationId: `updateMany${pascalModelName}`,
       parameters: [
         {
-          name: "filter",
+          name: "filters",
           in: "query",
           description: "Filter criteria in JSON format (required)",
           required: true,
@@ -326,7 +326,7 @@ export async function generatePrismaModelMainRoutesPaths(
       operationId: `deleteMany${pascalModelName}`,
       parameters: [
         {
-          name: "filter",
+          name: "filters",
           in: "query",
           description: "Filter criteria in JSON format (required)",
           required: true,

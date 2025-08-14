@@ -6,7 +6,13 @@ const config: Config = {
   testEnvironment: "node",
   roots: ["<rootDir>/src"],
   testMatch: ["**/__tests__/**/*.ts?(x)", "**/?(*.)+(spec|test).ts?(x)"],
+  transformIgnorePatterns: [
+    // Allow Jest to transform ESM dependencies
+    "node_modules/(?!@scalar/express-api-reference)",
+  ],
   transform: {
+    // "^.+\\.tsx?$": "ts-jest",
+    // "^.+\\.(js|jsx|ts|tsx)$": "babel-jest",
     "^.+\\.tsx?$": "ts-jest",
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],

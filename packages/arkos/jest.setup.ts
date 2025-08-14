@@ -38,21 +38,6 @@ jest.mock("express", () => {
 
   return mockExpress;
 });
-
-// const portAndHostAllocator = jest.requireActual(
-//   "./src/utils/features/port-and-host-allocator"
-// );
-
-// jest.mock("./src/utils/features/port-and-host-allocator", () => ({
-//   __esModule: true,
-//   ...jest.requireActual("./src/utils/features/port-and-host-allocator").default,
-//   default: {
-//     ...jest.requireActual("./src/utils/features/port-and-host-allocator")
-//       .default,
-//     getHostAndAvailablePort: (env: any, config: any) =>
-//       (portAndHostAllocator as any).default.getCorrectHostAndPortToUse(
-//         env,
-//         config
-//       ),
-//   },
-// }));
+jest.mock("@scalar/express-api-reference", () => ({
+  apiReference: jest.fn(),
+}));

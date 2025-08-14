@@ -655,7 +655,7 @@ export type ArkosConfig = {
      *
      * @default false
      */
-    strict: boolean;
+    strict?: boolean;
     /**
      * Defines your swagger configurations
      */

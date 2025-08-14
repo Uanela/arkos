@@ -6,7 +6,7 @@ import { ArkosConfig } from "../../../../../../exports";
 import { importPrismaModelModules } from "../../../../../../utils/helpers/models.helpers";
 import { localValidatorFileExists } from "../../../../../../utils/helpers/models.helpers";
 
-export async function generatePrismaModelParentRoutePaths(
+export default async function generatePrismaModelParentRoutesPaths(
   model: string,
   paths: OpenAPIV3.PathsObject,
   arkosConfig: ArkosConfig
@@ -34,14 +34,11 @@ export async function generatePrismaModelParentRoutePaths(
     const parentEndpoints = routerConfig?.parent?.endpoints;
 
     // If endpoints is "*" or undefined, allow all
-    if (!parentEndpoints || parentEndpoints === "*") {
-      return true;
-    }
+    if (!parentEndpoints || parentEndpoints === "*") return true;
 
     // If endpoints is array, check if endpoint is included
-    if (Array.isArray(parentEndpoints)) {
+    if (Array.isArray(parentEndpoints))
       return parentEndpoints.includes(endpoint as any);
-    }
 
     return false;
   };
@@ -150,9 +147,9 @@ export async function generatePrismaModelParentRoutePaths(
           },
         },
         {
-          name: "filter",
+          name: "filters",
           in: "query",
-          description: "Additional filter criteria in JSON format",
+          description: "Additional filters criteria in JSON format",
           schema: {
             type: "string",
           },
@@ -331,9 +328,9 @@ export async function generatePrismaModelParentRoutePaths(
           },
         },
         {
-          name: "filter",
+          name: "filters",
           in: "query",
-          description: "Additional filter criteria in JSON format",
+          description: "Additional filters criteria in JSON format",
           schema: {
             type: "string",
           },
@@ -407,9 +404,9 @@ export async function generatePrismaModelParentRoutePaths(
           },
         },
         {
-          name: "filter",
+          name: "filters",
           in: "query",
-          description: "Additional filter criteria in JSON format",
+          description: "Additional filters criteria in JSON format",
           schema: {
             type: "string",
           },

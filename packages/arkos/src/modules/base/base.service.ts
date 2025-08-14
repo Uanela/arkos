@@ -26,7 +26,7 @@ import authService from "../auth/auth.service";
  * **Example:** creating a simple service
  *
  * ```ts
- * import { prisma } from '../../utils/prisma'
+ * import prisma from '../../utils/prisma'
  *
  * const userService = new BaseService<typeof prisma.user>("user")
  * ```

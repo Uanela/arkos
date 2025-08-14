@@ -3,43 +3,40 @@ import { getSchemaRef } from "./swagger.router.helpers";
 import { ArkosConfig } from "../../../../exports";
 import { localValidatorFileExists } from "../../../../utils/helpers/models.helpers";
 
-export async function getAuthenticationJsonSchemaPaths(
+// Helper function to determine the correct mode for schema ref
+export const getSchemaMode = async (
+  action: string,
+  arkosConfig: ArkosConfig
+): Promise<"prisma" | "zod" | "class-validator"> => {
+  const swaggerMode = arkosConfig.swagger?.mode;
+  const isStrict = arkosConfig.swagger?.strict;
+
+  if (!swaggerMode) return "prisma";
+
+  if (isStrict) return swaggerMode;
+
+  const actionKey = action as any;
+  // For auth endpoints, we don't have a specific model, so we use "user" as the model name
+  const localFileExists = await localValidatorFileExists(
+    actionKey,
+    "user",
+    arkosConfig
+  );
+
+  if (!localFileExists) return "prisma";
+
+  return swaggerMode;
+};
+
+export default async function getAuthenticationJsonSchemaPaths(
   arkosConfig: ArkosConfig
 ) {
   const paths: OpenAPIV3.PathsObject = {};
 
-  // Helper function to determine the correct mode for schema ref
-  const getSchemaMode = async (
-    action: string
-  ): Promise<"prisma" | "zod" | "class-validator"> => {
-    const swaggerMode = arkosConfig.swagger?.mode;
-    const isStrict = arkosConfig.swagger?.strict;
-
-    if (!swaggerMode) return "prisma";
-
-    if (isStrict) {
-      return swaggerMode;
-    }
-
-    const actionKey = action as any;
-    // For auth endpoints, we don't have a specific model, so we use "user" as the model name
-    const localFileExists = await localValidatorFileExists(
-      actionKey,
-      "user",
-      arkosConfig
-    );
-
-    if (!localFileExists) {
-      return "prisma";
-    }
-
-    return swaggerMode;
-  };
-
   if (!arkosConfig.swagger?.mode) return paths;
 
   // Add login endpoint
-  const loginMode = await getSchemaMode("login");
+  const loginMode = await getSchemaMode("login", arkosConfig);
   paths["/api/auth/login"] = {
     post: {
       tags: ["Authentication"],
@@ -104,8 +101,8 @@ export async function getAuthenticationJsonSchemaPaths(
   };
 
   // Add signup endpoint
-  const signupMode = await getSchemaMode("signup");
-  const userMode = await getSchemaMode("user");
+  const signupMode = await getSchemaMode("signup", arkosConfig);
+  const userMode = await getSchemaMode("user", arkosConfig);
   paths["/api/auth/signup"] = {
     post: {
       tags: ["Authentication"],
@@ -145,7 +142,7 @@ export async function getAuthenticationJsonSchemaPaths(
   };
 
   // Add update password endpoint
-  const updatePasswordMode = await getSchemaMode("updatePassword");
+  const updatePasswordMode = await getSchemaMode("updatePassword", arkosConfig);
   paths["/api/auth/update-password"] = {
     post: {
       tags: ["Authentication"],
@@ -196,7 +193,7 @@ export async function getAuthenticationJsonSchemaPaths(
   };
 
   // Add get current user endpoint
-  const findMeMode = await getSchemaMode("getMe");
+  const findMeMode = await getSchemaMode("getMe", arkosConfig);
   paths["/api/users/me"] = {
     get: {
       tags: ["Authentication"],
@@ -224,7 +221,7 @@ export async function getAuthenticationJsonSchemaPaths(
   };
 
   // Add update current user endpoint
-  const updateMeMode = await getSchemaMode("updateMe");
+  const updateMeMode = await getSchemaMode("updateMe", arkosConfig);
   if (!paths["/api/users/me"]) paths["/api/users/me"] = {};
   paths["/api/users/me"]!.patch = {
     tags: ["Authentication"],

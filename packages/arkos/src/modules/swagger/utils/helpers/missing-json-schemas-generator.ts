@@ -20,12 +20,12 @@ class MissingJsonSchemasGenerator {
       let modelName = match[1];
       // Handle special auth cases
       if (
-        modelName === "Auth" ||
-        modelName === "Login" ||
-        modelName === "Signup" ||
-        modelName === "GetMe" ||
-        modelName === "UpdateMe" ||
-        modelName === "UpdatePassword"
+        modelName.toLowerCase() === "auth" ||
+        modelName.toLowerCase() === "login" ||
+        modelName.toLowerCase() === "signup" ||
+        modelName.toLowerCase() === "getme" ||
+        modelName.toLowerCase() === "updateme" ||
+        modelName.toLowerCase() === "updatepassword"
       ) {
         return "Auth";
       }
@@ -42,10 +42,13 @@ class MissingJsonSchemasGenerator {
    * "updateUser" -> "updateOne"
    */
   private extractActionFromOperationId(operationId: string): string | null {
+    if (!operationId) return null;
     // Handle bulk operations first (more specific patterns)
     if (operationId.includes("createMany")) return "createMany";
     if (operationId.includes("updateMany")) return "updateMany";
     if (operationId.includes("deleteMany")) return "deleteMany";
+    if (operationId.includes("updateMe")) return "updateMe";
+    if (operationId.includes("updatePassword")) return "updatePassword";
 
     // Handle single operations
     if (operationId.startsWith("create")) return "createOne";
@@ -84,6 +87,7 @@ class MissingJsonSchemasGenerator {
    * "updateUser" -> "User"
    */
   private extractModelNameFromOperationId(operationId: string): string | null {
+    if (!operationId) return null;
     // Remove common prefixes and suffixes to isolate model name
     let modelName = operationId
       .replace(/^(create|update|delete|find)Many/i, "")
@@ -93,11 +97,11 @@ class MissingJsonSchemasGenerator {
 
     // Handle auth operations
     if (
-      operationId.includes("login") ||
-      operationId.includes("signup") ||
-      operationId.includes("getMe") ||
-      operationId.includes("updateMe") ||
-      operationId.includes("updatePassword")
+      operationId.toLowerCase().includes("login") ||
+      operationId.toLowerCase().includes("signup") ||
+      operationId.toLowerCase().includes("getme") ||
+      operationId.toLowerCase().includes("updateme") ||
+      operationId.toLowerCase().includes("updatepassword")
     ) {
       return "Auth";
     }

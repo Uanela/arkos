@@ -34,36 +34,5 @@ export function getSystemJsonSchemaPaths() {
     },
   };
 
-  paths["/api/available-routes"] = {
-    get: {
-      tags: ["System"],
-      summary: "Get available routes",
-      description:
-        "Returns a comprehensive list of all registered API routes and their methods",
-      operationId: "getAvailableRoutes",
-      responses: {
-        "200": {
-          description: "List of available routes retrieved successfully",
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  routes: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                    description: "Array of available API routes",
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-
   return paths;
 }
