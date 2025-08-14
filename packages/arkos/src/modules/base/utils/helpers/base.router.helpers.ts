@@ -14,7 +14,7 @@ import {
 } from "../../base.middlewares";
 import { processMiddleware } from "../../../../utils/helpers/routers.helpers";
 
-export function setupRouters(
+export async function setupRouters(
   models: string[],
   router: Router,
   arkosConfigs: ArkosConfig

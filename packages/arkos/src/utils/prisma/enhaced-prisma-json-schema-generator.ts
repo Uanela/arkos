@@ -525,6 +525,7 @@ export class EnhancedPrismaJsonSchemaGenerator {
           const relationModel = this.schema.models.find(
             (m) => m.name === field.type
           );
+
           if (relationModel) {
             const relationSchema = this.generateNestedRelationSchema(
               relationModel,

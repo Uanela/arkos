@@ -51,48 +51,54 @@ export let _arkosConfig: ArkosConfig & { available?: boolean } = {
  *
  */
 async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
-  _arkosConfig.available = true;
+  try {
+    _arkosConfig.available = true;
 
-  const portAndHost = await portAndHostAllocator.getHostAndAvailablePort(
-    process.env,
-    arkosConfig
-  );
-
-  initializePrismaModels();
-  _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
-
-  _app = await bootstrap(_arkosConfig);
-  const time = new Date().toTimeString().split(" ")[0];
-
-  if (
-    ("port" in arkosConfig && arkosConfig?.port !== undefined) ||
-    !("port" in arkosConfig)
-  ) {
-    server = http.createServer(_app);
-
-    if (_arkosConfig?.configureServer)
-      await _arkosConfig.configureServer(server);
-
-    server.listen(Number(portAndHost?.port), portAndHost.host!, () => {
-      const message = `${sheu.gray(time)} {{server}} waiting on http://${portAndHost?.host}:${portAndHost?.port}`;
-
-      sheu.ready(
-        message.replace(
-          "{{server}}",
-          `${capitalize(process.env.NODE_ENV || "development")} server`
-        )
-      );
-      if (_arkosConfig?.swagger?.mode)
-        sheu.ready(
-          `${message.replace("{{server}}", "Documentation")}${_arkosConfig?.swagger?.endpoint || "/api/docs"}`
-        );
-    });
-  } else {
-    sheu.warn(
-      `${sheu.gray(time)} Port set to undefined, hence no internal http server was setup.`
+    const portAndHost = await portAndHostAllocator.getHostAndAvailablePort(
+      process.env,
+      arkosConfig
     );
-  }
 
+    initializePrismaModels();
+    _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
+
+    _app = await bootstrap(_arkosConfig);
+    const time = new Date().toTimeString().split(" ")[0];
+
+    if (
+      ("port" in arkosConfig && arkosConfig?.port !== undefined) ||
+      !("port" in arkosConfig)
+    ) {
+      server = http.createServer(_app);
+
+      if (_arkosConfig?.configureServer)
+        await _arkosConfig.configureServer(server);
+
+      server.listen(Number(portAndHost?.port), portAndHost.host!, () => {
+        const message = `${sheu.gray(time)} {{server}} waiting on http://${portAndHost?.host}:${portAndHost?.port}`;
+
+        sheu.ready(
+          message.replace(
+            "{{server}}",
+            `${capitalize(process.env.NODE_ENV || "development")} server`
+          )
+        );
+        if (_arkosConfig?.swagger?.mode)
+          sheu.ready(
+            `${message.replace("{{server}}", "Documentation")}${_arkosConfig?.swagger?.endpoint || "/api/docs"}`
+          );
+      });
+    } else {
+      sheu.warn(
+        `${sheu.gray(time)} Port set to undefined, hence no internal http server was setup.`
+      );
+    }
+  } catch (err: any) {
+    sheu.error(
+      err?.message || "Something went wrong while starting your application!"
+    );
+    console.error(err);
+  }
   return _app;
 }
 

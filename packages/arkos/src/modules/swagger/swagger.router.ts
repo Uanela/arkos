@@ -8,7 +8,7 @@ import {
 } from "./utils/helpers/swagger.router.helpers";
 import missingJsonSchemaGenerator from "./utils/helpers/missing-json-schemas-generator";
 import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs";
-import * as scalar from "@scalar/express-api-reference";
+import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
 
 const swaggerRouter = Router();
 
@@ -42,9 +42,9 @@ export async function getSwaggerRouter(
     ...options,
   });
 
-  // const importFn = new Function("path", "return import(path)");
-  // const scalar = await importFn("@scalar/express-api-reference");
-
+  const scalar = await importEsmPreventingTsTransformation(
+    "@scalar/express-api-reference"
+  );
   // Serve Scalar API documentation
   swaggerRouter.use(
     swaggerConfigs!.endpoint!,

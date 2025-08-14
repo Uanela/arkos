@@ -32,6 +32,18 @@ export function removeApiAction(obj: Record<string, any>): Record<string, any> {
   return result;
 }
 
+const prismaOperations = [
+  "create",
+  "connect",
+  "update",
+  "delete",
+  "disconnect",
+  "deleteMany",
+  "connectOrCreate",
+  "upsert",
+  "set",
+];
+
 /**
  * Checks if an object is already formatted as a Prisma relation operation
  *
@@ -41,21 +53,15 @@ export function removeApiAction(obj: Record<string, any>): Record<string, any> {
 export function isPrismaRelationFormat(obj: Record<string, any>): boolean {
   if (!obj || typeof obj !== "object") return false;
 
-  // Common Prisma relation operations
-  const prismaOperations = [
-    "create",
-    "connect",
-    "update",
-    "delete",
-    "disconnect",
-    "deleteMany",
-    "connectOrCreate",
-    "upsert",
-    "set",
-  ];
-
   // Check if any key is a Prisma operation
   return prismaOperations.some((op) => op in obj);
+}
+
+export function throwErrorIfApiActionIsInvalid(apiAction: string) {
+  if (apiAction && !prismaOperations.includes(apiAction))
+    throw Error(
+      `Validation Error: Unknown value "${apiAction}" for apiAction field, available values are ${prismaOperations.join(", ")}.`
+    );
 }
 
 /**
@@ -96,15 +102,18 @@ export function handleRelationFieldsInBody(
   relationFields?.list?.forEach((field) => {
     if (!body[field.name]) return;
 
+    if (ignoreActions?.includes?.(body[field.name]?.apiAction)) {
+      delete mutableBody[field.name];
+      return;
+    }
+
     // Skip if the field is already in Prisma relation format
     if (isPrismaRelationFormat(body[field.name])) {
       return;
     }
 
     // Skip if the field is not an array (likely already handled manually)
-    if (!Array.isArray(body[field.name])) {
-      return;
-    }
+    if (!Array.isArray(body[field.name])) return;
 
     const createData: any[] = [];
     const connectData: any[] = [];
@@ -117,13 +126,17 @@ export function handleRelationFieldsInBody(
 
       const apiAction = bodyField?.apiAction;
 
+      throwErrorIfApiActionIsInvalid(apiAction);
+
       if (apiAction === "delete") {
         deleteManyIds.push(bodyField.id);
       } else if (apiAction === "disconnect") {
         disconnectData.push({ id: bodyField.id });
       } else if (canBeUsedToConnect(field.type, bodyField)) {
         // Handle connection with unique fields or ID
-        const { apiAction: _, ...cleanedData } = bodyField;
+        const { apiAction, ...cleanedData } = bodyField;
+
+        throwErrorIfApiActionIsInvalid(apiAction);
         connectData.push(cleanedData);
       } else if (!bodyField?.id) {
         // If no ID, assume create operation
@@ -141,15 +154,18 @@ export function handleRelationFieldsInBody(
 
         // Ensure apiAction is removed
         if ("apiAction" in dataToPush) {
-          const { apiAction: _, ...rest } = dataToPush;
+          const { apiAction, ...rest } = dataToPush;
+
+          throwErrorIfApiActionIsInvalid(apiAction);
           dataToPush = rest;
         }
 
         createData.push(dataToPush);
       } else {
         // If ID and other fields, assume update operation
-        const { id, apiAction: _, ...data } = bodyField;
+        const { id, apiAction, ...data } = bodyField;
 
+        throwErrorIfApiActionIsInvalid(apiAction);
         let nestedRelations = getPrismaModelRelations(field.type);
 
         let dataToPush = data;
@@ -181,7 +197,11 @@ export function handleRelationFieldsInBody(
 
   relationFields?.singular?.forEach((field) => {
     if (!body[field.name]) return;
-    if (ignoreActions?.includes?.(body[field.name]?.apiAction)) return;
+
+    if (ignoreActions?.includes?.(body[field.name]?.apiAction)) {
+      delete mutableBody[field.name];
+      return;
+    }
 
     // Skip if the field is already in Prisma relation format
     if (isPrismaRelationFormat(body[field.name])) {
@@ -191,16 +211,27 @@ export function handleRelationFieldsInBody(
     const relationData = body[field.name];
     let nestedRelations = getPrismaModelRelations(field.type);
 
-    if (canBeUsedToConnect(field.type, relationData)) {
+    if (relationData?.apiAction === "delete") {
+      // Handle delete for singular relations
+      mutableBody[field.name] = { delete: true };
+    } else if (relationData?.apiAction === "disconnect") {
+      // Handle disconnect for singular relations
+      mutableBody[field.name] = { disconnect: true };
+    } else if (canBeUsedToConnect(field.type, relationData)) {
       // Handle connection with unique fields or ID
-      const { apiAction: _, ...cleanedData } = relationData;
+      const { apiAction, ...cleanedData } = relationData;
+
+      throwErrorIfApiActionIsInvalid(apiAction);
+
       mutableBody[field.name] = { connect: cleanedData };
     } else if (!relationData?.id) {
       // If no ID, assume create operation
       let dataToCreate = { ...relationData };
 
       if ("apiAction" in dataToCreate) {
-        const { apiAction: _, ...rest } = dataToCreate;
+        const { apiAction, ...rest } = dataToCreate;
+        throwErrorIfApiActionIsInvalid(apiAction);
+
         dataToCreate = rest;
       }
 
@@ -215,7 +246,9 @@ export function handleRelationFieldsInBody(
       mutableBody[field.name] = { create: dataToCreate };
     } else {
       // If ID and other fields, assume update operation
-      const { id, apiAction: _, ...data } = relationData;
+      const { id, apiAction, ...data } = relationData;
+
+      throwErrorIfApiActionIsInvalid(apiAction);
 
       let dataToUpdate = data;
       if (nestedRelations) {
@@ -228,6 +261,7 @@ export function handleRelationFieldsInBody(
 
       mutableBody[field.name] = {
         update: {
+          where: { id },
           data: dataToUpdate,
         },
       };
@@ -236,8 +270,15 @@ export function handleRelationFieldsInBody(
 
   // Remove any remaining apiAction fields from the top level
   if ("apiAction" in mutableBody) {
-    const { apiAction, ...rest } = mutableBody;
-    mutableBody = rest;
+    // const { apiAction, ...rest } = mutableBody;
+
+    throw Error(
+      "Validation Error: Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple."
+    );
+
+    // throwErrorIfApiActionIsInvalid(apiAction);
+
+    // mutableBody = rest;
   }
 
   // As a final step, recursively remove any remaining apiAction fields

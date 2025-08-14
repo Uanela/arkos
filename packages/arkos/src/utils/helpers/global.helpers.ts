@@ -35,6 +35,14 @@ export async function importModule(
 }
 
 /**
+ * This one was written for escaping  esModules when imported on cjs
+ */
+export async function importEsmPreventingTsTransformation(path: string) {
+  const importFn = new Function("path", "return import(path)");
+  return await importFn(path);
+}
+
+/**
  * Helps getting the current package manager from user agent
  *
  * @returns {string} the package manager

@@ -4,7 +4,6 @@ import { getSwaggerRouter } from "../../../../src/modules/swagger/swagger.router
 import * as swaggerRouterHelpers from "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers";
 import missingJsonSchemaGenerator from "../../../../src/modules/swagger/utils/helpers/missing-json-schemas-generator";
 import getSwaggerDefaultConfig from "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs";
-import { apiReference } from "@scalar/express-api-reference";
 
 // Mock all dependencies
 jest.mock("fs", () => ({
@@ -18,8 +17,14 @@ jest.mock("fs", () => ({
 }));
 jest.mock("express");
 jest.mock("swagger-jsdoc");
-jest.mock("@scalar/express-api-reference", () => ({
-  apiReference: jest.fn(),
+
+const mockApiReference = jest.fn();
+
+jest.mock("../../../utils/helpers/global.helpers", () => ({
+  ...jest.requireActual("../../../utils/helpers/global.helpers"),
+  importEsmPreventingTsTransformation: jest.fn(() => ({
+    apiReference: mockApiReference,
+  })),
 }));
 jest.mock(
   "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers"
@@ -66,7 +71,7 @@ describe("getSwaggerRouter", () => {
     // Setup default mock implementations
     (Router as jest.Mock).mockReturnValue(mockRouter);
     (swaggerJsdoc as jest.Mock).mockReturnValue(mockSwaggerSpec);
-    (apiReference as jest.Mock).mockReturnValue(jest.fn());
+    (mockApiReference as jest.Mock).mockReturnValue(jest.fn());
 
     (
       swaggerRouterHelpers.getOpenAPIJsonSchemasByConfigMode as jest.Mock
@@ -131,16 +136,10 @@ describe("getSwaggerRouter", () => {
   it("should setup Scalar API reference", async () => {
     await getSwaggerRouter(mockConfig);
 
-    expect(apiReference).toHaveBeenCalledWith({
+    expect(mockApiReference).toHaveBeenCalledWith({
       content: mockSwaggerSpec,
       ...mockConfig.swagger.scalarApiReferenceConfiguration,
     });
-
-    // FIXM: just some weird no tested behavior
-    // expect(mockRouter.use).not.toHaveBeenCalled(
-    //   mockConfig.swagger.endpoint,
-    //   expect.any(Function)
-    // );
   });
 
   it("should handle missing swagger config", async () => {
