@@ -14,9 +14,9 @@ const userQueryOptions = {
       omit: {
         password: true,
       }, 
+      {{#if (eq authentication.type "dynamic")}}
+        {{#if authentication.multipleRoles}}
       include: {
-        {{#if (eq authentication.type "dynamic")}}
-          {{#if authentication.multipleRoles}}
         roles: {
           include: {
             role: true,
@@ -28,14 +28,14 @@ const userQueryOptions = {
             role: true,
           }
         },
-          {{/if}}
-        {{/if}}
       },
+        {{/if}}
+      {{/if}}
     },
     findOne: {
+      {{#if (eq authentication.type "dynamic")}}
+        {{#if authentication.multipleRoles}}
       include: {
-        {{#if (eq authentication.type "dynamic")}}
-          {{#if authentication.multipleRoles}}
         roles: {
           include: {
             role: {
@@ -55,9 +55,9 @@ const userQueryOptions = {
             }
           }
         },
-          {{/if}}
-        {{/if}}
       },
+        {{/if}}
+      {{/if}}
     },
     findMany: {},
     update: {},

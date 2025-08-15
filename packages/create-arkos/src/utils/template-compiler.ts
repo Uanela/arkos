@@ -106,7 +106,7 @@ class TemplateCompiler {
       );
 
     // Ignore zod related files when validation is class-validator
-    if (config.validation.type !== "zod")
+    if (config.validation?.type !== "zod")
       files.push(
         ...sharedAuthZodSchemaFiles,
         ...dynamicAuthZodSchemaFiles,
@@ -114,7 +114,7 @@ class TemplateCompiler {
       );
 
     // Ignore class-validator related files when validation is zod
-    if (config.validation.type !== "class-validator")
+    if (config.validation?.type !== "class-validator")
       files.push(
         ...sharedAuthClassValidatorDtoFiles,
         ...dynamicAuthClassValidatorDtoFiles,
