@@ -6,10 +6,10 @@ export interface ProjectConfig {
   projectName: string;
   argProjectName?: string;
   typescript: boolean;
-  validation: {
+  validation?: {
     type?: "zod" | "class-validator";
   };
-  authentication: {
+  authentication?: {
     type?: "static" | "dynamic" | "define later";
     usernameField?: "username" | "email" | "custom";
     multipleRoles: boolean;

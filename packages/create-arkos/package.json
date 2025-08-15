@@ -1,6 +1,6 @@
 {
   "name": "create-arkos",
-  "version": "1.2.16-beta",
+  "version": "1.2.16-beta.2",
   "type": "module",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
@@ -13,7 +13,7 @@
     "postbuild": "npx tsx scripts/postbuild/fix-esm-imports.ts",
     "postpublisa": "ts-node scripts/postpublish/index.ts",
     "test:hbs": "ts-node src/utils/helpers/hbs-tester.helpers.ts",
-    "prepublishOnlyBak": "pnpm build",
+    "prepublishOnly": "pnpm build",
     "publishasa": "ts-node scripts/postbuild/index.ts && pnpm build && npm publish --tag latest"
   },
   "author": "Uanela Como",

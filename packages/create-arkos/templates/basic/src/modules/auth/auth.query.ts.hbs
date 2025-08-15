@@ -13,9 +13,9 @@ const authQueryOptions = {
     omit: {
       password: true,
     }, 
+    {{#if (eq authentication.type "dynamic")}}
+      {{#if authentication.multipleRoles}}
     include: {
-      {{#if (eq authentication.type "dynamic")}}
-        {{#if authentication.multipleRoles}}
       roles: {
         include: {
           role: {
@@ -25,7 +25,7 @@ const authQueryOptions = {
           }
         }
       },
-        {{else}}
+      {{else}}
       role: {
         include: {
           role: {
@@ -35,9 +35,9 @@ const authQueryOptions = {
           }
         }
       },
-        {{/if}}
-      {{/if}}
     },
+      {{/if}}
+    {{/if}}
   },
   updateMe: {
     omit: {

@@ -18,10 +18,10 @@ The official CLI tool to quickly scaffold new Arkos.js API projects with interac
 npm create arkos@latest
 
 # Using yarn
-yarn create arkos
+yarn create arkos@latest
 
 # Using pnpm
-pnpm create arkos
+pnpm create arkos@latest
 ```
 
 ## Interactive Setup
