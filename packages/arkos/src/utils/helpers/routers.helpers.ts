@@ -37,7 +37,6 @@ import catchAsync, {
 } from "../../modules/error-handler/utils/catch-async";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
-  // Fix the logic: should throw for truthy non-function values
   if (middleware && typeof middleware !== "function") {
     throw Error(
       `Validation Error: Invalid interceptor middleware of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
