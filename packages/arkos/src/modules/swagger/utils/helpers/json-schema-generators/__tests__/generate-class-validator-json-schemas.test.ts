@@ -37,7 +37,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       typeof getCorrectJsonSchemaName
     >;
 
-  // Mock console.warn to test error handling
+  // Mock onsole.warn to test error handling
   const mockConsoleWarn = jest
     .spyOn(console, "warn")
     .mockImplementation(() => {});
