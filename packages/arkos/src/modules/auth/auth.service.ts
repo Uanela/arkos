@@ -26,6 +26,11 @@ import { MsDuration } from "./utils/helpers/auth.controller.helpers";
  */
 export class AuthService {
   /**
+   * Object containing a combination of actions per resource, tracked by each set of calls of `authService.handleAccessControl`, this can be accessed through the `authService` object or through the endpoint
+   */
+  actionsPerResource: Record<string, Set<string>> = {};
+
+  /**
    * Signs a JWT token for the user.
    *
    * @param {number | string} id - The unique identifier of the user to generate the token for.
@@ -201,11 +206,7 @@ export class AuthService {
     accessControl?: AccessControlConfig
   ): ArkosRequestHandler {
     return catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
+      async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         if (req.user) {
           const user = req.user as any;
           const prisma = getPrismaInstance();
@@ -361,7 +362,7 @@ export class AuthService {
    * @returns {void}
    */
   authenticate = catchAsync(
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       const arkosConfig = getArkosConfig();
       if (!arkosConfig?.authentication) {
         next();

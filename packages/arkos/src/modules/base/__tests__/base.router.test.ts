@@ -103,7 +103,6 @@ describe("Base Router", () => {
       // Mock authentication middleware
       (authService.authenticate as jest.Mock) = jest.fn();
       (authService.handleAccessControl as jest.Mock) = jest.fn(() => jest.fn());
-      (baseController.getAvalibleRoutes as jest.Mock) = jest.fn();
       (baseController.getAvailableResources as jest.Mock) = jest.fn();
 
       // Call the function
@@ -116,14 +115,6 @@ describe("Base Router", () => {
       // Verify routes were created
       const routerInstance = (Router as jest.Mock).mock.results[0].value;
       expect(routerInstance.get).toHaveBeenCalledTimes(2);
-
-      // Check first route (available-routes)
-      expect(routerInstance.get).toHaveBeenNthCalledWith(
-        1,
-        "/available-routes",
-        authService.authenticate,
-        baseController.getAvalibleRoutes
-      );
 
       // Check second route (available-resources)
       expect(routerInstance.get).toHaveBeenCalledWith(

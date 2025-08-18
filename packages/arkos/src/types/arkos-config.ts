@@ -408,6 +408,7 @@ export type ArkosConfig = {
      * An array containing a list of defaults middlewares to be disabled
      *
      * **Caution**: Be careful with this because you may endup breaking your entire application.
+     *
      */
     disable?: (
       | "compression"
@@ -417,7 +418,6 @@ export type ArkosConfig = {
       | "express-json"
       | "cookie-parser"
       | "query-parser"
-      | "database-connection"
       | "request-logger"
       | "global-error-handler"
     )[];
@@ -455,10 +455,6 @@ export type ArkosConfig = {
        * Replace the default query parser middleware
        */
       queryParser?: express.RequestHandler;
-      /**
-       * Replace the default database connection check middleware
-       */
-      databaseConnection?: express.RequestHandler;
       /**
        * Replace the default request logger middleware
        */

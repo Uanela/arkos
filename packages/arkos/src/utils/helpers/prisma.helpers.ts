@@ -1,6 +1,4 @@
 import fs from "fs";
-import { Request, Response, NextFunction } from "express";
-import catchAsync from "../../modules/error-handler/utils/catch-async";
 import AppError from "../../modules/error-handler/utils/app-error";
 import { crd, getUserFileExtension as ext } from "./fs.helpers";
 import { importModule } from "./global.helpers";
@@ -43,16 +41,3 @@ export async function loadPrismaModule() {
 export function getPrismaInstance() {
   return prismaInstance;
 }
-
-export const checkDatabaseConnection = catchAsync(
-  async (_: Request, _1: Response, next: NextFunction) => {
-    const prisma = await loadPrismaModule();
-    try {
-      await prisma.$connect();
-      next();
-    } catch (error: any) {
-      console.error("Database connection error", error.message);
-      next(new AppError(error.message, 503));
-    }
-  }
-);

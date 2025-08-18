@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAvalibleRoutes, getAvailableResources } from "./base.controller";
+import { getAvailableResources } from "./base.controller";
 import { getModels } from "../../utils/helpers/models.helpers";
 import authService from "../auth/auth.service";
 import { ArkosConfig } from "../../types/arkos-config";
@@ -15,13 +15,6 @@ export async function getPrismaModelsRouter(arkosConfigs: ArkosConfig) {
 
 export function getAvailableResourcesAndRoutesRouter(): Router {
   const router = Router();
-  //
-  router.get(
-    "/available-routes",
-    authService?.authenticate,
-    // authService?.handleAccessControl({}, "view", ""),
-    getAvalibleRoutes
-  );
 
   router.get(
     "/available-resources",

@@ -5,7 +5,6 @@ import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
 import { getModelModules, getModels } from "../../utils/helpers/models.helpers";
-import { getAppRoutes } from "./utils/helpers/base.controller.helpers";
 import pluralize from "pluralize";
 
 /**
@@ -72,9 +71,11 @@ export class BaseController {
    * @param {string} modelName - The name of the model for which this controller will handle operations
    */
   constructor(modelName: string) {
+    const components = getModelModules(modelName);
+
     this.modelName = modelName;
-    this.service = new BaseService(modelName);
-    this.middlewares = getModelModules(modelName)?.middlewares || {};
+    this.service = components?.service || new BaseService(modelName);
+    this.middlewares = components?.middlewares || {};
   }
 
   /**
@@ -88,7 +89,8 @@ export class BaseController {
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       const data = await this.service.createOne(
         req.body,
-        req.prismaQueryOptions
+        req.prismaQueryOptions,
+        { req, res, next }
       );
 
       if (this.middlewares.afterCreateOne) {
@@ -112,7 +114,8 @@ export class BaseController {
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       const data = await this.service.createMany(
         req.body,
-        req.prismaQueryOptions
+        req.prismaQueryOptions,
+        { req, res, next }
       );
 
       if (!data)
@@ -152,19 +155,10 @@ export class BaseController {
         .limitFields()
         .paginate();
 
-      // Execute both operations separately
       const [data, total] = (await Promise.all([
-        this.service.findMany(where, queryOptions),
-        this.service.count(where),
+        this.service.findMany(where, queryOptions, { req, res, next }),
+        this.service.count(where, { req, res, next }),
       ])) as [Record<string, any>[], number];
-
-      // if (total === 0)
-      //   throw new AppError(
-      //     `${kebabCase(pluralize(String(this.modelName))).replaceAll("-", "")}`,
-      //     404,
-      //     { query: req?.query },
-      //     "NotFound"
-      //   );
 
       if (this.middlewares.afterFindMany) {
         req.responseData = { total, results: data.length, data };
@@ -187,7 +181,8 @@ export class BaseController {
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       const data = await this.service.findOne(
         req.params,
-        req.prismaQueryOptions
+        req.prismaQueryOptions,
+        { req, res, next }
       );
 
       if (!data) {
@@ -240,7 +235,8 @@ export class BaseController {
       const data = await this.service.updateOne(
         req.params,
         req.body,
-        req.prismaQueryOptions
+        req.prismaQueryOptions,
+        { req, res, next }
       );
 
       if (!data) {
@@ -306,7 +302,8 @@ export class BaseController {
       const data = (await this.service.updateMany(
         where,
         req.body,
-        queryOptions
+        queryOptions,
+        { req, res, next }
       )) as { count: number };
 
       if (!data || data.count === 0)
@@ -336,7 +333,7 @@ export class BaseController {
    */
   deleteOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const data = await this.service.deleteOne(req.params);
+      const data = await this.service.deleteOne(req.params, { req, res, next });
 
       if (!data) {
         if (Object.keys(req.params).length === 1 && "id" in req.params) {
@@ -397,7 +394,7 @@ export class BaseController {
         filters: { where },
       } = new APIFeatures(req, this.modelName).filter().sort();
 
-      const data = await this.service.deleteMany(where);
+      const data = await this.service.deleteMany(where, { req, res, next });
 
       if (!data || data.count === 0) {
         return next(
@@ -417,30 +414,16 @@ export class BaseController {
 }
 
 /**
- * Returns a list of all registered API routes in the Express application
- * @param {ArkosRequest} req - Express request object
- * @param {ArkosResponse} res - Express response object
- * @param {ArkosNextFunction} next - Express next function
- * @returns {void}
- */
-export function getAvalibleRoutes(
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
-) {
-  const routes = getAppRoutes();
-
-  res.json(routes);
-}
-
-/**
  * Returns a list of all available resource endpoints based on the application's models
+ *
+ * Will soon be removed
+ *
  * @param {ArkosRequest} req - Express request object
  * @param {ArkosResponse} res - Express response object
  * @param {ArkosNextFunction} next - Express next function
  * @returns {Promise<void>}
  */
-export const getAvailableResources = catchAsync(async (req, res, next) => {
+export const getAvailableResources = catchAsync(async (_, res) => {
   const models = getModels();
   res.status(200).json({
     data: [...models.map((model) => kebabCase(model)), "file-upload"],

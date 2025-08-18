@@ -10,10 +10,7 @@ import errorHandler from "./modules/error-handler/error-handler.controller";
 import { rateLimit } from "express-rate-limit";
 import compression from "compression";
 import { handleRequestLogs } from "./modules/base/base.middlewares";
-import {
-  checkDatabaseConnection,
-  loadPrismaModule,
-} from "./utils/helpers/prisma.helpers";
+import { loadPrismaModule } from "./utils/helpers/prisma.helpers";
 import { getFileUploadRouter } from "./modules/file-upload/file-upload.router";
 import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
@@ -129,10 +126,6 @@ export async function bootstrap(
           )
         )
     );
-
-  // Database connection check middleware
-  if (!disabledMiddlewares?.includes?.("database-connection"))
-    app.use(replacedMiddlewares.databaseConnection || checkDatabaseConnection);
 
   // Request logger middleware
   if (!disabledMiddlewares?.includes?.("request-logger"))
