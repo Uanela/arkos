@@ -4,7 +4,7 @@ import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
 import { RouterEndpoint } from "../../../../types/router-config";
-import { importPrismaModelModules } from "../../../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../../../utils/helpers/models.helpers";
 import authService from "../../../auth/auth.service";
 import { BaseController } from "../../base.controller";
 import {
@@ -21,7 +21,7 @@ export async function setupRouters(
 ) {
   return models.map(async (model) => {
     const modelNameInKebab = kebabCase(model);
-    const modelModules = await importPrismaModelModules(
+    const ModuleComponents = await importModuleComponents(
       modelNameInKebab,
       arkosConfigs
     );
@@ -32,7 +32,7 @@ export async function setupRouters(
       router: customRouterModule,
       dtos,
       schemas,
-    } = modelModules;
+    } = ModuleComponents;
 
     const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);

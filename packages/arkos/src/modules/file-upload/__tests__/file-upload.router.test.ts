@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getFileUploadRouter } from "../file-upload.router"; // Update with the correct path
-import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../../utils/helpers/models.helpers";
 import authService from "../../auth/auth.service";
 import fileUploadController from "../file-upload.controller";
 import { sendResponse } from "../../base/base.middlewares";
@@ -76,7 +76,7 @@ describe("File Upload Router", () => {
 
   test("should create router with default configuration", async () => {
     // Arrange
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {},
       authConfigs: {},
     });
@@ -86,7 +86,7 @@ describe("File Upload Router", () => {
 
     // Assert
     expect(Router).toHaveBeenCalled();
-    expect(importPrismaModelModules).toHaveBeenCalledWith(
+    expect(importModuleComponents).toHaveBeenCalledWith(
       "file-upload",
       mockArkosConfig
     );
@@ -156,7 +156,7 @@ describe("File Upload Router", () => {
       beforeUploadFile,
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       authConfigs: {},
     });
@@ -182,7 +182,7 @@ describe("File Upload Router", () => {
       afterUploadFile,
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       authConfigs: {},
     });
@@ -210,7 +210,7 @@ describe("File Upload Router", () => {
       afterUploadFile,
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       authConfigs: {},
     });
@@ -239,7 +239,7 @@ describe("File Upload Router", () => {
       afterUpdateFile,
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       authConfigs: {},
     });
@@ -268,7 +268,7 @@ describe("File Upload Router", () => {
       afterDeleteFile,
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       authConfigs: {},
     });
@@ -295,7 +295,7 @@ describe("File Upload Router", () => {
       beforeFindFile,
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       authConfigs: {},
     });
@@ -328,7 +328,7 @@ describe("File Upload Router", () => {
       beforeFindFile,
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       authConfigs: {},
     });
@@ -380,7 +380,7 @@ describe("File Upload Router", () => {
 
   test("should normalize basePathname by adding leading and trailing slashes", async () => {
     // Arrange
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {},
       authConfigs: {},
     });
@@ -445,7 +445,7 @@ describe("File Upload Router", () => {
 
   test("should use default baseRoute when not provided", async () => {
     // Arrange
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {},
       authConfigs: {},
     });
@@ -471,7 +471,7 @@ describe("File Upload Router", () => {
 
   test("should use default baseUploadDir when not provided", async () => {
     // Arrange
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {},
       authConfigs: {},
     });
@@ -501,7 +501,7 @@ describe("File Upload Router", () => {
       accessControl: { Delete: ["Admin"] },
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       authConfigs: customAuthConfigs,
     });
@@ -545,7 +545,7 @@ describe("File Upload Router", () => {
 
   test("should handle missing model modules gracefully", async () => {
     // Arrange
-    (importPrismaModelModules as jest.Mock).mockResolvedValue(null);
+    (importModuleComponents as jest.Mock).mockResolvedValue(null);
 
     // Act
     await getFileUploadRouter(mockArkosConfig);
@@ -571,7 +571,7 @@ describe("File Upload Router", () => {
 
   test("should merge default and custom express static options", async () => {
     // Arrange
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {},
       authConfigs: {},
     });

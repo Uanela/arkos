@@ -16,7 +16,7 @@ jest.mock("../../../utils/helpers/models.helpers", () => ({
   getModels: jest.fn().mockReturnValue([]),
   getModelFields: jest.fn().mockReturnValue([]),
   getPrismaModels: jest.fn().mockReturnValue([]),
-  getModelModules: jest.fn().mockReturnValue([]),
+  getModuleComponents: jest.fn().mockReturnValue([]),
   getPrismaSchemasContent: jest.fn().mockReturnValue(""),
 }));
 

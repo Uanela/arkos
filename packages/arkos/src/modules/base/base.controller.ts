@@ -4,7 +4,10 @@ import APIFeatures from "../../utils/features/api.features";
 import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
-import { getModelModules, getModels } from "../../utils/helpers/models.helpers";
+import {
+  getModuleComponents,
+  getModels,
+} from "../../utils/helpers/models.helpers";
 import pluralize from "pluralize";
 
 /**
@@ -71,10 +74,10 @@ export class BaseController {
    * @param {string} modelName - The name of the model for which this controller will handle operations
    */
   constructor(modelName: string) {
-    const components = getModelModules(modelName);
+    const components = getModuleComponents(modelName);
 
     this.modelName = modelName;
-    this.service = components?.service || new BaseService(modelName);
+    this.service = new BaseService(modelName);
     this.middlewares = components?.middlewares || {};
   }
 
@@ -90,7 +93,7 @@ export class BaseController {
       const data = await this.service.createOne(
         req.body,
         req.prismaQueryOptions,
-        { req, res, next }
+        { user: req?.user, accessToken: req?.accessToken }
       );
 
       if (this.middlewares.afterCreateOne) {
@@ -115,7 +118,7 @@ export class BaseController {
       const data = await this.service.createMany(
         req.body,
         req.prismaQueryOptions,
-        { req, res, next }
+        { user: req?.user, accessToken: req?.accessToken }
       );
 
       if (!data)
@@ -156,8 +159,14 @@ export class BaseController {
         .paginate();
 
       const [data, total] = (await Promise.all([
-        this.service.findMany(where, queryOptions, { req, res, next }),
-        this.service.count(where, { req, res, next }),
+        this.service.findMany(where, queryOptions, {
+          user: req?.user,
+          accessToken: req?.accessToken,
+        }),
+        this.service.count(where, {
+          user: req?.user,
+          accessToken: req?.accessToken,
+        }),
       ])) as [Record<string, any>[], number];
 
       if (this.middlewares.afterFindMany) {
@@ -182,7 +191,7 @@ export class BaseController {
       const data = await this.service.findOne(
         req.params,
         req.prismaQueryOptions,
-        { req, res, next }
+        { user: req?.user, accessToken: req?.accessToken }
       );
 
       if (!data) {
@@ -236,7 +245,7 @@ export class BaseController {
         req.params,
         req.body,
         req.prismaQueryOptions,
-        { req, res, next }
+        { user: req?.user, accessToken: req?.accessToken }
       );
 
       if (!data) {
@@ -303,7 +312,7 @@ export class BaseController {
         where,
         req.body,
         queryOptions,
-        { req, res, next }
+        { user: req?.user, accessToken: req?.accessToken }
       )) as { count: number };
 
       if (!data || data.count === 0)
@@ -333,7 +342,10 @@ export class BaseController {
    */
   deleteOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const data = await this.service.deleteOne(req.params, { req, res, next });
+      const data = await this.service.deleteOne(req.params, {
+        user: req?.user,
+        accessToken: req?.accessToken,
+      });
 
       if (!data) {
         if (Object.keys(req.params).length === 1 && "id" in req.params) {
@@ -394,7 +406,10 @@ export class BaseController {
         filters: { where },
       } = new APIFeatures(req, this.modelName).filter().sort();
 
-      const data = await this.service.deleteMany(where, { req, res, next });
+      const data = await this.service.deleteMany(where, {
+        user: req?.user,
+        accessToken: req?.accessToken,
+      });
 
       if (!data || data.count === 0) {
         return next(

@@ -3,7 +3,7 @@ import { validationMetadatasToSchemas } from "class-validator-jsonschema";
 import { importModule } from "../../../../../../utils/helpers/global.helpers";
 import { getMetadataStorage } from "class-validator";
 import {
-  getModelModules,
+  getModuleComponents,
   getModels,
 } from "../../../../../../utils/helpers/models.helpers";
 import { getCorrectJsonSchemaName } from "../../swagger.router.helpers";
@@ -28,8 +28,8 @@ describe("generateClassValidatorJsonSchemas", () => {
   const mockGetMetadataStorage = getMetadataStorage as jest.MockedFunction<
     typeof getMetadataStorage
   >;
-  const mockGetModelModules = getModelModules as jest.MockedFunction<
-    typeof getModelModules
+  const mockgetModuleComponents = getModuleComponents as jest.MockedFunction<
+    typeof getModuleComponents
   >;
   const mockGetModels = getModels as jest.MockedFunction<typeof getModels>;
   const mockGetCorrectJsonSchemaName =
@@ -76,7 +76,7 @@ describe("generateClassValidatorJsonSchemas", () => {
     });
 
     test("should generate schemas successfully with valid models and DTOs", async () => {
-      mockGetModelModules
+      mockgetModuleComponents
         .mockReturnValueOnce({
           dtos: {
             create: { name: "CreateUserDto" },
@@ -119,7 +119,7 @@ describe("generateClassValidatorJsonSchemas", () => {
     });
 
     test("should handle models without DTOs", async () => {
-      mockGetModelModules
+      mockgetModuleComponents
         .mockReturnValueOnce({
           dtos: {
             create: { name: "CreateUserDto" },
@@ -180,7 +180,7 @@ describe("generateClassValidatorJsonSchemas", () => {
 
     test("should handle empty JSON schema from class-validator", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({});
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {
           create: { name: "CreateUserDto" },
         },
@@ -198,7 +198,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {
           create: null, // Null DTO class
           update: { name: "UpdateUserDto" },
@@ -218,7 +218,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {
           create: undefined, // Undefined DTO class
           update: { name: "UpdateUserDto" },
@@ -238,7 +238,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {
           create: { name: "CreateUserDto" },
           update: { name: "UpdateUserDto" },
@@ -269,7 +269,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         SomeDto: { type: "object" },
       });
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {}, // Empty DTOs object
       });
 
@@ -284,7 +284,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         SomeDto: { type: "object" },
       });
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         // No 'dtos' property
         entities: { user: {} },
       } as any);
@@ -367,7 +367,7 @@ describe("generateClassValidatorJsonSchemas", () => {
         SomeOtherSchema: { type: "object" },
       });
 
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {
           create: { name: "CreateUserDto" },
           update: { name: "UpdateUserDto" },
@@ -409,7 +409,7 @@ describe("generateClassValidatorJsonSchemas", () => {
         },
       });
 
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {
           create: { name: "CreateUserDto" },
           update: { name: "CreateProductDto" }, // Different DTO with same pattern
@@ -458,7 +458,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       };
 
       mockValidationMetadatasToSchemas.mockReturnValue(complexSchema as any);
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {
           complex: { name: "ComplexDto" },
         },
@@ -491,7 +491,7 @@ describe("generateClassValidatorJsonSchemas", () => {
         TestDto: { type: "object" },
       });
 
-      mockGetModelModules.mockReturnValue({
+      mockgetModuleComponents.mockReturnValue({
         dtos: {
           test: { name: "TestDto" },
         },

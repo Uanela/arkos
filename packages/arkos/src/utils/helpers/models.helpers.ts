@@ -12,16 +12,16 @@ import { killServerChildProcess } from "../cli/utils/cli.helpers";
 import { ArkosConfig } from "../../exports";
 import sheu from "../sheu";
 
-type ModeModules = Awaited<ReturnType<typeof importPrismaModelModules>>;
+type ModeModules = Awaited<ReturnType<typeof importModuleComponents>>;
 
 // Must be exported to not cause problems on cjs
 let prismaModelsModules: Record<string, ModeModules> = {};
 
-export function setModelModules(modelName: string, modules: ModeModules) {
+export function setModuleComponents(modelName: string, modules: ModeModules) {
   prismaModelsModules[kebabCase(modelName)] = modules;
 }
 
-export function getModelModules(modelName: string) {
+export function getModuleComponents(modelName: string) {
   return prismaModelsModules[kebabCase(modelName)];
 }
 
@@ -33,10 +33,10 @@ export function getModelModules(modelName: string) {
  * @param result
  */
 export type ValidationFileMappingKey = keyof ReturnType<
-  typeof getFileModelModulesFileStructure
+  typeof getFileModuleComponentsFileStructure
 >["dtos"];
 
-export function getFileModelModulesFileStructure(modelName: string) {
+export function getFileModuleComponentsFileStructure(modelName: string) {
   const kebabModelName = kebabCase(modelName).toLowerCase();
   const isAuthModule = modelName.toLowerCase() === "auth";
   const ext = getUserFileExtension();
@@ -46,6 +46,8 @@ export function getFileModelModulesFileStructure(modelName: string) {
       service: `${kebabModelName}.service.${ext}`,
       controller: `${kebabModelName}.controller.${ext}`,
       middlewares: `${kebabModelName}.middlewares.${ext}`,
+      hooks: `${kebabModelName}.hooks.${ext}`,
+      interceptors: `${kebabModelName}.interceptors.${ext}`,
       authConfigs: `${kebabModelName}.auth-configs.${ext}`,
       authConfigsNew: `${kebabModelName}.auth.${ext}`,
       prismaQueryOptions: `${kebabModelName}.prisma-query-options.${ext}`,
@@ -104,7 +106,7 @@ export async function processSubdir(
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
   const subdir = path.join(moduleDir, type);
-  const fileStructure = getFileModelModulesFileStructure(modelName);
+  const fileStructure = getFileModuleComponentsFileStructure(modelName);
   const result: Record<string, any> = {};
 
   // Skip if directory doesn't exist
@@ -141,8 +143,9 @@ export async function processSubdir(
   return result;
 }
 
-type importPrismaModelModulesReturnType = {
+type importModuleComponentsReturnType = {
   service?: any;
+  hooks?: any;
   controller?: any;
   middlewares?: any;
   authConfigs?: AuthConfigs;
@@ -158,15 +161,20 @@ type importPrismaModelModulesReturnType = {
  * Validates naming convention conflicts for prismaQueryOptions and authConfigs
  * @param {string} key - The current file key being processed
  * @param {string} fileName - The filename being imported
- * @param {importPrismaModelModulesReturnType} result - The current result object
+ * @param {importModuleComponentsReturnType} result - The current result object
  * @throws {Error} When conflicting naming conventions are detected
  */
 export function validateNamingConventions(
   key: string,
   fileName: string,
-  result: importPrismaModelModulesReturnType
+  result: importModuleComponentsReturnType
 ): void {
+  const ext = getUserFileExtension();
+
   if (key === "prismaQueryOptions") {
+    sheu.warn(
+      `Found ${fileName}, .prisma-query-options.${ext} files will be deprecated on 1.4.0-beta consider using .query.${ext}.`
+    );
     if (result.prismaQueryOptions) {
       killServerChildProcess();
       throw new Error(
@@ -187,6 +195,9 @@ export function validateNamingConventions(
       );
     }
   } else if (key === "authConfigs") {
+    sheu.warn(
+      `Found ${fileName}, .auth-configs.${ext} files will be deprecated on 1.4.0-beta consider using .auth.${ext}.`
+    );
     if (result.authConfigs) {
       killServerChildProcess();
       throw new Error(
@@ -213,12 +224,12 @@ export function validateNamingConventions(
  * Processes and assigns module to the result object based on the key
  * @param {string} key - The file key being processed
  * @param {any} module - The imported module
- * @param {importPrismaModelModulesReturnType} result - The result object to modify
+ * @param {importModuleComponentsReturnType} result - The result object to modify
  */
 export function assignModuleToResult(
   key: string,
   module: any,
-  result: importPrismaModelModulesReturnType
+  result: importModuleComponentsReturnType
 ): void {
   if (key === "prismaQueryOptions" || key === "prismaQueryOptionsNew") {
     result.prismaQueryOptions = module.default || module;
@@ -238,20 +249,20 @@ export function assignModuleToResult(
  * @param {string} modelName - The name of the model (e.g., "User", "Post", "Auth").
  * @returns {Promise<Object>} An object containing the imported modules
  */
-export async function importPrismaModelModules(
+export async function importModuleComponents(
   modelName: string,
   arkosConfig: ArkosConfig
-): Promise<importPrismaModelModulesReturnType> {
+): Promise<importModuleComponentsReturnType> {
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
-  const result: importPrismaModelModulesReturnType = {
+  const result: importModuleComponentsReturnType = {
     dtos: {},
     schemas: {},
   };
 
-  if (getModelModules(modelName)) return getModelModules(modelName);
+  if (getModuleComponents(modelName)) return getModuleComponents(modelName);
 
-  const fileStructure = getFileModelModulesFileStructure(modelName);
+  const fileStructure = getFileModuleComponentsFileStructure(modelName);
 
   // Batch process core files
   await Promise.all(
@@ -519,9 +530,9 @@ export async function localValidatorFileExists(
   arkosConfig: ArkosConfig
 ) {
   if (arkosConfig?.swagger?.mode === "prisma") return false;
-  const modelModules = await importPrismaModelModules(modelName, arkosConfig);
+  const ModuleComponents = await importModuleComponents(modelName, arkosConfig);
 
-  return !!modelModules?.[
+  return !!ModuleComponents?.[
     arkosConfig.validation?.resolver === "zod" ? "schemas" : "dtos"
   ]?.[camelCase(action)];
 }

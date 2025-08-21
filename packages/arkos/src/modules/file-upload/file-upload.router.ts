@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../utils/helpers/models.helpers";
 import authService from "../auth/auth.service";
 import fileUploadController from "./file-upload.controller";
 import { ArkosConfig } from "../../types/arkos-config";
@@ -16,14 +16,14 @@ const router: Router = Router();
 export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const { fileUpload } = arkosConfig;
 
-  const modelModules = await importPrismaModelModules(
+  const ModuleComponents = await importModuleComponents(
     "file-upload",
     arkosConfig
   );
   let { middlewares = {} as any, authConfigs = {} as AuthConfigs } = {};
 
-  if (modelModules) {
-    ({ middlewares = {}, authConfigs = {} } = modelModules);
+  if (ModuleComponents) {
+    ({ middlewares = {}, authConfigs = {} } = ModuleComponents);
   }
 
   let basePathname = fileUpload?.baseRoute || "/api/uploads/";

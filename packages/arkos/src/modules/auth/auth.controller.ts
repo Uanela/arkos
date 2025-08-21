@@ -3,7 +3,7 @@ import AppError from "../error-handler/utils/app-error";
 import { CookieOptions } from "express";
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import authService from "./auth.service";
-import { getBaseServices } from "../base/base.service";
+import { BaseService, getBaseServices } from "../base/base.service";
 import { User } from "../../types";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
@@ -29,7 +29,7 @@ export const defaultExcludedUserFields = {
  * @returns An object containing all authentication controller methods
  */
 export const authControllerFactory = async (middlewares: any = {}) => {
-  const userService = getBaseServices()["user"];
+  const userService = new BaseService("user");
 
   return {
     /**
@@ -225,6 +225,8 @@ export const authControllerFactory = async (middlewares: any = {}) => {
         )
           res.cookie("arkos_access_token", token, cookieOptions);
 
+        req.accessToken = token;
+
         if (middlewares?.afterLogin) {
           req.additionalData = { user };
           req.responseStatus = 200;
@@ -337,7 +339,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         const configs = getArkosConfig();
         const initAuthConfigs = configs?.authentication;
-        // const modules = getModelModules("auth");
+        // const modules = getModuleComponents("auth");
 
         if (!isPasswordCorrect)
           return next(new AppError("Current password is incorrect.", 400));

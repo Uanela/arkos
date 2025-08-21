@@ -85,15 +85,15 @@ describe("setupRouters", () => {
 
   it("should register all routes for a model with no customization", async () => {
     // Mock the imported modules
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     // Call the function
@@ -176,7 +176,7 @@ describe("setupRouters", () => {
 
   it("should not register disabled routes", async () => {
     // Mock the imported modules with disabled routes
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: {},
       authConfigs: {},
       prismaQueryOptions: {},
@@ -190,8 +190,8 @@ describe("setupRouters", () => {
       },
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     // Call the function
@@ -225,7 +225,7 @@ describe("setupRouters", () => {
 
   it("should not register any routes if completely disabled", async () => {
     // Mock the imported modules with all routes disabled
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: {},
       authConfigs: {},
       prismaQueryOptions: {},
@@ -237,8 +237,8 @@ describe("setupRouters", () => {
       },
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     // Call the function
@@ -254,7 +254,7 @@ describe("setupRouters", () => {
 
   it("should use custom middleware when provided as function", async () => {
     // Mock the imported modules with custom middlewares
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: {
         beforeFindMany: jest.fn(),
         afterFindMany: jest.fn(),
@@ -264,8 +264,8 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     // Call the function
@@ -287,7 +287,7 @@ describe("setupRouters", () => {
 
   it("should use custom middleware when provided as array of functions", async () => {
     // Mock the imported modules with custom middlewares as arrays
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: {
         beforeFindMany: [jest.fn(), jest.fn(), jest.fn()],
         afterFindMany: [jest.fn(), jest.fn()],
@@ -297,8 +297,8 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     // Call the function
@@ -323,7 +323,7 @@ describe("setupRouters", () => {
 
   it("should throw error when middleware is not a function", async () => {
     // Mock the imported modules with invalid middleware
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: {
         beforeFindMany: "not-a-function", // This should cause an error
       },
@@ -332,8 +332,8 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     // Call the function and expect it to throw
@@ -344,7 +344,7 @@ describe("setupRouters", () => {
 
   it("should throw error when middleware array contains non-function values", async () => {
     // Mock the imported modules with invalid middleware in array
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: {
         beforeFindMany: [jest.fn(), "not-a-function", jest.fn()], // Second item should cause error
       },
@@ -353,8 +353,8 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     // Call the function and expect it to throw
@@ -364,15 +364,15 @@ describe("setupRouters", () => {
   });
 
   it("should throw error for various non-function middleware types", async () => {
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: { beforeFindMany: [jest.fn(), null, jest.fn()] },
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     let setupPromises = null;
@@ -392,7 +392,7 @@ describe("setupRouters", () => {
     ];
 
     // Mock the imported modules with custom router
-    const mockModelModules = {
+    const mockModuleComponents = {
       middlewares: {},
       authConfigs: {},
       prismaQueryOptions: {},
@@ -404,14 +404,14 @@ describe("setupRouters", () => {
     };
 
     // Mock hasCustomImplementation to return true for specific path/method
-    mockModelModules.router.default.stack.some = jest
+    mockModuleComponents.router.default.stack.some = jest
       .fn()
       .mockImplementation((callback) =>
         callback({ path: "/users", method: "GET" })
       );
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockResolvedValue(
-      mockModelModules
+    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+      mockModuleComponents
     );
 
     // Call the function
@@ -449,7 +449,7 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockImplementation(
+    (importHelpers.importModuleComponents as jest.Mock).mockImplementation(
       (modelName) => {
         if (modelName === "user") return Promise.resolve(mockUserModules);
         if (modelName === "post") return Promise.resolve(mockPostModules);
@@ -484,7 +484,7 @@ describe("setupRouters", () => {
       },
     };
 
-    (importHelpers.importPrismaModelModules as jest.Mock).mockImplementation(
+    (importHelpers.importModuleComponents as jest.Mock).mockImplementation(
       (modelName) => {
         if (modelName === "post") return Promise.resolve(mockPostModules);
         return Promise.resolve({});

@@ -1,5 +1,5 @@
 import {
-  getModelModules,
+  getModuleComponents,
   getModels,
 } from "../../../../../utils/helpers/models.helpers";
 import zodToJsonSchema from "zod-to-json-schema";
@@ -10,10 +10,10 @@ export default async function generateZodJsonSchemas() {
   const schemas: Record<string, any> = {};
 
   models.forEach((modelName) => {
-    const modelModules = getModelModules(modelName);
+    const ModuleComponents = getModuleComponents(modelName);
 
-    if (modelModules?.schemas)
-      Object.entries(modelModules.schemas).forEach(
+    if (ModuleComponents?.schemas)
+      Object.entries(ModuleComponents.schemas).forEach(
         ([schemaType, zodSchema]) => {
           if (zodSchema)
             try {

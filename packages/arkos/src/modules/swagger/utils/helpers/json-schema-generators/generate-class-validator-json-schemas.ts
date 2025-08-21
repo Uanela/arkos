@@ -2,7 +2,7 @@ import { validationMetadatasToSchemas } from "class-validator-jsonschema";
 import { importModule } from "../../../../../utils/helpers/global.helpers";
 import { getMetadataStorage } from "class-validator";
 import {
-  getModelModules,
+  getModuleComponents,
   getModels,
 } from "../../../../../utils/helpers/models.helpers";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
@@ -26,10 +26,10 @@ export async function generateClassValidatorJsonSchemas() {
   });
 
   models.forEach((modelName) => {
-    const modelModules = getModelModules(modelName);
+    const ModuleComponents = getModuleComponents(modelName);
 
-    if (modelModules?.dtos) {
-      Object.entries(modelModules.dtos).forEach(([dtoType, dtoClass]) => {
+    if (ModuleComponents?.dtos) {
+      Object.entries(ModuleComponents.dtos).forEach(([dtoType, dtoClass]) => {
         if (dtoClass) {
           try {
             const schemaName = getCorrectJsonSchemaName(

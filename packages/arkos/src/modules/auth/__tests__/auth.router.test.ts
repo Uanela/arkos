@@ -3,7 +3,7 @@ import { getAuthRouter } from "../auth.router";
 import { authControllerFactory } from "../auth.controller";
 import authService from "../auth.service";
 import rateLimit from "express-rate-limit";
-import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../../utils/helpers/models.helpers";
 import {
   sendResponse,
   addPrismaQueryOptionsToRequest,
@@ -99,7 +99,7 @@ describe("Auth Router", () => {
     };
 
     (authControllerFactory as jest.Mock).mockResolvedValue(mockAuthController);
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {},
       prismaQueryOptions: mockPrismaQueryOptions,
     });
@@ -126,7 +126,7 @@ describe("Auth Router", () => {
 
     // Assert
     expect(Router).toHaveBeenCalled();
-    expect(importPrismaModelModules).toHaveBeenCalledWith(
+    expect(importModuleComponents).toHaveBeenCalledWith(
       "auth",
       mockArkosConfig
     );
@@ -224,7 +224,7 @@ describe("Auth Router", () => {
       afterUpdatePassword: jest.fn(),
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: customMiddlewares,
       prismaQueryOptions: mockPrismaQueryOptions,
     });
@@ -281,7 +281,7 @@ describe("Auth Router", () => {
       updatePassword: "updatePasswordSchema",
     };
 
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {},
       dtos: mockDtos,
       schemas: mockSchemas,
@@ -313,7 +313,7 @@ describe("Auth Router", () => {
 
     // Reset for next test
     jest.clearAllMocks();
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {},
       dtos: mockDtos,
       schemas: mockSchemas,
@@ -346,7 +346,7 @@ describe("Auth Router", () => {
 
   test("should create all required routes with no middlewares passed", async () => {
     // Act
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: undefined,
       prismaQueryOptions: mockPrismaQueryOptions,
     });
@@ -414,7 +414,7 @@ describe("Auth Router", () => {
 
   test("should create all required routes with after middlewares passed to all routes", async () => {
     // Act
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {
         afterGetMe: jest.fn(),
         afterUpdateMe: jest.fn(),
@@ -496,7 +496,7 @@ describe("Auth Router", () => {
 
   test("should create all required routes with before middlewares passed to all routes", async () => {
     // Act
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {
         beforeGetMe: jest.fn(),
         beforeUpdateMe: jest.fn(),
@@ -578,7 +578,7 @@ describe("Auth Router", () => {
 
   test("should create all required routes with before and after middlewares passed to all routes", async () => {
     // Act
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       middlewares: {
         beforeGetMe: jest.fn(),
         afterGetMe: jest.fn(),

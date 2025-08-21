@@ -4,7 +4,7 @@ import pluralize from "pluralize";
 import { isEndpointDisabled } from "../../../../../../base/utils/helpers/base.router.helpers";
 import { kebabCase, pascalCase } from "../../../../../../../exports/utils";
 import {
-  importPrismaModelModules,
+  importModuleComponents,
   localValidatorFileExists,
 } from "../../../../../../../utils/helpers/models.helpers";
 
@@ -19,7 +19,7 @@ jest.mock("fs");
 describe("generatePrismaModelMainRoutesPaths", () => {
   let paths: any = {};
   let arkosConfig: any;
-  let mockModelModules: any;
+  let mockModuleComponents: any;
 
   beforeEach(() => {
     // Reset all mocks
@@ -34,7 +34,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       },
     };
 
-    mockModelModules = {
+    mockModuleComponents = {
       router: {
         config: {},
       },
@@ -58,7 +58,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       (schema, _) => `#/components/schemas/${schema}`
     );
     (isEndpointDisabled as jest.Mock).mockReturnValue(false);
-    (importPrismaModelModules as jest.Mock).mockResolvedValue(mockModelModules);
+    (importModuleComponents as jest.Mock).mockResolvedValue(mockModuleComponents);
     (localValidatorFileExists as jest.Mock).mockResolvedValue(false);
   });
 
@@ -99,10 +99,10 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       expect(pluralize.plural).toHaveBeenCalledWith("User Profile");
     });
 
-    it("should call importPrismaModelModules with correct parameters", async () => {
+    it("should call importModuleComponents with correct parameters", async () => {
       await generatePrismaModelMainRoutesPaths("Product", paths, arkosConfig);
 
-      expect(importPrismaModelModules).toHaveBeenCalledWith(
+      expect(importModuleComponents).toHaveBeenCalledWith(
         "Product",
         arkosConfig
       );
@@ -111,9 +111,9 @@ describe("generatePrismaModelMainRoutesPaths", () => {
 
   describe("Router Configuration - Complete Disable", () => {
     it("should skip route generation when router is completely disabled", async () => {
-      mockModelModules.router.config = { disable: true };
-      (importPrismaModelModules as jest.Mock).mockResolvedValue(
-        mockModelModules
+      mockModuleComponents.router.config = { disable: true };
+      (importModuleComponents as jest.Mock).mockResolvedValue(
+        mockModuleComponents
       );
 
       await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
@@ -122,9 +122,9 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     });
 
     it("should handle missing router config gracefully", async () => {
-      mockModelModules.router = undefined;
-      (importPrismaModelModules as jest.Mock).mockResolvedValue(
-        mockModelModules
+      mockModuleComponents.router = undefined;
+      (importModuleComponents as jest.Mock).mockResolvedValue(
+        mockModuleComponents
       );
 
       await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
@@ -134,7 +134,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     });
 
     it("should handle missing model modules gracefully", async () => {
-      (importPrismaModelModules as jest.Mock).mockResolvedValue(null);
+      (importModuleComponents as jest.Mock).mockResolvedValue(null);
 
       await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
@@ -415,8 +415,8 @@ describe("generatePrismaModelMainRoutesPaths", () => {
   });
 
   describe("Async Error Handling", () => {
-    it("should handle errors from importPrismaModelModules", async () => {
-      (importPrismaModelModules as jest.Mock).mockRejectedValue(
+    it("should handle errors from importModuleComponents", async () => {
+      (importModuleComponents as jest.Mock).mockRejectedValue(
         new Error("Module import failed")
       );
 

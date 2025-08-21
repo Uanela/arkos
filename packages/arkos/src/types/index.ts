@@ -221,6 +221,7 @@ export interface ArkosRequest<Body = any, Query = any> extends Request {
   body: Body;
   prismaQueryOptions?: Record<string, any>;
   // query: Query extends Request['ParsedQs'];
+  accessToken?: string;
 }
 
 export interface ArkosResponse extends Response {}

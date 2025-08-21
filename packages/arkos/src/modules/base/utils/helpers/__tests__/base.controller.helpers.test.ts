@@ -62,7 +62,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     // Arrange
     const transformedBody = { name: "transformed test" };
 
-    (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({
+    (modelsHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       dtos: { create: class CreateDto {} },
       schemas: {},
     });
@@ -77,7 +77,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     (validateDtoModule.default as jest.Mock).mockResolvedValue(transformedBody);
 
     const middleware = handleRequestBodyValidationAndTransformation(
-      modelsHelpers.getModelModules("user")?.dtos?.create
+      modelsHelpers.getModuleComponents("user")?.dtos?.create
     );
 
     // Act
@@ -86,7 +86,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     // Assert
     expect(validateDtoModule.default).toHaveBeenCalledTimes(1);
     expect(validateDtoModule.default).toHaveBeenCalledWith(
-      modelsHelpers.getModelModules("user")?.dtos?.create,
+      modelsHelpers.getModuleComponents("user")?.dtos?.create,
       { name: "test" },
       {
         whitelist: true,
@@ -103,7 +103,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     // const action = "update";
     const transformedBody = { name: "transformed test" };
 
-    (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({
+    (modelsHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       dtos: {},
       schemas: { update: { parse: () => {} } },
     });
@@ -139,7 +139,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     // Arrange
     const originalBody = { name: "test" };
 
-    (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({
+    (modelsHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       dtos: { create: class CreateDto {} },
       schemas: { create: { parse: () => {} } },
     });
@@ -164,7 +164,7 @@ describe("handleRequestBodyValidationAndTransformation", () => {
     // Arrange
     const originalBody = { name: "test" };
 
-    (modelsHelpers.getModelModules as jest.Mock).mockReturnValue({
+    (modelsHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       dtos: {},
       schemas: {},
     });

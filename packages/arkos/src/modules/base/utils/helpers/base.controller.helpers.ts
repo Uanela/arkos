@@ -92,5 +92,3 @@ export const getAppRoutes = () => {
 
   return routes;
 };
-
-export function parseAndGetPrismaQueryOptions(req: ArkosRequest) {}
