@@ -2,7 +2,7 @@ import { ArkosConfig, RouterConfig } from "../../exports";
 import { AuthPrismaQueryOptions, PrismaQueryOptions } from "../../types";
 import deepmerge from "../helpers/deepmerge.helper";
 import {
-  importPrismaModelModules,
+  importModuleComponents,
   localValidatorFileExists,
   ValidationFileMappingKey,
 } from "../helpers/models.helpers";
@@ -59,9 +59,9 @@ export class EnhancedPrismaJsonSchemaGenerator {
       ],
     } = config;
 
-    const modelModules = await importPrismaModelModules(modelName, arkosConfig);
-    const routerConfig = modelModules?.router?.config || {};
-    const prismaQueryOptions = modelModules?.prismaQueryOptions || {};
+    const ModuleComponents = await importModuleComponents(modelName, arkosConfig);
+    const routerConfig = ModuleComponents?.router?.config || {};
+    const prismaQueryOptions = ModuleComponents?.prismaQueryOptions || {};
     const authModuleModel = ["auth", "me", "password", "signup", "login"];
     const isAuthModule = authModuleModel.includes(modelName.toLowerCase());
 

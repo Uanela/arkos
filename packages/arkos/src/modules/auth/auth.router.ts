@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authControllerFactory } from "./auth.controller";
 import authService from "./auth.service";
 import rateLimit from "express-rate-limit";
-import { importPrismaModelModules } from "../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../utils/helpers/models.helpers";
 import {
   addPrismaQueryOptionsToRequest,
   handleRequestBodyValidationAndTransformation,
@@ -17,7 +17,7 @@ const router: Router = Router();
 
 export async function getAuthRouter(arkosConfigs: ArkosConfig) {
   const { middlewares, dtos, schemas, prismaQueryOptions } =
-    await importPrismaModelModules("auth", arkosConfigs);
+    await importModuleComponents("auth", arkosConfigs);
   const authController = await authControllerFactory(middlewares);
 
   // Helper to get the correct schema or DTO based on Arkos Config

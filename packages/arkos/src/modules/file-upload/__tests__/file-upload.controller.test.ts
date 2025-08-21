@@ -13,7 +13,7 @@ import {
   mkdirAsync,
   statAsync,
 } from "../../../utils/helpers/fs.helpers";
-import { getModelModules } from "../../../utils/helpers/models.helpers";
+import { getModuleComponents } from "../../../utils/helpers/models.helpers";
 
 // Mock dependencies
 jest.mock("../file-upload.service");
@@ -72,7 +72,7 @@ describe("FileUploadController", () => {
       },
     });
 
-    (getModelModules as jest.MockedFunction<any>).mockReturnValue({
+    (getModuleComponents as jest.MockedFunction<any>).mockReturnValue({
       middlewares: {},
     });
 
@@ -230,7 +230,7 @@ describe("FileUploadController", () => {
       mockReq.params = { fileType: "files" };
       mockReq.file = { path: "/tmp/test.txt" };
 
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: {
           afterUploadFile: true,
         },
@@ -261,7 +261,7 @@ describe("FileUploadController", () => {
       });
       mockUploader.handleMultipleUpload.mockReturnValue(mockHandleUpload);
 
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: {
           afterUploadFile: false,
         },
@@ -349,7 +349,7 @@ describe("FileUploadController", () => {
       mockReq.params = { fileType: "files", fileName: "test.txt" };
       mockReq.originalUrl = "/api/uploads/files/test.txt";
 
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: {
           afterDeleteFile: true,
         },
@@ -430,7 +430,7 @@ describe("FileUploadController", () => {
             "http://localhost:3000/uploads/files/repeater2.txt"
           );
 
-        (getModelModules as jest.Mock).mockReturnValue({
+        (getModuleComponents as jest.Mock).mockReturnValue({
           middlewares: {
             afterUpdateFile: false,
           },
@@ -499,7 +499,7 @@ describe("FileUploadController", () => {
       mockReq.params = { fileType: "files", fileName: "old-test.txt" };
       mockReq.file = { path: "/tmp/new-test.txt" };
 
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: {
           afterUpdateFile: true,
         },

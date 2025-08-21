@@ -2,9 +2,8 @@ import { BaseController } from "../base.controller";
 import { BaseService } from "../base.service";
 import AppError from "../../error-handler/utils/app-error";
 import APIFeatures from "../../../utils/features/api.features";
-import { getExpressApp } from "../../../server";
 import {
-  getModelModules,
+  getModuleComponents,
   getModels,
 } from "../../../utils/helpers/models.helpers";
 
@@ -35,7 +34,7 @@ describe("BaseController", () => {
     (BaseService as jest.Mock).mockImplementation(() => mockBaseService);
 
     // Setup mocked model modules
-    (getModelModules as jest.Mock).mockReturnValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       middlewares: {
         // Empty object for most tests, will be populated when testing middleware flows
       },
@@ -73,17 +72,17 @@ describe("BaseController", () => {
   describe("constructor", () => {
     it("should initialize controller with correct model name and service", () => {
       expect(BaseService).toHaveBeenCalledWith("Post");
-      expect(getModelModules).toHaveBeenCalledWith("Post");
+      expect(getModuleComponents).toHaveBeenCalledWith("Post");
     });
 
     it("should initialize with empty middlewares when model modules return null", () => {
-      (getModelModules as jest.Mock).mockReturnValue(null);
+      (getModuleComponents as jest.Mock).mockReturnValue(null);
       new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
     });
 
     it("should initialize with empty middlewares when model modules return undefined middlewares", () => {
-      (getModelModules as jest.Mock).mockReturnValue({});
+      (getModuleComponents as jest.Mock).mockReturnValue({});
       new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
     });
@@ -105,7 +104,7 @@ describe("BaseController", () => {
 
     it("should call next with responseData if afterCreateOne middleware exists", async () => {
       // Set up the middleware
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: { afterCreateOne: true },
       });
       baseController = new BaseController("Post");
@@ -148,7 +147,7 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterCreateMany middleware exists", async () => {
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: { afterCreateMany: true },
       });
       baseController = new BaseController("Post");
@@ -198,7 +197,7 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterFindMany middleware exists", async () => {
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: { afterFindMany: true },
       });
       baseController = new BaseController("Post");
@@ -286,7 +285,7 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterFindOne middleware exists", async () => {
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: { afterFindOne: true },
       });
       baseController = new BaseController("Post");
@@ -350,7 +349,7 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterUpdateOne middleware exists", async () => {
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: { afterUpdateOne: true },
       });
       baseController = new BaseController("Post");
@@ -443,7 +442,7 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterUpdateMany middleware exists", async () => {
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: { afterUpdateMany: true },
       });
       baseController = new BaseController("Post");
@@ -502,7 +501,7 @@ describe("BaseController", () => {
     });
 
     it("should call next with additionalData if afterDeleteOne middleware exists", async () => {
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: { afterDeleteOne: true },
       });
       baseController = new BaseController("Post");
@@ -587,7 +586,7 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterDeleteMany middleware exists", async () => {
-      (getModelModules as jest.Mock).mockReturnValue({
+      (getModuleComponents as jest.Mock).mockReturnValue({
         middlewares: { afterDeleteMany: true },
       });
       baseController = new BaseController("Post");
@@ -621,47 +620,6 @@ describe("BaseController", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({
         data: ["post", "user", "comment", "file-upload"],
       });
-    });
-  });
-
-  describe("getAvalibleRoutes", () => {
-    it("should return available routes", () => {
-      const { getAvalibleRoutes } = require("../base.controller");
-
-      const mockApp = {
-        _router: {
-          stack: [
-            {
-              route: {
-                path: "/posts",
-                methods: { get: true },
-              },
-            },
-            {
-              handle: {
-                stack: [
-                  {
-                    route: {
-                      path: "/users",
-                      methods: { post: true },
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        },
-      };
-
-      (getExpressApp as jest.Mock).mockReturnValue(mockApp);
-
-      getAvalibleRoutes(mockRequest, mockResponse, mockNext);
-
-      expect(getExpressApp).toHaveBeenCalled();
-      expect(mockResponse.json).toHaveBeenCalledWith([
-        { method: "GET", path: "/posts" },
-        { method: "POST", path: "/users" },
-      ]);
     });
   });
 });

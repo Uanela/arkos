@@ -1,5 +1,4 @@
 import fs from "fs";
-import { Request, Response, NextFunction } from "express";
 import * as dbUtils from "../prisma.helpers";
 import AppError from "../../../modules/error-handler/utils/app-error";
 import { getUserFileExtension } from "../fs.helpers";
@@ -189,62 +188,6 @@ describe("prisma.helpers", () => {
 
       // Assert expected behavior
       expect(result).toBe(mockPrismaModule.default);
-    });
-  });
-
-  describe("checkDatabaseConnection", () => {
-    it("should call next() when database connection succeeds", async () => {
-      // Set up mocks
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (importModule as jest.Mock).mockResolvedValue({
-        default: mockPrismaModule.default,
-      });
-
-      // Create mock Express objects
-      const req = {} as Request;
-      const res = {} as Response;
-      const next = jest.fn() as NextFunction;
-
-      // Call function under test
-      await dbUtils.checkDatabaseConnection(req, res, next);
-
-      // Assert expected behavior
-      expect(mockPrismaModule.default.$connect).toHaveBeenCalled();
-      expect(next).toHaveBeenCalledWith();
-      expect(next).not.toHaveBeenCalledWith(expect.any(AppError));
-    });
-
-    it("should call next with AppError when connection fails", async () => {
-      // Set up error message
-      const errorMessage = "Connection failed";
-
-      // Set up mocks
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (importModule as jest.Mock).mockResolvedValue({
-        default: {
-          $connect: jest.fn().mockRejectedValue(new Error(errorMessage)),
-        },
-      });
-
-      // Create mock Express objects
-      const req = {} as Request;
-      const res = {} as Response;
-      const next = jest.fn() as NextFunction;
-
-      // Mock console.error to prevent test output noise
-      jest.spyOn(console, "error").mockImplementation();
-
-      // Call function under test
-      await dbUtils.checkDatabaseConnection(req, res, next);
-
-      // Assert expected behavior
-      expect(next).toHaveBeenCalledWith(expect.any(AppError));
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: errorMessage,
-          statusCode: 503,
-        })
-      );
     });
   });
 });

@@ -14,7 +14,7 @@ import {
   statAsync,
 } from "../../utils/helpers/fs.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
-import { getModelModules } from "../../utils/helpers/models.helpers";
+import { getModuleComponents } from "../../utils/helpers/models.helpers";
 
 /**
  * Handles files uploads and allow to be extended
@@ -36,7 +36,7 @@ class FileUploadController {
    */
   uploadFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.middlewares = getModelModules("file-upload")?.middlewares || {};
+      this.middlewares = getModuleComponents("file-upload")?.middlewares || {};
 
       const { fileType } = req.params;
       const { format, width, height, resizeTo } = req.query;
@@ -140,7 +140,7 @@ class FileUploadController {
    */
   deleteFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.middlewares = getModelModules("file-upload")?.middlewares || {};
+      this.middlewares = getModuleComponents("file-upload")?.middlewares || {};
 
       const { fileType, fileName } = req.params;
 
@@ -218,7 +218,7 @@ class FileUploadController {
    */
   updateFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.middlewares = getModelModules("file-upload")?.middlewares || {};
+      this.middlewares = getModuleComponents("file-upload")?.middlewares || {};
 
       const { fileType, fileName } = req.params;
       const { format, width, height, resizeTo } = req.query;

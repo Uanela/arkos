@@ -11,7 +11,7 @@ jest.mock("zod-to-json-schema");
 jest.mock("fs");
 
 const mockGetModels = modelsHelpers.getModels as jest.Mock;
-const mockGetModelModules = modelsHelpers.getModelModules as jest.Mock;
+const mockgetModuleComponents = modelsHelpers.getModuleComponents as jest.Mock;
 const mockGetCorrectJsonSchemaName =
   swaggerRouterHelpers.getCorrectJsonSchemaName as jest.Mock;
 const mockZodToJsonSchema = zodToJsonSchema as jest.Mock;
@@ -34,7 +34,7 @@ describe("generateZodJsonSchemas", () => {
   describe("Edge Case: Empty models list", () => {
     it("should handle empty models list and return only auth schema", async () => {
       mockGetModels.mockReturnValue([]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "auth") {
           return {
             schemas: {
@@ -56,7 +56,7 @@ describe("generateZodJsonSchemas", () => {
       const result = await generateZodJsonSchemas();
 
       expect(mockGetModels).toHaveBeenCalledTimes(1);
-      expect(mockGetModelModules).toHaveBeenCalledWith("auth");
+      expect(mockgetModuleComponents).toHaveBeenCalledWith("auth");
       expect(result).toEqual({
         AuthLoginSchema: {
           type: "object",
@@ -72,7 +72,7 @@ describe("generateZodJsonSchemas", () => {
   describe("Edge Case: Models with no schemas", () => {
     it("should handle models with undefined schemas property", async () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "User") return { schemas: undefined };
         if (modelName === "Post") return {};
         if (modelName === "auth") return null;
@@ -88,7 +88,7 @@ describe("generateZodJsonSchemas", () => {
 
     it("should handle models with null schemas property", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "User") return { schemas: null };
         if (modelName === "auth") return null;
         return null;
@@ -101,7 +101,7 @@ describe("generateZodJsonSchemas", () => {
 
     it("should handle models with empty schemas object", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "User") return { schemas: {} };
         if (modelName === "auth") return null;
         return null;
@@ -114,9 +114,9 @@ describe("generateZodJsonSchemas", () => {
   });
 
   describe("Edge Case: Null/undefined model modules", () => {
-    it("should handle models that return null from getModelModules", async () => {
+    it("should handle models that return null from getModuleComponents", async () => {
       mockGetModels.mockReturnValue(["NonExistent"]);
-      mockGetModelModules.mockReturnValue(null);
+      mockgetModuleComponents.mockReturnValue(null);
 
       const result = await generateZodJsonSchemas();
 
@@ -124,9 +124,9 @@ describe("generateZodJsonSchemas", () => {
       expect(mockZodToJsonSchema).not.toHaveBeenCalled();
     });
 
-    it("should handle models that return undefined from getModelModules", async () => {
+    it("should handle models that return undefined from getModuleComponents", async () => {
       mockGetModels.mockReturnValue(["NonExistent"]);
-      mockGetModelModules.mockReturnValue(undefined);
+      mockgetModuleComponents.mockReturnValue(undefined);
 
       const result = await generateZodJsonSchemas();
 
@@ -138,7 +138,7 @@ describe("generateZodJsonSchemas", () => {
     it("should handle zodToJsonSchema throwing an error", async () => {
       const mockZodSchema = z.object({ name: z.string() });
       mockGetModels.mockReturnValue(["User"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "User") {
           return {
             schemas: {
@@ -168,7 +168,7 @@ describe("generateZodJsonSchemas", () => {
       const mockZodSchema2 = z.object({ title: z.string() });
 
       mockGetModels.mockReturnValue(["User"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "User") {
           return {
             schemas: {
@@ -207,7 +207,7 @@ describe("generateZodJsonSchemas", () => {
   describe("Edge Case: Null/undefined zod schemas", () => {
     it("should skip null zod schemas", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "User") {
           return {
             schemas: {
@@ -249,7 +249,7 @@ describe("generateZodJsonSchemas", () => {
       };
 
       mockGetModels.mockReturnValue(["User"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "User") {
           return { schemas: mockSchemas };
         }
@@ -293,7 +293,7 @@ describe("generateZodJsonSchemas", () => {
   describe("Edge Case: Multiple models with mixed scenarios", () => {
     it("should handle multiple models with various edge cases combined", async () => {
       mockGetModels.mockReturnValue(["User", "Post", "Comment"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         switch (modelName) {
           case "User":
             return {
@@ -351,10 +351,10 @@ describe("generateZodJsonSchemas", () => {
 
       const result = await generateZodJsonSchemas();
 
-      expect(mockGetModelModules).toHaveBeenCalledWith("User");
-      expect(mockGetModelModules).toHaveBeenCalledWith("Post");
-      expect(mockGetModelModules).toHaveBeenCalledWith("Comment");
-      expect(mockGetModelModules).toHaveBeenCalledWith("auth");
+      expect(mockgetModuleComponents).toHaveBeenCalledWith("User");
+      expect(mockgetModuleComponents).toHaveBeenCalledWith("Post");
+      expect(mockgetModuleComponents).toHaveBeenCalledWith("Comment");
+      expect(mockgetModuleComponents).toHaveBeenCalledWith("auth");
 
       // Should only have schemas from User, Comment, and auth (Post returns null)
       expect(Object.keys(result)).toHaveLength(3);
@@ -364,7 +364,7 @@ describe("generateZodJsonSchemas", () => {
   describe("Edge Case: Auth model special handling", () => {
     it("should always include auth model even when not in getModels result", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "User") {
           return { schemas: { create: z.object({ name: z.string() }) } };
         }
@@ -389,20 +389,20 @@ describe("generateZodJsonSchemas", () => {
 
       const result = await generateZodJsonSchemas();
 
-      expect(mockGetModelModules).toHaveBeenCalledWith("auth");
+      expect(mockgetModuleComponents).toHaveBeenCalledWith("auth");
       expect(Object.keys(result)).toHaveLength(3); // User create + auth login + auth register
     });
 
     it("should handle auth model returning no schemas", async () => {
       mockGetModels.mockReturnValue([]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "auth") return null;
         return null;
       });
 
       const result = await generateZodJsonSchemas();
 
-      expect(mockGetModelModules).toHaveBeenCalledWith("auth");
+      expect(mockgetModuleComponents).toHaveBeenCalledWith("auth");
       expect(result).toEqual({});
     });
   });
@@ -410,7 +410,7 @@ describe("generateZodJsonSchemas", () => {
   describe("Edge Case: Schema name generation", () => {
     it("should handle special characters and edge cases in schema names", async () => {
       mockGetModels.mockReturnValue(["WeirdModel"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         if (modelName === "WeirdModel") {
           return {
             schemas: {
@@ -469,7 +469,7 @@ describe("generateZodJsonSchemas", () => {
       });
 
       mockGetModels.mockReturnValue(["User", "Post"]);
-      mockGetModelModules.mockImplementation((modelName: string) => {
+      mockgetModuleComponents.mockImplementation((modelName: string) => {
         switch (modelName) {
           case "User":
             return {

@@ -18,7 +18,7 @@ jest.mock("../../../utils/helpers/models.helpers", () => ({
   ...jest.requireActual("../../../utils/helpers/models.helpers"),
   getPrismaModelRelations: jest.fn(),
   getModels: jest.fn(),
-  getModelModules: jest.fn(),
+  getModuleComponents: jest.fn(),
   getAllPrismaFiles: jest.fn(),
 }));
 jest.mock("../../../utils/helpers/change-case.helpers", () => ({
@@ -28,7 +28,7 @@ jest.mock("../../../utils/helpers/change-case.helpers", () => ({
     (str) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
   ),
 }));
-jest.mock("../../../utils/validate-dto", () => jest.fn((dto, data) => data));
+jest.mock("../../../utils/validate-dto", () => jest.fn((_, data) => data));
 jest.mock("../../../server", () => ({
   getArkosConfig: jest.fn(() => ({ validation: true })),
 }));
@@ -525,25 +525,6 @@ describe("BaseService", () => {
 
       expect(mockPrisma.post.count).toHaveBeenCalledWith({ where: {} });
       expect(result).toEqual(expectedCount);
-    });
-  });
-
-  describe("getBaseServices", () => {
-    // Importing the function for testing
-    const { getBaseServices } = require("../base.service");
-
-    it("should return base services for all models", () => {
-      const getModelsMock = jest.requireMock(
-        "../../../utils/helpers/models.helpers"
-      ).getModels;
-      getModelsMock.mockReturnValue(["Post", "User", "Comment"]);
-
-      const services = getBaseServices();
-
-      expect(Object.keys(services)).toEqual(["post", "user", "comment"]);
-      expect(services.post).toBeInstanceOf(BaseService);
-      expect(services.user).toBeInstanceOf(BaseService);
-      expect(services.comment).toBeInstanceOf(BaseService);
     });
   });
 });

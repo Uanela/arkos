@@ -350,6 +350,7 @@ export class AuthService {
         "PasswordChanged"
       );
 
+    req.accessToken = token;
     return user;
   }
 

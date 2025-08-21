@@ -3,9 +3,8 @@ import {
   defaultExcludedUserFields,
 } from "../auth.controller";
 import authService from "../auth.service";
-import { getBaseServices } from "../../base/base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
-import { importPrismaModelModules } from "../../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../../utils/helpers/models.helpers";
 import { getArkosConfig } from "../../../server";
 
 jest.mock("bcryptjs", () => ({
@@ -36,7 +35,7 @@ jest.mock("../../../utils/helpers/prisma.helpers", () => ({
 
 // Update your mock for models.helpers.ts
 jest.mock("../../../utils/helpers/models.helpers", () => ({
-  importPrismaModelModules: jest.fn(),
+  importModuleComponents: jest.fn(),
   getPrismaModelRelations: jest.fn(),
   getModels: jest.fn(() => []),
   getModelUniqueFields: jest.fn(() => []),
@@ -76,12 +75,12 @@ describe("Auth Controller Factory", () => {
     };
 
     // Setup mock implementations
-    (getBaseServices as jest.Mock).mockReturnValue({
-      user: userService,
-    });
+    // (getBaseServices as jest.Mock).mockReturnValue({
+    //   user: userService,
+    // });
 
     (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
-    (importPrismaModelModules as jest.Mock).mockResolvedValue({
+    (importModuleComponents as jest.Mock).mockResolvedValue({
       prismaQueryOptions: {
         queryOptions: {},
         findOne: {},
