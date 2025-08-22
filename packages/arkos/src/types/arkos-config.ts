@@ -470,6 +470,24 @@ export type ArkosConfig = {
    */
   routers?: {
     /**
+     * Strict mode configuration for routing security
+     *
+     * @default false
+     * - all CRUD + Auth (if using auth) endpoits are enabled and avialable by default.
+     *
+     * When enabled:
+     * - If `true`: All CRUD endpoints start disabled and must be explicitly enabled
+     *   in each model's router configuration
+     * - If `'no-bulk'`: Bulk operations (createMany, updateMany, deleteMany) are disabled
+     *   by default, while individual operations can be enabled per model
+     *
+     * This provides enhanced security by ensuring no routes are accidentally exposed.
+     * Use this in production environments to follow the principle of least privilege.
+     *
+     * See documentation: https://www.arkosjs.com/docs/guide/security#strict-mode
+     */
+    strict?: boolean | "no-bulk";
+    /**
      * Allows to add an array of custom express routers into the default middleware/router stack.
      *
      * **Where will these be placed?**: see [www.arkosjs.com/docs/advanced-guide/adding-custom-routers](https://www.arkosjs.com/docs/advanced-guide/adding-custom-routers)

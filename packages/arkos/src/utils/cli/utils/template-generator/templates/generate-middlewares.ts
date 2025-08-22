@@ -27,68 +27,102 @@ import { catchAsync } from "arkos/error-handler";`
     ? `req: ${requestType}, res: ${responseType}, next: ${nextType}`
     : `req, res, next`;
 
+  const errorFunctionParams = isTypeScript
+    ? `err: any, req: ${requestType}, res: ${responseType}, next: ${nextType}`
+    : `err, req, res, next`;
+
   if (isAuth) {
     return `${baseImports}
 
 // export const beforeGetMe = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterGetMe = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onGetMeError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeLogin = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterLogin = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onLoginError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeLogout = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterLogout = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onLogoutError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeSignup = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterSignup = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onSignupError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeUpdatePassword = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterUpdatePassword = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onUpdatePasswordError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 `;
   }
 
@@ -96,49 +130,73 @@ import { catchAsync } from "arkos/error-handler";`
     return `${baseImports}
 
 
-// export const beforeFindFile = 
-//   async (${functionParams}) => {
+// export const beforeFindF]ile = 
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // There is not afterFindFile: because the main handler is handleded by express.static()
 
-// export const beforeUploadFile = 
-//   async (${functionParams}) => {
+// export const onFindFileError =
+//   [async (${errorFunctionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const beforeUploadFile = 
+//   [async (${functionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const afterUploadFile = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onUploadFileError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeUpdateFile = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterUpdateFile = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onUpdateFileError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeDeleteFile = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterDeleteFile = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onDeleteFileError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 `;
   }
 
@@ -146,99 +204,147 @@ import { catchAsync } from "arkos/error-handler";`
   return `${baseImports}
 
 // export const beforeCreateOne = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterCreateOne = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onCreateOneError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeFindOne = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterFindOne = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onFindOneError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeFindMany = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterFindMany = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onFindManyError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeUpdateOne = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterUpdateOne = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onUpdateOneError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeDeleteOne = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterDeleteOne = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onDeleteOneError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeCreateMany = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterCreateMany = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onCreateManyError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeUpdateMany = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterUpdateMany = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onUpdateManyError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 
 // export const beforeDeleteMany = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
 
 // export const afterDeleteMany = 
-//   async (${functionParams}) => {
+//   [async (${functionParams}) => {
 //     // Your logic here
 //     next();
-//   }
+//   }]
+
+// export const onDeleteManyError =
+//   [async (${errorFunctionParams}) => {
+//     // Your logic here
+//     next();
+//   }]
 `;
 }

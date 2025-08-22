@@ -42,7 +42,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       ...processMiddleware(interceptors?.beforeGetMe),
       authController.getMe,
       ...processMiddleware(interceptors?.afterGetMe),
-      sendResponse
+      sendResponse,
+      ...processMiddleware(interceptors?.onGetMeError)
     )
     .patch(
       "/users/me",
@@ -57,7 +58,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       ...processMiddleware(interceptors?.beforeUpdateMe),
       authController.updateMe,
       ...processMiddleware(interceptors?.afterUpdateMe),
-      sendResponse
+      sendResponse,
+      ...processMiddleware(interceptors?.onUpdateMeError)
     )
     .delete(
       "/users/me",
@@ -69,7 +71,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       ...processMiddleware(interceptors?.beforeDeleteMe),
       authController.deleteMe,
       ...processMiddleware(interceptors?.afterDeleteMe),
-      sendResponse
+      sendResponse,
+      ...processMiddleware(interceptors?.onDeleteMeError)
     );
 
   router.use(
@@ -81,7 +84,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
           limit: 10,
           standardHeaders: "draft-7",
           legacyHeaders: false,
-          handler: (req, res) => {
+          handler: (_, res) => {
             res.status(429).json({
               message: "Too many requests, please try again later",
             });
@@ -104,7 +107,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     ...processMiddleware(interceptors?.beforeLogin),
     authController.login,
     ...processMiddleware(interceptors?.afterLogin),
-    sendResponse
+    sendResponse,
+    ...processMiddleware(interceptors?.onLoginError)
   );
 
   router.delete(
@@ -113,7 +117,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     ...processMiddleware(interceptors?.beforeLogout),
     authController.logout,
     ...processMiddleware(interceptors?.afterLogout),
-    sendResponse
+    sendResponse,
+    ...processMiddleware(interceptors?.onLogoutError)
   );
 
   router.post(
@@ -128,7 +133,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     ...processMiddleware(interceptors?.beforeSignup),
     authController.signup,
     ...processMiddleware(interceptors?.afterSignup),
-    sendResponse
+    sendResponse,
+    ...processMiddleware(interceptors?.onSignupError)
   );
 
   router.post(
@@ -144,7 +150,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     ...processMiddleware(interceptors?.beforeUpdatePassword),
     authController.updatePassword,
     ...processMiddleware(interceptors?.afterUpdatePassword),
-    sendResponse
+    sendResponse,
+    ...processMiddleware(interceptors?.onUpdatePasswordError)
   );
 
   return router;

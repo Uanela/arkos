@@ -59,7 +59,10 @@ export class EnhancedPrismaJsonSchemaGenerator {
       ],
     } = config;
 
-    const ModuleComponents = await importModuleComponents(modelName, arkosConfig);
+    const ModuleComponents = await importModuleComponents(
+      modelName,
+      arkosConfig
+    );
     const routerConfig = ModuleComponents?.router?.config || {};
     const prismaQueryOptions = ModuleComponents?.prismaQueryOptions || {};
     const authModuleModel = ["auth", "me", "password", "signup", "login"];

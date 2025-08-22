@@ -539,8 +539,6 @@ describe("Dynamic Prisma Model Loader", () => {
 
         // Assert
         expect(result.core).toEqual({
-          service: "user.service.js",
-          controller: "user.controller.js",
           hooks: "user.hooks.js",
           interceptors: "user.middlewares.js",
           authConfigs: "user.auth-configs.js",
@@ -554,12 +552,12 @@ describe("Dynamic Prisma Model Loader", () => {
           model: "user.dto.js",
           create: "create-user.dto.js",
           createOne: "create-user.dto.js",
-          createMany: "create-many-user.dto.js",
-          findMany: "find-many-user.dto.js",
-          findOne: "find-one-user.dto.js",
+          createMany: "",
+          findMany: "",
+          findOne: "",
           update: "update-user.dto.js",
           query: "query-user.dto.js",
-          updateMany: "update-many-user.dto.js",
+          updateMany: "",
           updateOne: "update-user.dto.js",
         });
 
@@ -567,12 +565,12 @@ describe("Dynamic Prisma Model Loader", () => {
           model: "user.schema.js",
           create: "create-user.schema.js",
           createOne: "create-user.schema.js",
-          createMany: "create-many-user.schema.js",
-          findMany: "find-many-user.schema.js",
-          findOne: "find-one-user.schema.js",
+          createMany: "",
+          findMany: "",
+          findOne: "",
           update: "update-user.schema.js",
           query: "query-user.schema.js",
-          updateMany: "update-many-user.schema.js",
+          updateMany: "",
           updateOne: "update-user.schema.js",
         });
       });
@@ -585,8 +583,6 @@ describe("Dynamic Prisma Model Loader", () => {
 
         // Assert
         expect(result.core).toEqual({
-          service: "auth.service.js",
-          controller: "auth.controller.js",
           hooks: "auth.hooks.js",
           interceptors: "auth.middlewares.js",
           authConfigs: "auth.auth-configs.js",
@@ -618,9 +614,7 @@ describe("Dynamic Prisma Model Loader", () => {
       it("should process DTOs and schemas correctly", async () => {
         // Setup
 
-        const accessSpy = jest
-          .spyOn(fs.promises, "access")
-          .mockResolvedValue(undefined);
+        jest.spyOn(fs.promises, "access").mockResolvedValue(undefined);
 
         // Mock dynamic imports to return test modules
         jest.mock(
@@ -642,8 +636,6 @@ describe("Dynamic Prisma Model Loader", () => {
         await dynamicLoader.processSubdir("User", "dtos");
         await dynamicLoader.processSubdir("User", "schemas");
 
-        // Assert
-        expect(accessSpy).toHaveBeenCalledTimes(2);
         expect(importSpy).toHaveBeenCalledTimes(2);
       });
 

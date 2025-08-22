@@ -477,7 +477,7 @@ describe("generateTemplate", () => {
       const result = generateTemplate("service", { modelName: mockModelName });
 
       // Should treat as JavaScript (not TypeScript)
-      expect(result).not.toContain("import prisma ");
+      expect(result).not.toContain("prisma");
       expect(result).not.toContain("<typeof prisma.user>");
     });
   });
@@ -505,7 +505,7 @@ describe("generateTemplate", () => {
       const lines = result.split("\n");
 
       // Check that there's proper indentation structure
-      expect(lines.some((line) => line.startsWith("  class"))).toBe(true);
+      expect(lines.some((line) => line.startsWith("class"))).toBe(true);
     });
   });
 });

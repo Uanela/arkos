@@ -23,10 +23,12 @@ export function generateRouterTemplate(options: TemplateOptions): string {
 
   const controllerImportLine = controllerExists
     ? `import ${modelName.camel}Controller from "${
-        imports?.controller || `./${modelName.kebab}.controller`
+        imports?.controller ||
+        `./${modelName.kebab}.controller${ext === "js" ? ".js" : ""}`
       }"`
     : `// import ${modelName.camel}Controller from "${
-        imports?.controller || `./${modelName.kebab}.controller`
+        imports?.controller ||
+        `./${modelName.kebab}.controller${ext === "js" ? ".js" : ""}`
       }"`;
 
   const controllerHandlerLine = controllerExists

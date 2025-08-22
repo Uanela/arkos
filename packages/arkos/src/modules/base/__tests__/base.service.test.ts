@@ -2,7 +2,10 @@ import { BaseService } from "../base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import authService from "../../auth/auth.service";
 import { handleRelationFieldsInBody } from "../utils/helpers/base.service.helpers";
-import { getPrismaModelRelations } from "../../../utils/helpers/dynamic-loader";
+import {
+  getModuleComponents,
+  getPrismaModelRelations,
+} from "../../../utils/helpers/dynamic-loader";
 
 // Mock dependencies
 jest.mock("fs", () => ({
@@ -525,6 +528,309 @@ describe("BaseService", () => {
 
       expect(mockPrisma.post.count).toHaveBeenCalledWith({ where: {} });
       expect(result).toEqual(expectedCount);
+    });
+  });
+
+  describe("Context handling", () => {
+    it("should pass context to beforeCreateOne hook", async () => {
+      const mockContext = {
+        user: { id: 1, role: "admin" },
+        accessToken: "token123",
+      };
+      const body = { title: "Test Post" };
+      const mockHook = jest.fn();
+
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: {
+          beforeCreateOne: mockHook,
+        },
+      });
+
+      await baseService.createOne(body, {}, mockContext as any);
+
+      expect(getModuleComponents).toHaveBeenCalledWith("post");
+      expect(mockHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: body,
+          context: mockContext,
+        })
+      );
+    });
+
+    it("should pass context to afterCreateOne hook with result", async () => {
+      const mockContext = { user: { id: 1, role: "admin" } };
+      const body = { title: "Test Post" };
+      const createdRecord = { id: "1", ...body };
+      const mockHook = jest.fn();
+
+      mockPrisma.post.create.mockResolvedValue(createdRecord);
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: {
+          afterCreateOne: mockHook,
+        },
+      });
+
+      await baseService.createOne(body, {}, mockContext as any);
+
+      expect(mockHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          result: createdRecord,
+          data: body,
+          context: mockContext,
+        })
+      );
+    });
+
+    it("should pass context to findMany hooks", async () => {
+      const mockContext = { accessToken: "find-token" };
+      const filters = { published: true };
+      const mockBeforeHook = jest.fn();
+      const mockAfterHook = jest.fn();
+
+      mockPrisma.post.findMany.mockResolvedValue([]);
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: {
+          beforeFindMany: mockBeforeHook,
+          afterFindMany: mockAfterHook,
+        },
+      });
+
+      await baseService.findMany(filters, {}, mockContext);
+
+      expect(mockBeforeHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filters,
+          context: mockContext,
+        })
+      );
+      expect(mockAfterHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          result: [],
+          filters,
+          context: mockContext,
+        })
+      );
+    });
+  });
+
+  describe("Hook execution", () => {
+    it("should execute beforeCreateOne and afterCreateOne hooks", async () => {
+      const mockBeforeHook = jest.fn();
+      const mockAfterHook = jest.fn();
+
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: {
+          beforeCreateOne: mockBeforeHook,
+          afterCreateOne: mockAfterHook,
+        },
+      });
+
+      const body = { title: "Test" };
+      const result = { id: "1", ...body };
+      mockPrisma.post.create.mockResolvedValue(result);
+
+      await baseService.createOne(body);
+
+      expect(mockBeforeHook).toHaveBeenCalled();
+      expect(mockAfterHook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          result,
+          data: body,
+        })
+      );
+    });
+
+    it("should handle hook errors appropriately", async () => {
+      // Only mock the error for THIS specific test
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: {
+          beforeCreateOne: jest
+            .fn()
+            .mockRejectedValue(new Error("Hook failed")),
+        },
+      });
+
+      await expect(baseService.createOne({ title: "Test" })).rejects.toThrow(
+        "Hook failed"
+      );
+    });
+  });
+
+  describe("Relation field handling", () => {
+    it("should handle relation fields in createOne", async () => {
+      (getModuleComponents as jest.Mock).mockReturnValue({ hooks: {} });
+
+      const bodyWithRelations = {
+        title: "Test",
+        category: { connect: { id: 1 } },
+        tags: { set: [{ id: 1 }, { id: 2 }] },
+      };
+
+      await baseService.createOne(bodyWithRelations);
+
+      expect(handleRelationFieldsInBody).toHaveBeenCalledWith(
+        bodyWithRelations,
+        baseService.relationFields,
+        ["delete", "disconnect", "update"]
+      );
+    });
+
+    it("should handle relation fields in updateOne", async () => {
+      const bodyWithRelations = {
+        title: "Updated",
+        category: { disconnect: true },
+      };
+
+      await baseService.updateOne({ id: "1" }, bodyWithRelations);
+
+      expect(handleRelationFieldsInBody).toHaveBeenCalledWith(
+        bodyWithRelations,
+        baseService.relationFields
+      );
+    });
+  });
+
+  describe("Password hashing", () => {
+    it("should not hash already hashed passwords for users", async () => {
+      baseService = new BaseService("User");
+      const hashedPassword = "$2b$10$alreadyHashedPassword";
+      const body = { email: "test@example.com", password: hashedPassword };
+
+      (authService.isPasswordHashed as jest.Mock).mockReturnValue(true);
+
+      await baseService.createOne(body);
+
+      expect(authService.hashPassword).not.toHaveBeenCalled();
+      expect(mockPrisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: body, // Password should remain unchanged
+        })
+      );
+    });
+
+    it("should handle password hashing for updateMany with users", async () => {
+      baseService = new BaseService("User");
+      const body = { password: "plaintext" };
+
+      (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
+      (authService.hashPassword as jest.Mock).mockResolvedValue("hashed");
+
+      await baseService.updateMany({}, body);
+
+      expect(authService.hashPassword).toHaveBeenCalled();
+    });
+  });
+
+  describe("Edge cases", () => {
+    it("should handle empty array for createMany without throwing", async () => {
+      mockPrisma.post.createMany.mockResolvedValue({ count: 0 });
+
+      const result = await baseService.createMany([]);
+
+      expect(result).toEqual({ count: 0 });
+      expect(mockPrisma.post.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: [] })
+      );
+    });
+
+    it("should handle undefined filters in findMany by passing undefined where clause", async () => {
+      mockPrisma.post.findMany.mockResolvedValue([]);
+
+      await baseService.findMany(undefined);
+
+      expect(mockPrisma.post.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: undefined })
+      );
+    });
+
+    it("should handle null context without throwing errors in createOne", async () => {
+      const body = { title: "Test Post" };
+      mockPrisma.post.create.mockResolvedValue({ id: "1", ...body });
+
+      await expect(
+        baseService.createOne(body, {}, null as any)
+      ).resolves.not.toThrow();
+
+      expect(mockPrisma.post.create).toHaveBeenCalled();
+    });
+
+    it("should handle empty object filters in deleteMany", async () => {
+      mockPrisma.post.deleteMany.mockResolvedValue({ count: 5 });
+
+      const result = await baseService.deleteMany({});
+
+      expect(result).toEqual({ count: 5 });
+      expect(mockPrisma.post.deleteMany).toHaveBeenCalledWith({
+        where: {},
+      });
+    });
+
+    it("should handle numeric string ID in findById", async () => {
+      const numericStringId = "123";
+      const expectedRecord = { id: 123, title: "Test" };
+
+      mockPrisma.post.findUnique.mockResolvedValue(expectedRecord);
+
+      const result = await baseService.findById(numericStringId);
+
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "123" } })
+      );
+      expect(result).toEqual(expectedRecord);
+    });
+  });
+
+  describe("Method integration", () => {
+    it("should support complete CRUD flow with proper data flow", async () => {
+      // Setup mock data
+      const createData = { title: "Test Post", content: "Test Content" };
+      const createdRecord = { id: "123", ...createData };
+      const updateData = { title: "Updated Post" };
+      const updatedRecord = { ...createdRecord, ...updateData };
+
+      // Mock all Prisma methods
+      mockPrisma.post.create.mockResolvedValue(createdRecord);
+      mockPrisma.post.findUnique.mockResolvedValue(createdRecord);
+      mockPrisma.post.update.mockResolvedValue(updatedRecord);
+      mockPrisma.post.delete.mockResolvedValue(updatedRecord);
+
+      // Execute CRUD flow
+      const created = await baseService.createOne(createData);
+      const found = await baseService.findById(created.id);
+      const updated = await baseService.updateOne(
+        { id: created.id },
+        updateData
+      );
+      const deleted = await baseService.deleteOne({ id: created.id });
+
+      // Verify create was called correctly
+      expect(mockPrisma.post.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: createData })
+      );
+
+      // Verify find was called with correct ID
+      expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "123" } })
+      );
+
+      // Verify update was called with correct data
+      expect(mockPrisma.post.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "123" },
+          data: updateData,
+        })
+      );
+
+      // Verify delete was called with correct ID
+      expect(mockPrisma.post.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: "123" } })
+      );
+
+      // Verify data integrity through the flow
+      expect(created).toEqual(createdRecord);
+      expect(found).toEqual(createdRecord);
+      expect(updated).toEqual(updatedRecord);
+      expect(deleted).toEqual(updatedRecord);
     });
   });
 });

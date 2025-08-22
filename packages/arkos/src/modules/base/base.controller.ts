@@ -9,6 +9,7 @@ import {
   getModels,
 } from "../../utils/helpers/dynamic-loader";
 import pluralize from "pluralize";
+import sheu from "../../utils/sheu";
 
 /**
  * The `BaseController` class provides standardized RESTful API endpoints
@@ -440,6 +441,10 @@ export class BaseController {
  */
 export const getAvailableResources = catchAsync(async (_, res) => {
   const models = getModels();
+  sheu.warn(
+    "This route `/api/available-routes` will be deprecated from 1.4.0-beta, consider using /api/auth/actions-and-permissions."
+  );
+
   res.status(200).json({
     data: [...models.map((model) => kebabCase(model)), "file-upload"],
   });

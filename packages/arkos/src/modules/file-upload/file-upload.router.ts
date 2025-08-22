@@ -59,7 +59,8 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
         },
         fileUpload?.expressStaticOptions || {}
       )
-    )
+    ),
+    ...processMiddleware(interceptors?.onFindFileError)
   );
 
   // POST /{basePathname}:fileType - Upload File
@@ -77,7 +78,8 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
     ...processMiddleware(interceptors?.beforeUploadFile),
     fileUploadController.uploadFile,
     ...processMiddleware(interceptors?.afterUploadFile),
-    sendResponse
+    sendResponse,
+    ...processMiddleware(interceptors?.onUploadFileError)
   );
 
   // PATCH /{basePathname}:fileType/:fileName - Update File
@@ -95,7 +97,8 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
     ...processMiddleware(interceptors?.beforeUpdateFile),
     fileUploadController.updateFile,
     ...processMiddleware(interceptors?.afterUpdateFile),
-    sendResponse
+    sendResponse,
+    ...processMiddleware(interceptors?.onUpdateFileError)
   );
 
   // DELETE /{basePathname}:fileType/:fileName - Delete File
@@ -113,7 +116,8 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
     ...processMiddleware(interceptors?.beforeDeleteFile),
     fileUploadController.deleteFile,
     ...processMiddleware(interceptors?.afterDeleteFile),
-    sendResponse
+    sendResponse,
+    ...processMiddleware(interceptors?.onafterDeleteFileError)
   );
 
   return router;

@@ -1,4 +1,4 @@
-import { EnhancedPrismaJsonSchemaGenerator } from "../enhaced-prisma-json-schema-generator";
+import { EnhancedPrismaJsonSchemaGenerator } from "../prisma-json-schema-generator";
 import { ArkosConfig, RouterConfig } from "../../../exports";
 import { PrismaQueryOptions } from "../../../types";
 import deepmerge from "../../helpers/deepmerge.helper";

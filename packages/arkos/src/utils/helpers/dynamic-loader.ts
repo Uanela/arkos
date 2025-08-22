@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import { camelCase, kebabCase, pascalCase } from "./change-case.helpers";
-import { crd, getUserFileExtension } from "./fs.helpers";
+import { crd, getUserFileExtension, statAsync } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 import { AuthConfigs } from "../../types/auth";
 import { killServerChildProcess } from "../cli/utils/cli.helpers";
@@ -19,6 +19,14 @@ export function setModuleComponents(modelName: string, modules: ModeModules) {
 
 export function getModuleComponents(modelName: string) {
   return prismaModelsModules[kebabCase(modelName)];
+}
+
+async function getPathStats(path: string) {
+  try {
+    return await statAsync(path);
+  } catch (err) {
+    return null;
+  }
 }
 
 /**
@@ -39,8 +47,6 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
 
   return {
     core: {
-      service: `${kebabModelName}.service.${ext}`,
-      controller: `${kebabModelName}.controller.${ext}`,
       hooks: `${kebabModelName}.hooks.${ext}`,
       interceptors: `${kebabModelName}.middlewares.${ext}`,
       authConfigs: `${kebabModelName}.auth-configs.${ext}`,
@@ -61,14 +67,14 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
           model: `${kebabModelName}.dto.${ext}`,
           create: `create-${kebabModelName}.dto.${ext}`,
           createOne: `create-${kebabModelName}.dto.${ext}`, // just for sake of completion and reusability around other parts of code
-          createMany: `create-many-${kebabModelName}.dto.${ext}`,
+          createMany: ``,
           update: `update-${kebabModelName}.dto.${ext}`,
           updateOne: `update-${kebabModelName}.dto.${ext}`, // same as createOne
-          updateMany: `update-many-${kebabModelName}.dto.${ext}`,
+          updateMany: ``,
           query: `query-${kebabModelName}.dto.${ext}`,
           // looking for some better naming convetion
-          findOne: `find-one-${kebabModelName}.dto.${ext}`,
-          findMany: `find-many-${kebabModelName}.dto.${ext}`,
+          findOne: ``,
+          findMany: ``,
         },
     schemas: isAuthModule
       ? {
@@ -82,14 +88,14 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
           model: `${kebabModelName}.schema.${ext}`,
           create: `create-${kebabModelName}.schema.${ext}`,
           createOne: `create-${kebabModelName}.schema.${ext}`,
-          createMany: `create-many-${kebabModelName}.schema.${ext}`, // just for sake of completion and reusability around other parts of code
+          createMany: ``, // just for sake of completion and reusability around other parts of code
           update: `update-${kebabModelName}.schema.${ext}`,
           updateOne: `update-${kebabModelName}.schema.${ext}`, // same as createOne
-          updateMany: `update-many-${kebabModelName}.schema.${ext}`,
+          updateMany: ``,
           query: `query-${kebabModelName}.schema.${ext}`,
           // looking for some better naming convetion
-          findOne: `find-one-${kebabModelName}.schema.${ext}`,
-          findMany: `find-many-${kebabModelName}.schema.${ext}`,
+          findOne: ``,
+          findMany: ``,
         },
   };
 }
@@ -106,17 +112,20 @@ export async function processSubdir(
 
   // Skip if directory doesn't exist
   try {
-    await fs.promises.access(subdir).catch(() => {
-      return; // Directory doesn't exist
-    });
+    try {
+      await fs.promises.access(subdir);
+    } catch (err) {
+      return {};
+    }
 
     await Promise.all(
       Object.entries(fileStructure[type]).map(async ([key, fileName]) => {
         const filePath = path.join(subdir, fileName);
         try {
-          const module = await importModule(filePath).catch((err) => {
-            if (!err.message.includes("Cannot find module")) {
-              sheu.error(`Failed to import ${fileName}:`);
+          const module = await importModule(filePath).catch(async (err) => {
+            // if (!err?.message?.includes("Cannot find module")) {
+            if (!getPathStats(filePath)) {
+              sheu.error(`Failed to import ${fileName}: `);
               console.error(err);
               killServerChildProcess();
               process.exit(1);
@@ -139,10 +148,8 @@ export async function processSubdir(
 }
 
 type importModuleComponentsReturnType = {
-  service?: any;
   hooks?: any;
   interceptors?: any;
-  controller?: any;
   authConfigs?: AuthConfigs;
   authConfigsNew?: AuthConfigs;
   prismaQueryOptions?: any;
@@ -164,11 +171,9 @@ export function validateNamingConventions(
   fileName: string,
   result: importModuleComponentsReturnType
 ): void {
-  const ext = getUserFileExtension();
-
   if (key === "prismaQueryOptions") {
     sheu.warn(
-      `Found ${fileName}, .prisma-query-options.${ext} files will be deprecated on 1.4.0-beta consider using .query.${ext}.`
+      `Found ${fileName} which will be deprecated from 1.4.0-beta, consider switching to ${fileName.replace("prisma-query-options", "query")}.`
     );
     if (result.prismaQueryOptions) {
       killServerChildProcess();
@@ -191,7 +196,7 @@ export function validateNamingConventions(
     }
   } else if (key === "authConfigs") {
     sheu.warn(
-      `Found ${fileName}, .auth-configs.${ext} files will be deprecated on 1.4.0-beta consider using .auth.${ext}.`
+      `Found ${fileName} which will be deprecated from 1.4.0-beta, consider switching to ${fileName.replace("prisma-query-options", "query")}.`
     );
     if (result.authConfigs) {
       killServerChildProcess();
@@ -246,8 +251,11 @@ export function assignModuleToResult(
  */
 export async function importModuleComponents(
   modelName: string,
-  arkosConfig: ArkosConfig
+  arkosConfig: ArkosConfig,
+  caller?: string
 ): Promise<importModuleComponentsReturnType> {
+  // temp fix for perfomance issues on start time
+  if (!caller) return {};
   const moduleDir = path.resolve(crd(), "src", "modules", kebabCase(modelName));
 
   const result: importModuleComponentsReturnType = {
@@ -256,37 +264,8 @@ export async function importModuleComponents(
   };
 
   if (getModuleComponents(modelName)) return getModuleComponents(modelName);
-
+  // if (!(await statAsync))
   const fileStructure = getFileModuleComponentsFileStructure(modelName);
-
-  // Batch process core files
-  await Promise.all(
-    Object.entries(fileStructure.core).map(async ([key, fileName]) => {
-      const filePath = path.join(moduleDir, fileName);
-      try {
-        const module = await importModule(filePath).catch((err) => {
-          if (!err.message.includes("Cannot find module")) {
-            sheu.error(`Failed to import ${fileName}:`);
-            console.error(err);
-            killServerChildProcess();
-            process.exit(1);
-          }
-        });
-
-        if (module) {
-          // Validate naming conventions before assignment
-          validateNamingConventions(key, fileName, result);
-
-          // Assign module to result
-          assignModuleToResult(key, module, result);
-        }
-      } catch (err: any) {
-        if (err.message.includes("Cannot use both")) throw err;
-        console.error(err);
-        killServerChildProcess();
-      }
-    })
-  );
 
   const validationSubdir = arkosConfig.validation?.resolver
     ? arkosConfig.validation.resolver === "zod"
@@ -294,9 +273,43 @@ export async function importModuleComponents(
       : "dtos"
     : null;
 
-  let validators = {};
-  if (validationSubdir)
-    validators = await processSubdir(modelName, validationSubdir);
+  // Batch process core files
+  const [_, validators] = await Promise.all([
+    Promise.all(
+      Object.entries(fileStructure.core).map(async ([key, fileName]) => {
+        if (["createMany", "findMany", "findOne", "updateMany"].includes(key))
+          return;
+
+        const filePath = path.join(moduleDir, fileName);
+        try {
+          const module = await importModule(filePath).catch(async (err) => {
+            try {
+              // if (!err?.message?.includes("Cannot find module")) {
+              if (!getPathStats(filePath)) {
+                sheu.error(`Failed to import ${fileName}:`);
+                console.error(err);
+                killServerChildProcess();
+                process.exit(1);
+              }
+            } catch (err) {}
+          });
+
+          if (module) {
+            // Validate naming conventions before assignment
+            validateNamingConventions(key, fileName, result);
+
+            // Assign module to result
+            assignModuleToResult(key, module, result);
+          }
+        } catch (err: any) {
+          if (err.message.includes("Cannot use both")) throw err;
+          console.error(err);
+          killServerChildProcess();
+        }
+      })
+    ),
+    validationSubdir && processSubdir(modelName, validationSubdir),
+  ]);
 
   prismaModelsModules[modelName] = {
     ...result,
@@ -471,7 +484,7 @@ export function getPrismaModelRelations(
  * @returns {string[]} An array of model names (e.g., ["User", "Post"]).
  */
 function getModels(): string[] {
-  return models;
+  return Array.from(new Set(models));
 }
 
 /**
@@ -530,6 +543,19 @@ export async function localValidatorFileExists(
   return !!ModuleComponents?.[
     arkosConfig.validation?.resolver === "zod" ? "schemas" : "dtos"
   ]?.[camelCase(action)];
+}
+
+/**
+ * Allows to asynchronously load all app modules components at once to speed up app start time.
+ */
+export async function loadAllModuleComponents(arkosConfig: ArkosConfig) {
+  const appModules = Array.from(new Set([...models, "auth"]));
+  const modulesComponentsImportPromises = appModules.map((appModule) =>
+    // temp fix for perfomance issue on start time
+    importModuleComponents(appModule, arkosConfig, "caller")
+  );
+
+  await Promise.all(modulesComponentsImportPromises);
 }
 
 export { getModels, getModelUniqueFields };
