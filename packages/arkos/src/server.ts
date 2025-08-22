@@ -5,7 +5,6 @@ import { bootstrap } from "./app";
 import { ArkosConfig } from "./types/arkos-config";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import http from "http";
-import { initializePrismaModels } from "./utils/helpers/dynamic-loader";
 import sheu from "./utils/sheu";
 import { capitalize } from "./utils/helpers/text.helpers";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";
@@ -59,7 +58,7 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
       arkosConfig
     );
 
-    initializePrismaModels();
+    // initializePrismaModels();
     _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
 
     _app = await bootstrap(_arkosConfig);

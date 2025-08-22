@@ -16,15 +16,18 @@ import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import { getSwaggerRouter } from "./modules/swagger/swagger.router";
+import { loadAllModuleComponents } from "./utils/helpers/dynamic-loader";
 
 export const app: express.Express = express();
 
 export async function bootstrap(
   arkosConfig: ArkosConfig
 ): Promise<express.Express> {
-  await loadPrismaModule();
-
-  if (arkosConfig?.configureApp) await arkosConfig.configureApp(app);
+  await Promise.all([
+    await loadPrismaModule(),
+    await loadAllModuleComponents(arkosConfig),
+    arkosConfig?.configureApp && (await arkosConfig?.configureApp(app)),
+  ]);
 
   const middlewaresConfig = arkosConfig?.middlewares;
   const disabledMiddlewares = middlewaresConfig?.disable || [];

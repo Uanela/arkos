@@ -4,7 +4,6 @@ import {
   pascalCase,
 } from "../../utils/helpers/change-case.helpers";
 import {
-  getModels,
   getModuleComponents,
   getPrismaModelRelations,
   RelationFields,
@@ -44,6 +43,7 @@ import {
   DeleteManyResult,
   ServiceBaseContext,
 } from "./types/base.service.types";
+import serviceHooksManager from "./utils/service-hooks-manager";
 
 /**
  * Base service class for handling CRUD operations on a specific model.
@@ -123,8 +123,13 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<CreateOneResult<T>> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
+
     if (serviceHooks?.beforeCreateOne)
-      await serviceHooks.beforeCreateOne({ data, queryOptions, context });
+      await serviceHooksManager.handleHook(serviceHooks.beforeCreateOne, {
+        data,
+        queryOptions,
+        context,
+      });
 
     if (kebabCase(this.modelName) === "user" && (data as any).password)
       if (!authService.isPasswordHashed((data as any).password))
@@ -152,7 +157,7 @@ export class BaseService<T extends ModelDelegate = any> {
     );
 
     if (serviceHooks?.afterCreateOne)
-      await serviceHooks?.afterCreateOne({
+      await serviceHooksManager.handleHook(serviceHooks.afterCreateOne, {
         result,
         data,
         queryOptions,
@@ -176,34 +181,33 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<CreateManyResult<T>> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
-    if (serviceHooks?.beforeCreateMany)
-      await serviceHooks.beforeCreateMany({ data, queryOptions, context });
+
+    if (serviceHooks?.beforeCreateMany) {
+      await serviceHooksManager.handleHook(serviceHooks.beforeCreateMany, {
+        data,
+        queryOptions,
+        context,
+      });
+    }
 
     const prisma = getPrismaInstance();
     const dataWithRelationFieldsHandled: any[] = [];
 
-    if (Array.isArray(data))
-      await new Promise((resolve) => {
-        (data as { [x: string]: any; password?: string }[]).forEach(
-          async (curr, i) => {
-            if ("password" in curr && this.modelName === "user")
-              if (!authService.isPasswordHashed(curr.password!))
-                data[i].password = await authService.hashPassword(
-                  curr?.password!
-                );
-
-            dataWithRelationFieldsHandled[i] = handleRelationFieldsInBody(
-              data[i] as Record<string, any>,
-              {
-                ...this.relationFields,
-              },
-              ["delete", "disconnect", "update"]
-            );
-
-            if (i === data.length - 1) resolve(null);
+    if (Array.isArray(data)) {
+      for (let i = 0; i < data.length; i++) {
+        const curr = data[i];
+        if ("password" in curr && this.modelName === "user") {
+          if (!authService.isPasswordHashed(curr.password!)) {
+            data[i].password = await authService.hashPassword(curr?.password!);
           }
+        }
+        dataWithRelationFieldsHandled[i] = handleRelationFieldsInBody(
+          data[i] as Record<string, any>,
+          { ...this.relationFields },
+          ["delete", "disconnect", "update"]
         );
-      });
+      }
+    }
 
     const result = await (prisma[this.modelName] as T).createMany(
       deepmerge(
@@ -215,7 +219,12 @@ export class BaseService<T extends ModelDelegate = any> {
     );
 
     if (serviceHooks?.afterCreateMany)
-      await serviceHooks?.afterCreateMany({ result, queryOptions, context });
+      await serviceHooksManager.handleHook(serviceHooks.afterCreateMany, {
+        result,
+        data,
+        queryOptions,
+        context,
+      });
 
     return result;
   }
@@ -231,8 +240,13 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<number> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
-    if (serviceHooks?.beforeCount)
-      await serviceHooks.beforeCount({ filters, context });
+
+    if (serviceHooks?.beforeCount) {
+      await serviceHooksManager.handleHook(serviceHooks.beforeCount, {
+        filters,
+        context,
+      });
+    }
 
     const prisma = getPrismaInstance();
 
@@ -240,8 +254,13 @@ export class BaseService<T extends ModelDelegate = any> {
       where: filters,
     });
 
-    if (serviceHooks?.afterCount)
-      await serviceHooks.afterCount({ result, filters, context });
+    if (serviceHooks?.afterCount) {
+      await serviceHooksManager.handleHook(serviceHooks.afterCount, {
+        result,
+        filters,
+        context,
+      });
+    }
 
     return result;
   }
@@ -260,8 +279,14 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<FindManyResult<T, TOptions>> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
-    if (serviceHooks?.beforeFindMany)
-      await serviceHooks.beforeFindMany({ filters, queryOptions, context });
+
+    if (serviceHooks?.beforeFindMany) {
+      await serviceHooksManager.handleHook(serviceHooks.beforeFindMany, {
+        filters,
+        queryOptions,
+        context,
+      });
+    }
 
     const prisma = getPrismaInstance();
 
@@ -272,7 +297,7 @@ export class BaseService<T extends ModelDelegate = any> {
     );
 
     if (serviceHooks?.afterFindMany)
-      await serviceHooks?.afterFindMany({
+      await serviceHooksManager.handleHook(serviceHooks.afterFindMany, {
         result,
         filters,
         queryOptions,
@@ -287,15 +312,27 @@ export class BaseService<T extends ModelDelegate = any> {
    *
    * @param {string | number} id - The ID of the record to find.
    * @param {FindByIdOptions<T>} [queryOptions] - Additional query options to modify the Prisma query.
+   * @param {ServiceBaseContext} [context] - Request context containing req, res, and next for accessing HTTP-specific information.
    * @returns {Promise<FindByIdResult<T>>} The found record or null if not found.
    */
   async findById<TOptions extends FindByIdOptions<T>>(
     id: string | number,
-    queryOptions?: TOptions
+    queryOptions?: TOptions,
+    context?: ServiceBaseContext
   ): Promise<FindByIdResult<T>> {
+    const serviceHooks = getModuleComponents(this.modelName)?.hooks;
+
+    if (serviceHooks?.beforeFindById) {
+      await serviceHooksManager.handleHook(serviceHooks.beforeFindById, {
+        id,
+        queryOptions,
+        context,
+      });
+    }
+
     const prisma = getPrismaInstance();
 
-    return await (prisma[this.modelName] as T).findUnique(
+    const result = await (prisma[this.modelName] as T).findUnique(
       deepmerge(
         {
           where: { id },
@@ -303,6 +340,17 @@ export class BaseService<T extends ModelDelegate = any> {
         queryOptions || {}
       ) as { where: { id: string | number } }
     );
+
+    if (serviceHooks?.afterFindById) {
+      await serviceHooksManager.handleHook(serviceHooks.afterFindById, {
+        result,
+        id,
+        queryOptions,
+        context,
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -319,8 +367,14 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<FindOneResult<T>> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
-    if (serviceHooks?.beforeFindOne)
-      await serviceHooks.beforeFindOne({ filters, queryOptions, context });
+
+    if (serviceHooks?.beforeFindOne) {
+      await serviceHooksManager.handleHook(serviceHooks.beforeFindOne, {
+        filters,
+        queryOptions,
+        context,
+      });
+    }
 
     const prisma = getPrismaInstance();
 
@@ -349,7 +403,7 @@ export class BaseService<T extends ModelDelegate = any> {
       );
 
     if (serviceHooks?.afterFindOne)
-      await serviceHooks?.afterFindOne({
+      await serviceHooksManager.handleHook(serviceHooks.afterFindOne, {
         result,
         filters,
         queryOptions,
@@ -375,8 +429,9 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<UpdateOneResult<T>> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
+
     if (serviceHooks?.beforeUpdateOne)
-      await serviceHooks.beforeUpdateOne({
+      await serviceHooksManager.handleHook(serviceHooks.beforeUpdateOne, {
         filters,
         data,
         queryOptions,
@@ -410,7 +465,7 @@ export class BaseService<T extends ModelDelegate = any> {
     );
 
     if (serviceHooks?.afterUpdateOne)
-      await serviceHooks?.afterUpdateOne({
+      await serviceHooksManager.handleHook(serviceHooks.afterUpdateOne, {
         result,
         filters,
         data,
@@ -437,8 +492,9 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<UpdateManyResult<T>> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
+
     if (serviceHooks?.beforeUpdateMany)
-      await serviceHooks.beforeUpdateMany({
+      await serviceHooksManager.handleHook(serviceHooks.beforeUpdateMany, {
         filters,
         data,
         queryOptions,
@@ -447,20 +503,17 @@ export class BaseService<T extends ModelDelegate = any> {
 
     const prisma = getPrismaInstance();
 
-    if (Array.isArray(data) && this.modelName === "user")
-      await new Promise((resolve) => {
-        (data as { [x: string]: any; password?: string }[]).forEach(
-          async (curr, i) => {
-            if ("password" in data[i])
-              if (!authService.isPasswordHashed(curr.password!))
-                (data[i] as any).password = await authService.hashPassword(
-                  curr.password!
-                );
-
-            if (i === data.length - 1) resolve(undefined);
-          }
+    if (
+      this.modelName === "user" &&
+      "password" in (data as any) &&
+      (data as any)?.password
+    ) {
+      if (!authService.isPasswordHashed((data as any).password)) {
+        (data as any).password = await authService.hashPassword(
+          (data as any)?.password
         );
-      });
+      }
+    }
 
     const firstMerge = deepmerge({ data }, (queryOptions as {}) || {});
 
@@ -472,7 +525,7 @@ export class BaseService<T extends ModelDelegate = any> {
     );
 
     if (serviceHooks?.afterUpdateMany)
-      await serviceHooks?.afterUpdateMany({
+      await serviceHooksManager.handleHook(serviceHooks.afterUpdateMany, {
         result,
         filters,
         data,
@@ -495,8 +548,12 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<DeleteOneResult<T>> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
+
     if (serviceHooks?.beforeDeleteOne)
-      await serviceHooks.beforeDeleteOne({ filters, context });
+      await serviceHooksManager.handleHook(serviceHooks.beforeDeleteOne, {
+        filters,
+        context,
+      });
 
     const prisma = getPrismaInstance();
 
@@ -505,7 +562,11 @@ export class BaseService<T extends ModelDelegate = any> {
     });
 
     if (serviceHooks?.afterDeleteOne)
-      await serviceHooks?.afterDeleteOne({ result, filters, context });
+      await serviceHooksManager.handleHook(serviceHooks.afterDeleteOne, {
+        result,
+        filters,
+        context,
+      });
 
     return result;
   }
@@ -522,8 +583,12 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<DeleteManyResult<T>> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
+
     if (serviceHooks?.beforeDeleteMany)
-      await serviceHooks.beforeDeleteMany({ filters, context });
+      await serviceHooksManager.handleHook(serviceHooks.beforeDeleteMany, {
+        filters,
+        context,
+      });
 
     const prisma = getPrismaInstance();
 
@@ -532,7 +597,11 @@ export class BaseService<T extends ModelDelegate = any> {
     });
 
     if (serviceHooks?.afterDeleteMany)
-      await serviceHooks?.afterDeleteMany({ result, filters, context });
+      await serviceHooksManager.handleHook(serviceHooks.afterDeleteMany, {
+        result,
+        filters,
+        context,
+      });
 
     return result;
   }

@@ -93,7 +93,8 @@ export async function setupRouters(
         ...processMiddleware(interceptors?.beforeCreateOne),
         controller.createOne,
         ...processMiddleware(interceptors?.afterCreateOne),
-        sendResponse
+        sendResponse,
+        ...processMiddleware(interceptors?.onCreateOneError)
       );
     }
 
@@ -120,7 +121,8 @@ export async function setupRouters(
         ...processMiddleware(interceptors?.beforeFindMany),
         controller.findMany,
         ...processMiddleware(interceptors?.afterFindMany),
-        sendResponse
+        sendResponse,
+        ...processMiddleware(interceptors?.onFindManyError)
       );
     }
 
@@ -150,7 +152,8 @@ export async function setupRouters(
         ...processMiddleware(interceptors?.beforeCreateMany),
         controller.createMany,
         ...processMiddleware(interceptors?.afterCreateMany),
-        sendResponse
+        sendResponse,
+        ...processMiddleware(interceptors?.onCreateManyError)
       );
     }
 
@@ -180,7 +183,8 @@ export async function setupRouters(
         ...processMiddleware(interceptors?.beforeUpdateMany),
         controller.updateMany,
         ...processMiddleware(interceptors?.afterUpdateMany),
-        sendResponse
+        sendResponse,
+        ...processMiddleware(interceptors?.onUpdateManyError)
       );
     }
 
@@ -210,7 +214,8 @@ export async function setupRouters(
         ...processMiddleware(interceptors?.beforeDeleteMany),
         controller.deleteMany,
         ...processMiddleware(interceptors?.afterDeleteMany),
-        sendResponse
+        sendResponse,
+        ...processMiddleware(interceptors?.onDeleteManyError)
       );
     }
 
@@ -240,7 +245,8 @@ export async function setupRouters(
         ...processMiddleware(interceptors?.beforeFindOne),
         controller.findOne,
         ...processMiddleware(interceptors?.afterFindOne),
-        sendResponse
+        sendResponse,
+        ...processMiddleware(interceptors?.onFindOneError)
       );
     }
 
@@ -270,7 +276,8 @@ export async function setupRouters(
         ...processMiddleware(interceptors?.beforeUpdateOne),
         controller.updateOne,
         ...processMiddleware(interceptors?.afterUpdateOne),
-        sendResponse
+        sendResponse,
+        ...processMiddleware(interceptors?.onUpdateOneError)
       );
     }
 
@@ -300,7 +307,8 @@ export async function setupRouters(
         ...processMiddleware(interceptors?.beforeDeleteOne),
         controller.deleteOne,
         ...processMiddleware(interceptors?.afterDeleteOne),
-        sendResponse
+        sendResponse,
+        ...processMiddleware(interceptors?.onDeleteOneError)
       );
     }
   });

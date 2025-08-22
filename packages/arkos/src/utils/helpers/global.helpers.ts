@@ -19,6 +19,11 @@ export function isEsm() {
   return pkg?.type === "module";
 }
 
+// When importing user modules: mainly on ESM environment
+const userRequire = createRequire(
+  pathToFileURL(process.cwd() + "/package.json")
+);
+
 export async function importModule(
   modulePath: string,
   options: { fixExtension: boolean } = { fixExtension: true }
@@ -26,10 +31,6 @@ export async function importModule(
   if (!options.fixExtension || modulePath.endsWith(".ts") || !isEsm())
     return await import(modulePath);
 
-  // When importing user modules: mainly on ESM environment
-  const userRequire = createRequire(
-    pathToFileURL(process.cwd() + "/package.json")
-  );
   const resolved = userRequire.resolve(modulePath);
   return await import(pathToFileURL(resolved) as any);
 }

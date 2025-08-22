@@ -78,7 +78,7 @@ export async function devCommand(options: DevOptions = {}) {
             "--ignore-watch",
             ".build",
             "--watch",
-            "src", // Explicitly watch src directory
+            "src",
             entryPoint,
           ],
           {
@@ -105,6 +105,8 @@ export async function devCommand(options: DevOptions = {}) {
             ".dist",
             "--ignore",
             ".build",
+            "--watch",
+            "src",
             entryPoint,
           ],
           {
