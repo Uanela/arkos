@@ -13,14 +13,14 @@ import {
   mkdirAsync,
   statAsync,
 } from "../../../utils/helpers/fs.helpers";
-import { getModuleComponents } from "../../../utils/helpers/models.helpers";
+import { getModuleComponents } from "../../../utils/helpers/dynamic-loader";
 
 // Mock dependencies
 jest.mock("../file-upload.service");
 jest.mock("../../../server");
 jest.mock("../utils/helpers/file-upload.helpers");
 jest.mock("../../../utils/helpers/fs.helpers");
-jest.mock("../../../utils/helpers/models.helpers");
+jest.mock("../../../utils/helpers/dynamic-loader");
 jest.mock("fs");
 
 describe("FileUploadController", () => {
@@ -73,7 +73,7 @@ describe("FileUploadController", () => {
     });
 
     (getModuleComponents as jest.MockedFunction<any>).mockReturnValue({
-      middlewares: {},
+      interceptors: {},
     });
 
     (accessAsync as jest.MockedFunction<any>).mockResolvedValue(true);
@@ -231,7 +231,7 @@ describe("FileUploadController", () => {
       mockReq.file = { path: "/tmp/test.txt" };
 
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: {
+        interceptors: {
           afterUploadFile: true,
         },
       });
@@ -262,7 +262,7 @@ describe("FileUploadController", () => {
       mockUploader.handleMultipleUpload.mockReturnValue(mockHandleUpload);
 
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: {
+        interceptors: {
           afterUploadFile: false,
         },
       });
@@ -350,7 +350,7 @@ describe("FileUploadController", () => {
       mockReq.originalUrl = "/api/uploads/files/test.txt";
 
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: {
+        interceptors: {
           afterDeleteFile: true,
         },
       });
@@ -431,7 +431,7 @@ describe("FileUploadController", () => {
           );
 
         (getModuleComponents as jest.Mock).mockReturnValue({
-          middlewares: {
+          interceptors: {
             afterUpdateFile: false,
           },
         });
@@ -500,7 +500,7 @@ describe("FileUploadController", () => {
       mockReq.file = { path: "/tmp/new-test.txt" };
 
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: {
+        interceptors: {
           afterUpdateFile: true,
         },
       });

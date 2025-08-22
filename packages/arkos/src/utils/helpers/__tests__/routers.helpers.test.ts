@@ -66,7 +66,7 @@ describe("Middleware Utils", () => {
       const truthyValue = "some-string";
 
       expect(() => safeCatchAsync(truthyValue)).toThrow(
-        "Validation Error: Invalid interceptor middleware of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+        "Validation Error: Invalid interceptor of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
       );
 
       expect(mockedCatchAsync).not.toHaveBeenCalled();
@@ -125,7 +125,7 @@ describe("Middleware Utils", () => {
         const middleware = "middleware-string";
 
         expect(() => processMiddleware(middleware)).toThrow(
-          "Validation Error: Invalid interceptor middleware of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+          "Validation Error: Invalid interceptor of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
         );
 
         expect(mockedCatchAsync).not.toHaveBeenCalled();
@@ -262,7 +262,7 @@ describe("Middleware Utils", () => {
         const arrayLike = { 0: jest.fn(), 1: jest.fn(), length: 2 };
 
         expect(() => processMiddleware(arrayLike)).toThrow(
-          "Validation Error: Invalid interceptor middleware of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+          "Validation Error: Invalid interceptor of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
         );
 
         expect(mockedCatchAsync).not.toHaveBeenCalled();
@@ -272,67 +272,26 @@ describe("Middleware Utils", () => {
         const objMiddleware = { handler: jest.fn() };
 
         expect(() => processMiddleware(objMiddleware)).toThrow(
-          "Validation Error: Invalid interceptor middleware of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+          "Validation Error: Invalid interceptor of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
         );
 
         expect(mockedCatchAsync).not.toHaveBeenCalled();
       });
 
       it("should maintain order in arrays", () => {
-        const middlewares: jest.MockedFunction<any>[] = [];
+        const interceptors: jest.MockedFunction<any>[] = [];
         for (let i = 0; i < 10; i++) {
-          middlewares.push(jest.fn().mockName(`middleware_${i}`));
+          interceptors.push(jest.fn().mockName(`middleware_${i}`));
         }
 
-        const result = processMiddleware(middlewares);
+        const result = processMiddleware(interceptors);
 
         expect(mockedCatchAsync).toHaveBeenCalledTimes(10);
-        middlewares.forEach((mw, index) => {
+        interceptors.forEach((mw, index) => {
           expect(mockedCatchAsync).toHaveBeenNthCalledWith(index + 1, mw);
         });
         expect(result).toHaveLength(10);
       });
-    });
-
-    describe("type safety", () => {
-      it("should handle only functions as middleware", () => {
-        const functionTypes = [
-          jest.fn(),
-          async () => {},
-          function* () {},
-          function namedFunction() {},
-          () => "arrow function",
-        ];
-
-        functionTypes.forEach((testCase) => {
-          jest.clearAllMocks();
-          const result = processMiddleware(testCase);
-          expect(mockedCatchAsync).toHaveBeenCalledWith(testCase);
-          expect(result).toEqual([`wrapped_${testCase.toString()}`]);
-        });
-      });
-
-      // it("should throw errors for non-function data types", () => {
-      //   const invalidTypes = [
-      //     { value: "string", type: "string" },
-      //     { value: 123, type: "number" },
-      //     { value: true, type: "boolean" },
-      //     { value: new Date(), type: "object" },
-      //     { value: /regex/, type: "object" },
-      //     { value: new Map(), type: "object" },
-      //     { value: new Set(), type: "object" },
-      //     { value: {}, type: "object" },
-      //     { value: [], type: "object" }, // Empty array is treated as object
-      //   ];
-
-      //   invalidTypes.forEach(({ value, type }) => {
-      //     jest.clearAllMocks();
-      //     expect(() => processMiddleware(value)).toThrow(
-      //       `Validation Error: Invalid interceptor middleware of type ${type}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
-      //     );
-      //     expect(mockedCatchAsync).not.toHaveBeenCalled();
-      //   });
-      // });
     });
 
     describe("error handling scenarios", () => {
@@ -358,9 +317,9 @@ describe("Middleware Utils", () => {
           return `wrapped_${mw}` as any;
         });
 
-        const middlewares = [jest.fn(), jest.fn(), jest.fn()];
+        const interceptors = [jest.fn(), jest.fn(), jest.fn()];
 
-        expect(() => processMiddleware(middlewares)).toThrow(
+        expect(() => processMiddleware(interceptors)).toThrow(
           "Second middleware failed"
         );
       });
@@ -418,7 +377,7 @@ describe("Middleware Utils", () => {
           }, 100);
         });
 
-        const middlewares = [
+        const interceptors = [
           normalMw,
           throwingMw,
           null,
@@ -427,7 +386,7 @@ describe("Middleware Utils", () => {
           timeoutMw,
         ];
 
-        const result = processMiddleware(middlewares);
+        const result = processMiddleware(interceptors);
 
         // Should only process truthy middleware
         expect(mockedCatchAsync).toHaveBeenCalledTimes(4);

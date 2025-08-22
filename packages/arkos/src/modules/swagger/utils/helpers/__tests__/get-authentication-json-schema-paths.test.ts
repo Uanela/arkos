@@ -1,11 +1,11 @@
 import { ArkosConfig } from "../../../../../exports";
-import { localValidatorFileExists } from "../../../../../utils/helpers/models.helpers";
+import { localValidatorFileExists } from "../../../../../utils/helpers/dynamic-loader";
 import getAuthenticationJsonSchemaPaths, {
   getSchemaMode,
 } from "../get-authentication-json-schema-paths";
 
 // Mock the dependencies one level up
-jest.mock("../../../../../utils/helpers/models.helpers", () => ({
+jest.mock("../../../../../utils/helpers/dynamic-loader", () => ({
   localValidatorFileExists: jest.fn(),
 }));
 
@@ -32,7 +32,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should use prisma mode when no validator file exists", async () => {
-    require("../../../../../utils/helpers/models.helpers").localValidatorFileExists.mockResolvedValue(
+    require("../../../../../utils/helpers/dynamic-loader").localValidatorFileExists.mockResolvedValue(
       false
     );
     const result = await getAuthenticationJsonSchemaPaths(mockConfig);
@@ -45,7 +45,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should use configured mode when validator file exists", async () => {
-    require("../../../../../utils/helpers/models.helpers").localValidatorFileExists.mockResolvedValue(
+    require("../../../../../utils/helpers/dynamic-loader").localValidatorFileExists.mockResolvedValue(
       true
     );
     const result = await getAuthenticationJsonSchemaPaths(mockConfig);
@@ -117,7 +117,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should handle missing action keys gracefully", async () => {
-    require("../../../../../utils/helpers/models.helpers").localValidatorFileExists.mockImplementation(
+    require("../../../../../utils/helpers/dynamic-loader").localValidatorFileExists.mockImplementation(
       async (action: string) => action !== "invalidAction"
     );
 

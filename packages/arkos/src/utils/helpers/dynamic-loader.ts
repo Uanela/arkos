@@ -1,10 +1,6 @@
 import path from "path";
 import fs from "fs";
-import {
-  camelCase,
-  kebabCase,
-  pascalCase,
-} from "../../utils/helpers/change-case.helpers";
+import { camelCase, kebabCase, pascalCase } from "./change-case.helpers";
 import { crd, getUserFileExtension } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 import { AuthConfigs } from "../../types/auth";
@@ -45,9 +41,8 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
     core: {
       service: `${kebabModelName}.service.${ext}`,
       controller: `${kebabModelName}.controller.${ext}`,
-      middlewares: `${kebabModelName}.middlewares.${ext}`,
       hooks: `${kebabModelName}.hooks.${ext}`,
-      interceptors: `${kebabModelName}.interceptors.${ext}`,
+      interceptors: `${kebabModelName}.middlewares.${ext}`,
       authConfigs: `${kebabModelName}.auth-configs.${ext}`,
       authConfigsNew: `${kebabModelName}.auth.${ext}`,
       prismaQueryOptions: `${kebabModelName}.prisma-query-options.${ext}`,
@@ -146,8 +141,8 @@ export async function processSubdir(
 type importModuleComponentsReturnType = {
   service?: any;
   hooks?: any;
+  interceptors?: any;
   controller?: any;
-  middlewares?: any;
   authConfigs?: AuthConfigs;
   authConfigsNew?: AuthConfigs;
   prismaQueryOptions?: any;
@@ -235,7 +230,7 @@ export function assignModuleToResult(
     result.prismaQueryOptions = module.default || module;
   } else if (key === "authConfigs" || key === "authConfigsNew") {
     result.authConfigs = module.default || module;
-  } else if (key === "middlewares" || key === "router") {
+  } else if (key === "interceptors" || key === "router") {
     result[key] = module;
   } else {
     result[key as keyof typeof result] = module.default || module;

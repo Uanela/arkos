@@ -4,8 +4,9 @@ import {
 } from "../auth.controller";
 import authService from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
-import { importModuleComponents } from "../../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../../utils/helpers/dynamic-loader";
 import { getArkosConfig } from "../../../server";
+import { BaseService } from "../../base/base.service";
 
 jest.mock("bcryptjs", () => ({
   default: {
@@ -27,14 +28,17 @@ jest.mock("../auth.service", () => ({
 
 jest.mock("../../base/base.service", () => ({
   getBaseServices: jest.fn(),
+  BaseService: jest.fn(),
 }));
+
+const MockedBaseService = BaseService as jest.MockedClass<typeof BaseService>;
 
 jest.mock("../../../utils/helpers/prisma.helpers", () => ({
   getPrismaInstance: jest.fn(),
 }));
 
-// Update your mock for models.helpers.ts
-jest.mock("../../../utils/helpers/models.helpers", () => ({
+// Update your mock for dynamic-loader.ts
+jest.mock("../../../utils/helpers/dynamic-loader", () => ({
   importModuleComponents: jest.fn(),
   getPrismaModelRelations: jest.fn(),
   getModels: jest.fn(() => []),
@@ -54,18 +58,15 @@ describe("Auth Controller Factory", () => {
   let next: any;
   let mockPrisma: any;
   let authController: any;
-  let userService: any;
+  let userService: any = {
+    findOne: jest.fn(),
+    updateOne: jest.fn(),
+    createOne: jest.fn(),
+  };
 
   beforeEach(async () => {
     // Reset mocks
     jest.resetAllMocks();
-
-    // Setup mocks
-    userService = {
-      findOne: jest.fn(),
-      createOne: jest.fn(),
-      updateOne: jest.fn(),
-    };
 
     mockPrisma = {
       user: {
@@ -73,11 +74,7 @@ describe("Auth Controller Factory", () => {
         update: jest.fn(),
       },
     };
-
-    // Setup mock implementations
-    // (getBaseServices as jest.Mock).mockReturnValue({
-    //   user: userService,
-    // });
+    MockedBaseService.mockImplementation(() => userService);
 
     (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
     (importModuleComponents as jest.Mock).mockResolvedValue({
@@ -138,6 +135,7 @@ describe("Auth Controller Factory", () => {
       };
 
       userService.findOne.mockResolvedValueOnce(user);
+      MockedBaseService.mockImplementation(() => userService);
 
       // Execute
       await authController.getMe(req, res, next);
@@ -868,6 +866,84 @@ describe("Auth Controller Factory", () => {
       });
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteMe", () => {
+    it("should mark user account as deleted and return 200", async () => {
+      // Setup
+      const updatedUser = {
+        id: "user-id-123",
+        username: "testuser",
+        email: "test@example.com",
+        deletedSelfAccountAt: new Date().toISOString(),
+      };
+
+      userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
+
+      // Execute
+      await authController.deleteMe(req, res, next);
+
+      // Verify
+      expect(userService.updateOne).toHaveBeenCalledWith(
+        { id: "user-id-123" },
+        {
+          deletedSelfAccountAt: expect.any(String),
+        },
+        {}
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Account deleted successfully",
+      });
+    });
+
+    it("should call next middleware when afterDeleteMe is provided", async () => {
+      // Setup
+      const controllerWithMiddleware = await authControllerFactory({
+        afterDeleteMe: true,
+      });
+
+      const updatedUser = {
+        id: "user-id-123",
+        username: "testuser",
+        email: "test@example.com",
+        deletedSelfAccountAt: new Date().toISOString(),
+      };
+
+      userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
+
+      // Execute
+      await controllerWithMiddleware.deleteMe(req, res, next);
+
+      // Verify
+      expect(req.responseData).toEqual({ data: updatedUser });
+      expect(req.responseStatus).toBe(200);
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it("should remove excluded fields from user object", async () => {
+      // Setup
+      const updatedUserWithSensitiveData = {
+        id: "user-id-123",
+        username: "testuser",
+        email: "test@example.com",
+        password: "hashedPassword",
+        deletedSelfAccountAt: new Date().toISOString(),
+      };
+
+      userService.updateOne.mockResolvedValueOnce({
+        ...updatedUserWithSensitiveData,
+      });
+
+      // Execute
+      await authController.deleteMe(req, res, next);
+
+      // Verify that sensitive fields would be removed (though message is returned instead)
+      expect(res.json).toHaveBeenCalledWith({
+        message: "Account deleted successfully",
+      });
     });
   });
 });

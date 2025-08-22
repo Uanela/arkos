@@ -10,14 +10,14 @@ export function generateControllerTemplate(options: TemplateOptions): string {
     imports?.baseController || "arkos/controllers"
   }";
   
-  class ${modelName.pascal}Controller extends BaseController {
-    constructor() {
-      super("${modelName.kebab}");
-    }
+class ${modelName.pascal}Controller extends BaseController {
+  constructor() {
+    super("${modelName.kebab}");
   }
-  
-  const ${modelName.camel}Controller = new ${modelName.pascal}Controller();
-  
-  export default ${modelName.camel}Controller;
+}
+
+const ${modelName.camel}Controller = new ${modelName.pascal}Controller();
+
+export default ${modelName.camel}Controller;
   `;
 }

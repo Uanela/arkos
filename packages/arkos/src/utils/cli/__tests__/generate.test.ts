@@ -246,11 +246,11 @@ describe("generateCommand", () => {
     });
   });
 
-  describe("middlewares command", () => {
-    it("should generate middlewares with correct naming", async () => {
+  describe("interceptors command", () => {
+    it("should generate interceptors with correct naming", async () => {
       const options = { model: "auth" };
 
-      await generateCommand.middlewares(options);
+      await generateCommand.interceptors(options);
 
       expect(mockedGenerateTemplate).toHaveBeenCalledWith("middlewares", {
         modelName: {
@@ -271,7 +271,7 @@ describe("generateCommand", () => {
     it("should exit with error when middleware name is missing", async () => {
       const options = { model: "" };
 
-      await generateCommand.middlewares(options);
+      await generateCommand.interceptors(options);
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "❌ Middleware name is required"
@@ -279,10 +279,10 @@ describe("generateCommand", () => {
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
-    it("should use custom path for middlewares", async () => {
+    it("should use custom path for interceptors", async () => {
       const options = { model: "validation", path: "src/middleware" };
 
-      await generateCommand.middlewares(options);
+      await generateCommand.interceptors(options);
 
       expect(mockedEnsureDirectoryExists).toHaveBeenCalledWith(
         `${mockCwd}/src/middleware/validation`

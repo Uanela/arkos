@@ -8,7 +8,7 @@ import {
   getModuleComponents,
   getPrismaModelRelations,
   RelationFields,
-} from "../../utils/helpers/models.helpers";
+} from "../../utils/helpers/dynamic-loader";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { handleRelationFieldsInBody } from "./utils/helpers/base.service.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";

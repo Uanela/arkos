@@ -1,8 +1,8 @@
 import { PrismaSchemaParser } from "../prisma-schema-parser";
-import { getPrismaSchemasContent } from "../../helpers/models.helpers";
+import { getPrismaSchemasContent } from "../../helpers/dynamic-loader";
 
 // Mock the getPrismaSchemasContent function
-jest.mock("../../helpers/models.helpers", () => ({
+jest.mock("../../helpers/dynamic-loader", () => ({
   getPrismaSchemasContent: jest.fn(),
 }));
 

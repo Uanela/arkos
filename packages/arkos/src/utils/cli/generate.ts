@@ -131,7 +131,7 @@ export const generateCommand = {
     }
   },
 
-  middlewares: async (options: GenerateOptions) => {
+  interceptors: async (options: GenerateOptions) => {
     const modelName = options.model;
 
     if (!modelName) {

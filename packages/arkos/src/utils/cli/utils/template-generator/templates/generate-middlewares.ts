@@ -142,7 +142,7 @@ import { catchAsync } from "arkos/error-handler";`
 `;
   }
 
-  // Regular model middlewares
+  // Regular model interceptors
   return `${baseImports}
 
 // export const beforeCreateOne = 

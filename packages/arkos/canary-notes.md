@@ -2,14 +2,16 @@
 
 ## TODO
 
-- add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
-
 ### Add
+
+- add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
+- add `onActionError` interceptor -> allowing handling errors on module level
+- allow passing array of service hook on .hooks.ts files
 
 ### Change
 
 - change .middlewares to .interceptor - as it is basically working just like a reference (router alike) when using array of middlewares which will be used on most project. also allowing devs to use .middlewares to actually store the middlewares functions.
-- update places using getBaseServices function
+-
 
 ### Fix
 
@@ -49,6 +51,7 @@
 - imported file service hooks
 - added exports of before/after services hooks args
 - added warnings for old file naming convection suchs .prisma-query-options and .auth-configs and warning removal on 1.5.
+- added support for passing array of functions into `interceptor middlewares`
 
 ### Change
 
@@ -67,7 +70,7 @@
 ### Deprecate
 
 - deprecated and removed possibility of desabling database connection because it no longer exits
-- Remove database connection check or allow only one check at start time or first request.
+- Remove database connection check or allow only one check at start time for first request.
 
 # Canary Notes v1.4.0-beta
 
@@ -76,12 +79,16 @@
 ### Add
 
 - add `FileUpload` model to handle files uploads kind of like in django ORM.
-- separete what goes into `arkos.init()` and `arkos.config.ts`.
 - separete the cli to own package cli (`arkos/cli`) -> it is basically development required.
 - add dtos generation into cli
 - add a configuration process to customize global context object
 - mimic base service class behavior into auth service
 - mimic file upload service class behavior into auth service
+- Show suggestion to add invalid --model params components in folders out of module
+
+### Change
+
+- separete what goes into `arkos.init()` and `arkos.config.ts`.
 
 ### Remove
 

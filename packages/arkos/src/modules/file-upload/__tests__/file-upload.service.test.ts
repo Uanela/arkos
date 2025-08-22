@@ -20,7 +20,7 @@ jest.mock("process");
 jest.mock("../../../server");
 jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/helpers/prisma.helpers");
-jest.mock("../../../utils/helpers/models.helpers");
+jest.mock("../../../utils/helpers/dynamic-loader");
 
 describe("FileUploadService", () => {
   let mockReq: any;

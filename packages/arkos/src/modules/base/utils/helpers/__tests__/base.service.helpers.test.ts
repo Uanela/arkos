@@ -7,7 +7,7 @@ import {
 } from "../base.service.helpers"; // Update this path
 
 // Mock the required helpers
-jest.mock("../../../../../utils/helpers/models.helpers", () => ({
+jest.mock("../../../../../utils/helpers/dynamic-loader", () => ({
   getPrismaModelRelations: jest.fn((type) => {
     if (type === "Post") {
       return {

@@ -7,7 +7,7 @@ import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
 import {
   getModuleComponents,
   getModels,
-} from "../../utils/helpers/models.helpers";
+} from "../../utils/helpers/dynamic-loader";
 import pluralize from "pluralize";
 
 /**
@@ -64,10 +64,10 @@ export class BaseController {
   private modelName: string;
 
   /**
-   * Model-specific middlewares loaded from model modules
+   * Model-specific interceptors loaded from model modules
    * @private
    */
-  private middlewares: any;
+  private interceptors: any;
 
   /**
    * Creates a new BaseController instance
@@ -78,7 +78,7 @@ export class BaseController {
 
     this.modelName = modelName;
     this.service = new BaseService(modelName);
-    this.middlewares = components?.middlewares || {};
+    this.interceptors = components?.interceptors || {};
   }
 
   /**
@@ -96,7 +96,7 @@ export class BaseController {
         { user: req?.user, accessToken: req?.accessToken }
       );
 
-      if (this.middlewares.afterCreateOne) {
+      if (this.interceptors.afterCreateOne) {
         req.responseData = { data };
         req.responseStatus = 201;
         return next();
@@ -131,7 +131,7 @@ export class BaseController {
           )
         );
 
-      if (this.middlewares.afterCreateMany) {
+      if (this.interceptors.afterCreateMany) {
         req.responseData = { data };
         req.responseStatus = 201;
         return next();
@@ -169,7 +169,7 @@ export class BaseController {
         }),
       ])) as [Record<string, any>[], number];
 
-      if (this.middlewares.afterFindMany) {
+      if (this.interceptors.afterFindMany) {
         req.responseData = { total, results: data.length, data };
         req.responseStatus = 200;
         return next();
@@ -222,7 +222,7 @@ export class BaseController {
         }
       }
 
-      if (this.middlewares.afterFindOne) {
+      if (this.interceptors.afterFindOne) {
         req.responseData = { data };
         req.responseStatus = 200;
         return next();
@@ -272,7 +272,7 @@ export class BaseController {
         }
       }
 
-      if (this.middlewares.afterUpdateOne) {
+      if (this.interceptors.afterUpdateOne) {
         req.responseData = { data };
         req.responseStatus = 200;
         return next();
@@ -323,7 +323,7 @@ export class BaseController {
           )
         );
 
-      if (this.middlewares.afterUpdateMany) {
+      if (this.interceptors.afterUpdateMany) {
         req.responseData = { results: data.count, data };
         req.responseStatus = 200;
         return next();
@@ -371,7 +371,7 @@ export class BaseController {
         }
       }
 
-      if (this.middlewares.afterDeleteOne) {
+      if (this.interceptors.afterDeleteOne) {
         req.additionalData = { data };
         req.responseStatus = 204;
         return next();
@@ -417,7 +417,7 @@ export class BaseController {
         );
       }
 
-      if (this.middlewares.afterDeleteMany) {
+      if (this.interceptors.afterDeleteMany) {
         req.responseData = { results: data.count, data };
         req.responseStatus = 200;
         return next();

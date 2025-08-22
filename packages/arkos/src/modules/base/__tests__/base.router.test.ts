@@ -3,7 +3,7 @@ import {
   getPrismaModelsRouter,
   getAvailableResourcesAndRoutesRouter,
 } from "../base.router";
-import * as modelsHelpers from "../../../utils/helpers/models.helpers";
+import * as modelsHelpers from "../../../utils/helpers/dynamic-loader";
 import * as baseController from "../base.controller";
 import authService from "../../auth/auth.service";
 import * as routerHelpers from "../utils/helpers/base.router.helpers";
@@ -32,7 +32,7 @@ jest.mock("express", () => {
   return mockExpress;
 });
 
-jest.mock("../../../utils/helpers/models.helpers");
+jest.mock("../../../utils/helpers/dynamic-loader");
 jest.mock("../base.controller");
 jest.mock("../../auth/auth.service");
 jest.mock("../utils/helpers/base.router.helpers");
@@ -98,7 +98,7 @@ describe("Base Router", () => {
     });
   });
 
-  describe("getAvailableResourcesAndRoutesRouter", () => {
+  describe("getAvailableResources", () => {
     it("should create a router with available routes and resources endpoints", () => {
       // Mock authentication middleware
       (authService.authenticate as jest.Mock) = jest.fn();
@@ -114,7 +114,7 @@ describe("Base Router", () => {
 
       // Verify routes were created
       const routerInstance = (Router as jest.Mock).mock.results[0].value;
-      expect(routerInstance.get).toHaveBeenCalledTimes(2);
+      expect(routerInstance.get).toHaveBeenCalledTimes(1);
 
       // Check second route (available-resources)
       expect(routerInstance.get).toHaveBeenCalledWith(

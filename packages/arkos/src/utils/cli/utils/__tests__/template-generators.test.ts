@@ -59,8 +59,8 @@ describe("generateTemplate", () => {
       expect(result).toContain("const userQueryOptions");
     });
 
-    it("should generate middlewares template", () => {
-      const result = generateTemplate("middlewares", {
+    it("should generate interceptors template", () => {
+      const result = generateTemplate("interceptors", {
         modelName: mockModelName,
       });
       expect(result).toContain("beforeCreateOne");
@@ -341,9 +341,9 @@ describe("generateTemplate", () => {
   });
 
   describe("generateMiddlewaresTemplate", () => {
-    it("should generate regular TypeScript middlewares template", () => {
+    it("should generate regular TypeScript interceptors template", () => {
       mockedGetUserFileExtension.mockReturnValue("ts");
-      const result = generateTemplate("middlewares", {
+      const result = generateTemplate("interceptors", {
         modelName: mockModelName,
       });
 
@@ -359,10 +359,10 @@ describe("generateTemplate", () => {
       expect(result).toContain("afterDeleteMany");
     });
 
-    it("should generate auth TypeScript middlewares template", () => {
+    it("should generate auth TypeScript interceptors template", () => {
       mockedGetUserFileExtension.mockReturnValue("ts");
       const authModelName = { pascal: "Auth", camel: "auth", kebab: "auth" };
-      const result = generateTemplate("middlewares", {
+      const result = generateTemplate("interceptors", {
         modelName: authModelName,
       });
 
@@ -373,14 +373,14 @@ describe("generateTemplate", () => {
       expect(result).not.toContain("beforeCreateOne");
     });
 
-    it("should generate file upload middlewares template", () => {
+    it("should generate file upload interceptors template", () => {
       mockedGetUserFileExtension.mockReturnValue("ts");
       const fileUploadModelName = {
         pascal: "FileUpload",
         camel: "fileUpload",
         kebab: "file-upload",
       };
-      const result = generateTemplate("middlewares", {
+      const result = generateTemplate("interceptors", {
         modelName: fileUploadModelName,
       });
 
@@ -389,9 +389,9 @@ describe("generateTemplate", () => {
       expect(result).not.toContain("beforeCreateOne");
     });
 
-    it("should generate JavaScript middlewares template", () => {
+    it("should generate JavaScript interceptors template", () => {
       mockedGetUserFileExtension.mockReturnValue("js");
-      const result = generateTemplate("middlewares", {
+      const result = generateTemplate("interceptors", {
         modelName: mockModelName,
       });
 
@@ -407,7 +407,7 @@ describe("generateTemplate", () => {
         camel: "file-upload",
         kebab: "file-upload",
       };
-      const result = generateTemplate("middlewares", {
+      const result = generateTemplate("interceptors", {
         modelName: fileUploadModelName,
       });
 
@@ -416,7 +416,7 @@ describe("generateTemplate", () => {
     });
 
     it("should throw error without model name", () => {
-      expect(() => generateTemplate("middlewares", {} as any)).toThrow(
+      expect(() => generateTemplate("interceptors", {} as any)).toThrow(
         "Model name is required for middleware template"
       );
     });
@@ -463,7 +463,7 @@ describe("generateTemplate", () => {
         camel: "Auth",
         kebab: "auth",
       };
-      const result = generateTemplate("middlewares", {
+      const result = generateTemplate("interceptors", {
         modelName: authUpperModelName,
       });
 

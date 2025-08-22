@@ -3,7 +3,7 @@ import AppError from "../error-handler/utils/app-error";
 import { CookieOptions } from "express";
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import authService from "./auth.service";
-import { BaseService, getBaseServices } from "../base/base.service";
+import { BaseService } from "../base/base.service";
 import { User } from "../../types";
 import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
@@ -23,12 +23,12 @@ export const defaultExcludedUserFields = {
 };
 
 /**
- * Factory function to create authentication controller with configurable middlewares
+ * Factory function to create authentication controller with configurable interceptors
  *
- * @param middlewares - Optional middleware functions to execute after controller actions
+ * @param interceptors - Optional middleware functions to execute after controller actions
  * @returns An object containing all authentication controller methods
  */
-export const authControllerFactory = async (middlewares: any = {}) => {
+export const authControllerFactory = async (interceptors: any = {}) => {
   const userService = new BaseService("user");
 
   return {
@@ -50,7 +50,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           if (user) delete user[key as keyof User];
         });
 
-        if (middlewares?.afterGetMe) {
+        if (interceptors?.afterGetMe) {
           req.responseData = { data: user };
           req.responseStatus = 200;
           return next();
@@ -87,7 +87,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           if (user) delete user[key as keyof User];
         });
 
-        if (middlewares?.afterUpdateMe) {
+        if (interceptors?.afterUpdateMe) {
           req.responseData = { data: user };
           req.responseStatus = 200;
           return next();
@@ -111,7 +111,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           httpOnly: true,
         });
 
-        if (middlewares?.afterLogout) {
+        if (interceptors?.afterLogout) {
           req.responseData = null;
           req.responseStatus = 204;
           return next();
@@ -227,7 +227,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
 
         req.accessToken = token;
 
-        if (middlewares?.afterLogin) {
+        if (interceptors?.afterLogin) {
           req.additionalData = { user };
           req.responseStatus = 200;
           return next();
@@ -262,7 +262,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           req.prismaQueryOptions || {}
         )) as Record<string, any>;
 
-        if (middlewares?.afterSignup) {
+        if (interceptors?.afterSignup) {
           req.responseData = { data: user };
           req.responseStatus = 201;
           return next();
@@ -294,7 +294,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           req.prismaQueryOptions || {}
         )) as Record<string, any>;
 
-        if (middlewares?.afterDeleteMe) {
+        if (interceptors?.afterDeleteMe) {
           req.responseData = { data: updatedUser };
           req.responseStatus = 200;
           return next();
@@ -367,7 +367,7 @@ export const authControllerFactory = async (middlewares: any = {}) => {
           }
         );
 
-        if (middlewares?.afterUpdatePassword) {
+        if (interceptors?.afterUpdatePassword) {
           req.additionalData = {
             user,
           };

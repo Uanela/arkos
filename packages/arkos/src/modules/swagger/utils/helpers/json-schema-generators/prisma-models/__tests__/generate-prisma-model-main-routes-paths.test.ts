@@ -6,14 +6,14 @@ import { kebabCase, pascalCase } from "../../../../../../../exports/utils";
 import {
   importModuleComponents,
   localValidatorFileExists,
-} from "../../../../../../../utils/helpers/models.helpers";
+} from "../../../../../../../utils/helpers/dynamic-loader";
 
 // Mock all dependencies
 jest.mock("../../../swagger.router.helpers");
 jest.mock("pluralize");
 jest.mock("../../../../../../base/utils/helpers/base.router.helpers");
 jest.mock("../../../../../../../exports/utils");
-jest.mock("../../../../../../../utils/helpers/models.helpers");
+jest.mock("../../../../../../../utils/helpers/dynamic-loader");
 jest.mock("fs");
 
 describe("generatePrismaModelMainRoutesPaths", () => {

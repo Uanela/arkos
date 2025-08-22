@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getAvailableResources } from "./base.controller";
-import { getModels } from "../../utils/helpers/models.helpers";
+import { getModels } from "../../utils/helpers/dynamic-loader";
 import authService from "../auth/auth.service";
 import { ArkosConfig } from "../../types/arkos-config";
 import { setupRouters } from "./utils/helpers/base.router.helpers";
@@ -19,7 +19,6 @@ export function getAvailableResourcesAndRoutesRouter(): Router {
   router.get(
     "/available-resources",
     authService?.authenticate,
-    // authService?.handleAccessControl({}, "view", ""),
     getAvailableResources
   );
 

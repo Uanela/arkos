@@ -1,5 +1,5 @@
 import { ArkosConfig } from "../../../../exports";
-import { getModels } from "../../../../utils/helpers/models.helpers";
+import { getModels } from "../../../../utils/helpers/dynamic-loader";
 import { pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
