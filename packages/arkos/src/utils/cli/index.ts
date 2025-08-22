@@ -80,7 +80,7 @@ generate
   .description("Generate a new middleware file")
   .requiredOption("-m, --model <name>", "Middleware name")
   .option("-p, --path <path>", "Custom path for middleware", "src/modules")
-  .action(generateCommand.middlewares);
+  .action(generateCommand.interceptors);
 
 program.parse(process.argv);
 

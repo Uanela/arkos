@@ -5,7 +5,7 @@ import { bootstrap } from "./app";
 import { ArkosConfig } from "./types/arkos-config";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import http from "http";
-import { initializePrismaModels } from "./utils/helpers/models.helpers";
+import { initializePrismaModels } from "./utils/helpers/dynamic-loader";
 import sheu from "./utils/sheu";
 import { capitalize } from "./utils/helpers/text.helpers";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";

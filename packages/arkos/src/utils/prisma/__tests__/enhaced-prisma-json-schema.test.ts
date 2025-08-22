@@ -5,12 +5,12 @@ import deepmerge from "../../helpers/deepmerge.helper";
 import {
   importModuleComponents,
   localValidatorFileExists,
-} from "../../helpers/models.helpers";
+} from "../../helpers/dynamic-loader";
 import prismaSchemaParser from "../prisma-schema-parser";
 
 // Mock all dependencies
 jest.mock("../../helpers/deepmerge.helper");
-jest.mock("../../helpers/models.helpers");
+jest.mock("../../helpers/dynamic-loader");
 jest.mock("../prisma-schema-parser");
 jest.mock("fs");
 

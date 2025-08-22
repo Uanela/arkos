@@ -5,7 +5,7 @@ import {
   importModuleComponents,
   localValidatorFileExists,
   ValidationFileMappingKey,
-} from "../helpers/models.helpers";
+} from "../helpers/dynamic-loader";
 import prismaSchemaParser from "./prisma-schema-parser";
 import {
   PrismaModel,

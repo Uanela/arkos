@@ -4,7 +4,7 @@ import { getMetadataStorage } from "class-validator";
 import {
   getModuleComponents,
   getModels,
-} from "../../../../../utils/helpers/models.helpers";
+} from "../../../../../utils/helpers/dynamic-loader";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
 
 export async function generateClassValidatorJsonSchemas() {

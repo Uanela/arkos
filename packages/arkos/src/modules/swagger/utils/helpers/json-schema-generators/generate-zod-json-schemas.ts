@@ -1,7 +1,7 @@
 import {
   getModuleComponents,
   getModels,
-} from "../../../../../utils/helpers/models.helpers";
+} from "../../../../../utils/helpers/dynamic-loader";
 import zodToJsonSchema from "zod-to-json-schema";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
 

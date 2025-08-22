@@ -1,7 +1,7 @@
 import { OpenAPIV3 } from "openapi-types";
 import generatePrismaModelParentRoutePaths from "../generate-prisma-model-parent-routes-paths";
 import { ArkosConfig } from "../../../../../../../exports";
-import * as modelsHelpers from "../../../../../../../utils/helpers/models.helpers";
+import * as modelsHelpers from "../../../../../../../utils/helpers/dynamic-loader";
 
 jest.mock("../../../swagger.router.helpers", () => ({
   getSchemaRef: jest.fn(
@@ -12,7 +12,7 @@ jest.mock("../../../swagger.router.helpers", () => ({
   ),
 }));
 
-jest.mock("../../../../../../../utils/helpers/models.helpers", () => ({
+jest.mock("../../../../../../../utils/helpers/dynamic-loader", () => ({
   importModuleComponents: jest.fn(),
   localValidatorFileExists: jest.fn(),
 }));

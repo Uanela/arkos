@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import * as dynamicLoader from "../../../utils/helpers/models.helpers";
+import * as dynamicLoader from "../dynamic-loader";
 
 import { getUserFileExtension } from "../fs.helpers";
 
@@ -280,7 +280,7 @@ describe("Dynamic Prisma Model Loader", () => {
 
       // Assert
       expect(console.error).toHaveBeenCalled();
-      expect(result.middlewares).toBeUndefined();
+      expect(result.interceptors).toBeUndefined();
     });
 
     it("should return the existing prisma model modules", async () => {
@@ -518,7 +518,7 @@ describe("Dynamic Prisma Model Loader", () => {
     });
   });
 
-  describe("Prisma Models Helpers - Additional Tests", () => {
+  describe("Prisma dynamic-loader - Additional Tests", () => {
     beforeEach(() => {
       jest.clearAllMocks();
 
@@ -534,13 +534,15 @@ describe("Dynamic Prisma Model Loader", () => {
       it("should return the correct file structure for regular models", () => {
         (getUserFileExtension as jest.Mock).mockReturnValue("js");
         // Act
-        const result = dynamicLoader.getFileModuleComponentsFileStructure("User");
+        const result =
+          dynamicLoader.getFileModuleComponentsFileStructure("User");
 
         // Assert
         expect(result.core).toEqual({
           service: "user.service.js",
           controller: "user.controller.js",
-          middlewares: "user.middlewares.js",
+          hooks: "user.hooks.js",
+          interceptors: "user.middlewares.js",
           authConfigs: "user.auth-configs.js",
           authConfigsNew: "user.auth.js",
           prismaQueryOptions: "user.prisma-query-options.js",
@@ -578,13 +580,15 @@ describe("Dynamic Prisma Model Loader", () => {
       it("should return the correct file structure for auth model", () => {
         (getUserFileExtension as jest.Mock).mockReturnValue("js");
         // Act
-        const result = dynamicLoader.getFileModuleComponentsFileStructure("Auth");
+        const result =
+          dynamicLoader.getFileModuleComponentsFileStructure("Auth");
 
         // Assert
         expect(result.core).toEqual({
           service: "auth.service.js",
           controller: "auth.controller.js",
-          middlewares: "auth.middlewares.js",
+          hooks: "auth.hooks.js",
+          interceptors: "auth.middlewares.js",
           authConfigs: "auth.auth-configs.js",
           authConfigsNew: "auth.auth.js",
           prismaQueryOptions: "auth.prisma-query-options.js",
@@ -906,12 +910,12 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(result.authConfigs).toEqual({ auth: "config" });
     });
 
-    it("should assign middlewares without default extraction", () => {
+    it("should assign interceptors without default extraction", () => {
       const module = { middleware: jest.fn() };
 
-      dynamicLoader.assignModuleToResult("middlewares", module, result);
+      dynamicLoader.assignModuleToResult("interceptors", module, result);
 
-      expect(result.middlewares).toBe(module);
+      expect(result.interceptors).toBe(module);
     });
   });
 });

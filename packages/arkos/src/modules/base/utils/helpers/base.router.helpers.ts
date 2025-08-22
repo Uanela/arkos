@@ -4,7 +4,7 @@ import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
 import { RouterEndpoint } from "../../../../types/router-config";
-import { importModuleComponents } from "../../../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../../../utils/helpers/dynamic-loader";
 import authService from "../../../auth/auth.service";
 import { BaseController } from "../../base.controller";
 import {
@@ -21,18 +21,18 @@ export async function setupRouters(
 ) {
   return models.map(async (model) => {
     const modelNameInKebab = kebabCase(model);
-    const ModuleComponents = await importModuleComponents(
+    const modelModules = await importModuleComponents(
       modelNameInKebab,
       arkosConfigs
     );
     const {
-      middlewares,
+      interceptors,
       authConfigs,
       prismaQueryOptions,
       router: customRouterModule,
       dtos,
       schemas,
-    } = ModuleComponents;
+    } = modelModules;
 
     const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);
@@ -90,9 +90,9 @@ export async function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createOne"
         ),
-        ...processMiddleware(middlewares?.beforeCreateOne),
+        ...processMiddleware(interceptors?.beforeCreateOne),
         controller.createOne,
-        ...processMiddleware(middlewares?.afterCreateOne),
+        ...processMiddleware(interceptors?.afterCreateOne),
         sendResponse
       );
     }
@@ -117,9 +117,9 @@ export async function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findMany"
         ),
-        ...processMiddleware(middlewares?.beforeFindMany),
+        ...processMiddleware(interceptors?.beforeFindMany),
         controller.findMany,
-        ...processMiddleware(middlewares?.afterFindMany),
+        ...processMiddleware(interceptors?.afterFindMany),
         sendResponse
       );
     }
@@ -147,9 +147,9 @@ export async function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createMany"
         ),
-        ...processMiddleware(middlewares?.beforeCreateMany),
+        ...processMiddleware(interceptors?.beforeCreateMany),
         controller.createMany,
-        ...processMiddleware(middlewares?.afterCreateMany),
+        ...processMiddleware(interceptors?.afterCreateMany),
         sendResponse
       );
     }
@@ -177,9 +177,9 @@ export async function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
         ),
-        ...processMiddleware(middlewares?.beforeUpdateMany),
+        ...processMiddleware(interceptors?.beforeUpdateMany),
         controller.updateMany,
-        ...processMiddleware(middlewares?.afterUpdateMany),
+        ...processMiddleware(interceptors?.afterUpdateMany),
         sendResponse
       );
     }
@@ -207,9 +207,9 @@ export async function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteMany"
         ),
-        ...processMiddleware(middlewares?.beforeDeleteMany),
+        ...processMiddleware(interceptors?.beforeDeleteMany),
         controller.deleteMany,
-        ...processMiddleware(middlewares?.afterDeleteMany),
+        ...processMiddleware(interceptors?.afterDeleteMany),
         sendResponse
       );
     }
@@ -237,9 +237,9 @@ export async function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findOne"
         ),
-        ...processMiddleware(middlewares?.beforeFindOne),
+        ...processMiddleware(interceptors?.beforeFindOne),
         controller.findOne,
-        ...processMiddleware(middlewares?.afterFindOne),
+        ...processMiddleware(interceptors?.afterFindOne),
         sendResponse
       );
     }
@@ -267,9 +267,9 @@ export async function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateOne"
         ),
-        ...processMiddleware(middlewares?.beforeUpdateOne),
+        ...processMiddleware(interceptors?.beforeUpdateOne),
         controller.updateOne,
-        ...processMiddleware(middlewares?.afterUpdateOne),
+        ...processMiddleware(interceptors?.afterUpdateOne),
         sendResponse
       );
     }
@@ -297,9 +297,9 @@ export async function setupRouters(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteOne"
         ),
-        ...processMiddleware(middlewares?.beforeDeleteOne),
+        ...processMiddleware(interceptors?.beforeDeleteOne),
         controller.deleteOne,
-        ...processMiddleware(middlewares?.afterDeleteOne),
+        ...processMiddleware(interceptors?.afterDeleteOne),
         sendResponse
       );
     }

@@ -38,7 +38,7 @@ export function generateTemplate(
       return generateAuthConfigsTemplate(options);
     case "query-options":
       return generateQueryOptionsTemplate(options);
-    case "middlewares":
+    case "interceptors":
       return generateMiddlewaresTemplate(options);
     default:
       throw new Error(`\n Unknown template type: ${type}`);

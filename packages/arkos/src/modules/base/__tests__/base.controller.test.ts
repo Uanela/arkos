@@ -5,7 +5,7 @@ import APIFeatures from "../../../utils/features/api.features";
 import {
   getModuleComponents,
   getModels,
-} from "../../../utils/helpers/models.helpers";
+} from "../../../utils/helpers/dynamic-loader";
 
 // Mock dependencies
 jest.mock("fs", () => ({
@@ -17,7 +17,7 @@ jest.mock("../base.service");
 jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/features/api.features");
 jest.mock("../../../server");
-jest.mock("../../../utils/helpers/models.helpers");
+jest.mock("../../../utils/helpers/dynamic-loader");
 
 describe("BaseController", () => {
   let baseController: BaseController;
@@ -35,7 +35,7 @@ describe("BaseController", () => {
 
     // Setup mocked model modules
     (getModuleComponents as jest.Mock).mockReturnValue({
-      middlewares: {
+      interceptors: {
         // Empty object for most tests, will be populated when testing middleware flows
       },
     });
@@ -75,13 +75,13 @@ describe("BaseController", () => {
       expect(getModuleComponents).toHaveBeenCalledWith("Post");
     });
 
-    it("should initialize with empty middlewares when model modules return null", () => {
+    it("should initialize with empty interceptors when model modules return null", () => {
       (getModuleComponents as jest.Mock).mockReturnValue(null);
       new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
     });
 
-    it("should initialize with empty middlewares when model modules return undefined middlewares", () => {
+    it("should initialize with empty interceptors when model modules return undefined interceptors", () => {
       (getModuleComponents as jest.Mock).mockReturnValue({});
       new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
@@ -97,7 +97,14 @@ describe("BaseController", () => {
 
       await baseController.createOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.createOne).toHaveBeenCalledWith(mockBody, {});
+      expect(mockBaseService.createOne).toHaveBeenCalledWith(
+        mockBody,
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
     });
@@ -105,7 +112,7 @@ describe("BaseController", () => {
     it("should call next with responseData if afterCreateOne middleware exists", async () => {
       // Set up the middleware
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: { afterCreateOne: true },
+        interceptors: { afterCreateOne: true },
       });
       baseController = new BaseController("Post");
 
@@ -130,7 +137,14 @@ describe("BaseController", () => {
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.createMany).toHaveBeenCalledWith(mockBody, {});
+      expect(mockBaseService.createMany).toHaveBeenCalledWith(
+        mockBody,
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
       expect(mockResponse.status).toHaveBeenCalledWith(201);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockResult });
     });
@@ -148,7 +162,7 @@ describe("BaseController", () => {
 
     it("should call next with responseData if afterCreateMany middleware exists", async () => {
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: { afterCreateMany: true },
+        interceptors: { afterCreateMany: true },
       });
       baseController = new BaseController("Post");
 
@@ -185,9 +199,19 @@ describe("BaseController", () => {
       expect(APIFeatures).toHaveBeenCalled();
       expect(mockBaseService.findMany).toHaveBeenCalledWith(
         { published: true },
-        expect.any(Object)
+        expect.any(Object),
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
       );
-      expect(mockBaseService.count).toHaveBeenCalledWith({ published: true });
+      expect(mockBaseService.count).toHaveBeenCalledWith(
+        { published: true },
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         total: mockTotal,
@@ -198,7 +222,7 @@ describe("BaseController", () => {
 
     it("should call next with responseData if afterFindMany middleware exists", async () => {
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: { afterFindMany: true },
+        interceptors: { afterFindMany: true },
       });
       baseController = new BaseController("Post");
 
@@ -246,7 +270,14 @@ describe("BaseController", () => {
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.findOne).toHaveBeenCalledWith(mockParams, {});
+      expect(mockBaseService.findOne).toHaveBeenCalledWith(
+        mockParams,
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
     });
@@ -286,7 +317,7 @@ describe("BaseController", () => {
 
     it("should call next with responseData if afterFindOne middleware exists", async () => {
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: { afterFindOne: true },
+        interceptors: { afterFindOne: true },
       });
       baseController = new BaseController("Post");
 
@@ -318,7 +349,11 @@ describe("BaseController", () => {
       expect(mockBaseService.updateOne).toHaveBeenCalledWith(
         mockParams,
         mockBody,
-        {}
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
       );
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
@@ -350,7 +385,7 @@ describe("BaseController", () => {
 
     it("should call next with responseData if afterUpdateOne middleware exists", async () => {
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: { afterUpdateOne: true },
+        interceptors: { afterUpdateOne: true },
       });
       baseController = new BaseController("Post");
 
@@ -443,7 +478,7 @@ describe("BaseController", () => {
 
     it("should call next with responseData if afterUpdateMany middleware exists", async () => {
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: { afterUpdateMany: true },
+        interceptors: { afterUpdateMany: true },
       });
       baseController = new BaseController("Post");
 
@@ -473,7 +508,10 @@ describe("BaseController", () => {
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(mockParams);
+      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(mockParams, {
+        accessToken: undefined,
+        user: undefined,
+      });
       expect(mockResponse.status).toHaveBeenCalledWith(204);
       expect(mockResponse.send).toHaveBeenCalled();
     });
@@ -502,7 +540,7 @@ describe("BaseController", () => {
 
     it("should call next with additionalData if afterDeleteOne middleware exists", async () => {
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: { afterDeleteOne: true },
+        interceptors: { afterDeleteOne: true },
       });
       baseController = new BaseController("Post");
 
@@ -587,7 +625,7 @@ describe("BaseController", () => {
 
     it("should call next with responseData if afterDeleteMany middleware exists", async () => {
       (getModuleComponents as jest.Mock).mockReturnValue({
-        middlewares: { afterDeleteMany: true },
+        interceptors: { afterDeleteMany: true },
       });
       baseController = new BaseController("Post");
 

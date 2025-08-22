@@ -2,7 +2,7 @@ import {
   getPrismaModelRelations,
   RelationFields,
   getModelUniqueFields,
-} from "../../../../utils/helpers/models.helpers";
+} from "../../../../utils/helpers/dynamic-loader";
 
 /**
  * Removes apiAction field from an object and all nested objects

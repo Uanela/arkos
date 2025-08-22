@@ -3,8 +3,8 @@ import pluralize from "pluralize";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import { getSchemaRef, kebabToHuman } from "../../swagger.router.helpers";
 import { ArkosConfig } from "../../../../../../exports";
-import { importModuleComponents } from "../../../../../../utils/helpers/models.helpers";
-import { localValidatorFileExists } from "../../../../../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../../../../../utils/helpers/dynamic-loader";
+import { localValidatorFileExists } from "../../../../../../utils/helpers/dynamic-loader";
 
 export default async function generatePrismaModelParentRoutesPaths(
   model: string,

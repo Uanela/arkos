@@ -3,7 +3,7 @@ import { getAuthRouter } from "../auth.router";
 import { authControllerFactory } from "../auth.controller";
 import authService from "../auth.service";
 import rateLimit from "express-rate-limit";
-import { importModuleComponents } from "../../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../../utils/helpers/dynamic-loader";
 import {
   sendResponse,
   addPrismaQueryOptionsToRequest,
@@ -51,7 +51,7 @@ jest.mock("../auth.service", () => ({
   authenticate: jest.fn(),
 }));
 jest.mock("express-rate-limit");
-jest.mock("../../../utils/helpers/models.helpers");
+jest.mock("../../../utils/helpers/dynamic-loader");
 jest.mock("../../../utils/helpers/deepmerge.helper");
 jest.mock("../../../server");
 jest.mock("../../base/base.middlewares", () => ({
@@ -100,7 +100,7 @@ describe("Auth Router", () => {
 
     (authControllerFactory as jest.Mock).mockResolvedValue(mockAuthController);
     (importModuleComponents as jest.Mock).mockResolvedValue({
-      middlewares: {},
+      interceptors: {},
       prismaQueryOptions: mockPrismaQueryOptions,
     });
     (rateLimit as jest.Mock).mockReturnValue(jest.fn());
@@ -120,7 +120,7 @@ describe("Auth Router", () => {
     };
   });
 
-  test("should create router with default middleware configuration when no custom middlewares", async () => {
+  test("should create router with default middleware configuration when no custom interceptors", async () => {
     // Act
     await getAuthRouter(mockArkosConfig);
 
@@ -225,7 +225,7 @@ describe("Auth Router", () => {
     };
 
     (importModuleComponents as jest.Mock).mockResolvedValue({
-      middlewares: customMiddlewares,
+      interceptors: customMiddlewares,
       prismaQueryOptions: mockPrismaQueryOptions,
     });
 
@@ -282,7 +282,7 @@ describe("Auth Router", () => {
     };
 
     (importModuleComponents as jest.Mock).mockResolvedValue({
-      middlewares: {},
+      interceptors: {},
       dtos: mockDtos,
       schemas: mockSchemas,
       prismaQueryOptions: mockPrismaQueryOptions,
@@ -314,7 +314,7 @@ describe("Auth Router", () => {
     // Reset for next test
     jest.clearAllMocks();
     (importModuleComponents as jest.Mock).mockResolvedValue({
-      middlewares: {},
+      interceptors: {},
       dtos: mockDtos,
       schemas: mockSchemas,
       prismaQueryOptions: mockPrismaQueryOptions,
@@ -344,10 +344,10 @@ describe("Auth Router", () => {
     );
   });
 
-  test("should create all required routes with no middlewares passed", async () => {
+  test("should create all required routes with no interceptors passed", async () => {
     // Act
     (importModuleComponents as jest.Mock).mockResolvedValue({
-      middlewares: undefined,
+      interceptors: undefined,
       prismaQueryOptions: mockPrismaQueryOptions,
     });
 
@@ -412,10 +412,10 @@ describe("Auth Router", () => {
     );
   });
 
-  test("should create all required routes with after middlewares passed to all routes", async () => {
+  test("should create all required routes with after interceptors passed to all routes", async () => {
     // Act
     (importModuleComponents as jest.Mock).mockResolvedValue({
-      middlewares: {
+      interceptors: {
         afterGetMe: jest.fn(),
         afterUpdateMe: jest.fn(),
         afterDeleteMe: jest.fn(),
@@ -494,10 +494,10 @@ describe("Auth Router", () => {
     );
   });
 
-  test("should create all required routes with before middlewares passed to all routes", async () => {
+  test("should create all required routes with before interceptors passed to all routes", async () => {
     // Act
     (importModuleComponents as jest.Mock).mockResolvedValue({
-      middlewares: {
+      interceptors: {
         beforeGetMe: jest.fn(),
         beforeUpdateMe: jest.fn(),
         beforeDeleteMe: jest.fn(),
@@ -576,10 +576,10 @@ describe("Auth Router", () => {
     );
   });
 
-  test("should create all required routes with before and after middlewares passed to all routes", async () => {
+  test("should create all required routes with before and after interceptors passed to all routes", async () => {
     // Act
     (importModuleComponents as jest.Mock).mockResolvedValue({
-      middlewares: {
+      interceptors: {
         beforeGetMe: jest.fn(),
         afterGetMe: jest.fn(),
         beforeUpdateMe: jest.fn(),

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { setupRouters } from "../base.router.helpers"; // Adjust the import path
-import * as importHelpers from "../../../../../utils/helpers/models.helpers";
+import * as importHelpers from "../../../../../utils/helpers/dynamic-loader";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
 import catchAsync from "../../../../error-handler/utils/catch-async";
@@ -31,7 +31,7 @@ jest.mock("express", () => {
 
   return mockExpress;
 });
-jest.mock("../../../../../utils/helpers/models.helpers");
+jest.mock("../../../../../utils/helpers/dynamic-loader");
 jest.mock("../../../../auth/auth.service", () => ({
   handleAuthenticationControl: jest.fn(() => jest.fn()),
   handleAccessControl: jest.fn(() => jest.fn()),
@@ -86,7 +86,7 @@ describe("setupRouters", () => {
   it("should register all routes for a model with no customization", async () => {
     // Mock the imported modules
     const mockModuleComponents = {
-      middlewares: {},
+      interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
@@ -177,7 +177,7 @@ describe("setupRouters", () => {
   it("should not register disabled routes", async () => {
     // Mock the imported modules with disabled routes
     const mockModuleComponents = {
-      middlewares: {},
+      interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: {
@@ -226,7 +226,7 @@ describe("setupRouters", () => {
   it("should not register any routes if completely disabled", async () => {
     // Mock the imported modules with all routes disabled
     const mockModuleComponents = {
-      middlewares: {},
+      interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: {
@@ -253,9 +253,9 @@ describe("setupRouters", () => {
   });
 
   it("should use custom middleware when provided as function", async () => {
-    // Mock the imported modules with custom middlewares
+    // Mock the imported modules with custom interceptors
     const mockModuleComponents = {
-      middlewares: {
+      interceptors: {
         beforeFindMany: jest.fn(),
         afterFindMany: jest.fn(),
       },
@@ -286,9 +286,9 @@ describe("setupRouters", () => {
   });
 
   it("should use custom middleware when provided as array of functions", async () => {
-    // Mock the imported modules with custom middlewares as arrays
+    // Mock the imported modules with custom interceptors as arrays
     const mockModuleComponents = {
-      middlewares: {
+      interceptors: {
         beforeFindMany: [jest.fn(), jest.fn(), jest.fn()],
         afterFindMany: [jest.fn(), jest.fn()],
       },
@@ -324,7 +324,7 @@ describe("setupRouters", () => {
   it("should throw error when middleware is not a function", async () => {
     // Mock the imported modules with invalid middleware
     const mockModuleComponents = {
-      middlewares: {
+      interceptors: {
         beforeFindMany: "not-a-function", // This should cause an error
       },
       authConfigs: {},
@@ -345,7 +345,7 @@ describe("setupRouters", () => {
   it("should throw error when middleware array contains non-function values", async () => {
     // Mock the imported modules with invalid middleware in array
     const mockModuleComponents = {
-      middlewares: {
+      interceptors: {
         beforeFindMany: [jest.fn(), "not-a-function", jest.fn()], // Second item should cause error
       },
       authConfigs: {},
@@ -365,7 +365,7 @@ describe("setupRouters", () => {
 
   it("should throw error for various non-function middleware types", async () => {
     const mockModuleComponents = {
-      middlewares: { beforeFindMany: [jest.fn(), null, jest.fn()] },
+      interceptors: { beforeFindMany: [jest.fn(), null, jest.fn()] },
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
@@ -393,7 +393,7 @@ describe("setupRouters", () => {
 
     // Mock the imported modules with custom router
     const mockModuleComponents = {
-      middlewares: {},
+      interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: {
@@ -436,14 +436,14 @@ describe("setupRouters", () => {
   it("should handle multiple models in parallel", async () => {
     // Mock the imported modules for different models
     const mockUserModules = {
-      middlewares: {},
+      interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
     };
 
     const mockPostModules = {
-      middlewares: {},
+      interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
@@ -476,7 +476,7 @@ describe("setupRouters", () => {
 
   it("should first setup the custom router if provided", async () => {
     const mockPostModules = {
-      middlewares: {},
+      interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: {

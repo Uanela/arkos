@@ -5,14 +5,14 @@ import { getMetadataStorage } from "class-validator";
 import {
   getModuleComponents,
   getModels,
-} from "../../../../../../utils/helpers/models.helpers";
+} from "../../../../../../utils/helpers/dynamic-loader";
 import { getCorrectJsonSchemaName } from "../../swagger.router.helpers";
 
 // Mock all dependencies
 jest.mock("class-validator-jsonschema");
 jest.mock("../../../../../../utils/helpers/global.helpers");
 jest.mock("class-validator");
-jest.mock("../../../../../../utils/helpers/models.helpers");
+jest.mock("../../../../../../utils/helpers/dynamic-loader");
 jest.mock("../../swagger.router.helpers");
 jest.mock("fs");
 

@@ -1,5 +1,5 @@
 import fs from "fs";
-import * as modelsHelpers from "../../../../../utils/helpers/models.helpers";
+import * as modelsHelpers from "../../../../../utils/helpers/dynamic-loader";
 import * as serverConfig from "../../../../../server";
 import * as validateDtoModule from "../../../../../utils/validate-dto";
 import * as validateSchemaModule from "../../../../../utils/validate-schema";
@@ -8,7 +8,7 @@ import { ArkosRequest, ArkosResponse } from "../../../../../types";
 import { getAppRoutes } from "../base.controller.helpers";
 import { z } from "zod";
 
-jest.mock("../../../../../utils/helpers/models.helpers");
+jest.mock("../../../../../utils/helpers/dynamic-loader");
 jest.mock("../../../../../server");
 jest.mock("../../../../../utils/validate-dto");
 jest.mock("../../../../../utils/validate-schema");

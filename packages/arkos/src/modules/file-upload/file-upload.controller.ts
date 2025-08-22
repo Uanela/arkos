@@ -14,17 +14,17 @@ import {
   statAsync,
 } from "../../utils/helpers/fs.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
-import { getModuleComponents } from "../../utils/helpers/models.helpers";
+import { getModuleComponents } from "../../utils/helpers/dynamic-loader";
 
 /**
  * Handles files uploads and allow to be extended
  */
 class FileUploadController {
   /**
-   * Model-specific middlewares loaded from model modules
+   * Model-specific interceptors loaded from model modules
    * @private
    */
-  private middlewares: any;
+  private interceptors: any;
 
   /**
    * Handles file upload requests, processes images if needed, and returns URLs
@@ -36,7 +36,7 @@ class FileUploadController {
    */
   uploadFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.middlewares = getModuleComponents("file-upload")?.middlewares || {};
+      this.interceptors = getModuleComponents("file-upload")?.interceptors || {};
 
       const { fileType } = req.params;
       const { format, width, height, resizeTo } = req.query;
@@ -119,7 +119,7 @@ class FileUploadController {
             : "File uploaded successfully",
         };
 
-        if (this.middlewares?.afterUploadFile) {
+        if (this.interceptors?.afterUploadFile) {
           req.responseData = jsonContent;
           req.responseStatus = 200;
           return next();
@@ -140,7 +140,7 @@ class FileUploadController {
    */
   deleteFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.middlewares = getModuleComponents("file-upload")?.middlewares || {};
+      this.interceptors = getModuleComponents("file-upload")?.interceptors || {};
 
       const { fileType, fileName } = req.params;
 
@@ -193,7 +193,7 @@ class FileUploadController {
           await uploader.deleteFileByName(fileName, fileType);
         }
 
-        if (this.middlewares.afterDeleteFile) {
+        if (this.interceptors.afterDeleteFile) {
           req.responseStatus = 204;
           return next();
         }
@@ -218,7 +218,7 @@ class FileUploadController {
    */
   updateFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.middlewares = getModuleComponents("file-upload")?.middlewares || {};
+      this.interceptors = getModuleComponents("file-upload")?.interceptors || {};
 
       const { fileType, fileName } = req.params;
       const { format, width, height, resizeTo } = req.query;
@@ -339,7 +339,7 @@ class FileUploadController {
             : "File uploaded successfully",
         };
 
-        if (this.middlewares.afterUpdateFile) {
+        if (this.interceptors.afterUpdateFile) {
           req.responseData = jsonContent;
           req.responseStatus = 200;
           return next();

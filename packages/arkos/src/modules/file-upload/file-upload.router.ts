@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { importModuleComponents } from "../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../utils/helpers/dynamic-loader";
 import authService from "../auth/auth.service";
 import fileUploadController from "./file-upload.controller";
 import { ArkosConfig } from "../../types/arkos-config";
@@ -20,10 +20,10 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
     "file-upload",
     arkosConfig
   );
-  let { middlewares = {} as any, authConfigs = {} as AuthConfigs } = {};
+  let { interceptors = {} as any, authConfigs = {} as AuthConfigs } = {};
 
   if (ModuleComponents) {
-    ({ middlewares = {}, authConfigs = {} } = ModuleComponents);
+    ({ interceptors = {}, authConfigs = {} } = ModuleComponents);
   }
 
   let basePathname = fileUpload?.baseRoute || "/api/uploads/";
@@ -43,7 +43,7 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
       "file-upload",
       authConfigs.accessControl
     ),
-    ...processMiddleware(middlewares?.beforeFindFile),
+    ...processMiddleware(interceptors?.beforeFindFile),
     adjustRequestUrl,
     express.static(
       path.resolve(process.cwd(), fileUpload?.baseUploadDir || "uploads"),
@@ -74,9 +74,9 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
       "file-upload",
       authConfigs.accessControl
     ),
-    ...processMiddleware(middlewares?.beforeUploadFile),
+    ...processMiddleware(interceptors?.beforeUploadFile),
     fileUploadController.uploadFile,
-    ...processMiddleware(middlewares?.afterUploadFile),
+    ...processMiddleware(interceptors?.afterUploadFile),
     sendResponse
   );
 
@@ -92,9 +92,9 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
       "file-upload",
       authConfigs.accessControl
     ),
-    ...processMiddleware(middlewares?.beforeUpdateFile),
+    ...processMiddleware(interceptors?.beforeUpdateFile),
     fileUploadController.updateFile,
-    ...processMiddleware(middlewares?.afterUpdateFile),
+    ...processMiddleware(interceptors?.afterUpdateFile),
     sendResponse
   );
 
@@ -110,9 +110,9 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
       "file-upload",
       authConfigs.accessControl
     ),
-    ...processMiddleware(middlewares?.beforeDeleteFile),
+    ...processMiddleware(interceptors?.beforeDeleteFile),
     fileUploadController.deleteFile,
-    ...processMiddleware(middlewares?.afterDeleteFile),
+    ...processMiddleware(interceptors?.afterDeleteFile),
     sendResponse
   );
 

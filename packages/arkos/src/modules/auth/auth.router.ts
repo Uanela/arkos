@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authControllerFactory } from "./auth.controller";
 import authService from "./auth.service";
 import rateLimit from "express-rate-limit";
-import { importModuleComponents } from "../../utils/helpers/models.helpers";
+import { importModuleComponents } from "../../utils/helpers/dynamic-loader";
 import {
   addPrismaQueryOptionsToRequest,
   handleRequestBodyValidationAndTransformation,
@@ -16,9 +16,9 @@ import { processMiddleware } from "../../utils/helpers/routers.helpers";
 const router: Router = Router();
 
 export async function getAuthRouter(arkosConfigs: ArkosConfig) {
-  const { middlewares, dtos, schemas, prismaQueryOptions } =
+  const { interceptors, dtos, schemas, prismaQueryOptions } =
     await importModuleComponents("auth", arkosConfigs);
-  const authController = await authControllerFactory(middlewares);
+  const authController = await authControllerFactory(interceptors);
 
   // Helper to get the correct schema or DTO based on Arkos Config
   const getValidationSchemaOrDto = (key: string) => {
@@ -39,9 +39,9 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "getMe"
       ),
-      ...processMiddleware(middlewares?.beforeGetMe),
+      ...processMiddleware(interceptors?.beforeGetMe),
       authController.getMe,
-      ...processMiddleware(middlewares?.afterGetMe),
+      ...processMiddleware(interceptors?.afterGetMe),
       sendResponse
     )
     .patch(
@@ -54,9 +54,9 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "updateMe"
       ),
-      ...processMiddleware(middlewares?.beforeUpdateMe),
+      ...processMiddleware(interceptors?.beforeUpdateMe),
       authController.updateMe,
-      ...processMiddleware(middlewares?.afterUpdateMe),
+      ...processMiddleware(interceptors?.afterUpdateMe),
       sendResponse
     )
     .delete(
@@ -66,9 +66,9 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "deleteMe"
       ),
-      ...processMiddleware(middlewares?.beforeDeleteMe),
+      ...processMiddleware(interceptors?.beforeDeleteMe),
       authController.deleteMe,
-      ...processMiddleware(middlewares?.afterDeleteMe),
+      ...processMiddleware(interceptors?.afterDeleteMe),
       sendResponse
     );
 
@@ -101,18 +101,18 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       prismaQueryOptions as AuthPrismaQueryOptions<any>,
       "login"
     ),
-    ...processMiddleware(middlewares?.beforeLogin),
+    ...processMiddleware(interceptors?.beforeLogin),
     authController.login,
-    ...processMiddleware(middlewares?.afterLogin),
+    ...processMiddleware(interceptors?.afterLogin),
     sendResponse
   );
 
   router.delete(
     "/auth/logout",
     authService.authenticate,
-    ...processMiddleware(middlewares?.beforeLogout),
+    ...processMiddleware(interceptors?.beforeLogout),
     authController.logout,
-    ...processMiddleware(middlewares?.afterLogout),
+    ...processMiddleware(interceptors?.afterLogout),
     sendResponse
   );
 
@@ -125,9 +125,9 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       prismaQueryOptions as AuthPrismaQueryOptions<any>,
       "signup"
     ),
-    ...processMiddleware(middlewares?.beforeSignup),
+    ...processMiddleware(interceptors?.beforeSignup),
     authController.signup,
-    ...processMiddleware(middlewares?.afterSignup),
+    ...processMiddleware(interceptors?.afterSignup),
     sendResponse
   );
 
@@ -141,9 +141,9 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       prismaQueryOptions as AuthPrismaQueryOptions<any>,
       "updatePassword"
     ),
-    ...processMiddleware(middlewares?.beforeUpdatePassword),
+    ...processMiddleware(interceptors?.beforeUpdatePassword),
     authController.updatePassword,
-    ...processMiddleware(middlewares?.afterUpdatePassword),
+    ...processMiddleware(interceptors?.afterUpdatePassword),
     sendResponse
   );
 

@@ -7,7 +7,7 @@ import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import {
   importModuleComponents,
   localValidatorFileExists,
-} from "../../../../../../utils/helpers/models.helpers";
+} from "../../../../../../utils/helpers/dynamic-loader";
 
 export async function generatePrismaModelMainRoutesPaths(
   model: string,
