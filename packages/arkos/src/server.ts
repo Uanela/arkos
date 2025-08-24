@@ -57,7 +57,7 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
   try {
     _arkosConfig.available = true;
 
-    await checkTsErrorsIfUsingTs();
+    // await checkTsErrorsIfUsingTs();
 
     const portAndHost = await portAndHostAllocator.getHostAndAvailablePort(
       process.env,
