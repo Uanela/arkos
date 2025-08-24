@@ -5,9 +5,9 @@ import { isEndpointDisabled } from "../../../../../base/utils/helpers/base.route
 import { ArkosConfig } from "../../../../../../exports";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import {
-  importModuleComponents,
+  getModuleComponents,
   localValidatorFileExists,
-} from "../../../../../../utils/helpers/dynamic-loader";
+} from "../../../../../../utils/dynamic-loader";
 
 export async function generatePrismaModelMainRoutesPaths(
   model: string,
@@ -21,7 +21,7 @@ export async function generatePrismaModelMainRoutesPaths(
   const humanReadableNamePlural = pluralize.plural(humanReadableName);
 
   // Import model modules to get router config
-  const ModuleComponents = await importModuleComponents(model, arkosConfig);
+  const ModuleComponents = getModuleComponents(model);
   const routerConfig = ModuleComponents?.router?.config;
 
   // Skip if router is completely disabled

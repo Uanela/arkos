@@ -1,11 +1,11 @@
 import generateZodJsonSchemas from "../generate-zod-json-schemas";
-import * as modelsHelpers from "../../../../../../utils/helpers/dynamic-loader";
+import * as modelsHelpers from "../../../../../../utils//dynamic-loader";
 import * as swaggerRouterHelpers from "../../swagger.router.helpers";
 import zodToJsonSchema from "zod-to-json-schema";
 import { z } from "zod";
 
 // Mock the dependencies
-jest.mock("../../../../../../utils/helpers/dynamic-loader");
+jest.mock("../../../../../../utils//dynamic-loader");
 jest.mock("../../swagger.router.helpers");
 jest.mock("zod-to-json-schema");
 jest.mock("fs");

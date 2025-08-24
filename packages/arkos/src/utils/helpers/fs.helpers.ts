@@ -1,10 +1,5 @@
-import { promisify } from "util";
 import fs from "fs";
 import path from "path";
-
-export const statAsync = promisify(fs.stat);
-export const accessAsync = promisify(fs.access);
-export const mkdirAsync = promisify(fs.mkdir);
 
 export const crd = () =>
   process.env.ARKOS_BUILD === "true"

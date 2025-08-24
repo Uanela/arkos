@@ -8,13 +8,8 @@ import fs from "fs";
 import catchAsync from "../error-handler/utils/catch-async";
 import { getArkosConfig } from "../../server";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
-import {
-  accessAsync,
-  mkdirAsync,
-  statAsync,
-} from "../../utils/helpers/fs.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
-import { getModuleComponents } from "../../utils/helpers/dynamic-loader";
+import { getModuleComponents } from "../../utils/dynamic-loader";
 
 /**
  * Handles files uploads and allow to be extended
@@ -36,7 +31,8 @@ class FileUploadController {
    */
   uploadFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors = getModuleComponents("file-upload")?.interceptors || {};
+      this.interceptors =
+        getModuleComponents("file-upload")?.interceptors || {};
 
       const { fileType } = req.params;
       const { format, width, height, resizeTo } = req.query;
@@ -55,10 +51,10 @@ class FileUploadController {
       // Ensure upload directory exists
       const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
       try {
-        await accessAsync(uploadPath);
+        await fs.promises.access(uploadPath);
       } catch (err) {
         // Create directory if it doesn't exist
-        await mkdirAsync(uploadPath, { recursive: true });
+        await fs.promises.mkdir(uploadPath, { recursive: true });
       }
 
       // Select the appropriate uploader service based on file type
@@ -140,7 +136,8 @@ class FileUploadController {
    */
   deleteFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors = getModuleComponents("file-upload")?.interceptors || {};
+      this.interceptors =
+        getModuleComponents("file-upload")?.interceptors || {};
 
       const { fileType, fileName } = req.params;
 
@@ -218,7 +215,8 @@ class FileUploadController {
    */
   updateFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors = getModuleComponents("file-upload")?.interceptors || {};
+      this.interceptors =
+        getModuleComponents("file-upload")?.interceptors || {};
 
       const { fileType, fileName } = req.params;
       const { format, width, height, resizeTo } = req.query;
@@ -237,10 +235,10 @@ class FileUploadController {
       // Ensure upload directory exists
       const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
       try {
-        await accessAsync(uploadPath);
+        await fs.promises.access(uploadPath);
       } catch (err) {
         // Create directory if it doesn't exist
-        await mkdirAsync(uploadPath, { recursive: true });
+        await fs.promises.mkdir(uploadPath, { recursive: true });
       }
 
       // Select the appropriate uploader service based on file type
@@ -335,8 +333,8 @@ class FileUploadController {
               ? `File updated successfully. ${data.length} new files uploaded`
               : `${data.length} files uploaded successfully`
             : fileName && fileName.trim() !== ""
-            ? "File updated successfully"
-            : "File uploaded successfully",
+              ? "File updated successfully"
+              : "File uploaded successfully",
         };
 
         if (this.interceptors.afterUpdateFile) {
@@ -356,17 +354,17 @@ class FileUploadController {
    * @deprecated
    */
   streamFile = catchAsync(
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    async (req: ArkosRequest, res: ArkosResponse, _: ArkosNextFunction) => {
       const { fileName, fileType } = req.params;
 
       const filePath = path.join(".", "uploads", fileType, fileName);
       try {
-        await accessAsync(filePath);
+        await fs.promises.access(filePath);
       } catch (err) {
         throw new AppError("File not found", 404);
       }
 
-      const fileStat = await statAsync(filePath);
+      const fileStat = await fs.promises.stat(filePath);
       const fileSize = fileStat.size;
       const range = req.headers.range;
 

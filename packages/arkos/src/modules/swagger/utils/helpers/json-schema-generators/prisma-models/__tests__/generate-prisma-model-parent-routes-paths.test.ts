@@ -1,7 +1,7 @@
 import { OpenAPIV3 } from "openapi-types";
 import generatePrismaModelParentRoutePaths from "../generate-prisma-model-parent-routes-paths";
 import { ArkosConfig } from "../../../../../../../exports";
-import * as modelsHelpers from "../../../../../../../utils/helpers/dynamic-loader";
+import * as modelsHelpers from "../../../../../../../utils//dynamic-loader";
 
 jest.mock("../../../swagger.router.helpers", () => ({
   getSchemaRef: jest.fn(
@@ -12,17 +12,17 @@ jest.mock("../../../swagger.router.helpers", () => ({
   ),
 }));
 
-jest.mock("../../../../../../../utils/helpers/dynamic-loader", () => ({
-  importModuleComponents: jest.fn(),
+jest.mock("../../../../../../../utils//dynamic-loader", () => ({
+  getModuleComponents: jest.fn(),
   localValidatorFileExists: jest.fn(),
 }));
 
 describe("generatePrismaModelParentRoutesPaths", () => {
   let paths: OpenAPIV3.PathsObject;
   let arkosConfig: ArkosConfig;
-  const mockimportModuleComponents =
-    modelsHelpers.importModuleComponents as jest.MockedFunction<
-      typeof modelsHelpers.importModuleComponents
+  const mockgetModuleComponents =
+    modelsHelpers.getModuleComponents as jest.MockedFunction<
+      typeof modelsHelpers.getModuleComponents
     >;
   const mockLocalValidatorFileExists =
     modelsHelpers.localValidatorFileExists as jest.MockedFunction<
@@ -42,7 +42,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
 
   describe("Edge Case: Router completely disabled", () => {
     it("should return early when router is completely disabled", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: true,
@@ -58,7 +58,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
 
   describe("Edge Case: No parent configuration", () => {
     it("should return early when no parent config is provided", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,
@@ -73,7 +73,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     });
 
     it("should return early when parent config is null", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,
@@ -89,8 +89,8 @@ describe("generatePrismaModelParentRoutesPaths", () => {
   });
 
   describe("Edge Case: No model modules", () => {
-    it("should return early when importModuleComponents returns null", async () => {
-      mockimportModuleComponents.mockResolvedValue({});
+    it("should return early when getModuleComponents returns null", async () => {
+      mockgetModuleComponents.mockReturnValue({});
 
       await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
 
@@ -98,7 +98,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     });
 
     it("should return early when router config is undefined", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         // No router property
       });
 
@@ -122,7 +122,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     });
 
     it("should generate all endpoints when endpoints is '*'", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: baseRouterConfig,
         },
@@ -138,7 +138,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     });
 
     it("should generate all endpoints when endpoints is undefined", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,
@@ -156,7 +156,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     });
 
     it("should generate only specified endpoints when endpoints is an array", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,
@@ -179,7 +179,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     });
 
     it("should generate no endpoints when endpoints is an empty array", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,
@@ -210,7 +210,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
       arkosConfig.swagger!.strict = true;
       arkosConfig.swagger!.mode = "zod";
 
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: baseRouterConfig,
         },
@@ -231,7 +231,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     it("should fallback to prisma when local file doesn't exist", async () => {
       arkosConfig.swagger!.strict = false;
 
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: baseRouterConfig,
         },
@@ -252,7 +252,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
       arkosConfig.swagger!.strict = false;
       arkosConfig.swagger!.mode = "class-validator";
 
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: baseRouterConfig,
         },
@@ -280,7 +280,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     };
 
     it("should initialize path objects when they don't exist", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: baseRouterConfig,
         },
@@ -300,7 +300,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
 
   describe("Edge Case: Complex model names", () => {
     it("should handle complex model names with multiple words", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,
@@ -327,7 +327,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     });
 
     it("should handle single character model names", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,
@@ -351,7 +351,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     it("should handle missing swagger config gracefully", async () => {
       const arkosConfigWithoutSwagger: ArkosConfig = {};
 
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,
@@ -386,7 +386,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
     };
 
     beforeEach(() => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: fullRouterConfig,
         },
@@ -464,18 +464,8 @@ describe("generatePrismaModelParentRoutesPaths", () => {
   });
 
   describe("Integration with async dependencies", () => {
-    it("should handle async errors gracefully", async () => {
-      mockimportModuleComponents.mockRejectedValue(
-        new Error("Module import failed")
-      );
-
-      await expect(
-        generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig)
-      ).rejects.toThrow("Module import failed");
-    });
-
     it("should handle localValidatorFileExists async errors", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: {
           config: {
             disable: false,

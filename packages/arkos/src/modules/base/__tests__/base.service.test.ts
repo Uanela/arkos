@@ -5,7 +5,7 @@ import { handleRelationFieldsInBody } from "../utils/helpers/base.service.helper
 import {
   getModuleComponents,
   getPrismaModelRelations,
-} from "../../../utils/helpers/dynamic-loader";
+} from "../../../utils//dynamic-loader";
 
 // Mock dependencies
 jest.mock("fs", () => ({
@@ -17,8 +17,8 @@ jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../auth/auth.service");
 jest.mock("../utils/helpers/base.router.helpers");
 jest.mock("../utils/helpers/base.service.helpers");
-jest.mock("../../../utils/helpers/dynamic-loader", () => ({
-  ...jest.requireActual("../../../utils/helpers/dynamic-loader"),
+jest.mock("../../../utils//dynamic-loader", () => ({
+  ...jest.requireActual("../../../utils//dynamic-loader"),
   getPrismaModelRelations: jest.fn(),
   getModels: jest.fn(),
   getModuleComponents: jest.fn(),

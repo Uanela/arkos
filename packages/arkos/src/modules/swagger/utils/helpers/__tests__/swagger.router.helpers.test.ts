@@ -7,14 +7,14 @@ import {
 } from "../swagger.router.helpers";
 import { ArkosConfig } from "../../../../../exports";
 import sheu from "../../../../../utils/sheu";
-import { getModels } from "../../../../../utils/helpers/dynamic-loader";
+import { getModels } from "../../../../../utils//dynamic-loader";
 import { generatePrismaJsonSchemas } from "../json-schema-generators/generate-prisma-json-schemas";
 import { generateClassValidatorJsonSchemas } from "../json-schema-generators/generate-class-validator-json-schemas";
 import generateZodJsonSchemas from "../json-schema-generators/generate-zod-json-schemas";
 import { generatePrismaModelMainRoutesPaths } from "../json-schema-generators/prisma-models/generate-prisma-model-main-routes-paths";
 
 // Mock all dependencies
-jest.mock("../../../../../utils/helpers/dynamic-loader");
+jest.mock("../../../../../utils//dynamic-loader");
 jest.mock("../../../../../utils/sheu");
 jest.mock("../get-system-json-schema-paths");
 jest.mock("../get-authentication-json-schema-paths");

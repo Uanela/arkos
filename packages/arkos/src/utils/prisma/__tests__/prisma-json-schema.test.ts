@@ -3,14 +3,14 @@ import { ArkosConfig, RouterConfig } from "../../../exports";
 import { PrismaQueryOptions } from "../../../types";
 import deepmerge from "../../helpers/deepmerge.helper";
 import {
-  importModuleComponents,
+  getModuleComponents,
   localValidatorFileExists,
-} from "../../helpers/dynamic-loader";
+} from "../../dynamic-loader";
 import prismaSchemaParser from "../prisma-schema-parser";
 
 // Mock all dependencies
 jest.mock("../../helpers/deepmerge.helper");
-jest.mock("../../helpers/dynamic-loader");
+jest.mock("../..//dynamic-loader");
 jest.mock("../prisma-schema-parser");
 jest.mock("fs");
 
@@ -229,7 +229,7 @@ describe("EnhancedPrismaJsonSchemaGenerator", () => {
   };
 
   // Mock functions
-  const mockimportModuleComponents = importModuleComponents as jest.Mock;
+  const mockgetModuleComponents = getModuleComponents as jest.Mock;
   const mockLocalValidatorFileExists = localValidatorFileExists as jest.Mock;
   const mockDeepmerge = deepmerge as unknown as jest.Mock;
   const mockPrismaSchemaParser = prismaSchemaParser as any;
@@ -242,7 +242,7 @@ describe("EnhancedPrismaJsonSchemaGenerator", () => {
 
     // Setup default mock returns
     mockPrismaSchemaParser.parse = jest.fn().mockReturnValue(mockSchema);
-    mockimportModuleComponents.mockResolvedValue({
+    mockgetModuleComponents.mockReturnValue({
       router: { config: {} },
       prismaQueryOptions: {},
     });
@@ -300,7 +300,7 @@ describe("EnhancedPrismaJsonSchemaGenerator", () => {
     });
 
     it("should return empty object when router is disabled", async () => {
-      mockimportModuleComponents.mockResolvedValue({
+      mockgetModuleComponents.mockReturnValue({
         router: { config: { disable: true } },
         prismaQueryOptions: {},
       });

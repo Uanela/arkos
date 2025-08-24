@@ -1,10 +1,5 @@
 import fs from "fs";
-import {
-  statAsync,
-  accessAsync,
-  mkdirAsync,
-  getUserFileExtension,
-} from "../fs.helpers";
+import { getUserFileExtension } from "../fs.helpers";
 import * as fsHelpers from "../fs.helpers";
 import path from "path";
 
@@ -17,6 +12,11 @@ jest.mock("fs", () => ({
   existsSync: jest.fn(),
   statSync: jest.fn(),
   readdirSync: jest.fn(),
+  promises: {
+    stat: jest.fn(),
+    access: jest.fn(),
+    mkdir: jest.fn(),
+  },
 }));
 
 jest.mock("path");
@@ -24,104 +24,6 @@ jest.mock("path");
 describe("fs.helpers", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe("statAsync", () => {
-    it("should resolve with stats when fs.stat succeeds", async () => {
-      const mockStats = { size: 1024, isDirectory: () => false };
-      (fs.stat as any as jest.Mock).mockImplementation((path, callback) => {
-        callback(null, mockStats);
-      });
-
-      const result = await statAsync("test.txt");
-
-      expect(fs.stat).toHaveBeenCalledWith("test.txt", expect.any(Function));
-      expect(result).toEqual(mockStats);
-    });
-
-    it("should reject when fs.stat fails", async () => {
-      const mockError = new Error("File not found");
-      (fs.stat as any as jest.Mock).mockImplementation((path, callback) => {
-        callback(mockError);
-      });
-
-      await expect(statAsync("nonexistent.txt")).rejects.toThrow(
-        "File not found"
-      );
-      expect(fs.stat).toHaveBeenCalledWith(
-        "nonexistent.txt",
-        expect.any(Function)
-      );
-    });
-  });
-
-  describe("accessAsync", () => {
-    it("should resolve when fs.access succeeds", async () => {
-      (fs.access as any as jest.Mock).mockImplementation(
-        (path, mode, callback) => {
-          callback(null);
-        }
-      );
-
-      await accessAsync("test.txt", fs.constants.R_OK);
-
-      expect(fs.access).toHaveBeenCalledWith(
-        "test.txt",
-        fs.constants.R_OK,
-        expect.any(Function)
-      );
-    });
-
-    it("should reject when fs.access fails", async () => {
-      const mockError = new Error("Permission denied");
-      (fs.access as any as jest.Mock).mockImplementation(
-        (path, mode, callback) => {
-          callback(mockError);
-        }
-      );
-
-      await expect(
-        accessAsync("protected.txt", fs.constants.W_OK)
-      ).rejects.toThrow("Permission denied");
-      expect(fs.access).toHaveBeenCalledWith(
-        "protected.txt",
-        fs.constants.W_OK,
-        expect.any(Function)
-      );
-    });
-  });
-
-  describe("mkdirAsync", () => {
-    it("should resolve when fs.mkdir succeeds", async () => {
-      (fs.mkdir as any as jest.Mock).mockImplementation(
-        (path, options, callback) => {
-          callback(null);
-        }
-      );
-
-      await mkdirAsync("new-directory", { recursive: true });
-
-      expect(fs.mkdir).toHaveBeenCalledWith(
-        "new-directory",
-        { recursive: true },
-        expect.any(Function)
-      );
-    });
-
-    it("should reject when fs.mkdir fails", async () => {
-      const mockError = new Error("Cannot create directory");
-      (fs.mkdir as any as jest.Mock).mockImplementation((path, callback) => {
-        callback(mockError);
-      });
-
-      await expect(mkdirAsync("/root/forbidden")).rejects.toThrow(
-        "Cannot create directory"
-      );
-      expect(fs.mkdir).toHaveBeenCalledWith(
-        "/root/forbidden",
-        expect.any(Function)
-      );
-    });
   });
 
   describe("getUserFileExtension", () => {

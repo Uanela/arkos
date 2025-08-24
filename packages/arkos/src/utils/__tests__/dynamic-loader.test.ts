@@ -1,8 +1,7 @@
 import path from "path";
 import fs from "fs";
 import * as dynamicLoader from "../dynamic-loader";
-
-import { getUserFileExtension } from "../fs.helpers";
+import { getUserFileExtension } from "../helpers/fs.helpers";
 
 export const prismaModelsUniqueFields: Record<string, any[]> = [] as any;
 
@@ -15,14 +14,14 @@ jest.mock("fs", () => ({
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
 }));
-jest.mock("../global.helpers", () => ({
+jest.mock("../helpers/global.helpers", () => ({
   importModule: jest.fn(),
 }));
-jest.mock("../../arkos-env", () => ({
+jest.mock("../arkos-env", () => ({
   __esModule: true,
   default: { PRISMA_SCHEMA_PATH: "./custom-prisma-path" },
 }));
-jest.mock("../fs.helpers", () => ({
+jest.mock("../helpers/fs.helpers", () => ({
   getUserFileExtension: jest.fn(() => "js"),
   crd: jest.fn(),
 }));
@@ -226,7 +225,7 @@ describe("Dynamic Prisma Model Loader", () => {
   });
 
   describe("getModuleComponents", () => {
-    it("should return the cached model module", async () => {
+    it("should return the cached model module single word model name", async () => {
       await dynamicLoader.importModuleComponents("User", {
         validation: { resolver: "zod" },
       });
@@ -241,6 +240,21 @@ describe("Dynamic Prisma Model Loader", () => {
       // Assert
       expect(result).toBe(mockModule);
       // expect(kebabCase).toHaveBeenCalledWith("User");
+    });
+
+    it("should return the cached model module single multiple model name", async () => {
+      await dynamicLoader.importModuleComponents("UserRole", {
+        validation: { resolver: "zod" },
+      });
+      // Setup
+      const mockModule = { schemas: {} };
+      dynamicLoader.setModuleComponents("user-role", mockModule);
+
+      // Act
+      const result = dynamicLoader.getModuleComponents("UserRole");
+
+      // Assert
+      expect(result).toBe(mockModule);
     });
   });
 
@@ -613,8 +627,7 @@ describe("Dynamic Prisma Model Loader", () => {
     describe("processSubdir", () => {
       it("should process DTOs and schemas correctly", async () => {
         // Setup
-
-        jest.spyOn(fs.promises, "access").mockResolvedValue(undefined);
+        jest.spyOn(fs.promises, "stat").mockResolvedValue({} as any);
 
         // Mock dynamic imports to return test modules
         jest.mock(
@@ -889,7 +902,12 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should assign prismaQueryOptions correctly", () => {
       const module = { default: { query: "options" } };
 
-      dynamicLoader.assignModuleToResult("prismaQueryOptions", module, result);
+      dynamicLoader.assignModuleToResult(
+        "prismaQueryOptions",
+        module,
+        result,
+        {}
+      );
 
       expect(result.prismaQueryOptions).toEqual({ query: "options" });
     });
@@ -897,7 +915,7 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should assign authConfigs correctly", () => {
       const module = { default: { auth: "config" } };
 
-      dynamicLoader.assignModuleToResult("authConfigs", module, result);
+      dynamicLoader.assignModuleToResult("authConfigs", module, result, {});
 
       expect(result.authConfigs).toEqual({ auth: "config" });
     });
@@ -905,7 +923,7 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should assign interceptors without default extraction", () => {
       const module = { middleware: jest.fn() };
 
-      dynamicLoader.assignModuleToResult("interceptors", module, result);
+      dynamicLoader.assignModuleToResult("interceptors", module, result, {});
 
       expect(result.interceptors).toBe(module);
     });

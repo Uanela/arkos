@@ -1,4 +1,4 @@
-import { getPrismaSchemasContent } from "../helpers/dynamic-loader";
+import { getPrismaSchemasContent } from "../dynamic-loader"
 import { PrismaSchema, PrismaModel, PrismaEnum, PrismaField } from "./types";
 
 /**

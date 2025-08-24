@@ -4,10 +4,7 @@ import APIFeatures from "../../utils/features/api.features";
 import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
-import {
-  getModuleComponents,
-  getModels,
-} from "../../utils/helpers/dynamic-loader";
+import { getModuleComponents, getModels } from "../../utils/dynamic-loader";
 import pluralize from "pluralize";
 import sheu from "../../utils/sheu";
 

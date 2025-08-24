@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { setupRouters } from "../base.router.helpers"; // Adjust the import path
-import * as importHelpers from "../../../../../utils/helpers/dynamic-loader";
+import * as importHelpers from "../../../../../utils//dynamic-loader";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
 import catchAsync from "../../../../error-handler/utils/catch-async";
@@ -31,7 +31,7 @@ jest.mock("express", () => {
 
   return mockExpress;
 });
-jest.mock("../../../../../utils/helpers/dynamic-loader");
+jest.mock("../../../../../utils//dynamic-loader");
 jest.mock("../../../../auth/auth.service", () => ({
   handleAuthenticationControl: jest.fn(() => jest.fn()),
   handleAccessControl: jest.fn(() => jest.fn()),
@@ -92,7 +92,7 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -190,7 +190,7 @@ describe("setupRouters", () => {
       },
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -237,7 +237,7 @@ describe("setupRouters", () => {
       },
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -264,7 +264,7 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -297,7 +297,7 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -332,7 +332,7 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -353,7 +353,7 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -371,7 +371,7 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -410,7 +410,7 @@ describe("setupRouters", () => {
         callback({ path: "/users", method: "GET" })
       );
 
-    (importHelpers.importModuleComponents as jest.Mock).mockResolvedValue(
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
@@ -449,7 +449,7 @@ describe("setupRouters", () => {
       router: undefined,
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockImplementation(
+    (importHelpers.getModuleComponents as jest.Mock).mockImplementation(
       (modelName) => {
         if (modelName === "user") return Promise.resolve(mockUserModules);
         if (modelName === "post") return Promise.resolve(mockPostModules);
@@ -484,10 +484,10 @@ describe("setupRouters", () => {
       },
     };
 
-    (importHelpers.importModuleComponents as jest.Mock).mockImplementation(
+    (importHelpers.getModuleComponents as jest.Mock).mockImplementation(
       (modelName) => {
-        if (modelName === "post") return Promise.resolve(mockPostModules);
-        return Promise.resolve({});
+        if (modelName === "post") return mockPostModules;
+        return {};
       }
     );
 

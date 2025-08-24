@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getFileUploadRouter } from "../file-upload.router"; // Update with the correct path
-import { importModuleComponents } from "../../../utils/helpers/dynamic-loader";
+import { getModuleComponents } from "../../../utils//dynamic-loader";
 import authService from "../../auth/auth.service";
 import fileUploadController from "../file-upload.controller";
 import { sendResponse } from "../../base/base.middlewares";
@@ -33,7 +33,7 @@ jest.mock("express", () => {
   return mockExpress;
 });
 
-jest.mock("../../../utils/helpers/dynamic-loader");
+jest.mock("../../../utils//dynamic-loader");
 jest.mock("../../auth/auth.service");
 jest.mock("../file-upload.controller");
 jest.mock("../../base/base.middlewares");
@@ -76,7 +76,7 @@ describe("File Upload Router", () => {
 
   test("should create router with default configuration", async () => {
     // Arrange
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {},
     });
@@ -86,10 +86,7 @@ describe("File Upload Router", () => {
 
     // Assert
     expect(Router).toHaveBeenCalled();
-    expect(importModuleComponents).toHaveBeenCalledWith(
-      "file-upload",
-      mockArkosConfig
-    );
+    expect(getModuleComponents).toHaveBeenCalledWith("file-upload");
 
     // Check static file middleware setup
     expect(path.resolve).toHaveBeenCalledWith(process.cwd(), "uploads");
@@ -124,7 +121,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
       fileUploadController.uploadFile, // First middleware (no beforeUploadFile)
-      sendResponse // Second middleware (no afterUploadFile)
+      sendResponse
     );
 
     // Check update route setup
@@ -133,7 +130,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
       fileUploadController.updateFile, // First middleware (no beforeUpdateFile)
-      sendResponse // Second middleware (no afterUpdateFile)
+      sendResponse
     );
 
     // Check Delete route setup
@@ -142,7 +139,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAuthenticationControl
       expect.any(Function), // authService.handleAccessControl
       fileUploadController.deleteFile, // First middleware (no beforeDeleteFile)
-      sendResponse // Second middleware (no afterDeleteFile)
+      sendResponse
     );
 
     // Expect the router to be returned
@@ -156,7 +153,7 @@ describe("File Upload Router", () => {
       beforeUploadFile,
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       authConfigs: {},
     });
@@ -171,7 +168,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAccessControl
       expect.any(Function), // First middleware (beforeUploadFile)
       fileUploadController.uploadFile, // Second middleware (controller)
-      sendResponse // Final middleware
+      sendResponse
     );
   });
 
@@ -182,7 +179,7 @@ describe("File Upload Router", () => {
       afterUploadFile,
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       authConfigs: {},
     });
@@ -197,7 +194,7 @@ describe("File Upload Router", () => {
       expect.any(Function), // authService.handleAccessControl
       fileUploadController.uploadFile, // First middleware (controller, no beforeUploadFile)
       expect.any(Function), // Second middleware (afterUploadFile)
-      sendResponse // Final middleware
+      sendResponse
     );
   });
 
@@ -205,12 +202,14 @@ describe("File Upload Router", () => {
     // Arrange
     const beforeUploadFile = jest.fn();
     const afterUploadFile = jest.fn();
+    const onUploadFileError = jest.fn();
     const customMiddlewares = {
       beforeUploadFile,
       afterUploadFile,
+      onUploadFileError,
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       authConfigs: {},
     });
@@ -226,7 +225,8 @@ describe("File Upload Router", () => {
       expect.any(Function), // First middleware (beforeUploadFile)
       fileUploadController.uploadFile, // Second middleware (controller)
       expect.any(Function), // Third middleware (afterUploadFile)
-      sendResponse // Final middleware
+      sendResponse,
+      expect.any(Function) // Error handling middleware
     );
   });
 
@@ -234,12 +234,14 @@ describe("File Upload Router", () => {
     // Arrange
     const beforeUpdateFile = jest.fn();
     const afterUpdateFile = jest.fn();
+    const onUpdateFileError = jest.fn();
     const customMiddlewares = {
       beforeUpdateFile,
       afterUpdateFile,
+      onUpdateFileError,
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       authConfigs: {},
     });
@@ -255,7 +257,8 @@ describe("File Upload Router", () => {
       expect.any(Function), // First middleware (beforeUpdateFile)
       fileUploadController.updateFile, // Second middleware (controller)
       expect.any(Function), // Third middleware (afterUpdateFile)
-      sendResponse // Final middleware
+      sendResponse,
+      expect.any(Function) // Final middleware
     );
   });
 
@@ -263,12 +266,14 @@ describe("File Upload Router", () => {
     // Arrange
     const beforeDeleteFile = jest.fn();
     const afterDeleteFile = jest.fn();
+    const onDeleteFileError = jest.fn();
     const customMiddlewares = {
       beforeDeleteFile,
       afterDeleteFile,
+      onDeleteFileError,
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       authConfigs: {},
     });
@@ -284,7 +289,8 @@ describe("File Upload Router", () => {
       expect.any(Function), // First middleware (beforeDeleteFile)
       fileUploadController.deleteFile, // Second middleware (controller)
       expect.any(Function), // Third middleware (afterDeleteFile)
-      sendResponse // Final middleware
+      sendResponse,
+      expect.any(Function) // Final middleware
     );
   });
 
@@ -295,7 +301,7 @@ describe("File Upload Router", () => {
       beforeFindFile,
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       authConfigs: {},
     });
@@ -328,7 +334,7 @@ describe("File Upload Router", () => {
       beforeFindFile,
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       authConfigs: {},
     });
@@ -380,7 +386,7 @@ describe("File Upload Router", () => {
 
   test("should normalize basePathname by adding leading and trailing slashes", async () => {
     // Arrange
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {},
     });
@@ -445,7 +451,7 @@ describe("File Upload Router", () => {
 
   test("should use default baseRoute when not provided", async () => {
     // Arrange
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {},
     });
@@ -471,7 +477,7 @@ describe("File Upload Router", () => {
 
   test("should use default baseUploadDir when not provided", async () => {
     // Arrange
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {},
     });
@@ -501,7 +507,7 @@ describe("File Upload Router", () => {
       accessControl: { Delete: ["Admin"] },
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       authConfigs: customAuthConfigs,
     });
@@ -545,7 +551,7 @@ describe("File Upload Router", () => {
 
   test("should handle missing model modules gracefully", async () => {
     // Arrange
-    (importModuleComponents as jest.Mock).mockResolvedValue(null);
+    (getModuleComponents as jest.Mock).mockResolvedValue(null);
 
     // Act
     await getFileUploadRouter(mockArkosConfig);
@@ -571,7 +577,7 @@ describe("File Upload Router", () => {
 
   test("should merge default and custom express static options", async () => {
     // Arrange
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {},
     });
