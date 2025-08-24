@@ -4,7 +4,7 @@ import {
 } from "../auth.controller";
 import authService from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
-import { importModuleComponents } from "../../../utils/helpers/dynamic-loader";
+import { getModuleComponents } from "../../../utils//dynamic-loader";
 import { getArkosConfig } from "../../../server";
 import { BaseService } from "../../base/base.service";
 
@@ -38,8 +38,8 @@ jest.mock("../../../utils/helpers/prisma.helpers", () => ({
 }));
 
 // Update your mock for dynamic-loader.ts
-jest.mock("../../../utils/helpers/dynamic-loader", () => ({
-  importModuleComponents: jest.fn(),
+jest.mock("../../../utils//dynamic-loader", () => ({
+  getModuleComponents: jest.fn(),
   getPrismaModelRelations: jest.fn(),
   getModels: jest.fn(() => []),
   getModelUniqueFields: jest.fn(() => []),
@@ -77,7 +77,7 @@ describe("Auth Controller Factory", () => {
     MockedBaseService.mockImplementation(() => userService);
 
     (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockResolvedValue({
       prismaQueryOptions: {
         queryOptions: {},
         findOne: {},

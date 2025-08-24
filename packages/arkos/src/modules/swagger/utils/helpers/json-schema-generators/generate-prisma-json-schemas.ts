@@ -1,5 +1,5 @@
 import { ArkosConfig } from "../../../../../exports";
-import { getModels } from "../../../../../utils/helpers/dynamic-loader";
+import { getModels } from "../../../../../utils/dynamic-loader"
 import enhancedPrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
 
 export async function generatePrismaJsonSchemas(arkosConfig: ArkosConfig) {

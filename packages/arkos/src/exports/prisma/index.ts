@@ -1,5 +1,5 @@
 import { PrismaQueryOptions, AuthPrismaQueryOptions } from "../../types";
-import { getModels } from "../../utils/helpers/dynamic-loader";
+import { getModels } from "../../utils/dynamic-loader";
 
 export {
   PrismaQueryOptions,

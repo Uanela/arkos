@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getAvailableResources } from "./base.controller";
-import { getModels } from "../../utils/helpers/dynamic-loader";
+import { getModels } from "../../utils/dynamic-loader";
 import authService from "../auth/auth.service";
 import { ArkosConfig } from "../../types/arkos-config";
 import { setupRouters } from "./utils/helpers/base.router.helpers";

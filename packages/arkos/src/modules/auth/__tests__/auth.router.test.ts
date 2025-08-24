@@ -3,7 +3,7 @@ import { getAuthRouter } from "../auth.router";
 import { authControllerFactory } from "../auth.controller";
 import authService from "../auth.service";
 import rateLimit from "express-rate-limit";
-import { importModuleComponents } from "../../../utils/helpers/dynamic-loader";
+import { getModuleComponents } from "../../../utils//dynamic-loader";
 import {
   sendResponse,
   addPrismaQueryOptionsToRequest,
@@ -51,7 +51,7 @@ jest.mock("../auth.service", () => ({
   authenticate: jest.fn(),
 }));
 jest.mock("express-rate-limit");
-jest.mock("../../../utils/helpers/dynamic-loader");
+jest.mock("../../../utils//dynamic-loader");
 jest.mock("../../../utils/helpers/deepmerge.helper");
 jest.mock("../../../server");
 jest.mock("../../base/base.middlewares", () => ({
@@ -99,7 +99,7 @@ describe("Auth Router", () => {
     };
 
     (authControllerFactory as jest.Mock).mockResolvedValue(mockAuthController);
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       prismaQueryOptions: mockPrismaQueryOptions,
     });
@@ -126,10 +126,7 @@ describe("Auth Router", () => {
 
     // Assert
     expect(Router).toHaveBeenCalled();
-    expect(importModuleComponents).toHaveBeenCalledWith(
-      "auth",
-      mockArkosConfig
-    );
+    expect(getModuleComponents).toHaveBeenCalledWith("auth");
     expect(authControllerFactory).toHaveBeenCalled();
 
     // Check routes are defined with the new middleware
@@ -224,7 +221,7 @@ describe("Auth Router", () => {
       afterUpdatePassword: jest.fn(),
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: customMiddlewares,
       prismaQueryOptions: mockPrismaQueryOptions,
     });
@@ -281,7 +278,7 @@ describe("Auth Router", () => {
       updatePassword: "updatePasswordSchema",
     };
 
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       dtos: mockDtos,
       schemas: mockSchemas,
@@ -313,7 +310,7 @@ describe("Auth Router", () => {
 
     // Reset for next test
     jest.clearAllMocks();
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       dtos: mockDtos,
       schemas: mockSchemas,
@@ -346,7 +343,7 @@ describe("Auth Router", () => {
 
   test("should create all required routes with no interceptors passed", async () => {
     // Act
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: undefined,
       prismaQueryOptions: mockPrismaQueryOptions,
     });
@@ -414,7 +411,7 @@ describe("Auth Router", () => {
 
   test("should create all required routes with after interceptors passed to all routes", async () => {
     // Act
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {
         afterGetMe: jest.fn(),
         afterUpdateMe: jest.fn(),
@@ -496,7 +493,7 @@ describe("Auth Router", () => {
 
   test("should create all required routes with before interceptors passed to all routes", async () => {
     // Act
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {
         beforeGetMe: jest.fn(),
         beforeUpdateMe: jest.fn(),
@@ -578,22 +575,35 @@ describe("Auth Router", () => {
 
   test("should create all required routes with before and after interceptors passed to all routes", async () => {
     // Act
-    (importModuleComponents as jest.Mock).mockResolvedValue({
+    (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {
         beforeGetMe: jest.fn(),
         afterGetMe: jest.fn(),
+        onGetMeError: jest.fn(),
+
         beforeUpdateMe: jest.fn(),
         afterUpdateMe: jest.fn(),
+        onUpdateMeError: jest.fn(),
+
         beforeDeleteMe: jest.fn(),
         afterDeleteMe: jest.fn(),
+        onDeleteMeError: jest.fn(),
+
         beforeLogin: jest.fn(),
         afterLogin: jest.fn(),
+        onLoginError: jest.fn(),
+
         beforeLogout: jest.fn(),
         afterLogout: jest.fn(),
+        onLogoutError: jest.fn(),
+
         beforeSignup: jest.fn(),
         afterSignup: jest.fn(),
+        onSignupError: jest.fn(),
+
         beforeUpdatePassword: jest.fn(),
         afterUpdatePassword: jest.fn(),
+        onUpdatePasswordError: jest.fn(),
       },
       prismaQueryOptions: mockPrismaQueryOptions,
     });
@@ -607,7 +617,8 @@ describe("Auth Router", () => {
       expect.any(Function), // beforeGetMe
       expect.any(Function), // getMe
       expect.any(Function), // afterGetMe
-      sendResponse
+      sendResponse,
+      expect.any(Function) // Error handler middleware
     );
 
     expect(mockRouter.patch).toHaveBeenCalledWith(
@@ -618,7 +629,8 @@ describe("Auth Router", () => {
       expect.any(Function), // beforeUpdateMe
       expect.any(Function), // updateMe
       expect.any(Function), // afterUpdateMe
-      sendResponse
+      sendResponse,
+      expect.any(Function) // Error handler middleware
     );
 
     expect(mockRouter.delete).toHaveBeenCalledWith(
@@ -628,7 +640,8 @@ describe("Auth Router", () => {
       expect.any(Function), // beforeDeleteMe
       expect.any(Function), // deleteMe
       expect.any(Function), // afterDeleteMe
-      sendResponse
+      sendResponse,
+      expect.any(Function) // Error handler middleware
     );
 
     expect(mockRouter.post).toHaveBeenCalledWith(
@@ -638,7 +651,8 @@ describe("Auth Router", () => {
       expect.any(Function), // beforeLogin
       expect.any(Function), // login
       expect.any(Function), // afterLogin
-      sendResponse
+      sendResponse,
+      expect.any(Function) // Error handler middleware
     );
 
     expect(mockRouter.delete).toHaveBeenCalledWith(
@@ -647,7 +661,8 @@ describe("Auth Router", () => {
       expect.any(Function), // beforeLogout
       expect.any(Function), // logout
       expect.any(Function), // afterLogout
-      sendResponse
+      sendResponse,
+      expect.any(Function) // Error handler middleware
     );
 
     expect(mockRouter.post).toHaveBeenCalledWith(
@@ -657,7 +672,8 @@ describe("Auth Router", () => {
       expect.any(Function), // beforeSignup
       expect.any(Function), // signup
       expect.any(Function), // afterSignup
-      sendResponse
+      sendResponse,
+      expect.any(Function) // Error handler middleware
     );
 
     expect(mockRouter.post).toHaveBeenCalledWith(
@@ -668,7 +684,8 @@ describe("Auth Router", () => {
       expect.any(Function), // beforeUpdatePassword
       expect.any(Function), // updatePassword
       expect.any(Function), // afterUpdatePassword
-      sendResponse
+      sendResponse,
+      expect.any(Function) // Error handler middleware
     );
   });
 });

@@ -3,8 +3,8 @@ import pluralize from "pluralize";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import { getSchemaRef, kebabToHuman } from "../../swagger.router.helpers";
 import { ArkosConfig } from "../../../../../../exports";
-import { importModuleComponents } from "../../../../../../utils/helpers/dynamic-loader";
-import { localValidatorFileExists } from "../../../../../../utils/helpers/dynamic-loader";
+import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
+import { localValidatorFileExists } from "../../../../../../utils/dynamic-loader";
 
 export default async function generatePrismaModelParentRoutesPaths(
   model: string,
@@ -18,7 +18,7 @@ export default async function generatePrismaModelParentRoutesPaths(
   const humanReadableNamePlural = pluralize.plural(humanReadableName);
 
   // Import model modules to get router config
-  const ModuleComponents = await importModuleComponents(model, arkosConfig);
+  const ModuleComponents = getModuleComponents(model);
   const routerConfig = ModuleComponents?.router?.config;
 
   // Skip if router is completely disabled

@@ -3,7 +3,7 @@ import {
   getPrismaModelsRouter,
   getAvailableResourcesAndRoutesRouter,
 } from "../base.router";
-import * as modelsHelpers from "../../../utils/helpers/dynamic-loader";
+import * as modelsHelpers from "../../../utils//dynamic-loader";
 import * as baseController from "../base.controller";
 import authService from "../../auth/auth.service";
 import * as routerHelpers from "../utils/helpers/base.router.helpers";
@@ -32,7 +32,7 @@ jest.mock("express", () => {
   return mockExpress;
 });
 
-jest.mock("../../../utils/helpers/dynamic-loader");
+jest.mock("../../../utils//dynamic-loader");
 jest.mock("../base.controller");
 jest.mock("../../auth/auth.service");
 jest.mock("../utils/helpers/base.router.helpers");

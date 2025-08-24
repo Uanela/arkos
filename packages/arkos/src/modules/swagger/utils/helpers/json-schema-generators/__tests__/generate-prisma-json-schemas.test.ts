@@ -1,10 +1,10 @@
 import { generatePrismaJsonSchemas } from "../generate-prisma-json-schemas";
 import { ArkosConfig } from "../../../../../../exports";
-import * as modelsHelpers from "../../../../../../utils/helpers/dynamic-loader";
+import * as modelsHelpers from "../../../../../../utils//dynamic-loader";
 import enhancedPrismaJsonSchemaGenerator from "../../../../../../utils/prisma/prisma-json-schema-generator";
 
 // Mock the dependencies
-jest.mock("../../../../../../utils/helpers/dynamic-loader");
+jest.mock("../../../../../../utils//dynamic-loader");
 jest.mock(
   "../../../../../../utils/prisma/prisma-json-schema-generator"
 );

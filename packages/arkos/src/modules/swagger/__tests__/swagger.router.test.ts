@@ -14,6 +14,11 @@ jest.mock("fs", () => ({
     mkdir: jest.fn(),
     readdirSync: jest.fn(),
   },
+  promises: {
+    stat: jest.fn(),
+    access: jest.fn(),
+    mkdir: jest.fn(),
+  },
 }));
 jest.mock("express");
 jest.mock("swagger-jsdoc");

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { importModuleComponents } from "../../utils/helpers/dynamic-loader";
+import { getModuleComponents } from "../../utils/dynamic-loader";
 import authService from "../auth/auth.service";
 import fileUploadController from "./file-upload.controller";
 import { ArkosConfig } from "../../types/arkos-config";
@@ -16,10 +16,7 @@ const router: Router = Router();
 export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const { fileUpload } = arkosConfig;
 
-  const ModuleComponents = await importModuleComponents(
-    "file-upload",
-    arkosConfig
-  );
+  const ModuleComponents = getModuleComponents("file-upload");
   let { interceptors = {} as any, authConfigs = {} as AuthConfigs } = {};
 
   if (ModuleComponents) {
@@ -117,7 +114,7 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
     fileUploadController.deleteFile,
     ...processMiddleware(interceptors?.afterDeleteFile),
     sendResponse,
-    ...processMiddleware(interceptors?.onafterDeleteFileError)
+    ...processMiddleware(interceptors?.onDeleteFileError)
   );
 
   return router;

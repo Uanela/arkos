@@ -16,7 +16,7 @@ import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import { getSwaggerRouter } from "./modules/swagger/swagger.router";
-import { loadAllModuleComponents } from "./utils/helpers/dynamic-loader";
+import { loadAllModuleComponents } from "./utils/dynamic-loader";
 
 export const app: express.Express = express();
 
@@ -24,8 +24,8 @@ export async function bootstrap(
   arkosConfig: ArkosConfig
 ): Promise<express.Express> {
   await Promise.all([
-    await loadPrismaModule(),
-    await loadAllModuleComponents(arkosConfig),
+    loadPrismaModule(),
+    loadAllModuleComponents(arkosConfig),
     arkosConfig?.configureApp && (await arkosConfig?.configureApp(app)),
   ]);
 

@@ -33,6 +33,9 @@ export let _arkosConfig: ArkosConfig & { available?: boolean } = {
     baseUploadDir: "uploads",
     baseRoute: "/api/uploads",
   },
+  routers: {
+    strict: false,
+  },
   available: false,
 };
 

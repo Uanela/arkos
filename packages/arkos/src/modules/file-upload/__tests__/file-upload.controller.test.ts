@@ -8,20 +8,23 @@ import {
   processFile,
   processImage,
 } from "../utils/helpers/file-upload.helpers";
-import {
-  accessAsync,
-  mkdirAsync,
-  statAsync,
-} from "../../../utils/helpers/fs.helpers";
-import { getModuleComponents } from "../../../utils/helpers/dynamic-loader";
+import { getModuleComponents } from "../../../utils//dynamic-loader";
 
 // Mock dependencies
 jest.mock("../file-upload.service");
 jest.mock("../../../server");
 jest.mock("../utils/helpers/file-upload.helpers");
 jest.mock("../../../utils/helpers/fs.helpers");
-jest.mock("../../../utils/helpers/dynamic-loader");
-jest.mock("fs");
+jest.mock("../../../utils//dynamic-loader");
+jest.mock("fs", () => ({
+  ...jest.requireActual("fs"),
+  readdirSync: jest.fn(),
+  promises: {
+    access: jest.fn(),
+    mkdir: jest.fn(),
+    stat: jest.fn(),
+  },
+}));
 
 describe("FileUploadController", () => {
   let mockReq: any;
@@ -76,8 +79,8 @@ describe("FileUploadController", () => {
       interceptors: {},
     });
 
-    (accessAsync as jest.MockedFunction<any>).mockResolvedValue(true);
-    (mkdirAsync as jest.MockedFunction<any>).mockResolvedValue(true);
+    (fs.promises.access as jest.MockedFunction<any>).mockResolvedValue(true);
+    (fs.promises.mkdir as jest.MockedFunction<any>).mockResolvedValue(true);
     (processFile as jest.MockedFunction<any>).mockResolvedValue(
       "http://localhost:3000/uploads/files/test.txt"
     );
@@ -209,7 +212,7 @@ describe("FileUploadController", () => {
       mockReq.params = { fileType: "files" };
       mockReq.file = { path: "/tmp/test.txt" };
 
-      (accessAsync as jest.MockedFunction<any>).mockRejectedValue(
+      (fs.promises.access as jest.MockedFunction<any>).mockRejectedValue(
         new Error("Directory not found")
       );
 
@@ -220,7 +223,7 @@ describe("FileUploadController", () => {
 
       await fileUploadController.uploadFile(mockReq, mockRes, mockNext);
 
-      expect(mkdirAsync).toHaveBeenCalledWith(
+      expect(fs.promises.mkdir).toHaveBeenCalledWith(
         path.resolve(process.cwd(), "/uploads", "files"),
         { recursive: true }
       );
@@ -520,7 +523,7 @@ describe("FileUploadController", () => {
 
   // describe("streamFile", () => {
   //   beforeEach(() => {
-  //     (statAsync as jest.MockedFunction<any>).mockResolvedValue({ size: 1000 });
+  //     (fs.promises.stat as jest.MockedFunction<any>).mockResolvedValue({ size: 1000 });
   //     (fs.createReadStream as jest.MockedFunction<any>).mockReturnValue({
   //       pipe: jest.fn(),
   //     });
@@ -576,7 +579,7 @@ describe("FileUploadController", () => {
   //   it("should handle file not found", async () => {
   //     mockReq.params = { fileType: "files", fileName: "nonexistent.txt" };
 
-  //     (accessAsync as jest.MockedFunction<any>).mockRejectedValue(
+  //     (fs.promises.access as jest.MockedFunction<any>).mockRejectedValue(
   //       new Error("File not found")
   //     );
 
@@ -642,7 +645,7 @@ describe("FileUploadController", () => {
 
         await fileUploadController.uploadFile(mockReq, mockRes, mockNext);
 
-        expect(mkdirAsync).toHaveBeenCalledWith(
+        expect(fs.promises.mkdir).toHaveBeenCalledWith(
           path.resolve(process.cwd(), "/uploads", "files"),
           { recursive: true }
         );

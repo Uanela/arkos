@@ -5,7 +5,7 @@ import APIFeatures from "../../../utils/features/api.features";
 import {
   getModuleComponents,
   getModels,
-} from "../../../utils/helpers/dynamic-loader";
+} from "../../../utils//dynamic-loader";
 
 // Mock dependencies
 jest.mock("fs", () => ({
@@ -17,7 +17,7 @@ jest.mock("../base.service");
 jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/features/api.features");
 jest.mock("../../../server");
-jest.mock("../../../utils/helpers/dynamic-loader");
+jest.mock("../../../utils//dynamic-loader");
 
 describe("BaseController", () => {
   let baseController: BaseController;

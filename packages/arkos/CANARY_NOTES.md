@@ -10,70 +10,11 @@
 - add strict routing mode into cli flags
 - add documentain about stric mode routing and update jsdocs on arkos config
 
-```ts
-import { ArkosConfig } from "../types/arkos.types";
-import { RouterConfig } from "../types/base.service.types";
-
-/**
- * Applies strict routing rules to module configuration
- */
-export function applyStrictRouting(
-    arkosConfig: ArkosConfig,
-    moduleConfig?: RouterConfig
-): RouterConfig {
-    const strictMode = arkosConfig?.routers?.strict || false;
-
-    // Start with module config or empty object
-    const config = moduleConfig || {};
-
-    if (strictMode === true) {
-        // Strict mode: all endpoints disabled by default
-        return {
-            ...config,
-            disable:
-                typeof config.disable === "boolean"
-                    ? config.disable
-                    : {
-                          createOne: true,
-                          findOne: true,
-                          updateOne: true,
-                          deleteOne: true,
-                          createMany: true,
-                          findMany: true,
-                          updateMany: true,
-                          deleteMany: true,
-                          ...(typeof config.disable === "object"
-                              ? config.disable
-                              : {}),
-                      },
-        };
-    } else if (strictMode === "no-bulk") {
-        // No-bulk mode: only bulk operations disabled by default
-        return {
-            ...config,
-            disable:
-                typeof config.disable === "boolean"
-                    ? config.disable
-                    : {
-                          createMany: true,
-                          updateMany: true,
-                          deleteMany: true,
-                          ...(typeof config.disable === "object"
-                              ? config.disable
-                              : {}),
-                      },
-        };
-    }
-
-    // No strict mode, return original config
-    return config;
-}
-```
-
 ### Change
 
 ### Fix
 
+- strict routing only work for export routers
 - Enhance importing components helper function
 
 ### Remove

@@ -46,7 +46,7 @@ function main(): void {
     createPackageJson(filePath, config);
   });
 
-  console.log("\nAll package.json files generated successfully!");
+  console.info("\nAll package.json files generated successfully!");
 }
 
 // Run the script
