@@ -467,7 +467,6 @@ export class AuthService {
     return async (user: Record<string, any>): Promise<boolean> => {
       // getArkosConfig must not be called the same time as arkos.init()
       const configs = getArkosConfig();
-      console.log(configs);
       if (!configs?.authentication)
         throw Error(
           "Validation Error: Trying to use authService.permission without setting up authentication."
