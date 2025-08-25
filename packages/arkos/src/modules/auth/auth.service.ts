@@ -18,6 +18,7 @@ import {
   AccessAction,
   AccessControlConfig,
   AuthenticationControlConfig,
+  AccessControlRules,
 } from "../../types/auth";
 import { MsDuration } from "./utils/helpers/auth.controller.helpers";
 
@@ -193,6 +194,64 @@ export class AuthService {
   }
 
   /**
+   * Checks if a user has permission for a specific action using static access control rules.
+   * Validates user roles against predefined access control configuration.
+   *
+   * @param user - The user object containing role or roles field
+   * @param action - The action being performed
+   * @param accessControl - Access control configuration (array of roles or object with action-role mappings)
+   * @returns True if user has permission, false otherwise
+   * @throws Error if user doesn't have role/roles field
+   */
+  protected checkStaticAccessControl(
+    user: User,
+    action: string,
+    accessControl: AccessControlConfig
+  ) {
+    if (!user?.role && !user.roles)
+      throw Error(
+        "Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles."
+      );
+    let authorizedRoles: string[] = [];
+    if (Array.isArray(accessControl)) authorizedRoles = accessControl;
+    else if (accessControl[action])
+      authorizedRoles = accessControl[action] || [];
+    const userRoles = Array.isArray(user?.roles) ? user.roles : [user.role];
+    return !!userRoles.some((role: string) => authorizedRoles.includes(role));
+  }
+
+  /**
+   * Checks if a user has permission for a specific action and resource using dynamic access control.
+   * Queries the database to verify user's role permissions.
+   *
+   * @param userId - The unique identifier of the user
+   * @param action - The action being performed
+   * @param resource - The resource being accessed
+   * @returns Promise resolving to true if user has permission, false otherwise
+   */
+  protected async checkDynamicAccessControl(
+    userId: string,
+    action: string,
+    resource: string
+  ) {
+    const prisma = getPrismaInstance();
+    return !!(await prisma.userRole.findFirst({
+      where: {
+        userId,
+        role: {
+          permissions: {
+            some: {
+              resource,
+              action,
+            },
+          },
+        },
+      },
+      select: { id: true },
+    }));
+  }
+
+  /**
    * Middleware function to handle access control based on user roles and permissions.
    *
    * @param {AccessAction} action - The action being performed (e.g., create, update, delete, view).
@@ -208,8 +267,7 @@ export class AuthService {
     return catchAsync(
       async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         if (req.user) {
-          const user = req.user as any;
-          const prisma = getPrismaInstance();
+          const user = req.user as User;
           const configs = getArkosConfig();
 
           if (user.isSuperUser) {
@@ -217,59 +275,31 @@ export class AuthService {
             return;
           }
 
+          const notEnoughPermissionsError = new AppError(
+            "You do not have permission to perfom this action",
+            403,
+            {},
+            "NotEnoughPermissions"
+          );
+
           if (configs?.authentication?.mode === "dynamic") {
-            const matchingRole = await prisma.userRole.findFirst({
-              where: {
-                userId: req.user.id,
-                role: {
-                  permissions: {
-                    some: {
-                      resource: resourceName,
-                      action: action,
-                    },
-                  },
-                },
-              },
-              select: { id: true },
-            });
-
-            if (!matchingRole)
-              return next(
-                new AppError(
-                  "You do not have permission to perfom this action",
-                  403
-                )
-              );
-          } else if (configs?.authentication?.mode === "static") {
-            let authorizedRoles: string[] = [];
-
-            if (!accessControl)
-              return next(
-                new AppError(
-                  "You do not have permission to perform this action",
-                  403
-                )
-              );
-
-            if (Array.isArray(accessControl)) authorizedRoles = accessControl;
-            else if (accessControl[action])
-              authorizedRoles = accessControl[action] || [];
-
-            const userRoles = Array.isArray(user?.roles)
-              ? user.roles
-              : [user.role];
-            const hasPermission = userRoles.some((role: string) =>
-              authorizedRoles.includes(role)
+            const hasPermission = await this.checkDynamicAccessControl(
+              user.id,
+              action,
+              resourceName
             );
 
-            if (!hasPermission) {
-              return next(
-                new AppError(
-                  "You do not have permission to perform this action",
-                  403
-                )
-              );
-            }
+            if (!hasPermission) return next(notEnoughPermissionsError);
+          } else if (configs?.authentication?.mode === "static") {
+            if (!accessControl) return next(notEnoughPermissionsError);
+
+            const hasPermission = this.checkStaticAccessControl(
+              user,
+              action,
+              accessControl
+            );
+
+            if (!hasPermission) return next(notEnoughPermissionsError);
           }
         }
 
@@ -336,7 +366,9 @@ export class AuthService {
     if (!user)
       throw new AppError(
         "The user belonging to this token does no longer exists",
-        401
+        401,
+        {},
+        "UserNoLongerExists"
       );
 
     if (
@@ -392,6 +424,65 @@ export class AuthService {
     } else return this.authenticate;
 
     return this.authenticate;
+  }
+
+  /**
+   * Creates a permission checker function for a specific action and resource.
+   *
+   * PS: This method should be called during application initialization to build permission validators.
+   *
+   *
+   * @param action - The action to check permission for (e.g., 'View', 'Create', 'Delete')
+   * @param resource - The resource being accessed (e.g., 'user', 'product', 'order')
+   * @param accessControl - Access control rules (required for static authentication mode)
+   * @returns A function that takes a user object and returns a boolean indicating permission status
+   *
+   * @example
+   * ```typescript
+   * const hasViewProductPermission = await authService.permission('View', 'product');
+   *
+   * // Later in handler:
+   * const canAccess = await hasViewProductPermission(user);
+   * if (canAccess) {
+   *   // User has permission
+   * }
+   * ```
+   */
+  async permission(
+    action: string,
+    resource: string,
+    accessControl?: AccessControlRules
+  ) {
+    // Check if called during request handling (deep call stack indicates handler execution)
+    const stack = new Error().stack;
+    const stackDepth = stack ? stack.split("\n").length : 0;
+    // console.log(stackDepth, stack);
+
+    if (stackDepth > 10) {
+      throw new Error(
+        "authService.permission() should be called during application initialization level."
+      );
+    }
+
+    return async (user: Record<string, any>): Promise<boolean> => {
+      // getArkosConfig must not be called the same time as arkos.init()
+      const configs = getArkosConfig();
+      console.log(configs);
+      if (!configs?.authentication)
+        throw Error(
+          "Validation Error: Trying to use authService.permission without setting up authentication."
+        );
+
+      if (configs?.authentication?.mode === "dynamic") {
+        return await this.checkDynamicAccessControl(user.id, action, resource);
+      } else if (configs?.authentication?.mode === "static") {
+        return (
+          !!accessControl &&
+          this.checkStaticAccessControl(user as any, action, accessControl)
+        );
+      }
+      return false;
+    };
   }
 }
 

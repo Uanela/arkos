@@ -1,7 +1,6 @@
 import path from "path";
 import fs from "fs";
 import { ChildProcess, spawn } from "child_process";
-import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { importModule } from "../helpers/global.helpers";
 import { fullCleanCwd } from "../helpers/fs.helpers";

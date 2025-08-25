@@ -212,3 +212,12 @@ export function handleNonExistingRecord(err: {
     `Operation could not be completed as the required record was not found`;
   return new AppError(message, 404, err.meta || {}, "PrismaRecordNotFound");
 }
+
+export function handlePrismaClientInitializationError(_: any) {
+  return new AppError(
+    "Database is not available.",
+    503,
+    {},
+    "DatabaseNotAvailable"
+  );
+}

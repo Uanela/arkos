@@ -8,31 +8,29 @@ jest.mock("../../sheu", () => ({
   warn: jest.fn(),
 }));
 
-jest.mock("net");
+jest.mock("net", () => ({
+  createConnection: jest.fn(),
+}));
 
 describe("PortAndHostAllocator", () => {
-  let mockServer: jest.Mocked<net.Server>;
-  let mockCreateServer: jest.MockedFunction<typeof net.createServer>;
+  let mockSocket: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
+    mockSocket = {
+      on: jest.fn(),
+      destroy: jest.fn(),
+    };
+
+    (net.createConnection as jest.Mock).mockImplementation(() => mockSocket);
+
+    // Reset singleton state
     (portAndHostAllocator as any).host = undefined;
     (portAndHostAllocator as any).port = undefined;
+    (portAndHostAllocator as any).prevWarnings = new Set();
 
     jest.spyOn(console, "info").mockImplementation(jest.fn());
-
-    // Create mock server
-    mockServer = {
-      listen: jest.fn(),
-      close: jest.fn(),
-      on: jest.fn(),
-    } as any;
-
-    mockCreateServer = net.createServer as jest.MockedFunction<
-      typeof net.createServer
-    >;
-    mockCreateServer.mockReturnValue(mockServer);
   });
 
   afterEach(() => {
@@ -135,14 +133,12 @@ describe("PortAndHostAllocator", () => {
   });
 
   describe("isPortAvailable", () => {
-    it("should return true when port is available", async () => {
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+    it("should return true when port is available (error event)", async () => {
+      // Mock socket event handlers - simulate connection error (port available)
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
       });
 
       const result = await (portAndHostAllocator as any).isPortAvailable(
@@ -151,19 +147,28 @@ describe("PortAndHostAllocator", () => {
       );
 
       expect(result).toBe(true);
-      expect(mockServer.listen).toHaveBeenCalledWith(
-        8000,
+      expect(net.createConnection).toHaveBeenCalledWith({
+        host: "localhost",
+        port: 8000,
+        timeout: 100,
+      });
+      expect(mockSocket.on).toHaveBeenCalledWith(
+        "connect",
         expect.any(Function)
       );
-      expect(mockServer.close).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockSocket.on).toHaveBeenCalledWith("error", expect.any(Function));
+      expect(mockSocket.on).toHaveBeenCalledWith(
+        "timeout",
+        expect.any(Function)
+      );
     });
 
-    it("should return false when port is not available", async () => {
-      mockServer.on.mockImplementation((event, callback) => {
-        if (event === ("error" as any)) {
-          callback(new Error("Port in use") as any);
+    it("should return false when port is in use (connect event)", async () => {
+      // Mock socket event handlers - simulate successful connection (port in use)
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "connect") {
+          setTimeout(() => callback(), 0);
         }
-        return "" as any;
       });
 
       const result = await (portAndHostAllocator as any).isPortAvailable(
@@ -172,26 +177,74 @@ describe("PortAndHostAllocator", () => {
       );
 
       expect(result).toBe(false);
-      expect(mockServer.on).toHaveBeenCalledWith("error", expect.any(Function));
+      expect(net.createConnection).toHaveBeenCalledWith({
+        host: "localhost",
+        port: 8000,
+        timeout: 100,
+      });
+      expect(mockSocket.destroy).toHaveBeenCalled();
     });
 
-    it("should handle server creation properly", async () => {
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+    it("should return true when port times out (timeout event)", async () => {
+      // Mock socket event handlers - simulate timeout (port available)
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "timeout") {
+          setTimeout(() => callback(), 0);
+        }
       });
 
-      await (portAndHostAllocator as any).isPortAvailable("127.0.0.1", 3000);
-
-      expect(net.createServer).toHaveBeenCalledTimes(1);
-      expect(mockServer.listen).toHaveBeenCalledWith(
-        3000,
-        expect.any(Function)
+      const result = await (portAndHostAllocator as any).isPortAvailable(
+        "localhost",
+        8000
       );
+
+      expect(result).toBe(true);
+      expect(net.createConnection).toHaveBeenCalledWith({
+        host: "localhost",
+        port: 8000,
+        timeout: 100,
+      });
+      expect(mockSocket.destroy).toHaveBeenCalled();
+    });
+
+    it("should use custom host when not localhost or 127.0.0.1", async () => {
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
+      });
+
+      const result = await (portAndHostAllocator as any).isPortAvailable(
+        "example.com",
+        8000
+      );
+
+      expect(result).toBe(true);
+      expect(net.createConnection).toHaveBeenCalledWith({
+        host: "example.com",
+        port: 8000,
+        timeout: 100,
+      });
+    });
+
+    it("should convert 127.0.0.1 to localhost", async () => {
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
+      });
+
+      const result = await (portAndHostAllocator as any).isPortAvailable(
+        "127.0.0.1",
+        3000
+      );
+
+      expect(result).toBe(true);
+      expect(net.createConnection).toHaveBeenCalledWith({
+        host: "localhost",
+        port: 3000,
+        timeout: 100,
+      });
     });
   });
 
@@ -210,20 +263,18 @@ describe("PortAndHostAllocator", () => {
         host: "cached-host",
         port: "9999",
       });
-      expect(net.createServer).not.toHaveBeenCalled();
+      expect(net.createConnection).not.toHaveBeenCalled();
+      expect(sheu.warn).toHaveBeenCalledWith("port in use 1");
     });
 
     it("should find the first available port", async () => {
       const env = { PORT: "3000" };
 
-      // Mock port availability - first port is available
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+      // Mock port as available (error event triggered)
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
       });
 
       const result = await portAndHostAllocator.getHostAndAvailablePort(env);
@@ -232,43 +283,25 @@ describe("PortAndHostAllocator", () => {
         host: "localhost",
         port: "3000",
       });
-      expect(mockServer.listen).toHaveBeenCalledWith(
-        3000,
-        expect.any(Function)
-      );
+      expect(net.createConnection).toHaveBeenCalledWith({
+        host: "localhost",
+        port: 3000,
+        timeout: 100,
+      });
     });
 
     it("should increment port until available port is found", async () => {
       const env = { PORT: "4000" };
       let callCount = 0;
 
-      // Mock first two ports as unavailable, third as available
-      mockServer.on.mockImplementation((event, callback) => {
-        if (event === ("error" as any) && callCount < 3) {
-          callback(new Error("Port in use") as any);
-        }
-        return "" as any;
-      });
-
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callCount <= 1) {
-          // Simulate port not available for first two calls
-          setTimeout(() => {
-            const errorCallback = mockServer.on.mock.calls.find(
-              (call) => call[0] === ("error" as any)
-            )?.[1];
-            if (errorCallback) errorCallback(new Error("Port in use") as any);
-          }, 0);
-        } else {
-          // Third call succeeds
-          if (callback) callback();
+      // Mock first two ports as unavailable (connect event), third as available (error event)
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "connect" && callCount < 4) {
+          setTimeout(() => callback(), 0);
+        } else if (event === "error" && callCount >= 4) {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
         }
         callCount++;
-      }) as any);
-
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
       });
 
       const result = await portAndHostAllocator.getHostAndAvailablePort(env, {
@@ -295,17 +328,11 @@ describe("PortAndHostAllocator", () => {
         port: 5000,
       };
 
-      mockServer.listen.mockImplementation(((
-        _: any,
-        _1: any,
-        callback: any
-      ) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+      // Mock port as available
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
       });
 
       const result = await portAndHostAllocator.getHostAndAvailablePort(
@@ -317,23 +344,21 @@ describe("PortAndHostAllocator", () => {
         host: "0.0.0.0",
         port: "5000",
       });
-      expect(mockServer.listen).toHaveBeenCalledWith(
-        5000,
-        "0.0.0.0",
-        expect.any(Function)
-      );
+      expect(net.createConnection).toHaveBeenCalledWith({
+        host: "0.0.0.0",
+        port: 5000,
+        timeout: 100,
+      });
     });
 
     it("should handle string ports correctly", async () => {
       const env = { PORT: "8080" };
 
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+      // Mock port as available
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
       });
 
       const result = await portAndHostAllocator.getHostAndAvailablePort(env);
@@ -342,22 +367,21 @@ describe("PortAndHostAllocator", () => {
         host: "localhost",
         port: "8080",
       });
-      expect(mockServer.listen).toHaveBeenCalledWith(
-        8080,
-        expect.any(Function)
-      );
+      expect(net.createConnection).toHaveBeenCalledWith({
+        host: "localhost",
+        port: 8080,
+        timeout: 100,
+      });
     });
 
     it("should cache the found port and host for subsequent calls", async () => {
       const env = { PORT: "6000", HOST: "127.0.0.1" };
 
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+      // Mock port as available
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
       });
 
       // First call
@@ -368,8 +392,8 @@ describe("PortAndHostAllocator", () => {
       const result2 = await portAndHostAllocator.getHostAndAvailablePort(env);
       expect(result2).toEqual({ host: "127.0.0.1", port: "6000" });
 
-      // net.createServer should only be called once (for the first call)
-      expect(net.createServer).toHaveBeenCalledTimes(1);
+      // net.createConnection should only be called once (for the first call)
+      expect(net.createConnection).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -377,13 +401,11 @@ describe("PortAndHostAllocator", () => {
     it("should maintain state across multiple method calls", async () => {
       const env = { PORT: "7000" };
 
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+      // Mock port as available
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
       });
 
       const result1 = await portAndHostAllocator.getHostAndAvailablePort(env);
@@ -399,13 +421,11 @@ describe("PortAndHostAllocator", () => {
     it("should handle undefined config gracefully", async () => {
       const env = {};
 
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+      // Mock port as available
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
       });
 
       const result = await portAndHostAllocator.getHostAndAvailablePort(
@@ -420,13 +440,11 @@ describe("PortAndHostAllocator", () => {
     });
 
     it("should handle empty environment object", async () => {
-      mockServer.listen.mockImplementation(((_: any, callback: any) => {
-        if (callback) callback?.();
-        return "" as any;
-      }) as any);
-      mockServer.close.mockImplementation((callback) => {
-        if (callback) callback();
-        return "" as any;
+      // Mock port as available
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
       });
 
       const result = await portAndHostAllocator.getHostAndAvailablePort({});
@@ -440,14 +458,16 @@ describe("PortAndHostAllocator", () => {
 
   describe("logWarnings()", () => {
     it("should log prev warnings", () => {
-      (portAndHostAllocator as any).prevWarnings = [
+      (portAndHostAllocator as any).prevWarnings = new Set([
         "port in use 1",
         "port in use 2",
-      ];
+      ]);
 
       portAndHostAllocator.logWarnings();
 
       expect(sheu.warn).toHaveBeenCalledTimes(2);
+      expect(sheu.warn).toHaveBeenCalledWith("port in use 1");
+      expect(sheu.warn).toHaveBeenCalledWith("port in use 2");
     });
   });
 });

@@ -62,7 +62,7 @@ class PortAndHostAllocator {
       this.prevWarnings.add(msg);
 
       if (config?.logWarning) {
-        console.info("");
+        // console.info("");
         sheu.warn(`${msg}`);
       }
 
@@ -79,20 +79,27 @@ class PortAndHostAllocator {
    */
   private async isPortAvailable(host: string, port: number): Promise<boolean> {
     return new Promise((resolve) => {
-      const server = net.createServer();
-      const hostAndPort = [
+      const actualHost = !["localhost", "127.0.0.1"].includes(host)
+        ? host
+        : "localhost";
+      const socket = net.createConnection({
+        host: actualHost,
         port,
-        !["localhost", "127.0.0.1"].includes(host) ? host : undefined,
-      ].filter((val) => !!val) as any;
-
-      server.listen(...hostAndPort, () => {
-        server.close(() => {
-          resolve(true);
-        });
+        timeout: 100,
       });
 
-      server.on("error", () => {
+      socket.on("connect", () => {
+        socket.destroy();
         resolve(false);
+      });
+
+      socket.on("error", () => {
+        resolve(true);
+      });
+
+      socket.on("timeout", () => {
+        socket.destroy();
+        resolve(true); // Port is available
       });
     });
   }

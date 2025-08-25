@@ -508,8 +508,9 @@ export function getPrismaSchemasContent(): string {
   if (prismaSchemasContent) return prismaSchemasContent;
 
   const prismaContent: string[] = [];
+  const prismaPath = path.resolve(process.cwd(), "prisma");
 
-  const files = getAllPrismaFiles("./prisma");
+  const files = getAllPrismaFiles(prismaPath);
 
   for (const file of files) {
     const content = fs.readFileSync(file, "utf-8");
