@@ -8,7 +8,6 @@ import http from "http";
 import sheu from "./utils/sheu";
 import { capitalize } from "./utils/helpers/text.helpers";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";
-import checkTsErrorsIfUsingTs from "./utils/helpers/check-ts-errors-if-using-ts";
 
 process.on("uncaughtException", (err) => {
   if (err.message.includes("EPIPE")) return;
@@ -57,14 +56,11 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
   try {
     _arkosConfig.available = true;
 
-    // await checkTsErrorsIfUsingTs();
-
     const portAndHost = await portAndHostAllocator.getHostAndAvailablePort(
       process.env,
       arkosConfig
     );
 
-    // initializePrismaModels();
     _arkosConfig = deepmerge(_arkosConfig, arkosConfig);
 
     _app = await bootstrap(_arkosConfig);

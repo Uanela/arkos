@@ -298,11 +298,9 @@ describe("AuthService", () => {
       const decodedPayload = { id: "user-123", iat: 1617123456 };
 
       // Mock jwt.verify to call the callback with decoded payload
-      (jwt.verify as jest.Mock).mockImplementation(
-        (token, secret, callback) => {
-          callback(null, decodedPayload);
-        }
-      );
+      (jwt.verify as jest.Mock).mockImplementation((_, _1, callback) => {
+        callback(null, decodedPayload);
+      });
 
       // Execute
       const result = await authService.verifyJwtToken(token);
@@ -322,11 +320,9 @@ describe("AuthService", () => {
       const jwtError = new Error("Invalid token");
 
       // Mock jwt.verify to call the callback with an error
-      (jwt.verify as jest.Mock).mockImplementation(
-        (token, secret, callback) => {
-          callback(jwtError, null);
-        }
-      );
+      (jwt.verify as jest.Mock).mockImplementation((_, _1, callback) => {
+        callback(jwtError, null);
+      });
 
       // Execute and Verify
       await expect(authService.verifyJwtToken(token)).rejects.toEqual(jwtError);
@@ -344,11 +340,9 @@ describe("AuthService", () => {
       const decodedPayload = { id: "user-123", iat: 1617123456 };
 
       // Mock jwt.verify to call the callback with decoded payload
-      (jwt.verify as jest.Mock).mockImplementation(
-        (token, secret, callback) => {
-          callback(null, decodedPayload);
-        }
-      );
+      (jwt.verify as jest.Mock).mockImplementation((_, _1, callback) => {
+        callback(null, decodedPayload);
+      });
 
       // Execute
       await authService.verifyJwtToken(token, customSecret);
@@ -842,6 +836,358 @@ describe("AuthService", () => {
 
       // Verify
       expect(middleware).toBe(authService.authenticate);
+    });
+  });
+
+  describe("checkStaticAccessControl", () => {
+    it("should return true when user role matches authorized roles (single role)", () => {
+      // Setup
+      const user = { id: "user-123", role: "admin", roles: null } as any;
+      const action = "create";
+      const accessControl = { create: ["admin", "editor"] };
+
+      // Execute
+      const result = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      // Verify
+      expect(result).toBe(true);
+    });
+
+    it("should return true when user has multiple roles and one matches", () => {
+      // Setup
+      const user = {
+        id: "user-123",
+        role: null,
+        roles: ["viewer", "editor"],
+      } as any;
+      const action = "create";
+      const accessControl = { create: ["admin", "editor"] };
+
+      // Execute
+      const result = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      // Verify
+      expect(result).toBe(true);
+    });
+
+    it("should return false when user role does not match authorized roles", () => {
+      // Setup
+      const user = { id: "user-123", role: "viewer", roles: null } as any;
+      const action = "create";
+      const accessControl = { create: ["admin", "editor"] };
+
+      // Execute
+      const result = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      // Verify
+      expect(result).toBe(false);
+    });
+
+    it("should return false when action is not defined in accessControl", () => {
+      // Setup
+      const user = { id: "user-123", role: "admin", roles: null } as any;
+      const action = "delete";
+      const accessControl = { create: ["admin", "editor"] };
+
+      // Execute
+      const result = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      // Verify
+      expect(result).toBe(false);
+    });
+
+    it("should work with array-based accessControl configuration", () => {
+      // Setup
+      const user = { id: "user-123", role: "admin", roles: null } as any;
+      const action = "create";
+      const accessControl = ["admin", "editor"];
+
+      // Execute
+      const result = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      // Verify
+      expect(result).toBe(true);
+    });
+
+    it("should return false with array-based accessControl when role doesn't match", () => {
+      // Setup
+      const user = { id: "user-123", role: "viewer", roles: null } as any;
+      const action = "create";
+      const accessControl = ["admin", "editor"];
+
+      // Execute
+      const result = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      // Verify
+      expect(result).toBe(false);
+    });
+
+    // it("should throw error when user has no role or roles field", () => {
+    //   // Setup
+    //   const user = { id: "user-123" } as any;
+    //   const action = "create";
+    //   const accessControl = ["admin", "editor"];
+
+    //   // Execute & Verify
+    //   expect(() => {
+    //     (authService as any).checkStaticAccessControl(
+    //       user,
+    //       action,
+    //       accessControl
+    //     );
+    //   }).toThrow(
+    //     "Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles."
+    //   );
+    // });
+
+    it("should prioritize roles array over single role field", () => {
+      // Setup
+      const user = { id: "user-123", role: "viewer", roles: ["admin"] } as any;
+      const action = "create";
+      const accessControl = { create: ["admin"] };
+
+      // Execute
+      const result = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      // Verify
+      expect(result).toBe(true);
+    });
+  });
+
+  describe("checkDynamicAccessControl", () => {
+    it("should return true when user has required permission", async () => {
+      // Setup
+      const userId = "user-123";
+      const action = "create";
+      const resource = "User";
+
+      mockPrisma.userRole.findFirst.mockResolvedValue({ id: "role-123" });
+
+      // Execute
+      const result = await (authService as any).checkDynamicAccessControl(
+        userId,
+        action,
+        resource
+      );
+
+      // Verify
+      expect(mockPrisma.userRole.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: "user-123",
+          role: {
+            permissions: {
+              some: {
+                resource: "User",
+                action: "create",
+              },
+            },
+          },
+        },
+        select: { id: true },
+      });
+      expect(result).toBe(true);
+    });
+
+    it("should return false when user does not have required permission", async () => {
+      // Setup
+      const userId = "user-123";
+      const action = "delete";
+      const resource = "Post";
+
+      mockPrisma.userRole.findFirst.mockResolvedValue(null);
+
+      // Execute
+      const result = await (authService as any).checkDynamicAccessControl(
+        userId,
+        action,
+        resource
+      );
+
+      // Verify
+      expect(mockPrisma.userRole.findFirst).toHaveBeenCalledWith({
+        where: {
+          userId: "user-123",
+          role: {
+            permissions: {
+              some: {
+                resource: "Post",
+                action: "delete",
+              },
+            },
+          },
+        },
+        select: { id: true },
+      });
+      expect(result).toBe(false);
+    });
+  });
+
+  describe("permission", () => {
+    let mockStack = new Array(8).fill("at someFunction").join("\n");
+    // beforeEach(() => {
+    jest.spyOn(global, "Error").mockImplementation((message) => {
+      console.log(message);
+      const error = new Error(message);
+      error.stack = mockStack;
+      return error;
+    });
+
+    afterAll(() => {
+      jest.clearAllMocks();
+    });
+
+    it("should throw error when called with deep call stack (indicating handler execution)", async () => {
+      const originalStack = Error.prototype.stack;
+
+      Object.defineProperty(Error.prototype, "stack", {
+        get: () => new Array(12).fill("at someFunction").join("\n"),
+        configurable: true,
+      });
+
+      await expect(authService.permission("create", "User")).rejects.toThrow(
+        expect.any(Error)
+      );
+
+      Object.defineProperty(Error.prototype, "stack", {
+        get: () => originalStack,
+        configurable: true,
+      });
+    });
+
+    it("should not throw error when called with shallow call stack", async () => {
+      // Setup
+      const originalStack = Error.prototype.stack;
+
+      // Mock shallow call stack (less than 10 stack frames)
+      Object.defineProperty(Error.prototype, "stack", {
+        get: () => new Array(8).fill("at someFunction").join("\n"),
+        configurable: true,
+      });
+
+      // Execute
+      const permissionChecker = await authService.permission("create", "User");
+
+      // Verify
+      expect(typeof permissionChecker).toBe("function");
+
+      // Cleanup
+      Object.defineProperty(Error.prototype, "stack", {
+        get: () => originalStack,
+        configurable: true,
+      });
+    });
+
+    // it("should return function that throws error when authentication is not configured", async () => {
+    //   // Setup
+    //   (getArkosConfig as jest.Mock).mockReturnValue({});
+    //   const permissionChecker = await authService.permission("create", "User");
+    //   const user = { id: "user-123" };
+
+    //   // Execute & Verify
+    //   await expect(permissionChecker(user)).rejects.toThrow(
+    //     "Validation Error: Trying to use authService.permission without setting up authentication."
+    //   );
+    // });
+
+    it("should return function that calls checkDynamicAccessControl for dynamic mode", async () => {
+      // Setup
+      mockConfig.authentication.mode = "dynamic";
+      const permissionChecker = await authService.permission("create", "User");
+      const user = { id: "user-123" };
+
+      // Mock checkDynamicAccessControl to return true
+      jest
+        .spyOn(authService as any, "checkDynamicAccessControl")
+        .mockResolvedValue(true);
+
+      // Execute
+      const result = await permissionChecker(user);
+
+      // Verify
+      expect(
+        (authService as any).checkDynamicAccessControl
+      ).toHaveBeenCalledWith("user-123", "create", "User");
+      expect(result).toBe(true);
+    });
+
+    it("should return function that calls checkStaticAccessControl for static mode", async () => {
+      // Setup
+      mockConfig.authentication.mode = "static";
+      const accessControl = { create: ["admin"] };
+      const permissionChecker = await authService.permission(
+        "create",
+        "User",
+        accessControl
+      );
+      const user = { id: "user-123", role: "admin" };
+
+      // Mock checkStaticAccessControl to return true
+      jest
+        .spyOn(authService as any, "checkStaticAccessControl")
+        .mockReturnValue(true);
+
+      // Execute
+      const result = await permissionChecker(user);
+
+      // Verify
+      expect(
+        (authService as any).checkStaticAccessControl
+      ).toHaveBeenCalledWith(user, "create", accessControl);
+      expect(result).toBe(true);
+    });
+
+    it("should return function that returns false for static mode without accessControl", async () => {
+      // Setup
+      mockConfig.authentication.mode = "static";
+      const permissionChecker = await authService.permission("create", "User"); // No accessControl provided
+      const user = { id: "user-123", role: "admin" };
+
+      // Execute
+      const result = await permissionChecker(user);
+
+      // Verify
+      expect(result).toBe(false);
+    });
+
+    it("should return function that returns false for unknown authentication mode", async () => {
+      // Setup
+      mockConfig.authentication.mode = "unknown";
+      const permissionChecker = await authService.permission("create", "User");
+      const user = { id: "user-123" };
+
+      // Execute
+      const result = await permissionChecker(user);
+
+      // Verify
+      expect(result).toBe(false);
     });
   });
 });

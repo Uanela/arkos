@@ -40,8 +40,6 @@ function createPackageJson(filePath: string, config: PackageJsonConfig): void {
 }
 
 function main(): void {
-  // console.log("🚀 Generating package.json files for dist outputs...\n");
-
   Object.entries(configs).forEach(([filePath, config]) => {
     createPackageJson(filePath, config);
   });

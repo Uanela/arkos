@@ -9,12 +9,13 @@
 - Update documentation to match all new changes, make mention of old way of doing things if there where significant changes.
 - add strict routing mode into cli flags
 - add documentain about stric mode routing and update jsdocs on arkos config
+- add documentain about the new `authService.permission()` method and also add under jsdocs
 
 ### Change
 
 ### Fix
 
-- strict routing only work for export routers
+- strict routing only work for exported routers
 - Enhance importing components helper function
 
 ### Remove
@@ -61,6 +62,7 @@
 - refactores all function containg `ModelModules` to `ModuleComponents` for better convey that are importing a module components
 - changed the generate interceptors middlewares to be wrapped on array
 - stopped loading controller, service files -> they weren't in use anywhere
+- changed `ts-node-dev` for `tsx-strict` for faster startup, 2X faster.
 
 ### Fix
 

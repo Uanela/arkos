@@ -14,7 +14,7 @@ import { server } from "../../server";
  * @param {AppError} err - The error object thrown by the application.
  * @param {Request} req - The Express request object.
  * @param {Response} res - The Express response object.
- * @param {NextFunction} next - The next middleware function in the chain.
+ * @param {NextFunction} _ - The next middleware function in the chain.
  *
  * @returns {void} - Sends the response with the error details to the client.
  */
@@ -30,10 +30,8 @@ export default function errorHandler(
   err.status = err.status || "error";
 
   // If the environment is not production, send detailed error information
-  if (process.env.NODE_ENV !== "production") {
-    sendDevelopmentError(err, req, res);
-    return;
-  }
+  if (process.env.NODE_ENV !== "production")
+    return sendDevelopmentError(err, req, res);
 
   // Prepare error object for response, copying the original error's properties
   let error = { ...err, message: err.message };
@@ -47,6 +45,8 @@ export default function errorHandler(
   // Handle specific Prisma client validation errors
   if (err.name === "PrismaClientValidationError")
     error = errorControllerHelper.handlePrismaClientValidationError(err);
+  if (err.name === "PrismaClientInitializationError")
+    error = errorControllerHelper.handlePrismaClientInitializationError(err);
 
   // Handle Prisma database-specific error codes (P1000 to P3005)
   if (err.code === "P1000")

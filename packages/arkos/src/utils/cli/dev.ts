@@ -61,32 +61,37 @@ export async function devCommand(options: DevOptions = {}) {
 
       if (fileExt === "ts") {
         // Enhanced ts-node-dev configuration
-        child = spawn(
-          "npx",
-          [
-            "ts-node-dev",
-            "--respawn",
-            "--notify=false", // Disable desktop notifications
-            "--ignore-watch",
-            "node_modules",
-            "--ignore-watch",
-            "dist",
-            "--ignore-watch",
-            "build",
-            "--ignore-watch",
-            ".dist",
-            "--ignore-watch",
-            ".build",
-            "--watch",
-            "src",
-            entryPoint,
-          ],
-          {
-            stdio: "inherit",
-            env,
-            shell: true,
-          }
-        );
+        // child = spawn(
+        //   "npx",
+        //   [
+        //     "ts-node-dev",
+        //     "--respawn",
+        //     "--notify=false", // Disable desktop notifications
+        //     "--ignore-watch",
+        //     "node_modules",
+        //     "--ignore-watch",
+        //     "dist",
+        //     "--ignore-watch",
+        //     "build",
+        //     "--ignore-watch",
+        //     ".dist",
+        //     "--ignore-watch",
+        //     ".build",
+        //     "--watch",
+        //     "src",
+        //     entryPoint,
+        //   ],
+        //   {
+        //     stdio: "inherit",
+        //     env,
+        //     shell: true,
+        //   }
+        // );
+        child = spawn("npx", ["tsx-strict", "--watch", entryPoint], {
+          stdio: "inherit",
+          env,
+          shell: true,
+        });
       } else {
         // Enhanced nodemon configuration
         child = spawn(
@@ -220,14 +225,6 @@ export async function devCommand(options: DevOptions = {}) {
             filePath
           );
       });
-
-      // additionalWatcher.on("unlink", (filePath) => {
-      //   if (!restartingFiles.has(filePath))
-      //     scheduleRestart(
-      //       `${fullCleanCwd(filePath)} has been deleted`,
-      //       filePath
-      //     );
-      // });
 
       return additionalWatcher;
     };
