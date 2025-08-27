@@ -13,7 +13,7 @@ class Sheu {
    * Apply timestamp and bold formatting if requested
    */
   private formatText(
-    text: string = "",
+    content: any = "",
     options: {
       timestamp?: boolean | string;
       bold?: boolean;
@@ -21,20 +21,20 @@ class Sheu {
     } = {}
   ): string {
     const label = options?.label
-      ? text
+      ? content
         ? options?.label + " "
         : options?.label
       : "";
-    let result = `${label}${text}`;
+    let result = `${label}${content}`;
 
     // Apply timestamp if requested
     if (options.timestamp) {
       const timestamp = this.getTimestamp();
       if (options.timestamp === true)
-        result = `${label}\x1b[90m${timestamp}\x1b[0m ${text}`;
+        result = `${label}\x1b[90m${timestamp}\x1b[0m ${content}`;
       else if (typeof options.timestamp === "string") {
         const colorCode = this.getColorCode(options.timestamp);
-        result = `${label}${colorCode}${timestamp}\x1b[0m ${text}`;
+        result = `${label}${colorCode}${timestamp}\x1b[0m ${content}`;
       }
     }
 
@@ -66,10 +66,10 @@ class Sheu {
    * Red color
    */
   red(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[31m${text}\x1b[0m`;
+    const coloredText = `\x1b[31m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -77,10 +77,10 @@ class Sheu {
    * Blue color
    */
   blue(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[34m${text}\x1b[0m`;
+    const coloredText = `\x1b[34m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -88,10 +88,10 @@ class Sheu {
    * Green color
    */
   green(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[32m${text}\x1b[0m`;
+    const coloredText = `\x1b[32m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -99,10 +99,10 @@ class Sheu {
    * Yellow color
    */
   yellow(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[33m${text}\x1b[0m`;
+    const coloredText = `\x1b[33m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -110,10 +110,10 @@ class Sheu {
    * Cyan color
    */
   cyan(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[36m${text}\x1b[0m`;
+    const coloredText = `\x1b[36m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -121,10 +121,10 @@ class Sheu {
    * Magenta color
    */
   magenta(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[35m${text}\x1b[0m`;
+    const coloredText = `\x1b[35m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -132,10 +132,10 @@ class Sheu {
    * White color
    */
   white(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[37m${text}\x1b[0m`;
+    const coloredText = `\x1b[37m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -143,10 +143,10 @@ class Sheu {
    * Black color
    */
   black(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[30m${text}\x1b[0m`;
+    const coloredText = `\x1b[30m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -154,10 +154,10 @@ class Sheu {
    * Gray color
    */
   gray(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[90m${text}\x1b[0m`;
+    const coloredText = `\x1b[90m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
@@ -165,18 +165,18 @@ class Sheu {
    * Orange color
    */
   orange(
-    text: string,
+    content: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
-    const coloredText = `\x1b[91m${text}\x1b[0m`;
+    const coloredText = `\x1b[91m${content}\x1b[0m`;
     return this.formatText(coloredText, options || {});
   }
 
   /**
    * Bold text formatting
    */
-  bold(text: string, options?: { timestamp?: boolean | string }): string {
-    const boldText = `\x1b[1m${text}\x1b[0m`;
+  bold(content: any, options?: { timestamp?: boolean | string }): string {
+    const boldText = `\x1b[1m${content}\x1b[0m`;
     return this.formatText(boldText, { ...options, bold: false }); // Don't double-bold
   }
 
@@ -184,7 +184,7 @@ class Sheu {
    * Info label with cyan color [INFO]
    */
   info(
-    message: string,
+    message: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
     const label = `[\x1b[36mInfo\x1b[0m]`;
@@ -197,7 +197,7 @@ class Sheu {
    * Error label with red color [ERROR]
    */
   error(
-    message: string,
+    message: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
     const label = `[\x1b[31mError\x1b[0m]`;
@@ -224,7 +224,7 @@ class Sheu {
    * Done label with green color [DONE]
    */
   done(
-    message: string,
+    message: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
     const label = `[\x1b[32mDone\x1b[0m]`;
@@ -237,7 +237,7 @@ class Sheu {
    * Warning label with yellow color [WARN]
    */
   warn(
-    message: string,
+    message: any,
     options?: { timestamp?: boolean | string; bold?: boolean }
   ): string {
     const label = `[\x1b[33mWarn\x1b[0m]`;

@@ -63,3 +63,7 @@ export function detectPackageManagerFromUserAgent(): string {
 
   return "npm";
 }
+
+export function isEmptyObject(obj: Object) {
+  return typeof obj === "object" && Object.keys(obj).length === 0;
+}

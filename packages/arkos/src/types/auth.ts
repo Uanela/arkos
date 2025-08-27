@@ -15,15 +15,35 @@ export type AccessAction = "Create" | "Update" | "Delete" | "View" | string;
  *
  * @see {@link https://www.arkosjs.com/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior}
  * @example
+ *
  * const rules: AccessControlRules = {
- *   Create: ["Admin", "Manager"],
+ *   Create: {
+ *     roles: ["Admin", "Manager"],
+ *     name: "Create a new user",
+ *     description: "Allows to create a new user"
+ *   },
  *   Update: ["Admin"],
  *   Delete: ["Admin"],
  *   View: ["Admin", "User", "Guest"]
  * };
+ *
  */
 export type AccessControlRules = {
-  [key in AccessAction]: string[];
+  [key in AccessAction]:
+    | string[]
+    | {
+        /** Array of role names that have permission for this action */
+        roles: string[];
+        /** Human-readable name for this permission (optional) */
+        name?: string;
+        /** Detailed description of what this permission allows (optional) */
+        description?: string;
+        /** Detailed error message of what must be returned on forbidden response (optional)
+         *
+         * Note: not yet implemented
+         * */
+        errorMessage?: string;
+      };
 };
 
 /**

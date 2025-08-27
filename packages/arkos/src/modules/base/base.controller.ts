@@ -439,7 +439,7 @@ export class BaseController {
 export const getAvailableResources = catchAsync(async (_, res) => {
   const models = getModels();
   sheu.warn(
-    "This route `/api/available-routes` will be deprecated from 1.4.0-beta, consider using /api/auth/actions-and-permissions."
+    "This route `/api/available-routes` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead."
   );
 
   res.status(200).json({

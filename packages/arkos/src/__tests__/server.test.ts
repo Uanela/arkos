@@ -86,7 +86,7 @@ describe("Server Module", () => {
       expect(http.createServer).toHaveBeenCalledWith(mockApp);
       expect(mockServer.listen).toHaveBeenCalledWith(
         8000,
-        "localhost",
+        "127.0.0.1", // because localhost is translated to ip address
         expect.any(Function)
       );
     });
@@ -118,7 +118,7 @@ describe("Server Module", () => {
 
       expect(mockServer.listen).toHaveBeenCalledWith(
         9000,
-        "localhost",
+        "127.0.0.1", // because localhost is translated to ip address
         expect.any(Function)
       );
     });

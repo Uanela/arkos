@@ -218,13 +218,13 @@ export async function devCommand(options: DevOptions = {}) {
       //     );
       // });
 
-      additionalWatcher.on("add", (filePath) => {
-        if (!restartingFiles.has(filePath))
-          scheduleRestart(
-            `${fullCleanCwd(filePath)} has been created`,
-            filePath
-          );
-      });
+      //       additionalWatcher.on("add", (filePath) => {
+      //         if (!restartingFiles.has(filePath))
+      //           scheduleRestart(
+      //             `${fullCleanCwd(filePath)} has been created`,
+      //             filePath
+      //           );
+      //       });
 
       return additionalWatcher;
     };
