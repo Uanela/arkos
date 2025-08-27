@@ -558,11 +558,14 @@ export async function localValidatorFileExists(
   ]?.[camelCase(action)];
 }
 
+export const appModules = Array.from(
+  new Set([...models, "auth", "file-upload"])
+);
+
 /**
  * Allows to asynchronously load all app modules components at once to speed up app start time.
  */
 export async function loadAllModuleComponents(arkosConfig: ArkosConfig) {
-  const appModules = Array.from(new Set([...models, "auth"]));
   const moduleDirExists: string[] = [];
 
   await Promise.all(

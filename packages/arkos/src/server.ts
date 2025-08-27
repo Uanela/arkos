@@ -75,20 +75,24 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
       if (_arkosConfig?.configureServer)
         await _arkosConfig.configureServer(server);
 
-      server.listen(Number(portAndHost?.port), portAndHost.host!, () => {
-        const message = `${sheu.gray(time)} {{server}} waiting on http://${portAndHost?.host}:${portAndHost?.port}`;
+      server.listen(
+        Number(portAndHost?.port),
+        portAndHost.host! === "localhost" ? "127.0.0.1" : portAndHost.host!,
+        () => {
+          const message = `${sheu.gray(time)} {{server}} waiting on http://${portAndHost?.host}:${portAndHost?.port}`;
 
-        sheu.ready(
-          message.replace(
-            "{{server}}",
-            `${capitalize(process.env.NODE_ENV || "development")} server`
-          )
-        );
-        if (_arkosConfig?.swagger?.mode)
           sheu.ready(
-            `${message.replace("{{server}}", "Documentation")}${_arkosConfig?.swagger?.endpoint || "/api/docs"}`
+            message.replace(
+              "{{server}}",
+              `${capitalize(process.env.NODE_ENV || "development")} server`
+            )
           );
-      });
+          if (_arkosConfig?.swagger?.mode)
+            sheu.ready(
+              `${message.replace("{{server}}", "Documentation")}${_arkosConfig?.swagger?.endpoint || "/api/docs"}`
+            );
+        }
+      );
     } else {
       sheu.warn(
         `${sheu.gray(time)} Port set to undefined, hence no internal http server was setup.`

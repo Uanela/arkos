@@ -154,5 +154,16 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     ...processMiddleware(interceptors?.onUpdatePasswordError)
   );
 
+  router.get(
+    "/auth-actions",
+    authService.authenticate,
+    authService.handleAccessControl("View", "auth-action"),
+    ...processMiddleware(interceptors?.beforeFindManyAuthAction),
+    authController.findManyAuthAction,
+    ...processMiddleware(interceptors?.afterFindManyAuthAction),
+    sendResponse,
+    ...processMiddleware(interceptors?.onFindManyAuthActionError)
+  );
+
   return router;
 }

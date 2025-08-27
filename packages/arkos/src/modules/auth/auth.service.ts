@@ -18,9 +18,15 @@ import {
   AccessAction,
   AccessControlConfig,
   AuthenticationControlConfig,
-  AccessControlRules,
 } from "../../types/auth";
 import { MsDuration } from "./utils/helpers/auth.controller.helpers";
+import { appModules, getModuleComponents } from "../../utils/dynamic-loader";
+import { kebabCase } from "../../exports/utils";
+import {
+  invaliAuthTokenError,
+  loginRequiredError,
+} from "./utils/auth-error-objects";
+import authActionService from "./utils/services/auth-action.service";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -212,11 +218,17 @@ export class AuthService {
       throw Error(
         "Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles."
       );
+
     let authorizedRoles: string[] = [];
+
     if (Array.isArray(accessControl)) authorizedRoles = accessControl;
     else if (accessControl[action])
-      authorizedRoles = accessControl[action] || [];
+      authorizedRoles = Array.isArray(accessControl[action])
+        ? accessControl[action]
+        : accessControl[action].roles;
+
     const userRoles = Array.isArray(user?.roles) ? user.roles : [user.role];
+
     return !!userRoles.some((role: string) => authorizedRoles.includes(role));
   }
 
@@ -255,15 +267,17 @@ export class AuthService {
    * Middleware function to handle access control based on user roles and permissions.
    *
    * @param {AccessAction} action - The action being performed (e.g., create, update, delete, view).
-   * @param {string} resourceName - The resource name that the action is being performed on (e.g., "User", "Post").
+   * @param {string} resource - The resource name that the action is being performed on (e.g., "User", "Post").
    * @param {AccessControlConfig} accessControl - The access control configuration.
    * @returns {ArkosRequestHandler} The middleware function that checks if the user has permission to perform the action.
    */
   handleAccessControl(
     action: AccessAction,
-    resourceName: string,
+    resource: string,
     accessControl?: AccessControlConfig
   ): ArkosRequestHandler {
+    authActionService.add(action, resource, accessControl);
+
     return catchAsync(
       async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         if (req.user) {
@@ -286,7 +300,7 @@ export class AuthService {
             const hasPermission = await this.checkDynamicAccessControl(
               user.id,
               action,
-              resourceName
+              resource
             );
 
             if (!hasPermission) return next(notEnoughPermissionsError);
@@ -331,34 +345,17 @@ export class AuthService {
       token = req?.cookies?.arkos_access_token;
     }
 
-    if (!token)
-      throw new AppError(
-        "You are not logged in! please log in to get access",
-        401,
-        {},
-        "LoginRequired"
-      );
+    if (!token) throw loginRequiredError;
 
     let decoded: AuthJwtPayload | undefined;
+
     try {
       decoded = await this.verifyJwtToken(token);
     } catch (err) {
-      throw new AppError(
-        "Your auth token is invalid, please login again.",
-        401,
-        {},
-        "InvalidAuthToken"
-      );
+      throw invaliAuthTokenError;
     }
 
-    if (!decoded?.id)
-      throw new AppError(
-        "Your auth token is invalid, please login again.",
-        401,
-        {},
-        "InvalidAuthToken"
-      );
-
+    if (!decoded?.id) throw invaliAuthTokenError;
     const user: any | null = await (prisma as any).user.findUnique({
       where: { id: String(decoded.id) },
     });
@@ -433,8 +430,8 @@ export class AuthService {
    *
    *
    * @param action - The action to check permission for (e.g., 'View', 'Create', 'Delete')
-   * @param resource - The resource being accessed (e.g., 'user', 'product', 'order')
-   * @param accessControl - Access control rules (required for static authentication mode)
+   * @param resource - The resource being accessed, must be in kebabCase (e.g., 'user', 'cart-item', 'order')
+   * @param accessControl - Access control rules (required for static authentication mode), and it is automatically loaded for known modules such as all prisma models, auth and file-upload.
    * @returns A function that takes a user object and returns a boolean indicating permission status
    *
    * @example
@@ -448,21 +445,20 @@ export class AuthService {
    * }
    * ```
    */
-  async permission(
+  permission(
     action: string,
     resource: string,
-    accessControl?: AccessControlRules
+    accessControl?: AccessControlConfig
   ) {
     // Check if called during request handling (deep call stack indicates handler execution)
     const stack = new Error().stack;
-    const stackDepth = stack ? stack.split("\n").length : 0;
-    // console.log(stackDepth, stack);
 
-    if (stackDepth > 10) {
+    if (stack?.includes("node_modules/express/lib/router/index.js"))
       throw new Error(
         "authService.permission() should be called during application initialization level."
       );
-    }
+
+    authActionService.add(action, resource, accessControl);
 
     return async (user: Record<string, any>): Promise<boolean> => {
       // getArkosConfig must not be called the same time as arkos.init()
@@ -472,9 +468,16 @@ export class AuthService {
           "Validation Error: Trying to use authService.permission without setting up authentication."
         );
 
+      if (!user) throw loginRequiredError;
+      if (user.isSuperUser) return true;
+
       if (configs?.authentication?.mode === "dynamic") {
-        return await this.checkDynamicAccessControl(user.id, action, resource);
+        return await this.checkDynamicAccessControl(user?.id, action, resource);
       } else if (configs?.authentication?.mode === "static") {
+        if (!accessControl && appModules.includes(kebabCase(resource)))
+          accessControl = getModuleComponents(kebabCase(resource))?.authConfigs
+            ?.accessControl;
+
         return (
           !!accessControl &&
           this.checkStaticAccessControl(user as any, action, accessControl)

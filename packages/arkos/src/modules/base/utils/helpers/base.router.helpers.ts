@@ -13,6 +13,9 @@ import {
   sendResponse,
 } from "../../base.middlewares";
 import { processMiddleware } from "../../../../utils/helpers/routers.helpers";
+import { isEmptyObject } from "../../../../utils/helpers/global.helpers";
+import routerValidator from "../router-validator";
+import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
 
 export async function setupRouters(
   models: string[],
@@ -62,8 +65,14 @@ export async function setupRouters(
     };
 
     // If the custom router has its own routes, add them
-    if (customRouterModule?.default && !routerConfig?.disable)
-      router.use(`/${routeName}`, customRouterModule.default);
+    console.log(customRouterModule, modelNameInKebab);
+    if (!isEmptyObject(customRouterModule?.default) && !routerConfig?.disable)
+      if (routerValidator.isExpressRouter(customRouterModule?.default))
+        router.use(`/${routeName}`, customRouterModule.default);
+      else
+        throw Error(
+          `Validation Error: The exported router from ${modelNameInKebab}.router.${getUserFileExtension()} is not a valid express Router.`
+        );
 
     // POST /{routeName} - Create One
     if (

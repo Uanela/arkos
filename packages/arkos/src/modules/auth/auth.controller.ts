@@ -14,6 +14,7 @@ import {
   MsDuration,
   toMs,
 } from "./utils/helpers/auth.controller.helpers";
+import authActionService from "./utils/services/auth-action.service";
 
 /**
  * Default fields to exclude from user object when returning to client
@@ -339,7 +340,6 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         const configs = getArkosConfig();
         const initAuthConfigs = configs?.authentication;
-        // const modules = getModuleComponents("auth");
 
         if (!isPasswordCorrect)
           return next(new AppError("Current password is incorrect.", 400));
@@ -382,6 +382,18 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         res.status(200).json({
           status: "success",
           message: "Password updated successfully!",
+        });
+      }
+    ),
+
+    findManyAuthAction: catchAsync(
+      async (_: ArkosRequest, res: ArkosResponse) => {
+        const authActions = authActionService.getAll();
+
+        res.json({
+          total: authActions.length,
+          results: authActions.length,
+          data: authActions,
         });
       }
     ),
