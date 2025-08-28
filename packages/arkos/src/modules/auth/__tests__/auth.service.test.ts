@@ -5,6 +5,7 @@ import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { getArkosConfig } from "../../../server";
 import AppError from "../../error-handler/utils/app-error";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
+import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 
 // Mock dependencies
 jest.mock("jsonwebtoken");
@@ -14,7 +15,7 @@ jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../../server");
 jest.mock("../../error-handler/utils/app-error");
 
-jest.mock("../../../utils//dynamic-loader", () => ({
+jest.mock("../../../utils/dynamic-loader", () => ({
   getModels: jest.fn().mockReturnValue([]),
   getModelFields: jest.fn().mockReturnValue([]),
   getPrismaModels: jest.fn().mockReturnValue([]),
@@ -22,6 +23,8 @@ jest.mock("../../../utils//dynamic-loader", () => ({
   getPrismaSchemasContent: jest.fn().mockReturnValue(""),
   appModules: ["user", "auth", "file-upload"],
 }));
+
+jest.mock("fs");
 
 describe("AuthService", () => {
   let mockReq: any;

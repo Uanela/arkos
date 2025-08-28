@@ -1,37 +1,22 @@
+import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 import {
   handleRelationFieldsInBody,
   canBeUsedToConnect,
-  // isListFieldAnArray,
   isPrismaRelationFormat,
   removeApiAction,
 } from "../base.service.helpers"; // Update this path
 
+jest.mock("fs");
+
 // Mock the required helpers
 jest.mock("../../../../../utils//dynamic-loader", () => ({
-  getPrismaModelRelations: jest.fn((type) => {
-    if (type === "Post") {
-      return {
-        singular: [{ name: "category", type: "Category" }],
-        list: [
-          { name: "tags", type: "Tag" },
-          { name: "comments", type: "Comment" },
-        ],
-      };
-    }
-    if (type === "User") {
-      return {
-        singular: [{ name: "profile", type: "Profile" }],
-        list: [{ name: "posts", type: "Post" }],
-      };
-    }
-    if (type === "Comment") {
-      return {
-        singular: [{ name: "author", type: "User" }],
-      };
-    }
-    return null;
-  }),
-  getModelUniqueFields: jest.fn((modelName) => {
+  RelationField: {}, // Add this to satisfy TypeScript if needed
+  RelationFields: {}, // Add this to satisfy TypeScript if needed
+}));
+
+jest
+  .spyOn(prismaSchemaParser, "getModelUniqueFields")
+  .mockImplementation((modelName: string): any => {
     if (modelName === "Category") {
       return [{ name: "name" }];
     }
@@ -42,10 +27,53 @@ jest.mock("../../../../../utils//dynamic-loader", () => ({
       return [{ name: "email" }, { name: "username" }];
     }
     return [];
-  }),
-  RelationField: {}, // Add this to satisfy TypeScript if needed
-  RelationFields: {}, // Add this to satisfy TypeScript if needed
-}));
+  });
+
+jest
+  .spyOn(prismaSchemaParser, "getModelRelations")
+  .mockImplementation((type: string): any => {
+    if (type === "Post") {
+      return [
+        {
+          name: "category",
+          type: "Category",
+          isRelation: true,
+          connectionField: "categoryId",
+        },
+        {
+          name: "tags",
+          type: "Tag",
+          isRelation: true,
+          isArray: true,
+        },
+        { name: "comments", type: "Comment", isRelation: true, isArray: true },
+        ,
+      ];
+    }
+    if (type === "User") {
+      return [
+        {
+          name: "profile",
+          type: "Profile",
+          isRelation: true,
+          connectionField: "profileId",
+        },
+        ,
+        { name: "posts", type: "Post", isRelation: true, isArray: true },
+      ];
+    }
+    if (type === "Comment") {
+      return [
+        {
+          name: "author",
+          type: "User",
+          isRelation: true,
+          connectionField: "authorId",
+        },
+      ];
+    }
+    return null;
+  });
 
 describe("handleRelationFieldsInBody", () => {
   describe("Singular Relations", () => {
@@ -58,7 +86,7 @@ describe("handleRelationFieldsInBody", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
@@ -84,7 +112,7 @@ describe("handleRelationFieldsInBody", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
@@ -109,7 +137,7 @@ describe("handleRelationFieldsInBody", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [
           {
             name: "category",
@@ -141,7 +169,7 @@ describe("handleRelationFieldsInBody", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
@@ -173,7 +201,7 @@ describe("handleRelationFieldsInBody", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
@@ -198,7 +226,7 @@ describe("handleRelationFieldsInBody", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
@@ -222,7 +250,7 @@ describe("handleRelationFieldsInBody", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
@@ -248,9 +276,9 @@ describe("handleRelationFieldsInBody", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
-        list: [{ name: "tags", type: "Tag" }],
+        list: [{ name: "tags", type: "Tag", isRelation: true, isArray: true }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -269,7 +297,7 @@ describe("handleRelationFieldsInBody", () => {
         tags: [{ id: "1" }, { id: "2" }],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -290,7 +318,7 @@ describe("handleRelationFieldsInBody", () => {
         tags: [{ name: "JavaScript" }, { name: "TypeScript" }],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -314,7 +342,7 @@ describe("handleRelationFieldsInBody", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -341,7 +369,7 @@ describe("handleRelationFieldsInBody", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -367,7 +395,7 @@ describe("handleRelationFieldsInBody", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -394,9 +422,9 @@ describe("handleRelationFieldsInBody", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
-        list: [{ name: "tags", type: "Tag" }],
+        list: [{ name: "tags", type: "Tag", isRelation: true, isArray: true }],
       };
 
       const result = handleRelationFieldsInBody(body, relationFields);
@@ -427,7 +455,7 @@ describe("handleRelationFieldsInBody", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "posts", type: "Post" }],
       };
@@ -468,7 +496,7 @@ describe("handleRelationFieldsInBody", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "posts", type: "Post" }],
       };
@@ -524,7 +552,7 @@ describe("handleRelationFieldsInBody", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "posts", type: "Post" }],
       };
@@ -584,7 +612,7 @@ describe("handleRelationFieldsInBody", () => {
         posts: [],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "posts", type: "Post" }],
       };
@@ -604,7 +632,7 @@ describe("handleRelationFieldsInBody", () => {
         posts: null,
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [{ name: "posts", type: "Post" }],
       };
@@ -625,7 +653,7 @@ describe("handleRelationFieldsInBody", () => {
         comments: [{ content: "Valid array" }], // This should be processed
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [
           { name: "tags", type: "Tag" },
@@ -657,9 +685,9 @@ describe("IgnoreActions Parameter", () => {
       ],
     };
 
-    const relationFields = {
+    const relationFields: any = {
       singular: [],
-      list: [{ name: "tags", type: "Tag" }],
+      list: [{ name: "tags", type: "Tag", isRelation: true, isArray: true }],
     };
 
     const result = handleRelationFieldsInBody(body, relationFields, [
@@ -685,7 +713,7 @@ describe("IgnoreActions Parameter", () => {
       },
     };
 
-    const relationFields = {
+    const relationFields: any = {
       singular: [{ name: "profile", type: "Profile" }],
       list: [],
     };
@@ -711,7 +739,7 @@ describe("Unknown apiAction Error Handling", () => {
       ],
     };
 
-    const relationFields = {
+    const relationFields: any = {
       singular: [],
       list: [{ name: "tags", type: "Tag" }],
     };
@@ -730,7 +758,7 @@ describe("Unknown apiAction Error Handling", () => {
       },
     };
 
-    const relationFields = {
+    const relationFields: any = {
       singular: [{ name: "profile", type: "Profile" }],
       list: [],
     };
@@ -754,7 +782,7 @@ describe("Unknown apiAction Error Handling", () => {
       ],
     };
 
-    const relationFields = {
+    const relationFields: any = {
       singular: [],
       list: [{ name: "posts", type: "Post" }],
     };
@@ -775,9 +803,9 @@ describe("Unknown apiAction Error Handling", () => {
       ],
     };
 
-    const relationFields = {
+    const relationFields: any = {
       singular: [],
-      list: [{ name: "tags", type: "Tag" }],
+      list: [{ name: "tags", type: "Tag", isRelation: true, isArray: true }],
     };
 
     // Should not throw
@@ -900,7 +928,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
@@ -929,7 +957,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "profile", type: "Profile" }],
         list: [],
       };
@@ -959,7 +987,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "author", type: "User" }],
         list: [],
       };
@@ -989,7 +1017,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -1013,7 +1041,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -1037,7 +1065,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -1063,7 +1091,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         },
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "tags", type: "Tag" }],
       };
@@ -1101,7 +1129,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [{ name: "category", type: "Category" }],
         list: [
           { name: "tags", type: "Tag" },
@@ -1155,7 +1183,7 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
         ],
       };
 
-      const relationFields = {
+      const relationFields: any = {
         singular: [],
         list: [{ name: "posts", type: "Post" }],
       };

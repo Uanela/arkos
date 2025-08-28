@@ -13,7 +13,6 @@ import {
   sendResponse,
 } from "../../base.middlewares";
 import { processMiddleware } from "../../../../utils/helpers/routers.helpers";
-import { isEmptyObject } from "../../../../utils/helpers/global.helpers";
 import routerValidator from "../router-validator";
 import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
 
@@ -65,8 +64,10 @@ export async function setupRouters(
     };
 
     // If the custom router has its own routes, add them
-    console.log(customRouterModule, modelNameInKebab);
-    if (!isEmptyObject(customRouterModule?.default) && !routerConfig?.disable)
+    if (
+      typeof customRouterModule?.default === "function" &&
+      !routerConfig?.disable
+    )
       if (routerValidator.isExpressRouter(customRouterModule?.default))
         router.use(`/${routeName}`, customRouterModule.default);
       else

@@ -52,7 +52,9 @@ export let _arkosConfig: ArkosConfig & { available?: boolean } = {
  * You can prevent it from listen py passing port as undefined
  *
  */
-async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
+async function initApp(
+  arkosConfig: ArkosConfig = {}
+): Promise<Express | undefined> {
   try {
     _arkosConfig.available = true;
 
@@ -98,13 +100,14 @@ async function initApp(arkosConfig: ArkosConfig = {}): Promise<Express> {
         `${sheu.gray(time)} Port set to undefined, hence no internal http server was setup.`
       );
     }
+
+    return _app;
   } catch (err: any) {
     sheu.error(
       err?.message || "Something went wrong while starting your application!"
     );
     console.error(err);
   }
-  return _app;
 }
 
 process.on("unhandledRejection", (err: AppError) => {

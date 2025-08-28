@@ -28,7 +28,6 @@ function replaceVersionPlaceholder() {
     // Define target file paths
     const targetFiles = [
       "dist/esm/utils/cli/utils/cli.helpers.js",
-      "dist/esm/utils/cli/utils/cli.helpers.mjs",
       "dist/cjs/utils/cli/utils/cli.helpers.js",
     ];
 

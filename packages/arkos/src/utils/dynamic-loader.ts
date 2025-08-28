@@ -12,6 +12,7 @@ import {
 } from "./helpers/change-case.helpers";
 import { crd, getUserFileExtension } from "./helpers/fs.helpers";
 import { importModule } from "./helpers/global.helpers";
+import prismaSchemaParser from "./prisma/prisma-schema-parser";
 
 type ModeModules = Awaited<ReturnType<typeof importModuleComponents>>;
 
@@ -297,7 +298,6 @@ export async function importModuleComponents(
       try {
         const module = await importModule(filePath).catch(async (err) => {
           try {
-            // if (!err?.message?.includes("Cannot find module")) {
             if (await pathExists(filePath)) {
               sheu.error(`Failed to import ${fileName}`);
               console.error(err);
@@ -374,106 +374,12 @@ export function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
   return fileList;
 }
 
-const modelRegex = /model\s+(\w+)\s*{/g;
-export const models: string[] = [];
-export let prismaSchemasContent: string;
+export const models: string[] = prismaSchemaParser.models.map(
+  ({ name }) => name
+);
+
 export const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
   [] as any;
-
-export function initializePrismaModels() {
-  const copiedContent = getPrismaSchemasContent();
-
-  for (const model of models) {
-    const modelName = pascalCase(model);
-
-    const modelStart = copiedContent.indexOf(`model ${modelName} {`);
-    const modelEnd = copiedContent.indexOf("}", modelStart);
-    const modelDefinition = copiedContent.slice(modelStart, modelEnd);
-
-    const relations: RelationFields = {
-      singular: [],
-      list: [],
-    };
-    const lines = modelDefinition.split("\n");
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-
-      if (
-        !trimmedLine ||
-        trimmedLine.startsWith("model") ||
-        trimmedLine.startsWith("//") ||
-        trimmedLine.startsWith("/*")
-      )
-        continue;
-
-      const [fieldName, type] = trimmedLine.split(/\s+/);
-      const isUnique = trimmedLine?.includes?.("@unique");
-
-      if (isUnique) {
-        const existingFields = prismaModelsUniqueFields[model] || [];
-
-        const alreadyExists = existingFields.some(
-          (field) =>
-            field.name === fieldName &&
-            field.type === type &&
-            field.isUnique === isUnique
-        );
-
-        if (!alreadyExists) {
-          prismaModelsUniqueFields[model] = [
-            ...existingFields,
-            { name: fieldName, type, isUnique },
-          ];
-        }
-      }
-
-      const cleanType = type?.replace("[]", "").replace("?", "");
-
-      if (
-        trimmedLine?.includes?.("@relation") ||
-        trimmedLine.match(/\s+\w+(\[\])?(\s+@|$)/) ||
-        models?.includes?.(camelCase(cleanType || ""))
-      ) {
-        const enumStart = copiedContent.indexOf(`enum ${cleanType} {`);
-        const typeStart = copiedContent.indexOf(`type ${cleanType} {`);
-
-        if (
-          !cleanType ||
-          enumStart >= 0 ||
-          typeStart >= 0 ||
-          cleanType === "String" ||
-          cleanType === "Int" ||
-          cleanType === "Float" ||
-          cleanType === "Boolean" ||
-          cleanType === "DateTime" ||
-          cleanType === "Bytes" ||
-          cleanType === "Decimal" ||
-          cleanType === "BigInt" ||
-          cleanType === "Json"
-        ) {
-          continue;
-        }
-
-        if (!type?.includes?.("[]")) {
-          relations.singular.push({
-            name: fieldName,
-            type: cleanType,
-          });
-        } else {
-          relations.list.push({
-            name: fieldName,
-            type: cleanType,
-          });
-        }
-      }
-
-      prismaModelRelationFields[modelName] = relations;
-    }
-  }
-}
-
-initializePrismaModels();
 
 /**
  * Retrieves the relations for a given Prisma model.
@@ -497,36 +403,6 @@ export function getPrismaModelRelations(
  */
 function getModels(): string[] {
   return Array.from(new Set(models));
-}
-
-/**
- * Returns all content of all .prisma files gathered together
- *
- * @returns {string}
- */
-export function getPrismaSchemasContent(): string {
-  if (prismaSchemasContent) return prismaSchemasContent;
-
-  const prismaContent: string[] = [];
-  const prismaPath = path.resolve(process.cwd(), "prisma");
-
-  const files = getAllPrismaFiles(prismaPath);
-
-  for (const file of files) {
-    const content = fs.readFileSync(file, "utf-8");
-    if (!prismaContent?.includes?.(content)) prismaContent.push(content);
-  }
-
-  // Gather the content of all *.prisma files into single one
-  const content = prismaContent
-    .join("\n")
-    .replace(modelRegex, (_, modelName) => {
-      if (!models?.includes?.(modelName))
-        models.push(camelCase(modelName.trim()));
-      return `model ${modelName} {`;
-    });
-
-  return content;
 }
 
 /** Retuns a given model unique fields

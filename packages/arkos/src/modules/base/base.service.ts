@@ -1,15 +1,13 @@
-import {
-  camelCase,
-  kebabCase,
-  pascalCase,
-} from "../../utils/helpers/change-case.helpers";
+import { camelCase, kebabCase } from "../../utils/helpers/change-case.helpers";
 import {
   getModuleComponents,
-  getPrismaModelRelations,
   RelationFields,
 } from "../../utils/dynamic-loader";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { handleRelationFieldsInBody } from "./utils/helpers/base.service.helpers";
+import {
+  handleRelationFieldsInBody,
+  ModelGroupRelationFields,
+} from "./utils/helpers/base.service.helpers";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import authService from "../auth/auth.service";
 import {
@@ -44,6 +42,7 @@ import {
   ServiceBaseContext,
 } from "./types/base.service.types";
 import serviceHooksManager from "./utils/service-hooks-manager";
+import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 
 /**
  * Base service class for handling CRUD operations on a specific model.
@@ -92,7 +91,7 @@ export class BaseService<T extends ModelDelegate = any> {
    * Object containing singular and list relation fields for the model
    * @public
    */
-  relationFields: RelationFields;
+  relationFields: ModelGroupRelationFields;
 
   /**
    * Instance of the Prisma client
@@ -106,7 +105,16 @@ export class BaseService<T extends ModelDelegate = any> {
    */
   constructor(modelName: string) {
     this.modelName = camelCase(modelName);
-    this.relationFields = getPrismaModelRelations(pascalCase(modelName))!;
+    const modelFields = prismaSchemaParser.getModelRelations(modelName);
+
+    this.relationFields = {
+      singular:
+        modelFields?.filter(
+          (field) => field.connectionField && !field.isArray
+        ) || [],
+      list:
+        modelFields?.filter((field) => field.isRelation && field.isArray) || [],
+    };
   }
 
   /**

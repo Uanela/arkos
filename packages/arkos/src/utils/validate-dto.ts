@@ -46,7 +46,7 @@ export default async function validateDto<T extends object>(
       "Invalid request body",
       400,
       errors,
-      "invalid_request_body"
+      "InvalidRequestBody"
     );
 
   return dataDto;

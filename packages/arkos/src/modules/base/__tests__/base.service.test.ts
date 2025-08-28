@@ -6,6 +6,8 @@ import {
   getModuleComponents,
   getPrismaModelRelations,
 } from "../../../utils//dynamic-loader";
+import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
+import { PrismaField } from "../../../utils/prisma/types";
 
 // Mock dependencies
 jest.mock("fs", () => ({
@@ -44,10 +46,10 @@ describe("BaseService", () => {
     jest.clearAllMocks();
 
     // Setup mocks
-    (getPrismaModelRelations as jest.Mock).mockReturnValue({
-      singular: [{ name: "category" }],
-      list: [{ name: "tags" }],
-    });
+    jest.spyOn(prismaSchemaParser, "getModelRelations").mockReturnValue([
+      { name: "category", connectionField: "categoryId", isArray: false },
+      { name: "tags", isArray: true, isRelation: true },
+    ] as PrismaField[]);
 
     mockPrisma = {
       post: {
@@ -85,19 +87,17 @@ describe("BaseService", () => {
     baseService = new BaseService("Post");
   });
 
-  // describe("constructor", () => {
-  //   it("should initialize service with correct model name and relations", () => {
-  //     expect(baseService.modelName).toBe("post");
-  //     expect(baseService.relationFields).toEqual({
-  //       singular: [{ name: "category" }],
-  //       list: [{ name: "tags" }],
-  //     });
-  //     expect(baseService.singularRelationFieldToInclude).toEqual({
-  //       category: true,
-  //     });
-  //     expect(baseService.listRelationFieldToInclude).toEqual({ tags: true });
-  //   });
-  // });
+  describe("constructor", () => {
+    it("should initialize service with correct model name and relations", () => {
+      expect(baseService.modelName).toBe("post");
+      expect(baseService.relationFields).toEqual({
+        singular: [
+          { name: "category", connectionField: "categoryId", isArray: false },
+        ],
+        list: [{ name: "tags", isArray: true, isRelation: true }],
+      });
+    });
+  });
 
   describe("createOne", () => {
     it("should create a record and return it", async () => {
