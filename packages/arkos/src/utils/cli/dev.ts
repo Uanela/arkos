@@ -60,33 +60,6 @@ export async function devCommand(options: DevOptions = {}) {
       const env = getEnv();
 
       if (fileExt === "ts") {
-        // Enhanced ts-node-dev configuration
-        // child = spawn(
-        //   "npx",
-        //   [
-        //     "ts-node-dev",
-        //     "--respawn",
-        //     "--notify=false", // Disable desktop notifications
-        //     "--ignore-watch",
-        //     "node_modules",
-        //     "--ignore-watch",
-        //     "dist",
-        //     "--ignore-watch",
-        //     "build",
-        //     "--ignore-watch",
-        //     ".dist",
-        //     "--ignore-watch",
-        //     ".build",
-        //     "--watch",
-        //     "src",
-        //     entryPoint,
-        //   ],
-        //   {
-        //     stdio: "inherit",
-        //     env,
-        //     shell: true,
-        //   }
-        // );
         child = spawn("npx", ["tsx-strict", "--watch", entryPoint], {
           stdio: "inherit",
           env,
@@ -210,21 +183,14 @@ export async function devCommand(options: DevOptions = {}) {
           },
         }
       );
-      // additionalWatcher.on("change", (filePath) => {
-      //   if (!restartingFiles.has(filePath))
-      //     scheduleRestart(
-      //       `${fullCleanCwd(filePath)} has been modified`,
-      //       filePath
-      //     );
-      // });
 
-      //       additionalWatcher.on("add", (filePath) => {
-      //         if (!restartingFiles.has(filePath))
-      //           scheduleRestart(
-      //             `${fullCleanCwd(filePath)} has been created`,
-      //             filePath
-      //           );
-      //       });
+      additionalWatcher.on("add", (filePath) => {
+        if (!restartingFiles.has(filePath))
+          scheduleRestart(
+            `${fullCleanCwd(filePath)} has been created`,
+            filePath
+          );
+      });
 
       return additionalWatcher;
     };

@@ -2,10 +2,7 @@ import { BaseController } from "../base.controller";
 import { BaseService } from "../base.service";
 import AppError from "../../error-handler/utils/app-error";
 import APIFeatures from "../../../utils/features/api.features";
-import {
-  getModuleComponents,
-  getModels,
-} from "../../../utils//dynamic-loader";
+import { getModuleComponents, getModels } from "../../../utils//dynamic-loader";
 
 // Mock dependencies
 jest.mock("fs", () => ({
@@ -183,7 +180,17 @@ describe("BaseController", () => {
   describe("findMany", () => {
     beforeEach(() => {
       mockBaseService.relationFields = {
-        singular: [{ name: "category", type: "Category" }],
+        singular: [
+          {
+            name: "category",
+            type: "Category",
+            connectionField: "categoryId",
+            isArray: false,
+            isRelation: true,
+            isOptional: false,
+            attributes: [],
+          },
+        ],
         list: [],
       };
     });

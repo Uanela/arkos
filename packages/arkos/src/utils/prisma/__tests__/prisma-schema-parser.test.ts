@@ -1,17 +1,16 @@
-import { getPrismaSchemasContent } from "../../dynamic-loader";
-import { PrismaSchemaParser } from "../prisma-schema-parser";
+import parser from "../prisma-schema-parser";
 
-// Mock the getPrismaSchemasContent function
-jest.mock("../..//dynamic-loader", () => ({
-  getPrismaSchemasContent: jest.fn(),
+jest.mock("fs", () => ({
+  readdirSync: jest.fn(),
 }));
 
 describe("PrismaSchemaParser", () => {
-  let parser: PrismaSchemaParser;
-  const mockGetPrismaSchemasContent = getPrismaSchemasContent as jest.Mock;
+  const mockGetPrismaSchemasContent = jest.spyOn(
+    parser,
+    "getPrismaSchemasContent"
+  );
 
   beforeEach(() => {
-    parser = new PrismaSchemaParser();
     jest.clearAllMocks();
   });
 
@@ -131,6 +130,7 @@ describe("PrismaSchemaParser", () => {
         name: "id",
         type: "Int",
         isOptional: false,
+        isRelation: false,
         isArray: false,
         connectionField: "",
         defaultValue: undefined, // autoincrement() is a function
@@ -145,6 +145,7 @@ describe("PrismaSchemaParser", () => {
         name: "email",
         type: "String",
         isOptional: false,
+        isRelation: false,
         isArray: false,
         connectionField: "",
         defaultValue: undefined,
@@ -421,7 +422,7 @@ describe("PrismaSchemaParser", () => {
     });
 
     it("should handle null content from helper", () => {
-      mockGetPrismaSchemasContent.mockReturnValue(null);
+      mockGetPrismaSchemasContent.mockReturnValue(null as any);
 
       const result = parser.parse();
 

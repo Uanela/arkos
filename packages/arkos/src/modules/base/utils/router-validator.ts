@@ -1,13 +1,13 @@
 class RouterValidator {
-  isExpressRouter(obj: any) {
-    if (!obj || typeof obj !== "function") return false;
+  isExpressRouter(router: any) {
+    if (!router || typeof router !== "function") return false;
 
     const hasRouterMethods =
-      typeof obj.use === "function" &&
-      typeof obj.get === "function" &&
-      typeof obj.route === "function";
+      typeof router?.use === "function" &&
+      typeof router?.get === "function" &&
+      typeof router?.route === "function";
 
-    const hasStack = Array.isArray(obj.stack);
+    const hasStack = Array.isArray(router?.stack);
 
     return hasRouterMethods && hasStack;
   }

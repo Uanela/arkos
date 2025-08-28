@@ -68,7 +68,7 @@ describe("validateDto", () => {
       "Invalid request body",
       400,
       mockErrors,
-      "invalid_request_body"
+      "InvalidRequestBody"
     );
   });
 

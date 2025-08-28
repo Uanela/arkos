@@ -52,7 +52,7 @@ describe("validateSchema", () => {
       expect.objectContaining({
         email: expect.anything(),
       }),
-      "invalid_request_body"
+      "InvalidRequestBody"
     );
   });
 
@@ -131,7 +131,7 @@ describe("validateSchema", () => {
         age: expect.anything(),
         email: expect.anything(),
       }),
-      "invalid_request_body"
+      "InvalidRequestBody"
     );
   });
 });

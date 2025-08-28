@@ -414,7 +414,7 @@ export class EnhancedPrismaJsonSchemaGenerator {
       // Handle relations
       if (this.isModelRelation(field.type)) {
         // For single relations, include only the ID field
-        if (!field.isArray) {
+        if (!field.isArray && field.connectionField) {
           properties[field.connectionField] = {
             type: this.mapPrismaTypeToJsonSchema(
               model.fields.find(
@@ -468,7 +468,7 @@ export class EnhancedPrismaJsonSchemaGenerator {
       // Handle relations
       if (this.isModelRelation(field.type)) {
         // For single relations, include only the ID field
-        if (!field.isArray)
+        if (!field.isArray && field.connectionField)
           properties[field.connectionField] = {
             type: this.mapPrismaTypeToJsonSchema(
               model.fields.find(

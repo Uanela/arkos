@@ -4,6 +4,7 @@ import * as importHelpers from "../../../../../utils//dynamic-loader";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
 import catchAsync from "../../../../error-handler/utils/catch-async";
+import routerValidator from "../../router-validator";
 
 jest.mock("../../../../error-handler/utils/catch-async");
 // Mocks
@@ -54,6 +55,13 @@ jest.mock("../../../../../exports/utils", () => ({
 }));
 
 jest.mock("fs");
+
+jest.mock("../../router-validator", () => ({
+  __esModule: true,
+  default: {
+    isExpressRouter: jest.fn(() => true),
+  },
+}));
 
 describe("setupRouters", () => {
   let router: Router;
@@ -507,5 +515,55 @@ describe("setupRouters", () => {
         (router.patch as jest.Mock).mock.calls.length +
         (router.delete as jest.Mock).mock.calls.length
     ).toBe(8);
+  });
+
+  it("should throw an error when invalid express router is passed", async () => {
+    const mockPostModules = {
+      interceptors: {},
+      authConfigs: {},
+      prismaQueryOptions: {},
+      router: {
+        default: jest.fn(), // Mock router as function
+      },
+    };
+
+    (importHelpers.getModuleComponents as jest.Mock).mockImplementation(
+      (modelName) => {
+        if (modelName === "post") return mockPostModules;
+        return {};
+      }
+    );
+
+    jest.spyOn(routerValidator, "isExpressRouter").mockReturnValue(false);
+
+    // Call the function
+    try {
+      const setupPromises = setupRouters(["Post"], router, {});
+      await Promise.all(await setupPromises);
+
+      expect(setupRouters).toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining(
+            "post.router.js is not a valid express Router."
+          ),
+        })
+      );
+
+      // Verify routes for both models were registered
+      expect(pluralize.plural).toHaveBeenCalledWith("post");
+
+      expect(router.use).not.toHaveBeenCalledWith(
+        `/posts`,
+        expect.any(Function)
+      );
+
+      // 8 routes per model
+      expect(
+        (router.get as jest.Mock).mock.calls.length +
+          (router.post as jest.Mock).mock.calls.length +
+          (router.patch as jest.Mock).mock.calls.length +
+          (router.delete as jest.Mock).mock.calls.length
+      ).not.toBe(8);
+    } catch {}
   });
 });

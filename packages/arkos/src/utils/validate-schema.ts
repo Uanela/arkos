@@ -36,7 +36,7 @@ export default async function validateSchema<T>(
       "Invalid request body",
       400,
       result.error.format(),
-      "invalid_request_body"
+      "InvalidRequestBody"
     );
   }
   return result.data;

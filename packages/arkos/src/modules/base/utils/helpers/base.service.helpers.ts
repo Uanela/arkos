@@ -1,8 +1,6 @@
-import {
-  getPrismaModelRelations,
-  RelationFields,
-  getModelUniqueFields,
-} from "../../../../utils/dynamic-loader";
+import { RelationFields } from "../../../../utils/dynamic-loader";
+import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
+import { PrismaField } from "../../../../utils/prisma/types";
 
 /**
  * Removes apiAction field from an object and all nested objects
@@ -94,7 +92,7 @@ export function throwErrorIfApiActionIsInvalid(apiAction: string) {
  */
 export function handleRelationFieldsInBody(
   body: Record<string, any>,
-  relationFields: RelationFields,
+  relationFields: ModelGroupRelationFields,
   ignoreActions: string[] = []
 ) {
   let mutableBody = { ...body };
@@ -108,9 +106,7 @@ export function handleRelationFieldsInBody(
     }
 
     // Skip if the field is already in Prisma relation format
-    if (isPrismaRelationFormat(body[field.name])) {
-      return;
-    }
+    if (isPrismaRelationFormat(body[field.name])) return;
 
     // Skip if the field is not an array (likely already handled manually)
     if (!Array.isArray(body[field.name])) return;
@@ -140,11 +136,11 @@ export function handleRelationFieldsInBody(
         connectData.push(cleanedData);
       } else if (!bodyField?.id) {
         // If no ID, assume create operation
-        let nestedRelations = getPrismaModelRelations(field.type);
+        let nestedRelations = getGroupedModelReations(field.type);
 
         let dataToPush = { ...bodyField };
 
-        if (nestedRelations) {
+        if (nestedRelations?.singular || nestedRelations?.list) {
           dataToPush = handleRelationFieldsInBody(
             dataToPush,
             nestedRelations,
@@ -166,10 +162,10 @@ export function handleRelationFieldsInBody(
         const { id, apiAction, ...data } = bodyField;
 
         throwErrorIfApiActionIsInvalid(apiAction);
-        let nestedRelations = getPrismaModelRelations(field.type);
+        let nestedRelations = getGroupedModelReations(field.type);
 
         let dataToPush = data;
-        if (nestedRelations) {
+        if (nestedRelations?.singular || nestedRelations?.list) {
           dataToPush = handleRelationFieldsInBody(
             data,
             nestedRelations,
@@ -209,7 +205,7 @@ export function handleRelationFieldsInBody(
     }
 
     const relationData = body[field.name];
-    let nestedRelations = getPrismaModelRelations(field.type);
+    let nestedRelations = getGroupedModelReations(field.type);
 
     if (relationData?.apiAction === "delete") {
       // Handle delete for singular relations
@@ -235,7 +231,7 @@ export function handleRelationFieldsInBody(
         dataToCreate = rest;
       }
 
-      if (nestedRelations) {
+      if (nestedRelations?.singular || nestedRelations?.list) {
         dataToCreate = handleRelationFieldsInBody(
           dataToCreate,
           nestedRelations,
@@ -251,7 +247,7 @@ export function handleRelationFieldsInBody(
       throwErrorIfApiActionIsInvalid(apiAction);
 
       let dataToUpdate = data;
-      if (nestedRelations) {
+      if (nestedRelations?.singular || nestedRelations?.list) {
         dataToUpdate = handleRelationFieldsInBody(
           data,
           nestedRelations,
@@ -270,19 +266,28 @@ export function handleRelationFieldsInBody(
 
   // Remove any remaining apiAction fields from the top level
   if ("apiAction" in mutableBody) {
-    // const { apiAction, ...rest } = mutableBody;
-
     throw Error(
       "Validation Error: Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple."
     );
-
-    // throwErrorIfApiActionIsInvalid(apiAction);
-
-    // mutableBody = rest;
   }
 
   // As a final step, recursively remove any remaining apiAction fields
   return removeApiAction(mutableBody);
+}
+
+export type ModelGroupRelationFields = ReturnType<
+  typeof getGroupedModelReations
+>;
+
+function getGroupedModelReations(modelName: string) {
+  const relationsFields = prismaSchemaParser.getModelRelations(modelName);
+
+  return {
+    singular: relationsFields?.filter(
+      (field) => field.isRelation && field.connectionField && !field.isArray
+    ),
+    list: relationsFields?.filter((field) => field.isRelation && field.isArray),
+  };
 }
 
 /**
@@ -316,12 +321,12 @@ export function canBeUsedToConnect(
   }
 
   // Get unique fields for the model
-  const uniqueFields = getModelUniqueFields(modelName);
+  const uniqueFields = prismaSchemaParser.getModelUniqueFields(modelName) || [];
 
   // If the field has exactly one property and it's a unique field, it can be used to connect
-  if (Object.keys(bodyField).length === 1) {
+  if (Object.keys(bodyField).length === 1 && uniqueFields?.length > 0) {
     const fieldName = Object.keys(bodyField)[0];
-    return uniqueFields?.some((field) => field.name === fieldName);
+    return uniqueFields?.some((field: PrismaField) => field.name === fieldName);
   }
 
   return false;

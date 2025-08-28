@@ -49,6 +49,7 @@ jest.mock("../auth.controller");
 jest.mock("../auth.service", () => ({
   ...jest.requireActual("../auth.controller"),
   authenticate: jest.fn(),
+  handleAccessControl: jest.fn(),
 }));
 jest.mock("express-rate-limit");
 jest.mock("../../../utils//dynamic-loader");

@@ -1,5 +1,7 @@
-import { getPrismaSchemasContent } from "../dynamic-loader"
+import path from "path";
 import { PrismaSchema, PrismaModel, PrismaEnum, PrismaField } from "./types";
+import { camelCase, pascalCase } from "../helpers/change-case.helpers";
+import fs from "fs";
 
 /**
  * A parser for Prisma schema files that extracts models, enums, and their properties.
@@ -18,18 +20,29 @@ import { PrismaSchema, PrismaModel, PrismaEnum, PrismaField } from "./types";
  */
 export class PrismaSchemaParser {
   /** Collection of parsed enum definitions */
-  private enums: PrismaEnum[] = [];
+  enums: PrismaEnum[] = [];
   /** Collection of parsed model definitions */
-  private models: PrismaModel[] = [];
+  models: PrismaModel[] = [];
+  /** Current loaded prisma schemas content as a single file */
+  prismaSchemasContent: string = "";
+  parsed: boolean = false;
+
+  constructor() {
+    this.parse();
+  }
 
   /**
    * Parses the Prisma schema and extracts all models and enums.
    *
    * @returns The parsed schema containing arrays of models and enums
    */
-  parse(): PrismaSchema {
-    this.enums = this.extractEnums();
-    this.models = this.extractModels();
+  parse(
+    { override }: { override: boolean } = { override: false }
+  ): PrismaSchema {
+    if (!this.parsed || override) {
+      this.enums = this.extractEnums();
+      this.models = this.extractModels();
+    }
 
     return {
       models: this.models,
@@ -45,7 +58,7 @@ export class PrismaSchemaParser {
    */
   private extractEnums(): PrismaEnum[] {
     const enums: PrismaEnum[] = [];
-    const schema = getPrismaSchemasContent() || "";
+    const schema = this.getPrismaSchemasContent() || "";
     const enumBlocks = schema.match(/enum\s+\w+\s*\{[^}]*\}/g) || [];
 
     for (const block of enumBlocks) {
@@ -112,8 +125,8 @@ export class PrismaSchemaParser {
    * @returns Array of model block strings
    */
   private extractModelBlocks(): string[] {
-    const modelRegex = /model\s+\w+\s*\{[^}]*\}/g;
-    const schema = getPrismaSchemasContent() || "";
+    const modelRegex = /model\s+\w+\s*\{((?:[^{}]*(?:\{[^{}]*\}[^{}]*)*)*)\}/g;
+    const schema = this.getPrismaSchemasContent() || "";
     return schema.match(modelRegex) || [];
   }
 
@@ -224,11 +237,13 @@ export class PrismaSchemaParser {
 
     const isId = attributes.some((attr) => attr.startsWith("@id"));
     const isUnique = attributes.some((attr) => attr.startsWith("@unique"));
+    const models = this.models;
 
     return {
       name,
       type,
       isOptional,
+      isRelation: models.map((model) => model.name).includes(type),
       isArray,
       connectionField,
       defaultValue,
@@ -282,6 +297,51 @@ export class PrismaSchemaParser {
     return defaultStr;
   }
 
+  getPrismaSchemasContent(): string {
+    if (this.prismaSchemasContent) return this.prismaSchemasContent;
+
+    const models: string[] = [];
+    const modelRegex = /model\s+(\w+)\s*{/g;
+
+    const prismaContent: string[] = [];
+    const prismaPath = path.resolve(process.cwd(), "prisma");
+
+    const files = this.getAllPrismaFiles(prismaPath);
+
+    for (const file of files) {
+      const content = fs.readFileSync(file, "utf-8");
+      if (!prismaContent?.includes?.(content)) prismaContent.push(content);
+    }
+
+    // Gather the content of all *.prisma files into single one
+    const content = prismaContent
+      .join("\n")
+      .replace(modelRegex, (_, modelName) => {
+        if (!models?.includes?.(modelName))
+          models.push(camelCase(modelName.trim()));
+        return `model ${modelName} {`;
+      });
+
+    return content;
+  }
+
+  private getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
+    const files = fs.readdirSync(dirPath);
+
+    files?.forEach((file) => {
+      const filePath = path.join(dirPath, file);
+      const stat = fs.statSync(filePath);
+
+      // Skip migrations folder
+      if (stat.isDirectory() && file !== "migrations") {
+        fileList = this.getAllPrismaFiles(filePath, fileList);
+      } else if (stat.isFile() && file.endsWith(".prisma")) {
+        fileList.push(filePath);
+      }
+    });
+
+    return fileList;
+  }
   /**
    * Checks if a given type name corresponds to a defined enum.
    *
@@ -316,6 +376,18 @@ export class PrismaSchemaParser {
    */
   isModel(typeName: string): boolean {
     return this.models.some((m) => m.name === typeName);
+  }
+
+  getModelUniqueFields(modelName: string) {
+    return this.models
+      .find(({ name }) => pascalCase(name) === pascalCase(modelName))
+      ?.fields.filter(({ isUnique }) => isUnique);
+  }
+
+  getModelRelations(modelName: string) {
+    return this.models
+      .find((model) => pascalCase(model.name) === pascalCase(modelName))
+      ?.fields.filter((field) => field.isRelation);
   }
 }
 
