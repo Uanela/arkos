@@ -4,7 +4,10 @@ import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
 import { ArkosConfig } from "../exports";
 import sheu from "./sheu";
-import { applyStrictRoutingRules } from "./helpers/dynamic-loader.helpers";
+import {
+  applyStrictRoutingRules,
+  pathExists,
+} from "./helpers/dynamic-loader.helpers";
 import {
   camelCase,
   kebabCase,
@@ -29,15 +32,6 @@ export function setModuleComponents(
 // just fixing ts with _: in order to remove run test to fixes arkosConfig passage
 export function getModuleComponents(modelName: string) {
   return prismaModelsModules[pascalCase(modelName)];
-}
-
-async function pathExists(path: string) {
-  try {
-    await fs.promises.stat(path);
-    return true;
-  } catch (err) {
-    return null;
-  }
 }
 
 /**
@@ -234,6 +228,7 @@ export function validateNamingConventions(
  * @param {importModuleComponentsReturnType} result - The result object to modify
  */
 export function assignModuleToResult(
+  appModule: string,
   key: string,
   module: any,
   result: importModuleComponentsReturnType,
@@ -248,7 +243,11 @@ export function assignModuleToResult(
   } else if (key === "router") {
     result[key] = {
       ...module,
-      config: applyStrictRoutingRules(arkosConfig, module?.config || {}),
+      config: applyStrictRoutingRules(
+        appModule,
+        arkosConfig,
+        module?.config || {}
+      ),
     };
   } else {
     result[key as keyof typeof result] = module.default || module;
@@ -271,8 +270,9 @@ export async function importModuleComponents(
     dtos: {},
     schemas: {},
   };
+  const usingStrictRouting = arkosConfig.routers?.strict;
 
-  if (!moduleDirExists) return result;
+  if (!moduleDirExists && !usingStrictRouting) return result;
 
   if (getModuleComponents(modelName)) return getModuleComponents(modelName);
 
@@ -289,14 +289,24 @@ export async function importModuleComponents(
   // Batch process core files
   const [_, validators] = await Promise.all([
     Object.entries(fileStructure.core).map(async ([key, fileName]) => {
-      if (["createMany", "findMany", "findOne", "updateMany"].includes(key))
+      if (
+        ["createMany", "findMany", "findOne", "updateMany"].includes(key) ||
+        !fileName
+      )
         return;
 
       const filePath = path.join(moduleDir, fileName);
-      if (!fileName || !(await pathExists(filePath))) return;
+
+      if (
+        key === "router" &&
+        !usingStrictRouting &&
+        !(await pathExists(filePath))
+      )
+        return;
+      else if (!(await pathExists(filePath))) return;
 
       try {
-        const module = await importModule(filePath).catch(async (err) => {
+        let module = await importModule(filePath).catch(async (err) => {
           try {
             if (await pathExists(filePath)) {
               sheu.error(`Failed to import ${fileName}`);
@@ -307,12 +317,14 @@ export async function importModuleComponents(
           } catch (err) {}
         });
 
+        if (!module && key === "router" && usingStrictRouting) module = {};
+
         if (module) {
           // Validate naming conventions before assignment
           validateNamingConventions(key, fileName, result);
 
           // Assign module to result
-          assignModuleToResult(key, module, result, arkosConfig);
+          assignModuleToResult(modelName, key, module, result, arkosConfig);
         }
       } catch (err: any) {
         if (err.message.includes("Cannot use both")) throw err;
@@ -350,12 +362,6 @@ export type RelationFields = {
   list: Omit<ModelFieldDefition, "isUnique">[];
 };
 
-/**
- * Reads the Prisma schema files and extracts all model definitions,
- * identifying their relations (one-to-one and one-to-many).
- */
-export const prismaModelRelationFields: Record<string, RelationFields> = {};
-
 export function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
   const files = fs.readdirSync(dirPath);
 
@@ -374,10 +380,6 @@ export function getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
   return fileList;
 }
 
-export const models: string[] = prismaSchemaParser.models.map(
-  ({ name }) => name
-);
-
 export const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
   [] as any;
 
@@ -387,23 +389,6 @@ export const prismaModelsUniqueFields: Record<string, ModelFieldDefition[]> =
  * @param {string} modelName - The name of the model (e.g., "User").
  * @returns {RelationFields|undefined} The relation fields for the model, or `undefined` if no relations are found.
  */
-export function getPrismaModelRelations(
-  modelName: string
-): RelationFields | undefined {
-  modelName = pascalCase(modelName);
-
-  if (!(modelName in prismaModelRelationFields)) return;
-  return prismaModelRelationFields[modelName];
-}
-
-/**
- * Retrieves all the model names from the Prisma schema.
- *
- * @returns {string[]} An array of model names (e.g., ["User", "Post"]).
- */
-function getModels(): string[] {
-  return Array.from(new Set(models));
-}
 
 /** Retuns a given model unique fields
  * @param {string} modelName - The name of model in PascalCase
@@ -435,7 +420,11 @@ export async function localValidatorFileExists(
 }
 
 export const appModules = Array.from(
-  new Set([...models, "auth", "file-upload"])
+  new Set([
+    ...prismaSchemaParser.getModelsAsArrayOfStrings(),
+    "auth",
+    "file-upload",
+  ])
 );
 
 /**
@@ -468,4 +457,4 @@ export async function loadAllModuleComponents(arkosConfig: ArkosConfig) {
   await Promise.all(modulesComponentsImportPromises);
 }
 
-export { getModels, getModelUniqueFields };
+export { getModelUniqueFields };

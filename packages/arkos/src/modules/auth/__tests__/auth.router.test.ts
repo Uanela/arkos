@@ -3,7 +3,7 @@ import { getAuthRouter } from "../auth.router";
 import { authControllerFactory } from "../auth.controller";
 import authService from "../auth.service";
 import rateLimit from "express-rate-limit";
-import { getModuleComponents } from "../../../utils//dynamic-loader";
+import { getModuleComponents } from "../../../utils/dynamic-loader";
 import {
   sendResponse,
   addPrismaQueryOptionsToRequest,
@@ -52,7 +52,7 @@ jest.mock("../auth.service", () => ({
   handleAccessControl: jest.fn(),
 }));
 jest.mock("express-rate-limit");
-jest.mock("../../../utils//dynamic-loader");
+jest.mock("../../../utils/dynamic-loader");
 jest.mock("../../../utils/helpers/deepmerge.helper");
 jest.mock("../../../server");
 jest.mock("../../base/base.middlewares", () => ({

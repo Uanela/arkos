@@ -1,18 +1,16 @@
 import { generateClassValidatorJsonSchemas } from "../generate-class-validator-json-schemas";
+import prismaSchemaParser from "../../../../../../utils/prisma/prisma-schema-parser";
 import { validationMetadatasToSchemas } from "class-validator-jsonschema";
 import { importModule } from "../../../../../../utils/helpers/global.helpers";
 import { getMetadataStorage } from "class-validator";
-import {
-  getModuleComponents,
-  getModels,
-} from "../../../../../../utils//dynamic-loader";
+import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
 import { getCorrectJsonSchemaName } from "../../swagger.router.helpers";
 
 // Mock all dependencies
 jest.mock("class-validator-jsonschema");
 jest.mock("../../../../../../utils/helpers/global.helpers");
 jest.mock("class-validator");
-jest.mock("../../../../../../utils//dynamic-loader");
+jest.mock("../../../../../../utils/dynamic-loader");
 jest.mock("../../swagger.router.helpers");
 jest.mock("fs");
 
@@ -31,7 +29,10 @@ describe("generateClassValidatorJsonSchemas", () => {
   const mockgetModuleComponents = getModuleComponents as jest.MockedFunction<
     typeof getModuleComponents
   >;
-  const mockGetModels = getModels as jest.MockedFunction<typeof getModels>;
+  const mockGetModels = jest.spyOn(
+    prismaSchemaParser,
+    "getModelsAsArrayOfStrings"
+  );
   const mockGetCorrectJsonSchemaName =
     getCorrectJsonSchemaName as jest.MockedFunction<
       typeof getCorrectJsonSchemaName
@@ -75,7 +76,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should generate schemas successfully with valid models and DTOs", async () => {
+    it("should generate schemas successfully with valid models and DTOs", async () => {
       mockgetModuleComponents
         .mockReturnValueOnce({
           dtos: {
@@ -118,7 +119,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should handle models without DTOs", async () => {
+    it("should handle models without DTOs", async () => {
       mockgetModuleComponents
         .mockReturnValueOnce({
           dtos: {
@@ -147,7 +148,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should handle empty models array", async () => {
+    it("should handle empty models array", async () => {
       mockGetModels.mockReturnValue([]);
 
       const result = await generateClassValidatorJsonSchemas();
@@ -178,7 +179,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should handle empty JSON schema from class-validator", async () => {
+    it("should handle empty JSON schema from class-validator", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({});
       mockgetModuleComponents.mockReturnValue({
         dtos: {
@@ -194,7 +195,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should handle null DTO classes", async () => {
+    it("should handle null DTO classes", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
@@ -214,7 +215,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should handle undefined DTO classes", async () => {
+    it("should handle undefined DTO classes", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
@@ -234,15 +235,20 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should handle getCorrectJsonSchemaName throwing errors", async () => {
+    it("should handle getCorrectJsonSchemaName throwing errors", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {
-          create: { name: "CreateUserDto" },
-          update: { name: "UpdateUserDto" },
-        },
+      mockgetModuleComponents.mockImplementationOnce((modelName: string) => {
+        if (modelName.toLowerCase() === "user")
+          return {
+            dtos: {
+              create: { name: "CreateUserDto" },
+              update: { name: "UpdateUserDto" },
+            },
+          };
+
+        return {};
       });
 
       mockGetCorrectJsonSchemaName
@@ -265,7 +271,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       // );
     });
 
-    test("should handle models with empty DTOs object", async () => {
+    it("should handle models with empty DTOs object", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         SomeDto: { type: "object" },
       });
@@ -280,7 +286,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should handle models with no dtos property", async () => {
+    it("should handle models with no dtos property", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         SomeDto: { type: "object" },
       });
@@ -296,7 +302,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should handle importModule failure", async () => {
+    it("should handle importModule failure", async () => {
       mockImportModule.mockRejectedValue(new Error("Module import failed"));
 
       await expect(generateClassValidatorJsonSchemas()).rejects.toThrow(
@@ -304,7 +310,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       );
     });
 
-    test("should handle validationMetadatasToSchemas throwing error", async () => {
+    it("should handle validationMetadatasToSchemas throwing error", async () => {
       mockImportModule.mockResolvedValue({
         defaultMetadataStorage: { mock: "storage" },
       });
@@ -317,7 +323,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       );
     });
 
-    test("should handle getMetadataStorage throwing error", async () => {
+    it("should handle getMetadataStorage throwing error", async () => {
       mockImportModule.mockResolvedValue({
         defaultMetadataStorage: { mock: "storage" },
       });
@@ -330,7 +336,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       );
     });
 
-    test("should handle getModels throwing error", async () => {
+    it("should handle getModels throwing error", async () => {
       mockImportModule.mockResolvedValue({
         defaultMetadataStorage: { mock: "storage" },
       });
@@ -354,7 +360,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       });
     });
 
-    test("should correctly map schema names and delete original class names", async () => {
+    it("should correctly map schema names and delete original class names", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: {
           type: "object",
@@ -397,7 +403,7 @@ describe("generateClassValidatorJsonSchemas", () => {
       expect(result.UpdateUserDto).toBeUndefined();
     });
 
-    test("should handle duplicate schema names", async () => {
+    it("should handle duplicate schema names", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: {
           type: "object",
@@ -432,7 +438,7 @@ describe("generateClassValidatorJsonSchemas", () => {
   });
 
   describe("Complex DTO Structures", () => {
-    test("should handle DTOs with various types", async () => {
+    it("should handle DTOs with various types", async () => {
       mockGetModels.mockReturnValue(["complex"]);
       mockGetMetadataStorage.mockReturnValue({} as any);
       mockImportModule.mockResolvedValue({
@@ -472,7 +478,7 @@ describe("generateClassValidatorJsonSchemas", () => {
   });
 
   describe("Async Behavior", () => {
-    test("should handle slow importModule resolution", async () => {
+    it("should handle slow importModule resolution", async () => {
       mockGetModels.mockReturnValue(["user"]);
       mockGetMetadataStorage.mockReturnValue({} as any);
 

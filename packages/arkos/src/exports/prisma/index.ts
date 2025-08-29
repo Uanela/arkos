@@ -1,8 +1,7 @@
 import { PrismaQueryOptions, AuthPrismaQueryOptions } from "../../types";
-import { getModels } from "../../utils/dynamic-loader";
+import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 
-export {
-  PrismaQueryOptions,
-  getModels as getPrismaModels,
-  AuthPrismaQueryOptions,
-};
+export function getPrismaModels() {
+  return prismaSchemaParser.models.map(({ name }) => name);
+}
+export { PrismaQueryOptions, prismaSchemaParser, AuthPrismaQueryOptions };

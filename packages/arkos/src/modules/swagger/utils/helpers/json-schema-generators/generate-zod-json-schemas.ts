@@ -1,15 +1,16 @@
-import {
-  getModuleComponents,
-  getModels,
-} from "../../../../../utils/dynamic-loader"
+import { getModuleComponents } from "../../../../../utils/dynamic-loader";
 import zodToJsonSchema from "zod-to-json-schema";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
+import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 
 export default async function generateZodJsonSchemas() {
-  const models = [...getModels(), "auth"];
+  const requiredAppModules = [
+    ...prismaSchemaParser.getModelsAsArrayOfStrings(),
+    "auth",
+  ];
   const schemas: Record<string, any> = {};
 
-  models.forEach((modelName) => {
+  requiredAppModules.forEach((modelName) => {
     const ModuleComponents = getModuleComponents(modelName);
 
     if (ModuleComponents?.schemas)

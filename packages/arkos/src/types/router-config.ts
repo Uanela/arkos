@@ -9,11 +9,31 @@ export type RouterEndpoint =
   | "deleteMany";
 
 /**
- * Allows to customize the generated routers
- *
- * See docs [https://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers](https://https://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers)
+ * Auth module specific endpoint types
  */
-export type RouterConfig = {
+export type AuthRouterEndpoint =
+  | "getMe"
+  | "updateMe"
+  | "deleteMe"
+  | "login"
+  | "logout"
+  | "signup"
+  | "updatePassword"
+  | "findManyAuthAction";
+
+/**
+ * File upload module specific endpoint types
+ */
+export type FileUploadRouterEndpoint =
+  | "findFile"
+  | "uploadFile"
+  | "updateFile"
+  | "deleteFile";
+
+/**
+ * Base router configuration for Prisma models
+ */
+interface PrismaBaseRouterConfig {
   /**
    * Allows to configure nested routes.
    *
@@ -25,7 +45,7 @@ export type RouterConfig = {
    *
    * Returning only the fields belonging to the passed author id.
    *
-   * See more at [ttps://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers](https://ttps://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers)
+   * See more at [https://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers](https://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers)
    */
   parent?: {
     /**
@@ -34,8 +54,6 @@ export type RouterConfig = {
     model?: string;
     /**
      * Defines the parentId field stores the Id relation. e.g authorId, categoryId, productId.
-     *
-     *
      *
      * **Note**: By default **Arkos** will look for modelNameId, modelName being the model specified in `parent.model`.
      *
@@ -48,7 +66,7 @@ export type RouterConfig = {
      * }
      * ```
      *
-     * When passed `parent.model` to `author` **Arkos** will create an endpoint:
+     * When passed *`parent.model`* to *`author`* **Arkos** will create an endpoint:
      * ```curl
      * GET /api/authors/:id/posts
      * GET /api/authors/:id/posts/:id
@@ -70,88 +88,205 @@ export type RouterConfig = {
      */
     endpoints?: "*" | RouterEndpoint[];
   };
-  /**
-   * Use to disable endpoints or the whole router
-   *
-   * If `true`, will disable:
-   *
-   * ```curl
-   * POST /api/[mode-name]
-   * GET /api/[mode-name]/:id
-   * PATCH /api/[mode-name]:id
-   * DELETE /api/[mode-name]:id
-   * POST /api/[mode-name]/many
-   * GET /api/[mode-name]
-   * UPDATE /api/[mode-name]/many
-   * DELETE /api/[mode-name]/many
-   * ```
-   */
-  disable?:
-    | boolean
-    | {
+}
+
+/**
+ * Allows to customize the generated routers
+ *
+ * See docs [https://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers](https://www.arkosjs.com/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers)
+ */
+export type RouterConfig<T extends string = string> = T extends "auth"
+  ? {
+      /**
+       * Use to disable endpoints or the whole router
+       *
+       * If `true`, will disable all endpoints for the router
+       */
+      disable?:
+        | boolean
+        | {
+            /**
+             * If `true`, will disable:
+             *
+             * ```curl
+             * GET /api/users/me
+             * ```
+             */
+            getMe?: boolean;
+            /**
+             * If `true`, will disable:
+             *
+             * ```curl
+             * PATCH /api/users/me
+             * ```
+             */
+            updateMe?: boolean;
+            /**
+             * If `true`, will disable:
+             *
+             * ```curl
+             * DELETE /api/users/me
+             * ```
+             */
+            deleteMe?: boolean;
+            /**
+             * If `true`, will disable:
+             *
+             * ```curl
+             * POST /api/auth/login
+             * ```
+             */
+            login?: boolean;
+            /**
+             * If `true`, will disable:
+             *
+             * ```curl
+             * DELETE /api/auth/logout
+             * ```
+             */
+            logout?: boolean;
+            /**
+             * If `true`, will disable:
+             *
+             * ```curl
+             * POST /api/auth/signup
+             * ```
+             */
+            signup?: boolean;
+            /**
+             * If `true`, will disable:
+             *
+             * ```curl
+             * POST /api/auth/update-password
+             * ```
+             */
+            updatePassword?: boolean;
+            /**
+             * If `true`, will disable:
+             *
+             * ```curl
+             * GET /api/auth-actions
+             * ```
+             */
+            findManyAuthAction?: boolean;
+          };
+    }
+  : T extends "file-upload"
+    ? {
         /**
-         * If `true`, will disable:
+         * Use to disable endpoints or the whole router
          *
-         * ```curl
-         * POST /api/[mode-name]
-         * ```
+         * If `true`, will disable all endpoints for the router
          */
-        createOne?: boolean;
+        disable?:
+          | boolean
+          | {
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * GET /{basePathname}*
+               * ```
+               */
+              findFile?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * POST /{basePathname}:fileType
+               * ```
+               */
+              uploadFile?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * PATCH /{basePathname}:fileType/:fileName
+               * ```
+               */
+              updateFile?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * DELETE /{basePathname}:fileType/:fileName
+               * ```
+               */
+              deleteFile?: boolean;
+            };
+      }
+    : PrismaBaseRouterConfig & {
         /**
-         * If `true`, will disable:
+         * Use to disable endpoints or the whole router
          *
-         * ```curl
-         * GET /api/[mode-name]/:id
-         * ```
+         * If `true`, will disable all endpoints for the router
          */
-        findOne?: boolean;
-        /**
-         * If `true`, will disable:
-         *
-         * ```curl
-         * PATCH /api/[mode-name]:id
-         * ```
-         */
-        updateOne?: boolean;
-        /**
-         * If `true`, will disable:
-         *
-         * ```curl
-         * DELETE /api/[mode-name]:id
-         * ```
-         */
-        deleteOne?: boolean;
-        /**
-         * If `true`, will disable:
-         *
-         * ```curl
-         * POST /api/[mode-name]/many
-         * ```
-         */
-        createMany?: boolean;
-        /**
-         * If `true`, will disable:
-         *
-         * ```curl
-         * GET /api/[mode-name]
-         * ```
-         */
-        findMany?: boolean;
-        /**
-         * If `true`, will disable:
-         *
-         * ```curl
-         * UPDATE /api/[mode-name]/many
-         * ```
-         */
-        updateMany?: boolean;
-        /**
-         * If `true`, will disable:
-         *
-         * ```curl
-         * DELETE /api/[mode-name]/many
-         * ```
-         */
-        deleteMany?: boolean;
+        disable?:
+          | boolean
+          | {
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * POST /api/[model-name]
+               * ```
+               */
+              createOne?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * GET /api/[model-name]/:id
+               * ```
+               */
+              findOne?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * PATCH /api/[model-name]:id
+               * ```
+               */
+              updateOne?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * DELETE /api/[model-name]:id
+               * ```
+               */
+              deleteOne?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * POST /api/[model-name]/many
+               * ```
+               */
+              createMany?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * GET /api/[model-name]
+               * ```
+               */
+              findMany?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * UPDATE /api/[model-name]/many
+               * ```
+               */
+              updateMany?: boolean;
+              /**
+               * If `true`, will disable:
+               *
+               * ```curl
+               * DELETE /api/[model-name]/many
+               * ```
+               */
+              deleteMany?: boolean;
+            };
       };
-};

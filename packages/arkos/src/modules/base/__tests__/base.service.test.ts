@@ -2,10 +2,7 @@ import { BaseService } from "../base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import authService from "../../auth/auth.service";
 import { handleRelationFieldsInBody } from "../utils/helpers/base.service.helpers";
-import {
-  getModuleComponents,
-  getPrismaModelRelations,
-} from "../../../utils//dynamic-loader";
+import { getModuleComponents } from "../../../utils/dynamic-loader";
 import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 import { PrismaField } from "../../../utils/prisma/types";
 
@@ -19,8 +16,8 @@ jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../auth/auth.service");
 jest.mock("../utils/helpers/base.router.helpers");
 jest.mock("../utils/helpers/base.service.helpers");
-jest.mock("../../../utils//dynamic-loader", () => ({
-  ...jest.requireActual("../../../utils//dynamic-loader"),
+jest.mock("../../../utils/dynamic-loader", () => ({
+  ...jest.requireActual("../../../utils/dynamic-loader"),
   getPrismaModelRelations: jest.fn(),
   getModels: jest.fn(),
   getModuleComponents: jest.fn(),

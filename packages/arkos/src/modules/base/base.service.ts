@@ -1,8 +1,5 @@
 import { camelCase, kebabCase } from "../../utils/helpers/change-case.helpers";
-import {
-  getModuleComponents,
-  RelationFields,
-} from "../../utils/dynamic-loader";
+import { getModuleComponents } from "../../utils/dynamic-loader";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import {
   handleRelationFieldsInBody,

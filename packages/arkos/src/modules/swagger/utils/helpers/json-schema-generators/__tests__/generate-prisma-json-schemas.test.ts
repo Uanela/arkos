@@ -1,19 +1,20 @@
 import { generatePrismaJsonSchemas } from "../generate-prisma-json-schemas";
+import prismaSchemaParser from "../../../../../../utils/prisma/prisma-schema-parser";
 import { ArkosConfig } from "../../../../../../exports";
-import * as modelsHelpers from "../../../../../../utils//dynamic-loader";
-import enhancedPrismaJsonSchemaGenerator from "../../../../../../utils/prisma/prisma-json-schema-generator";
+import PrismaJsonSchemaGenerator from "../../../../../../utils/prisma/prisma-json-schema-generator";
 
 // Mock the dependencies
-jest.mock("../../../../../../utils//dynamic-loader");
-jest.mock(
-  "../../../../../../utils/prisma/prisma-json-schema-generator"
-);
+jest.mock("../../../../../../utils/dynamic-loader");
+jest.mock("../../../../../../utils/prisma/prisma-json-schema-generator");
 jest.mock("fs");
 
-const mockGetModels = modelsHelpers.getModels as jest.Mock;
-const mockEnhancedPrismaJsonSchemaGenerator =
-  enhancedPrismaJsonSchemaGenerator as jest.Mocked<
-    typeof enhancedPrismaJsonSchemaGenerator
+const mockGetModels = jest.spyOn(
+  prismaSchemaParser,
+  "getModelsAsArrayOfStrings"
+);
+const mockPrismaJsonSchemaGenerator =
+  PrismaJsonSchemaGenerator as jest.Mocked<
+    typeof PrismaJsonSchemaGenerator
   >;
 
 describe("generatePrismaJsonSchemas", () => {
@@ -42,7 +43,7 @@ describe("generatePrismaJsonSchemas", () => {
   describe("Edge Case: Empty models list", () => {
     it("should handle empty models list and only process auth", async () => {
       mockGetModels.mockReturnValue([]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockResolvedValue(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockResolvedValue(
         {
           AuthLoginSchema: {
             type: "object",
@@ -58,10 +59,10 @@ describe("generatePrismaJsonSchemas", () => {
 
       expect(mockGetModels).toHaveBeenCalledTimes(1);
       expect(
-        mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas
+        mockPrismaJsonSchemaGenerator.generateModelSchemas
       ).toHaveBeenCalledTimes(1);
       expect(
-        mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas
+        mockPrismaJsonSchemaGenerator.generateModelSchemas
       ).toHaveBeenCalledWith({
         modelName: "auth",
         arkosConfig,
@@ -79,7 +80,7 @@ describe("generatePrismaJsonSchemas", () => {
 
     it("should return empty object when no models and auth returns empty", async () => {
       mockGetModels.mockReturnValue([]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockResolvedValue(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockResolvedValue(
         {}
       );
 
@@ -92,7 +93,7 @@ describe("generatePrismaJsonSchemas", () => {
   describe("Edge Case: Single model scenarios", () => {
     it("should handle single model with multiple schemas", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }): Promise<any> => {
           if (modelName === "User") {
             return {
@@ -122,7 +123,7 @@ describe("generatePrismaJsonSchemas", () => {
       const result = await generatePrismaJsonSchemas(arkosConfig);
 
       expect(
-        mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas
+        mockPrismaJsonSchemaGenerator.generateModelSchemas
       ).toHaveBeenCalledTimes(2);
       expect(result).toEqual({
         CreateUserModelSchema: {
@@ -138,7 +139,7 @@ describe("generatePrismaJsonSchemas", () => {
 
     it("should handle model returning null/undefined schemas", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }) => {
           if (modelName === "User") {
             return null as any;
@@ -159,7 +160,7 @@ describe("generatePrismaJsonSchemas", () => {
   describe("Edge Case: Multiple models with mixed results", () => {
     it("should handle multiple models with various schema results", async () => {
       mockGetModels.mockReturnValue(["User", "Post", "Comment"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }): Promise<any> => {
           switch (modelName) {
             case "User":
@@ -198,7 +199,7 @@ describe("generatePrismaJsonSchemas", () => {
       const result = await generatePrismaJsonSchemas(arkosConfig);
 
       expect(
-        mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas
+        mockPrismaJsonSchemaGenerator.generateModelSchemas
       ).toHaveBeenCalledTimes(4);
       expect(Object.keys(result)).toHaveLength(4);
       expect(result.CreateUserModelSchema).toBeDefined();
@@ -209,7 +210,7 @@ describe("generatePrismaJsonSchemas", () => {
 
     it("should properly merge schemas with overlapping property names", async () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }): Promise<any> => {
           switch (modelName) {
             case "User":
@@ -257,7 +258,7 @@ describe("generatePrismaJsonSchemas", () => {
   describe("Edge Case: Error handling scenarios", () => {
     it("should handle single model throwing an error", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }): Promise<any> => {
           if (modelName === "User") {
             throw new Error("Failed to generate User schemas");
@@ -277,7 +278,7 @@ describe("generatePrismaJsonSchemas", () => {
 
     it("should handle multiple models with one throwing error", async () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }): Promise<any> => {
           if (modelName === "User") {
             return { CreateUserModelSchema: { type: "object" } };
@@ -300,7 +301,7 @@ describe("generatePrismaJsonSchemas", () => {
 
     it("should handle auth model throwing error", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }): Promise<any> => {
           if (modelName === "User") {
             return { CreateUserModelSchema: { type: "object" } };
@@ -320,7 +321,7 @@ describe("generatePrismaJsonSchemas", () => {
 
     it("should handle Promise.all rejection properly", async () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }) => {
           // Simulate multiple async operations with one failing
           if (modelName === "User") {
@@ -351,7 +352,7 @@ describe("generatePrismaJsonSchemas", () => {
     it("should handle minimal arkosConfig", async () => {
       const minimalConfig: ArkosConfig = {};
       mockGetModels.mockReturnValue(["User"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockResolvedValue(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockResolvedValue(
         {
           CreateUserModelSchema: { type: "object" },
         }
@@ -360,7 +361,7 @@ describe("generatePrismaJsonSchemas", () => {
       const result = await generatePrismaJsonSchemas(minimalConfig);
 
       expect(
-        mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas
+        mockPrismaJsonSchemaGenerator.generateModelSchemas
       ).toHaveBeenCalledWith({
         modelName: "User",
         arkosConfig: minimalConfig,
@@ -380,7 +381,7 @@ describe("generatePrismaJsonSchemas", () => {
       };
 
       mockGetModels.mockReturnValue(["User"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockResolvedValue(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockResolvedValue(
         {
           CreateUserModelSchema: { type: "object" },
         }
@@ -389,7 +390,7 @@ describe("generatePrismaJsonSchemas", () => {
       await generatePrismaJsonSchemas(complexConfig);
 
       expect(
-        mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas
+        mockPrismaJsonSchemaGenerator.generateModelSchemas
       ).toHaveBeenCalledWith({
         modelName: "User",
         arkosConfig: complexConfig,
@@ -402,7 +403,7 @@ describe("generatePrismaJsonSchemas", () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
 
       const mockCalls: string[] = [];
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }) => {
           mockCalls.push(modelName);
           return { [`${modelName}Schema`]: { type: "object" } };
@@ -421,7 +422,7 @@ describe("generatePrismaJsonSchemas", () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
 
       const mockCalls: string[] = [];
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }) => {
           mockCalls.push(modelName);
           return { [`${modelName}Schema`]: { type: "object" } };
@@ -443,7 +444,7 @@ describe("generatePrismaJsonSchemas", () => {
       mockGetModels.mockReturnValue(manyModels);
 
       const startTime = Date.now();
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }) => {
           // Simulate some async work
           await new Promise((resolve) => setTimeout(resolve, 1));
@@ -460,7 +461,7 @@ describe("generatePrismaJsonSchemas", () => {
       expect(duration).toBeLessThan(1000); // Less than 1 second
       expect(Object.keys(result)).toHaveLength(51); // 50 models + auth
       expect(
-        mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas
+        mockPrismaJsonSchemaGenerator.generateModelSchemas
       ).toHaveBeenCalledTimes(51);
     });
   });
@@ -468,7 +469,7 @@ describe("generatePrismaJsonSchemas", () => {
   describe("Edge Case: Schema merging edge cases", () => {
     it("should handle schemas with nested objects and arrays", async () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }: any): Promise<any> => {
           if (modelName === "User") {
             return {
@@ -530,7 +531,7 @@ describe("generatePrismaJsonSchemas", () => {
 
     it("should handle empty and null schema values in merge", async () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }) => {
           switch (modelName) {
             case "User":
@@ -563,7 +564,7 @@ describe("generatePrismaJsonSchemas", () => {
   describe("Integration scenarios", () => {
     it("should handle a realistic multi-model scenario", async () => {
       mockGetModels.mockReturnValue(["User", "Post", "Comment"]);
-      mockEnhancedPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         async ({ modelName }) => {
           const baseSchemas = {
             [`Create${modelName}ModelSchema`]: {

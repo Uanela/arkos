@@ -1,16 +1,19 @@
 import { ArkosConfig } from "../../../../../exports";
-import { getModels } from "../../../../../utils/dynamic-loader"
-import enhancedPrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
+import PrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
+import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 
 export async function generatePrismaJsonSchemas(arkosConfig: ArkosConfig) {
-  const models = [...getModels(), "auth"];
+  const requiredAppModules = [
+    ...prismaSchemaParser.getModelsAsArrayOfStrings(),
+    "auth",
+  ];
 
   try {
     // Use Promise.all to handle all async operations properly
     const modelSchemasArray = await Promise.all(
-      models.map(async (modelName) => {
+      requiredAppModules.map(async (modelName) => {
         const modelSchemas =
-          await enhancedPrismaJsonSchemaGenerator.generateModelSchemas({
+          await PrismaJsonSchemaGenerator.generateModelSchemas({
             modelName,
             arkosConfig,
           });

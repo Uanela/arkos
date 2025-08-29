@@ -1,14 +1,15 @@
 import { validationMetadatasToSchemas } from "class-validator-jsonschema";
 import { importModule } from "../../../../../utils/helpers/global.helpers";
 import { getMetadataStorage } from "class-validator";
-import {
-  getModuleComponents,
-  getModels,
-} from "../../../../../utils/dynamic-loader"
+import { getModuleComponents } from "../../../../../utils/dynamic-loader";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
+import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 
 export async function generateClassValidatorJsonSchemas() {
-  const models = getModels();
+  const requiredAppModules = [
+    ...prismaSchemaParser.getModelsAsArrayOfStrings(),
+    "auth",
+  ];
   const schemas: Record<string, any> = {};
 
   const { defaultMetadataStorage } = await importModule(
@@ -25,7 +26,7 @@ export async function generateClassValidatorJsonSchemas() {
     schemas[className] = schema;
   });
 
-  models.forEach((modelName) => {
+  requiredAppModules.forEach((modelName) => {
     const ModuleComponents = getModuleComponents(modelName);
 
     if (ModuleComponents?.dtos) {

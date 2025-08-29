@@ -4,9 +4,10 @@ import APIFeatures from "../../utils/features/api.features";
 import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
-import { getModuleComponents, getModels } from "../../utils/dynamic-loader";
+import { getModuleComponents } from "../../utils/dynamic-loader";
 import pluralize from "pluralize";
 import sheu from "../../utils/sheu";
+import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 
 /**
  * The `BaseController` class provides standardized RESTful API endpoints
@@ -437,12 +438,16 @@ export class BaseController {
  * @returns {Promise<void>}
  */
 export const getAvailableResources = catchAsync(async (_, res) => {
-  const models = getModels();
   sheu.warn(
     "This route `/api/available-routes` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead."
   );
 
   res.status(200).json({
-    data: [...models.map((model) => kebabCase(model)), "file-upload"],
+    data: [
+      ...prismaSchemaParser
+        .getModelsAsArrayOfStrings()
+        .map((model) => kebabCase(model)),
+      "file-upload",
+    ],
   });
 });

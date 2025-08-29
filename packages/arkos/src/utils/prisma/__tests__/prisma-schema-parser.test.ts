@@ -18,7 +18,7 @@ describe("PrismaSchemaParser", () => {
     it("should return empty schema when no content is projest.ed", () => {
       mockGetPrismaSchemasContent.mockReturnValue("");
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result).toEqual({
         models: [],
@@ -41,7 +41,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result.models).toHaveLength(1);
       expect(result.enums).toHaveLength(1);
@@ -61,7 +61,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result.enums).toHaveLength(1);
       expect(result.enums[0]).toEqual({
@@ -84,7 +84,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result.enums).toHaveLength(2);
       expect(result.enums[0].name).toBe("Status");
@@ -100,7 +100,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result.enums[0].values).toEqual(["ACTIVE", "INACTIVE"]);
     });
@@ -117,7 +117,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result.models).toHaveLength(1);
       const user = result.models[0];
@@ -170,7 +170,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result.models[0].mapName).toBe("users");
     });
@@ -184,7 +184,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       const tagsField = result.models[0].fields.find((f) => f.name === "tags");
       expect(tagsField?.isArray).toBe(true);
@@ -206,7 +206,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       const postModel = result.models.find((m) => m.name === "Post");
       const authorField = postModel?.fields.find((f) => f.name === "author");
@@ -228,7 +228,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
       const nameField = result.models[0].fields.find((f) => f.name === "name");
       expect(nameField?.defaultValue).toBe("John Doe");
     });
@@ -242,7 +242,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
       const isActiveField = result.models[0].fields.find(
         (f) => f.name === "isActive"
       );
@@ -263,7 +263,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
       const priceField = result.models[0].fields.find(
         (f) => f.name === "price"
       );
@@ -288,7 +288,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
       const statusField = result.models[0].fields.find(
         (f) => f.name === "status"
       );
@@ -304,7 +304,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
       const idField = result.models[0].fields.find((f) => f.name === "id");
       const createdAtField = result.models[0].fields.find(
         (f) => f.name === "createdAt"
@@ -325,7 +325,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      parser.parse();
+      parser.parse({ override: true });
       expect(parser.isEnum("Status")).toBe(true);
     });
 
@@ -338,7 +338,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      parser.parse();
+      parser.parse({ override: true });
       expect(parser.isEnum("Role")).toBe(false);
       expect(parser.isEnum("String")).toBe(false);
     });
@@ -353,7 +353,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      parser.parse();
+      parser.parse({ override: true });
       expect(parser.isModel("User")).toBe(true);
     });
 
@@ -365,7 +365,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      parser.parse();
+      parser.parse({ override: true });
       expect(parser.isModel("Post")).toBe(false);
       expect(parser.isModel("String")).toBe(false);
     });
@@ -375,7 +375,7 @@ describe("PrismaSchemaParser", () => {
     it("should handle empty schema gracefully", () => {
       mockGetPrismaSchemasContent.mockReturnValue("");
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result).toEqual({
         models: [],
@@ -394,7 +394,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result.models[0].fields).toHaveLength(2);
       expect(result.models[0].fields.map((f) => f.name)).toEqual([
@@ -415,7 +415,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result.models).toHaveLength(0);
       expect(result.enums).toHaveLength(0);
@@ -424,7 +424,7 @@ describe("PrismaSchemaParser", () => {
     it("should handle null content from helper", () => {
       mockGetPrismaSchemasContent.mockReturnValue(null as any);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       expect(result).toEqual({
         models: [],
@@ -486,7 +486,7 @@ describe("PrismaSchemaParser", () => {
       `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse();
+      const result = parser.parse({ override: true });
 
       // Check enums
       expect(result.enums).toHaveLength(2);

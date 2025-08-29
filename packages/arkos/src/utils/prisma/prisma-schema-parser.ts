@@ -42,6 +42,7 @@ export class PrismaSchemaParser {
     if (!this.parsed || override) {
       this.enums = this.extractEnums();
       this.models = this.extractModels();
+      this.parsed = true;
     }
 
     return {
@@ -388,6 +389,10 @@ export class PrismaSchemaParser {
     return this.models
       .find((model) => pascalCase(model.name) === pascalCase(modelName))
       ?.fields.filter((field) => field.isRelation);
+  }
+
+  getModelsAsArrayOfStrings() {
+    return this.models.map(({ name }) => name);
   }
 }
 
