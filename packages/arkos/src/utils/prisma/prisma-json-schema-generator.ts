@@ -3,7 +3,6 @@ import { AuthPrismaQueryOptions, PrismaQueryOptions } from "../../types";
 import deepmerge from "../helpers/deepmerge.helper";
 import {
   getModuleComponents,
-  localValidatorFileExists,
   ValidationFileMappingKey,
 } from "../dynamic-loader";
 import prismaSchemaParser from "./prisma-schema-parser";
@@ -13,6 +12,7 @@ import {
   JsonSchema,
   JsonSchemaProperty,
 } from "./types";
+import { localValidatorFileExists } from "../../modules/swagger/utils/helpers/swagger.router.helpers";
 
 // Add these types to your existing types file
 export interface SchemaGenerationConfig {

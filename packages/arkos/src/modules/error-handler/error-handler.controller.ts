@@ -80,7 +80,7 @@ export default function errorHandler(
 
   if (err.name === "NetworkError")
     error = errorControllerHelper.handleNetworkError(err);
-  if (!error.isOperational) error = new AppError("Something went wrong!", 500);
+  if (!error.isOperational) error = new AppError("Internal server error", 500);
 
   // Send the error response for production environment
   sendProductionError(error, req, res);
@@ -111,7 +111,7 @@ function sendDevelopmentError(
     });
   else
     res.status(err.statusCode).json({
-      title: "Something went wrong!",
+      title: "Internal server error",
       message: err.message,
     });
 }
@@ -140,7 +140,7 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
     else
       res.status(500).json({
         status: "error",
-        message: "Something went wrong!",
+        message: "Internal server error",
       });
 
     return;
@@ -148,14 +148,14 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
 
   if (err.isOperational) {
     res.status(err.statusCode).json({
-      title: "Something went wrong!",
+      title: "Internal server error",
       message: err.message,
     });
     return;
   }
 
   res.status(err.statusCode).json({
-    title: "Something went wrong!",
+    title: "Internal server error",
     message: "Please try again later.",
   });
 }

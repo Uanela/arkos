@@ -25,7 +25,7 @@ Arkos simplifies the development of secure and scalable RESTful APIs with minima
 Get started with Arkos.js in seconds:
 
 ```bash
-npm create arkos@latest
+npm create arkos@latest my-project
 ```
 
 ## Documentation

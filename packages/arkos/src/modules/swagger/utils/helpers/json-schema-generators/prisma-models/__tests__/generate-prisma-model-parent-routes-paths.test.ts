@@ -2,6 +2,7 @@ import { OpenAPIV3 } from "openapi-types";
 import generatePrismaModelParentRoutePaths from "../generate-prisma-model-parent-routes-paths";
 import { ArkosConfig } from "../../../../../../../exports";
 import * as modelsHelpers from "../../../../../../../utils/dynamic-loader";
+import { localValidatorFileExists } from "../../../swagger.router.helpers";
 
 jest.mock("../../../swagger.router.helpers", () => ({
   getSchemaRef: jest.fn(
@@ -14,8 +15,14 @@ jest.mock("../../../swagger.router.helpers", () => ({
 
 jest.mock("../../../../../../../utils/dynamic-loader", () => ({
   getModuleComponents: jest.fn(),
+}));
+
+jest.mock("../../../swagger.router.helpers", () => ({
+  ...jest.requireActual("../../../swagger.router.helpers"),
   localValidatorFileExists: jest.fn(),
 }));
+
+jest.mock("fs");
 
 describe("generatePrismaModelParentRoutesPaths", () => {
   let paths: OpenAPIV3.PathsObject;
@@ -25,8 +32,8 @@ describe("generatePrismaModelParentRoutesPaths", () => {
       typeof modelsHelpers.getModuleComponents
     >;
   const mockLocalValidatorFileExists =
-    modelsHelpers.localValidatorFileExists as jest.MockedFunction<
-      typeof modelsHelpers.localValidatorFileExists
+    localValidatorFileExists as jest.MockedFunction<
+      typeof localValidatorFileExists
     >;
 
   beforeEach(() => {
@@ -225,7 +232,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
         (paths["/api/posts/{id}/comments"]?.post?.requestBody as any)?.content[
           "application/json"
         ]?.schema?.$ref
-      ).toBe("#/components/schemas/CreateComment");
+      ).toBe("#/components/schemas/CreateCommentSchema");
     });
 
     it("should fallback to prisma when local file doesn't exist", async () => {

@@ -1,7 +1,9 @@
 import { OpenAPIV3 } from "openapi-types";
-import { getSchemaRef } from "./swagger.router.helpers";
+import {
+  getSchemaRef,
+  localValidatorFileExists,
+} from "./swagger.router.helpers";
 import { ArkosConfig } from "../../../../exports";
-import { localValidatorFileExists } from "../../../../utils/dynamic-loader"
 
 // Helper function to determine the correct mode for schema ref
 export const getSchemaMode = async (

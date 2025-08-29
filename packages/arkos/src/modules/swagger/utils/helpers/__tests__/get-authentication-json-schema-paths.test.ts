@@ -1,17 +1,19 @@
 import { ArkosConfig } from "../../../../../exports";
-import { localValidatorFileExists } from "../../../../../utils/dynamic-loader";
 import getAuthenticationJsonSchemaPaths, {
   getSchemaMode,
 } from "../get-authentication-json-schema-paths";
+import { localValidatorFileExists } from "../swagger.router.helpers";
 
 // Mock the dependencies one level up
-jest.mock("../../../../../utils/dynamic-loader", () => ({
+jest.mock("../../../../../utils/dynamic-loader", () => ({}));
+
+jest.mock("../swagger.router.helpers", () => ({
+  ...jest.requireActual("../swagger.router.helpers"),
+  getSchemaRef: jest.fn((model: string) => `#/components/schemas/${model}`),
   localValidatorFileExists: jest.fn(),
 }));
 
-jest.mock("../swagger.router.helpers", () => ({
-  getSchemaRef: jest.fn((model: string) => `#/components/schemas/${model}`),
-}));
+jest.mock("fs");
 
 describe("getAuthenticationJsonSchemaPaths", () => {
   const mockConfig: ArkosConfig = {
@@ -32,9 +34,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should use prisma mode when no validator file exists", async () => {
-    require("../../../../../utils/dynamic-loader").localValidatorFileExists.mockResolvedValue(
-      false
-    );
+    (localValidatorFileExists as jest.Mock).mockResolvedValue(false);
     const result = await getAuthenticationJsonSchemaPaths(mockConfig);
 
     expect(
@@ -45,9 +45,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should use configured mode when validator file exists", async () => {
-    require("../../../../../utils/dynamic-loader").localValidatorFileExists.mockResolvedValue(
-      true
-    );
+    (localValidatorFileExists as jest.Mock).mockResolvedValue(true);
     const result = await getAuthenticationJsonSchemaPaths(mockConfig);
 
     expect(
@@ -120,7 +118,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should handle missing action keys gracefully", async () => {
-    require("../../../../../utils/dynamic-loader").localValidatorFileExists.mockImplementation(
+    (localValidatorFileExists as jest.Mock).mockImplementation(
       async (action: string) => action !== "invalidAction"
     );
 

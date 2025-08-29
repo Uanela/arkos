@@ -77,6 +77,6 @@ export async function pathExists(path: string) {
     await fs.promises.stat(path);
     return true;
   } catch (err) {
-    return null;
+    return false;
   }
 }

@@ -1,12 +1,13 @@
 import { generatePrismaModelMainRoutesPaths } from "../generate-prisma-model-main-routes-paths";
-import { getSchemaRef, kebabToHuman } from "../../../swagger.router.helpers";
+import {
+  getSchemaRef,
+  kebabToHuman,
+  localValidatorFileExists,
+} from "../../../swagger.router.helpers";
 import pluralize from "pluralize";
 import { isEndpointDisabled } from "../../../../../../base/utils/helpers/base.router.helpers";
 import { kebabCase, pascalCase } from "../../../../../../../exports/utils";
-import {
-  getModuleComponents,
-  localValidatorFileExists,
-} from "../../../../../../../utils/dynamic-loader";
+import { getModuleComponents } from "../../../../../../../utils/dynamic-loader";
 
 // Mock all dependencies
 jest.mock("../../../swagger.router.helpers");

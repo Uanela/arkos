@@ -1,10 +1,13 @@
 import { OpenAPIV3 } from "openapi-types";
 import pluralize from "pluralize";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
-import { getSchemaRef, kebabToHuman } from "../../swagger.router.helpers";
+import {
+  getSchemaRef,
+  kebabToHuman,
+  localValidatorFileExists,
+} from "../../swagger.router.helpers";
 import { ArkosConfig } from "../../../../../../exports";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
-import { localValidatorFileExists } from "../../../../../../utils/dynamic-loader";
 
 export default async function generatePrismaModelParentRoutesPaths(
   model: string,

@@ -54,11 +54,11 @@ class AppError extends Error {
   ) {
     super(message);
 
-    this.message = message;
+    this.message = message || "An error occurred, try again!";
     this.statusCode = statusCode;
     this.status = `${statusCode}`.startsWith("4") ? "fail" : "error";
     this.isOperational = true;
-    this.code = code;
+    this.code = code || "Unknown";
     this.meta = meta;
     this.missing = false;
 

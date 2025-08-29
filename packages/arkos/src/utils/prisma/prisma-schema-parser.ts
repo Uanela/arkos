@@ -108,6 +108,7 @@ export class PrismaSchemaParser {
   private extractModels(): PrismaModel[] {
     const models: PrismaModel[] = [];
     const modelBlocks = this.extractModelBlocks();
+    console.log(modelBlocks);
 
     for (const block of modelBlocks) {
       const model = this.parseModelBlock(block);
@@ -244,7 +245,9 @@ export class PrismaSchemaParser {
       name,
       type,
       isOptional,
-      isRelation: models.map((model) => model.name).includes(type),
+      isRelation:
+        models.map((model) => model.name).includes(type) ||
+        this.getPrismaSchemasContent().includes(`model ${type} {`),
       isArray,
       connectionField,
       defaultValue,
@@ -273,28 +276,21 @@ export class PrismaSchemaParser {
    */
   private parseDefaultValue(defaultStr: string): any {
     defaultStr = defaultStr.trim();
-
     // Handle string values
     if (defaultStr.startsWith('"') && defaultStr.endsWith('"'))
       return defaultStr.slice(1, -1);
-
     // Handle boolean values
     if (defaultStr === "true") return true;
     if (defaultStr === "false") return false;
-
-    // Handle numeric values
-    if (/^\d+$/.test(defaultStr)) return parseInt(defaultStr, 10);
-
-    if (/^\d+\.\d+$/.test(defaultStr)) return parseFloat(defaultStr);
-
+    // Handle numeric values (including negative numbers)
+    if (/^-?\d+$/.test(defaultStr)) return parseInt(defaultStr, 10);
+    if (/^-?\d+\.\d+$/.test(defaultStr)) return parseFloat(defaultStr);
     // Handle enum values (no quotes, not a function)
     if (!defaultStr.includes("(")) return defaultStr;
-
     // Handle functions (like now(), auto(), etc.)
     if (defaultStr.includes("("))
       // For MongoDB, we'll skip function defaults as they're handled by the DB
       return undefined;
-
     return defaultStr;
   }
 
@@ -313,6 +309,7 @@ export class PrismaSchemaParser {
       const content = fs.readFileSync(file, "utf-8");
       if (!prismaContent?.includes?.(content)) prismaContent.push(content);
     }
+    console.log(files);
 
     // Gather the content of all *.prisma files into single one
     const content = prismaContent
