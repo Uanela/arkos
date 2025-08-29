@@ -16,7 +16,9 @@ model User {
       {{else}}
   roles                UserRole[]
       {{/if}}
-    {{/if}}
+    {{else}}
+  roles                UserRole[]
+  {{/if}}
   {{else}}
     {{#if (eq authentication.type "dynamic")}}
   role                 UserRole?
