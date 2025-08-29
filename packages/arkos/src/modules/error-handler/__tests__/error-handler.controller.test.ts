@@ -158,7 +158,7 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        title: "Something went wrong!",
+        title: "Internal server error",
         message: "Test error",
       });
     });
@@ -183,7 +183,7 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        code: "unknown",
+        code: "Unknown",
         status: "fail",
         message: "Test operational error",
         meta: {},
@@ -203,9 +203,9 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        code: "unknown",
+        code: "Unknown",
         status: "error",
-        message: expect.stringMatching("Something went wrong!"),
+        message: expect.stringMatching("Internal server error"),
         meta: {},
       });
     });
@@ -225,7 +225,7 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        title: "Something went wrong!",
+        title: "Internal server error",
         message: "Test operational error",
       });
     });
@@ -244,8 +244,8 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        title: "Something went wrong!",
-        message: "Something went wrong!",
+        title: "Internal server error",
+        message: "Internal server error",
       });
     });
   });

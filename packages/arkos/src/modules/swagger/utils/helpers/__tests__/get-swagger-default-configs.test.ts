@@ -82,7 +82,20 @@ describe("getSwaggerDefaultConfig", () => {
   });
 
   it("should use capitalized NODE_ENV in server description", async () => {
-    process.env.NODE_ENV = "development";
+    process.env.NODE_ENV = "production";
+    const result = (await getSwaggerDefaultConfig(
+      mockDefaultModelsPaths,
+      mockDefaultJsonSchemas
+    )) as any;
+
+    expect(result.options.definition.servers[0].description).toBe(
+      "Local Production Server"
+    );
+    expect(capitalize).toHaveBeenCalledWith("production");
+  });
+
+  it("should use capitalized NODE_ENV fallback (development) in server description", async () => {
+    process.env.NODE_ENV = "";
     const result = (await getSwaggerDefaultConfig(
       mockDefaultModelsPaths,
       mockDefaultJsonSchemas
@@ -95,7 +108,10 @@ describe("getSwaggerDefaultConfig", () => {
   });
 
   it("should handle empty paths and schemas", async () => {
-    const result = (await getSwaggerDefaultConfig({}, {})) as any;
+    const result = (await (getSwaggerDefaultConfig as any)(
+      {},
+      undefined
+    )) as any;
 
     expect(result.options.definition.paths).toEqual({});
     expect(result.options.definition.components.schemas).toEqual({});

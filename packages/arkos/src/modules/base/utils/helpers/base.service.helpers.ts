@@ -1,4 +1,3 @@
-import { RelationFields } from "../../../../utils/dynamic-loader";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import { PrismaField } from "../../../../utils/prisma/types";
 

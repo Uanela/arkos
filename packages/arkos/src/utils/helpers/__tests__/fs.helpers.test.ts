@@ -118,7 +118,6 @@ describe("fs.helpers", () => {
     it('should return "ts" when has src/app.ts', () => {
       // Mock fs.existsSync to return false for tsconfig.json
       (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
-        console.log(path);
         if (path.includes("src/app.ts")) return true;
         return false;
       });

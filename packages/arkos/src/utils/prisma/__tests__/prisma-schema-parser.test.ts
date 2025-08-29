@@ -1,4 +1,5 @@
-import parser from "../prisma-schema-parser";
+import parser, { PrismaSchemaParser } from "../prisma-schema-parser";
+import fs from "fs";
 
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),
@@ -530,6 +531,650 @@ describe("PrismaSchemaParser", () => {
       expect(parser.isModel("User")).toBe(true);
       expect(parser.isModel("Profile")).toBe(true);
       expect(parser.isModel("Post")).toBe(true);
+    });
+  });
+
+  describe("parse() caching behavior", () => {
+    it("should not re-parse when parsed is true and override is false", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      // First parse
+      const result1 = parser.parse({ override: true });
+      expect(mockGetPrismaSchemasContent).toHaveBeenCalledTimes(3); // Called in extractEnums and extractModels
+
+      mockGetPrismaSchemasContent.mockClear();
+
+      // Second parse without override should not call the method
+      const result2 = parser.parse({ override: false });
+      expect(mockGetPrismaSchemasContent).not.toHaveBeenCalled();
+      expect(result1).toEqual(result2);
+    });
+
+    it("should re-parse when override is true even if already parsed", () => {
+      const schemaContent1 = `
+        model User {
+          id Int @id
+        }
+      `;
+      const schemaContent2 = `
+        model Post {
+          id Int @id
+          title String
+        }
+      `;
+
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent1);
+      parser.parse({ override: true });
+
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent2);
+      const result = parser.parse({ override: true });
+
+      expect(result.models[0].name).toBe("Post");
+    });
+
+    it("should use default parameter when no options provided", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true }); // First parse
+      mockGetPrismaSchemasContent.mockClear();
+
+      parser.parse(); // Should not re-parse due to default override: false
+      expect(mockGetPrismaSchemasContent).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("parseFieldLine() edge cases", () => {
+    it("should handle fields with complex relation syntax", () => {
+      const schemaContent = `
+        model Post {
+          id Int @id
+          author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+          authorId Int
+        }
+        
+        model User {
+          id Int @id
+          posts Post[]
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const postModel = result.models.find((m) => m.name === "Post");
+      const authorField = postModel?.fields.find((f) => f.name === "author");
+
+      expect(authorField?.connectionField).toBe("authorId");
+      expect(authorField?.isRelation).toBe(true);
+    });
+
+    it("should handle fields with quoted connection fields", () => {
+      const schemaContent = `
+        model Post {
+          id Int @id
+          author User @relation(fields: ["authorId"], references: ["id"])
+          authorId Int
+        }
+        
+        model User {
+          id Int @id
+          posts Post[]
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const postModel = result.models.find((m) => m.name === "Post");
+      const authorField = postModel?.fields.find((f) => f.name === "author");
+
+      expect(authorField?.connectionField).toBe("authorId");
+    });
+
+    it("should handle fields with single quoted connection fields", () => {
+      const schemaContent = `
+        model Post {
+          id Int @id
+          author User @relation(fields: ['authorId'], references: ['id'])
+          authorId Int
+        }
+        
+        model User {
+          id Int @id
+          posts Post[]
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const postModel = result.models.find((m) => m.name === "Post");
+      const authorField = postModel?.fields.find((f) => f.name === "author");
+
+      expect(authorField?.connectionField).toBe("authorId");
+    });
+
+    it("should handle fields without relation attributes", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          posts Post[]
+        }
+        
+        model Post {
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const userModel = result.models.find((m) => m.name === "User");
+      const postsField = userModel?.fields.find((f) => f.name === "posts");
+
+      expect(postsField?.connectionField).toBe("");
+      expect(postsField?.isRelation).toBe(true);
+    });
+
+    it("should not return null for invalid field lines", () => {
+      const schemaContent = `
+        model User {
+          invalid line without proper format
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const userModel = result.models.find((m) => m.name === "User");
+
+      // Should only have the valid field
+      expect(userModel?.fields).toHaveLength(2);
+      expect(userModel?.fields[1].name).toBe("id");
+    });
+  });
+
+  describe("getModelUniqueFields()", () => {
+    it("should return unique fields for a model", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          email String @unique
+          username String @unique
+          name String
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const uniqueFields = parser.getModelUniqueFields("User");
+
+      expect(uniqueFields).toHaveLength(2);
+      expect(uniqueFields?.map((f) => f.name)).toEqual(["email", "username"]);
+    });
+
+    it("should return empty array when model has no unique fields", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          name String
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const uniqueFields = parser.getModelUniqueFields("User");
+
+      expect(uniqueFields).toHaveLength(0);
+    });
+
+    it("should return undefined when model doesn't exist", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const uniqueFields = parser.getModelUniqueFields("NonExistentModel");
+
+      expect(uniqueFields).toBeUndefined();
+    });
+
+    it("should handle case-insensitive model names", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          email String @unique
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const uniqueFields = parser.getModelUniqueFields("user");
+
+      expect(uniqueFields).toHaveLength(1);
+      expect(uniqueFields?.[0].name).toBe("email");
+    });
+  });
+
+  describe("getModelRelations()", () => {
+    it("should return relation fields for a model", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          posts Post[]
+          profile Profile?
+          name String
+        }
+        
+        model Post {
+          id Int @id
+        }
+        
+        model Profile {
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const relations = parser.getModelRelations("User");
+
+      expect(relations).toHaveLength(2);
+      expect(relations?.map((f) => f.name)).toEqual(["posts", "profile"]);
+    });
+
+    it("should return empty array when model has no relations", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          name String
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const relations = parser.getModelRelations("User");
+
+      expect(relations).toHaveLength(0);
+    });
+
+    it("should return undefined when model doesn't exist", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const relations = parser.getModelRelations("NonExistentModel");
+
+      expect(relations).toBeUndefined();
+    });
+
+    it("should handle case-insensitive model names", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          posts Post[]
+        }
+        
+        model Post {
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const relations = parser.getModelRelations("user");
+
+      expect(relations).toHaveLength(1);
+      expect(relations?.[0].name).toBe("posts");
+    });
+  });
+
+  describe("getModelsAsArrayOfStrings()", () => {
+    it("should return array of model names", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+        }
+        
+        model Post {
+          id Int @id
+        }
+        
+        model Comment {
+          id Int @id
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const modelNames = parser.getModelsAsArrayOfStrings();
+
+      expect(modelNames).toEqual(["User", "Post", "Comment"]);
+    });
+
+    it("should return empty array when no models exist", () => {
+      const schemaContent = `
+        enum Status {
+          ACTIVE
+          INACTIVE
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+      const modelNames = parser.getModelsAsArrayOfStrings();
+
+      expect(modelNames).toEqual([]);
+    });
+  });
+
+  describe("parseDefaultValue() edge cases", () => {
+    it("should handle empty default value", () => {
+      const schemaContent = `
+        model User {
+          name String @default("")
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const nameField = result.models[0].fields.find((f) => f.name === "name");
+      expect(nameField?.defaultValue).toBe("");
+    });
+
+    it("should handle zero values", () => {
+      const schemaContent = `
+        model User {
+          count Int @default(0)
+          rate Float @default(0.0)
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const countField = result.models[0].fields.find(
+        (f) => f.name === "count"
+      );
+      const rateField = result.models[0].fields.find((f) => f.name === "rate");
+
+      expect(countField?.defaultValue).toBe(0);
+      expect(rateField?.defaultValue).toBe(0.0);
+    });
+
+    it("should handle negative numbers", () => {
+      const schemaContent = `
+        model User {
+          balance Int @default(-100)
+          temperature Float @default(-3.5)
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const balanceField = result.models[0].fields.find(
+        (f) => f.name === "balance"
+      );
+      const temperatureField = result.models[0].fields.find(
+        (f) => f.name === "temperature"
+      );
+
+      expect(balanceField?.defaultValue).toBe(-100);
+      expect(temperatureField?.defaultValue).toBe(-3.5);
+    });
+
+    it("should handle whitespace in default values", () => {
+      const schemaContent = `
+        model User {
+          name String @default( "  spaced  " )
+          count Int @default( 42 )
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const nameField = result.models[0].fields.find((f) => f.name === "name");
+      const countField = result.models[0].fields.find(
+        (f) => f.name === "count"
+      );
+
+      expect(nameField?.defaultValue).toBe("  spaced  ");
+      expect(countField?.defaultValue).toBe(42);
+    });
+
+    it("should handle complex function calls", () => {
+      const schemaContent = `
+        model User {
+          id String @default(cuid())
+          createdAt DateTime @default(now())
+          uuid String @default(uuid())
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const idField = result.models[0].fields.find((f) => f.name === "id");
+      const createdAtField = result.models[0].fields.find(
+        (f) => f.name === "createdAt"
+      );
+      const uuidField = result.models[0].fields.find((f) => f.name === "uuid");
+
+      expect(idField?.defaultValue).toBeUndefined();
+      expect(createdAtField?.defaultValue).toBeUndefined();
+      expect(uuidField?.defaultValue).toBeUndefined();
+    });
+  });
+
+  describe("extractModelBlocks() complex cases", () => {
+    it("should handle nested braces in model blocks", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          
+          @@map("users")
+        }
+        
+        model Post {
+          id Int @id
+          metadata Json @default("{}")
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      expect(result.models).toHaveLength(2);
+      expect(result.models.map((m) => m.name)).toEqual(["User", "Post"]);
+    });
+
+    it("should handle models with multiple @@attributes", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          email String @unique
+          name String
+          
+          @@map("users")
+          @@index([email, name])
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      expect(result.models).toHaveLength(1);
+      expect(result.models[0].name).toBe("User");
+      expect(result.models[0].mapName).toBe("users");
+      expect(result.models[0].fields).toHaveLength(3);
+    });
+  });
+
+  describe("parseEnumBlock() edge cases", () => {
+    it("should handle enums with mixed formatting", () => {
+      const schemaContent = `
+        enum Status {
+          ACTIVE,
+          INACTIVE
+          PENDING,
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      expect(result.enums).toHaveLength(1);
+      expect(result.enums[0].values).toEqual(["ACTIVE", "INACTIVE", "PENDING"]);
+    });
+
+    it("should handle single-value enums", () => {
+      const schemaContent = `
+        enum SingleValue {
+          ONLY_ONE
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      expect(result.enums).toHaveLength(1);
+      expect(result.enums[0].values).toEqual(["ONLY_ONE"]);
+    });
+
+    it("should handle empty enum blocks gracefully", () => {
+      const schemaContent = `
+        enum Empty {
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      expect(result.enums).toHaveLength(1);
+      expect(result.enums[0].values).toEqual([]);
+    });
+  });
+
+  describe("field attribute parsing", () => {
+    it("should parse multiple attributes correctly", () => {
+      const schemaContent = `
+        model User {
+          email String @unique @db.VarChar(255) @map("email_address")
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const emailField = result.models[0].fields.find(
+        (f) => f.name === "email"
+      );
+
+      expect(emailField?.attributes).toEqual([
+        "@unique",
+        "@db.VarChar(255)",
+        '@map("email_address")',
+      ]);
+    });
+
+    it("should handle attributes with complex parameters", () => {
+      const schemaContent = `
+        model User {
+          data Json @default("{\\"key\\": \\"value\\"}")
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const dataField = result.models[0].fields.find((f) => f.name === "data");
+
+      expect(dataField?.attributes).toHaveLength(1);
+      expect(dataField?.attributes[0]).toContain("@default");
+    });
+
+    it("should handle fields without attributes", () => {
+      const schemaContent = `
+        model User {
+          id Int
+          name String
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const nameField = result.models[0].fields.find((f) => f.name === "name");
+
+      expect(nameField?.attributes).toEqual([]);
+    });
+  });
+
+  describe("isRelation field detection", () => {
+    it("should correctly identify relation fields after parsing", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          posts Post[]
+          profile Profile?
+          name String
+        }
+        
+        model Post {
+          id Int @id
+          authorId Int
+          author User @relation(fields: [authorId], references: [id])
+        }
+        
+        model Profile {
+          id Int @id
+          userId Int @unique
+          user User @relation(fields: [userId], references: [id])
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      const userModel = result.models.find((m) => m.name === "User")!;
+      const postsField = userModel.fields.find((f) => f.name === "posts")!;
+      const profileField = userModel.fields.find((f) => f.name === "profile")!;
+      const nameField = userModel.fields.find((f) => f.name === "name")!;
+
+      expect(postsField.isRelation).toBe(true);
+      expect(profileField.isRelation).toBe(true);
+      expect(nameField.isRelation).toBe(false);
+    });
+
+    it("should handle self-relations", () => {
+      const schemaContent = `
+        model User {
+          id Int @id
+          managerId Int?
+          manager User? @relation("UserManager", fields: [managerId], references: [id])
+          subordinates User[] @relation("UserManager")
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      const userModel = result.models.find((m) => m.name === "User")!;
+      const managerField = userModel.fields.find((f) => f.name === "manager")!;
+      const subordinatesField = userModel.fields.find(
+        (f) => f.name === "subordinates"
+      )!;
+
+      expect(managerField.isRelation).toBe(true);
+      expect(subordinatesField.isRelation).toBe(true);
     });
   });
 });

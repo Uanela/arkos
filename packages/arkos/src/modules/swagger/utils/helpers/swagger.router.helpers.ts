@@ -1,5 +1,5 @@
 import { ArkosConfig } from "../../../../exports";
-import { pascalCase } from "../../../../exports/utils";
+import { camelCase, pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
 import getAuthenticationJsonSchemaPaths from "./get-authentication-json-schema-paths";
@@ -10,6 +10,10 @@ import { generatePrismaModelMainRoutesPaths } from "./json-schema-generators/pri
 import generatePrismaModelParentRoutePaths from "./json-schema-generators/prisma-models/generate-prisma-model-parent-routes-paths";
 import sheu from "../../../../utils/sheu";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
+import {
+  getModuleComponents,
+  ValidationFileMappingKey,
+} from "../../../../utils/dynamic-loader";
 
 /**
  * Helps choosing the right json schemas according to swagger configurations
@@ -133,4 +137,25 @@ export async function generatePathsForModels(
   };
 
   return paths;
+}
+
+/**
+ * Helps in finding out whether a given dto/schema file exits under the user project according to the validation arkos configuration.
+ *
+ * @param action {ValidationFileMappingKey} - the action of the dto, e.g: create, findMany.
+ * @param modelName {string} - the model to be checked
+ * @param arkosConfig {ArkosConfig} - the arkos.js configuration
+ * @returns boolean
+ */
+export async function localValidatorFileExists(
+  action: ValidationFileMappingKey,
+  modelName: string,
+  arkosConfig: ArkosConfig
+) {
+  if (arkosConfig?.swagger?.mode === "prisma") return false;
+  const ModuleComponents = getModuleComponents(modelName);
+
+  return !!ModuleComponents?.[
+    arkosConfig.validation?.resolver === "zod" ? "schemas" : "dtos"
+  ]?.[camelCase(action)];
 }

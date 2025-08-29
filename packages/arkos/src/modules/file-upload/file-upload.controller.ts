@@ -353,52 +353,52 @@ class FileUploadController {
    *
    * @deprecated
    */
-  streamFile = catchAsync(
-    async (req: ArkosRequest, res: ArkosResponse, _: ArkosNextFunction) => {
-      const { fileName, fileType } = req.params;
+  // streamFile = catchAsync(
+  //   async (req: ArkosRequest, res: ArkosResponse, _: ArkosNextFunction) => {
+  //     const { fileName, fileType } = req.params;
 
-      const filePath = path.join(".", "uploads", fileType, fileName);
-      try {
-        await fs.promises.access(filePath);
-      } catch (err) {
-        throw new AppError("File not found", 404);
-      }
+  //     const filePath = path.join(".", "uploads", fileType, fileName);
+  //     try {
+  //       await fs.promises.access(filePath);
+  //     } catch (err) {
+  //       throw new AppError("File not found", 404);
+  //     }
 
-      const fileStat = await fs.promises.stat(filePath);
-      const fileSize = fileStat.size;
-      const range = req.headers.range;
+  //     const fileStat = await fs.promises.stat(filePath);
+  //     const fileSize = fileStat.size;
+  //     const range = req.headers.range;
 
-      if (range) {
-        const [partialStart, partialEnd] = range
-          .replace(/bytes=/, "")
-          .split("-");
-        const start = parseInt(partialStart, 10) || 0;
-        const end = partialEnd ? parseInt(partialEnd, 10) : fileSize - 1;
+  //     if (range) {
+  //       const [partialStart, partialEnd] = range
+  //         .replace(/bytes=/, "")
+  //         .split("-");
+  //       const start = parseInt(partialStart, 10) || 0;
+  //       const end = partialEnd ? parseInt(partialEnd, 10) : fileSize - 1;
 
-        if (start >= fileSize || end >= fileSize) {
-          res.status(416).json({ error: "Range Not Satisfiable" });
-          return;
-        }
+  //       if (start >= fileSize || end >= fileSize) {
+  //         res.status(416).json({ error: "Range Not Satisfiable" });
+  //         return;
+  //       }
 
-        res.writeHead(206, {
-          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-          "Accept-Ranges": "bytes",
-          "Content-Length": end - start + 1,
-          "Content-Type": "application/octet-stream",
-          "Content-Disposition": `inline; filename="${fileName}"`,
-        });
+  //       res.writeHead(206, {
+  //         "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+  //         "Accept-Ranges": "bytes",
+  //         "Content-Length": end - start + 1,
+  //         "Content-Type": "application/octet-stream",
+  //         "Content-Disposition": `inline; filename="${fileName}"`,
+  //       });
 
-        fs.createReadStream(filePath, { start, end }).pipe(res);
-      } else {
-        res.writeHead(200, {
-          "Content-Length": fileSize,
-          "Content-Type": "application/octet-stream",
-          "Content-Disposition": `inline; filename="${fileName}"`,
-        });
-        fs.createReadStream(filePath).pipe(res);
-      }
-    }
-  );
+  //       fs.createReadStream(filePath, { start, end }).pipe(res);
+  //     } else {
+  //       res.writeHead(200, {
+  //         "Content-Length": fileSize,
+  //         "Content-Type": "application/octet-stream",
+  //         "Content-Disposition": `inline; filename="${fileName}"`,
+  //       });
+  //       fs.createReadStream(filePath).pipe(res);
+  //     }
+  //   }
+  // );
 }
 
 /**

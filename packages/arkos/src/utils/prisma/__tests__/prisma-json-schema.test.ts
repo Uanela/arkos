@@ -2,16 +2,14 @@ import { PrismaJsonSchemaGenerator } from "../prisma-json-schema-generator";
 import { ArkosConfig, RouterConfig } from "../../../exports";
 import { PrismaQueryOptions } from "../../../types";
 import deepmerge from "../../helpers/deepmerge.helper";
-import {
-  getModuleComponents,
-  localValidatorFileExists,
-} from "../../dynamic-loader";
+import { getModuleComponents } from "../../dynamic-loader";
 import prismaSchemaParser from "../prisma-schema-parser";
+import { localValidatorFileExists } from "../../../modules/swagger/utils/helpers/swagger.router.helpers";
 
 // Mock all dependencies
 jest.mock("../../helpers/deepmerge.helper");
 jest.mock("../../dynamic-loader");
-// jest.mock("../prisma-schema-parser");
+jest.mock("../../../modules/swagger/utils/helpers/swagger.router.helpers");
 jest.mock("fs");
 
 describe("PrismaJsonSchemaGenerator", () => {

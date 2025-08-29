@@ -16,29 +16,30 @@ export function handleJWTExpired() {
 }
 
 export function handlePrismaClientValidationError(err: AppError) {
-  const message = err?.message.split("\n")[err?.message.split("\n").length - 1];
+  const message =
+    err?.message?.split("\n")[err?.message.split("\n").length - 1];
   return new AppError(message, 400);
 }
 
-export function handleAuthenticationError(err: AppError) {
+export function handleAuthenticationError(_: AppError) {
   const message =
     "Authentication failed against the database server. Please check your credentials.";
   return new AppError(message, 401);
 }
 
-export function handleServerNotReachableError(err: AppError) {
+export function handleServerNotReachableError(_: AppError) {
   const message =
     "The database server is not reachable. Verify your connection string or ensure the server is online.";
   return new AppError(message, 503);
 }
 
-export function handleConnectionTimeoutError(err: AppError) {
+export function handleConnectionTimeoutError(_: AppError) {
   const message =
     "Connection to the database timed out. Please check server performance or network connectivity.";
   return new AppError(message, 504);
 }
 
-export function handleDatabaseNotFoundError(err: AppError) {
+export function handleDatabaseNotFoundError(_: AppError) {
   const message = "The specified database does not exist on the server.";
   return new AppError(message, 404);
 }
@@ -54,7 +55,7 @@ export function handleFieldValueTooLargeError(err: AppError) {
   return new AppError(message, 400);
 }
 
-export function handleRecordNotFoundError(err: AppError) {
+export function handleRecordNotFoundError(_: AppError) {
   const message =
     "No record found for the given query. Ensure the query parameters are correct.";
   return new AppError(message, 404);
@@ -66,7 +67,7 @@ export function handleUniqueConstraintError(err: AppError) {
   return new AppError(message, 409);
 }
 
-export function handleForeignKeyConstraintError(err: AppError) {
+export function handleForeignKeyConstraintError(_: AppError) {
   const message =
     "Foreign key constraint violation. Ensure that the referenced record exists.";
   return new AppError(message, 400);
@@ -90,7 +91,7 @@ export function handleInvalidFieldProvidedError(err: AppError) {
   return new AppError(message, 400);
 }
 
-export function handleDataValidationError(err: AppError) {
+export function handleDataValidationError(_: AppError) {
   const message =
     "Data validation error occurred. Please ensure all fields meet the required criteria.";
   return new AppError(message, 400);
@@ -108,7 +109,7 @@ export function handleInvalidQueryFormatError(err: AppError) {
   return new AppError(message, 400);
 }
 
-export function handleRawQueryExecutionError(err: AppError) {
+export function handleRawQueryExecutionError(_: AppError) {
   const message =
     "An error occurred during the execution of a raw query. Verify the query and try again.";
   return new AppError(message, 500);
@@ -120,7 +121,7 @@ export function handleNullConstraintViolationError(err: AppError) {
   return new AppError(message, 400);
 }
 
-export function handleSchemaCreationFailedError(err: AppError) {
+export function handleSchemaCreationFailedError(_: AppError) {
   const message =
     "Failed to create the database schema. Verify the schema definition and try again.";
   return new AppError(message, 500);
@@ -138,7 +139,7 @@ export function handleMigrationScriptFailedError(err: AppError) {
   return new AppError(message, 500);
 }
 
-export function handleVersionMismatchError(err: AppError) {
+export function handleVersionMismatchError(_: AppError) {
   const message = `Version mismatch: The database schema and migration versions are inconsistent. Please check and resolve this issue.`;
   return new AppError(message, 400);
 }
@@ -149,22 +150,22 @@ export function handleMigrationFileReadError(err: AppError) {
   return new AppError(message, 500);
 }
 
-export function handleSchemaDriftError(err: AppError) {
+export function handleSchemaDriftError(_: AppError) {
   const message = `Schema drift detected: The database schema differs from the expected state. Run migrations or sync schema to resolve.`;
   return new AppError(message, 400);
 }
 
-export function handleSchemaSyntaxError(err: AppError) {
+export function handleSchemaSyntaxError(_: AppError) {
   const message = `Syntax error in the schema file. Please check for typos or invalid syntax in your schema definition.`;
   return new AppError(message, 500);
 }
 
-export function handleClientTypeError(err: AppError) {
+export function handleClientTypeError(_: AppError) {
   const message = `Type error, Ensure proper usage of methods and correct data types.`;
   return new AppError(message, 400);
 }
 
-export function handleDynamicQueryError(err: AppError) {
+export function handleDynamicQueryError(_: AppError) {
   const message = `Error constructing or executing a dynamic query. Verify query structure and parameters.`;
   return new AppError(message, 400);
 }
@@ -181,12 +182,12 @@ export function handleBinaryError(err: AppError) {
   return new AppError(message, 500);
 }
 
-export function handleNetworkError(err: AppError) {
+export function handleNetworkError(_: AppError) {
   const message = `Network error: Unable to connect to the database or internet. Please check your network connection.`;
   return new AppError(message, 500);
 }
 
-export function handleUnhandledPromiseError(err: AppError) {
+export function handleUnhandledPromiseError(_: AppError) {
   const message = `Unhandled promise rejection detected. Please check asynchronous code for proper error handling.`;
   return new AppError(message, 500);
 }
@@ -198,7 +199,7 @@ export function handleDataTypeError(err: AppError) {
   return new AppError(message, 400);
 }
 
-export function handleEmptyResultError(err: AppError) {
+export function handleEmptyResultError(_: AppError) {
   const message = `Empty result: No data was found for the given query. Ensure the query criteria are correct.`;
   return new AppError(message, 404);
 }
@@ -210,12 +211,12 @@ export function handleNonExistingRecord(err: {
   const message =
     err?.meta?.cause ||
     `Operation could not be completed as the required record was not found`;
-  return new AppError(message, 404, err.meta || {}, "PrismaRecordNotFound");
+  return new AppError(message, 404, err.meta || {}, "RecordNotFound");
 }
 
 export function handlePrismaClientInitializationError(_: any) {
   return new AppError(
-    "Database is not available.",
+    "Service temporarily unavailable",
     503,
     {},
     "DatabaseNotAvailable"

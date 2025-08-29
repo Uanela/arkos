@@ -268,28 +268,28 @@ describe("applyStrictRoutingRules", () => {
     });
 
     describe("when path does not exist", () => {
-      it("should return null for non-existing file", async () => {
+      it("should return false for non-existing file", async () => {
         const nonExistingPath = "./non-existing-file.txt";
 
         const result = await pathExists(nonExistingPath);
 
-        expect(result).toBeNull();
+        expect(result).toBe(false);
       });
 
-      it("should return null for non-existing directory", async () => {
+      it("should return false for non-existing directory", async () => {
         const nonExistingPath = "./non-existing-directory";
 
         const result = await pathExists(nonExistingPath);
 
-        expect(result).toBeNull();
+        expect(result).toBe(false);
       });
 
-      it("should return null for invalid path", async () => {
+      it("should return false for invalid path", async () => {
         const invalidPath = "./invalid/deeply/nested/non-existing/path";
 
         const result = await pathExists(invalidPath);
 
-        expect(result).toBeNull();
+        expect(result).toBe(false);
       });
     });
 
@@ -299,7 +299,7 @@ describe("applyStrictRoutingRules", () => {
 
         const result = await pathExists(emptyPath);
 
-        expect(result).toBeNull();
+        expect(result).toBe(false);
       });
 
       it("should handle relative paths", async () => {
