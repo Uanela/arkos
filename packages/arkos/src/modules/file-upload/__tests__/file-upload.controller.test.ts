@@ -8,14 +8,14 @@ import {
   processFile,
   processImage,
 } from "../utils/helpers/file-upload.helpers";
-import { getModuleComponents } from "../../../utils//dynamic-loader";
+import { getModuleComponents } from "../../../utils/dynamic-loader";
 
 // Mock dependencies
 jest.mock("../file-upload.service");
 jest.mock("../../../server");
 jest.mock("../utils/helpers/file-upload.helpers");
 jest.mock("../../../utils/helpers/fs.helpers");
-jest.mock("../../../utils//dynamic-loader");
+jest.mock("../../../utils/dynamic-loader");
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),

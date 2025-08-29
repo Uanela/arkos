@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getFileUploadRouter } from "../file-upload.router"; // Update with the correct path
-import { getModuleComponents } from "../../../utils//dynamic-loader";
+import { getModuleComponents } from "../../../utils/dynamic-loader";
 import authService from "../../auth/auth.service";
 import fileUploadController from "../file-upload.controller";
 import { sendResponse } from "../../base/base.middlewares";
@@ -33,7 +33,7 @@ jest.mock("express", () => {
   return mockExpress;
 });
 
-jest.mock("../../../utils//dynamic-loader");
+jest.mock("../../../utils/dynamic-loader");
 jest.mock("../../auth/auth.service");
 jest.mock("../file-upload.controller");
 jest.mock("../../base/base.middlewares");

@@ -46,7 +46,7 @@ export const getUserFileExtension = (): "ts" | "js" => {
 
     // Decision logic (prioritized)
     if (isBuildMode) userFileExtension = "js";
-    else if (hasTsConfig) userFileExtension = "ts";
+    else if (hasTsConfig && hasAppTs) userFileExtension = "ts";
     else if (hasAppTs && !hasAppJs) userFileExtension = "ts";
     else if (hasAppJs) userFileExtension = "js";
     else userFileExtension = "js";

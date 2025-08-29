@@ -3,10 +3,10 @@ import {
   getPrismaModelsRouter,
   getAvailableResourcesAndRoutesRouter,
 } from "../base.router";
-import * as modelsHelpers from "../../../utils//dynamic-loader";
 import * as baseController from "../base.controller";
 import authService from "../../auth/auth.service";
 import * as routerHelpers from "../utils/helpers/base.router.helpers";
+import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 
 // Mock the dependencies
 jest.mock("express", () => {
@@ -32,7 +32,7 @@ jest.mock("express", () => {
   return mockExpress;
 });
 
-jest.mock("../../../utils//dynamic-loader");
+jest.mock("../../../utils/dynamic-loader");
 jest.mock("../base.controller");
 jest.mock("../../auth/auth.service");
 jest.mock("../utils/helpers/base.router.helpers");
@@ -47,7 +47,9 @@ describe("Base Router", () => {
     it("should create a router with routes for all models", async () => {
       // Mock return values
       const mockModels = ["User", "Post", "Comment"];
-      (modelsHelpers.getModels as jest.Mock).mockReturnValue(mockModels);
+      jest
+        .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+        .mockReturnValue(mockModels);
 
       (routerHelpers.setupRouters as jest.Mock).mockReturnValue([
         Promise.resolve(),
@@ -59,21 +61,17 @@ describe("Base Router", () => {
       const mockRouter = Router();
       const result = await getPrismaModelsRouter({});
 
-      // Assertions
-      expect(modelsHelpers.getModels).toHaveBeenCalledTimes(1);
       expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
-      expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
-        mockModels,
-        mockRouter,
-        {}
-      );
+      expect(routerHelpers.setupRouters).toHaveBeenCalledWith(mockRouter, {});
       expect(result).toBe(mockRouter);
     });
 
     it("should pass arkosConfigs to the router setup if provided", async () => {
       // Mock return values
       const mockModels = ["User", "Post"];
-      (modelsHelpers.getModels as jest.Mock).mockReturnValue(mockModels);
+      jest
+        .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+        .mockReturnValue(mockModels);
 
       (routerHelpers.setupRouters as jest.Mock).mockReturnValue([
         Promise.resolve(),
@@ -87,10 +85,8 @@ describe("Base Router", () => {
       const result = await getPrismaModelsRouter(mockArkosConfig as any);
 
       // Assertions
-      expect(modelsHelpers.getModels).toHaveBeenCalledTimes(1);
       expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
       expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
-        mockModels,
         mockRouter,
         mockArkosConfig
       );

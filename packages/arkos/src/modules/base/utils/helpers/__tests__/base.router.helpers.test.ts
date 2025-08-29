@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { setupRouters } from "../base.router.helpers"; // Adjust the import path
-import * as importHelpers from "../../../../../utils//dynamic-loader";
+import * as importHelpers from "../../../../../utils/dynamic-loader";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
 import catchAsync from "../../../../error-handler/utils/catch-async";
 import routerValidator from "../../router-validator";
+import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 
 jest.mock("../../../../error-handler/utils/catch-async");
 // Mocks
@@ -32,7 +33,7 @@ jest.mock("express", () => {
 
   return mockExpress;
 });
-jest.mock("../../../../../utils//dynamic-loader");
+jest.mock("../../../../../utils/dynamic-loader");
 jest.mock("../../../../auth/auth.service", () => ({
   handleAuthenticationControl: jest.fn(() => jest.fn()),
   handleAccessControl: jest.fn(() => jest.fn()),
@@ -62,6 +63,10 @@ jest.mock("../../router-validator", () => ({
     isExpressRouter: jest.fn(() => true),
   },
 }));
+
+jest
+  .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+  .mockReturnValue(["User"]);
 
 describe("setupRouters", () => {
   let router: Router;
@@ -105,7 +110,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router, {});
+    const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
     // Verify all routes are registered
@@ -203,7 +208,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router, {});
+    const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
     // Verify disabled routes are not registered
@@ -250,7 +255,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router, {});
+    const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
     // Verify no routes are registered
@@ -277,7 +282,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router, {});
+    const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
     // Verify custom middleware is used
@@ -310,7 +315,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router, {});
+    const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
     // Verify custom middleware is used - should spread the array
@@ -345,7 +350,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function and expect it to throw
-    const setupPromises = setupRouters(["User"], router, {});
+    const setupPromises = setupRouters(router, {});
 
     await expect(Promise.all(await setupPromises)).rejects.toThrow();
   });
@@ -366,7 +371,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function and expect it to throw
-    const setupPromises = setupRouters(["User"], router, {});
+    const setupPromises = setupRouters(router, {});
 
     await expect(Promise.all(await setupPromises)).rejects.toThrow();
   });
@@ -385,7 +390,7 @@ describe("setupRouters", () => {
 
     let setupPromises = null;
     try {
-      setupPromises = (await setupRouters(["User"], router, {})) as any;
+      setupPromises = (await setupRouters(router, {})) as any;
     } catch (err) {
       expect(setupPromises).rejects.toThrow();
     }
@@ -423,7 +428,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User"], router, {});
+    const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
     // Verify the route with custom implementation is not registered
@@ -466,7 +471,11 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["User", "Post"], router, {});
+    jest
+      .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+      .mockReturnValue(["User", "Post"]);
+
+    const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
     // Verify routes for both models were registered
@@ -500,7 +509,11 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(["Post"], router, {});
+    jest
+      .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+      .mockReturnValue(["Post"]);
+
+    const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
     // Verify routes for both models were registered
@@ -537,8 +550,12 @@ describe("setupRouters", () => {
     jest.spyOn(routerValidator, "isExpressRouter").mockReturnValue(false);
 
     // Call the function
+    jest
+      .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+      .mockReturnValue(["Post"]);
+
     try {
-      const setupPromises = setupRouters(["Post"], router, {});
+      const setupPromises = setupRouters(router, {});
       await Promise.all(await setupPromises);
 
       expect(setupRouters).toThrow(

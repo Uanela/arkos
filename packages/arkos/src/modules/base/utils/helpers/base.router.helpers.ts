@@ -15,13 +15,10 @@ import {
 import { processMiddleware } from "../../../../utils/helpers/routers.helpers";
 import routerValidator from "../router-validator";
 import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
+import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 
-export async function setupRouters(
-  models: string[],
-  router: Router,
-  arkosConfigs: ArkosConfig
-) {
-  return models.map(async (model) => {
+export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
+  return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
     const modelModules = getModuleComponents(modelNameInKebab) || {};
 

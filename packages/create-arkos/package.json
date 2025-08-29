@@ -1,6 +1,6 @@
 {
   "name": "create-arkos",
-  "version": "1.2.16-beta.3",
+  "version": "1.2.16-beta.4",
   "type": "module",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {

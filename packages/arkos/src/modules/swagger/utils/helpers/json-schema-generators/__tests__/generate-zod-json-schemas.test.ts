@@ -1,17 +1,25 @@
 import generateZodJsonSchemas from "../generate-zod-json-schemas";
-import * as modelsHelpers from "../../../../../../utils//dynamic-loader";
+import * as dynamicLoader from "../../../../../../utils/dynamic-loader";
 import * as swaggerRouterHelpers from "../../swagger.router.helpers";
 import zodToJsonSchema from "zod-to-json-schema";
 import { z } from "zod";
+import prismaSchemaParser from "../../../../../../utils/prisma/prisma-schema-parser";
 
 // Mock the dependencies
-jest.mock("../../../../../../utils//dynamic-loader");
+jest.mock("../../../../../../utils/dynamic-loader");
+jest.mock("../../../../../../utils/prisma/prisma-schema-parser", () => ({
+  __esModule: true,
+  default: {
+    parse: jest.fn(),
+    getModelsAsArrayOfStrings: jest.fn(() => []),
+  },
+}));
 jest.mock("../../swagger.router.helpers");
 jest.mock("zod-to-json-schema");
 jest.mock("fs");
 
-const mockGetModels = modelsHelpers.getModels as jest.Mock;
-const mockgetModuleComponents = modelsHelpers.getModuleComponents as jest.Mock;
+const mockGetModels = prismaSchemaParser.getModelsAsArrayOfStrings as jest.Mock;
+const mockgetModuleComponents = dynamicLoader.getModuleComponents as jest.Mock;
 const mockGetCorrectJsonSchemaName =
   swaggerRouterHelpers.getCorrectJsonSchemaName as jest.Mock;
 const mockZodToJsonSchema = zodToJsonSchema as jest.Mock;
@@ -327,7 +335,7 @@ describe("generateZodJsonSchemas", () => {
         }
       );
 
-      mockZodToJsonSchema.mockImplementation((schema) => {
+      mockZodToJsonSchema.mockImplementation(() => {
         const schemaMap = new Map();
         schemaMap.set("User-create", {
           type: "object",

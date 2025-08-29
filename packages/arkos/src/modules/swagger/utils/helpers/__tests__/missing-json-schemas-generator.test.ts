@@ -1,7 +1,7 @@
 import missingJsonSchemaGenerator from "../missing-json-schemas-generator";
 import { OpenAPIV3 } from "openapi-types";
 import { ArkosConfig } from "../../../../../exports";
-import enhancedPrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
+import PrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
 
 // Mock the enhanced generator
 jest.mock(
@@ -13,8 +13,8 @@ jest.mock(
 
 describe("MissingJsonSchemasGenerator", () => {
   const mockEnhancedGenerator =
-    enhancedPrismaJsonSchemaGenerator as jest.Mocked<
-      typeof enhancedPrismaJsonSchemaGenerator
+    PrismaJsonSchemaGenerator as jest.Mocked<
+      typeof PrismaJsonSchemaGenerator
     >;
 
   beforeEach(() => {

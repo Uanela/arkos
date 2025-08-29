@@ -1,11 +1,11 @@
 import { ArkosConfig } from "../../../../../exports";
-import { localValidatorFileExists } from "../../../../../utils//dynamic-loader";
+import { localValidatorFileExists } from "../../../../../utils/dynamic-loader";
 import getAuthenticationJsonSchemaPaths, {
   getSchemaMode,
 } from "../get-authentication-json-schema-paths";
 
 // Mock the dependencies one level up
-jest.mock("../../../../../utils//dynamic-loader", () => ({
+jest.mock("../../../../../utils/dynamic-loader", () => ({
   localValidatorFileExists: jest.fn(),
 }));
 
@@ -32,7 +32,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should use prisma mode when no validator file exists", async () => {
-    require("../../../../../utils//dynamic-loader").localValidatorFileExists.mockResolvedValue(
+    require("../../../../../utils/dynamic-loader").localValidatorFileExists.mockResolvedValue(
       false
     );
     const result = await getAuthenticationJsonSchemaPaths(mockConfig);
@@ -45,7 +45,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should use configured mode when validator file exists", async () => {
-    require("../../../../../utils//dynamic-loader").localValidatorFileExists.mockResolvedValue(
+    require("../../../../../utils/dynamic-loader").localValidatorFileExists.mockResolvedValue(
       true
     );
     const result = await getAuthenticationJsonSchemaPaths(mockConfig);
@@ -114,10 +114,13 @@ describe("getAuthenticationJsonSchemaPaths", () => {
     expect(result["/api/users/me"]?.get?.security).toEqual([
       { BearerAuth: [] },
     ]);
+    expect(result["/api/users/me"]?.patch?.security).toEqual([
+      { BearerAuth: [] },
+    ]);
   });
 
   it("should handle missing action keys gracefully", async () => {
-    require("../../../../../utils//dynamic-loader").localValidatorFileExists.mockImplementation(
+    require("../../../../../utils/dynamic-loader").localValidatorFileExists.mockImplementation(
       async (action: string) => action !== "invalidAction"
     );
 

@@ -4,19 +4,19 @@
   "private": true,
   "description": "The Express & Prisma Framework For RESTful API",
   "license": "MIT",
-  "workspaces": [
-    "packages/*"
-  ],
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
   },
   "pnpm": {
-    "overrides": {
-      "global": "link:../../../../.pnpm-global/5/node_modules/global"
-    }
-  },
-  "dependencies": {
-    "global": "link:../../../../.pnpm-global/5/node_modules/global"
+    "overrides": {},
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "@scarf/scarf",
+      "esbuild",
+      "prisma",
+      "sharp"
+    ]
   }
 }

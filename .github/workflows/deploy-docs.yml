@@ -23,8 +23,8 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             sudo -u uanela -H bash -c "
-              cd /home/***/apps/nodejs/arkosjs.com 
-              git config --global --add safe.directory /home/***/apps/nodejs/arkosjs.com
+              cd /home/***/apps/nodejs/arkos/packages/docs
+              git config --global --add safe.directory /home/***/apps/nodejs/arkos/packages/docs
               git reset --hard
               git pull origin main --force
               pnpm install

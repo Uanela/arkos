@@ -1,6 +1,6 @@
 import { OpenAPIV3 } from "openapi-types";
 import { ArkosConfig } from "../../../../exports";
-import enhancedPrismaJsonSchemaGenerator from "../../../../utils/prisma/prisma-json-schema-generator";
+import PrismaJsonSchemaGenerator from "../../../../utils/prisma/prisma-json-schema-generator";
 
 /**
  * Used to backfill missing json schema contained in paths in situation such as when using a `arkosConfig.swagger.mode` different from prisma and `strict` to false, in this situation the jsonSchemas paths are filled with $ref pointing to non existent jsonSchema components.
@@ -240,7 +240,7 @@ class MissingJsonSchemasGenerator {
         const actionsArray = Array.from(actions) as any[];
 
         const generatedSchemas =
-          await enhancedPrismaJsonSchemaGenerator.generateModelSchemas({
+          await PrismaJsonSchemaGenerator.generateModelSchemas({
             modelName,
             arkosConfig,
             schemasToGenerate: actionsArray,

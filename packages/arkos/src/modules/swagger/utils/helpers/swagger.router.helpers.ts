@@ -1,5 +1,4 @@
 import { ArkosConfig } from "../../../../exports";
-import { getModels } from "../../../../utils/dynamic-loader"
 import { pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
@@ -10,6 +9,7 @@ import { generatePrismaJsonSchemas } from "./json-schema-generators/generate-pri
 import { generatePrismaModelMainRoutesPaths } from "./json-schema-generators/prisma-models/generate-prisma-model-main-routes-paths";
 import generatePrismaModelParentRoutePaths from "./json-schema-generators/prisma-models/generate-prisma-model-parent-routes-paths";
 import sheu from "../../../../utils/sheu";
+import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 
 /**
  * Helps choosing the right json schemas according to swagger configurations
@@ -110,7 +110,7 @@ export async function generatePathsForModels(
   if (!swaggerConfig) return {};
 
   let paths: OpenAPIV3.PathsObject = {};
-  const models = getModels();
+  const models = prismaSchemaParser.getModelsAsArrayOfStrings();
 
   for (const model of models) {
     // Generate main routes

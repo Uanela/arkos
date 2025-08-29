@@ -1,4 +1,4 @@
-import { EnhancedPrismaJsonSchemaGenerator } from "../prisma-json-schema-generator";
+import { PrismaJsonSchemaGenerator } from "../prisma-json-schema-generator";
 import { ArkosConfig, RouterConfig } from "../../../exports";
 import { PrismaQueryOptions } from "../../../types";
 import deepmerge from "../../helpers/deepmerge.helper";
@@ -10,12 +10,12 @@ import prismaSchemaParser from "../prisma-schema-parser";
 
 // Mock all dependencies
 jest.mock("../../helpers/deepmerge.helper");
-jest.mock("../..//dynamic-loader");
-jest.mock("../prisma-schema-parser");
+jest.mock("../../dynamic-loader");
+// jest.mock("../prisma-schema-parser");
 jest.mock("fs");
 
-describe("EnhancedPrismaJsonSchemaGenerator", () => {
-  let generator: EnhancedPrismaJsonSchemaGenerator;
+describe("PrismaJsonSchemaGenerator", () => {
+  let generator: PrismaJsonSchemaGenerator;
 
   // Mock data
   const mockSchema = {
@@ -235,7 +235,7 @@ describe("EnhancedPrismaJsonSchemaGenerator", () => {
   const mockPrismaSchemaParser = prismaSchemaParser as any;
 
   beforeEach(() => {
-    generator = new EnhancedPrismaJsonSchemaGenerator();
+    generator = new PrismaJsonSchemaGenerator();
 
     // Reset all mocks
     jest.clearAllMocks();

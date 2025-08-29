@@ -2,7 +2,8 @@ import { BaseController } from "../base.controller";
 import { BaseService } from "../base.service";
 import AppError from "../../error-handler/utils/app-error";
 import APIFeatures from "../../../utils/features/api.features";
-import { getModuleComponents, getModels } from "../../../utils//dynamic-loader";
+import { getModuleComponents } from "../../../utils/dynamic-loader";
+import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 
 // Mock dependencies
 jest.mock("fs", () => ({
@@ -14,7 +15,7 @@ jest.mock("../base.service");
 jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/features/api.features");
 jest.mock("../../../server");
-jest.mock("../../../utils//dynamic-loader");
+jest.mock("../../../utils/dynamic-loader");
 
 describe("BaseController", () => {
   let baseController: BaseController;
@@ -655,15 +656,19 @@ describe("BaseController", () => {
   describe("getAvailableResources", () => {
     it("should return available resources", async () => {
       const { getAvailableResources } = require("../base.controller");
-      const mockModels = ["Post", "User", "Comment"];
-      (getModels as jest.Mock).mockReturnValue(mockModels);
+      const mockModels = ["Post", "User", "Comment", "AuthRole"];
+      jest
+        .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+        .mockReturnValue(mockModels);
 
       await getAvailableResources(mockRequest, mockResponse, mockNext);
 
-      expect(getModels).toHaveBeenCalled();
+      expect(
+        jest.spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+      ).toHaveBeenCalled();
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        data: ["post", "user", "comment", "file-upload"],
+        data: ["post", "user", "comment", "auth-role", "file-upload"],
       });
     });
   });

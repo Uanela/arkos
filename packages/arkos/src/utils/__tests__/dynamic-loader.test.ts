@@ -273,7 +273,6 @@ describe("Dynamic Prisma Model Loader", () => {
 
       // Assert
       expect(fs.existsSync).toHaveBeenCalled();
-      // expect(dynamicLoader.getModuleComponents("user") as any).toBeDefined();
       expect(result).toHaveProperty("schemas");
     });
 
@@ -303,35 +302,6 @@ describe("Dynamic Prisma Model Loader", () => {
 
         expect(result).toBe("some modules");
       } catch (err) {}
-    });
-  });
-
-  describe("getPrismaModelRelations", () => {
-    it("should return relations for a known model", () => {
-      // Setup
-      const mockRelations = { singular: [], list: [] };
-
-      // Important: Directly modify the actual object reference that the function uses
-      dynamicLoader.prismaModelRelationFields.User = mockRelations;
-
-      // Act
-      const result = dynamicLoader.getPrismaModelRelations("user");
-
-      // Assert
-      expect(result).toBe(mockRelations);
-      // expect(pascalCase).toHaveBeenCalledWith("user");
-    });
-
-    it("should return undefined for unknown model", () => {
-      // Setup
-      (dynamicLoader.prismaModelRelationFields as any) = { user: [] };
-      // (pascalCase as jest.Mock).mockReturnValue("Unknown");
-
-      // Act
-      const result = dynamicLoader.getPrismaModelRelations("unknown");
-
-      // Assert
-      expect(result).toBeUndefined();
     });
   });
 
@@ -625,20 +595,6 @@ describe("Dynamic Prisma Model Loader", () => {
       });
     });
 
-    describe("getModels", () => {
-      it("should return all models", () => {
-        // Setup
-        dynamicLoader.models.length = 0; // Clears the array in-place
-        dynamicLoader.models.push("user", "post", "profile");
-
-        // Act
-        const result = dynamicLoader.getModels();
-
-        // Assert
-        expect(result).toEqual(["user", "post", "profile"]);
-      });
-    });
-
     describe("getModelUniqueFields", () => {
       it("should return unique fields for a model", () => {
         // Setup
@@ -713,6 +669,7 @@ describe("Dynamic Prisma Model Loader", () => {
       const module = { default: { query: "options" } };
 
       dynamicLoader.assignModuleToResult(
+        "user",
         "prismaQueryOptions",
         module,
         result,
@@ -725,7 +682,13 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should assign authConfigs correctly", () => {
       const module = { default: { auth: "config" } };
 
-      dynamicLoader.assignModuleToResult("authConfigs", module, result, {});
+      dynamicLoader.assignModuleToResult(
+        "user",
+        "authConfigs",
+        module,
+        result,
+        {}
+      );
 
       expect(result.authConfigs).toEqual({ auth: "config" });
     });
@@ -733,7 +696,13 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should assign interceptors without default extraction", () => {
       const module = { middleware: jest.fn() };
 
-      dynamicLoader.assignModuleToResult("interceptors", module, result, {});
+      dynamicLoader.assignModuleToResult(
+        "user",
+        "interceptors",
+        module,
+        result,
+        {}
+      );
 
       expect(result.interceptors).toBe(module);
     });

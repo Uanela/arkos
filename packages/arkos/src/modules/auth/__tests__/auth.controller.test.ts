@@ -4,7 +4,7 @@ import {
 } from "../auth.controller";
 import authService from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
-import { getModuleComponents } from "../../../utils//dynamic-loader";
+import { getModuleComponents } from "../../../utils/dynamic-loader";
 import { getArkosConfig } from "../../../server";
 import { BaseService } from "../../base/base.service";
 
@@ -38,7 +38,7 @@ jest.mock("../../../utils/helpers/prisma.helpers", () => ({
 }));
 
 // Update your mock for dynamic-loader.ts
-jest.mock("../../../utils//dynamic-loader", () => ({
+jest.mock("../../../utils/dynamic-loader", () => ({
   getModuleComponents: jest.fn(),
   getPrismaModelRelations: jest.fn(),
   getModels: jest.fn(() => []),
