@@ -113,6 +113,23 @@ describe("generatePrismaModelParentRoutesPaths", () => {
 
       expect(paths).toEqual({});
     });
+
+    // NEW: Cover the case where getModuleComponents returns null/undefined entirely
+    it("should return early when getModuleComponents returns null", async () => {
+      mockgetModuleComponents.mockReturnValue(null as any);
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      expect(paths).toEqual({});
+    });
+
+    it("should return early when getModuleComponents returns undefined", async () => {
+      mockgetModuleComponents.mockReturnValue(undefined as any);
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      expect(paths).toEqual({});
+    });
   });
 
   describe("Edge Case: Different endpoint configurations", () => {
@@ -202,6 +219,28 @@ describe("generatePrismaModelParentRoutesPaths", () => {
 
       expect(paths).toEqual({});
     });
+
+    // NEW: Test case where endpoint is not in the allowed array
+    it("should not generate endpoints that are not in the allowed endpoints array", async () => {
+      mockgetModuleComponents.mockReturnValue({
+        router: {
+          config: {
+            disable: false,
+            parent: {
+              model: "Post",
+              endpoints: ["findMany"], // Only allow findMany
+            },
+          },
+        },
+      });
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      expect(paths["/api/posts/{id}/comments"]?.get).toBeDefined();
+      expect(paths["/api/posts/{id}/comments"]?.post).toBeUndefined();
+      expect(paths["/api/posts/{id}/comments/many"]).toBeUndefined();
+      expect(paths["/api/posts/{id}/comments/{childId}"]).toBeUndefined();
+    });
   });
 
   describe("Edge Case: Schema mode determination", () => {
@@ -233,6 +272,22 @@ describe("generatePrismaModelParentRoutesPaths", () => {
           "application/json"
         ]?.schema?.$ref
       ).toBe("#/components/schemas/CreateCommentSchema");
+    });
+
+    // NEW: Cover the case where swagger mode is undefined in strict mode
+    it("should fallback to prisma when swagger mode is undefined in strict mode", async () => {
+      arkosConfig.swagger!.strict = true;
+      (arkosConfig as any).swagger!.mode = undefined;
+
+      mockgetModuleComponents.mockReturnValue({
+        router: {
+          config: baseRouterConfig,
+        },
+      });
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      expect(mockLocalValidatorFileExists).not.toHaveBeenCalled();
     });
 
     it("should fallback to prisma when local file doesn't exist", async () => {
@@ -275,6 +330,24 @@ describe("generatePrismaModelParentRoutesPaths", () => {
         arkosConfig
       );
     });
+
+    // NEW: Cover the case where swagger mode is undefined but file exists
+    it("should fallback to prisma when swagger mode is undefined and file exists", async () => {
+      arkosConfig.swagger!.strict = false;
+      (arkosConfig as any).swagger!.mode = undefined;
+
+      mockgetModuleComponents.mockReturnValue({
+        router: {
+          config: baseRouterConfig,
+        },
+      });
+
+      mockLocalValidatorFileExists.mockResolvedValue(true);
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      expect(mockLocalValidatorFileExists).toHaveBeenCalled();
+    });
   });
 
   describe("Edge Case: Path object initialization", () => {
@@ -302,6 +375,74 @@ describe("generatePrismaModelParentRoutesPaths", () => {
       expect(paths["/api/posts/{id}/comments/many"]).toBeDefined();
       expect(paths["/api/posts/{id}/comments/many"]?.patch).toBeDefined();
       expect(paths["/api/posts/{id}/comments/many"]?.delete).toBeDefined();
+    });
+
+    // NEW: Test path initialization for different endpoint combinations
+    it("should handle path initialization for updateOne and deleteOne endpoints", async () => {
+      mockgetModuleComponents.mockReturnValue({
+        router: {
+          config: {
+            disable: false,
+            parent: {
+              model: "Post",
+              endpoints: ["updateOne", "deleteOne"],
+            },
+          },
+        },
+      });
+
+      mockLocalValidatorFileExists.mockResolvedValue(false);
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      expect(paths["/api/posts/{id}/comments/{childId}"]).toBeDefined();
+      expect(paths["/api/posts/{id}/comments/{childId}"]?.patch).toBeDefined();
+      expect(paths["/api/posts/{id}/comments/{childId}"]?.delete).toBeDefined();
+    });
+
+    it("should handle existing path objects without overwriting", async () => {
+      // Pre-populate paths with existing objects
+      paths["/api/posts/{id}/comments"] = {
+        post: {} as any,
+      };
+      paths["/api/posts/{id}/comments/many"] = {
+        post: {} as any,
+      };
+      paths["/api/posts/{id}/comments/{childId}"] = {
+        get: {} as any,
+      };
+
+      mockgetModuleComponents.mockReturnValue({
+        router: {
+          config: {
+            disable: false,
+            parent: {
+              model: "Post",
+              endpoints: [
+                "findMany",
+                "updateMany",
+                "deleteMany",
+                "updateOne",
+                "deleteOne",
+              ],
+            },
+          },
+        },
+      });
+
+      mockLocalValidatorFileExists.mockResolvedValue(false);
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      // Should add new methods to existing path objects
+      expect(paths["/api/posts/{id}/comments"]?.post).toBeDefined(); // Existing
+      expect(paths["/api/posts/{id}/comments"]?.get).toBeDefined(); // New
+      expect(paths["/api/posts/{id}/comments/many"]?.post).toBeDefined(); // Existing
+      expect(paths["/api/posts/{id}/comments/many"]?.patch).toBeDefined(); // New
+      expect(paths["/api/posts/{id}/comments/many"]?.delete).toBeDefined(); // New
+      expect(paths["/api/posts/{id}/comments/{childId}"]?.get).toBeDefined(); // Existing
+      expect(paths["/api/posts/{id}/comments/{childId}"]?.patch).toBeDefined(); // New
+      expect(paths["/api/posts/{id}/comments/{childId}"]?.delete).toBeDefined(); // New
     });
   });
 
@@ -371,6 +512,34 @@ describe("generatePrismaModelParentRoutesPaths", () => {
       });
 
       mockLocalValidatorFileExists.mockResolvedValue(false);
+
+      await generatePrismaModelParentRoutePaths(
+        "Comment",
+        paths,
+        arkosConfigWithoutSwagger
+      );
+
+      expect(paths["/api/posts/{id}/comments"]).toBeDefined();
+      expect(mockLocalValidatorFileExists).toHaveBeenCalled();
+    });
+
+    // NEW: Test missing swagger config with different scenarios
+    it("should handle missing swagger config when strict mode would be checked", async () => {
+      const arkosConfigWithoutSwagger: ArkosConfig = {};
+
+      mockgetModuleComponents.mockReturnValue({
+        router: {
+          config: {
+            disable: false,
+            parent: {
+              model: "Post",
+              endpoints: ["createOne"],
+            },
+          },
+        },
+      });
+
+      mockLocalValidatorFileExists.mockResolvedValue(true);
 
       await generatePrismaModelParentRoutePaths(
         "Comment",
@@ -491,6 +660,126 @@ describe("generatePrismaModelParentRoutesPaths", () => {
       await expect(
         generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig)
       ).rejects.toThrow("File check failed");
+    });
+  });
+
+  // NEW: Additional tests to cover remaining branches
+  describe("Branch Coverage Enhancement", () => {
+    it("should handle router config with undefined config property", async () => {
+      mockgetModuleComponents.mockReturnValue({
+        router: {
+          // config is undefined
+        },
+      });
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      expect(paths).toEqual({});
+    });
+
+    it("should handle all possible schema modes in different scenarios", async () => {
+      const testCases = [
+        { mode: "prisma", fileExists: true },
+        { mode: "zod", fileExists: true },
+        { mode: "class-validator", fileExists: true },
+        { mode: "prisma", fileExists: false },
+        { mode: "zod", fileExists: false },
+        { mode: "class-validator", fileExists: false },
+      ];
+
+      for (const testCase of testCases) {
+        jest.clearAllMocks();
+        paths = {};
+        arkosConfig.swagger!.mode = testCase.mode as any;
+        arkosConfig.swagger!.strict = false;
+
+        mockgetModuleComponents.mockReturnValue({
+          router: {
+            config: {
+              disable: false,
+              parent: {
+                model: "Post",
+                endpoints: ["createOne"],
+              },
+            },
+          },
+        });
+
+        mockLocalValidatorFileExists.mockResolvedValue(testCase.fileExists);
+
+        await generatePrismaModelParentRoutePaths(
+          "Comment",
+          paths,
+          arkosConfig
+        );
+
+        expect(paths["/api/posts/{id}/comments"]).toBeDefined();
+      }
+    });
+
+    it("should test endpoint permission checking with various endpoint types", async () => {
+      const endpointTypes = [
+        "createOne",
+        "findMany",
+        "createMany",
+        "updateMany",
+        "deleteMany",
+        "findOne",
+        "updateOne",
+        "deleteOne",
+      ];
+
+      for (const endpoint of endpointTypes) {
+        jest.clearAllMocks();
+        paths = {};
+
+        mockgetModuleComponents.mockReturnValue({
+          router: {
+            config: {
+              disable: false,
+              parent: {
+                model: "Post",
+                endpoints: [endpoint],
+              },
+            },
+          },
+        });
+
+        mockLocalValidatorFileExists.mockResolvedValue(false);
+
+        await generatePrismaModelParentRoutePaths(
+          "Comment",
+          paths,
+          arkosConfig
+        );
+
+        expect(Object.keys(paths).length).toBeGreaterThan(0);
+      }
+    });
+
+    it("should handle mixed endpoint configurations", async () => {
+      mockgetModuleComponents.mockReturnValue({
+        router: {
+          config: {
+            disable: false,
+            parent: {
+              model: "Post",
+              endpoints: ["createOne", "deleteMany", "updateOne"],
+            },
+          },
+        },
+      });
+
+      mockLocalValidatorFileExists.mockResolvedValue(false);
+
+      await generatePrismaModelParentRoutePaths("Comment", paths, arkosConfig);
+
+      expect(paths["/api/posts/{id}/comments"]?.post).toBeDefined(); // createOne
+      expect(paths["/api/posts/{id}/comments"]?.get).toBeUndefined(); // findMany not included
+      expect(paths["/api/posts/{id}/comments/many"]?.delete).toBeDefined(); // deleteMany
+      expect(paths["/api/posts/{id}/comments/many"]?.patch).toBeUndefined(); // updateMany not included
+      expect(paths["/api/posts/{id}/comments/{childId}"]?.patch).toBeDefined(); // updateOne
+      expect(paths["/api/posts/{id}/comments/{childId}"]?.get).toBeUndefined(); // findOne not included
     });
   });
 });

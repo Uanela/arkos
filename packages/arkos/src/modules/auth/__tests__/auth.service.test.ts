@@ -5,7 +5,6 @@ import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { getArkosConfig } from "../../../server";
 import AppError from "../../error-handler/utils/app-error";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
-import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 
 // Mock dependencies
 jest.mock("jsonwebtoken");

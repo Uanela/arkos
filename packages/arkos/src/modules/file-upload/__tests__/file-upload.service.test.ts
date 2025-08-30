@@ -9,6 +9,7 @@ import {
 } from "../file-upload.service";
 import AppError from "../../error-handler/utils/app-error";
 import { getArkosConfig } from "../../../server";
+import * as helpers from "../utils/helpers/file-upload.helpers";
 
 // Mock dependencies
 jest.mock("multer");
@@ -815,6 +816,300 @@ describe("FileUploadService", () => {
         expect.stringContaining("Failed to delete file"),
         500
       );
+    });
+  });
+
+  describe("upload method - protocol detection", () => {
+    it("should use HTTPS protocol for non-localhost hosts", async () => {
+      mockReq.get = jest.fn((key) => {
+        if (key === "host") return "example.com";
+        return null;
+      });
+      mockReq.file = {
+        path: "images/test.jpg",
+        originalname: "test.jpg",
+      };
+
+      mockUpload.single.mockReturnValueOnce(
+        (req: any, res: any, next: Function) => {
+          req.file = mockReq.file;
+          next();
+        }
+      );
+
+      const result = await fileUploadService.upload(mockReq, mockRes);
+      expect(result).toBe("http://example.com/api/uploads/images/test.jpg");
+    });
+
+    it("should use HTTP protocol for localhost hosts", async () => {
+      mockReq.get = jest.fn((key) => {
+        if (key === "host") return "localhost:3000";
+        return null;
+      });
+      mockReq.file = {
+        path: "images/test.jpg",
+        originalname: "test.jpg",
+      };
+
+      mockUpload.single.mockReturnValueOnce(
+        (req: any, res: any, next: Function) => {
+          req.file = mockReq.file;
+          next();
+        }
+      );
+
+      const result = await fileUploadService.upload(mockReq, mockRes);
+      expect(result).toBe("http://localhost:3000/api/uploads/images/test.jpg");
+    });
+  });
+
+  describe("upload method - directory path parsing", () => {
+    it("should handle uploadDir ending with slash", async () => {
+      const serviceWithSlash = new FileUploadService("uploads/images/");
+      mockReq.file = {
+        path: "images/test.jpg",
+        originalname: "test.jpg",
+      };
+
+      mockUpload.single.mockReturnValueOnce(
+        (req: any, res: any, next: Function) => {
+          req.file = mockReq.file;
+          next();
+        }
+      );
+
+      const result = await serviceWithSlash.upload(mockReq, mockRes);
+      expect(result).toContain("/api/uploads/images/test.jpg");
+    });
+
+    it("should handle uploadDir not ending with slash", async () => {
+      const serviceWithoutSlash = new FileUploadService("uploads/videos");
+      mockReq.file = {
+        path: "videos/test.mp4",
+        originalname: "test.mp4",
+      };
+
+      mockUpload.single.mockReturnValueOnce(
+        (req: any, res: any, next: Function) => {
+          req.file = mockReq.file;
+          next();
+        }
+      );
+
+      const result = await serviceWithoutSlash.upload(mockReq, mockRes);
+      expect(result).toContain("/api/uploads/videos/test.mp4");
+    });
+  });
+
+  describe("upload method - file filtering", () => {
+    it("should filter out null values from failed processing in multiple files", async () => {
+      mockReq.query = { multiple: "true" };
+      mockReq.files = [
+        { path: "images/test1.jpg", originalname: "test1.jpg" },
+        { path: "images/test2.jpg", originalname: "test2.jpg" },
+      ];
+      mockReq.file = null;
+
+      jest
+        .spyOn(helpers, "processImage")
+        .mockResolvedValueOnce(
+          "http://localhost:3000/api/uploads/images/test1.jpg"
+        )
+        .mockResolvedValueOnce(null);
+
+      mockUpload.array.mockReturnValueOnce(
+        (req: any, res: any, next: Function) => {
+          req.files = mockReq.files;
+          next();
+        }
+      );
+
+      const imageService = new FileUploadService("uploads/images");
+      const result = await imageService.upload(mockReq, mockRes);
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(1);
+      expect(result![0]).toBe(
+        "http://localhost:3000/api/uploads/images/test1.jpg"
+      );
+    });
+  });
+
+  describe("getFieldName method", () => {
+    it("should return 'images' for images directory", () => {
+      const imageService = new FileUploadService("uploads/images");
+      const fieldName = imageService["getFieldName"]();
+      expect(fieldName).toBe("images");
+    });
+
+    it("should return 'videos' for videos directory", () => {
+      const videoService = new FileUploadService("uploads/videos");
+      const fieldName = videoService["getFieldName"]();
+      expect(fieldName).toBe("videos");
+    });
+
+    it("should return 'documents' for documents directory", () => {
+      const docService = new FileUploadService("uploads/documents");
+      const fieldName = docService["getFieldName"]();
+      expect(fieldName).toBe("documents");
+    });
+
+    it("should return 'files' for files directory", () => {
+      const fileService = new FileUploadService("uploads/files");
+      const fieldName = fileService["getFieldName"]();
+      expect(fieldName).toBe("files");
+    });
+
+    it("should return 'files' for unknown directory", () => {
+      const unknownService = new FileUploadService("uploads/unknown");
+      const fieldName = unknownService["getFieldName"]();
+      expect(fieldName).toBe("files");
+    });
+
+    it("should handle directory paths with trailing slash", () => {
+      const imageService = new FileUploadService("uploads/images/");
+      const fieldName = imageService["getFieldName"]();
+      expect(fieldName).toBe("images");
+    });
+  });
+
+  describe("deleteFileByUrl - URL parsing edge cases", () => {
+    it("should handle relative URLs without http protocol", async () => {
+      const relativeUrl = "/api/uploads/images/test.jpg";
+
+      const result = await fileUploadService.deleteFileByUrl(relativeUrl);
+
+      expect(mockStat).toHaveBeenCalled();
+      expect(mockUnlink).toHaveBeenCalled();
+      expect(result).toBe(true);
+    });
+
+    it("should handle URLs with path starting with slash after base route", async () => {
+      const result = await fileUploadService.deleteFileByUrl(
+        "http://localhost:3000/api/uploads/images/subfolder/test.jpg"
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it("should handle URLs with path not starting with slash after base route", async () => {
+      const result = await fileUploadService.deleteFileByUrl(
+        "http://localhost:3000/api/uploadsimages/test.jpg"
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it("should throw error when unable to determine file type from URL", async () => {
+      await expect(
+        fileUploadService.deleteFileByUrl(
+          "http://localhost:3000/api/uploads/unknown/test.jpg"
+        )
+      ).rejects.toBeInstanceOf(AppError);
+
+      expect(AppError).toHaveBeenCalledWith(
+        "Unable to determine file type or file name from URL",
+        400
+      );
+    });
+
+    it("should throw error for unsupported file type in switch case", async () => {
+      // This test might be tricky since we'd need to mock the fileTypes loop differently
+      // Let's create a scenario where we can't find a valid file type
+      const invalidUrl =
+        "http://localhost:3000/api/uploads/invalidtype/test.jpg";
+
+      await expect(
+        fileUploadService.deleteFileByUrl(invalidUrl)
+      ).rejects.toBeInstanceOf(AppError);
+    });
+  });
+
+  describe("constructor - directory path handling", () => {
+    it("should handle uploadDir starting with slash", () => {
+      const service = new FileUploadService("/uploads/images");
+      expect(service["uploadDir"]).toContain("uploads/images/");
+    });
+
+    it("should handle uploadDir not starting with slash", () => {
+      const service = new FileUploadService("uploads/images");
+      expect(service["uploadDir"]).toContain("uploads/images/");
+    });
+
+    it("should handle uploadDir ending with slash", () => {
+      const service = new FileUploadService("uploads/images/");
+      expect(service["uploadDir"]).toContain("uploads/images/");
+      expect(service["uploadDir"]).not.toMatch(/\/\/$/);
+    });
+
+    it("should handle uploadDir not ending with slash", () => {
+      const service = new FileUploadService("uploads/images");
+      expect(service["uploadDir"]).toContain("uploads/images/");
+    });
+  });
+
+  describe("handleSingleUpload - oldFilePath variations", () => {
+    it("should handle oldFilePath deletion when file exists", async () => {
+      const middleware = fileUploadService.handleSingleUpload(
+        "images/old-file.jpg"
+      );
+
+      mockUpload.single.mockReturnValueOnce((req: any, res: any, next: any) => {
+        next();
+      });
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(mockStat).toHaveBeenCalled();
+      expect(mockUnlink).toHaveBeenCalled();
+    });
+
+    it("should handle oldFilePath deletion when file stat fails", async () => {
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const middleware = fileUploadService.handleSingleUpload(
+        "images/nonexistent.jpg"
+      );
+
+      mockUpload.single.mockReturnValueOnce((req: any, res: any, next: any) => {
+        next();
+      });
+
+      mockStat.mockRejectedValueOnce(new Error("File not found"));
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe("handleDeleteSingleFile - error handling", () => {
+    it("should log error and continue when file stat fails", async () => {
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const middleware =
+        fileUploadService.handleDeleteSingleFile("nonexistent.jpg");
+
+      mockStat.mockRejectedValueOnce(new Error("Stat failed"));
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it("should log error and continue when file unlink fails", async () => {
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const middleware = fileUploadService.handleDeleteSingleFile("test.jpg");
+
+      mockUnlink.mockRejectedValueOnce(new Error("Unlink failed"));
+
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
   });
 });

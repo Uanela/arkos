@@ -559,4 +559,393 @@ describe("handleRequestBodyValidationAndTransformation", () => {
       expect(routes).toEqual([]);
     });
   });
+
+  // Add these test cases to your existing describe("getAppRoutes") block
+
+  describe("getAppRoutes - Additional Coverage Tests", () => {
+    const createMockApp = (routerConfig: any) => {
+      return {
+        _router: {
+          stack: routerConfig,
+        },
+      };
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it("should handle middleware without regexp but with handle.stack", () => {
+      // This tests the case where middleware.regexp is undefined/null
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/test",
+                  methods: { get: true },
+                },
+              },
+            ],
+          },
+          // No regexp property
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "GET", path: "/test" }]);
+    });
+
+    it("should handle regex patterns that don't match primary pattern", () => {
+      // Test the simpleMatch fallback when the main regex pattern fails
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/fallback",
+                  methods: { post: true },
+                },
+              },
+            ],
+          },
+          regexp: "/^\/different-pattern\/something/",
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "POST", path: "/fallback" }]);
+    });
+
+    it("should handle route paths that don't contain regex patterns", () => {
+      // Test the normal path joining when routePath doesn't contain "/?(?="
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/normal-path",
+                  methods: { get: true },
+                },
+              },
+            ],
+          },
+          regexp: "/^\/api/?(?=/|$)/i",
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "GET", path: "/normal-path" }]);
+    });
+
+    it("should handle route paths that start without slash", () => {
+      // Test the case where routePath doesn't start with "/"
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "no-leading-slash",
+                  methods: { put: true },
+                },
+              },
+            ],
+          },
+          regexp: "/^\/base/?(?=/|$)/i",
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "PUT", path: "no-leading-slash" }]);
+    });
+
+    it("should handle regex patterns with no match groups", () => {
+      // Test when regex patterns don't match any of the expected formats
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/unmatched",
+                  methods: { delete: true },
+                },
+              },
+            ],
+          },
+          regexp: "/completely-different-pattern/",
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "DELETE", path: "/unmatched" }]);
+    });
+
+    it("should handle pathMatch extraction failure", () => {
+      // Test when pathMatch is null/undefined
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/?(?=unextractable-pattern)/i",
+                  methods: { patch: true },
+                },
+              },
+            ],
+          },
+          regexp: "/^\/api/?(?=/|$)/i",
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([
+        { method: "PATCH", path: "unextractable-pattern" },
+      ]);
+    });
+
+    it("should handle fallbackMatch failure", () => {
+      // Test when both pathMatch and fallbackMatch fail
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/?(?=)/i", // Empty pattern that won't match fallbackMatch
+                  methods: { get: true },
+                },
+              },
+            ],
+          },
+          regexp: "/^\/api/?(?=/|$)/i",
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "GET", path: "/i" }]); // After cleanup
+    });
+
+    it("should handle middleware with handle but no stack", () => {
+      // Test middleware that has handle but no stack property
+      const mockApp = createMockApp([
+        {
+          handle: {
+            // No stack property
+          },
+          regexp: "/^\/api/?(?=/|$)/i",
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([]);
+    });
+
+    it("should handle basePath with trailing slash", () => {
+      // Test the basePath.replace(/\/$/, "") logic
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/resource",
+                  methods: { get: true },
+                },
+              },
+            ],
+          },
+          regexp: "/^\/api//?(?=/|$)/i", // This should result in basePath with trailing slash
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "GET", path: "/resource" }]);
+    });
+
+    it("should handle complex regex cleanup scenarios", () => {
+      // Test various regex artifact cleanup scenarios
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/^complex$/?(?=more-stuff)/path",
+                  methods: { post: true },
+                },
+              },
+            ],
+          },
+          regexp: "/^\/api^$/?(?=/|$)/i",
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "POST", path: "more-stuff" }]);
+    });
+
+    it("should handle middleware without regexp.toString method", () => {
+      // Test when regexp doesn't have toString or causes issues
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/test-path",
+                  methods: { get: true },
+                },
+              },
+            ],
+          },
+          regexp: {
+            // Object without proper toString that might cause issues
+            source: "^\/weird-pattern",
+          },
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "GET", path: "/test-path" }]);
+    });
+
+    it("should handle null or undefined middleware properties", () => {
+      // Test edge cases with null/undefined properties
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/null-test",
+                  methods: { get: true },
+                },
+              },
+            ],
+          },
+          regexp: null,
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "GET", path: "/null-test" }]);
+    });
+
+    it("should handle regex with multiple capture groups", () => {
+      // Test regex patterns with multiple capture groups to test the match[1] selection
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/multi-group",
+                  methods: { get: true },
+                },
+              },
+            ],
+          },
+          regexp: "/^(prefix)(\/api)/?(?=/|$)/i", // Multiple groups, should use match[1]
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "GET", path: "/multi-group" }]);
+    });
+
+    it("should handle successful basePath extraction and path joining", () => {
+      // Test a scenario where basePath is successfully extracted and joined
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "/users",
+                  methods: { get: true },
+                },
+              },
+            ],
+          },
+          regexp: /^\/api\/?(?=\/|$)/i, // This should extract "/api" as basePath
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "GET", path: "/api/users" }]);
+    });
+
+    it("should handle non-leading slash route with successful basePath", () => {
+      // Test case where routePath doesn't start with "/" and we have basePath
+      const mockApp = createMockApp([
+        {
+          handle: {
+            stack: [
+              {
+                route: {
+                  path: "items", // No leading slash
+                  methods: { post: true },
+                },
+              },
+            ],
+          },
+          regexp: /^\/store\/?(?=\/|$)/i, // Should extract "/store"
+        },
+      ]);
+
+      (serverConfig.getExpressApp as jest.Mock).mockReturnValue(mockApp);
+
+      const routes = getAppRoutes();
+
+      expect(routes).toEqual([{ method: "POST", path: "/store/items" }]);
+    });
+  });
 });

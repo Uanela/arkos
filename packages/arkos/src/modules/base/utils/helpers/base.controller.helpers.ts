@@ -1,5 +1,4 @@
 import { getExpressApp } from "../../../../server";
-import { ArkosRequest } from "../../../../types";
 
 export const getAppRoutes = () => {
   const app = getExpressApp();

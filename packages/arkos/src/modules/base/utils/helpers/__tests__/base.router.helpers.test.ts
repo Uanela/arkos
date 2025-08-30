@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { setupRouters } from "../base.router.helpers"; // Adjust the import path
+import {
+  isEndpointDisabled,
+  isParentEndpointAllowed,
+  setupRouters,
+} from "../base.router.helpers"; // Adjust the import path
 import * as importHelpers from "../../../../../utils/dynamic-loader";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
@@ -582,5 +586,429 @@ describe("setupRouters", () => {
           (router.delete as jest.Mock).mock.calls.length
       ).not.toBe(8);
     } catch {}
+  });
+
+  describe("setupRouters - Additional Coverage Tests", () => {
+    let router: Router;
+    let mockBaseController: any;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      router = Router();
+
+      mockBaseController = {
+        createOne: jest.fn(),
+        findMany: jest.fn(),
+        findOne: jest.fn(),
+        updateOne: jest.fn(),
+        deleteOne: jest.fn(),
+        createMany: jest.fn(),
+        updateMany: jest.fn(),
+        deleteMany: jest.fn(),
+      };
+
+      (BaseController as jest.Mock).mockImplementation(
+        () => mockBaseController
+      );
+      (catchAsync as jest.Mock).mockImplementation((fn) => fn);
+
+      jest
+        .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+        .mockReturnValue(["User"]);
+    });
+
+    // Test for line 58: when getModuleComponents returns falsy value
+    it("should handle when getModuleComponents returns falsy value", async () => {
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(null);
+
+      const setupPromises = setupRouters(router, {});
+      await Promise.all(await setupPromises);
+
+      // Should still register routes with default empty objects
+      expect(router.post).toHaveBeenCalledWith(
+        "/users",
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function)
+      );
+    });
+
+    // Test for lines 333, 340-346: validation configuration branches
+    it("should use class-validator DTOs when resolver is class-validator", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: {},
+        prismaQueryOptions: {},
+        router: undefined,
+        dtos: {
+          create: jest.fn(),
+          update: jest.fn(),
+          findOne: jest.fn(),
+          createMany: jest.fn(),
+          updateMany: jest.fn(),
+          deleteMany: jest.fn(),
+          delete: jest.fn(),
+        },
+        schemas: {
+          create: jest.fn(),
+          update: jest.fn(),
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      // Mock arkosConfigs with class-validator resolver
+      const arkosConfigs = {
+        validation: {
+          resolver: "class-validator",
+        },
+      };
+
+      const setupPromises = setupRouters(router, arkosConfigs as any);
+      await Promise.all(await setupPromises);
+
+      // Verify that DTOs are used (this tests line 333)
+      expect(router.post).toHaveBeenCalledWith(
+        "/users",
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function), // This should be the DTO
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function)
+      );
+    });
+
+    it("should use zod schemas when resolver is zod", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: {},
+        prismaQueryOptions: {},
+        router: undefined,
+        dtos: {
+          create: jest.fn(),
+        },
+        schemas: {
+          create: jest.fn(),
+          update: jest.fn(),
+          findOne: jest.fn(),
+          createMany: jest.fn(),
+          updateMany: jest.fn(),
+          deleteMany: jest.fn(),
+          delete: jest.fn(),
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      // Mock arkosConfigs with zod resolver
+      const arkosConfigs = {
+        validation: {
+          resolver: "zod",
+        },
+      };
+
+      const setupPromises = setupRouters(router, arkosConfigs as any);
+      await Promise.all(await setupPromises);
+
+      // Verify that schemas are used (this tests line 340)
+      expect(router.post).toHaveBeenCalledWith(
+        "/users",
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function), // This should be the schema
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function)
+      );
+    });
+
+    it("should return undefined when validation resolver is not configured", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: {},
+        prismaQueryOptions: {},
+        router: undefined,
+        dtos: {
+          create: jest.fn(),
+        },
+        schemas: {
+          create: jest.fn(),
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      // Mock arkosConfigs without validation config
+      const arkosConfigs = {};
+
+      const setupPromises = setupRouters(router, arkosConfigs);
+      await Promise.all(await setupPromises);
+
+      // Should still register routes but without specific validation (tests line 342)
+      expect(router.post).toHaveBeenCalledWith(
+        "/users",
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function)
+      );
+    });
+
+    it("should return undefined when validation resolver is unknown", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: {},
+        prismaQueryOptions: {},
+        router: undefined,
+        dtos: {
+          create: jest.fn(),
+        },
+        schemas: {
+          create: jest.fn(),
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      // Mock arkosConfigs with unknown resolver
+      const arkosConfigs = {
+        validation: {
+          resolver: "unknown-resolver",
+        },
+      };
+
+      jest
+        .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
+        .mockReturnValue(["User"]);
+
+      const setupPromises = setupRouters(router, arkosConfigs as any);
+      await Promise.all(await setupPromises);
+
+      expect(router.post).toHaveBeenCalledWith(
+        "/users",
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function)
+      );
+    });
+
+    // Test for different hasCustomImplementation path variations
+    it("should detect custom implementation with different path formats", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: {},
+        prismaQueryOptions: {},
+        router: {
+          default: {
+            stack: [
+              {
+                path: "/api/users",
+                method: { toLowerCase: () => "post" },
+                handle: jest.fn(),
+              },
+            ],
+          },
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      const setupPromises = setupRouters(router, {});
+      await Promise.all(await setupPromises);
+
+      // Should not register POST /users because custom implementation exists
+      expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
+    });
+
+    it("should detect custom implementation with api/ path format", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: {},
+        prismaQueryOptions: {},
+        router: {
+          default: {
+            stack: [
+              {
+                path: "api/users",
+                method: { toLowerCase: () => "get" },
+                handle: jest.fn(),
+              },
+            ],
+          },
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      const setupPromises = setupRouters(router, {});
+      await Promise.all(await setupPromises);
+
+      // Should not register GET /users because custom implementation exists
+      expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
+    });
+
+    it("should detect custom implementation with api/path/ trailing slash format", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: {},
+        prismaQueryOptions: {},
+        router: {
+          default: {
+            stack: [
+              {
+                path: "api/users/",
+                method: { toLowerCase: () => "patch" },
+                handle: jest.fn(),
+              },
+            ],
+          },
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      const setupPromises = setupRouters(router, {});
+      await Promise.all(await setupPromises);
+
+      // Should not register PATCH /users because custom implementation exists
+      expect(router.patch).not.toHaveBeenCalledWith(
+        "/users",
+        expect.anything()
+      );
+    });
+
+    it("should detect custom implementation with /api/path/ format", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: {},
+        prismaQueryOptions: {},
+        router: {
+          default: {
+            stack: [
+              {
+                path: "/api/users/",
+                method: { toLowerCase: () => "delete" },
+                handle: jest.fn(),
+              },
+            ],
+          },
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      const setupPromises = setupRouters(router, {});
+      await Promise.all(await setupPromises);
+
+      // Should not register DELETE /users because custom implementation exists
+      expect(router.delete).not.toHaveBeenCalledWith(
+        "/users",
+        expect.anything()
+      );
+    });
+  });
+
+  // Additional tests for isEndpointDisabled function edge cases
+  describe("isEndpointDisabled - Additional Coverage", () => {
+    it("should return false when routerConfig is undefined", () => {
+      const result = isEndpointDisabled(undefined as any, "createOne");
+      expect(result).toBe(false);
+    });
+
+    it("should return false when routerConfig.disable is undefined", () => {
+      const routerConfig = {};
+      const result = isEndpointDisabled(routerConfig, "createOne");
+      expect(result).toBe(false);
+    });
+
+    it("should handle when disable is an object but endpoint is not specified", () => {
+      const routerConfig = {
+        disable: {
+          findMany: true,
+          // createOne is not specified
+        },
+      };
+      const result = isEndpointDisabled(routerConfig, "createOne");
+      expect(result).toBe(false); // Should return false when endpoint is not in disable object
+    });
+  });
+
+  // Tests for isParentEndpointAllowed function
+  describe("isParentEndpointAllowed", () => {
+    it("should return false when routerConfig is null", () => {
+      const result = isParentEndpointAllowed(null, "createOne");
+      expect(result).toBe(false);
+    });
+
+    it("should return false when routerConfig.parent is undefined", () => {
+      const routerConfig = {};
+      const result = isParentEndpointAllowed(routerConfig, "createOne");
+      expect(result).toBe(false);
+    });
+
+    it("should return true when parent.endpoints is '*'", () => {
+      const routerConfig = {
+        parent: {
+          endpoints: "*",
+        },
+      };
+      const result = isParentEndpointAllowed(routerConfig, "createOne");
+      expect(result).toBe(true);
+    });
+
+    it("should return true when endpoint is in parent.endpoints array", () => {
+      const routerConfig = {
+        parent: {
+          endpoints: ["createOne", "findMany"],
+        },
+      };
+      const result = isParentEndpointAllowed(routerConfig, "createOne");
+      expect(result).toBe(true);
+    });
+
+    it("should return false when endpoint is not in parent.endpoints array", () => {
+      const routerConfig = {
+        parent: {
+          endpoints: ["findMany", "updateOne"],
+        },
+      };
+      const result = isParentEndpointAllowed(routerConfig, "createOne");
+      expect(result).toBe(false);
+    });
+
+    it("should return true when parent.endpoints is neither '*' nor array (default case)", () => {
+      const routerConfig = {
+        parent: {
+          endpoints: "some-other-value",
+        },
+      };
+      const result = isParentEndpointAllowed(routerConfig, "createOne");
+      expect(result).toBe(true);
+    });
   });
 });
