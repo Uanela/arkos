@@ -23,7 +23,9 @@ class Sheu {
     const label = options?.label
       ? content
         ? options?.label + " "
-        : options?.label
+        : content === null
+          ? options?.label + " "
+          : options?.label
       : "";
     let result = `${label}${content}`;
 
@@ -176,8 +178,7 @@ class Sheu {
    * Bold text formatting
    */
   bold(content: any, options?: { timestamp?: boolean | string }): string {
-    const boldText = `\x1b[1m${content}\x1b[0m`;
-    return this.formatText(boldText, { ...options, bold: false }); // Don't double-bold
+    return this.formatText(content, { ...options, bold: true }); // Don't double-bold
   }
 
   /**

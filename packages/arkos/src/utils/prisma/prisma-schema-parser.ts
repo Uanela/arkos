@@ -108,7 +108,6 @@ export class PrismaSchemaParser {
   private extractModels(): PrismaModel[] {
     const models: PrismaModel[] = [];
     const modelBlocks = this.extractModelBlocks();
-    console.log(modelBlocks);
 
     for (const block of modelBlocks) {
       const model = this.parseModelBlock(block);
@@ -309,7 +308,6 @@ export class PrismaSchemaParser {
       const content = fs.readFileSync(file, "utf-8");
       if (!prismaContent?.includes?.(content)) prismaContent.push(content);
     }
-    console.log(files);
 
     // Gather the content of all *.prisma files into single one
     const content = prismaContent

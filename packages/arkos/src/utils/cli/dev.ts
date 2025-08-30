@@ -1,5 +1,5 @@
 import { spawn, ChildProcess } from "child_process";
-import { watch } from "chokidar";
+import chokidar from "chokidar";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
@@ -8,6 +8,8 @@ import fs from "fs";
 import path from "path";
 import sheu from "../sheu";
 import portAndHostAllocator from "../features/port-and-host-allocator";
+import smartFsWatcher from "./utils/smart-fs-watcher";
+import { ArkosConfig } from "../../exports";
 
 interface DevOptions {
   port?: string;
@@ -30,10 +32,9 @@ export async function devCommand(options: DevOptions = {}) {
     const { port, host } = options;
     let isRestarting = false;
     let restartingFiles = new Set<string>();
-    // Detect if project uses TypeScript or JavaScript
+
     const fileExt = getUserFileExtension();
 
-    // Find the application entry point
     const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
 
     if (!fs.existsSync(entryPoint)) {
@@ -41,7 +42,6 @@ export async function devCommand(options: DevOptions = {}) {
       process.exit(1);
     }
 
-    // Set environment variables
     const getEnv = () =>
       ({
         NODE_ENV: "development",
@@ -50,7 +50,6 @@ export async function devCommand(options: DevOptions = {}) {
         ...(host && { CLI_HOST: host }),
       }) as { [x: string]: string };
 
-    // Function to start the child process
     const startServer = () => {
       if (child) {
         child.kill();
@@ -66,27 +65,9 @@ export async function devCommand(options: DevOptions = {}) {
           shell: true,
         });
       } else {
-        // Enhanced nodemon configuration
         child = spawn(
           "npx",
-          [
-            "node-dev",
-            "--respawn",
-            "--notify=false",
-            "--ignore",
-            "node_modules",
-            "--ignore",
-            "dist",
-            "--ignore",
-            "build",
-            "--ignore",
-            ".dist",
-            "--ignore",
-            ".build",
-            "--watch",
-            "src",
-            entryPoint,
-          ],
+          ["tsx-strict", "--no-type-check", "--watch", entryPoint],
           {
             stdio: "inherit",
             env,
@@ -107,6 +88,8 @@ export async function devCommand(options: DevOptions = {}) {
           }
         });
       }
+
+      if (smartFsWatcher) smartFsWatcher.reset();
     };
 
     // Function to handle server restart with debouncing
@@ -126,14 +109,15 @@ export async function devCommand(options: DevOptions = {}) {
       restartTimeout = setTimeout(() => {
         sheu.info(`\x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`);
         startServer();
+        isRestarting = false;
         restartTimeout = null;
-        restartingFiles.delete(filePath!);
+        if (filePath) restartingFiles.delete(filePath);
       }, 1000);
     };
 
     // Setup environment file watching
     const setupEnvWatcher = () => {
-      const envWatcher = watch(
+      const envWatcher = chokidar.watch(
         fullCleanCwd(envFiles?.join(",") || "")
           .replaceAll("/", "")
           .split(",") || [],
@@ -146,8 +130,7 @@ export async function devCommand(options: DevOptions = {}) {
       envWatcher.on("all", (_, filePath) => {
         try {
           envFiles = loadEnvironmentVariables();
-          // Restart server to pick up new env vars
-          scheduleRestart("Environments files changed", filePath);
+          scheduleRestart("Environment files changed", "env-files");
         } catch (error) {
           console.error(`Error reloading ${filePath}:`, error);
         }
@@ -156,57 +139,42 @@ export async function devCommand(options: DevOptions = {}) {
       return envWatcher;
     };
 
-    // Setup additional file watching for better new file detection
-    const setupAdditionalWatcher = () => {
-      const additionalWatcher = watch(
-        [
-          "src",
-          "package.json",
-          "tsconfig.json",
-          "jsconfig.json",
-          "arkos.config.ts",
-          "arkos.config.js",
-        ],
-        {
-          ignoreInitial: true,
-          ignored: [
-            /node_modules/,
-            /\.git/,
-            /\.dist/,
-            /\.build/,
-            /dist/,
-            /build/,
-            /\.env.*/,
-          ],
-          awaitWriteFinish: {
-            stabilityThreshold: 3000,
-          },
-        }
-      );
-
-      additionalWatcher.on("add", (filePath) => {
-        if (!restartingFiles.has(filePath))
+    // Setup smart watcher for new file detection
+    const setupSmartWatcher = () => {
+      smartFsWatcher.start((filePath) => {
+        if (!restartingFiles.has(filePath)) {
           scheduleRestart(
             `${fullCleanCwd(filePath)} has been created`,
             filePath
           );
+        }
       });
-
-      return additionalWatcher;
+      return smartFsWatcher;
     };
 
     // Start the server
     startServer();
 
-    // Setup watchers if enabled
+    // Setup watchers
     const envWatcher = setupEnvWatcher();
-    const additionalWatcher = setupAdditionalWatcher();
+    setupSmartWatcher();
 
     const checkConfig = async () => {
+      let config: ArkosConfig & { available: boolean } = {} as any;
+
       try {
-        // Import the config getter
-        const { getArkosConfig } = await importModule("../../server");
-        const config = getArkosConfig();
+        try {
+          const server = await importModule("../../server");
+          config = server?.getArkosConfig?.();
+        } catch (err: any) {
+          if (
+            !err?.message?.includes("../../server") &&
+            !err?.message?.includes("cjs/server") &&
+            !err?.message?.includes("esm/server")
+          )
+            throw err;
+        }
+
         if (config && config.available) {
           const env = getEnv();
           const hostAndPort =
@@ -227,15 +195,18 @@ export async function devCommand(options: DevOptions = {}) {
               .replaceAll("/", "")}\n`
           );
           return true;
+        } else {
+          // Config is ready, display the info with actual values
+          console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+          console.info(
+            `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
+              .replaceAll(`${process.cwd()}/`, "")
+              .replaceAll("/", "")}\n`
+          );
         }
         return false;
       } catch (err: any) {
-        const message = err?.message;
-        if (
-          !message.includes("../../server") &&
-          !message.includes("cjs/server")
-        )
-          console.info(err);
+        console.info(err);
         return false;
       }
     };
@@ -279,7 +250,7 @@ export async function devCommand(options: DevOptions = {}) {
 
       if (envWatcher) envWatcher.close();
 
-      if (additionalWatcher) additionalWatcher.close();
+      if (smartFsWatcher) smartFsWatcher.close();
 
       if (child) {
         child.kill("SIGTERM");
@@ -320,4 +291,5 @@ export async function devCommand(options: DevOptions = {}) {
 export function killDevelopmentServerChildProcess() {
   (child as ChildProcess)?.kill?.();
   child = null;
+  if (smartFsWatcher) smartFsWatcher.close();
 }

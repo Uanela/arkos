@@ -323,7 +323,6 @@ export async function importModuleComponents(
 
           // Assign module to result
           assignModuleToResult(modelName, key, module, result, arkosConfig);
-          console.log("wegotsome", modelName, module);
         }
       } catch (err: any) {
         if (err.message?.includes("Cannot use both")) throw err;

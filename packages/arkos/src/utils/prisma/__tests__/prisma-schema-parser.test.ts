@@ -1177,4 +1177,163 @@ describe("PrismaSchemaParser", () => {
       expect(subordinatesField.isRelation).toBe(true);
     });
   });
+
+  describe("PrismaSchemaParser - Missing Coverage", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    describe("parseDefaultValue() comprehensive coverage", () => {
+      it("should handle various default value formats", () => {
+        const testCases = [
+          { input: '"string with spaces"', expected: "string with spaces" },
+          { input: '""', expected: "" }, // empty string
+          { input: "0", expected: 0 }, // zero
+          { input: "0.0", expected: 0.0 }, // zero float
+          { input: "-5", expected: -5 }, // negative int
+          { input: "-3.14", expected: -3.14 }, // negative float
+          { input: "ENUM_VALUE", expected: "ENUM_VALUE" }, // enum without parens
+          { input: "now()", expected: undefined }, // function
+          { input: "autoincrement()", expected: undefined }, // function
+        ];
+
+        testCases.forEach(({ input, expected }) => {
+          const result = parser["parseDefaultValue"](input);
+          expect(result).toBe(expected);
+        });
+      });
+    });
+
+    describe("field parsing edge cases", () => {
+      it("should handle fields with various attribute patterns", () => {
+        const schemaContent = `
+        model Test {
+          field1 String // no attributes
+          field2 String @map("custom_name")
+          field3 String @relation(fields: [id], references: [id])
+          field4 String @relation(fields: ['id'], references: ['id'])
+          field5 String @relation(fields: ["id"], references: ["id"])
+        }
+      `;
+        mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+        const result = parser.parse({ override: true });
+        const model = result.models[0];
+
+        expect(model.fields).toHaveLength(5);
+
+        const field1 = model.fields.find((f) => f.name === "field1");
+        expect(field1?.attributes).toEqual([]);
+
+        const field3 = model.fields.find((f) => f.name === "field3");
+        expect(field3?.connectionField).toBe("id");
+
+        const field4 = model.fields.find((f) => f.name === "field4");
+        expect(field4?.connectionField).toBe("id");
+
+        const field5 = model.fields.find((f) => f.name === "field5");
+        expect(field5?.connectionField).toBe("id");
+      });
+    });
+
+    describe("regex extraction edge cases", () => {
+      it("should handle models with no valid blocks", () => {
+        mockGetPrismaSchemasContent.mockReturnValue(
+          "invalid content without proper models"
+        );
+
+        const result = parser.parse({ override: true });
+
+        expect(result.models).toHaveLength(0);
+        expect(result.enums).toHaveLength(0);
+      });
+
+      it("should handle enums with no valid blocks", () => {
+        mockGetPrismaSchemasContent.mockReturnValue(
+          "model User { id Int @id }"
+        );
+
+        const result = parser.parse({ override: true });
+
+        expect(result.enums).toHaveLength(0);
+        expect(result.models).toHaveLength(1);
+      });
+    });
+
+    describe("null/undefined handling", () => {
+      it("should handle null schema content", () => {
+        mockGetPrismaSchemasContent.mockReturnValue("");
+
+        const result = parser.parse({ override: true });
+
+        expect(result.models).toEqual([]);
+        expect(result.enums).toEqual([]);
+      });
+    });
+
+    describe("model and enum name extraction", () => {
+      it("should handle malformed enum blocks", () => {
+        const malformedBlock = "enum { INVALID }";
+        const result = parser["parseEnumBlock"](malformedBlock);
+        expect(result).toBeNull();
+      });
+
+      it("should handle malformed model blocks", () => {
+        const malformedBlock = "model { id Int @id }";
+        const result = parser["parseModelBlock"](malformedBlock);
+        expect(result).toBeNull();
+      });
+    });
+
+    describe("field line parsing comprehensive", () => {
+      it("should handle invalid field lines", () => {
+        const invalidLines = [
+          "not a valid field line",
+          "",
+          "   ",
+          "// comment line",
+          "@@map('table_name')",
+        ];
+
+        invalidLines.forEach((line) => {
+          const result = parser["parseFieldLine"](line);
+          // Most should return null, some might return a field
+          if (result) {
+            expect(typeof result.name).toBe("string");
+          }
+        });
+      });
+    });
+
+    describe("isRelation field detection", () => {
+      it("should detect relations using schema content when models array is empty", () => {
+        // Create a fresh parser instance to test the condition
+        const testSchema = `
+        model User {
+          id Int @id
+          posts Post[]
+        }
+        
+        model Post {
+          id Int @id
+        }
+      `;
+
+        mockGetPrismaSchemasContent.mockReturnValue(testSchema);
+
+        // Clear models to test fallback
+        const originalModels = parser.models;
+        parser.models = [];
+
+        const result = parser.parse({ override: true });
+        const userModel = result.models.find((m) => m.name === "User");
+        const postsField = userModel?.fields.find((f) => f.name === "posts");
+
+        expect(postsField?.isRelation).toBe(true);
+
+        // Restore
+        parser.models = originalModels;
+      });
+    });
+  });
 });

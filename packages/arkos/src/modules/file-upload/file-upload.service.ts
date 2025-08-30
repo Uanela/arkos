@@ -6,7 +6,7 @@ import AppError from "../error-handler/utils/app-error";
 import { promisify } from "util";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { ArkosRequest, ArkosResponse } from "../../types";
+import { ArkosRequest, ArkosRequestHandler, ArkosResponse } from "../../types";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { removeBothSlashes } from "../../utils/helpers/text.helpers";
 
@@ -46,10 +46,10 @@ export class FileUploadService {
     }
 
     this.storage = multer.diskStorage({
-      destination: (req, file, cb) => {
+      destination: (_, _1, cb) => {
         cb(null, this.uploadDir);
       },
-      filename: (req, file, cb) => {
+      filename: (_, file, cb) => {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
         cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
       },
@@ -58,11 +58,10 @@ export class FileUploadService {
 
   /**
    * Validates the file's type and MIME type.
-   * @param {Request} req - The Express request object.
    * @param {Express.Multer.File} file - The uploaded file.
    * @param {Function} cb - The callback function to indicate if file is valid.
    */
-  private fileFilter = (req: any, file: any, cb: any) => {
+  private fileFilter = (_: any, file: any, cb: any) => {
     const extName = this.allowedFileTypes.test(
       path.extname(file.originalname).toLowerCase()
     );
@@ -77,9 +76,9 @@ export class FileUploadService {
 
   /**
    * Returns the multer upload configuration.
-   * @returns {multer.Instance} The multer instance configured for file uploads.
+   * @returns {multer.Multer} The multer instance configured for file uploads.
    */
-  public getUpload() {
+  public getUpload(): multer.Multer {
     return multer({
       storage: this.storage,
       fileFilter: this.fileFilter,
@@ -92,7 +91,7 @@ export class FileUploadService {
    * @param {string} [oldFilePath] - The path to the file to delete before uploading.
    * @returns {Function} Middleware function for handling file upload.
    */
-  public handleSingleUpload(oldFilePath?: string) {
+  public handleSingleUpload(oldFilePath?: string): ArkosRequestHandler {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
       const upload = this.getUpload().single(this.getFieldName());
       upload(req, res, async (err) => {
@@ -125,10 +124,9 @@ export class FileUploadService {
 
   /**
    * Middleware to handle multiple file uploads.
-   * @param {number} maxCount - The maximum number of files allowed for upload.
    * @returns {Function} Middleware function for handling multiple file uploads.
    */
-  public handleMultipleUpload() {
+  public handleMultipleUpload(): ArkosRequestHandler {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
       const upload = this.getUpload().array(this.getFieldName(), this.maxCount);
       upload(req, res, (err) => {
@@ -144,12 +142,8 @@ export class FileUploadService {
    * @param {string} oldFilePath - The path to the file to be deleted.
    * @returns {Function} Middleware function for handling file deletion.
    */
-  public handleDeleteSingleFile(oldFilePath: string) {
-    return async (
-      req: ArkosRequest,
-      res: ArkosResponse,
-      next: NextFunction
-    ) => {
+  public handleDeleteSingleFile(oldFilePath: string): ArkosRequestHandler {
+    return async (_: ArkosRequest, _1: ArkosResponse, next: NextFunction) => {
       const filePath = path.join(oldFilePath);
       try {
         const stats = await promisify(fs.stat)(filePath);
@@ -297,7 +291,7 @@ export class FileUploadService {
     } = {}
   ): Promise<string | string[] | null> {
     const { fileUpload } = getArkosConfig();
-    const baseRoute = fileUpload?.baseRoute || "/api/uploads";
+    fileUpload?.baseRoute || "/api/uploads";
 
     return new Promise((resolve, reject) => {
       // Determine if it's a single or multiple file upload
@@ -318,14 +312,13 @@ export class FileUploadService {
           const protocol = req.get("host")?.includes?.("localhost")
             ? "http"
             : "https";
-          const baseURL = `${protocol}://${req.get("host")}`;
+          `${protocol}://${req.get("host")}`;
 
           // Get file type from uploadDir path
           const dirParts = this.uploadDir.split("/");
-          const fileType =
-            (this.uploadDir.endsWith("/")
-              ? dirParts[dirParts.length - 2]
-              : dirParts[dirParts.length - 1]) || "files";
+          (this.uploadDir.endsWith("/")
+            ? dirParts[dirParts.length - 2]
+            : dirParts[dirParts.length - 1]) || "files";
 
           // Process all uploaded files
           let data;
@@ -366,7 +359,6 @@ export class FileUploadService {
   /**
    * Deletes a file based on filename and file type from request parameters
    * @param {string} fileName - The name of the file to delete
-   * @param {ArkosRequest} req - Arkos request object containing params.fileType
    * @returns {Promise<boolean>} - True if deletion successful, false otherwise
    */
   public async deleteFileByName(
