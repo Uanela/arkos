@@ -1,12 +1,13 @@
 {
   "name": "create-arkos",
-  "version": "1.2.16-beta.4",
+  "version": "1.2.16-beta.5",
   "type": "module",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
     "create-arkos": "./dist/index.js"
   },
   "scripts": {
+    "test": "vitest --coverage",
     "build": "rimraf dist && tsc",
     "dev": "ts-node src/index.ts",
     "postbuia": "ts-node scripts/postbuild/index.ts",
@@ -30,8 +31,10 @@
   "devDependencies": {
     "@types/inquirer": "^8.1.0",
     "@types/node": "^16.18.126",
+    "@vitest/coverage-v8": "3.2.4",
     "ts-node": "^10.9.2",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
