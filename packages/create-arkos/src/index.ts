@@ -15,7 +15,7 @@ Handlebars.registerHelper("neq", (a: any, b: any) => a !== b);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-async function main() {
+export async function main() {
   const config = await projectConfigInquirer.run();
   const argProjectName = config.argProjectName;
 
