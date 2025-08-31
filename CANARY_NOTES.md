@@ -4,14 +4,12 @@
 
 ### Add
 
-- add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
-- add docker-compose file into `create-arkos`
 - Update documentation to match all new changes, make mention of old way of doing things if there where significant changes.
-- add strict routing mode into cli flags
 - add documentain about stric mode routing and update jsdocs on arkos config
 - add documentain about the new `authService.permission()` method and also add under jsdocs
 - allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
 - add auth-actions under swagger auto documentaiton
+- add hooks to generate components cli
 
 ### Change
 
@@ -57,6 +55,7 @@
 - added a new to check permission on code level using `authService.permission` -> allowing permissions to go beyond routers
 - Added a new descriptive way of adding `accessControl` under `.auth.ts` -> instead of `{ Create: ['Author'] }` can pass `{ Create: { roles: ['Author'], name: "Create a new post", description: "Allows to create a new author post" } }` in order to generate a better roles and permissions json
 - support fields like `errorMessage`, `description` for access roles defition.
+- added strict routing mode into cli flags
 
 ### Change
 
@@ -98,6 +97,8 @@
 - mimic file upload service class behavior into auth service
 - Show suggestion to add invalid --model params components in folders out of module
 - analyze custom forbidden error message per action
+- add docker-compose file into `create-arkos`
+- add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
 
 ### Change
 
