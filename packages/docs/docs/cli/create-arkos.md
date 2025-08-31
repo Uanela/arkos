@@ -46,8 +46,6 @@ Make sure you have Node.js 20 or higher installed before running the command.
 The CLI guides you through an intuitive setup process, asking questions about your project preferences:
 
 ```bash
-> create-arkos@1.0 dev
-
 ? Would you like to use TypeScript? Yes
 ? What db provider will be used for Prisma? mongodb
 ? Would you like to set up Validation? Yes
