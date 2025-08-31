@@ -143,7 +143,12 @@ class TemplateCompiler {
 
     function processTemplates(dir: string, relativeDir = "") {
       fs.readdirSync(dir, { withFileTypes: true }).forEach(async (dirent) => {
-        if (filesToBeSkipped.includes(dirent.name)) return;
+        if (
+          filesToBeSkipped.includes(dirent.name) ||
+          dirent.name === "__tests__" ||
+          dirent.name?.includes(".test.ts")
+        )
+          return;
 
         const fullPath = path.join(dir, dirent.name);
         const relativePath = path.join(relativeDir, dirent.name);

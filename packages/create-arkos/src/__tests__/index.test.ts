@@ -53,7 +53,7 @@ vi.mock("../utils/template-compiler", () => ({
   },
 }));
 
-vi.mock("../utils/helpers", () => ({
+vi.mock("../utils/helpers/package-json.helpers", () => ({
   getProcjetPackageJsonDependecies: vi.fn(),
 }));
 
@@ -137,7 +137,7 @@ describe("CLI Main Function", () => {
       "../utils/template-compiler"
     );
     const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
+      "../utils/helpers/package-json.helpers"
     );
     const { detectPackageManagerFromUserAgent } = await import(
       "../utils/helpers/npm.helpers"
@@ -216,7 +216,7 @@ describe("CLI Main Function", () => {
       "../utils/template-compiler"
     );
     const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
+      "../utils/helpers/package-json.helpers"
     );
     const { detectPackageManagerFromUserAgent } = await import(
       "../utils/helpers/npm.helpers"
@@ -262,7 +262,7 @@ describe("CLI Main Function", () => {
       "../utils/template-compiler"
     );
     const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
+      "../utils/helpers/package-json.helpers"
     );
     const { detectPackageManagerFromUserAgent } = await import(
       "../utils/helpers/npm.helpers"
@@ -299,7 +299,7 @@ describe("CLI Main Function", () => {
       "../utils/template-compiler"
     );
     const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
+      "../utils/helpers/package-json.helpers"
     );
     const { detectPackageManagerFromUserAgent } = await import(
       "../utils/helpers/npm.helpers"
@@ -336,7 +336,7 @@ describe("CLI Main Function", () => {
       "../utils/template-compiler"
     );
     const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
+      "../utils/helpers/package-json.helpers"
     );
     const { detectPackageManagerFromUserAgent } = await import(
       "../utils/helpers/npm.helpers"
@@ -388,12 +388,8 @@ describe("CLI Main Function", () => {
     const { default: templateCompiler } = await import(
       "../utils/template-compiler"
     );
-    const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
-    );
-    const { detectPackageManagerFromUserAgent } = await import(
-      "../utils/helpers/npm.helpers"
-    );
+    await import("../utils/helpers/package-json.helpers");
+    await import("../utils/helpers/npm.helpers");
 
     vi.mocked(projectConfigInquirer.run).mockResolvedValue({
       argProjectName: "test-project",
@@ -419,7 +415,7 @@ describe("CLI Main Function", () => {
       "../utils/template-compiler"
     );
     const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
+      "../utils/helpers/package-json.helpers"
     );
     const { detectPackageManagerFromUserAgent } = await import(
       "../utils/helpers/npm.helpers"
@@ -460,7 +456,7 @@ describe("CLI Main Function", () => {
       "../utils/template-compiler"
     );
     const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
+      "../utils/helpers/package-json.helpers"
     );
     const { detectPackageManagerFromUserAgent } = await import(
       "../utils/helpers/npm.helpers"
@@ -522,7 +518,7 @@ describe("CLI Main Function", () => {
       "../utils/template-compiler"
     );
     const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers"
+      "../utils/helpers/package-json.helpers"
     );
     const { detectPackageManagerFromUserAgent } = await import(
       "../utils/helpers/npm.helpers"

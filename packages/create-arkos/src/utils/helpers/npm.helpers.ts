@@ -23,11 +23,11 @@ export function detectPackageManagerFromUserAgent(): string {
   if (!userAgent) return "npm";
   if (userAgent.includes("pnpm")) return "pnpm";
   if (userAgent.includes("yarn")) return "yarn";
-  if (userAgent.includes("npm")) return "npm";
   if (userAgent.includes("bun")) return "bun";
   if (userAgent.includes("cnpm")) return "cnpm";
   if (userAgent.includes("corepack")) return "corepack";
   if (userAgent.includes("deno")) return "deno";
+  if (userAgent.includes("npm")) return "npm";
 
   return "npm";
 }

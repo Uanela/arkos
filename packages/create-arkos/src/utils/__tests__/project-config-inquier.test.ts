@@ -92,7 +92,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ useAuthentication: true })
         .mockResolvedValueOnce({ authenticationType: "dynamic" })
         .mockResolvedValueOnce({ usernameField: "email" })
-        .mockResolvedValueOnce({ multipleRoles: true });
+        .mockResolvedValueOnce({ multipleRoles: true })
+        .mockResolvedValueOnce({ strictRouting: true });
 
       const config = await projectConfigInquirer.run();
 
@@ -113,6 +114,9 @@ describe("ProjectConfigInquirer", () => {
             "postgresql://username:password@localhost:5432/test-project",
         },
         projectPath: expect.stringContaining("test-project"),
+        routing: {
+          strict: true,
+        },
       });
     });
 
@@ -124,7 +128,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "sqlite" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -144,7 +149,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "sqlite" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -244,7 +250,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: true })
         .mockResolvedValueOnce({ prismaProvider: "postgresql" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -269,7 +276,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "mongodb" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -285,7 +293,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "sqlite" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -301,7 +310,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "mysql" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -317,7 +327,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "sqlserver" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -334,7 +345,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "cockroachdb" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -357,7 +369,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: true })
         .mockResolvedValueOnce({ prismaProvider: "postgresql" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -370,7 +383,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ prismaProvider: "postgresql" })
         .mockResolvedValueOnce({ useValidation: true })
         .mockResolvedValueOnce({ validationType: "class-validator" })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -382,7 +396,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "postgresql" })
         .mockResolvedValueOnce({ useValidation: true })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -405,7 +420,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "postgresql" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -420,7 +436,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ useAuthentication: true })
         .mockResolvedValueOnce({ authenticationType: "dynamic" })
         .mockResolvedValueOnce({ usernameField: "username" })
-        .mockResolvedValueOnce({ multipleRoles: true });
+        .mockResolvedValueOnce({ multipleRoles: true })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -455,7 +472,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ useValidation: false })
         .mockResolvedValueOnce({ useAuthentication: true })
         .mockResolvedValueOnce({ authenticationType: "static" })
-        .mockResolvedValueOnce({ usernameField: "armando" });
+        .mockResolvedValueOnce({ usernameField: "armando" })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -472,7 +490,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ useValidation: false })
         .mockResolvedValueOnce({ useAuthentication: true })
         .mockResolvedValueOnce({ authenticationType: "define later" })
-        .mockResolvedValueOnce({ usernameField: "email" });
+        .mockResolvedValueOnce({ usernameField: "email" })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 
@@ -505,7 +524,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "postgresql" })
         .mockResolvedValueOnce({ useValidation: false })
-        .mockResolvedValueOnce({ useAuthentication: false });
+        .mockResolvedValueOnce({ useAuthentication: false })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const pathError = new Error("Path resolution failed");
       mockedPath.resolve.mockImplementation(() => {
@@ -536,7 +556,8 @@ describe("ProjectConfigInquirer", () => {
           .mockResolvedValueOnce({ typescript: false })
           .mockResolvedValueOnce({ prismaProvider: provider })
           .mockResolvedValueOnce({ useValidation: false })
-          .mockResolvedValueOnce({ useAuthentication: false });
+          .mockResolvedValueOnce({ useAuthentication: false })
+          .mockResolvedValueOnce({ strictRouting: false });
 
         const config = await projectConfigInquirer.run();
 
@@ -560,7 +581,8 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ useAuthentication: true })
         .mockResolvedValueOnce({ authenticationType: "dynamic" })
         .mockResolvedValueOnce({ usernameField: "email" })
-        .mockResolvedValueOnce({ multipleRoles: true });
+        .mockResolvedValueOnce({ multipleRoles: true })
+        .mockResolvedValueOnce({ strictRouting: false });
 
       const config = await projectConfigInquirer.run();
 

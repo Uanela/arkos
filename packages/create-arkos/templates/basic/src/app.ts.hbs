@@ -12,6 +12,11 @@ arkos.init({
     }
   },
   {{/if}}
+  {{#if routing.strict}}
+  routers: {
+    strict: true,
+  },
+  {{/if}}
   {{#if validation.type}}
   validation: {
     resolver: '{{validation.type}}'

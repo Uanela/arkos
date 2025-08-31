@@ -5,13 +5,13 @@ import chalk from "chalk";
 import { execSync } from "child_process";
 import projectConfigInquirer from "./utils/project-config-inquirer";
 import templateCompiler from "./utils/template-compiler";
-import Handlebars from "handlebars";
-import { getProcjetPackageJsonDependecies } from "./utils/helpers";
+import handlebars from "handlebars";
+import { getProcjetPackageJsonDependecies } from "./utils/helpers/package-json.helpers";
 import { detectPackageManagerFromUserAgent } from "./utils/helpers/npm.helpers";
 import { fileURLToPath } from "url";
 
-Handlebars.registerHelper("eq", (a: any, b: any) => a === b);
-Handlebars.registerHelper("neq", (a: any, b: any) => a !== b);
+handlebars.registerHelper("eq", (a: any, b: any) => a === b);
+handlebars.registerHelper("neq", (a: any, b: any) => a !== b);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -73,3 +73,5 @@ export async function main() {
 }
 
 main().catch(console.error);
+
+export { handlebars };
