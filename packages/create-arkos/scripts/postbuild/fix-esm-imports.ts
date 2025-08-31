@@ -55,6 +55,4 @@ function fixImports(dir: string) {
   });
 }
 
-// fixImports("./dist/esm");
-// fixImports("./dist/cjs");
 fixImports("./dist");

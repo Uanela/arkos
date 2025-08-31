@@ -26,6 +26,9 @@ export interface ProjectConfig {
     defaultDBurl: string;
   };
   projectPath: string;
+  routing?: {
+    strict?: boolean;
+  };
 }
 
 class ProjectConfigInquirer {
@@ -41,6 +44,7 @@ class ProjectConfigInquirer {
     await this.promptPrismaProvider();
     await this.promptValidation();
     await this.promptAuthentication();
+    await this.promptStrictRouting();
 
     // If user passed ".", use current directory name
     if (this.config.projectName === ".") {
@@ -287,6 +291,20 @@ class ProjectConfigInquirer {
         );
       }
     }
+  }
+
+  private async promptStrictRouting() {
+    const { strictRouting } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "strictRouting",
+        message: `Would you like to use ${chalk.cyan("Strict Routing")}?`,
+        default: false,
+      },
+    ]);
+    this.config.routing = {
+      strict: strictRouting,
+    };
   }
 }
 
