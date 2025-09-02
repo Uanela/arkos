@@ -1,5 +1,6 @@
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import { PrismaField } from "../../../../utils/prisma/types";
+import AppError from "../../../error-handler/utils/app-error";
 
 /**
  * Removes apiAction field from an object and all nested objects
@@ -51,7 +52,7 @@ export function isPrismaRelationFormat(obj: Record<string, any>): boolean {
   if (!obj || typeof obj !== "object") return false;
 
   // Check if any key is a Prisma operation
-  return prismaOperations.some((op) => op in obj);
+  return prismaOperations.some((op) => obj?.[op]);
 }
 
 export function throwErrorIfApiActionIsInvalid(apiAction: string) {
@@ -148,7 +149,7 @@ export function handleRelationFieldsInBody(
         }
 
         // Ensure apiAction is removed
-        if ("apiAction" in dataToPush) {
+        if (dataToPush?.apiAction) {
           const { apiAction, ...rest } = dataToPush;
 
           throwErrorIfApiActionIsInvalid(apiAction);
@@ -223,7 +224,7 @@ export function handleRelationFieldsInBody(
       // If no ID, assume create operation
       let dataToCreate = { ...relationData };
 
-      if ("apiAction" in dataToCreate) {
+      if (dataToCreate?.apiAction) {
         const { apiAction, ...rest } = dataToCreate;
         throwErrorIfApiActionIsInvalid(apiAction);
 
@@ -264,9 +265,15 @@ export function handleRelationFieldsInBody(
   });
 
   // Remove any remaining apiAction fields from the top level
-  if ("apiAction" in mutableBody) {
-    throw Error(
-      "Validation Error: Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple."
+  if (mutableBody?.apiAction) {
+    throw new AppError(
+      "Validation Error: Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple.",
+      500,
+      {
+        data: {
+          ...body,
+        },
+      }
     );
   }
 
