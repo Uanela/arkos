@@ -68,12 +68,14 @@ export type FindOneFilters<T extends ModelDelegate> = Parameters<
   T["findFirst"]
 >[0] extends { where?: infer W; [x: string]: any }
   ? W
-  : any | Parameters<T["findUnique"]>[0] extends {
-        where?: infer W;
-        [x: string]: any;
-      }
-    ? W
-    : any;
+  : any;
+
+// Parameters<T["findUnique"]>[0] extends {
+//         where?: infer W;
+//         [x: string]: any;
+//       }
+//     ? W
+//     : any;
 
 export type FindOneOptions<T extends ModelDelegate> =
   | Omit<Parameters<T["findFirst"]>[0], "where">
