@@ -8,12 +8,14 @@ import {
   pascalCase,
 } from "../../helpers/change-case.helpers";
 import { generateCommand } from "../generate";
-import { getUserFileExtension } from "../../helpers/fs.helpers";
+import { getUserFileExtension, fullCleanCwd } from "../../helpers/fs.helpers";
+import sheu from "../../sheu";
 
 // Mock all dependencies
 jest.mock("fs");
 jest.mock("path");
 jest.mock("../utils/template-generators");
+jest.mock("../../sheu");
 jest.mock("../utils/cli.helpers");
 jest.mock("../../helpers/change-case.helpers");
 jest.mock("../../helpers/fs.helpers");
@@ -32,21 +34,24 @@ const mockedPascalCase = pascalCase as jest.MockedFunction<typeof pascalCase>;
 describe("generateCommand", () => {
   const mockCwd = "/test/project";
   const mockTemplateContent = "mock template content";
-  let consoleErrorSpy: jest.SpyInstance,
-    consoleInfoSpy: jest.SpyInstance,
+  let sheuErrorSpy: jest.SpyInstance,
+    sheuDoneSpy: jest.SpyInstance,
     processExitSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-    consoleInfoSpy = jest.spyOn(console, "info").mockImplementation();
+    sheuErrorSpy = jest.spyOn(sheu, "error").mockImplementation();
+    sheuDoneSpy = jest.spyOn(sheu, "done").mockImplementation();
     processExitSpy = jest.spyOn(process, "exit").mockImplementation();
-
+    jest.spyOn(sheu, "bold").mockImplementation((text: string) => text);
     // Setup default mocks
     jest.spyOn(process, "cwd").mockReturnValue(mockCwd);
     mockedGenerateTemplate.mockReturnValue(mockTemplateContent);
     mockedPath.join.mockImplementation((...args) => args.join("/"));
+    (fullCleanCwd as jest.Mock).mockImplementation((text: string) =>
+      text.replace(mockCwd, "")
+    );
 
     // Setup case conversion mocks
     mockedPascalCase.mockImplementation(
@@ -60,8 +65,8 @@ describe("generateCommand", () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    consoleErrorSpy.mockRestore();
-    consoleInfoSpy.mockRestore();
+    sheuErrorSpy.mockRestore();
+    sheuDoneSpy.mockRestore();
     processExitSpy.mockRestore();
     mockedEnsureDirectoryExists.mockRestore();
     mockedFs.writeFileSync.mockImplementation();
@@ -92,8 +97,8 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/user/user.controller.ts`,
         mockTemplateContent
       );
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Controller generated:")
+      expect(sheuDoneSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Controller for")
       );
     });
 
@@ -116,7 +121,7 @@ describe("generateCommand", () => {
 
       await generateCommand.controller(options as any);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining("required")
       );
 
@@ -132,9 +137,8 @@ describe("generateCommand", () => {
 
       await generateCommand.controller(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "❌ Failed to generate controller:",
-        error
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to generate controller")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -148,9 +152,8 @@ describe("generateCommand", () => {
 
       await generateCommand.controller(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "❌ Failed to generate controller:",
-        error
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to generate controller")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -177,8 +180,8 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/user/user.service.js`,
         mockTemplateContent
       );
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Service generated:")
+      expect(sheuDoneSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Service for")
       );
     });
 
@@ -187,9 +190,7 @@ describe("generateCommand", () => {
 
       await generateCommand.service(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "\n❌ Model name is required"
-      );
+      expect(sheuErrorSpy).toHaveBeenCalledWith("Module name is required!");
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -202,9 +203,8 @@ describe("generateCommand", () => {
 
       await generateCommand.service(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "❌ Failed to generate service:",
-        error
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to generate service")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -239,9 +239,7 @@ describe("generateCommand", () => {
 
       await generateCommand.router(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "\n❌ Model name is required"
-      );
+      expect(sheuErrorSpy).toHaveBeenCalledWith("Module name is required!");
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
@@ -252,7 +250,7 @@ describe("generateCommand", () => {
 
       await generateCommand.interceptors(options);
 
-      expect(mockedGenerateTemplate).toHaveBeenCalledWith("middlewares", {
+      expect(mockedGenerateTemplate).toHaveBeenCalledWith("interceptors", {
         modelName: {
           pascal: "Auth",
           camel: "auth",
@@ -263,8 +261,8 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/auth/auth.middlewares.ts`,
         mockTemplateContent
       );
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Middlewares generated:")
+      expect(sheuDoneSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Interceptors for")
       );
     });
 
@@ -273,9 +271,7 @@ describe("generateCommand", () => {
 
       await generateCommand.interceptors(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "❌ Middleware name is required"
-      );
+      expect(sheuErrorSpy).toHaveBeenCalledWith("Module name is required!");
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -307,8 +303,8 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/user/user.auth.ts`,
         mockTemplateContent
       );
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Auth config generated:")
+      expect(sheuDoneSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Auth configs for")
       );
     });
 
@@ -333,9 +329,8 @@ describe("generateCommand", () => {
 
       await generateCommand.authConfigs(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "❌ Failed to generate auth config:",
-        error
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to generate auth configs")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -358,8 +353,8 @@ describe("generateCommand", () => {
         `${mockCwd}/src/modules/product/product.query.ts`,
         mockTemplateContent
       );
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Query config generated:")
+      expect(sheuDoneSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Query options for")
       );
     });
 
@@ -368,8 +363,8 @@ describe("generateCommand", () => {
 
       await generateCommand.queryOptions(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "\n❌ Model name is required"
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Module name is required!")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -379,8 +374,10 @@ describe("generateCommand", () => {
 
       await generateCommand.queryOptions(options);
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "\n❌ Prisma query options are not available to file-upload resource"
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Prisma query options are not available to file-upload resource"
+        )
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -421,7 +418,7 @@ describe("generateCommand", () => {
 
       await generateCommand.controller(options);
 
-      expect(consoleInfoSpy).toHaveBeenCalledWith(
+      expect(sheuDoneSpy).toHaveBeenCalledWith(
         expect.stringContaining("/src/modules/user/user.controller.ts")
       );
     });
@@ -459,7 +456,7 @@ describe("generateCommand", () => {
 
         await generateCommand.service(options);
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(sheuErrorSpy).toHaveBeenCalledWith(
           "❌ Failed to generate service:",
           error
         );
@@ -476,7 +473,7 @@ describe("generateCommand", () => {
 
       try {
         await generateCommand.queryOptions(options);
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(sheuErrorSpy).toHaveBeenCalledWith(
           "❌ Failed to generate query config:",
           error
         );

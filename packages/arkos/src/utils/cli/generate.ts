@@ -7,235 +7,134 @@ import {
   kebabCase,
   pascalCase,
 } from "../helpers/change-case.helpers";
-import { getUserFileExtension } from "../helpers/fs.helpers";
+import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
+import sheu from "../sheu";
 
 interface GenerateOptions {
   path?: string;
   model: string;
 }
 
-export const generateCommand = {
-  controller: async (options: GenerateOptions) => {
-    const modelName = options.model;
-    if (!modelName) {
-      console.error("\n❌ Model name is required");
-      process.exit(1);
-    }
+interface GenerateConfig {
+  templateName: string;
+  fileSuffix: string;
+  customValidation?: (modelName: string) => void;
+  customImports?: (names: any) => any;
+}
 
-    const { path: customPath = "src/modules" } = options;
+const generateFile = async (
+  options: GenerateOptions,
+  config: GenerateConfig
+) => {
+  const modelName = options.model;
 
-    const names = {
-      pascal: pascalCase(modelName),
-      camel: camelCase(modelName),
-      kebab: kebabCase(modelName),
+  if (!modelName) {
+    sheu.error("Module name is required!");
+    process.exit(1);
+  }
+
+  if (config.customValidation) {
+    config.customValidation(modelName);
+  }
+
+  const { path: customPath = "src/modules" } = options;
+
+  const names = {
+    pascal: pascalCase(modelName),
+    camel: camelCase(modelName),
+    kebab: kebabCase(modelName),
+  };
+
+  const ext = getUserFileExtension();
+  const modulePath = path.join(process.cwd(), customPath, names.kebab);
+  const filePath = path.join(
+    modulePath,
+    `${names.kebab}.${config.fileSuffix}.${ext}`
+  );
+  const humamReadableTemplateName =
+    config.templateName.charAt(0).toUpperCase() +
+    config.templateName.slice(1).replaceAll("-", " ");
+
+  try {
+    ensureDirectoryExists(modulePath);
+
+    const templateData = {
+      modelName: names,
+      ...(config.customImports && { imports: config.customImports(names) }),
     };
 
-    const ext = getUserFileExtension();
-    const modulePath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(modulePath, `${names.kebab}.controller.${ext}`);
+    const content = generateTemplate(config.templateName, templateData);
+    fs.writeFileSync(filePath, content);
 
-    try {
-      ensureDirectoryExists(modulePath);
+    sheu.done(
+      `${humamReadableTemplateName} for ${options.model} generated under ${fullCleanCwd(filePath)}`
+    );
+  } catch (error) {
+    sheu.error(
+      `${sheu.bold(`Failed to generate ${humamReadableTemplateName.toLowerCase()}`)} for ${options.model} ${filePath ? "under " + fullCleanCwd(filePath) + "." : "."}`
+    );
+    process.exit(1);
+  }
+};
 
-      const content = generateTemplate("controller", {
-        modelName: names,
-        imports: {
-          baseController: "arkos/controllers",
-        },
-      });
-
-      fs.writeFileSync(filePath, content);
-      console.info(
-        `\nController generated: ${filePath.replace(process.cwd(), "")}`
-      );
-    } catch (error) {
-      console.error(`❌ Failed to generate controller:`, error);
-      process.exit(1);
-    }
+export const generateCommand = {
+  controller: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "controller",
+      fileSuffix: "controller",
+      customImports: () => ({
+        baseController: "arkos/controllers",
+      }),
+    });
   },
 
   service: async (options: GenerateOptions) => {
-    const modelName = options.model;
-    if (!modelName) {
-      console.error("\n❌ Model name is required");
-      process.exit(1);
-    }
-
-    const { path: customPath = "src/modules" } = options;
-
-    const names = {
-      pascal: pascalCase(modelName),
-      camel: camelCase(modelName),
-      kebab: kebabCase(modelName),
-    };
-
-    const ext = getUserFileExtension();
-    const modulePath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(modulePath, `${names.kebab}.service.${ext}`);
-
-    try {
-      ensureDirectoryExists(modulePath);
-
-      const content = generateTemplate("service", {
-        modelName: names,
-        imports: {
-          baseService: "arkos/services",
-        },
-      });
-
-      fs.writeFileSync(filePath, content);
-      console.info(`\n✅ Service generated: ${filePath}`);
-    } catch (error) {
-      console.error(`❌ Failed to generate service:`, error);
-      process.exit(1);
-    }
+    await generateFile(options, {
+      templateName: "service",
+      fileSuffix: "service",
+      customImports: () => ({
+        baseService: "arkos/services",
+      }),
+    });
   },
 
   router: async (options: GenerateOptions) => {
-    const modelName = options.model;
-    if (!modelName) {
-      console.error("\n❌ Model name is required");
-      process.exit(1);
-    }
-
-    const { path: customPath = "src/modules" } = options;
-
-    const names = {
-      pascal: pascalCase(modelName),
-      camel: camelCase(modelName),
-      kebab: kebabCase(modelName),
-    };
-
-    const ext = getUserFileExtension();
-    const modulePath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(modulePath, `${names.kebab}.router.${ext}`);
-
-    try {
-      ensureDirectoryExists(modulePath);
-
-      const content = generateTemplate("router", {
-        modelName: names,
-        imports: {
-          baseRouter: "arkos",
-          controller: `./${names.kebab}.controller`,
-        },
-      });
-
-      fs.writeFileSync(filePath, content);
-      console.info(
-        `\nRouter generated: ${filePath.replace(process.cwd(), "")}`
-      );
-    } catch (error) {
-      console.error(`❌ Failed to generate router:`, error);
-      process.exit(1);
-    }
+    await generateFile(options, {
+      templateName: "router",
+      fileSuffix: "router",
+      customImports: (names) => ({
+        baseRouter: "arkos",
+        controller: `./${names.kebab}.controller`,
+      }),
+    });
   },
 
   interceptors: async (options: GenerateOptions) => {
-    const modelName = options.model;
-
-    if (!modelName) {
-      console.error("❌ Middleware name is required");
-      process.exit(1);
-    }
-
-    const { path: customPath = "src/modules" } = options;
-
-    const names = {
-      pascal: pascalCase(modelName),
-      camel: camelCase(modelName),
-      kebab: kebabCase(modelName),
-    };
-
-    const ext = getUserFileExtension();
-    const middlewarePath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(
-      middlewarePath,
-      `${names.kebab}.middlewares.${ext}`
-    );
-
-    try {
-      ensureDirectoryExists(middlewarePath);
-
-      const content = generateTemplate("middlewares", {
-        modelName: names,
-      });
-
-      fs.writeFileSync(filePath, content);
-      console.info(`\nMiddlewares generated: ${filePath}`);
-    } catch (error) {
-      console.error(`❌ Failed to generate middleware:`, error);
-      process.exit(1);
-    }
+    await generateFile(options, {
+      templateName: "interceptors",
+      fileSuffix: "middlewares",
+    });
   },
 
   authConfigs: async (options: GenerateOptions) => {
-    const modelName = options.model;
-    const { path: customPath = "src/modules" } = options;
-
-    const names = {
-      pascal: pascalCase(modelName),
-      camel: camelCase(modelName),
-      kebab: kebabCase(modelName),
-    };
-
-    const ext = getUserFileExtension();
-    const configPath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(configPath, `${names.kebab}.auth.${ext}`);
-
-    try {
-      ensureDirectoryExists(configPath);
-
-      const content = generateTemplate("auth-configs", { modelName: names });
-
-      fs.writeFileSync(filePath, content);
-      console.info(
-        `\nAuth config generated: ${filePath.replace(process.cwd(), "")}`
-      );
-    } catch (error) {
-      console.error(`❌ Failed to generate auth config:`, error);
-      process.exit(1);
-    }
+    await generateFile(options, {
+      templateName: "auth-configs",
+      fileSuffix: "auth",
+    });
   },
 
   queryOptions: async (options: GenerateOptions) => {
-    const modelName = options.model;
-    if (!modelName) {
-      console.error("\n❌ Model name is required");
-      process.exit(1);
-    }
-
-    if (modelName === "file-upload") {
-      console.error(
-        "\n❌ Prisma query options are not available to file-upload resource"
-      );
-      process.exit(1);
-    }
-
-    const { path: customPath = "src/modules" } = options;
-
-    const names = {
-      pascal: pascalCase(modelName),
-      camel: camelCase(modelName),
-      kebab: kebabCase(modelName),
-    };
-
-    const ext = getUserFileExtension();
-    const configPath = path.join(process.cwd(), customPath, names.kebab);
-    const filePath = path.join(configPath, `${names.kebab}.query.${ext}`);
-
-    try {
-      ensureDirectoryExists(configPath);
-
-      const content = generateTemplate("query-options", { modelName: names });
-
-      fs.writeFileSync(filePath, content);
-      console.info(
-        `\nQuery config generated: ${filePath.replace(process.cwd(), "")}`
-      );
-    } catch (error) {
-      console.error(`❌ Failed to generate query config:`, error);
-      process.exit(1);
-    }
+    await generateFile(options, {
+      templateName: "query-options",
+      fileSuffix: "query",
+      customValidation: (modelName) => {
+        if (modelName === "file-upload") {
+          sheu.error(
+            "Prisma query options are not available to file-upload resource"
+          );
+          process.exit(1);
+        }
+      },
+    });
   },
 };

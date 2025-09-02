@@ -106,9 +106,8 @@ export class BaseService<T extends ModelDelegate = any> {
 
     this.relationFields = {
       singular:
-        modelFields?.filter(
-          (field) => field.connectionField && !field.isArray
-        ) || [],
+        modelFields?.filter((field) => field.isRelation && !field.isArray) ||
+        [],
       list:
         modelFields?.filter((field) => field.isRelation && field.isArray) || [],
     };

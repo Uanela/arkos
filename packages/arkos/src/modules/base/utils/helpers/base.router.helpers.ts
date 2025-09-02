@@ -99,7 +99,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         controller.createOne,
         ...processMiddleware(interceptors?.afterCreateOne),
         sendResponse,
-        ...processMiddleware(interceptors?.onCreateOneError)
+        ...processMiddleware(interceptors?.onCreateOneError, { type: "error" })
       );
     }
 
@@ -127,7 +127,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         controller.findMany,
         ...processMiddleware(interceptors?.afterFindMany),
         sendResponse,
-        ...processMiddleware(interceptors?.onFindManyError)
+        ...processMiddleware(interceptors?.onFindManyError, { type: "error" })
       );
     }
 
@@ -158,7 +158,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         controller.createMany,
         ...processMiddleware(interceptors?.afterCreateMany),
         sendResponse,
-        ...processMiddleware(interceptors?.onCreateManyError)
+        ...processMiddleware(interceptors?.onCreateManyError, { type: "error" })
       );
     }
 
@@ -189,7 +189,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         controller.updateMany,
         ...processMiddleware(interceptors?.afterUpdateMany),
         sendResponse,
-        ...processMiddleware(interceptors?.onUpdateManyError)
+        ...processMiddleware(interceptors?.onUpdateManyError, { type: "error" })
       );
     }
 
@@ -220,7 +220,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         controller.deleteMany,
         ...processMiddleware(interceptors?.afterDeleteMany),
         sendResponse,
-        ...processMiddleware(interceptors?.onDeleteManyError)
+        ...processMiddleware(interceptors?.onDeleteManyError, { type: "error" })
       );
     }
 
@@ -251,7 +251,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         controller.findOne,
         ...processMiddleware(interceptors?.afterFindOne),
         sendResponse,
-        ...processMiddleware(interceptors?.onFindOneError)
+        ...processMiddleware(interceptors?.onFindOneError, { type: "error" })
       );
     }
 
@@ -282,7 +282,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         controller.updateOne,
         ...processMiddleware(interceptors?.afterUpdateOne),
         sendResponse,
-        ...processMiddleware(interceptors?.onUpdateOneError)
+        ...processMiddleware(interceptors?.onUpdateOneError, { type: "error" })
       );
     }
 
@@ -313,7 +313,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         controller.deleteOne,
         ...processMiddleware(interceptors?.afterDeleteOne),
         sendResponse,
-        ...processMiddleware(interceptors?.onDeleteOneError)
+        ...processMiddleware(interceptors?.onDeleteOneError, { type: "error" })
       );
     }
   });

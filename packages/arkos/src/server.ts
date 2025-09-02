@@ -17,7 +17,6 @@ process.on("uncaughtException", (err) => {
     bold: true,
   });
 
-  console.log(err.message, sheu.error("some thign again"));
   console.error(err.name, err.message);
   console.error(err);
   process.exit(1);

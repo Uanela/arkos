@@ -1,4 +1,10 @@
-import { NextFunction, Request, RequestHandler, Response } from "express";
+import {
+  ErrorRequestHandler,
+  NextFunction,
+  Request,
+  RequestHandler,
+  Response,
+} from "express";
 
 export type PrismaOperations = "findMany";
 
@@ -227,3 +233,4 @@ export interface ArkosRequest<Body = any, Query = any> extends Request {
 export interface ArkosResponse extends Response {}
 export interface ArkosNextFunction extends NextFunction {}
 export interface ArkosRequestHandler extends RequestHandler {}
+export interface ArkosErrorRequestHandler extends ErrorRequestHandler {}
