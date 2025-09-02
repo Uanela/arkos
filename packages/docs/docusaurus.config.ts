@@ -133,8 +133,7 @@ const config: Config = {
       insights: true,
     },
     prism: {
-      theme: prismThemes.oneDark,
-      // darkTheme: prismThemes.oneDark,
+      theme: prismThemes.dracula,
     },
     onBrokenLinks: "ignore",
     onBrokenMarkdownLinks: "ignore",
