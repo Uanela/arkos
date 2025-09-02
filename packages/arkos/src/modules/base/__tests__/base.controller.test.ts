@@ -16,6 +16,7 @@ jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/features/api.features");
 jest.mock("../../../server");
 jest.mock("../../../utils/dynamic-loader");
+jest.mock("../../../utils/sheu");
 
 describe("BaseController", () => {
   let baseController: BaseController;

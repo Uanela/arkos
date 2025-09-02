@@ -5,6 +5,7 @@ import { importModule } from "../../../../../../utils/helpers/global.helpers";
 import { getMetadataStorage } from "class-validator";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
 import { getCorrectJsonSchemaName } from "../../swagger.router.helpers";
+import sheu from "../../../../../../utils/sheu";
 
 // Mock all dependencies
 jest.mock("class-validator-jsonschema");
@@ -13,6 +14,7 @@ jest.mock("class-validator");
 jest.mock("../../../../../../utils/dynamic-loader");
 jest.mock("../../swagger.router.helpers");
 jest.mock("fs");
+jest.mock("../../../../../../utils/sheu");
 
 describe("generateClassValidatorJsonSchemas", () => {
   // Mock functions
@@ -42,14 +44,17 @@ describe("generateClassValidatorJsonSchemas", () => {
   const mockConsoleWarn = jest
     .spyOn(console, "warn")
     .mockImplementation(() => {});
+  const mockSheuWarn = jest.spyOn(sheu, "warn").mockImplementation(jest.fn());
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockConsoleWarn.mockClear();
+    mockSheuWarn.mockClear();
   });
 
   afterEach(() => {
     mockConsoleWarn.mockRestore();
+    mockSheuWarn.mockClear();
   });
 
   describe("Happy Path Tests", () => {
@@ -259,13 +264,11 @@ describe("generateClassValidatorJsonSchemas", () => {
 
       const result = await generateClassValidatorJsonSchemas();
 
-      // await new Promise(setImmediate);
-
       expect(result).toEqual({
         "update-user-dto": {},
         CreateUserDto: { type: "object" },
       });
-      // expect(mockConsoleWarn).toHaveBeenCalledWith(
+      // expect(mockSheuWarn).toHaveBeenCalledWith(
       //   "Failed to generate schema for create user:",
       //   expect.any(Error)
       // );

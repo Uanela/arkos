@@ -3,6 +3,7 @@ import {
   ArkosResponse,
   ArkosNextFunction,
   ArkosRequestHandler,
+  ArkosErrorRequestHandler,
 } from "../../../types";
 
 /**
@@ -22,19 +23,34 @@ import {
  * })
  * ```
  */
-const catchAsync =
-  (fn: ArkosRequestHandler) =>
-  async (
-    req: ArkosRequest,
-    res: ArkosResponse,
-    next: ArkosNextFunction
-  ): Promise<void> => {
-    try {
-      return (await fn(req, res, next)) as void;
-    } catch (err) {
-      next(err);
-    }
-  };
+const catchAsync = (
+  fn: ArkosRequestHandler | ArkosErrorRequestHandler,
+  options: { type: "error" | "normal" } = { type: "normal" }
+): any =>
+  options?.type === "error"
+    ? async (
+        err: any,
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ): Promise<void> => {
+        try {
+          return (await (fn as any)(err, req, res, next)) as void;
+        } catch (err) {
+          next(err);
+        }
+      }
+    : async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ): Promise<void> => {
+        try {
+          return (await (fn as ArkosRequestHandler)(req, res, next)) as void;
+        } catch (err) {
+          next(err);
+        }
+      };
 
 export type CatchAsyncReturnType = ReturnType<typeof catchAsync>;
 

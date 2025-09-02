@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.3.0-canary.3",
+  "version": "1.3.0-canary.4",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -85,10 +85,11 @@
     "build:esm": "tsc -p tsconfig.esm.json && npx tsx scripts/fix-esm-imports.ts",
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && pnpm run minify && tsx scripts/post-build-scripts.ts",
+    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && tsx scripts/post-build-scripts.ts",
     "buildTsup": "tsup && tsx scripts/post-build-scripts.ts",
     "minifyOld": "esbuild dist/cjs/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
-    "minify": "esbuild $(find dist -type f -name '*.js') --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
+    "minifyOld2": "esbuild $(find dist -type f -name '*.js') --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
+    "minify": "",
     "clean": "rm -r dist",
     "dev": "tsx --watch",
     "lint": "eslint src --ext .ts",
@@ -163,7 +164,8 @@
     "ts-jest": "^29.3.1",
     "tsx": "^4.20.3",
     "type-fest": "^4.41.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "chokidar": "^4.0.3",

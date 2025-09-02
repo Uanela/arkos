@@ -1,3 +1,4 @@
+import { z, ZodTypeAny } from "zod";
 import path from "path";
 import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
@@ -99,6 +100,17 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
   };
 }
 
+export function isClass(value: any): boolean {
+  return (
+    typeof value === "function" &&
+    /^class\s/.test(Function.prototype.toString.call(value))
+  );
+}
+
+export function isZodSchema(value: any): value is ZodTypeAny {
+  return value instanceof z.ZodType;
+}
+
 export async function processSubdir(
   modelName: string,
   type: "dtos" | "schemas"
@@ -129,14 +141,26 @@ export async function processSubdir(
             }
           );
 
-          if (module) result[key] = module.default;
-        } catch (error) {
-          console.error(error);
+          const cleanFilePath = `src/modules/${kebabCase(modelName)}/${fileName}`;
+          if (type === "dtos" && !isClass(module?.default))
+            throw Error(
+              `ValidationError: Please export as default a valid class under ${cleanFilePath}, in order to use as Dto.`
+            );
+          else if (type === "schemas" && !isZodSchema(module?.default))
+            throw Error(
+              `ValidationError: Please export as default a valid zod schema under ${cleanFilePath}, in order to use as Schema`
+            );
+
+          if (module && module?.default) result[key] = module.default;
+        } catch (err: any) {
+          if (err?.message?.includes("ValidationError")) throw err;
+          console.error(err);
         }
       })
     );
-  } catch (error) {
-    console.error(error);
+  } catch (err: any) {
+    if (err?.message?.includes("ValidationError")) throw err;
+    console.error(err);
   }
 
   return result;

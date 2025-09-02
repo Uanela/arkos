@@ -437,17 +437,19 @@ export class BaseController {
  * @param {ArkosNextFunction} next - Express next function
  * @returns {Promise<void>}
  */
-export const getAvailableResources = catchAsync(async (_, res) => {
-  sheu.warn(
-    "This route `/api/available-routes` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead."
-  );
+export const getAvailableResources = catchAsync(
+  async (_: any, res: ArkosResponse) => {
+    sheu.warn(
+      "This route `/api/available-routes` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead."
+    );
 
-  res.status(200).json({
-    data: [
-      ...prismaSchemaParser
-        .getModelsAsArrayOfStrings()
-        .map((model) => kebabCase(model)),
-      "file-upload",
-    ],
-  });
-});
+    res.status(200).json({
+      data: [
+        ...prismaSchemaParser
+          .getModelsAsArrayOfStrings()
+          .map((model) => kebabCase(model)),
+        "file-upload",
+      ],
+    });
+  }
+);

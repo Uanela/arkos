@@ -283,7 +283,7 @@ function getGroupedModelReations(modelName: string) {
 
   return {
     singular: relationsFields?.filter(
-      (field) => field.isRelation && field.connectionField && !field.isArray
+      (field) => field.isRelation && !field.isArray
     ),
     list: relationsFields?.filter((field) => field.isRelation && field.isArray),
   };

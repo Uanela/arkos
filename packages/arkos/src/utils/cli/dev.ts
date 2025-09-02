@@ -3,13 +3,11 @@ import chokidar from "chokidar";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
-import { importModule } from "../helpers/global.helpers";
 import fs from "fs";
 import path from "path";
 import sheu from "../sheu";
 import portAndHostAllocator from "../features/port-and-host-allocator";
-import smartFsWatcher from "./utils/smart-fs-watcher";
-import { ArkosConfig } from "../../exports";
+// import smartFsWatcher from "./utils/smart-fs-watcher";
 
 interface DevOptions {
   port?: string;
@@ -88,8 +86,6 @@ export async function devCommand(options: DevOptions = {}) {
           }
         });
       }
-
-      if (smartFsWatcher) smartFsWatcher.reset();
     };
 
     // Function to handle server restart with debouncing
@@ -139,118 +135,33 @@ export async function devCommand(options: DevOptions = {}) {
       return envWatcher;
     };
 
-    // Setup smart watcher for new file detection
-    const setupSmartWatcher = () => {
-      smartFsWatcher.start((filePath) => {
-        if (!restartingFiles.has(filePath)) {
-          scheduleRestart(
-            `${fullCleanCwd(filePath)} has been created`,
-            filePath
-          );
-        }
-      });
-      return smartFsWatcher;
-    };
-
     // Start the server
     startServer();
 
     // Setup watchers
     const envWatcher = setupEnvWatcher();
-    setupSmartWatcher();
 
-    const checkConfig = async () => {
-      let config: ArkosConfig & { available: boolean } = {} as any;
+    const env = getEnv();
+    const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
+      env,
+      { logWarning: true }
+    );
 
-      try {
-        try {
-          const server = await importModule("../../server");
-          config = server?.getArkosConfig?.();
-        } catch (err: any) {
-          if (
-            !err?.message?.includes("../../server") &&
-            !err?.message?.includes("cjs/server") &&
-            !err?.message?.includes("esm/server")
-          )
-            throw err;
-        }
-
-        if (config && config.available) {
-          const env = getEnv();
-          const hostAndPort =
-            await portAndHostAllocator.getHostAndAvailablePort(env, {
-              ...config,
-              logWarning: true,
-              caller: "dev",
-            });
-          // Config is ready, display the info with actual values
-          console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-          if (config?.port !== undefined)
-            console.info(
-              `  - Local:        http://${hostAndPort.host}:${hostAndPort.port}`
-            );
-          console.info(
-            `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-              .replaceAll(`${process.cwd()}/`, "")
-              .replaceAll("/", "")}\n`
-          );
-          return true;
-        } else {
-          // Config is ready, display the info with actual values
-          console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-          console.info(
-            `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-              .replaceAll(`${process.cwd()}/`, "")
-              .replaceAll("/", "")}\n`
-          );
-        }
-        return false;
-      } catch (err: any) {
-        console.info(err);
-        return false;
-      }
-    };
-
-    // Try to get config periodically
-    const waitForConfig = async () => {
-      let attempts = 0;
-      const maxAttempts = 15;
-      while (attempts < maxAttempts) {
-        const ready = await checkConfig();
-        if (ready) break;
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        attempts++;
-      }
-
-      // Fall back to defaults if config never became available
-      if (attempts >= maxAttempts) {
-        const env = getEnv();
-        const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
-          env,
-          { logWarning: true }
-        );
-
-        console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-        console.info(
-          `  - Local:        http://${hostAndPort?.host}:${hostAndPort?.port}`
-        );
-        console.info(
-          `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-            .replaceAll(`${process.cwd()}/`, "")
-            .replaceAll("/", "")}\n`
-        );
-      }
-    };
-
-    waitForConfig();
+    console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+    console.info(
+      `  - Local:        http://${hostAndPort?.host}:${hostAndPort?.port}`
+    );
+    console.info(
+      `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
+        .replaceAll(`${process.cwd()}/`, "")
+        .replaceAll("/", "")}\n`
+    );
 
     // Enhanced cleanup function
     const cleanup = () => {
       if (restartTimeout) clearTimeout(restartTimeout);
 
       if (envWatcher) envWatcher.close();
-
-      if (smartFsWatcher) smartFsWatcher.close();
 
       if (child) {
         child.kill("SIGTERM");
@@ -291,5 +202,4 @@ export async function devCommand(options: DevOptions = {}) {
 export function killDevelopmentServerChildProcess() {
   (child as ChildProcess)?.kill?.();
   child = null;
-  if (smartFsWatcher) smartFsWatcher.close();
 }

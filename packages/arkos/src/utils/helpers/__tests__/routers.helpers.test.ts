@@ -22,7 +22,9 @@ describe("Middleware Utils", () => {
 
       const result = safeCatchAsync(mockMiddleware);
 
-      expect(mockedCatchAsync).toHaveBeenCalledWith(mockMiddleware);
+      expect(mockedCatchAsync).toHaveBeenCalledWith(mockMiddleware, {
+        type: "normal",
+      });
       expect(mockedCatchAsync).toHaveBeenCalledTimes(1);
       expect(result).toBe(`wrapped_${mockMiddleware}`);
     });
@@ -86,9 +88,11 @@ describe("Middleware Utils", () => {
         throw new Error("Middleware execution failed");
       });
 
-      const result = safeCatchAsync(throwingMiddleware);
+      const result = safeCatchAsync(throwingMiddleware, { type: "normal" });
 
-      expect(mockedCatchAsync).toHaveBeenCalledWith(throwingMiddleware);
+      expect(mockedCatchAsync).toHaveBeenCalledWith(throwingMiddleware, {
+        type: "normal",
+      });
       expect(result).toBe(`wrapped_${throwingMiddleware}`);
     });
   });
@@ -114,9 +118,11 @@ describe("Middleware Utils", () => {
       it("should process single function middleware", () => {
         const mockMiddleware = jest.fn();
 
-        const result = processMiddleware(mockMiddleware);
+        const result = processMiddleware(mockMiddleware, { type: "normal" });
 
-        expect(mockedCatchAsync).toHaveBeenCalledWith(mockMiddleware);
+        expect(mockedCatchAsync).toHaveBeenCalledWith(mockMiddleware, {
+          type: "normal",
+        });
         expect(mockedCatchAsync).toHaveBeenCalledTimes(1);
         expect(result).toEqual([`wrapped_${mockMiddleware}`]);
       });
@@ -143,9 +149,13 @@ describe("Middleware Utils", () => {
           throw new Error("Middleware execution failed");
         });
 
-        const result = processMiddleware(throwingMiddleware);
+        const result = processMiddleware(throwingMiddleware, {
+          type: "normal",
+        });
 
-        expect(mockedCatchAsync).toHaveBeenCalledWith(throwingMiddleware);
+        expect(mockedCatchAsync).toHaveBeenCalledWith(throwingMiddleware, {
+          type: "normal",
+        });
         expect(result).toEqual([`wrapped_${throwingMiddleware}`]);
       });
     });
@@ -160,9 +170,15 @@ describe("Middleware Utils", () => {
         const result = processMiddleware(middlewareArray);
 
         expect(mockedCatchAsync).toHaveBeenCalledTimes(3);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, mw2);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(3, mw3);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1, {
+          type: "normal",
+        });
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, mw2, {
+          type: "normal",
+        });
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(3, mw3, {
+          type: "normal",
+        });
         expect(result).toEqual([
           `wrapped_${mw1}`,
           `wrapped_${mw2}`,
@@ -178,8 +194,12 @@ describe("Middleware Utils", () => {
         const result = processMiddleware(middlewareArray);
 
         expect(mockedCatchAsync).toHaveBeenCalledTimes(2);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, mw2);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1, {
+          type: "normal",
+        });
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, mw2, {
+          type: "normal",
+        });
         expect(result).toEqual([`wrapped_${mw1}`, `wrapped_${mw2}`]);
       });
 
@@ -208,9 +228,15 @@ describe("Middleware Utils", () => {
         const result = processMiddleware(middlewareArray);
 
         expect(mockedCatchAsync).toHaveBeenCalledTimes(3);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, mw2);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(3, mw3);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1, {
+          type: "normal",
+        });
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, mw2, {
+          type: "normal",
+        });
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(3, mw3, {
+          type: "normal",
+        });
         expect(result).toEqual([
           `wrapped_${mw1}`,
           `wrapped_${mw2}`,
@@ -229,9 +255,15 @@ describe("Middleware Utils", () => {
         const result = processMiddleware(middlewareArray);
 
         expect(mockedCatchAsync).toHaveBeenCalledTimes(3);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, throwingMw);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(3, mw3);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, mw1, {
+          type: "normal",
+        });
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, throwingMw, {
+          type: "normal",
+        });
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(3, mw3, {
+          type: "normal",
+        });
         expect(result).toEqual([
           `wrapped_${mw1}`,
           `wrapped_${throwingMw}`,
@@ -251,8 +283,12 @@ describe("Middleware Utils", () => {
         const result = processMiddleware(middlewareArray);
 
         expect(mockedCatchAsync).toHaveBeenCalledTimes(2);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, asyncMw1);
-        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, asyncMw2);
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(1, asyncMw1, {
+          type: "normal",
+        });
+        expect(mockedCatchAsync).toHaveBeenNthCalledWith(2, asyncMw2, {
+          type: "normal",
+        });
         expect(result).toEqual([`wrapped_${asyncMw1}`, `wrapped_${asyncMw2}`]);
       });
     });
@@ -288,7 +324,9 @@ describe("Middleware Utils", () => {
 
         expect(mockedCatchAsync).toHaveBeenCalledTimes(10);
         interceptors.forEach((mw, index) => {
-          expect(mockedCatchAsync).toHaveBeenNthCalledWith(index + 1, mw);
+          expect(mockedCatchAsync).toHaveBeenNthCalledWith(index + 1, mw, {
+            type: "normal",
+          });
         });
         expect(result).toHaveLength(10);
       });

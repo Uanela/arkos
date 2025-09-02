@@ -82,6 +82,14 @@ generate
   .option("-p, --path <path>", "Custom path for middleware", "src/modules")
   .action(generateCommand.interceptors);
 
+generate
+  .command("interceptors")
+  .alias("i")
+  .description("Generate a new interceptors file")
+  .requiredOption("-m, --model <name>", "Middleware name")
+  .option("-p, --path <path>", "Custom path for interceptors", "src/modules")
+  .action(generateCommand.interceptors);
+
 program.parse(process.argv);
 
 export { program, buildCommand, devCommand, startCommand, generateCommand };

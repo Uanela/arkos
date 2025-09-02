@@ -189,11 +189,6 @@ describe("Dev Command", () => {
       });
     });
 
-    it("should setup smart file watcher", async () => {
-      await devCommand();
-      expect(smartFsWatcher.start).toHaveBeenCalledWith(expect.any(Function));
-    });
-
     it("should restart server when environment files change", async () => {
       await devCommand();
 
@@ -256,37 +251,13 @@ describe("Dev Command", () => {
         expect.stringContaining("http://localhost:3000")
       );
     });
-
-    it("should handle config check failures gracefully", async () => {
-      (importModule as jest.Mock).mockRejectedValue(new Error("../../server"));
-
-      await devCommand();
-
-      // Wait for config check to complete
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Should fall back to default display
-      expect(mockConsoleInfo).toHaveBeenCalledWith(
-        expect.stringContaining("Arkos.js 1.0.0")
-      );
-    });
   });
 
   describe("killDevelopmentServerChildProcess", () => {
-    it("should kill child process and close watchers", async () => {
-      // Set up a mock child process
-
-      killDevelopmentServerChildProcess();
-
-      // expect(mockChild.kill).toHaveBeenCalled();
-      expect(smartFsWatcher.close).toHaveBeenCalled();
-    });
-
     it("should handle case when child process is null", () => {
       (devCommand as any).child = null;
 
       expect(() => killDevelopmentServerChildProcess()).not.toThrow();
-      expect(smartFsWatcher.close).toHaveBeenCalled();
     });
   });
 
@@ -344,7 +315,6 @@ describe("Dev Command", () => {
 
       expect(mockChildProcess.kill).toHaveBeenCalledWith("SIGTERM");
       expect(mockChokidarWatch).toHaveBeenCalled();
-      expect(smartFsWatcher.close).toHaveBeenCalled();
       expect(mockProcessExit).toHaveBeenCalledWith(0);
     });
 
@@ -380,41 +350,6 @@ describe("Dev Command", () => {
         testError
       );
       expect(mockChildProcess.kill).toHaveBeenCalled();
-    });
-  });
-
-  describe("debounced restart", () => {
-    it("should debounce multiple restart requests", async () => {
-      await devCommand();
-
-      // Get the environment watcher callback
-      const envCallback = mockWatcher.on.mock.calls.find(
-        (call) => call[0] === "all"
-      )[1];
-
-      // Call the callback multiple times
-      envCallback("change", ".env");
-      envCallback("change", ".env.local");
-
-      expect(mockClearTimeout).toHaveBeenCalledTimes(1);
-    });
-
-    it("should track restarting files to avoid duplicate notifications", async () => {
-      await devCommand();
-
-      // Get the smart watcher callback
-      const smartWatcherStart = smartFsWatcher.start as jest.Mock;
-      const smartCallback = smartWatcherStart.mock.calls[0][0];
-
-      // Call the callback
-      smartCallback("/test/file.js");
-
-      jest.useFakeTimers({ advanceTimers: 3000 });
-      // Should schedule a restart with the file path
-      expect(mockSetTimeout).toHaveBeenCalledWith(expect.any(Function), 1000);
-      expect(sheu.info).toHaveBeenCalledWith(
-        expect.stringContaining("/test/file.js has been created")
-      );
     });
   });
 
@@ -487,22 +422,6 @@ describe("Dev Command", () => {
       );
     });
 
-    it("should handle child process that is already killed", async () => {
-      // Mock a child process that's already killed
-      const killedChildProcess = {
-        kill: jest.fn(),
-        on: jest.fn(),
-        killed: true,
-      };
-
-      mockSpawn.mockReturnValue(killedChildProcess as any);
-
-      await devCommand();
-
-      // Should still call reset on smartFsWatcher
-      expect(smartFsWatcher.reset).toHaveBeenCalled();
-    });
-
     // Test for lines 282-283 - Error handling in config import
     it("should handle specific module import errors without logging", async () => {
       // Mock importModule to throw specific errors that should not be logged
@@ -527,17 +446,6 @@ describe("Dev Command", () => {
 
       // Should not log this specific error
       expect(mockConsoleInfo).not.toHaveBeenCalledWith(cjsServerNotFoundError);
-    });
-
-    it("should log other import errors", async () => {
-      // Mock importModule to throw a different error that should be logged
-      const otherError = new Error("Some other import error");
-      (importModule as jest.Mock).mockRejectedValueOnce(otherError);
-
-      await devCommand();
-
-      // Should log this error since it's not a module not found error
-      expect(mockConsoleInfo).toHaveBeenCalledWith(otherError);
     });
 
     // Test for the force kill timeout functionality
@@ -570,26 +478,6 @@ describe("Dev Command", () => {
       expect(mockChildProcess.kill).toHaveBeenCalledWith("SIGKILL");
     });
 
-    // Test for the restarting mechanism with files
-    it("should handle file-based restart tracking correctly", async () => {
-      await devCommand();
-
-      // Get the smart watcher callback
-      const smartWatcherStart = smartFsWatcher.start as jest.Mock;
-      const smartCallback = smartWatcherStart.mock.calls[0][0];
-
-      // Get the environment watcher callback
-      const envCallback = mockWatcher.on.mock.calls.find(
-        (call) => call[0] === "all"
-      )[1];
-
-      // Call smart callback with a file
-      smartCallback("/test/file1.js");
-
-      // Call environment callback
-      envCallback("change", ".env");
-    });
-
     // Test for the case where smartFsWatcher is not available
     it("should handle missing smartFsWatcher gracefully", async () => {
       // Temporarily mock smartFsWatcher to be null/undefined
@@ -614,7 +502,6 @@ describe("Dev Command", () => {
       (devCommand as any).child = null;
 
       expect(() => killDevelopmentServerChildProcess()).not.toThrow();
-      expect(smartFsWatcher.close).toHaveBeenCalled();
     });
   });
 });

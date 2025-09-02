@@ -63,7 +63,7 @@ describe("Dynamic Prisma Model Loader", () => {
     mockError.mockImplementation((message) => {
       const error = new originalError(message);
       error.name = "MockError";
-      console.info(error);
+      // console.info(error);
       if (message === "Path check failed") return error;
       return {};
     });
@@ -189,6 +189,18 @@ describe("Dynamic Prisma Model Loader", () => {
 
       expect(importModule).toHaveBeenCalled();
       expect(result.model).toEqual({ structure: "model" });
+    });
+
+    it("should process files correctly when they exist and return nothing when module exists but no dto class exported as default", async () => {
+      (pathExists as jest.Mock).mockImplementation((filePath) => {
+        return filePath.includes("user.dto.js") || filePath.includes("dtos");
+      });
+      (importModule as jest.Mock).mockResolvedValue(undefined);
+
+      const result = await dynamicLoader.processSubdir("User", "dtos");
+
+      expect(importModule).toHaveBeenCalled();
+      expect(result.model).toEqual(undefined);
     });
 
     it("should skip empty filenames and non-existent files", async () => {

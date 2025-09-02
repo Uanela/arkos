@@ -43,7 +43,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       authController.getMe,
       ...processMiddleware(interceptors?.afterGetMe),
       sendResponse,
-      ...processMiddleware(interceptors?.onGetMeError)
+      ...processMiddleware(interceptors?.onGetMeError, { type: "error" })
     )
     .patch(
       "/users/me",
@@ -59,7 +59,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       authController.updateMe,
       ...processMiddleware(interceptors?.afterUpdateMe),
       sendResponse,
-      ...processMiddleware(interceptors?.onUpdateMeError)
+      ...processMiddleware(interceptors?.onUpdateMeError, { type: "error" })
     )
     .delete(
       "/users/me",
@@ -72,7 +72,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       authController.deleteMe,
       ...processMiddleware(interceptors?.afterDeleteMe),
       sendResponse,
-      ...processMiddleware(interceptors?.onDeleteMeError)
+      ...processMiddleware(interceptors?.onDeleteMeError, { type: "error" })
     );
 
   router.use(
@@ -108,7 +108,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     authController.login,
     ...processMiddleware(interceptors?.afterLogin),
     sendResponse,
-    ...processMiddleware(interceptors?.onLoginError)
+    ...processMiddleware(interceptors?.onLoginError, { type: "error" })
   );
 
   router.delete(
@@ -118,7 +118,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     authController.logout,
     ...processMiddleware(interceptors?.afterLogout),
     sendResponse,
-    ...processMiddleware(interceptors?.onLogoutError)
+    ...processMiddleware(interceptors?.onLogoutError, { type: "error" })
   );
 
   router.post(
@@ -134,7 +134,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     authController.signup,
     ...processMiddleware(interceptors?.afterSignup),
     sendResponse,
-    ...processMiddleware(interceptors?.onSignupError)
+    ...processMiddleware(interceptors?.onSignupError, { type: "error" })
   );
 
   router.post(
@@ -151,7 +151,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     authController.updatePassword,
     ...processMiddleware(interceptors?.afterUpdatePassword),
     sendResponse,
-    ...processMiddleware(interceptors?.onUpdatePasswordError)
+    ...processMiddleware(interceptors?.onUpdatePasswordError, { type: "error" })
   );
 
   router.get(
@@ -162,7 +162,9 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     authController.findManyAuthAction,
     ...processMiddleware(interceptors?.afterFindManyAuthAction),
     sendResponse,
-    ...processMiddleware(interceptors?.onFindManyAuthActionError)
+    ...processMiddleware(interceptors?.onFindManyAuthActionError, {
+      type: "error",
+    })
   );
 
   return router;
