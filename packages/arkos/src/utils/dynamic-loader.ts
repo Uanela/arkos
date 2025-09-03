@@ -122,7 +122,7 @@ export async function processSubdir(
   const result: Record<string, any> = {};
 
   if (!(await pathExists(subdir))) return result;
-  // Skip if directory doesn't exist
+
   try {
     await Promise.all(
       Object.entries(fileStructure[type]).map(async ([key, fileName]) => {

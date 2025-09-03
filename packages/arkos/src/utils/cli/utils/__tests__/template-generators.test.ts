@@ -417,7 +417,7 @@ describe("generateTemplate", () => {
 
     it("should throw error without model name", () => {
       expect(() => generateTemplate("interceptors", {} as any)).toThrow(
-        "Model name is required for middleware template"
+        "Module name is required for middleware template"
       );
     });
   });
