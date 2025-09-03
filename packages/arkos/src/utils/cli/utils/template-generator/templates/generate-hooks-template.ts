@@ -33,9 +33,9 @@ export default function generateHooksTemplate(
 } from "arkos/services";`
     : ``;
 
-  const prismaImport = `import prisma from "../../utils/prisma${ext === "ts" ? "" : ".js"}";`;
+  const prismaImport = `"../../utils/prisma${ext === "ts" ? "" : "." + "js"}";`;
 
-  const serviceImport = `import ${modelName.camel}Service from "./${modelName.kebab}.service${ext === "ts" ? "" : ".js"}";`;
+  const serviceImport = `"./${modelName.kebab}.service${ext === "ts" ? "" : "." + "js"}";`;
 
   const delegateExport = isTypeScript
     ? `\nexport type ${modelName.pascal}Delegate = typeof prisma.${modelName.camel};`
@@ -152,8 +152,8 @@ export const afterDeleteMany = [
 `;
 
   return `${baseImports}
-${prismaImport}
-${serviceImport}
+import prisma from ${prismaImport}
+import ${modelName.camel}Service from ${serviceImport}
 ${delegateExport}
 
 ${hooks}`;
