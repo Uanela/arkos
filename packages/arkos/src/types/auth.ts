@@ -9,6 +9,20 @@ import { JwtPayload } from "jsonwebtoken";
  */
 export type AccessAction = "Create" | "Update" | "Delete" | "View" | string;
 
+export type DetailedAccessControlRule = {
+  /** Array of role names that have permission for this action */
+  roles: string[];
+  /** Human-readable name for this permission (optional) */
+  name?: string;
+  /** Detailed description of what this permission allows (optional) */
+  description?: string;
+  /** Detailed error message of what must be returned on forbidden response (optional)
+   *
+   * Note: not yet implemented
+   * */
+  errorMessage?: string;
+};
+
 /**
  * Rules defining access control for different controller actions.
  * The array contains role names that are allowed to perform the action.
@@ -29,21 +43,7 @@ export type AccessAction = "Create" | "Update" | "Delete" | "View" | string;
  *
  */
 export type AccessControlRules = {
-  [key in AccessAction]:
-    | string[]
-    | {
-        /** Array of role names that have permission for this action */
-        roles: string[];
-        /** Human-readable name for this permission (optional) */
-        name?: string;
-        /** Detailed description of what this permission allows (optional) */
-        description?: string;
-        /** Detailed error message of what must be returned on forbidden response (optional)
-         *
-         * Note: not yet implemented
-         * */
-        errorMessage?: string;
-      };
+  [key in AccessAction]: string[] | DetailedAccessControlRule;
 };
 
 /**

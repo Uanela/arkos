@@ -1,8 +1,13 @@
 import { kebabCase } from "../../../../exports/utils";
-import { AccessControlConfig } from "../../../../types/auth";
+import {
+  AccessControlConfig,
+  DetailedAccessControlRule,
+} from "../../../../types/auth";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
 
 interface AuthAction {
+  /** role name, e.g Admin, Manager */
+  roles: string[];
   /** action name, e.g Create, View, Update, Download, Cancel */
   action: string;
   /** resource name, e.g user, user-role, product, author */
@@ -21,6 +26,7 @@ interface AuthAction {
 class AuthActionService {
   authActions: AuthAction[] = [
     {
+      roles: [],
       action: "View",
       resource: "auth-action",
       name: "View auth action",
@@ -57,6 +63,17 @@ class AuthActionService {
     accessControl?: AccessControlConfig
   ): AuthAction {
     const baseAuthAction: AuthAction = {
+      roles:
+        (accessControl &&
+          (Array.isArray(accessControl)
+            ? accessControl
+            : typeof accessControl === "string"
+              ? [accessControl]
+              : Array.isArray(accessControl?.[action] || {})
+                ? (accessControl[action] as string[])
+                : (accessControl[action] as DetailedAccessControlRule)
+                    ?.roles)) ||
+        [],
       action,
       resource,
       name: `${action} ${resource}`,
