@@ -177,18 +177,20 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(result).toEqual({});
     });
 
-    it("should process files correctly when they exist", async () => {
+    it("should process files correctly when they exist and return correctly if it is a valida class for dto usage", async () => {
       (pathExists as jest.Mock).mockImplementation((filePath) => {
         return filePath.includes("user.dto.js") || filePath.includes("dtos");
       });
+      class UserDto {}
+
       (importModule as jest.Mock).mockResolvedValue({
-        default: { structure: "model" },
+        default: UserDto,
       });
 
       const result = await dynamicLoader.processSubdir("User", "dtos");
 
       expect(importModule).toHaveBeenCalled();
-      expect(result.model).toEqual({ structure: "model" });
+      expect(result.model).toEqual(UserDto);
     });
 
     it("should process files correctly when they exist and return nothing when module exists but no dto class exported as default", async () => {

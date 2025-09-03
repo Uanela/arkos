@@ -4,6 +4,7 @@ import { generateMiddlewaresTemplate } from "./template-generator/templates/gene
 import { generateQueryOptionsTemplate } from "./template-generator/templates/generate-prisma-query-options";
 import { generateRouterTemplate } from "./template-generator/templates/generate-router-template";
 import { generateServiceTemplate } from "./template-generator/templates/generate-service-template";
+import generateHooksTemplate from "./template-generator/templates/generate-hooks-template";
 
 interface ModelName {
   pascal: string;
@@ -40,6 +41,8 @@ export function generateTemplate(
       return generateQueryOptionsTemplate(options);
     case "interceptors":
       return generateMiddlewaresTemplate(options);
+    case "hooks":
+      return generateHooksTemplate(options);
     default:
       throw new Error(`\n Unknown template type: ${type}`);
   }

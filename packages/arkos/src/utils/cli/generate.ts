@@ -123,6 +123,13 @@ export const generateCommand = {
     });
   },
 
+  hooks: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "hooks",
+      fileSuffix: "hooks",
+    });
+  },
+
   queryOptions: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "query-options",
