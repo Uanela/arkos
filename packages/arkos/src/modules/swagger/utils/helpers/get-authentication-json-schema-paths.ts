@@ -293,5 +293,51 @@ export default async function getAuthenticationJsonSchemaPaths(
     },
   };
 
+  // Add auth actions endpoint
+  paths["/api/auth-actions"] = {
+    get: {
+      tags: ["Authentication"],
+      summary: "Get all authentication actions",
+      description:
+        "Retrieves a list of all available authentication actions and permissions",
+      operationId: "findManyAuthAction",
+      security: [{ BearerAuth: [] }],
+      responses: {
+        "200": {
+          description: "Auth actions retrieved successfully",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  total: {
+                    type: "number",
+                    description: "Total number of auth actions",
+                  },
+                  results: {
+                    type: "number",
+                    description: "Number of auth actions returned",
+                  },
+                  data: {
+                    type: "array",
+                    items: {
+                      $ref: "#/components/schemas/FindManAuthActionSystemSchema",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        "401": {
+          description: "Authentication required",
+        },
+        "403": {
+          description: "Insufficient permissions",
+        },
+      },
+    },
+  };
+
   return paths;
 }

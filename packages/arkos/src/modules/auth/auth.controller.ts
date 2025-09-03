@@ -388,7 +388,12 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
     findManyAuthAction: catchAsync(
       async (_: ArkosRequest, res: ArkosResponse) => {
-        const authActions = authActionService.getAll();
+        const arkosConfig = getArkosConfig();
+        const authActions = authActionService.getAll()?.map((authAction) => {
+          if (arkosConfig?.authentication?.mode === "dynamic")
+            delete (authAction as any)?.roles;
+          return authAction;
+        });
 
         res.json({
           total: authActions.length,

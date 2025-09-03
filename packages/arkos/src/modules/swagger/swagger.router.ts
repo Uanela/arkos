@@ -9,6 +9,7 @@ import {
 import missingJsonSchemaGenerator from "./utils/helpers/missing-json-schemas-generator";
 import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs";
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
+import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/generate-system-json-schemas";
 
 const swaggerRouter = Router();
 
@@ -25,9 +26,9 @@ export async function getSwaggerRouter(
       defaultJsonSchemas,
       arkosConfig
     )),
+    ...generateSystemJsonSchemas(arkosConfig),
   };
 
-  // Merge default config with user config
   const swaggerConfigs = deepmerge(
     (await getSwaggerDefaultConfig(defaultModelsPaths, defaultJsonSchemas)) ||
       {},
@@ -36,7 +37,6 @@ export async function getSwaggerRouter(
 
   const { definition, ...options } = swaggerConfigs?.options!;
 
-  // Generate OpenAPI specification using swagger-jsdoc
   const swaggerSpecification = swaggerJsdoc({
     definition: definition as swaggerJsdoc.SwaggerDefinition,
     ...options,
@@ -45,7 +45,7 @@ export async function getSwaggerRouter(
   const scalar = await importEsmPreventingTsTransformation(
     "@scalar/express-api-reference"
   );
-  // Serve Scalar API documentation
+
   swaggerRouter.use(
     swaggerConfigs!.endpoint!,
     scalar.apiReference({
