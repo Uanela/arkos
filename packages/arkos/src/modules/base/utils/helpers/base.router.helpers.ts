@@ -3,7 +3,11 @@ import pluralize from "pluralize";
 import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
-import { RouterEndpoint } from "../../../../types/router-config";
+import {
+  AuthRouterEndpoint,
+  FileUploadRouterEndpoint,
+  RouterEndpoint,
+} from "../../../../types/router-config";
 import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import authService from "../../../auth/auth.service";
 import { BaseController } from "../../base.controller";
@@ -319,16 +323,16 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
   });
 }
 
-export function isEndpointDisabled(
-  routerConfig: RouterConfig,
-  endpoint: RouterEndpoint
+export function isEndpointDisabled<RouterType extends string = "prisma">(
+  routerConfig: RouterConfig<RouterType>,
+  endpoint: RouterEndpoint | AuthRouterEndpoint | FileUploadRouterEndpoint
 ): boolean {
   if (!routerConfig?.disable) return false;
 
   if (routerConfig.disable === true) return true;
 
   if (typeof routerConfig.disable === "object")
-    return routerConfig.disable[endpoint] === true;
+    return routerConfig.disable[endpoint as never] === true;
 
   return false;
 }

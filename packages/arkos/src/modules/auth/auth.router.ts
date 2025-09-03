@@ -12,15 +12,24 @@ import { ArkosConfig } from "../../types/arkos-config";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthPrismaQueryOptions } from "../../types";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
+import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 
 const router: Router = Router();
 
 export async function getAuthRouter(arkosConfigs: ArkosConfig) {
-  const { interceptors, dtos, schemas, prismaQueryOptions } =
-    getModuleComponents("auth");
+  const {
+    interceptors,
+    dtos,
+    schemas,
+    prismaQueryOptions,
+    router: customRouterModule,
+  } = getModuleComponents("auth");
+
+  const routerConfig = customRouterModule?.config || {};
   const authController = await authControllerFactory(interceptors);
 
-  // Helper to get the correct schema or DTO based on Arkos Config
+  if (routerConfig?.disable === true) return router;
+
   const getValidationSchemaOrDto = (key: string) => {
     const validationConfigs = arkosConfigs?.validation;
     if (validationConfigs?.resolver === "class-validator") {
@@ -31,8 +40,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     return undefined;
   };
 
-  router
-    .get(
+  if (!isEndpointDisabled<"auth">(routerConfig, "getMe")) {
+    router.get(
       "/users/me",
       authService.authenticate,
       addPrismaQueryOptionsToRequest<any>(
@@ -44,8 +53,11 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       ...processMiddleware(interceptors?.afterGetMe),
       sendResponse,
       ...processMiddleware(interceptors?.onGetMeError, { type: "error" })
-    )
-    .patch(
+    );
+  }
+
+  if (!isEndpointDisabled<"auth">(routerConfig, "updateMe")) {
+    router.patch(
       "/users/me",
       authService.authenticate,
       handleRequestBodyValidationAndTransformation(
@@ -60,8 +72,11 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       ...processMiddleware(interceptors?.afterUpdateMe),
       sendResponse,
       ...processMiddleware(interceptors?.onUpdateMeError, { type: "error" })
-    )
-    .delete(
+    );
+  }
+
+  if (!isEndpointDisabled<"auth">(routerConfig, "deleteMe")) {
+    router.delete(
       "/users/me",
       authService.authenticate,
       addPrismaQueryOptionsToRequest<any>(
@@ -74,98 +89,118 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       sendResponse,
       ...processMiddleware(interceptors?.onDeleteMeError, { type: "error" })
     );
+  }
 
-  router.use(
-    "/auth",
-    rateLimit(
-      deepmerge(
-        {
-          windowMs: 5000,
-          limit: 10,
-          standardHeaders: "draft-7",
-          legacyHeaders: false,
-          handler: (_, res) => {
-            res.status(429).json({
-              message: "Too many requests, please try again later",
-            });
+  if (
+    !isEndpointDisabled<"auth">(routerConfig, "login") ||
+    !isEndpointDisabled<"auth">(routerConfig, "logout") ||
+    !isEndpointDisabled<"auth">(routerConfig, "signup") ||
+    !isEndpointDisabled<"auth">(routerConfig, "updatePassword")
+  ) {
+    router.use(
+      "/auth",
+      rateLimit(
+        deepmerge(
+          {
+            windowMs: 5000,
+            limit: 10,
+            standardHeaders: "draft-7",
+            legacyHeaders: false,
+            handler: (_, res) => {
+              res.status(429).json({
+                message: "Too many requests, please try again later",
+              });
+            },
           },
-        },
-        arkosConfigs?.authentication?.requestRateLimitOptions || {}
+          arkosConfigs?.authentication?.requestRateLimitOptions || {}
+        )
       )
-    )
-  );
+    );
+  }
 
-  router.post(
-    "/auth/login",
-    handleRequestBodyValidationAndTransformation(
-      getValidationSchemaOrDto("login")
-    ),
-    addPrismaQueryOptionsToRequest<any>(
-      prismaQueryOptions as AuthPrismaQueryOptions<any>,
-      "login"
-    ),
-    ...processMiddleware(interceptors?.beforeLogin),
-    authController.login,
-    ...processMiddleware(interceptors?.afterLogin),
-    sendResponse,
-    ...processMiddleware(interceptors?.onLoginError, { type: "error" })
-  );
+  if (!isEndpointDisabled<"auth">(routerConfig, "login")) {
+    router.post(
+      "/auth/login",
+      handleRequestBodyValidationAndTransformation(
+        getValidationSchemaOrDto("login")
+      ),
+      addPrismaQueryOptionsToRequest<any>(
+        prismaQueryOptions as AuthPrismaQueryOptions<any>,
+        "login"
+      ),
+      ...processMiddleware(interceptors?.beforeLogin),
+      authController.login,
+      ...processMiddleware(interceptors?.afterLogin),
+      sendResponse,
+      ...processMiddleware(interceptors?.onLoginError, { type: "error" })
+    );
+  }
 
-  router.delete(
-    "/auth/logout",
-    authService.authenticate,
-    ...processMiddleware(interceptors?.beforeLogout),
-    authController.logout,
-    ...processMiddleware(interceptors?.afterLogout),
-    sendResponse,
-    ...processMiddleware(interceptors?.onLogoutError, { type: "error" })
-  );
+  if (!isEndpointDisabled<"auth">(routerConfig, "logout")) {
+    router.delete(
+      "/auth/logout",
+      authService.authenticate,
+      ...processMiddleware(interceptors?.beforeLogout),
+      authController.logout,
+      ...processMiddleware(interceptors?.afterLogout),
+      sendResponse,
+      ...processMiddleware(interceptors?.onLogoutError, { type: "error" })
+    );
+  }
 
-  router.post(
-    "/auth/signup",
-    handleRequestBodyValidationAndTransformation(
-      getValidationSchemaOrDto("signup")
-    ),
-    addPrismaQueryOptionsToRequest<any>(
-      prismaQueryOptions as AuthPrismaQueryOptions<any>,
-      "signup"
-    ),
-    ...processMiddleware(interceptors?.beforeSignup),
-    authController.signup,
-    ...processMiddleware(interceptors?.afterSignup),
-    sendResponse,
-    ...processMiddleware(interceptors?.onSignupError, { type: "error" })
-  );
+  if (!isEndpointDisabled<"auth">(routerConfig, "signup")) {
+    router.post(
+      "/auth/signup",
+      handleRequestBodyValidationAndTransformation(
+        getValidationSchemaOrDto("signup")
+      ),
+      addPrismaQueryOptionsToRequest<any>(
+        prismaQueryOptions as AuthPrismaQueryOptions<any>,
+        "signup"
+      ),
+      ...processMiddleware(interceptors?.beforeSignup),
+      authController.signup,
+      ...processMiddleware(interceptors?.afterSignup),
+      sendResponse,
+      ...processMiddleware(interceptors?.onSignupError, { type: "error" })
+    );
+  }
 
-  router.post(
-    "/auth/update-password",
-    authService.authenticate,
-    handleRequestBodyValidationAndTransformation(
-      getValidationSchemaOrDto("updatePassword")
-    ),
-    addPrismaQueryOptionsToRequest<any>(
-      prismaQueryOptions as AuthPrismaQueryOptions<any>,
-      "updatePassword"
-    ),
-    ...processMiddleware(interceptors?.beforeUpdatePassword),
-    authController.updatePassword,
-    ...processMiddleware(interceptors?.afterUpdatePassword),
-    sendResponse,
-    ...processMiddleware(interceptors?.onUpdatePasswordError, { type: "error" })
-  );
+  if (!isEndpointDisabled<"auth">(routerConfig, "updatePassword")) {
+    router.post(
+      "/auth/update-password",
+      authService.authenticate,
+      handleRequestBodyValidationAndTransformation(
+        getValidationSchemaOrDto("updatePassword")
+      ),
+      addPrismaQueryOptionsToRequest<any>(
+        prismaQueryOptions as AuthPrismaQueryOptions<any>,
+        "updatePassword"
+      ),
+      ...processMiddleware(interceptors?.beforeUpdatePassword),
+      authController.updatePassword,
+      ...processMiddleware(interceptors?.afterUpdatePassword),
+      sendResponse,
+      ...processMiddleware(interceptors?.onUpdatePasswordError, {
+        type: "error",
+      })
+    );
+  }
 
-  router.get(
-    "/auth-actions",
-    authService.authenticate,
-    authService.handleAccessControl("View", "auth-action"),
-    ...processMiddleware(interceptors?.beforeFindManyAuthAction),
-    authController.findManyAuthAction,
-    ...processMiddleware(interceptors?.afterFindManyAuthAction),
-    sendResponse,
-    ...processMiddleware(interceptors?.onFindManyAuthActionError, {
-      type: "error",
-    })
-  );
+  if (!isEndpointDisabled<"auth">(routerConfig, "findManyAuthAction")) {
+    router.get(
+      "/auth-actions",
+      authService.authenticate,
+      authService.handleAccessControl("View", "auth-action"),
+      ...processMiddleware(interceptors?.beforeFindManyAuthAction),
+      authController.findManyAuthAction,
+      ...processMiddleware(interceptors?.afterFindManyAuthAction),
+      sendResponse,
+      ...processMiddleware(interceptors?.onFindManyAuthActionError, {
+        type: "error",
+      })
+    );
+  }
 
   return router;
 }
