@@ -187,7 +187,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "findManyAuthAction")) {
+  if (!isEndpointDisabled<"auth">(routerConfig, "findManyAuthAction"))
     router.get(
       "/auth-actions",
       authService.authenticate,
@@ -200,7 +200,20 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         type: "error",
       })
     );
-  }
+
+  if (!isEndpointDisabled<"auth">(routerConfig, "findOneAuthAction"))
+    router.get(
+      "/auth-actions",
+      authService.authenticate,
+      authService.handleAccessControl("View", "auth-action"),
+      ...processMiddleware(interceptors?.beforeFindOneAuthAction),
+      authController.findManyAuthAction,
+      ...processMiddleware(interceptors?.afterFindOneAuthAction),
+      sendResponse,
+      ...processMiddleware(interceptors?.onFindOneAuthActionError, {
+        type: "error",
+      })
+    );
 
   return router;
 }
