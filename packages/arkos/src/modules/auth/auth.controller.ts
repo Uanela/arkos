@@ -402,5 +402,32 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         });
       }
     ),
+
+    findOneAuthAction: catchAsync(
+      async (req: ArkosRequest, res: ArkosResponse) => {
+        const arkosConfig = getArkosConfig();
+        const resourceName = req.params?.resourceName;
+
+        if (!resourceName)
+          throw new AppError(`Please provide a resoureName`, 400);
+
+        const authAction = authActionService.getByResource(
+          req.params?.resourceName
+        );
+
+        if (!authAction)
+          throw new AppError(
+            `Auth action with resource name ${resourceName}`,
+            404
+          );
+
+        if (arkosConfig?.authentication?.mode === "dynamic")
+          delete (authAction as any)?.roles;
+
+        res.json({
+          data: authAction,
+        });
+      }
+    ),
   };
 };

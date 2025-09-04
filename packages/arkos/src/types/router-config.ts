@@ -19,7 +19,8 @@ export type AuthRouterEndpoint =
   | "logout"
   | "signup"
   | "updatePassword"
-  | "findManyAuthAction";
+  | "findManyAuthAction"
+  | "findOneAuthAction";
 
 /**
  * File upload module specific endpoint types

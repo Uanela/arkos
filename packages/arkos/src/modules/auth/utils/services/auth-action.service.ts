@@ -133,8 +133,8 @@ class AuthActionService {
   /**
    * Get all auth actions for a specific resource
    */
-  getByResource(resource: string): AuthAction[] {
-    return this.authActions.filter(
+  getByResource(resource: string): AuthAction | undefined {
+    return this.authActions.find(
       (authAction) => authAction.resource === resource
     );
   }
