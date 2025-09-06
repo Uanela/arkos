@@ -12,6 +12,10 @@ body {
   font-family: "Poppins", sans-serif;
 }
 
+.theme-code-block {
+  font-size: 14px;
+}
+
 @layer components {
   .container {
     @apply lg:mx-10;
