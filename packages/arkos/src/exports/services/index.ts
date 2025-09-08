@@ -26,6 +26,16 @@ import {
   AfterDeleteOneHookArgs,
   BeforeDeleteManyHookArgs,
   AfterDeleteManyHookArgs,
+  OnCreateOneErrorHookArgs,
+  OnCreateManyErrorHookArgs,
+  OnCountErrorHookArgs,
+  OnFindManyErrorHookArgs,
+  OnFindByIdErrorHookArgs,
+  OnFindOneErrorHookArgs,
+  OnUpdateOneErrorHookArgs,
+  OnUpdateManyErrorHookArgs,
+  OnDeleteOneErrorHookArgs,
+  OnDeleteManyErrorHookArgs,
 } from "../../modules/base/types/base.service.types";
 
 /**
@@ -57,6 +67,16 @@ export {
   AfterDeleteOneHookArgs,
   BeforeDeleteManyHookArgs,
   AfterDeleteManyHookArgs,
+  OnCreateOneErrorHookArgs,
+  OnCreateManyErrorHookArgs,
+  OnCountErrorHookArgs,
+  OnFindManyErrorHookArgs,
+  OnFindByIdErrorHookArgs,
+  OnFindOneErrorHookArgs,
+  OnUpdateOneErrorHookArgs,
+  OnUpdateManyErrorHookArgs,
+  OnDeleteOneErrorHookArgs,
+  OnDeleteManyErrorHookArgs,
 };
 
 /**
