@@ -70,13 +70,6 @@ export type FindOneFilters<T extends ModelDelegate> = Parameters<
   ? W
   : any;
 
-// Parameters<T["findUnique"]>[0] extends {
-//         where?: infer W;
-//         [x: string]: any;
-//       }
-//     ? W
-//     : any;
-
 export type FindOneOptions<T extends ModelDelegate> =
   | Omit<Parameters<T["findFirst"]>[0], "where">
   | Omit<Parameters<T["findUnique"]>[0], "where">;
@@ -151,10 +144,42 @@ export type DeleteManyResult<T extends ModelDelegate> = ReturnType<
 >;
 
 // Service Hooks types
-
 export interface ServiceBaseContext {
+  /**
+   * The authenticated user making the request
+   */
   user?: User;
+
+  /**
+   * The access token from the request for authorization
+   */
   accessToken?: string;
+
+  /**
+   * Array of hook types to skip for this operation.
+   * - "before": Skip the before hook (e.g., beforeCreateOne)
+   * - "after": Skip the after hook (e.g., afterCreateOne)
+   * - "error": Skip the error hook (e.g., onCreateOneError)
+   *
+   * @example
+   * ```typescript
+   * // Skip before and error hooks
+   * { skip: ["before", "error"] }
+   *
+   * // Skip all hooks
+   * { skip: ["before", "after", "error"] }
+   * ```
+   */
+  skip?: ("before" | "after" | "error")[];
+
+  /**
+   * Whether to re-throw errors after error hooks have been executed.
+   * - `true` (default): Error hooks run, then error is re-thrown
+   * - `false`: Error hooks run, then method returns fallback value instead of throwing
+   * @default true
+   * ```
+   */
+  throwOnError?: boolean;
 }
 
 export interface BeforeCreateOneHookArgs<
@@ -323,4 +348,77 @@ export interface AfterDeleteManyHookArgs<
   result: DeleteManyResult<T>;
   filters: DeleteManyFilters<T>;
   context?: Context;
+}
+
+export interface OnCreateOneErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeCreateOneHookArgs<T, Context> {
+  error: any;
+}
+
+export interface OnCreateManyErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeCreateManyHookArgs<T, Context> {
+  error: any;
+}
+
+export interface OnCountErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeCountHookArgs<T, Context> {
+  error: any;
+}
+
+export interface OnFindManyErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeFindManyHookArgs<T, Context> {
+  error: any;
+}
+
+export interface OnFindByIdErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> {
+  error: any;
+  id: string | number;
+  queryOptions?: FindByIdOptions<T>;
+  context?: Context;
+}
+
+export interface OnFindOneErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeFindOneHookArgs<T, Context> {
+  error: any;
+}
+
+export interface OnUpdateOneErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeUpdateOneHookArgs<T, Context> {
+  error: any;
+}
+
+export interface OnUpdateManyErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeUpdateManyHookArgs<T, Context> {
+  error: any;
+}
+
+export interface OnDeleteOneErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeDeleteOneHookArgs<T, Context> {
+  error: any;
+}
+
+export interface OnDeleteManyErrorHookArgs<
+  T extends ModelDelegate,
+  Context = ServiceBaseContext,
+> extends BeforeDeleteManyHookArgs<T, Context> {
+  error: any;
 }

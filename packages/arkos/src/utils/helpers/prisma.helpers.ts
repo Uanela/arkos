@@ -27,7 +27,7 @@ export async function loadPrismaModule() {
     } catch (error: any) {
       if (error.message === "Prisma not found")
         throw new AppError(
-          `Could not initialize Prisma module. Make sure your prisma instance is exported under src/utils/prisma.${ext()} or src/utils/prisma/index.${ext()}, read more about Arkos.js Project Structure under https://www.arkosjs.com/docs/project-structure#root-structure`,
+          `Could not initialize Prisma module. Make sure your prisma instance is exported under src/utils/prisma.${ext()} or src/utils/prisma/index.${ext()}, read more about Arkos.js Project Structure under https://www.arkosjs.com/docs/getting-started/project-structure#utilities-directory`,
           500,
           {},
           "PrismaInstanceNotFound"
