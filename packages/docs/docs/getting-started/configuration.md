@@ -1,8 +1,11 @@
 ---
 sidebar_position: 3
+title: Configuration (new)
 ---
 
-# Configuration
+import SmallTag from "../components/small-tag"
+
+# Configuration <SmallTag>New</SmallTag>
 
 Arkos.js provides a comprehensive configuration system that allows you to customize every aspect of your application. The configuration is passed to the `arkos.init()` method in your application entry point.
 

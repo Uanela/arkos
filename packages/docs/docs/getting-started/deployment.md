@@ -1,8 +1,13 @@
 ---
 sidebar_position: 4
+title: Deployment (new)
 ---
 
-# Deployment
+import SmallTag from "../components/small-tag"
+
+# Deployment <SmallTag>New</SmallTag>
+
+Deploying an Arkos.js RESTful API is as simple as deploying a standard Node.js application, we've made it as easy as it can be so that you do not have to deal with common steps in deploying a Node.js application such as an Arkos.js project.
 
 When you're ready to deploy your Arkos.js application to production, there are important steps to ensure your application runs efficiently and securely. This guide covers the deployment process for Arkos.js applications.
 
@@ -21,10 +26,10 @@ To prepare your Arkos.js application for production:
 
 ```bash
 # Install dependencies
-pnpm install
+npm install
 
 # Build the application
-pnpm run build
+npm run build
 ```
 
 The build process compiles TypeScript code and prepares the application for production. The output is generated in the `.build/` directory.
@@ -35,17 +40,16 @@ Ensure your production environment has the necessary variables:
 
 ```bash
 # Required
-DATABASE_URL="your-production-database-url"
-JWT_SECRET="your-production-jwt-secret"
+DATABASE_URL=your-production-database-url
+JWT_SECRET=your-production-jwt-secret
 
 # Optional but recommended
-NODE_ENV="production"
-PORT="3000"
-HOST="0.0.0.0"
+PORT=8000
+HOST=0.0.0.0
 
 # Additional production-specific variables
-JWT_COOKIE_SECURE="true"
-JWT_COOKIE_HTTP_ONLY="true"
+JWT_COOKIE_SECURE=true
+JWT_COOKIE_HTTP_ONLY=true
 ```
 
 ## Deployment Platforms
@@ -53,11 +57,11 @@ JWT_COOKIE_HTTP_ONLY="true"
 ### 1. Traditional VPS (Hostinger, Contabo, DigitalOcean, AWS EC2)
 
 **Setup Process:**
-1. Provision a server with Node.js 18+ installed
+1. Provision a server with Node.js 20.19+ installed
 2. Copy your built application to the server
-3. Install production dependencies: `pnpm install`
+3. Install production dependencies: `npm install`
 4. Set up environment variables
-5. Start the application: `pnpm run start`
+5. Start the application: `npm run start`
 
 **Using PM2 for Process Management:**
 ```bash
@@ -68,7 +72,8 @@ npm install -g pm2
 module.exports = {
   apps: [{
     name: 'arkos-app',
-    script: 'start',
+    script: 'npm',
+    args: ['run', 'start'],
     instances: 'max',
     exec_mode: 'cluster',
     env: {
@@ -88,7 +93,7 @@ pm2 startup
 **Heroku Example:**
 ```bash
 # Create Procfile
-web: pnpm run start
+web: npm run start
 
 # Deploy
 git add .
@@ -105,27 +110,28 @@ heroku config:set JWT_SECRET="your-jwt-secret"
 
 **Dockerfile:**
 ```dockerfile
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm install -g pnpm
-RUN pnpm install
+RUN npm install
 
-# Copy built application
-COPY .build/ ./.build/
-COPY prisma/ ./prisma/
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
 
 # Generate Prisma client
 RUN npx prisma generate
 
-EXPOSE 3000
+EXPOSE 8000
 
-CMD ["pnpm", "run", "start"]
+CMD ["npm", "run", "start"]
 ```
 
 **Docker Compose Example:**
@@ -135,7 +141,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://user:pass@db:5432/arkos
       - JWT_SECRET=your-jwt-secret
@@ -165,7 +171,7 @@ server {
     server_name your-domain.com;
     
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:8000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -244,17 +250,17 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
-        cache: 'pnpm'
+        node-version: '20'
+        cache: 'npm'
     
     - name: Install dependencies
-      run: pnpm install
+      run: npm install
       
     - name: Build application
-      run: pnpm run build
+      run: npm run build
       
     - name: Run tests
-      run: pnpm test
+      run: npm test
       
     - name: Deploy to production
       uses: some-deployment-action@v1

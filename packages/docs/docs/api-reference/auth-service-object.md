@@ -18,7 +18,7 @@ import { authService } from "arkos/services";
 On the following section you will various examples on how you can use the authService, you ain't restricted to those but also in the same time bear in mind that **Arkos** handles many of auth relate scenarios, such as authentication, authorization, password hashing, password checks and many others.
 :::
 
-Before proceed reading this guide is highly encouragend to read the guide about how **Arkos** uses this under the hood so that you do not miss anything and try to reivent the wheel yourself, [Arkos Authentication Flow Guide](/docs/guide/authentication-system/guide/authentication-system-flow).
+Before proceed reading this guide is highly encouragend to read the guide about how **Arkos** uses this under the hood so that you do not miss anything and try to reivent the wheel yourself, [Arkos Authentication Flow Guide](/docs/core-concepts/request-data-validation#authentication-endpoint-validation).
 
 ## API Reference
 
