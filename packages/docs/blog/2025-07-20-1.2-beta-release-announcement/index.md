@@ -287,7 +287,7 @@ Or shorthand:
 npx arkos g a -m post
 ```
 
-Creates authentication and authorization configurations under `src/modules/post/post.authConfigs.{ts|js}` to control access to your endpoints, read more about this topic at [Static Role-Based Access Control Guide](/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior).
+Creates authentication and authorization configurations under `src/modules/post/post.authConfigs.{ts|js}` to control access to your endpoints, read more about this topic at [Static Role-Based Access Control Guide](/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior).
 
 **Output:**
 

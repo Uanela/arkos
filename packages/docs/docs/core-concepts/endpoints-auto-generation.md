@@ -216,7 +216,7 @@ GET /api/available-resources
 ]
 ```
 
-> This is useful when you want to create `authPermission` when using `Dynamic RBAC Authentication` so that you do not need to worry to keep your frontend or even keep a list synced with all your availabe db resources. You can read more about [here](/docs/advanced-guide/dynamic-rbac-authentication).
+> This is useful when you want to create `authPermission` when using `Dynamic RBAC Authentication` so that you do not need to worry to keep your frontend or even keep a list synced with all your availabe db resources. You can read more about [here](/docs/core-concepts/authentication-system#upgrading-to-dynamic-rbac).
 
 ## Summary
 

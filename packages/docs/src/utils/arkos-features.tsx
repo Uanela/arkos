@@ -90,7 +90,7 @@ export const arkosFeatures = [
     iconColor: "#f43f5e",
     outline: "hover:outline-green-500/50",
     titleHover: "group-hover:text-green-500/80",
-    to: "/docs/core-concepts/built-in-authentication-system",
+    to: "/docs/core-concepts/authentication-system",
     sideContent: (
       <div className="">
         <img

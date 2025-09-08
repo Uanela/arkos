@@ -1,11 +1,13 @@
 ---
-sidebar_position: 2
+sidebar_position: 1
+title: Installation (new)
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import SmallTag from "../components/small-tag"
 
-# Installation
+# Installation <SmallTag>New</SmallTag>
 
 On this guide you will learn how to install and create an Arkos.js project.
 

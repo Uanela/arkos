@@ -29,22 +29,22 @@ import arkos from "arkos";
 import helmet from "helmet";
 
 arkos.init({
-  configureApp: async (app) => {
-    // Direct access to Express app before any Arkos middleware is applied
-    app.set("trust proxy", true);
-    app.use(helmet());
+    configureApp: async (app) => {
+        // Direct access to Express app before any Arkos middleware is applied
+        app.set("trust proxy", true);
+        app.use(helmet());
 
-    // Set Express-specific properties
-    app.locals.title = "My Arkos Application";
-    app.set("view engine", "ejs");
+        // Set Express-specific properties
+        app.locals.title = "My Arkos Application";
+        app.set("view engine", "ejs");
 
-    // Register early middleware
-    app.use((req, res, next) => {
-      // Custom middleware logic
-      next();
-    });
-  },
-  // Other Arkos configurations
+        // Register early middleware
+        app.use((req, res, next) => {
+            // Custom middleware logic
+            next();
+        });
+    },
+    // Other Arkos configurations
 });
 ```
 
@@ -66,8 +66,8 @@ import arkos from "arkos";
 
 // Initialize Arkos
 const app = await arkos.init({
-  port: undefined, // so that Arkos won't create an HTTP server [recommended for custom server setup]
-  // Arkos configurations
+    port: undefined, // so that Arkos won't create an HTTP server [recommended for custom server setup]
+    // Arkos configurations
 });
 
 // Access the Express app instance
@@ -78,7 +78,7 @@ app.use("/special-route", specialMiddleware);
 
 // If port is undefined, you need to create your own HTTP server or call app.listen
 app.listen(process.env.HOST || 8000, () =>
-  console.info(`Server waiting on localhost:8000`)
+    console.info(`Server waiting on localhost:8000`)
 );
 
 // See 'Creating Your Own HTTP Server' section
@@ -98,26 +98,26 @@ import arkos from "arkos";
 import { Server } from "socket.io";
 
 arkos.init({
-  configureServer: async (server) => {
-    // Access to the HTTP server before it starts listening
-    // You can attach WebSockets or perform other server configurations
+    configureServer: async (server) => {
+        // Access to the HTTP server before it starts listening
+        // You can attach WebSockets or perform other server configurations
 
-    // Example: Attach Socket.IO
-    const io = new Server(server);
+        // Example: Attach Socket.IO
+        const io = new Server(server);
 
-    io.on("connection", (socket) => {
-      console.log("Client connected");
+        io.on("connection", (socket) => {
+            console.log("Client connected");
 
-      socket.on("message", (data) => {
-        io.emit("broadcast", data);
-      });
+            socket.on("message", (data) => {
+                io.emit("broadcast", data);
+            });
 
-      socket.on("disconnect", () => {
-        console.log("Client disconnected");
-      });
-    });
-  },
-  // Other Arkos configurations
+            socket.on("disconnect", () => {
+                console.log("Client disconnected");
+            });
+        });
+    },
+    // Other Arkos configurations
 });
 ```
 
@@ -136,37 +136,37 @@ import { Server } from "socket.io";
 import http from "http";
 
 const startServer = async () => {
-  // Initialize Arkos without creating an HTTP server
-  const app = await arkos.init({
-    // Important: Set port to undefined so Arkos won't create an HTTP server
-    port: undefined,
-    // Other Arkos configurations
-  });
-
-  // Create your own HTTP server with the Express app
-  const server = http.createServer(app);
-
-  // Configure the HTTP server or attach additional features
-  const io = new Server(server);
-
-  // Configure Socket.IO
-  io.on("connection", (socket) => {
-    console.log("Client connected");
-
-    socket.on("message", (data) => {
-      io.emit("broadcast", data);
+    // Initialize Arkos without creating an HTTP server
+    const app = await arkos.init({
+        // Important: Set port to undefined so Arkos won't create an HTTP server
+        port: undefined,
+        // Other Arkos configurations
     });
 
-    socket.on("disconnect", () => {
-      console.log("Client disconnected");
-    });
-  });
+    // Create your own HTTP server with the Express app
+    const server = http.createServer(app);
 
-  // Start the server manually
-  const port = process.env.PORT || 8000;
-  server.listen(port, () => {
-    console.log(`Server with Socket.IO listening on port ${port}`);
-  });
+    // Configure the HTTP server or attach additional features
+    const io = new Server(server);
+
+    // Configure Socket.IO
+    io.on("connection", (socket) => {
+        console.log("Client connected");
+
+        socket.on("message", (data) => {
+            io.emit("broadcast", data);
+        });
+
+        socket.on("disconnect", () => {
+            console.log("Client disconnected");
+        });
+    });
+
+    // Start the server manually
+    const port = process.env.PORT || 8000;
+    server.listen(port, () => {
+        console.log(`Server with Socket.IO listening on port ${port}`);
+    });
 };
 
 startServer();
@@ -241,13 +241,13 @@ If port is specified:                    If port is undefined:
 
 ```ts
 arkos.init({
-  configureApp: async (app) => {
-    app.set("views", "./views");
-    app.set("view engine", "ejs");
+    configureApp: async (app) => {
+        app.set("views", "./views");
+        app.set("view engine", "ejs");
 
-    // Register a template engine
-    app.engine("html", require("ejs").renderFile);
-  },
+        // Register a template engine
+        app.engine("html", require("ejs").renderFile);
+    },
 });
 ```
 
@@ -255,24 +255,24 @@ arkos.init({
 
 ```ts
 arkos.init({
-  configureApp: async (app) => {
-    // Create an SSE endpoint
-    app.get("/events", (req, res) => {
-      res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache");
-      res.setHeader("Connection", "keep-alive");
+    configureApp: async (app) => {
+        // Create an SSE endpoint
+        app.get("/events", (req, res) => {
+            res.setHeader("Content-Type", "text/event-stream");
+            res.setHeader("Cache-Control", "no-cache");
+            res.setHeader("Connection", "keep-alive");
 
-      // Send periodic updates
-      const intervalId = setInterval(() => {
-        res.write(`data: ${JSON.stringify({ time: new Date() })}\n\n`);
-      }, 1000);
+            // Send periodic updates
+            const intervalId = setInterval(() => {
+                res.write(`data: ${JSON.stringify({ time: new Date() })}\n\n`);
+            }, 1000);
 
-      // Clean up on connection close
-      req.on("close", () => {
-        clearInterval(intervalId);
-      });
-    });
-  },
+            // Clean up on connection close
+            req.on("close", () => {
+                clearInterval(intervalId);
+            });
+        });
+    },
 });
 ```
 
@@ -286,24 +286,24 @@ import arkos from "arkos";
 import { Server } from "socket.io";
 
 await arkos.init({
-  configureServer: async (server) => {
-    // Attach Socket.IO to the HTTP server
-    const io = new Server(server);
+    configureServer: async (server) => {
+        // Attach Socket.IO to the HTTP server
+        const io = new Server(server);
 
-    // Configure Socket.IO
-    io.on("connection", (socket) => {
-      console.log("Client connected");
+        // Configure Socket.IO
+        io.on("connection", (socket) => {
+            console.log("Client connected");
 
-      socket.on("message", (data) => {
-        io.emit("broadcast", data);
-      });
+            socket.on("message", (data) => {
+                io.emit("broadcast", data);
+            });
 
-      socket.on("disconnect", () => {
-        console.log("Client disconnected");
-      });
-    });
-  },
-  // Other Arkos configurations
+            socket.on("disconnect", () => {
+                console.log("Client disconnected");
+            });
+        });
+    },
+    // Other Arkos configurations
 });
 ```
 
@@ -316,37 +316,37 @@ import { Server } from "socket.io";
 import http from "http";
 
 const startServer = async () => {
-  // Initialize Arkos without creating an HTTP server
-  const app = await arkos.init({
-    // Important: Set port to undefined so you can create your own server
-    port: undefined,
-    // Other Arkos configurations
-  });
-
-  // Create your own HTTP server with the Express app
-  const server = http.createServer(app);
-
-  // Attach Socket.IO to the HTTP server
-  const io = new Server(server);
-
-  // Configure Socket.IO
-  io.on("connection", (socket) => {
-    console.log("Client connected");
-
-    socket.on("message", (data) => {
-      io.emit("broadcast", data);
+    // Initialize Arkos without creating an HTTP server
+    const app = await arkos.init({
+        // Important: Set port to undefined so you can create your own server
+        port: undefined,
+        // Other Arkos configurations
     });
 
-    socket.on("disconnect", () => {
-      console.log("Client disconnected");
-    });
-  });
+    // Create your own HTTP server with the Express app
+    const server = http.createServer(app);
 
-  // Start the server manually
-  const port = process.env.PORT || 8000;
-  server.listen(port, () => {
-    console.log(`Server with Socket.IO listening on port ${port}`);
-  });
+    // Attach Socket.IO to the HTTP server
+    const io = new Server(server);
+
+    // Configure Socket.IO
+    io.on("connection", (socket) => {
+        console.log("Client connected");
+
+        socket.on("message", (data) => {
+            io.emit("broadcast", data);
+        });
+
+        socket.on("disconnect", () => {
+            console.log("Client disconnected");
+        });
+    });
+
+    // Start the server manually
+    const port = process.env.PORT || 8000;
+    server.listen(port, () => {
+        console.log(`Server with Socket.IO listening on port ${port}`);
+    });
 };
 
 startServer();
@@ -358,10 +358,10 @@ If your application runs behind a proxy like Nginx or is deployed to some cloud 
 
 ```ts
 arkos.init({
-  configureApp: async (app) => {
-    // Enable trust proxy for accurate IP detection behind proxy
-    app.set("trust proxy", true);
-  },
+    configureApp: async (app) => {
+        // Enable trust proxy for accurate IP detection behind proxy
+        app.set("trust proxy", true);
+    },
 });
 ```
 
@@ -369,22 +369,22 @@ arkos.init({
 
 ```typescript
 arkos.init({
-  configureApp: async (app) => {
-    // Increase the maximum request body size
-    app.set("json limit", "50mb");
+    configureApp: async (app) => {
+        // Increase the maximum request body size
+        app.set("json limit", "50mb");
 
-    // Set custom response headers for all routes
-    app.use((req, res, next) => {
-      res.setHeader("X-Powered-By", "Arkos");
-      res.setHeader("X-Frame-Options", "DENY");
-      next();
-    });
+        // Set custom response headers for all routes
+        app.use((req, res, next) => {
+            res.setHeader("X-Powered-By", "Arkos");
+            res.setHeader("X-Frame-Options", "DENY");
+            next();
+        });
 
-    // Configure Express app properties
-    app.locals.appName = "My Arkos App";
-    app.locals.version = "1.0.0";
-    app.locals.adminEmail = "admin@example.com";
-  },
+        // Configure Express app properties
+        app.locals.appName = "My Arkos App";
+        app.locals.version = "1.0.0";
+        app.locals.adminEmail = "admin@example.com";
+    },
 });
 ```
 
@@ -414,18 +414,18 @@ import morgan from "morgan";
 import helmet from "helmet";
 
 arkos.init({
-  configureApp: async (app) => {
-    // Early middleware (runs first)
-    app.use(helmet());
-  },
-  middlewares: {
-    // Middleware to be added after Arkos built-ins
-    additional: [morgan("combined")],
-    // Replace built-in middleware
-    replace: {
-      cors: customCorsMiddleware,
+    configureApp: async (app) => {
+        // Early middleware (runs first)
+        app.use(helmet());
     },
-  },
+    middlewares: {
+        // Middleware to be added after Arkos built-ins
+        additional: [morgan("combined")],
+        // Replace built-in middleware
+        replace: {
+            cors: customCorsMiddleware,
+        },
+    },
 });
 ```
 

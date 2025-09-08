@@ -42,7 +42,7 @@ For every endpoint, **Arkos** evaluates and composes middleware like so:
 
 ### 2.1. **Authentication**
 
-Ensures the request is coming from a valid, authenticated user if request is activated for the current route, [read more](/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior) about how to customize.
+Ensures the request is coming from a valid, authenticated user if request is activated for the current route, [read more](/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior) about how to customize.
 
 ```ts
 authService.handleAuthenticationControl(...)
@@ -50,7 +50,7 @@ authService.handleAuthenticationControl(...)
 
 ### 2.2. **Authorization**
 
-Checks if the authenticated user has permission to perform the action on the specific model, [read more](/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior) about how to customize.
+Checks if the authenticated user has permission to perform the action on the specific model, [read more](/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior) about how to customize.
 
 ```ts
 authService.handleAccessControl(...)

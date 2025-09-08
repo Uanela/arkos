@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 7
 ---
 
 # Built-in Middlewares
@@ -34,12 +34,12 @@ Protects your API from abuse by limiting the number of requests per client.
 
 ```ts
 app.use(
-  rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    limit: 1000, // 1000 requests per windowMs
-    standardHeaders: "draft-7",
-    legacyHeaders: false,
-  })
+    rateLimit({
+        windowMs: 60 * 1000, // 1 minute
+        limit: 1000, // 1000 requests per windowMs
+        standardHeaders: "draft-7",
+        legacyHeaders: false,
+    })
 );
 ```
 
@@ -109,11 +109,11 @@ Parses query string parameters into appropriate JavaScript types.
 
 ```typescript
 app.use(
-  queryParser({
-    parseNull: true,
-    parseUndefined: true,
-    parseBoolean: true,
-  })
+    queryParser({
+        parseNull: true,
+        parseUndefined: true,
+        parseBoolean: true,
+    })
 );
 ```
 
@@ -175,10 +175,10 @@ To add your own middlewares to the stack:
 import arkos from "arkos";
 
 arkos.init({
-  middlewares: {
-    additional: [myCustomMiddleware, anotherMiddleware],
-  },
-  // other configs
+    middlewares: {
+        additional: [myCustomMiddleware, anotherMiddleware],
+    },
+    // other configs
 });
 ```
 

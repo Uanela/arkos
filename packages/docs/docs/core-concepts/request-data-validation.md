@@ -7,11 +7,26 @@ import TabItem from '@theme/TabItem';
 
 # Request Data Validation
 
-In **Arkos**, request data validation is a crucial feature that ensures incoming data meets your application's requirements before processing. The framework offers flexible validation options through both Zod and class-validator integration.
+Request data validation in Arkos ensures incoming data meets your application's requirements before processing. The framework provides flexible validation through both class-validator and Zod integration, with automatic validation for all auto-generated endpoints and authentication routes.
 
-## Validation Configuration
+## How Validation Works 
 
-**Arkos** provides built-in validation that can be configured when initializing your application:
+Arkos automatically validates request data based on your chosen validation approach:
+
+1. **Request arrives** at any API endpoint
+2. **Validation middleware intercepts** the request
+3. **Validation rules apply** based on your DTOs or schemas
+4. **Success**: Validated data replaces request body and continues processing
+5. **Failure**: Returns structured error response with validation details
+
+The validation system works seamlessly with:
+- Auto-generated CRUD endpoints (`/api/posts`, `/api/users`)
+- Authentication endpoints (`/api/auth/login`, `/api/auth/signup`)
+- Custom routes you define
+
+## Initial Configuration
+
+Enable validation in your application configuration:
 
 ```typescript
 // src/app.ts
@@ -21,136 +36,325 @@ arkos.init({
   validation: {
     resolver: "class-validator", // or "zod"
     validationOptions: {
-      whitelist: true,
-      // Additional validation options
+      whitelist: true, // Strips properties not defined in DTO/schema
+      // Additional class-validator options
     },
   },
 });
 ```
 
-By default, validation is disabled. When enabled, **Arkos** uses class-validator as the default resolver.
+**Configuration Options:**
 
-:::tip
-You can switch between validation libraries based on your team's preference without changing your application logic.
+| Option | Description | Default |
+|--------|-------------|---------|
+| `resolver` | Validation library: `"class-validator"` or `"zod"` | `"class-validator"` |
+| `validationOptions` | Options passed to your chosen validator | `{}` |
+
+:::warning Important
+Validation is **disabled by default**. You must explicitly enable it in your configuration.
 :::
 
-## Validation Methods
+## Implementation Workflow
 
-**Arkos** supports two primary validation approaches:
+### Step 1: Choose Your Validation Approach
 
-### 1. Class-Validator
+**Class-Validator (Decorator-based):**
+```typescript
+// src/modules/post/dtos/create-post.dto.ts
+import { IsString, IsOptional, MaxLength } from "class-validator";
 
-Use class-validator with decorators to define validation rules in Data Transfer Objects (DTOs):
+export default class CreatePostDto {
+  @IsString()
+  @MaxLength(200)
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  content?: string;
+}
+```
+
+**Zod (Schema-based):**
+```typescript
+// src/modules/post/schemas/create-post.schema.ts
+import { z } from "zod";
+
+const CreatePostSchema = z.object({
+  title: z.string().max(200),
+  content: z.string().optional(),
+});
+
+export default CreatePostSchema;
+```
+
+### Step 2: File Structure Convention
+
+Arkos automatically discovers validation files based on naming conventions:
+
+```
+src/modules/[model-name]/
+├── dtos/                           # Class-validator approach
+│   ├── create-[model-name].dto.ts
+│   └── update-[model-name].dto.ts
+└── schemas/                        # Zod approach
+    ├── create-[model-name].schema.ts
+    └── update-[model-name].schema.ts
+```
+
+**Examples:**
+- `User` model → `create-user.dto.ts`, `update-user.dto.ts`
+- `BlogPost` model → `create-blog-post.dto.ts`, `update-blog-post.dto.ts`
+
+:::warning Convention Requirements
+- Model names must be in **kebab-case** for file names
+- Must use exact naming pattern: `create-[model].dto.ts` / `update-[model].dto.ts`
+- Choose either DTOs **or** schemas - cannot use both together
+:::
+
+### Step 3: Define Validation Rules
+
+**For Standard CRUD Operations:**
 
 ```typescript
-// src/modules/user/dtos/create-user.dto.ts
-import { IsString, IsEmail } from "class-validator";
+// src/modules/product/dtos/create-product.dto.ts
+import { IsString, IsNumber, IsOptional, Min } from "class-validator";
 
-export default class CreateUserDto {
+export default class CreateProductDto {
   @IsString()
+  name: string;
+
+  @IsNumber()
+  @Min(0)
+  price: number;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+```
+
+```typescript
+// src/modules/product/dtos/update-product.dto.ts
+import { IsString, IsNumber, IsOptional, Min } from "class-validator";
+
+export default class UpdateProductDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  price?: number;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+```
+
+## Authentication Endpoint Validation
+
+Authentication endpoints have special validation requirements and file naming conventions:
+
+### Authentication File Structure
+
+```
+src/modules/auth/
+├── dtos/                    # Class-validator approach
+│   ├── login.dto.ts
+│   ├── signup.dto.ts
+│   ├── update-me.dto.ts
+│   └── update-password.dto.ts
+└── schemas/                 # Zod approach
+    ├── login.schema.ts
+    ├── signup.schema.ts
+    ├── update-me.schema.ts
+    └── update-password.schema.ts
+```
+
+### Login Validation
+
+```typescript
+// src/modules/auth/dtos/login.dto.ts
+import { IsString, IsNotEmpty } from "class-validator";
+
+export default class LoginDto {
+  @IsString()
+  @IsNotEmpty()
+  username: string; // Matches your login.allowedUsernames config
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+```
+
+**Dynamic Login Fields:**
+If you've configured custom login fields:
+
+```typescript
+// For email-based login
+export default class LoginDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+```
+
+### Signup Validation
+
+```typescript
+// src/modules/auth/dtos/signup.dto.ts
+import { IsString, IsEmail, MinLength, Matches } from "class-validator";
+
+export default class SignupDto {
+  @IsString()
+  @IsNotEmpty()
   name: string;
 
   @IsEmail()
   email: string;
+
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/, {
+    message: "Password must contain uppercase, lowercase, and number",
+  })
+  password: string;
+
+  // Add other required fields from your User model
+  @IsString()
+  @IsOptional()
+  firstName?: string;
 }
 ```
 
-The validation process is handled by the `validateDto` internal utility function and also exposed through `arkos/validation`:
+:::warning User Model Dependency
+Your SignupDto fields must match the required fields in your Prisma User model. Arkos requires specific fields for authentication - see the [Authentication System Guide](/docs/core-concepts/authentication-system#user-model-setup---static-rbac-foundation).
+:::
 
-```ts
-import { validateDto } from "arkos/validation";
-
-// wrapped on an async function
-const validatedUser = await validateDto(CreateUserDto, data);
-```
-
-### 2. Zod Schema
-
-Alternatively, define validation rules using Zod schemas:
+### Profile Update Validation
 
 ```typescript
-// src/modules/user/schemas/create-user.schema.ts
+// src/modules/auth/dtos/update-me.dto.ts
+import { IsString, IsEmail, IsOptional } from "class-validator";
+
+export default class UpdateMeDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  // Add other user fields you want to allow updating
+  // DO NOT include password field - use update-password endpoint
+}
+```
+
+:::warning Password Security
+The `/api/users/me` endpoint automatically rejects requests containing a `password` field, even if defined in your DTO. Use the dedicated `/api/auth/update-password` endpoint for password changes.
+:::
+
+### Password Change Validation
+
+```typescript
+// src/modules/auth/dtos/update-password.dto.ts
+import { IsString, MinLength, Matches } from "class-validator";
+
+export default class UpdatePasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(8)
+  @Matches(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/, {
+    message: "Password must contain uppercase, lowercase, and number",
+  })
+  newPassword: string;
+}
+```
+
+## Zod Schema Examples
+
+If using Zod instead of class-validator:
+
+```typescript
+// src/modules/auth/schemas/signup.schema.ts
 import { z } from "zod";
 
-const CreateUserSchema = z.object({
-  name: z.string(),
-  email: z.string().email(),
+const SignupSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(
+      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/,
+      "Password must contain uppercase, lowercase, and number"
+    ),
 });
 
-export default CreateUserSchema;
+export default SignupSchema;
 ```
-
-Validate data using the `validateSchema` internal utility function and also exposed through `arkos/validation`:
 
 ```typescript
-import { validateDto } from "arkos/validation";
+// src/modules/product/schemas/create-product.schema.ts
+import { z } from "zod";
 
-// wrapped on an async function
-const validatedUser = await validateSchema(CreateUserSchema, data);
+const CreateProductSchema = z.object({
+  name: z.string(),
+  price: z.number().min(0, "Price must be positive"),
+  description: z.string().optional(),
+});
+
+export default CreateProductSchema;
 ```
 
-:::tip
-Bear in mind that all of this are handled automatically by **Arkos** behind the scenes for your prisma models and provided authentication endpoints, read more below to understand it.
-:::
+## Validation Methods (Manual Usage)
 
-## Request Validation Flow
-
-**Arkos** automatically applies validation to incoming request bodies based on your configuration:
-
-1. The request hits your API endpoint
-2. The middleware rensponsible for handling validation intercepts the request
-3. Based on your validation configuration, it applies either class-validator or zod validation
-4. If validation fails, an `AppError` is thrown with a 400 status code and validation details, [read more](/docs/api-reference/the-app-error-class) about `AppError`.
-5. If validation passes, the validated data replaces the original request body
-
-:::info
-The validation process respects your model's create and update DTOs or schemas, applying them automatically for the corresponding operations.
-:::
-
-## Integration with Models
-
-For each model in your application, **Arkos** looks for validation schemas or DTOs based on naming conventions explained on the [project structure section](/docs/project-structure):
-
-```
-/src/modules/[model-name]/
-├── schemas/
-│   ├── create-model-name.schema.ts
-│   └── update-model-name.schema.ts
-├── dtos/
-│   ├── create-model-name.dto.ts
-│   └── update-model-name.dto.ts
-```
-
-The framework will automatically use these files for validation based on your chosen resolver.
-
-:::warning important
-You do not need to define both schemas and DTO's, it is up to the configuration you choose whether it is zod (schemas) or class-validator (DTO). remember both cannot be used together currently.
-:::
-
-## Custom Validation Logic
-
-For more complex validation scenarios, you can use middlewares to implement custom validation logic:
+For custom validation outside auto-generated endpoints:
 
 ```typescript
-// src/modules/user/user.middlewares.ts
-import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
-import { catchAsync } from "arkos/error-handler";
+import { validateDto, validateSchema } from "arkos/validation";
+import CreateUserDto from "./dtos/create-user.dto";
+import CreateUserSchema from "./schemas/create-user.schema";
 
-export const beforeCreateOne = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Custom validation logic
-    if (req.body.password !== req.body.confirmPassword) {
-      throw new AppError("Passwords do not match", 400);
-    }
+// Class-validator validation
+const validatedData = await validateDto(CreateUserDto, requestData);
 
-    next();
-  }
-);
+// Zod validation
+const validatedData = await validateSchema(CreateUserSchema, requestData);
 ```
+
+## Built-in Password Validation
+
+For authentication, Arkos provides default password validation:
+
+```typescript
+arkos.init({
+  authentication: {
+    mode: "static",
+    passwordValidation: {
+      regex: /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/,
+      message: "Password must contain at least 8 characters, including uppercase, lowercase, and numbers",
+    },
+  },
+});
+```
+
+:::warning DTO Override
+Custom DTOs/schemas override built-in password validation. If you define authentication DTOs, they take precedence over the `passwordValidation` configuration.
+:::
 
 ## Error Handling
 
-When validation fails, **Arkos** responds with a standardized error format:
+Validation failures return structured error responses:
 
 ```json
 {
@@ -158,47 +362,83 @@ When validation fails, **Arkos** responds with a standardized error format:
   "message": "Invalid Data",
   "code": 400,
   "errors": [
-    // Validation errors from class-validator or Zod
+    {
+      "property": "email",
+      "constraints": {
+        "isEmail": "email must be an email"
+      }
+    },
+    {
+      "property": "password",
+      "constraints": {
+        "matches": "Password must contain uppercase, lowercase, and number"
+      }
+    }
   ]
 }
 ```
 
-This consistent error format makes it easy for clients to understand and handle validation issues.
+## Custom Validation with Interceptors
 
-:::tip
-You can customize error messages by configuring your validation options or by implementing custom error handling middleware through interceptor middlewares.
-:::
+For complex validation scenarios beyond DTOs/schemas you can use [**Interceptor Middlewares**](/docs/core-concepts/interceptor-middlewares):
 
-## Authentication Validation
+```typescript
+// src/modules/user/user.middlewares.ts
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { AppError } from "arkos/error-handler";
+import { catchAsync } from "arkos/error-handler";
 
-**Arkos** also provides built-in password validation for authentication:
+export const beforeCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    // Custom validation logic
+    if (req.body.password !== req.body.confirmPassword) {
+      throw new AppError("Passwords do not match", 400);
+    }
 
-```ts
-arkos.init({
-  authentication: {
-    mode: "static", // or dynamic
-    passwordValidation: {
-      regex: /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).{8,}$/,
-      message:
-        "Password must contain at least 8 characters, including uppercase, lowercase, and numbers",
-    },
-  },
-  // Other config fields
-});
+    // Check business rules
+    if (await isEmailTaken(req.body.email)) {
+      throw new AppError("Email already exists", 409);
+    }
+
+    next();
+  }
+];
 ```
 
-By default, passwords must contain at least one uppercase letter, one lowercase letter, and one digit. [read more](/docs/guide/authentication-system/authentication-data-validation) about authentication data validation.
+## Integration with API Documentation
 
-:::warning important
-This will have no effect you if a `create-user` or `update-user` dto's or schemas are defined. and also for authentication dto's or schemas like `login`, `signup`, `update-password` are defined, read more about **authencation data validation** [clicking here](/docs/guide/authentication-system/authentication-data-validation).
-:::
+Your DTOs and schemas automatically generate JSON Schema for API documentation. The validation rules become part of your OpenAPI specification when using Arkos's built-in Swagger integration. Learn more about API documentation at [**Swagger API Documentation**](/docs/core-concepts/swagger-api-documentation).
+
+## Validation Flow Summary
+
+```
+Request → Authentication Check → Validation Middleware → DTO/Schema Validation → Controller → Response
+```
+
+**For authenticated endpoints:**
+1. JWT token verification
+2. Request data validation
+3. Business logic execution
+
+**For public endpoints:**
+1. Request data validation
+2. Business logic execution
 
 ## Best Practices
 
-1. Choose a consistent validation approach (class-validator or Zod) for your project
-2. Define clear validation rules that match your business requirements
-3. Use middlewares for complex validation scenarios that involve things that cannot be done through schemas or DTO's.
-4. Keep validation logic separate from business logic for better maintainability
-5. Document your validation rules for API consumers using the built-in documentation tool impleted through swagger or do it on your own you wish, you can [read more](/docs/core-concepts/built-in-swagger-documenation) about how to setup the built-in documentation.
+1. **Consistent Validation Strategy**: Choose either class-validator or Zod for your entire project
+2. **Match Your Database Schema**: Ensure validation rules align with your Prisma models
+3. **Separate Concerns**: Use DTOs/schemas for data structure, middlewares for business logic
+4. **Error Messages**: Provide clear, user-friendly validation messages
+5. **Security First**: Always validate sensitive operations like password changes
+6. **API Documentation**: Leverage automatic schema generation for consistent docs
 
-By leveraging **Arkos**'s validation capabilities, you can ensure data integrity and improve error handling in your application.
+## Common Pitfalls
+
+1. ❌ **Mixed Validation Approaches**: Using both DTOs and schemas in the same project
+2. ❌ **Incorrect File Naming**: Not following kebab-case convention for model names
+3. ❌ **Missing Optional Decorators**: Forgetting `@IsOptional()` for optional fields
+4. ❌ **Password in Update Endpoints**: Including password validation in profile update DTOs
+5. ❌ **Inconsistent Field Names**: DTO fields not matching your database schema
+
+**Correct Implementation**: Follow naming conventions, use one validation approach, separate password updates, match database fields.

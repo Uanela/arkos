@@ -437,5 +437,5 @@ For the default file upload endpoints (`/api/uploads/:fileType`), the resource n
 - [Custom Routers Guide](/docs/core-concepts/adding-custom-routers) - Creating custom routes
 - [Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares) - Using middleware with file operations
 - [File Upload Services Function Guide](/docs/api-reference/file-upload-services-function-guide) - Service layer file operations
-- [Static RBAC Authentication](/docs/advanced-guide/static-rbac-authentication) - Access control setup
-- [Dynamic RBAC Authentication](/docs/advanced-guide/dynamic-rbac-authentication) - Database-driven permissions
+- [Static RBAC Authentication](/docs/core-concepts/authentication-system) - Access control setup
+- [Dynamic RBAC Authentication](/docs/core-concepts/authentication-system#upgrading-to-dynamic-rbac) - Database-driven permissions

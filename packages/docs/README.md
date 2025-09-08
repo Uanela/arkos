@@ -2,7 +2,7 @@
 
 # Arkos.js
 
-### The Express And Prisma Framework For RESTful API
+### The Express And Prisma RESTful Framework
 
 Arkos simplifies the development of secure and scalable RESTful APIs with minimal configuration, allowing developers to focus on what really matters for their business logic.
 

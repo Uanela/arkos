@@ -1,0 +1,1156 @@
+---
+sidebar_position: 3
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import SmallTag from "../components/small-tag"
+
+# Interceptor Middlewares
+
+Arkos automatically generates RESTful API endpoints for your Prisma models, but your application needs custom business logic. Interceptor middlewares let you hook into these auto-generated endpoints to add your own processing logic without losing the power of automation - both for your Prisma model operations and built-in authentication endpoints.
+
+Think of interceptor middlewares as request level hooks that let you run custom code before and after Arkos handles your API requests. They work just like Express middlewares but are specifically designed to intercept the auto-generated CRUD operations.
+
+```typescript
+// Your auto-generated POST /api/posts endpoint becomes:
+Request → beforeCreateOne → Arkos Create Logic → afterCreateOne → Response
+```
+
+This gives you the flexibility of custom Express apps while keeping the speed of auto-generated APIs.
+
+## Setting Up Interceptor Middlewares
+
+### File Structure
+
+Interceptor middlewares follow Arkos's convention-based structure:
+
+```
+my-arkos-project/
+└── src/
+    └── modules/
+        └── [model-name]/
+            └── [model-name].middlewares.ts
+```
+
+:::warning Important
+Is important to follow the convention above because Arkos expects to find those file there as it auto discovers them, note also that the model name must be in **kebab-case** (e.g., `UserProfile` becomes `user-profile`).
+:::
+
+### Basic Middleware Example
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+// src/modules/post/post.middlewares.ts
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const beforeCreateOne = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Add custom logic before creating a post
+        console.log("Creating post:", req.body.title);
+
+        // Modify the request data
+        req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
+
+        next(); // Always call next() to continue
+    }
+    ];
+
+export const afterCreateOne = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Access the created post data
+        const createdPost = res.locals.data.data;
+
+        // Send notification, update cache, etc.
+        await sendNotification(`New post created: ${createdPost.title}`);
+
+        next();
+    }
+];
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+// src/modules/post/post.middlewares.js
+
+export const beforeCreateOne = [
+    async (req, res, next) => {
+        // Add custom logic before creating a post
+        console.log("Creating post:", req.body.title);
+
+        // Modify the request data
+        req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
+
+        next(); // Always call next() to continue
+    }
+];
+
+export const afterCreateOne = [
+    async (req, res, next) => {
+        // Access the created post data
+        const createdPost = res.locals.data.data;
+
+        // Send notification, update cache, etc.
+        await sendNotification(`New post created: ${createdPost.title}`);
+
+        next();
+    }
+];
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+Since v1.3.0-beta, you no longer need to wrap interceptor middlewares in `catchAsync` - Arkos handles this automatically.
+:::
+
+## Before Interceptor Middlewares
+
+Before interceptors run before the main Arkos operation. They're perfect for validation, data preprocessing, and permission checks.
+
+### Available Before Interceptors
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+// src/modules/post/post.middlewares.ts
+
+export const beforeCreateOne = [];
+export const beforeCreateMany = [];
+export const beforeUpdateOne = [];
+export const beforeUpdateMany = [];
+export const beforeDeleteOne = [];
+export const beforeDeleteMany = [];
+export const beforeFindOne = [];
+export const beforeFindMany = [];
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+// src/modules/post/post.middlewares.js
+
+export const beforeCreateOne = [];
+export const beforeCreateMany = [];
+export const beforeUpdateOne = [];
+export const beforeUpdateMany = [];
+export const beforeDeleteOne = [];
+export const beforeDeleteMany = [];
+export const beforeFindOne = [];
+export const beforeFindMany = [];
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+Is worth mentioning that you can pass multiple functions into the interceptors in order to handle different aspects of your application and at the same time following the practice of letting a function be responsible for a single thing.
+:::
+
+### Practical Before Interceptor Example
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+```ts
+// src/modules/post/post.middlewares.ts
+import { AppError } from "arkos/error-handler";
+import {
+    ArkosRequest,
+    ArkosResponse,
+    ArkosNextFunction,
+} from "arkos/error-handler";
+import {
+    validatePostOwnership,
+    sanitizePostContent,
+    checkPostQuota,
+    logPostActivity
+} from "../utils/helpers/post.middlewares.helpers";
+import postService from "../post.service"
+
+export const beforeUpdateOne = [
+    // 1. Validate user permissions and post ownership
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Ensure authors can only update their own posts
+        if (req.user.role === "author") {
+            const post = await postService.findOne({
+                id: req.params.id,
+                authorId: req.user.id,
+            });
+            if (!post) {
+                throw new AppError("You can only update your own posts", 403);
+            }
+            // Pass data to subsequent middleware
+            req.originalPost = post;
+        }
+        next();
+    },
+    // 2. Additional ownership validation helper
+    validatePostOwnership,
+    // 3. Sanitize and validate post content
+    sanitizePostContent,
+    // 4. Check user's post update quota
+    checkPostQuota,
+    // 5. Log activity for audit purposes
+    logPostActivity
+];
+```
+</TabItem>
+<TabItem value="js" label="JavaScript">
+```js
+// src/modules/post/post.middlewares.js
+import { AppError } from "arkos/error-handler";
+import {
+    validatePostOwnership,
+    sanitizePostContent,
+    checkPostQuota,
+    logPostActivity
+} from "../utils/helpers/post.middlewares.helpers.js";
+import postService from "../post.service.js"
+
+export const beforeUpdateOne = [
+    // 1. Validate user permissions and post ownership
+    async (req, res, next) => {
+        // Ensure authors can only update their own posts
+        if (req.user.role === "author") {
+            const post = await postService.findOne({
+                id: req.params.id,
+                authorId: req.user.id,
+            });
+            if (!post) {
+                throw new AppError("You can only update your own posts", 403);
+            }
+            // Pass data to subsequent middleware
+            req.originalPost = post;
+        }
+        next();
+    },
+    // 2. Additional ownership validation helper
+    validatePostOwnership,
+    // 3. Sanitize and validate post content
+    sanitizePostContent,
+    // 4. Check user's post update quota
+    checkPostQuota,
+    // 5. Log activity for audit purposes
+    logPostActivity
+];
+```
+</TabItem>
+</Tabs>
+
+## After Interceptor Middlewares
+
+after interceptors run after the main Arkos operation completes. They have access to the operation results and can modify the response.
+
+### Response Data Access
+
+After interceptors provide access to three key objects:
+
+#### Prior to `v1.3.0-beta`
+- `req.responseData` - The data that will be sent to the client
+- `req.responseStatus` - The HTTP status code that will be sent
+- `req.additionalData` - Extra data from the operation (usually null)
+
+#### From `v1.3.0-beta`
+- `res.locals.data.data` - The data that will be sent to the client
+- `res.locals.status` - The HTTP status code that will be sent
+- `res.locals.additionalData` - Extra data from the operation (usually null)
+
+:::tip
+Prior to `v1.3.0-beta` only the first was available and after it the second way was added to be more aligned to Express Community Conventions.
+:::
+
+### Available After Interceptors
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+// src/modules/post/post.middlewares.ts
+
+export const afterCreateOne = [];
+export const afterCreateMany = [];
+export const afterUpdateOne = [];
+export const afterUpdateMany = [];
+export const afterDeleteOne = [];
+export const afterDeleteMany = [];
+export const afterFindOne = [];
+export const afterFindMany = [];
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+// src/modules/post/post.middlewares.js
+
+export const afterCreateOne = [];
+export const afterCreateMany = [];
+export const afterUpdateOne = [];
+export const afterUpdateMany = [];
+export const afterDeleteOne = [];
+export const afterDeleteMany = [];
+export const afterFindOne = [];
+export const afterFindMany = [];
+```
+
+</TabItem>
+</Tabs>
+
+### Practical After Interceptor Example
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+// src/modules/author/author.middlewares.ts
+import {
+    ArkosRequest,
+    ArkosResponse,
+    ArkosNextFunction,
+} from "arkos/error-handler";
+import {
+    removeSensitiveData,
+    addComputedFields,
+    formatResponseData,
+    logAuthorActivity
+} from "../utils/helpers/author.middlewares.helpers";
+
+export const afterFindMany = [
+    // 1. Remove sensitive data from all authors
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        const authors = res.locals.data.data.map((author) => {
+            delete author.email; // Hide emails from public listings
+            delete author.phone; // Hide phone numbers
+            return author;
+        });
+
+        res.locals.data.data = authors;
+        next();
+    },
+    // 2. Additional sensitive data removal helper
+    removeSensitiveData,
+    // 3. Add computed fields to each author
+    addComputedFields,
+    // 4. Format response data structure
+    formatResponseData,
+    // 5. Log activity for analytics
+    logAuthorActivity
+];
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+// src/modules/author/author.middlewares.js
+import {
+    removeSensitiveData,
+    addComputedFields,
+    formatResponseData,
+    logAuthorActivity
+} from "../utils/helpers/author.middlewares.helpers";
+
+export const afterFindMany = [
+    // 1. Remove sensitive data from all authors
+    async (req, res, next) => {
+        const authors = res.locals.data.data.map((author) => {
+            delete author.email; // Hide emails from public listings
+            delete author.phone; // Hide phone numbers
+            return author;
+        });
+
+        res.locals.data.data = authors;
+        next();
+    },
+    // 2. Additional sensitive data removal helper
+    removeSensitiveData,
+    // 3. Add computed fields to each author
+    addComputedFields,
+    // 4. Format response data structure
+    formatResponseData,
+    // 5. Log activity for analytics
+    logAuthorActivity
+];
+```
+
+</TabItem>
+</Tabs>
+
+## Error Interceptor Middlewares <SmallTag>New</SmallTag>
+
+
+Error interceptors handle failures in CRUD operations, allowing you to clean up resources, rollback transactions, or perform custom error handling.
+
+:::tip
+Error Interceptor Middlewares are available from `v1.3.0-beta`.
+:::
+
+### Important: Error Middleware Signature
+
+Error middlewares **must** have exactly 4 parameters `(err, req, res, next)` - this is an Express.js requirement. Without all 4 parameters, Express won't recognize it as an error middleware.
+
+### Available Error Middlewares
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+// src/modules/post/post.middlewares.ts
+
+export const onCreateOneError = [];
+export const onCreateManyError = [];
+export const onUpdateOneError = [];
+export const onUpdateManyError = [];
+export const onDeleteOneError = [];
+export const onDeleteManyError = [];
+export const onFindOneError = [];
+export const onFindManyError = [];
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+// src/modules/post/post.middlewares.js
+
+export const onCreateOneError = [];
+export const onCreateManyError = [];
+export const onUpdateOneError = [];
+export const onUpdateManyError = [];
+export const onDeleteOneError = [];
+export const onDeleteManyError = [];
+export const onFindOneError = [];
+export const onFindManyError = [];
+```
+
+</TabItem>
+</Tabs>
+
+### Practical Error Middleware Example
+
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+// src/modules/user/user.middlewares.ts
+import {
+    ArkosRequest,
+    ArkosResponse,
+    ArkosNextFunction,
+} from "arkos/error-handler";
+import {
+    handlePrismaErrors,
+    handleValidationErrors,
+    handleFileCleanupErrors,
+    handleTransactionRollbackErrors,
+    logErrorDetails
+} from "../utils/helpers/user.error.helpers";
+
+export const onCreateOneError = [
+    // 1. Main error handling logic
+    async ( 
+        err: any,
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Cleanup uploaded profile picture if user creation fails
+        if (req.uploadedFiles) 
+            await cleanupFiles(req.uploadedFiles);
+
+        // Rollback any database changes made in beforeCreateOne
+        if (req.transactionData) 
+            await rollbackTransaction(req.transactionData);
+
+        // Log the error for debugging
+        console.error("User creation failed:", err.message);
+
+        // Pass error to next middleware
+        next(err);
+    },
+    // 2. Handle Prisma-specific database errors
+    handlePrismaErrors,
+    // 3. Handle validation and input errors
+    handleValidationErrors,
+    // 4. Additional file cleanup handling
+    handleFileCleanupErrors,
+    // 5. Additional transaction rollback handling
+    handleTransactionRollbackErrors,
+    // 6. Detailed error logging
+    logErrorDetails
+];
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+// src/modules/user/user.middlewares.js
+import {
+    handlePrismaErrors,
+    handleValidationErrors,
+    handleFileCleanupErrors,
+    handleTransactionRollbackErrors,
+    logErrorDetails
+} from "../utils/helpers/user.error.helpers";
+
+export const onCreateOneError = [
+    // 1. Main error handling logic
+    async (err, req, res, next) => {
+        // Cleanup uploaded profile picture if user creation fails
+        if (req.uploadedFiles) 
+            await cleanupFiles(req.uploadedFiles);
+
+        // Rollback any database changes made in beforeCreateOne
+        if (req.transactionData) 
+            await rollbackTransaction(req.transactionData);
+
+        // Log the error for debugging
+        console.error("User creation failed:", err.message);
+
+        // Pass error to next middleware
+        next(err);
+    },
+    // 2. Handle Prisma-specific database errors
+    handlePrismaErrors,
+    // 3. Handle validation and input errors
+    handleValidationErrors,
+    // 4. Additional file cleanup handling
+    handleFileCleanupErrors,
+    // 5. Additional transaction rollback handling
+    handleTransactionRollbackErrors,
+    // 6. Detailed error logging
+    logErrorDetails
+];
+```
+
+</TabItem>
+</Tabs>
+
+## Authentication Interceptor Middlewares
+
+Beyond model-based interceptors, Arkos provides specialized interceptor middlewares for authentication endpoints. These follow the same patterns as model interceptors but target the built-in authentication system.
+
+### Authentication Endpoints
+
+Authentication interceptors work with these built-in routes:
+
+| Route | Method | Available Interceptors |
+|-------|--------|----------------------|
+| `/api/auth/login` | POST | `beforeLogin`, `afterLogin`, `onLoginError` |
+| `/api/auth/signup` | POST | `beforeSignup`, `afterSignup`, `onSignupError` |
+| `/api/auth/logout` | DELETE | `beforeLogout`, `afterLogout`, `onLogoutError` |
+| `/api/auth/update-password` | POST | `beforeUpdatePassword`, `afterUpdatePassword`, `onUpdatePasswordError` |
+| `/api/users/me` | GET/PATCH/DELETE | `beforeGetMe`, `afterGetMe`, `beforeUpdateMe`, `afterUpdateMe`, `beforeDeleteMe`, `afterDeleteMe` |
+
+### File Structure for Authentication Interceptors
+
+```
+src/modules/auth/
+└── auth.middlewares.ts  # or auth.interceptors.ts (v1.4.0+)
+```
+
+### Authentication Interceptor Examples
+
+**Before Authentication:**
+
+```typescript
+// src/modules/auth/auth.middlewares.ts
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { AppError } from "arkos/error-handler";
+
+export const beforeLogin = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Track login attempts
+        const identifier = req.body.email || req.body.username;
+        const attempts = await getFailedLoginAttempts(identifier);
+        
+        if (attempts > 5) {
+            throw new AppError("Too many failed attempts. Try again later.", 429);
+        }
+        
+        // Log login attempt
+        await logLoginAttempt(identifier, req.ip);
+        
+        next();
+    }
+];
+
+export const beforeSignup = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Generate email verification token
+        req.body.verificationToken = crypto.randomBytes(32).toString("hex");
+        req.body.verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        
+        next();
+    }
+];
+```
+
+**After Authentication:**
+
+```typescript
+export const afterLogin = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        const user = res.locals.data.data; // or req.responseData (backward compatibility)
+        
+        // Reset failed login attempts
+        await resetFailedLoginAttempts(user.email);
+        
+        // Update last login timestamp
+        await updateLastLogin(user.id);
+        
+        // Log successful authentication
+        auditLog.info('User login', { userId: user.id, ip: req.ip });
+        
+        next();
+    }
+];
+
+export const afterSignup = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        const user = res.locals.data.data;
+        
+        // Send verification email (don't block response)
+        emailService
+            .sendVerificationEmail(user.email, user.verificationToken)
+            .catch(console.error);
+        
+        // Remove sensitive data from response
+        delete res.locals.data.data.verificationToken;
+        delete res.locals.data.data.verificationTokenExpires;
+        
+        // Add success message
+        res.locals.data.message = "Please check your email to verify your account";
+        
+        next();
+    }
+];
+```
+
+**Error Authentication Interceptors:**
+
+```typescript
+export const onLoginError = [
+    async (
+        err: any,
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Increment failed login attempts
+        const identifier = req.body.email || req.body.username;
+        if (identifier) {
+            await incrementFailedLoginAttempts(identifier);
+        }
+        
+        // Log failed login attempt
+        securityLog.warn('Failed login attempt', {
+            identifier,
+            ip: req.ip,
+            error: err.message
+        });
+        
+        next(err);
+    }
+];
+
+export const onSignupError = [
+    async (
+        err: any,
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Clean up partial user data if signup fails
+        if (req.body.email && err.code === 'P2002') { // Unique constraint error
+            await cleanupFailedSignup(req.body.email);
+        }
+        
+        next(err);
+    }
+];
+```
+
+### Response Data Access in Authentication Interceptors
+
+Authentication interceptors provide the same data access patterns:
+
+**Current (v1.3.0+):**
+- `res.locals.data.data` - User data or operation result
+- `res.locals.status` - HTTP status code
+- `res.locals.additionalData` - Extra operation data
+
+**Legacy (backward compatibility):**
+- `req.responseData` - User data or operation result
+- `req.responseStatus` - HTTP status code
+
+### User Profile Management Interceptors
+
+The `/api/users/me` endpoint supports additional interceptors:
+
+```typescript
+export const beforeUpdateMe = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Prevent password updates through profile endpoint
+        if ('password' in req.body) {
+            throw new AppError(
+                "Use /api/auth/update-password to change password", 
+                400
+            );
+        }
+        
+        // Audit profile changes
+        req.profileChangeAudit = {
+            userId: req.user.id,
+            changes: Object.keys(req.body),
+            timestamp: new Date()
+        };
+        
+        next();
+    }
+];
+
+export const afterDeleteMe = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        const userId = req.user.id;
+        
+        // Perform cleanup after account deletion
+        // Note: User record is soft-deleted (deletedSelfAccountAt set)
+        cleanupUserData(userId).catch(console.error);
+        
+        // Send farewell email
+        emailService
+            .sendAccountDeletionConfirmation(req.user.email)
+            .catch(console.error);
+            
+        next();
+    }
+];
+```
+
+### Integration with Authentication System
+
+Authentication interceptors work seamlessly with the [Authentication System](/docs/core-concepts/authentication-system). They intercept the built-in authentication flow without requiring custom route definitions.
+
+The execution order is:
+1. **Authentication data validation** (DTOs/schemas)
+2. **Before interceptors** (if defined)
+3. **Core authentication logic** (login, signup, etc.)
+4. **After interceptors** (if defined)
+5. **Error interceptors** (if operation fails)
+6. **Response sent to client**
+
+### Generating Authentication Interceptors
+
+Use the CLI to scaffold authentication interceptor files:
+
+```bash
+npx arkos generate interceptors --module auth
+```
+
+**Shorthand:**
+```bash
+npx arkos g i -m auth
+```
+
+This creates the `src/modules/auth/auth.middlewares.ts` file with empty interceptor exports ready for customization.
+
+## Advanced Usage
+
+### Customizing Base Query Options
+
+Instead of writing custom controllers, you can customize how Prisma queries work by default using query options:
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+// src/modules/user/user.query.ts
+import { PrismaQueryOptions } from "arkos/prisma";
+import { prisma } from "../../utils/prisma";
+
+export type UserDelegate = typeof prisma.user
+
+const userPrismaQueryOptions: PrismaQueryOptions<UserDelegate> = {
+    global: {
+        // Applied to all operations
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            profile: true, // Always include profile
+        },
+    },
+    findMany: {
+        // Only for findMany operations
+        orderBy: {
+            createdAt: "desc",
+        },
+        take: 50, // Limit to 50 results
+    },
+    createOne: {
+        // Only for create operations
+        include: {
+            profile: true,
+            posts: true,
+        },
+    },
+};
+
+export default userPrismaQueryOptions;
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+// src/modules/user/user.query.js
+import { prisma } from "../../utils/prisma/index.js";
+
+const userPrismaQueryOptions = {
+    global: {
+        // Applied to all operations
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            profile: true, // Always include profile
+        },
+    },
+    findMany: {
+        // Only for findMany operations
+        orderBy: {
+            createdAt: "desc",
+        },
+        take: 50, // Limit to 50 results
+    },
+    createOne: {
+        // Only for create operations
+        include: {
+            profile: true,
+            posts: true,
+        },
+    },
+};
+
+export default userPrismaQueryOptions;
+```
+
+</TabItem>
+</Tabs>
+
+You can explore more about `.query.ts` components under [**Custom Prisma Query Options Guide**](/docs/advanced-guide/custom-prisma-query-options).
+
+### Generating Middlewares with CLI
+
+Quickly scaffold middleware files using the Arkos CLI:
+
+```bash
+npx arkos generate interceptors --module user
+```
+
+**Shorthand:**
+
+```bash
+npx arkos g i -m user
+```
+
+:::tip
+On versions prior to `v1.3.0-beta` the command was `npx arkos generate middlewares --model user` and shorthand `npx arkos g m -m user`, from `v1.3.0-beta` we changed it but with backward compatibitly until `v1.4.0-beta`. We made this move aiming to lean toward what is comming until the stable release `v2.0`, and also from `v1.4.0-beta` will be recommend (not enforced) to use `.interceptors.ts` instead of `.middlewares.ts`, this way you will have a great separation of concerns and actually use the `.middlewares.ts` to define middlewares that be used under `.interceptors.ts`. 
+
+From  `v1.5.0-beta` `.middlewares.ts` will no longer work in favor of `.interceptors.ts`, to align better to what was explained before.
+:::
+
+### Passing Data Between Middlewares
+
+Use the request object to pass data from before to after interceptors:
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const beforeCreateOne = [
+    async (
+   req: ArkosRequest,
+   res: ArkosResponse,
+   next: ArkosNextFunction
+    ) => {
+        // Store data for after interceptor
+        (req as any).startTime = Date.now();
+        (req as any).clientIP = req.ip;
+        next();
+    }
+];
+
+export const afterCreateOne = [
+    async (
+   req: ArkosRequest,
+   res: ArkosResponse,
+   next: ArkosNextFunction
+    ) => {
+        // Access the stored data
+        const duration = Date.now() - (req as any).startTime;
+        const clientIP = (req as any).clientIP;
+
+        await logPerformance({
+            operation: "createOne",
+            duration,
+            clientIP,
+            resourceId: res.locals.data.data.id,
+        });
+
+        next();
+    }
+];
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+export const beforeCreateOne = [
+    async (req, res, next) => {
+        // Store data for after interceptor
+        req.startTime = Date.now();
+        req.clientIP = req.ip;
+        next();
+    }
+];
+
+export const afterCreateOne = [
+    async (req, res, next) => {
+        // Access the stored data
+        const duration = Date.now() - req.startTime;
+        const clientIP = req.clientIP;
+
+        await logPerformance({
+            operation: "createOne",
+            duration,
+            clientIP,
+            resourceId: res.locals.data.data.id,
+        });
+
+        next();
+    }
+];
+```
+
+</TabItem>
+</Tabs>
+
+## Complete Example: Blog Post with Auto-Slug
+
+Here's a real-world example showing before, after, and error middlewares working together:
+
+<Tabs>
+<TabItem value="ts" label="TypeScript" default>
+
+```ts
+// src/modules/post/post.middlewares.ts
+import { AppError } from "arkos/error-handler";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import postService from "../post.service"
+
+export const beforeCreateOne = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Auto-generate slug from title
+        if (req.body.title && !req.body.slug) {
+            req.body.slug = req.body.title
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9\s]/g, "")
+                .replace(/\s+/g, "-");
+        }
+
+        // Check for duplicate slugs
+        const existingPost = await postService.findOne({
+            slug: req.body.slug 
+        });
+
+        if (existingPost) {
+            req.body.slug += `-${Date.now()}`;
+        }
+
+        next();
+    }
+];
+
+export const afterCreateOne = [
+    async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        const post = res.locals.data.data;
+
+        // Send notifications
+        notificationService
+            .notifyFollowers(post.authorId, {
+                type: "new_post",
+                postId: post.id,
+                title: post.title,
+            })
+            .catch(console.error); // Don't block response
+
+        // Update search index
+        searchService.indexPost(post).catch(console.error);
+
+        next();
+    }
+];
+
+export const onCreateOneError = [
+    async (err, req, res, next) => {
+        // Clean up any uploaded images if post creation fails
+        if (req.body.featuredImage) {
+            await deleteUploadedFile(req.body.featuredImage).catch(console.error);
+        }
+
+        next(err);
+    }
+];
+```
+
+</TabItem>
+<TabItem value="js" label="JavaScript">
+
+```js
+// src/modules/post/post.middlewares.js
+import { AppError } from "arkos/error-handler";
+import postService from "../post.service.js"
+
+export const beforeCreateOne = [
+    async (req, res, next) => {
+        // Auto-generate slug from title
+        if (req.body.title && !req.body.slug) {
+            req.body.slug = req.body.title
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9\s]/g, "")
+                .replace(/\s+/g, "-");
+        }
+
+        // Check for duplicate slugs
+        const existingPost = await postService.findOne({
+            slug: req.body.slug
+        });
+
+        if (existingPost) {
+            req.body.slug += `-${Date.now()}`;
+        }
+
+        next();
+    }
+];
+
+export const afterCreateOne = [
+    async (req, res, next) => {
+        const post = res.locals.data.data;
+
+        // Send notifications
+        notificationService
+            .notifyFollowers(post.authorId, {
+                type: "new_post",
+                postId: post.id,
+                title: post.title,
+            })
+            .catch(console.error); // Don't block response
+
+        // Update search index
+        searchService.indexPost(post).catch(console.error);
+
+        next();
+    }
+];
+
+export const onCreateOneError = [
+    async (err, req, res, next) => {
+    // Clean up any uploaded images if post creation fails
+    if (req.body.featuredImage) {
+        await deleteUploadedFile(req.body.featuredImage).catch(console.error);
+    }
+
+    next(err);
+    }
+];
+```
+
+</TabItem>
+</Tabs>
+
+Arkos allows you to customize beyond the request level; it also enables you to customize the flow of the service methods. Let's take the example above: you may want to execute this behavior at any level where a new post is created, whether through an endpoint call or programmatically elsewhere in your code. For this situation, we highly encourage the use of [**Service Hooks**](/docs/guide/service-hooks) together with instances of the [**BaseService Class**](/docs/api-reference/the-base-service-class), which is one of the main strengths of Arkos.js.
+
+The BaseService Class generates services for all of your Prisma models, each containing all standard CRUD operations and many features that Arkos offers:
+
+- Automatic relation field handling;
+- Automatic password hashing for the user model;
+- Consistency in CRUD operations across all model services;
+- Service hooks, allowing you to execute before/after/onError consistently across your codebase.
+
+## File-Upload Interceptor Middlewares
+
+Arkos provides additional interceptor middleware systems for specific modules, in this case the `file-upload` module, you can check more about this one at [**File Upload Interceptor Middlewares Guide**](/docs/core-concepts/file-uploads#file-upload-interceptor-middlewares) - Intercept file upload, update, and delete operations.
+
+## Best Practices
+
+1. **Keep middlewares focused** - Each middleware should have a single responsibility, hence choose to use arrays of functions instead of simple functions.
+2. **Use AppError for custom errors** - Provides consistent error handling across your app.
+3. **Always call next()** - Unless you're sending a custom response.
+4. **Don't block responses** - Use `.catch()` for non-critical async operations.
+5. **Leverage error middlewares** - Clean up resources when operations fail.
+6. **Use custom prisma query options** - Customize Prisma behavior instead of writing complex middlewares when possible.
+
+Interceptor middlewares give you the power to customize every aspect of your auto-generated API while maintaining the simplicity and speed that makes Arkos powerful.

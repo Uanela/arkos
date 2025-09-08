@@ -20,7 +20,7 @@ http://localhost:8000/api
 GET /api/posts
 ```
 
-**Authorization:** `Bearer YOUR_API_TOKEN` if the endpoints requires it, remember that it can also be sent through cookies which is set automatically when login depending on your configs passed to `arkos.init()`, [read more](/docs/core-concepts/built-in-authentication-system)
+**Authorization:** `Bearer YOUR_API_TOKEN` if the endpoints requires it, remember that it can also be sent through cookies which is set automatically when login depending on your configs passed to `arkos.init()`, [read more](/docs/core-concepts/authentication-system)
 
 **Response:**
 

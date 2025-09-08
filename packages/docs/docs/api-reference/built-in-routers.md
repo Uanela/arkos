@@ -78,7 +78,7 @@ Provides authentication endpoints for user management.
 
 **Learn More:**
 
-- [Authentication Guide](/docs/guide/authentication-system/sending-authentication-requests#authentication-endpoints)
+- [Authentication Guide](/docs/core-concepts/authentication-system#sending-authentication-requests#authentication-endpoints)
 
 ## Prisma Models Router
 
@@ -174,5 +174,5 @@ see full guide about [Adding Custom Routers In Arkos](/docs/guide/adding-custom-
 
 - [Customizing Prisma Models Routers](/docs/guide/adding-custom-routers#2-customizing-prisma-model-routers)
 - [Built-in Middlewares](/docs/guide/built-in-middlewares)
-- [Authentication System](/docs/core-concepts/built-in-authentication-system)
+- [Authentication System](/docs/core-concepts/authentication-system)
 - [File Upload Guide](/docs/core-concepts/file-uploads)

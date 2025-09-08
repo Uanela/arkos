@@ -468,11 +468,11 @@ File upload endpoints respect the authentication and authorization rules you def
 
 #### 1. Static Role-Based Access Control
 
-In Static RBAC, define the `AuthConfigs` under `src/modules/file-upload/file-upload.auth.ts` and apply the same rules. See [Static RBAC Auth Configs Guide](/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior).
+In Static RBAC, define the `AuthConfigs` under `src/modules/file-upload/file-upload.auth.ts` and apply the same rules. See [Static RBAC Auth Configs Guide](/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior).
 
 #### 2. Dynamic Role-Based Access Control
 
-In Dynamic RBAC, define the `AuthPermission` with `resource` set to `file-upload` and the appropriate `action` (create, view, update, delete). See [Dynamic RBAC Auth Configs Guide](/docs/advanced-guide/dynamic-rbac-authentication#using-auth-config-to-customize-endpoint-behavior).
+In Dynamic RBAC, define the `AuthPermission` with `resource` set to `file-upload` and the appropriate `action` (create, view, update, delete). See [Dynamic RBAC Auth Configs Guide](/docs/core-concepts/authentication-system#upgrading-to-dynamic-rbac#using-auth-config-to-customize-endpoint-behavior).
 
 ## Next Steps
 

@@ -17,7 +17,7 @@ File upload authentication in **Arkos** works with both Static and Dynamic RBAC 
 
 ## File Upload Authentication with Static RBAC
 
-When using Static RBAC ([See Guide](/docs/advanced-guide/static-rbac-authentication)), you can define authentication and access control for file uploads through a dedicated auth config file.
+When using Static RBAC ([See Guide](/docs/core-concepts/authentication-system)), you can define authentication and access control for file uploads through a dedicated auth config file.
 
 ### Creating Auth Config for File Uploads
 
@@ -57,7 +57,7 @@ The `Update` action is not applicable to the default file upload system, as **Ar
 
 ## File Upload Authentication with Dynamic RBAC
 
-When using Dynamic RBAC ([See Guide](/docs/advanced-guide/dynamic-rbac-authentication)), you control file upload permissions through the database using the `AuthPermission` model.
+When using Dynamic RBAC ([See Guide](/docs/core-concepts/authentication-system#upgrading-to-dynamic-rbac)), you control file upload permissions through the database using the `AuthPermission` model.
 
 ### Creating Permissions for File Uploads
 
