@@ -29,14 +29,9 @@ export function generateServiceTemplate(options: TemplateOptions): string {
 
   return `${isTypeScript && "import prisma from "}${prismaImport}${baseServiceImport}
   
-class ${modelName.pascal}Service extends BaseService${typeParameter} {
-  constructor() {
-    super("${modelName.kebab}");
-  }
-  // Add your custom service methods here
-}
+class ${modelName.pascal}Service extends BaseService${typeParameter} {}
 
-const ${modelName.camel}Service = new ${modelName.pascal}Service();
+const ${modelName.camel}Service = new ${modelName.pascal}Service("${modelName.kebab}");
 
 export default ${modelName.camel}Service;
 `;

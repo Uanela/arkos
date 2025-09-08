@@ -27,7 +27,7 @@ export type DetailedAccessControlRule = {
  * Rules defining access control for different controller actions.
  * The array contains role names that are allowed to perform the action.
  *
- * @see {@link https://www.arkosjs.com/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior}
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior}
  * @example
  *
  * const rules: AccessControlRules = {
@@ -49,7 +49,7 @@ export type AccessControlRules = {
 /**
  * Rules defining authentication requirements for different controller actions.
  *
- * @see {@link https://www.arkosjs.com/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior}
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior}
  * @example
  * const authRules: AuthenticationControlRules = {
  *   Create: true,
@@ -82,7 +82,7 @@ export type AuthenticationControlConfig =
 /**
  * Configuration for access control.
  *
- * @see {@link https://www.arkosjs.com/docs/core-concepts/built-in-authentication-system#1-static-rbac-config-based}
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication-system#auth-config-files---static-rbac}
  * @example
  * // All actions allowed for these roles
  * const config1: AccessControlConfig = ["Admin", "Manager"];
@@ -98,7 +98,7 @@ export type AccessControlConfig = string[] | Partial<AccessControlRules>;
 /**
  * Configuration for authentication and access control.
  *
- * @see {@link https://www.arkosjs.com/docs/advanced-guide/static-rbac-authentication#using-auth-config-to-customize-endpoint-behavior}
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior}
  * @example
  * export const authConfig: AuthConfigs = {
  *   authenticationControl: {
