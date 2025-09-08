@@ -59,13 +59,13 @@ export type ArkosConfig = {
   /**
    * Defines authentication related configurations, by default is undefined.
    *
-   * See [www.arkosjs.com/docs/core-concepts/built-in-authentication-system](https://www.arkosjs.com/docs/core-concepts/built-in-authentication-system) for details.
+   * See [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for details.
    */
   authentication?: {
     /**
      * Defines whether to use Static or Dynamic Role-Based Acess Control
      *
-     * Visit [www.arkosjs.com/docs/core-concepts/built-in-authentication-system](https://www.arkosjs.com/docs/core-concepts/built-in-authentication-system) for more details.
+     * Visit [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for more details.
      */
     mode: "static" | "dynamic";
     /**
@@ -88,7 +88,7 @@ export type ArkosConfig = {
        * POST /api/auth/login?usernameField=email
        * ```
        *
-       * See more at [www.arkosjs.com/docs/guide/authentication-system/sending-authentication-requests#example-changing-the-username-field](https://www.arkosjs.com/docs/guide/authentication-system/sending-authentication-requests#example-changing-the-username-field)
+       * See more at [www.arkosjs.com/docs/core-concepts/authentication-system#login-with-different-fileds](https://www.arkosjs.com/docs/core-concepts/authentication-system#login-with-different-fileds)
        *
        * By specifing here another field for username, for example passing "email", "companyCode" or something else your json will be like:
        *
