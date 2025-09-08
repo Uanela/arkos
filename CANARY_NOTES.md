@@ -8,8 +8,6 @@
 - add documentain about stric mode routing and update jsdocs on arkos config
 - add documentain about the new `authService.permission()` method and also add under jsdocs
 - allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
-- add auth-actions under swagger auto documentaiton
-- add hooks to generate components cli
 
 ### Change
 
@@ -56,6 +54,8 @@
 - Added a new descriptive way of adding `accessControl` under `.auth.ts` -> instead of `{ Create: ['Author'] }` can pass `{ Create: { roles: ['Author'], name: "Create a new post", description: "Allows to create a new author post" } }` in order to generate a better roles and permissions json
 - support fields like `errorMessage`, `description` for access roles defition.
 - added strict routing mode into cli flags
+- added hooks to generate components cli
+- added auth-actions under swagger auto documentaiton
 
 ### Change
 
