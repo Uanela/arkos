@@ -24,7 +24,7 @@ export default function ArkosFeatureCard({
   reverse: boolean;
   sideContent?: any;
   iconColor?: string;
-}) {
+} & Record<string, any>) {
   return (
     <div
       data-is-reverse={reverse}

@@ -24,7 +24,7 @@ export default function SmallTag({
     >
       <span
         className={twMerge(
-          "sm:text-sm text-xs text-zinc-900 bg-sky-500 rounded-sm inline-block",
+          "text-sm text-zinc-900 bg-sky-500 rounded-sm inline-block",
           className
         )}
         style={{

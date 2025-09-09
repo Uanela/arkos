@@ -35,7 +35,11 @@ export default function Home() {
               className="tailwind grid md:gap-12 gap-8 p-2  mx-auto max-w-3xl md:max-w-6xl z-10 items-start md:mt-32 mt-16"
             >
               {arkosFeatures.map((feature, i) => (
-                <ArkosFeatureCard {...feature} reverse={!!(i % 2 == 0)} />
+                <ArkosFeatureCard
+                  key={i}
+                  {...feature}
+                  reverse={!!(i % 2 == 0)}
+                />
               ))}
             </div>
           </div>

@@ -40,11 +40,6 @@ body {
   .docMainContainer_TGxA {
     @apply flex justify-center;
   }
-
-  /* .container,
-  .navbar__inner {
-    @apply mx-auto max-w-6xl;
-  } */
 }
 
 .container {
@@ -56,20 +51,6 @@ body {
   display: flex;
   justify-content: center;
 }
-
-/* @layer base {
-  .tailwind {
-    @tailwind base;
-  }
-}
-
-
-
-@layer utilities {
-  .tailwind {
-    @tailwind utilities;
-  }
-} */
 
 /* Outline Color Classes with 40% opacity */
 .outline-sky-500 {
@@ -124,10 +105,6 @@ body {
   ); /* sky-500 with opacity */
 }
 
-/* body {
-  background-color: #050b1e;
-} */
-
 [data-theme="dark"],
 [data-theme="dark"] .navbar-sidebar {
   background-color: #090e1f;
@@ -148,6 +125,26 @@ body {
     248,
     0.3
   ); /* sky-400 with opacity */
+
+  /* Sidebar */
+  --ifm-menu-color-active: #090e1f;
+  --ifm-menu-color-hover: #090e1f; /* Sub list wrapper */
+  --ifm-menu-color-background-active: #0ea5e9;
+  --ifm-menu-color-background-hover: #0ea5e9; /* Sub list wrapper */
+}
+
+.menu__list-item-collapsible .menu__link:hover,
+.menu__list-item-collapsible .menu__link--active,
+.menu__list-item-collapsible:has(> .menu__link--active),
+.menu__list-item-collapsible:hover {
+  background-color: var(--ifm-menu-color-background-hover) !important;
+  color: var(--ifm-menu-color-active) !important;
+}
+
+/* Hide the paper icons */
+.theme-doc-sidebar-item-category > .menu__link::before,
+.menu__link::before {
+  display: none !important;
 }
 
 /* Change navbar background */
