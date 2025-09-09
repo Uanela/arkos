@@ -11,10 +11,10 @@ export default async function generateZodJsonSchemas() {
   const schemas: Record<string, any> = {};
 
   requiredAppModules.forEach((modelName) => {
-    const ModuleComponents = getModuleComponents(modelName);
+    const moduleComponents = getModuleComponents(modelName);
 
-    if (ModuleComponents?.schemas)
-      Object.entries(ModuleComponents.schemas).forEach(
+    if (moduleComponents?.schemas)
+      Object.entries(moduleComponents.schemas).forEach(
         ([schemaType, zodSchema]) => {
           if (zodSchema)
             try {

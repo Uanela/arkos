@@ -17,19 +17,19 @@ const router: Router = Router();
 export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const { fileUpload } = arkosConfig;
 
-  const ModuleComponents = getModuleComponents("file-upload");
+  const moduleComponents = getModuleComponents("file-upload");
   let {
     interceptors = {} as any,
     authConfigs = {} as AuthConfigs,
     router: customRouterModule,
   }: any = {};
 
-  if (ModuleComponents) {
+  if ((moduleComponents)) {
     ({
       interceptors = {},
       authConfigs = {},
       router: customRouterModule,
-    } = ModuleComponents);
+    } = moduleComponents);
   }
 
   const routerConfig = customRouterModule?.config || {};

@@ -5,7 +5,9 @@ import getAuthenticationJsonSchemaPaths, {
 import { localValidatorFileExists } from "../swagger.router.helpers";
 
 // Mock the dependencies one level up
-jest.mock("../../../../../utils/dynamic-loader", () => ({}));
+jest.mock("../../../../../utils/dynamic-loader", () => ({
+  getModuleComponents: jest.fn(),
+}));
 
 jest.mock("../swagger.router.helpers", () => ({
   ...jest.requireActual("../swagger.router.helpers"),

@@ -22,8 +22,8 @@ export async function generatePrismaModelMainRoutesPaths(
   const humanReadableNamePlural = pluralize.plural(humanReadableName);
 
   // Import model modules to get router config
-  const ModuleComponents = getModuleComponents(model);
-  const routerConfig = ModuleComponents?.router?.config;
+  const moduleComponents = getModuleComponents(model);
+  const routerConfig = moduleComponents?.router?.config;
 
   // Skip if router is completely disabled
   if (routerConfig?.disable === true) return paths;
