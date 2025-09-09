@@ -273,7 +273,7 @@ const authQueryOptions: AuthPrismaQueryOptions<typeof prisma.auth> = {
 };
 ```
 
-See more about prisma query options concept reading [Custom Prisma Query Options Advanced Guide](/docs/advanced-guide/custom-prisma-query-options).
+See more about prisma query options concept reading [Custom Prisma Query Options Advanced Guide](/docs/guide/custom-prisma-query-options).
 
 #### 1.6. Endpoint Authentication Configurations
 

@@ -56,7 +56,7 @@ export const arkosFeatures = [
     iconColor: "#50a496",
     outline: "hover:outline-indigo-500/50",
     titleHover: "group-hover:text-indigo-500/80",
-    to: "/docs/advanced-guide/custom-prisma-query-options",
+    to: "/docs/guide/custom-prisma-query-options",
     sideContent: (
       <div className="">
         <img

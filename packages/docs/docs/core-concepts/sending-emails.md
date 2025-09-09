@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 8
 ---
 
 # Sending Emails
@@ -23,17 +23,17 @@ The `EmailService` uses these `arkosConfig` variables for its default configurat
 
 ```ts
 arkos.init({
-  email: {
-    host: process.env.EMAIL_HOST,
-    port: process.env.EMAIL_PORT,
-    secure: process.env.EMAIL_SECURE,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+    email: {
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT,
+        secure: process.env.EMAIL_SECURE,
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD,
+        },
+        name: process.env.EMAIL_NAME,
     },
-    name: process.env.EMAIL_NAME,
-  },
-  // other configs
+    // other configs
 });
 ```
 
@@ -64,8 +64,8 @@ The email configuration in **Arkos** allows you to set up email functionality th
 #### `auth`
 
 - Object containing authentication credentials:
-  - `user`: The email address used for authentication with the SMTP server
-  - `pass`: Your SMTP password or authentication token for the email account
+    - `user`: The email address used for authentication with the SMTP server
+    - `pass`: Your SMTP password or authentication token for the email account
 - Required parameter
 
 #### `name`
@@ -87,17 +87,17 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import { catchAsync } from "arkos/error-handler";
 
 export const afterSignup = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const result = await emailService.send({
-      to: "recipient@example.com",
-      subject: "Welcome to Our Platform",
-      html: "<h1>Welcome!</h1><p>Thank you for registering.</p>",
-    });
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const result = await emailService.send({
+            to: "recipient@example.com",
+            subject: "Welcome to Our Platform",
+            html: "<h1>Welcome!</h1><p>Thank you for registering.</p>",
+        });
 
-    console.log(`Email sent successfully! Message ID: ${result.messageId}`);
+        console.log(`Email sent successfully! Message ID: ${result.messageId}`);
 
-    next();
-  }
+        next();
+    }
 );
 ```
 
@@ -105,11 +105,11 @@ export const afterSignup = catchAsync(
 
 ```typescript
 type EmailOptions = {
-  from?: string; // Optional: Overrides the default sender
-  to: string | string[]; // Single recipient or array of recipients
-  subject: string; // Email subject line
-  text?: string; // Optional: Plain text version (auto-generated from HTML if not provided)
-  html: string; // HTML content of the email
+    from?: string; // Optional: Overrides the default sender
+    to: string | string[]; // Single recipient or array of recipients
+    subject: string; // Email subject line
+    text?: string; // Optional: Plain text version (auto-generated from HTML if not provided)
+    html: string; // HTML content of the email
 };
 ```
 
@@ -121,20 +121,20 @@ You can send an email using different credentials without changing the default c
 
 ```typescript
 await emailService.send(
-  {
-    to: "client@example.com",
-    subject: "Your Invoice",
-    html: "<p>Please find your invoice attached.</p>",
-  },
-  {
-    host: "smtp.yourcompany.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: "billing@yourcompany.com",
-      pass: "billingPassword",
+    {
+        to: "client@example.com",
+        subject: "Your Invoice",
+        html: "<p>Please find your invoice attached.</p>",
     },
-  }
+    {
+        host: "smtp.yourcompany.com",
+        port: 587,
+        secure: false,
+        auth: {
+            user: "billing@yourcompany.com",
+            pass: "billingPassword",
+        },
+    }
 );
 ```
 
@@ -146,20 +146,20 @@ If you need to use multiple email configurations in your application:
 import { EmailService } from "arkos/services";
 
 const marketingEmailService = EmailService.create({
-  host: "smtp.marketing-provider.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: "marketing@yourcompany.com",
-    pass: "marketingPassword",
-  },
+    host: "smtp.marketing-provider.com",
+    port: 587,
+    secure: false,
+    auth: {
+        user: "marketing@yourcompany.com",
+        pass: "marketingPassword",
+    },
 });
 
 // Later in your code
 await marketingEmailService.send({
-  to: "prospects@example.com",
-  subject: "Special Offer",
-  html: "<h1>Limited Time Offer!</h1><p>Check out our new products...</p>",
+    to: "prospects@example.com",
+    subject: "Special Offer",
+    html: "<h1>Limited Time Offer!</h1><p>Check out our new products...</p>",
 });
 ```
 
@@ -169,13 +169,13 @@ If you need to switch to a different email account for an existing service insta
 
 ```typescript
 emailService.updateConfig({
-  host: "smtp.newprovider.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: "new@example.com",
-    pass: "newPassword",
-  },
+    host: "smtp.newprovider.com",
+    port: 587,
+    secure: false,
+    auth: {
+        user: "new@example.com",
+        pass: "newPassword",
+    },
 });
 ```
 
@@ -188,9 +188,9 @@ The connection is automatically verified before sending emails with custom confi
 const isConnected = await emailService.verifyConnection();
 
 if (isConnected) {
-  console.log("SMTP connection is working correctly");
+    console.log("SMTP connection is working correctly");
 } else {
-  console.log("SMTP connection failed - please check your credentials");
+    console.log("SMTP connection failed - please check your credentials");
 }
 ```
 
@@ -198,13 +198,13 @@ You can skip connection verification when sending emails by passing a third para
 
 ```typescript
 await emailService.send(
-  {
-    to: "client@example.com",
-    subject: "Quick notification",
-    html: "<p>This is an urgent notice.</p>",
-  },
-  undefined, // Use default connection
-  true // Skip verification to send faster
+    {
+        to: "client@example.com",
+        subject: "Quick notification",
+        html: "<p>This is an urgent notice.</p>",
+    },
+    undefined, // Use default connection
+    true // Skip verification to send faster
 );
 ```
 

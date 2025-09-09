@@ -66,7 +66,7 @@ handleRequestBodyValidationAndTransformation(...)
 
 ### 2.4. **Custom Prisma Query Options Injection**
 
-Injects your Prisma-specific options like filtering, ordering, pagination, etc., into the request, [read more](/docs/advanced-guide/custom-prisma-query-options) about how to inject your own custom prisma query options on the generated api routes.
+Injects your Prisma-specific options like filtering, ordering, pagination, etc., into the request, [read more](/docs/guide/custom-prisma-query-options) about how to inject your own custom prisma query options on the generated api routes.
 
 ```ts
 addPrismaQueryOptionsToRequestQuery(...)

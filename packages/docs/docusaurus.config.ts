@@ -17,7 +17,7 @@ const config: Config = {
   onBrokenMarkdownLinks: "warn",
   i18n: {
     defaultLocale: "en",
-    locales: ["en", "pt"],
+    locales: ["en"],
   },
   plugins: [
     async function myPlugin() {
@@ -56,10 +56,15 @@ const config: Config = {
     ],
   ],
   themeConfig: {
+    colorMode: {
+      defaultMode: "dark",
+      disableSwitch: true,
+      respectPrefersColorScheme: false,
+    },
     image: "img/arkos-social-card.webp",
     navbar: {
       style: "dark",
-      hideOnScroll: true,
+      hideOnScroll: false,
       logo: {
         alt: "Arkosjs Logo",
         src: "img/arkos-js-logo.svg",

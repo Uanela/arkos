@@ -218,7 +218,6 @@ POST /api/auth/login?usernameField=profile.nickname
 }
 ```
 
-
 #### Login With Deeply Nested Field (phones.some.number)
 
 ```curl
@@ -239,11 +238,11 @@ prisma.user.findUnique({
     where: {
         phones: {
             some: {
-                number: "+5511999999999"
-            }
-        }
-    }
-})
+                number: "+5511999999999",
+            },
+        },
+    },
+});
 ```
 
 This allows you to authenticate users based on fields within related models, providing flexible login options.
@@ -336,10 +335,10 @@ Custom actions defined in auth configs must be implemented in custom routes:
 import { Router } from "express";
 import { authService } from "arkos/services";
 import { catchAsync } from "arkos/error-handler";
-import postAuthConfigs from "./post.auth"
+import postAuthConfigs from "./post.auth";
 
 const router = Router();
-const { accessControl } = postAuthConfigs
+const { accessControl } = postAuthConfigs;
 
 router.get(
     "/export", // will translate to /api/posts/export
