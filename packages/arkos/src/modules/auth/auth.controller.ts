@@ -417,7 +417,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (!authAction)
           throw new AppError(
-            `Auth action with resource name ${resourceName}`,
+            `No auth action with resource name ${resourceName}`,
             404
           );
 
