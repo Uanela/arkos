@@ -203,7 +203,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
 
   if (!isEndpointDisabled<"auth">(routerConfig, "findOneAuthAction"))
     router.get(
-      "/auth-actions",
+      "/auth-actions/:resourceName",
       authService.authenticate,
       authService.handleAccessControl("View", "auth-action"),
       ...processMiddleware(interceptors?.beforeFindOneAuthAction),
