@@ -428,6 +428,7 @@ export class AuthService {
    *
    * PS: This method should be called during application initialization to build permission validators.
    *
+   * @see {@link https://www.arkosjs.com/docs/advanced-guide/fine-grained-access-control}
    *
    * @param action - The action to check permission for (e.g., 'View', 'Create', 'Delete')
    * @param resource - The resource being accessed, must be in kebabCase (e.g., 'user', 'cart-item', 'order')
