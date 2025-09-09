@@ -1,5 +1,9 @@
 import authActionService from "../auth-action.service";
 
+jest.mock("../../../../../server", () => ({
+  getArkosConfig: jest.fn(() => ({ authentication: { mode: "dynamic" } })),
+}));
+
 describe("AuthActionService", () => {
   beforeEach(() => {
     // Clear the authActions array before each test

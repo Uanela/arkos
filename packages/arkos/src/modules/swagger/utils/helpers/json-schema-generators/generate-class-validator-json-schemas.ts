@@ -27,10 +27,10 @@ export async function generateClassValidatorJsonSchemas() {
   });
 
   requiredAppModules.forEach((modelName) => {
-    const ModuleComponents = getModuleComponents(modelName);
+    const moduleComponents = getModuleComponents(modelName);
 
-    if (ModuleComponents?.dtos) {
-      Object.entries(ModuleComponents.dtos).forEach(([dtoType, dtoClass]) => {
+    if (moduleComponents?.dtos) {
+      Object.entries(moduleComponents.dtos).forEach(([dtoType, dtoClass]) => {
         if (dtoClass) {
           try {
             const schemaName = getCorrectJsonSchemaName(

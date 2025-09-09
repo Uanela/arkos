@@ -23,7 +23,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     schemas,
     prismaQueryOptions,
     router: customRouterModule,
-  } = getModuleComponents("auth");
+  } = getModuleComponents("auth") || {};
 
   const routerConfig = customRouterModule?.config || {};
   const authController = await authControllerFactory(interceptors);

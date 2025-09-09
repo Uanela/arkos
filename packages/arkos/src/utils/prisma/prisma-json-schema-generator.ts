@@ -59,9 +59,9 @@ export class PrismaJsonSchemaGenerator {
       ],
     } = config;
 
-    const ModuleComponents = getModuleComponents(modelName);
-    const routerConfig = ModuleComponents?.router?.config || {};
-    const prismaQueryOptions = ModuleComponents?.prismaQueryOptions || {};
+    const moduleComponents = getModuleComponents(modelName);
+    const routerConfig = moduleComponents?.router?.config || {};
+    const prismaQueryOptions = moduleComponents?.prismaQueryOptions || {};
     const authModuleModel = ["auth", "me", "password", "signup", "login"];
     const isAuthModule = authModuleModel.includes(modelName.toLowerCase());
 
