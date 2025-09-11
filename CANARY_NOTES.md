@@ -1,4 +1,4 @@
-# Canary Notes v1.3.1-beta
+# Canary Notes v1.3.2-beta
 
 ## TODO
 
@@ -37,6 +37,8 @@
 ## DONE
 
 ### Add
+
+- option to skip all hooks at once at service hooks by passing skip : "all"
 
 ### Change
 

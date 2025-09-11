@@ -5,14 +5,14 @@ import chalk from "chalk";
 import { execSync } from "child_process";
 import projectConfigInquirer from "./utils/project-config-inquirer.js";
 import templateCompiler from "./utils/template-compiler.js";
-import Handlebars from "handlebars";
-import { getProcjetPackageJsonDependecies } from "./utils/helpers/index.js";
+import handlebars from "handlebars";
+import { getProcjetPackageJsonDependecies } from "./utils/helpers/package-json.helpers.js";
 import { detectPackageManagerFromUserAgent } from "./utils/helpers/npm.helpers.js";
 import { fileURLToPath } from "url";
-Handlebars.registerHelper("eq", (a, b) => a === b);
-Handlebars.registerHelper("neq", (a, b) => a !== b);
+handlebars.registerHelper("eq", (a, b) => a === b);
+handlebars.registerHelper("neq", (a, b) => a !== b);
 const __dirname = dirname(fileURLToPath(import.meta.url));
-async function main() {
+export async function main() {
     const config = await projectConfigInquirer.run();
     const argProjectName = config.argProjectName;
     const projectPath = config.projectPath;
@@ -50,4 +50,5 @@ async function main() {
     `);
 }
 main().catch(console.error);
+export { handlebars };
 //# sourceMappingURL=index.js.map
