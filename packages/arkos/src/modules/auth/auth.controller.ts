@@ -411,21 +411,24 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         if (!resourceName)
           throw new AppError(`Please provide a resoureName`, 400);
 
-        const authAction = authActionService.getByResource(
-          req.params?.resourceName
-        );
+        const authActions = authActionService
+          .getByResource(req.params?.resourceName)
+          ?.map((authAction) => {
+            if (arkosConfig?.authentication?.mode === "dynamic")
+              delete (authAction as any)?.roles;
+            return authAction;
+          });
 
-        if (!authAction)
+        if (!authActions)
           throw new AppError(
             `No auth action with resource name ${resourceName}`,
             404
           );
 
-        if (arkosConfig?.authentication?.mode === "dynamic")
-          delete (authAction as any)?.roles;
-
         res.json({
-          data: authAction,
+          total: authActions.length,
+          results: authActions.length,
+          data: authActions,
         });
       }
     ),

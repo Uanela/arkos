@@ -207,7 +207,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       authService.authenticate,
       authService.handleAccessControl("View", "auth-action"),
       ...processMiddleware(interceptors?.beforeFindOneAuthAction),
-      authController.findManyAuthAction,
+      authController.findOneAuthAction,
       ...processMiddleware(interceptors?.afterFindOneAuthAction),
       sendResponse,
       ...processMiddleware(interceptors?.onFindOneAuthActionError, {

@@ -9,7 +9,7 @@ import { ValidatorOptions } from "class-validator";
 import { MsDuration } from "../modules/auth/utils/helpers/auth.controller.helpers";
 import { OpenAPIV3 } from "openapi-types";
 import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with { "resolution-mode": "import" };
-
+import nodemailer from "nodemailer";
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
  */
@@ -583,6 +583,12 @@ export type ArkosConfig = {
    */
   email?: {
     /**
+     * Email name to used like:
+     *
+     * John Doe\<john.doe@gmail.com>
+     */
+    name?: string;
+    /**
      * Your email provider url
      */
     host: string;
@@ -607,13 +613,7 @@ export type ArkosConfig = {
        */
       pass: string;
     };
-    /**
-     * Email name to used like:
-     *
-     * John Doe\<john.doe@gmail.com>
-     */
-    name?: string;
-  };
+  } & Parameters<typeof nodemailer.createTransport>[0];
   /**
    * Defines Swagger and OpenApi specifications for auto generating swagger documentation UI using whether it is Prisma Schemas, Class-validator DTOs, Zod Schemas or JSON-Schemas.
    *
