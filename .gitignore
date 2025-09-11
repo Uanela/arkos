@@ -9,4 +9,4 @@ coverage/
 **/node_modules/
 node_modules/
 .build/
-create-arkos-api
+packages/create-arkos-api
