@@ -170,7 +170,12 @@ export interface ServiceBaseContext {
    * { skip: ["before", "after", "error"] }
    * ```
    */
-  skip?: ("before" | "after" | "error")[];
+  skip?:
+    | ("before" | "after" | "error")[]
+    | "before"
+    | "after"
+    | "error"
+    | "all";
 
   /**
    * Whether to re-throw errors after error hooks have been executed.

@@ -76,7 +76,7 @@ class AuthActionService {
         [],
       action,
       resource,
-      name: `${action} ${resource}`,
+      name: `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`,
       description: `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`,
       errorMessage: `You do not have permission to perform this operation`,
     };
@@ -133,8 +133,8 @@ class AuthActionService {
   /**
    * Get all auth actions for a specific resource
    */
-  getByResource(resource: string): AuthAction | undefined {
-    return this.authActions.find(
+  getByResource(resource: string): AuthAction[] | undefined {
+    return this.authActions.filter(
       (authAction) => authAction.resource === resource
     );
   }

@@ -129,7 +129,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeCreateOne && !context?.skip?.includes("before"))
+      if (
+        serviceHooks?.beforeCreateOne &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      )
         await serviceHooksManager.handleHook(serviceHooks.beforeCreateOne, {
           data,
           queryOptions,
@@ -161,7 +166,12 @@ export class BaseService<T extends ModelDelegate = any> {
         ) as { data: any }
       );
 
-      if (serviceHooks?.afterCreateOne && !context?.skip?.includes("after"))
+      if (
+        serviceHooks?.afterCreateOne &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
         await serviceHooksManager.handleHook(serviceHooks.afterCreateOne, {
           result,
           data,
@@ -171,7 +181,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onCreateOneError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onCreateOneError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onCreateOneError, {
           error: err,
           data,
@@ -202,6 +217,8 @@ export class BaseService<T extends ModelDelegate = any> {
     try {
       if (
         serviceHooks?.beforeCreateMany &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
         !context?.skip?.includes("before")
       ) {
         await serviceHooksManager.handleHook(serviceHooks.beforeCreateMany, {
@@ -241,7 +258,12 @@ export class BaseService<T extends ModelDelegate = any> {
         }
       );
 
-      if (serviceHooks?.afterCreateMany && !context?.skip?.includes("after"))
+      if (
+        serviceHooks?.afterCreateMany &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
         await serviceHooksManager.handleHook(serviceHooks.afterCreateMany, {
           result,
           data,
@@ -251,7 +273,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onCreateManyError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onCreateManyError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onCreateManyError, {
           error: err,
           data,
@@ -277,7 +304,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeCount && !context?.skip?.includes("before")) {
+      if (
+        serviceHooks?.beforeCount &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      ) {
         await serviceHooksManager.handleHook(serviceHooks.beforeCount, {
           filters,
           context,
@@ -290,7 +322,12 @@ export class BaseService<T extends ModelDelegate = any> {
         where: filters,
       });
 
-      if (serviceHooks?.afterCount && !context?.skip?.includes("after")) {
+      if (
+        serviceHooks?.afterCount &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      ) {
         await serviceHooksManager.handleHook(serviceHooks.afterCount, {
           result,
           filters,
@@ -300,7 +337,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onCountError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onCountError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onCountError, {
           error: err,
           filters,
@@ -328,7 +370,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeFindMany && !context?.skip?.includes("before")) {
+      if (
+        serviceHooks?.beforeFindMany &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      ) {
         await serviceHooksManager.handleHook(serviceHooks.beforeFindMany, {
           filters,
           queryOptions,
@@ -344,7 +391,12 @@ export class BaseService<T extends ModelDelegate = any> {
         } & TOptions
       );
 
-      if (serviceHooks?.afterFindMany && !context?.skip?.includes("after"))
+      if (
+        serviceHooks?.afterFindMany &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
         await serviceHooksManager.handleHook(serviceHooks.afterFindMany, {
           result,
           filters,
@@ -354,7 +406,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onFindManyError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onFindManyError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onFindManyError, {
           error: err,
           filters,
@@ -383,7 +440,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeFindById && !context?.skip?.includes("before")) {
+      if (
+        serviceHooks?.beforeFindById &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      ) {
         await serviceHooksManager.handleHook(serviceHooks.beforeFindById, {
           id,
           queryOptions,
@@ -402,7 +464,12 @@ export class BaseService<T extends ModelDelegate = any> {
         ) as { where: { id: string | number } }
       );
 
-      if (serviceHooks?.afterFindById && !context?.skip?.includes("after")) {
+      if (
+        serviceHooks?.afterFindById &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      ) {
         await serviceHooksManager.handleHook(serviceHooks.afterFindById, {
           result,
           id,
@@ -413,7 +480,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onFindByIdError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onFindByIdError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onFindByIdError, {
           error: err,
           id,
@@ -442,7 +514,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeFindOne && !context?.skip?.includes("before")) {
+      if (
+        serviceHooks?.beforeFindOne &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      ) {
         await serviceHooksManager.handleHook(serviceHooks.beforeFindOne, {
           filters,
           queryOptions,
@@ -476,7 +553,12 @@ export class BaseService<T extends ModelDelegate = any> {
           ) as { where: any }
         );
 
-      if (serviceHooks?.afterFindOne && !context?.skip?.includes("after"))
+      if (
+        serviceHooks?.afterFindOne &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
         await serviceHooksManager.handleHook(serviceHooks.afterFindOne, {
           result,
           filters,
@@ -486,7 +568,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onFindOneError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onFindOneError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onFindOneError, {
           error: err,
           filters,
@@ -517,7 +604,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeUpdateOne && !context?.skip?.includes("before"))
+      if (
+        serviceHooks?.beforeUpdateOne &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      )
         await serviceHooksManager.handleHook(serviceHooks.beforeUpdateOne, {
           filters,
           data,
@@ -551,7 +643,12 @@ export class BaseService<T extends ModelDelegate = any> {
         ) as { where: any; data: any }
       );
 
-      if (serviceHooks?.afterUpdateOne && !context?.skip?.includes("after"))
+      if (
+        serviceHooks?.afterUpdateOne &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
         await serviceHooksManager.handleHook(serviceHooks.afterUpdateOne, {
           result,
           filters,
@@ -562,7 +659,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onUpdateOneError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onUpdateOneError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onUpdateOneError, {
           error: err,
           filters,
@@ -594,7 +696,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeUpdateMany && !context?.skip?.includes("before"))
+      if (
+        serviceHooks?.beforeUpdateMany &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      )
         await serviceHooksManager.handleHook(serviceHooks.beforeUpdateMany, {
           filters,
           data,
@@ -625,7 +732,12 @@ export class BaseService<T extends ModelDelegate = any> {
         }
       );
 
-      if (serviceHooks?.afterUpdateMany && !context?.skip?.includes("after"))
+      if (
+        serviceHooks?.afterUpdateMany &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
         await serviceHooksManager.handleHook(serviceHooks.afterUpdateMany, {
           result,
           filters,
@@ -636,7 +748,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onUpdateManyError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onUpdateManyError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onUpdateManyError, {
           error: err,
           filters,
@@ -664,7 +781,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeDeleteOne && !context?.skip?.includes("before"))
+      if (
+        serviceHooks?.beforeDeleteOne &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      )
         await serviceHooksManager.handleHook(serviceHooks.beforeDeleteOne, {
           filters,
           context,
@@ -676,7 +798,12 @@ export class BaseService<T extends ModelDelegate = any> {
         where: filters,
       });
 
-      if (serviceHooks?.afterDeleteOne && !context?.skip?.includes("after"))
+      if (
+        serviceHooks?.afterDeleteOne &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
         await serviceHooksManager.handleHook(serviceHooks.afterDeleteOne, {
           result,
           filters,
@@ -685,7 +812,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onDeleteOneError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onDeleteOneError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onDeleteOneError, {
           error: err,
           filters,
@@ -711,7 +843,12 @@ export class BaseService<T extends ModelDelegate = any> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
 
     try {
-      if (serviceHooks?.beforeDeleteMany && !context?.skip?.includes("before"))
+      if (
+        serviceHooks?.beforeDeleteMany &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      )
         await serviceHooksManager.handleHook(serviceHooks.beforeDeleteMany, {
           filters,
           context,
@@ -723,7 +860,12 @@ export class BaseService<T extends ModelDelegate = any> {
         where: filters,
       });
 
-      if (serviceHooks?.afterDeleteMany && !context?.skip?.includes("after"))
+      if (
+        serviceHooks?.afterDeleteMany &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
         await serviceHooksManager.handleHook(serviceHooks.afterDeleteMany, {
           result,
           filters,
@@ -732,7 +874,12 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return result;
     } catch (err: any) {
-      if (serviceHooks?.onDeleteManyError && !context?.skip?.includes("error"))
+      if (
+        serviceHooks?.onDeleteManyError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
         await serviceHooksManager.handleHook(serviceHooks.onDeleteManyError, {
           error: err,
           filters,
