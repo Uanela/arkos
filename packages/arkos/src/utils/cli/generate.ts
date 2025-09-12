@@ -33,9 +33,7 @@ const generateFile = async (
     process.exit(1);
   }
 
-  if (config.customValidation) {
-    config.customValidation(modelName);
-  }
+  if (config.customValidation) config.customValidation(modelName);
 
   const { path: customPath = "src/modules" } = options;
 
@@ -127,6 +125,20 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "hooks",
       fileSuffix: "hooks",
+    });
+  },
+
+  createDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "create-dto",
+      fileSuffix: "dto",
+    });
+  },
+
+  updateDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "update-dto",
+      fileSuffix: "dto",
     });
   },
 
