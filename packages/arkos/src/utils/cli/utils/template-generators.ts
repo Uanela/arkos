@@ -1,10 +1,10 @@
-import { generateControllerTemplate } from "./template-generator/templates/generate-controller-template";
-import { generateAuthConfigsTemplate } from "./template-generator/templates/generate-auth-configs-template";
-import { generateMiddlewaresTemplate } from "./template-generator/templates/generate-middlewares";
-import { generateQueryOptionsTemplate } from "./template-generator/templates/generate-prisma-query-options";
-import { generateRouterTemplate } from "./template-generator/templates/generate-router-template";
-import { generateServiceTemplate } from "./template-generator/templates/generate-service-template";
-import generateHooksTemplate from "./template-generator/templates/generate-hooks-template";
+import { generateControllerTemplate } from "./template-generator/templates/controller-template";
+import { generateAuthConfigsTemplate } from "./template-generator/templates/auth-configs-template";
+import { generateMiddlewaresTemplate } from "./template-generator/templates/middlewares-template";
+import { generateQueryOptionsTemplate } from "./template-generator/templates/query-options-template";
+import { generateRouterTemplate } from "./template-generator/templates/router-template";
+import { generateServiceTemplate } from "./template-generator/templates/service-template";
+import generateHooksTemplate from "./template-generator/templates/hooks-template";
 
 interface ModelName {
   pascal: string;
