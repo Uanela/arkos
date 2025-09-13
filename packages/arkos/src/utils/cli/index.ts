@@ -4,6 +4,7 @@ import { devCommand } from "./dev";
 import { startCommand } from "./start";
 import { generateCommand } from "./generate";
 import { getVersion } from "./utils/cli.helpers";
+import prismaGenerateCommand from "./prisma-generate";
 
 const program = new Command();
 
@@ -97,6 +98,12 @@ generate
   .requiredOption("-m, --model <name>", "Module name")
   .option("-p, --path <path>", "Custom path for hooks", "src/modules")
   .action(generateCommand.hooks);
+
+program
+  .command("prisma")
+  .command("generate")
+  .description("Generate your @prisma/client and BaseService class types")
+  .action(prismaGenerateCommand);
 
 program.parse(process.argv);
 
