@@ -205,7 +205,7 @@ export interface AfterCreateOneHookArgs<
   T extends ModelDelegate,
   Context = ServiceBaseContext,
 > {
-  result: CreateOneResult<T>;
+  result: Awaited<CreateOneResult<T>>;
   data: CreateOneData<T>;
   queryOptions?: CreateOneOptions<T>;
   context?: Context;
@@ -224,7 +224,7 @@ export interface AfterCreateManyHookArgs<
   T extends ModelDelegate,
   Context = ServiceBaseContext,
 > {
-  result: CreateManyResult<T>;
+  result: Awaited<CreateManyResult<T>>;
   queryOptions?: CreateManyOptions<T>;
   context?: Context;
 }
@@ -259,7 +259,7 @@ export interface AfterFindManyHookArgs<
   T extends ModelDelegate,
   Context = ServiceBaseContext,
 > {
-  result: FindManyResult<T>;
+  result: Awaited<FindManyResult<T>>;
   filters?: FindManyFilters<T>;
   queryOptions?: FindManyOptions<T>;
   context?: Context;
@@ -278,7 +278,7 @@ export interface AfterFindOneHookArgs<
   T extends ModelDelegate,
   Context = ServiceBaseContext,
 > {
-  result: FindOneResult<T>;
+  result: Awaited<FindOneResult<T>>;
   filters: FindOneFilters<T>;
   queryOptions?: FindOneOptions<T>;
   context?: Context;
@@ -298,7 +298,7 @@ export interface AfterUpdateOneHookArgs<
   T extends ModelDelegate,
   Context = ServiceBaseContext,
 > {
-  result: UpdateOneResult<T>;
+  result: Awaited<UpdateOneResult<T>>;
   filters: UpdateOneFilters<T>;
   data: UpdateOneData<T>;
   queryOptions?: UpdateOneOptions<T>;
@@ -319,7 +319,7 @@ export interface AfterUpdateManyHookArgs<
   T extends ModelDelegate,
   Context = ServiceBaseContext,
 > {
-  result: UpdateManyResult<T>;
+  result: Awaited<UpdateManyResult<T>>;
   filters: UpdateManyFilters<T>;
   data: UpdateManyData<T>;
   queryOptions?: UpdateManyOptions<T>;
@@ -338,7 +338,7 @@ export interface AfterDeleteOneHookArgs<
   T extends ModelDelegate,
   Context = ServiceBaseContext,
 > {
-  result: DeleteOneResult<T>;
+  result: Awaited<DeleteOneResult<T>>;
   filters: DeleteOneFilters<T>;
   context?: Context;
 }
@@ -355,7 +355,7 @@ export interface AfterDeleteManyHookArgs<
   T extends ModelDelegate,
   Context = ServiceBaseContext,
 > {
-  result: DeleteManyResult<T>;
+  result: Awaited<DeleteManyResult<T>>;
   filters: DeleteManyFilters<T>;
   context?: Context;
 }
