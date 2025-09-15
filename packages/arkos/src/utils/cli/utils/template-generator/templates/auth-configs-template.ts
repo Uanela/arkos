@@ -1,4 +1,5 @@
 import { getUserFileExtension } from "../../../../helpers/fs.helpers";
+import { capitalize } from "../../../../helpers/text.helpers";
 import { TemplateOptions } from "../../template-generators";
 
 export function generateAuthConfigsTemplate(options: TemplateOptions): string {
@@ -35,10 +36,26 @@ const ${modelName.camel}AuthConfigs${typeAnnotation} = {
     View: true,
   },
   accessControl: {
-    // Create: [],
-    // Update: [],
-    // Delete: [],
-    // View: [],
+    // Create: {
+    //   roles: [], // only when using static authentication
+    //   name: Create ${capitalize(modelName.kebab.replaceAll("-", ""))},
+    //   description: Permission to create new ${modelName.kebab.replaceAll("-", " ")} records,
+    // },
+    // Update: {
+    //   roles: [], // only when using static authentication
+    //   name: Update ${capitalize(modelName.kebab.replaceAll("-", ""))},
+    //   description: Permission to update existing ${modelName.kebab.replaceAll("-", " ")} records,
+    // },
+    // Delete: {
+    //   roles: [], // only when using static authentication
+    //   name: Delete ${capitalize(modelName.kebab.replaceAll("-", ""))},
+    //   description: Permission to delete ${modelName.kebab.replaceAll("-", " ")} records,
+    // },
+    // View: {
+    //   roles: [], // only when using static authentication
+    //   name: View ${capitalize(modelName.kebab.replaceAll("-", ""))},
+    //   description: Permission to view ${modelName.kebab.replaceAll("-", " ")} records,
+    // },
   },
 };
 
