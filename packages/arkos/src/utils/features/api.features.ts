@@ -4,8 +4,6 @@ import { parseQueryParamsWithModifiers } from "../helpers/api.features.helpers";
 import AppError from "../../modules/error-handler/utils/app-error";
 import { getPrismaInstance } from "../helpers/prisma.helpers";
 import { ArkosRequest } from "../../types";
-import prismaSchemaParser from "../prisma/prisma-schema-parser";
-import { pascalCase } from "./change-case.features";
 
 type ModelName = string;
 
@@ -151,6 +149,11 @@ export default class APIFeatures {
     );
 
     this.filters = deepmerge(firstMerge, this.filters);
+    this.searchParams = deepmerge(
+      this.searchParams || {},
+      this.req.prismaQueryOptions || {}
+    );
+
     return this;
   }
 
@@ -169,10 +172,6 @@ export default class APIFeatures {
   }
 
   limitFields() {
-    const currentModel = prismaSchemaParser.models.find(
-      (model) => pascalCase(model.name) === pascalCase(this.modelName)
-    );
-
     let finalSelect: Record<string, any> = {};
     let finalInclude: Record<string, any> = {};
     let finalOmit: Record<string, any> = {};
@@ -209,38 +208,48 @@ export default class APIFeatures {
       });
     }
 
-    if (this.searchParams.include) {
-      finalInclude = deepmerge(finalInclude, this.searchParams.include);
+    if (this.searchParams.include || this.filters.include)
+      finalInclude = deepmerge(
+        finalInclude,
+        deepmerge(this.filters?.include || {}, this.searchParams?.include || {})
+      );
+
+    if (this.searchParams.select || this.filters.include)
+      finalSelect = deepmerge(
+        finalSelect,
+        deepmerge(this.filters?.select || {}, this.searchParams?.select || {})
+      );
+
+    if (this.searchParams.omit || this.filters.omit)
+      finalOmit = deepmerge(
+        finalOmit,
+        deepmerge(this.filters?.omit || {}, this.searchParams?.omit || {})
+      );
+
+    if (
+      Object.keys(finalSelect).length > 0 &&
+      Object.keys(finalInclude).length > 0
+    ) {
+      finalSelect = deepmerge(finalSelect, finalInclude);
+      finalInclude = {};
+      delete this.filters.include;
+      delete this.searchParams.include;
     }
 
-    if (this.searchParams.select) {
-      finalSelect = deepmerge(finalSelect, this.searchParams.select);
-    }
-
-    if (this.searchParams.omit) {
-      finalOmit = deepmerge(finalOmit, this.searchParams.omit);
-    }
-
-    // ALWAYS validate for password exposure regardless of model
     this._validateNoPasswordExposure(finalSelect, finalInclude, finalOmit);
 
     // ALWAYS protect password field in finalOmit
-    if (finalOmit.password === false) {
+    if (finalOmit.password === false)
       throw new AppError("Cannot disable password omission protection", 400);
-    }
-    finalOmit.password = true;
 
-    if (Object.keys(finalSelect).length > 0) {
-      this.filters.select = finalSelect;
-    }
+    if (this.modelName?.toLowerCase?.() === "user") finalOmit.password = true;
 
-    if (Object.keys(finalInclude).length > 0) {
+    if (Object.keys(finalSelect).length > 0) this.filters.select = finalSelect;
+
+    if (Object.keys(finalInclude).length > 0)
       this.filters.include = finalInclude;
-    }
 
-    if (Object.keys(finalOmit).length > 0) {
-      this.filters.omit = finalOmit;
-    }
+    if (Object.keys(finalOmit).length > 0) this.filters.omit = finalOmit;
 
     if (this.searchParams?.addFields || this.searchParams?.removeFields) {
       throw new AppError(

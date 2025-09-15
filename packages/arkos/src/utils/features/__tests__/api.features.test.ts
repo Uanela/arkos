@@ -259,8 +259,6 @@ describe("APIFeatures", () => {
           name: true,
           email: true,
           createdAt: true,
-        },
-        include: {
           posts: true,
         },
         omit: {
@@ -409,8 +407,7 @@ describe("APIFeatures", () => {
       expect(result).toBe(apiFeatures);
       expect(apiFeatures.filters).toEqual({
         where: { OR: [{ email: "arkos@the-beast.com" }] },
-        select: { name: true, email: true },
-        include: { posts: true },
+        select: { name: true, email: true, posts: true },
         omit: { password: true },
         orderBy: [{ createdAt: "desc" }],
         skip: 10,
@@ -420,6 +417,37 @@ describe("APIFeatures", () => {
   });
 
   describe("edge cases", () => {
+    test("should merge include and select into a single selct even though with query merged from req.prismaQueryOptions", () => {
+      req.prismaQueryOptions = {
+        include: {
+          posts: true,
+          banners: true,
+        },
+      };
+      req.query = {
+        select: {
+          id: true,
+          name: true,
+        },
+      };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.filter().limitFields().sort().paginate();
+
+      expect(apiFeatures.filters).toEqual({
+        where: {},
+        omit: { password: true },
+        select: {
+          id: true,
+          name: true,
+          posts: true,
+          banners: true,
+        },
+        skip: 0,
+        take: 30,
+      });
+    });
+
     test("should handle empty query", () => {
       req.query = {};
       const apiFeatures = new APIFeatures(req, "user");
