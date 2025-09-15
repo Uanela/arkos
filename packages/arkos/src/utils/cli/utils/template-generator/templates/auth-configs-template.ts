@@ -18,6 +18,15 @@ export function generateAuthConfigsTemplate(options: TemplateOptions): string {
   const typeAnnotation = isTypeScript ? `: AuthConfigs` : "";
 
   return `${imports}
+import { authService } from "arkos/services";
+
+export const ${modelName.camel}Permissions = {
+  canCreate: authService.permission("Create", "${modelName.kebab}"),
+  canUpdate: authService.permission("Update", "${modelName.kebab}"),
+  canDelete: authService.permission("Delete", "${modelName.kebab}"),
+  canView: authService.permission("View", "${modelName.kebab}"),
+}
+
 const ${modelName.camel}AuthConfigs${typeAnnotation} = {
   authenticationControl: {
     Create: true,
