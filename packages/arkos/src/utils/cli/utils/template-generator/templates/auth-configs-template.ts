@@ -20,18 +20,16 @@ export function generateAuthConfigsTemplate(options: TemplateOptions): string {
   return `${imports}
 const ${modelName.camel}AuthConfigs${typeAnnotation} = {
   authenticationControl: {
-    // Create: true,
-    // Update: true,
-    // Delete: true,
-    // View: false,
+    Create: true,
+    Update: true,
+    Delete: true,
+    View: true,
   },
-  
-  // Only when using Static RBAC
   accessControl: {
-    // Create: ["Admin"],
-    // Update: ["Admin", "Manager"],
-    // Delete: ["Admin"],
-    // View: ["User", "Admin", "Guest"],
+    // Create: [],
+    // Update: [],
+    // Delete: [],
+    // View: [],
   },
 };
 
