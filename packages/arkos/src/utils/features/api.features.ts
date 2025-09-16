@@ -304,14 +304,19 @@ export default class APIFeatures {
   }
 
   paginate(): APIFeatures {
-    const page = parseInt(this.searchParams.page, 10) || 1;
-    const limit = parseInt(this.searchParams.limit, 10) || 30;
-    const skip = (page - 1) * limit;
+    const paginationOptions = (() => {
+      if (this.searchParams.limit === "all") return {};
+
+      const page = parseInt(this.searchParams.page, 10) || 1;
+      const limit = parseInt(this.searchParams.limit, 10) || 30;
+      const skip = (page - 1) * limit;
+
+      return { skip, take: limit };
+    })();
 
     this.filters = {
       ...this.filters,
-      skip,
-      take: limit,
+      ...paginationOptions,
     };
     return this;
   }

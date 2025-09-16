@@ -34,9 +34,7 @@ const generateFile = async (
     process.exit(1);
   }
 
-  if (config.customValidation) {
-    config.customValidation(modelName);
-  }
+  if (config.customValidation) config.customValidation(modelName);
 
   const { path: customPath = "src/modules" } = options;
 
@@ -71,15 +69,16 @@ const generateFile = async (
       );
     fs.writeFileSync(filePath, content);
 
+    console.info("");
     sheu.done(
       `${humamReadableTemplateName} for ${options.model} generated under ${fullCleanCwd(filePath)}`
     );
-  } catch (err) {
+  } catch (err: any) {
     console.info("");
     sheu.error(
-      `${sheu.bold(`Failed to generate ${humamReadableTemplateName.toLowerCase()}`)} for ${options.model} ${filePath ? "under " + fullCleanCwd(filePath) + "." : "."}`
+      `${`Failed to generate ${humamReadableTemplateName.toLowerCase()}`} for ${options.model} ${filePath ? "under " + fullCleanCwd(filePath) + "." : "."}`
     );
-    console.info(err);
+    console.info(`${sheu.bold("Reason: ")}${err?.message || "unknown"}`);
     process.exit(1);
   }
 };
