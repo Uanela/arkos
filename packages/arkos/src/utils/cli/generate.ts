@@ -9,6 +9,7 @@ import {
 } from "../helpers/change-case.helpers";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import sheu from "../sheu";
+import { capitalize } from "../helpers/text.helpers";
 
 interface GenerateOptions {
   path?: string;
@@ -64,15 +65,21 @@ const generateFile = async (
     };
 
     const content = generateTemplate(config.templateName, templateData);
+    if (fs.existsSync(filePath))
+      throw new Error(
+        `${capitalize(humamReadableTemplateName.toLowerCase())} for ${options.model} already exists.`
+      );
     fs.writeFileSync(filePath, content);
 
     sheu.done(
       `${humamReadableTemplateName} for ${options.model} generated under ${fullCleanCwd(filePath)}`
     );
-  } catch (error) {
+  } catch (err) {
+    console.info("");
     sheu.error(
       `${sheu.bold(`Failed to generate ${humamReadableTemplateName.toLowerCase()}`)} for ${options.model} ${filePath ? "under " + fullCleanCwd(filePath) + "." : "."}`
     );
+    console.info(err);
     process.exit(1);
   }
 };
