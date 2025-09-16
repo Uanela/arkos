@@ -281,11 +281,18 @@ export default class APIFeatures {
           if (value === false)
             throw new AppError(
               "Cannot disable password omission protection",
-              400
+              400,
+              { ...obj },
+              "CannotUserExposePassword"
             );
 
           if (value === true && !omit?.["password"])
-            throw new AppError("User password exposure detected", 400);
+            throw new AppError(
+              "User password exposure detected",
+              403,
+              {},
+              "UserPasswordExposureDetected"
+            );
         }
 
         if (
