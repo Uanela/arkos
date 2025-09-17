@@ -3,7 +3,7 @@ import { AuthConfigs } from "arkos/auth";
 {{/if}}
 import { authService } from "arkos/services";
 
-export const ${modelName.camel}Permissions = {
+export const authRolePermissions = {
   canCreate: authService.permission("Create", "auth-role"),
   canUpdate: authService.permission("Update", "auth-role"),
   canDelete: authService.permission("Delete", "auth-role"),
@@ -25,22 +25,30 @@ const authRoleAuthConfigs = {
   {{#if (eq authentication.type "static")}}
   accessControl: {
     // Create: {
-    //   roles: [], // only when using static authentication
+    {{#if (eq authentication.type "static")}}
+    //   roles: [],
+    {{/if}}
     //   name: "Create New Auth Role",
     //   description: "Permission to create auth role records"
     // },
     // Update: {
-    //   roles: [], // only when using static authentication
+    {{#if (eq authentication.type "static")}}
+    //   roles: [],
+    {{/if}}
     //   name: "Update Auth Role",
     //   description: "Permission to update auth role records"
     // },
     // Delete: {
-    //   roles: [], // only when using static authentication
+    {{#if (eq authentication.type "static")}}
+    //   roles: [],
+    {{/if}}
     //   name: "Delete Auth Role",
     //   description: "Permission to delete auth role records"
     // },
     // View: {
-    //   roles: [], // only when using static authentication
+    {{#if (eq authentication.type "static")}}
+    //   roles: [],
+    {{/if}}
     //   name: "View Auth Role",
     //   description: "Permission to update auth role records"
     // },
