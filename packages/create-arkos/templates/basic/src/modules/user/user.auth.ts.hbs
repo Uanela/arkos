@@ -1,6 +1,16 @@
 {{#if typescript}}
-import { AuthConfigs } from "arkos/auth"
+import { AuthConfigs } from "arkos/auth";
+{{/if}}
+import { authService } from "arkos/services";
 
+export const ${modelName.camel}Permissions = {
+  canCreate: authService.permission("Create", "user"),
+  canUpdate: authService.permission("Update", "user"),
+  canDelete: authService.permission("Delete", "user"),
+  canView: authService.permission("View", "user"),
+}
+
+{{#if typescript}}
 const userAuthConfigs: AuthConfigs = {
 {{else}}
 /** @type {import('arkos/auth').AuthConfigs} */
@@ -14,10 +24,26 @@ const userAuthConfigs = {
   },
   {{#if (eq authentication.type "static")}}
   accessControl: {
-    // Create: ["Admin"],
-    // Update: ["Admin", "Manager"],
-    // Delete: ["Admin"],
-    // View: ["User", "Admin", "Guest"],
+    // Create: {
+    //   roles: [], // only when using static authentication
+    //   name: "Create New User",
+    //   description: "Permission to create user records"
+    // },
+    // Update: {
+    //   roles: [], // only when using static authentication
+    //   name: "Update User",
+    //   description: "Permission to update user records"
+    // },
+    // Delete: {
+    //   roles: [], // only when using static authentication
+    //   name: "Delete User",
+    //   description: "Permission to delete user records"
+    // },
+    // View: {
+    //   roles: [], // only when using static authentication
+    //   name: "View User",
+    //   description: "Permission to update user records"
+    // },
   },
   {{/if}}
 };

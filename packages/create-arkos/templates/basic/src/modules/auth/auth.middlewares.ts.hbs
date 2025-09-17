@@ -1,103 +1,122 @@
 {{#if typescript}}
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
-// export const beforeGetMe = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// export const beforeGetMe = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const afterGetMe = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const afterGetMe = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const beforeLogin = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const onGetMeError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const afterLogin = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const beforeLogin = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const beforeLogout = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const afterLogin = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const afterLogout = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const onLoginError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const beforeSignup = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const beforeLogout = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const afterSignup = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const afterLogout = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const beforeUpdatePassword = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const onLogoutError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const afterUpdatePassword = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// }];
+
+// export const beforeSignup = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-{{else}}
-// export const beforeGetMe = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const afterSignup = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const afterGetMe = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const onSignupError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const beforeLogin = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const beforeUpdatePassword = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const afterLogin = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const afterUpdatePassword = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const beforeLogout = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const onUpdatePasswordError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
-// 
-// export const afterLogout = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const beforeGetMe = [async (req, res, next) => {
 //   next();
-// };
-// 
-// export const beforeSignup = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const afterGetMe = [async (req, res, next) => {
 //   next();
-// };
-// 
-// export const afterSignup = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const onGetMeError = [async (req, res, next) => {
 //   next();
-// };
-// 
-// export const beforeUpdatePassword = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const beforeLogin = [async (req, res, next) => {
 //   next();
-// };
-// 
-// export const afterUpdatePassword = async (req, res, next) => {
-//   // Your logic here
+// }];
+
+// export const afterLogin = [async (req, res, next) => {
 //   next();
-// };
-// {{/if}}
+// }];
+
+// export const onLoginError = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const beforeLogout = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const afterLogout = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const onLogoutError = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const beforeSignup = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const afterSignup = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const onSignupError = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const beforeUpdatePassword = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const afterUpdatePassword = [async (req, res, next) => {
+//   next();
+// }];
+
+// export const onUpdatePasswordError = [async (req, res, next) => {
+//   next();
+// }];
