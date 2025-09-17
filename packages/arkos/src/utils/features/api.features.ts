@@ -283,7 +283,7 @@ export default class APIFeatures {
               "Cannot disable password omission protection",
               400,
               { ...obj },
-              "CannotUserExposePassword"
+              "CannotExposeUserPassword"
             );
 
           if (value === true && !omit?.["password"])
