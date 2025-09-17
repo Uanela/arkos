@@ -14,10 +14,34 @@ const fileUplaodAuthConfigs = {
   },
   {{#if (eq authentication.type "static")}}
   accessControl: {
-    // Create: ["Admin"],
-    // Update: ["Admin", "Manager"],
-    // Delete: ["Admin"],
-    // View: ["User", "Admin", "Guest"],
+    // Create: {
+    {{#if (eq authentication.type "static")}}
+    //   roles: [],
+    {{/if}}
+    //   name: "Upload File",
+    //   description: "Permission to upload file"
+    // },
+    // Update: {
+    {{#if (eq authentication.type "static")}}
+    //   roles: [],
+    {{/if}}
+    //   name: "Update File",
+    //   description: "Permission to update file"
+    // },
+    // Delete: {
+    {{#if (eq authen.type "static")}}
+    //   roles: [],
+    {{/if}}
+    //   name: "Delete File",
+    //   description: "Permission to delete file"
+    // },
+    // View: {
+    {{#if (eq authen.type "static")}}
+    //   roles: [],
+    {{/if}}
+    //   name: "View File",
+    //   description: "Permission to view file"
+    // },
   },
   {{/if}}
 };

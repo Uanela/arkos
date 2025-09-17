@@ -9,7 +9,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onCreateOneError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+// export const onCreateOneError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
 // }];
 
@@ -21,7 +21,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onFindOneError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+// export const onFindOneError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
 // }];
 
@@ -33,7 +33,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onFindManyError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+// export const onFindManyError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
 // }];
 
@@ -45,7 +45,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onUpdateOneError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+// export const onUpdateOneError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
 // }];
 
@@ -57,7 +57,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onDeleteOneError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+// export const onDeleteOneError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
 // }];
 
@@ -69,7 +69,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onCreateManyError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+// export const onCreateManyError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
 // }];
 
@@ -81,7 +81,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onUpdateManyError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+// export const onUpdateManyError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
 // }];
 
@@ -93,10 +93,10 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onDeleteManyError = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+// export const onDeleteManyError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
 // }];
-
+{{else}}
 // export const beforeCreateOne = [async (req, res, next) => {
 //   next();
 // }];
@@ -105,7 +105,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onCreateOneError = [async (req, res, next) => {
+// export const onCreateOneError = [async (err, req, res, next) => {
 //   next();
 // }];
 
@@ -117,7 +117,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onFindOneError = [async (req, res, next) => {
+// export const onFindOneError = [async (err, req, res, next) => {
 //   next();
 // }];
 
@@ -129,7 +129,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onFindManyError = [async (req, res, next) => {
+// export const onFindManyError = [async (err, req, res, next) => {
 //   next();
 // }];
 
@@ -141,7 +141,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onUpdateOneError = [async (req, res, next) => {
+// export const onUpdateOneError = [async (err, req, res, next) => {
 //   next();
 // }];
 
@@ -153,7 +153,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onDeleteOneError = [async (req, res, next) => {
+// export const onDeleteOneError = [async (err, req, res, next) => {
 //   next();
 // }];
 
@@ -165,7 +165,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onCreateManyError = [async (req, res, next) => {
+// export const onCreateManyError = [async (err, req, res, next) => {
 //   next();
 // }];
 
@@ -177,7 +177,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onUpdateManyError = [async (req, res, next) => {
+// export const onUpdateManyError = [async (err, req, res, next) => {
 //   next();
 // }];
 
@@ -189,6 +189,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 //   next();
 // }];
 
-// export const onDeleteManyError = [async (req, res, next) => {
+// export const onDeleteManyError = [async (err, req, res, next) => {
 //   next();
 // }];
+{{/if}}
