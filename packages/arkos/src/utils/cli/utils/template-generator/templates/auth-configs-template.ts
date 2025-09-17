@@ -38,23 +38,23 @@ const ${modelName.camel}AuthConfigs${typeAnnotation} = {
   accessControl: {
     // Create: {
     //   roles: [], // only when using static authentication
-    //   name: Create ${capitalize(modelName.kebab.replaceAll("-", ""))},
-    //   description: Permission to create new ${modelName.kebab.replaceAll("-", " ")} records,
+    //   name: "Create ${capitalize(modelName.kebab.replaceAll("-", ""))}",
+    //   description: "Permission to create new ${modelName.kebab.replaceAll("-", " ")} records"
     // },
     // Update: {
     //   roles: [], // only when using static authentication
-    //   name: Update ${capitalize(modelName.kebab.replaceAll("-", ""))},
-    //   description: Permission to update existing ${modelName.kebab.replaceAll("-", " ")} records,
+    //   name: "Update ${capitalize(modelName.kebab.replaceAll("-", ""))}",
+    //   description: "Permission to update existing ${modelName.kebab.replaceAll("-", " ")} records"
     // },
     // Delete: {
     //   roles: [], // only when using static authentication
-    //   name: Delete ${capitalize(modelName.kebab.replaceAll("-", ""))},
-    //   description: Permission to delete ${modelName.kebab.replaceAll("-", " ")} records,
+    //   name: "Delete ${capitalize(modelName.kebab.replaceAll("-", ""))}",
+    //   description: "Permission to delete ${modelName.kebab.replaceAll("-", " ")} records"
     // },
     // View: {
     //   roles: [], // only when using static authentication
-    //   name: View ${capitalize(modelName.kebab.replaceAll("-", ""))},
-    //   description: Permission to view ${modelName.kebab.replaceAll("-", " ")} records,
+    //   name: "View ${capitalize(modelName.kebab.replaceAll("-", ""))}",
+    //   description: "Permission to view ${modelName.kebab.replaceAll("-", " ")} records"
     // },
   },
 };
