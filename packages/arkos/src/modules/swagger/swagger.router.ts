@@ -18,14 +18,16 @@ export async function getSwaggerRouter(
 ): Promise<Router> {
   let defaultJsonSchemas = await getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const defaultModelsPaths = await generatePathsForModels(arkosConfig);
-
-  defaultJsonSchemas = {
-    ...defaultJsonSchemas,
-    ...(await missingJsonSchemaGenerator.generateMissingJsonSchemas(
+  const missingJsonSchemas =
+    await missingJsonSchemaGenerator.generateMissingJsonSchemas(
       defaultModelsPaths,
       defaultJsonSchemas,
       arkosConfig
-    )),
+    );
+
+  defaultJsonSchemas = {
+    ...defaultJsonSchemas,
+    ...missingJsonSchemas,
     ...generateSystemJsonSchemas(arkosConfig),
   };
 

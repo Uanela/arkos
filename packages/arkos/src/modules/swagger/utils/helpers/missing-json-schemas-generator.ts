@@ -1,6 +1,7 @@
 import { OpenAPIV3 } from "openapi-types";
 import { ArkosConfig } from "../../../../exports";
 import PrismaJsonSchemaGenerator from "../../../../utils/prisma/prisma-json-schema-generator";
+import { singular } from "pluralize";
 
 /**
  * Used to backfill missing json schema contained in paths in situation such as when using a `arkosConfig.swagger.mode` different from prisma and `strict` to false, in this situation the jsonSchemas paths are filled with $ref pointing to non existent jsonSchema components.
@@ -92,8 +93,7 @@ class MissingJsonSchemasGenerator {
     let modelName = operationId
       .replace(/^(create|update|delete|find)Many/i, "")
       .replace(/^(create|update|delete|find)/i, "")
-      .replace(/ById$/i, "")
-      .replace(/s$/, ""); // Remove plural 's'
+      .replace(/ById$/i, "");
 
     // Handle auth operations
     if (
@@ -106,7 +106,7 @@ class MissingJsonSchemasGenerator {
       return "Auth";
     }
 
-    return modelName || null;
+    return singular(modelName) || null;
   }
 
   /**
