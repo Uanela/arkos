@@ -15,15 +15,12 @@ export async function loadPrismaModule() {
       if (!fs.existsSync(prismaPath))
         prismaPath = `${crd()}/src/utils/prisma/index.${ext()}`;
 
-      if (!fs.existsSync(prismaPath))
-        throw new Error(
-          `Could not found prisma insteance exported as default at ${prismaPath}`
-        );
+      if (!fs.existsSync(prismaPath)) throw new Error(`Prisma not found`);
 
       const prismaModule = await importModule(prismaPath, {
         fixExtension: false,
       });
-      prismaInstance = prismaModule.default || prismaModule.prisma;
+      prismaInstance = prismaModule.default;
 
       if (
         !prismaInstance ||
