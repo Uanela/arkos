@@ -99,7 +99,7 @@ export class BaseController {
         req.responseData = { data };
         res.locals.data = { data };
         req.responseStatus = 201;
-        res.locals.code = 201;
+        res.locals.status = 201;
         return next();
       }
 
@@ -135,7 +135,7 @@ export class BaseController {
         req.responseData = { data };
         res.locals.data = { data };
         req.responseStatus = 201;
-        res.locals.code = 201;
+        res.locals.status = 201;
         return next();
       }
 
@@ -175,7 +175,7 @@ export class BaseController {
         req.responseData = { total, results: data.length, data };
         res.locals.data = { total, results: data.length, data };
         req.responseStatus = 200;
-        res.locals.code = 200;
+        res.locals.status = 200;
         return next();
       }
 
@@ -230,7 +230,7 @@ export class BaseController {
         req.responseData = { data };
         res.locals.data = { data };
         req.responseStatus = 200;
-        res.locals.code = 200;
+        res.locals.status = 200;
         return next();
       }
 
@@ -282,7 +282,7 @@ export class BaseController {
         req.responseData = { data };
         res.locals.data = { data };
         req.responseStatus = 200;
-        res.locals.code = 200;
+        res.locals.status = 200;
         return next();
       }
 
@@ -335,7 +335,7 @@ export class BaseController {
         req.responseData = { results: data.count, data };
         res.locals.data = { results: data.count, data };
         req.responseStatus = 200;
-        res.locals.code = 200;
+        res.locals.status = 200;
         return next();
       }
 
@@ -371,7 +371,7 @@ export class BaseController {
         req.responseData = { results: data.length, data };
         res.locals.data = { results: data.length, data };
         req.responseStatus = 200;
-        res.locals.code = 200;
+        res.locals.status = 200;
         return next();
       }
 
@@ -467,7 +467,7 @@ export class BaseController {
         req.responseData = { results: data.count, data };
         res.locals.data = { results: data.count, data };
         req.responseStatus = 200;
-        res.locals.code = 200;
+        res.locals.status = 200;
         return next();
       }
 
@@ -502,7 +502,7 @@ export class BaseController {
         req.responseData = { results: data.length, data };
         res.locals.data = { results: data.length, data };
         req.responseStatus = 200;
-        res.locals.code = 200;
+        res.locals.status = 200;
         return next();
       }
 

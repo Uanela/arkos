@@ -55,7 +55,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
           req.responseData = { data: user };
           res.locals.data = { data: user };
           req.responseStatus = 200;
-          res.locals.code = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -94,7 +94,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
           req.responseData = { data: user };
           res.locals.data = { data: user };
           req.responseStatus = 200;
-          res.locals.code = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -120,7 +120,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
           req.responseData = null;
           res.locals.data = null;
           req.responseStatus = 204;
-          res.locals.code = 204;
+          res.locals.status = 204;
           return next();
         }
 
@@ -237,7 +237,9 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (interceptors?.afterLogin) {
           req.additionalData = { user };
+          res.locals.additional = { user };
           req.responseStatus = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -274,7 +276,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
           req.responseData = { data: user };
           res.locals.data = { data: user };
           req.responseStatus = 201;
-          res.locals.code = 201;
+          res.locals.status = 201;
           return next();
         }
 
@@ -308,7 +310,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
           req.responseData = { data: updatedUser };
           res.locals.data = { data: updatedUser };
           req.responseStatus = 200;
-          res.locals.code = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -391,7 +393,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
             message: "Password updated successfully!",
           };
           req.responseStatus = 200;
-          res.locals.code = 200;
+          res.locals.status = 200;
           return next();
         }
 
