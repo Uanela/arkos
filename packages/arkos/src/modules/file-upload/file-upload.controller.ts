@@ -110,7 +110,7 @@ class FileUploadController {
           req.responseData = jsonContent;
           res.locals.data = jsonContent;
           req.responseStatus = 200;
-          res.locals.code = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -334,7 +334,7 @@ class FileUploadController {
           req.responseData = jsonContent;
           res.locals.data = jsonContent;
           req.responseStatus = 200;
-          res.locals.code = 200;
+          res.locals.status = 200;
           return next();
         }
 
