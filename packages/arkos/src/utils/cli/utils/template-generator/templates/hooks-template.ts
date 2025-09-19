@@ -112,111 +112,111 @@ export default function generateHooksTemplate(
   // Generate all hook exports with their respective functions
   const hooks = `
 // export const beforeFindOne = [
-//   ${generateHookFunction("beforeFindOne", ["context", "filters", "queryOptions"])}
+//   ${generateHookFunction("beforeFindOne", ["filters", "queryOptions"])}
 // ];
 
 // export const afterFindOne = [
-//   ${generateHookFunction("afterFindOne", ["context", "result", "filters", "queryOptions"])}
+//   ${generateHookFunction("afterFindOne", ["result", "filters", "queryOptions"])}
 // ];
 
 // export const onFindOneError = [
-//   ${generateHookFunction("onFindOneError", ["context", "error", "filters", "queryOptions"])}
+//   ${generateHookFunction("onFindOneError", ["error", "filters", "queryOptions"])}
 // ];
 
 // export const beforeUpdateOne = [
-//   ${generateHookFunction("beforeUpdateOne", ["context", "filters", "data", "queryOptions"])}
+//   ${generateHookFunction("beforeUpdateOne", ["filters", "data", "queryOptions"])}
 // ];
 
 // export const afterUpdateOne = [
-//   ${generateHookFunction("afterUpdateOne", ["context", "result", "filters", "data", "queryOptions"])}
+//   ${generateHookFunction("afterUpdateOne", ["result", "filters", "data", "queryOptions"])}
 // ];
 
 // export const onUpdateOneError = [
-//   ${generateHookFunction("onUpdateOneError", ["context", "error", "filters", "data", "queryOptions"])}
+//   ${generateHookFunction("onUpdateOneError", ["error", "filters", "data", "queryOptions"])}
 // ];
 
 // export const beforeCreateOne = [
-//   ${generateHookFunction("beforeCreateOne", ["context", "data", "queryOptions"])}
+//   ${generateHookFunction("beforeCreateOne", ["data", "queryOptions"])}
 // ];
 
 // export const afterCreateOne = [
-//   ${generateHookFunction("afterCreateOne", ["context", "result", "data", "queryOptions"])}
+//   ${generateHookFunction("afterCreateOne", ["result", "data", "queryOptions"])}
 // ];
 
 // export const onCreateOneError = [
-//   ${generateHookFunction("onCreateOneError", ["context", "error", "data", "queryOptions"])}
+//   ${generateHookFunction("onCreateOneError", ["error", "data", "queryOptions"])}
 // ];
 
 // export const beforeCreateMany = [
-//   ${generateHookFunction("beforeCreateMany", ["context", "data", "queryOptions"])}
+//   ${generateHookFunction("beforeCreateMany", ["data", "queryOptions"])}
 // ];
 
 // export const afterCreateMany = [
-//   ${generateHookFunction("afterCreateMany", ["context", "result", "queryOptions"])}
+//   ${generateHookFunction("afterCreateMany", ["result", "queryOptions"])}
 // ];
 
 // export const onCreateManyError = [
-//   ${generateHookFunction("onCreateManyError", ["context", "error", "data", "queryOptions"])}
+//   ${generateHookFunction("onCreateManyError", ["error", "data", "queryOptions"])}
 // ];
 
 // export const beforeCount = [
-//   ${generateHookFunction("beforeCount", ["context", "filters"])}
+//   ${generateHookFunction("beforeCount", ["filters"])}
 // ];
 
 // export const afterCount = [
-//   ${generateHookFunction("afterCount", ["context", "result", "filters"])}
+//   ${generateHookFunction("afterCount", ["result", "filters"])}
 // ];
 
 // export const onCountError = [
-//   ${generateHookFunction("onCountError", ["context", "error", "filters"])}
+//   ${generateHookFunction("onCountError", ["error", "filters"])}
 // ];
 
 // export const beforeFindMany = [
-//   ${generateHookFunction("beforeFindMany", ["context", "filters", "queryOptions"])}
+//   ${generateHookFunction("beforeFindMany", ["filters", "queryOptions"])}
 // ];
 
 // export const afterFindMany = [
-//   ${generateHookFunction("afterFindMany", ["context", "result", "filters", "queryOptions"])}
+//   ${generateHookFunction("afterFindMany", ["result", "filters", "queryOptions"])}
 // ];
 
 // export const onFindManyError = [
-//   ${generateHookFunction("onFindManyError", ["context", "error", "filters", "queryOptions"])}
+//   ${generateHookFunction("onFindManyError", ["error", "filters", "queryOptions"])}
 // ];
 
 // export const beforeUpdateMany = [
-//   ${generateHookFunction("beforeUpdateMany", ["context", "filters", "data", "queryOptions"])}
+//   ${generateHookFunction("beforeUpdateMany", ["filters", "data", "queryOptions"])}
 // ];
 
 // export const afterUpdateMany = [
-//   ${generateHookFunction("afterUpdateMany", ["context", "result", "filters", "data", "queryOptions"])}
+//   ${generateHookFunction("afterUpdateMany", ["result", "filters", "data", "queryOptions"])}
 // ];
 
 // export const onUpdateManyError = [
-//   ${generateHookFunction("onUpdateManyError", ["context", "error", "filters", "data", "queryOptions"])}
+//   ${generateHookFunction("onUpdateManyError", ["error", "filters", "data", "queryOptions"])}
 // ];
 
 // export const beforeDeleteOne = [
-//   ${generateHookFunction("beforeDeleteOne", ["context", "filters"])}
+//   ${generateHookFunction("beforeDeleteOne", ["filters"])}
 // ];
 
 // export const afterDeleteOne = [
-//   ${generateHookFunction("afterDeleteOne", ["context", "result", "filters"])}
+//   ${generateHookFunction("afterDeleteOne", ["result", "filters"])}
 // ];
 
 // export const onDeleteOneError = [
-//   ${generateHookFunction("onDeleteOneError", ["context", "error", "filters"])}
+//   ${generateHookFunction("onDeleteOneError", ["error", "filters"])}
 // ];
 
 // export const beforeDeleteMany = [
-//   ${generateHookFunction("beforeDeleteMany", ["context", "filters"])}
+//   ${generateHookFunction("beforeDeleteMany", ["filters"])}
 // ];
 
 // export const afterDeleteMany = [
-//   ${generateHookFunction("afterDeleteMany", ["context", "result", "filters"])}
+//   ${generateHookFunction("afterDeleteMany", ["result", "filters"])}
 // ];
 
 // export const onDeleteManyError = [
-//   ${generateHookFunction("onDeleteManyError", ["context", "error", "filters"])}
+//   ${generateHookFunction("onDeleteManyError", ["error", "filters"])}
 // ];
 `;
 
