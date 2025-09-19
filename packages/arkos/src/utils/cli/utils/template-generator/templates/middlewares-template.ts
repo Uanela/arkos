@@ -13,7 +13,6 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
   const isFileUpload =
     modelName.camel === "fileUpload" || modelName.camel === "file-upload";
 
-  // Generate imports based on TypeScript/JavaScript
   const requestType = isTypeScript ? "ArkosRequest" : "req";
   const responseType = isTypeScript ? "ArkosResponse" : "res";
   const nextType = isTypeScript ? "ArkosNextFunction" : "next";
@@ -117,8 +116,6 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 //   [async (${functionParams}) => {
 //     next();
 //   }]
-
-// There is not afterFindFile: because the main handler is handleded by express.static()
 
 // export const onFindFileError =
 //   [async (${errorFunctionParams}) => {

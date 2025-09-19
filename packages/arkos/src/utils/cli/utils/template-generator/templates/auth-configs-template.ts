@@ -37,22 +37,22 @@ const ${modelName.camel}AuthConfigs${typeAnnotation} = {
   },
   accessControl: {
     // Create: {
-    //   roles: [], // only when using static authentication
+    //   roles: [],
     //   name: "Create ${capitalize(modelName.kebab.replaceAll("-", ""))}",
     //   description: "Permission to create new ${modelName.kebab.replaceAll("-", " ")} records"
     // },
     // Update: {
-    //   roles: [], // only when using static authentication
+    //   roles: [],
     //   name: "Update ${capitalize(modelName.kebab.replaceAll("-", ""))}",
     //   description: "Permission to update existing ${modelName.kebab.replaceAll("-", " ")} records"
     // },
     // Delete: {
-    //   roles: [], // only when using static authentication
+    //   roles: [],
     //   name: "Delete ${capitalize(modelName.kebab.replaceAll("-", ""))}",
     //   description: "Permission to delete ${modelName.kebab.replaceAll("-", " ")} records"
     // },
     // View: {
-    //   roles: [], // only when using static authentication
+    //   roles: [],
     //   name: "View ${capitalize(modelName.kebab.replaceAll("-", ""))}",
     //   description: "Permission to view ${modelName.kebab.replaceAll("-", " ")} records"
     // },
