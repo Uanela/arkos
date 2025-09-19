@@ -48,16 +48,13 @@ class FileUploadController {
       const { fileUpload } = getArkosConfig();
       const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
 
-      // Ensure upload directory exists
       const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
       try {
         await fs.promises.access(uploadPath);
       } catch (err) {
-        // Create directory if it doesn't exist
         await fs.promises.mkdir(uploadPath, { recursive: true });
       }
 
-      // Select the appropriate uploader service based on file type
       let uploader: FileUploadService;
       switch (fileType) {
         case "images":
@@ -76,28 +73,22 @@ class FileUploadController {
           return next(new AppError("Invalid file type", 400));
       }
 
-      // Handle the file upload
       uploader.handleMultipleUpload()(req, res, async (err) => {
         if (err) return next(err);
 
-        // Process all uploaded files
         let data;
         if (req.files && Array.isArray(req.files) && req.files.length > 0) {
           if (fileType === "images") {
-            // Process multiple image files with image transformations
             data = await Promise.all(
               req.files.map((file) => processImage(req, file.path, options))
             );
           } else {
-            // Just store other file types without processing
             data = await Promise.all(
               req.files.map((file) => processFile(req, file.path))
             );
           }
-          // Filter out any null values from failed processing
           data = data.filter((url) => url !== null);
         } else if (req.file) {
-          // Process a single file
           if (fileType === "images") {
             data = await processImage(req, req.file.path, options);
           } else {
@@ -117,7 +108,9 @@ class FileUploadController {
 
         if (this.interceptors?.afterUploadFile) {
           req.responseData = jsonContent;
+          res.locals.data = jsonContent;
           req.responseStatus = 200;
+          res.locals.code = 200;
           return next();
         }
 
@@ -339,7 +332,9 @@ class FileUploadController {
 
         if (this.interceptors.afterUpdateFile) {
           req.responseData = jsonContent;
+          res.locals.data = jsonContent;
           req.responseStatus = 200;
+          res.locals.code = 200;
           return next();
         }
 

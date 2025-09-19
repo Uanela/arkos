@@ -97,7 +97,9 @@ export class BaseController {
 
       if (this.interceptors.afterCreateOne) {
         req.responseData = { data };
+        res.locals.data = { data };
         req.responseStatus = 201;
+        res.locals.code = 201;
         return next();
       }
 
@@ -125,14 +127,15 @@ export class BaseController {
           new AppError(
             "Failed to create the resources. Please check your input.",
             400,
-            {},
-            "MissingRequestBody"
+            { body: req.body }
           )
         );
 
       if (this.interceptors.afterCreateMany) {
         req.responseData = { data };
+        res.locals.data = { data };
         req.responseStatus = 201;
+        res.locals.code = 201;
         return next();
       }
 
@@ -170,7 +173,9 @@ export class BaseController {
 
       if (this.interceptors.afterFindMany) {
         req.responseData = { total, results: data.length, data };
+        res.locals.data = { total, results: data.length, data };
         req.responseStatus = 200;
+        res.locals.code = 200;
         return next();
       }
 
@@ -223,7 +228,9 @@ export class BaseController {
 
       if (this.interceptors.afterFindOne) {
         req.responseData = { data };
+        res.locals.data = { data };
         req.responseStatus = 200;
+        res.locals.code = 200;
         return next();
       }
 
@@ -273,7 +280,9 @@ export class BaseController {
 
       if (this.interceptors.afterUpdateOne) {
         req.responseData = { data };
+        res.locals.data = { data };
         req.responseStatus = 200;
+        res.locals.code = 200;
         return next();
       }
 
@@ -324,11 +333,49 @@ export class BaseController {
 
       if (this.interceptors.afterUpdateMany) {
         req.responseData = { results: data.count, data };
+        res.locals.data = { results: data.count, data };
         req.responseStatus = 200;
+        res.locals.code = 200;
         return next();
       }
 
       res.status(200).json({ results: data.count, data });
+    }
+  );
+
+  /**
+   * Updates multiple resources with different data in a single transaction
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  batchUpdate = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const data = await this.service.batchUpdate(
+        req.body,
+        req.prismaQueryOptions,
+        { user: req?.user, accessToken: req?.accessToken }
+      );
+
+      if (!data || data.length === 0)
+        return next(
+          new AppError(
+            "Failed to update the resources. Please check your input.",
+            400,
+            { body: req.body }
+          )
+        );
+
+      if (this.interceptors.afterBatchUpdate) {
+        req.responseData = { results: data.length, data };
+        res.locals.data = { results: data.length, data };
+        req.responseStatus = 200;
+        res.locals.code = 200;
+        return next();
+      }
+
+      res.status(200).json({ results: data.length, data });
     }
   );
 
@@ -418,11 +465,48 @@ export class BaseController {
 
       if (this.interceptors.afterDeleteMany) {
         req.responseData = { results: data.count, data };
+        res.locals.data = { results: data.count, data };
         req.responseStatus = 200;
+        res.locals.code = 200;
         return next();
       }
 
       res.status(200).json({ results: data.count, data });
+    }
+  );
+
+  /**
+   * Deletes multiple resources with different filters in a single transaction
+   * @param {ArkosRequest} req - Express request object
+   * @param {ArkosResponse} res - Express response object
+   * @param {ArkosNextFunction} next - Express next function
+   * @returns {Promise<void>}
+   */
+  batchDelete = catchAsync(
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const data = await this.service.batchDelete(req.body, {
+        user: req?.user,
+        accessToken: req?.accessToken,
+      });
+
+      if (!data || data.length === 0)
+        return next(
+          new AppError(
+            "Failed to delete the resources. Please check your input.",
+            400,
+            { body: req.body }
+          )
+        );
+
+      if (this.interceptors.afterBatchDelete) {
+        req.responseData = { results: data.length, data };
+        res.locals.data = { results: data.length, data };
+        req.responseStatus = 200;
+        res.locals.code = 200;
+        return next();
+      }
+
+      res.status(200).json({ results: data.length, data });
     }
   );
 }
