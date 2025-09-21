@@ -1,6 +1,5 @@
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
-import APIFeatures from "../../utils/features/api.features";
 import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
@@ -152,13 +151,7 @@ export class BaseController {
    */
   findMany = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const {
-        filters: { where, ...queryOptions },
-      } = new APIFeatures(req, this.modelName)
-        .filter()
-        .sort()
-        .limitFields()
-        .paginate();
+      const { where, ...queryOptions } = req.filters!;
 
       const [data, total] = (await Promise.all([
         this.service.findMany(where, queryOptions, {
@@ -310,10 +303,7 @@ export class BaseController {
         );
       }
 
-      req.query.filterMode = req.query?.filterMode || "AND";
-      const {
-        filters: { where, ...queryOptions },
-      } = new APIFeatures(req, this.modelName).filter().sort();
+      const { where, ...queryOptions } = req.filters!;
       delete queryOptions.include;
 
       const data = (await this.service.updateMany(
@@ -419,7 +409,9 @@ export class BaseController {
 
       if (this.interceptors.afterDeleteOne) {
         req.additionalData = { data };
+        res.locals.additionalData = { data };
         req.responseStatus = 204;
+        res.locals.status = 204;
         return next();
       }
 
@@ -447,10 +439,7 @@ export class BaseController {
         );
       }
 
-      req.query.filterMode = req.query?.filterMode || "AND";
-      const {
-        filters: { where },
-      } = new APIFeatures(req, this.modelName).filter().sort();
+      const { where } = req.filters!;
 
       const data = await this.service.deleteMany(where, {
         user: req?.user,

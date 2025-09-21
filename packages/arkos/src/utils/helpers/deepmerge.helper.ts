@@ -148,7 +148,6 @@ function deepmerge<T1, T2>(
 function deepmerge(target: any, source: any, options?: deepmerge.Options): any {
   options = options || {};
 
-  // Ensure default implementations
   const mergeOptions: deepmerge.ArrayMergeOptions = {
     arrayMerge: options.arrayMerge || defaultArrayMerge,
     isMergeableObject: options.isMergeableObject || isMergeableObject,

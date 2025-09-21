@@ -36,6 +36,7 @@ export function generateRouterTemplate(options: TemplateOptions): string {
 
   return `import { Router } from 'express'
 import { authService } from 'arkos/services'
+import { catchAsync } from 'arkos/error-handler'
 ${controllerImportLine}
 ${routerConfigTsTypeImport}
 
@@ -45,11 +46,9 @@ const ${modelName.camel}Router = Router()
 
 ${modelName.camel}Router.get(
   '/custom-endpoint',
-    modelName.kebab
-  )}/custom-endpoint
   authService.authenticate,
   authService.handleAccessControl('CustomAction', '${modelName.kebab}'),
-${controllerHandlerLine}
+  catchAsync(${controllerHandlerLine})
 )
 
 export default ${modelName.camel}Router
