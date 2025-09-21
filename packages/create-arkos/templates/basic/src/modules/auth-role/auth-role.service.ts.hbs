@@ -1,12 +1,13 @@
 import { BaseService } from "arkos/services";
+{{#if typescript}}
+import { Prisma } from "@prisma/client"
 
-class AuthRoleService extends BaseService {
-  constructor() {
-    super("auth-role");
-  }
-  // Add your custom service methods here
-}
+class AuthRoleService extends BaseService<Prisma.AuthRoleDelegate> {}
+{{else}}
 
-const authRoleService = new AuthRoleService();
+class AuthRoleService extends BaseService {}
+{{/if}}
+
+const authRoleService = new AuthRoleService("auth-role");
 
 export default authRoleService;

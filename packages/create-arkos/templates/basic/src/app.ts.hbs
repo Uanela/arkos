@@ -12,11 +12,13 @@ arkos.init({
     }
   },
   {{/if}}
-  {{#if routing.strict}}
   routers: {
-    strict: true,
-  },
+  {{#if routing.strict}}
+    strict: true
+  {{else}}
+    strict: "no-bulk"
   {{/if}}
+  },
   {{#if validation.type}}
   validation: {
     resolver: '{{validation.type}}'

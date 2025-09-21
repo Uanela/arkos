@@ -1,4 +1,4 @@
-# Canary Notes v1.3.2-beta
+# Canary Notes v1.3.4-beta
 
 ## TODO
 
@@ -10,7 +10,8 @@
 
 ### Fix
 
-- strict routing only work for exported routers
+- strict routing only work for exported routers on swagger documenation
+- fix functions names at service hooks template
 
 ### Remove
 
@@ -22,7 +23,7 @@
 
 ### Add
 
-- add strict routing -> all routes starts disabled and must be activated one by one through `config` object under `model-name.router.ts`
+- add batch update and delete on services and control
 
 ### Change
 
@@ -37,8 +38,6 @@
 ## DONE
 
 ### Add
-
-- option to skip all hooks at once at service hooks by passing skip : "all"
 
 ### Change
 
@@ -65,6 +64,8 @@
 - add docker-compose file into `create-arkos`
 - add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
 - allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
+- change the paramter type of ServiceHookArgs to receive data type as second parameter "BeforeCreateOneHookArgs<Prisma.ProductDelegate, CreateProductDto>"
+- add question about unknow modules when generating compoents -> like to generate
 
 ### Change
 
@@ -74,3 +75,11 @@
 ### Remove
 
 - completely remove support for `.prima-query-options.{js|ts}` and `.auht-configs.{js|ts}`
+
+### Deprecate
+
+- deprecate .middlewares.ts files in favor of .interceptors.ts, add warnings to change, and also warn when find .middlewares.ts and .interceptors.ts with same structure tell which one will be used
+
+### Annoucment
+
+- Announce the batch and delete methods

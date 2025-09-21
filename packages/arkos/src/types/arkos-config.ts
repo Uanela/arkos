@@ -819,4 +819,14 @@ export type ArkosConfig = {
      */
     scalarApiReferenceConfiguration?: Partial<ApiReferenceConfiguration>;
   };
+  /**
+   * Helps in debugging some of the variables values that are used inside arkos generated api, services methods and tools.
+   *
+   *
+   */
+  debugging?: {
+    // requests?: {
+    level?: number;
+    // };
+  };
 };

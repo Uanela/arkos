@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { getAuthRouter } from "./modules/auth/auth.router";
@@ -19,6 +19,7 @@ import { getSwaggerRouter } from "./modules/swagger/swagger.router";
 import { loadAllModuleComponents } from "./utils/dynamic-loader";
 
 export const app: express.Express = express();
+const knowModulesRouter = Router();
 
 export async function bootstrap(
   arkosConfig: ArkosConfig
@@ -33,14 +34,12 @@ export async function bootstrap(
   const disabledMiddlewares = middlewaresConfig?.disable || [];
   const replacedMiddlewares = middlewaresConfig?.replace || {};
 
-  // Compression middleware
   if (!disabledMiddlewares?.includes?.("compression"))
     app.use(
       replacedMiddlewares.compression ||
         compression(arkosConfig?.compressionOptions)
     );
 
-  // Global rate limit middleware
   if (!disabledMiddlewares?.includes?.("global-rate-limit"))
     app.use(
       replacedMiddlewares.globalRateLimit ||
@@ -62,7 +61,6 @@ export async function bootstrap(
         )
     );
 
-  // CORS middleware
   if (!disabledMiddlewares?.includes?.("cors"))
     app.use(
       replacedMiddlewares.cors ||
@@ -100,21 +98,18 @@ export async function bootstrap(
         )
     );
 
-  // JSON body parser middleware
   if (!disabledMiddlewares?.includes?.("express-json"))
     app.use(
       replacedMiddlewares.expressJson ||
         express.json(arkosConfig?.jsonBodyParserOptions)
     );
 
-  // Cookie parser middleware
   if (!disabledMiddlewares?.includes?.("cookie-parser"))
     app.use(
       replacedMiddlewares.cookieParser ||
         cookieParser(...[...(arkosConfig?.cookieParserParameters || [])])
     );
 
-  // Query parser middleware
   if (!disabledMiddlewares?.includes?.("query-parser"))
     app.use(
       replacedMiddlewares.queryParser ||
@@ -130,22 +125,18 @@ export async function bootstrap(
         )
     );
 
-  // Request logger middleware
   if (!disabledMiddlewares?.includes?.("request-logger"))
     app.use(replacedMiddlewares.requestLogger || handleRequestLogs);
 
-  // Additional custom middlewares
   if (arkosConfig?.middlewares?.additional)
     arkosConfig.middlewares.additional.forEach((middleware) => {
       app.use(middleware);
     });
 
-  // Configure routers
   const routersConfig = arkosConfig?.routers;
   const disabledRouters = routersConfig?.disable || [];
   const replacedRouters = routersConfig?.replace || {};
 
-  // Welcome endpoint
   if (!disabledRouters?.includes?.("welcome-endpoint"))
     app.get(
       "/api",
@@ -155,15 +146,13 @@ export async function bootstrap(
         })
     );
 
-  // File upload router
   if (!disabledRouters?.includes?.("file-upload")) {
     const fileUploadRouter = replacedRouters.fileUpload
       ? await replacedRouters.fileUpload(arkosConfig)
       : await getFileUploadRouter(arkosConfig);
-    app.use(fileUploadRouter);
+    knowModulesRouter.use(fileUploadRouter);
   }
 
-  // Auth router
   if (
     !disabledRouters?.includes?.("auth-router") &&
     arkosConfig.authentication
@@ -171,17 +160,17 @@ export async function bootstrap(
     const authRouter = replacedRouters.authRouter
       ? await replacedRouters.authRouter(arkosConfig)
       : await getAuthRouter(arkosConfig);
-    app.use("/api", authRouter);
+    knowModulesRouter.use("/api", authRouter);
   }
 
-  // Prisma models router
   if (!disabledRouters?.includes?.("prisma-models-router")) {
     const modelsRouter = replacedRouters.prismaModelsRouter
       ? await replacedRouters.prismaModelsRouter(arkosConfig)
       : await getPrismaModelsRouter(arkosConfig);
-    app.use("/api", modelsRouter);
+    knowModulesRouter.use("/api", modelsRouter);
   }
 
+  app.use(knowModulesRouter);
   app.use("/api", getAvailableResourcesAndRoutesRouter());
 
   if (
@@ -191,13 +180,11 @@ export async function bootstrap(
   )
     app.use("/api", await getSwaggerRouter(arkosConfig));
 
-  // Additional custom routers
   if (routersConfig?.additional)
     routersConfig.additional.forEach((router) => {
       app.use(router);
     });
 
-  // Global error handler middleware (must be last)
   if (!disabledMiddlewares?.includes?.("global-error-handler"))
     app.use(replacedMiddlewares.globalErrorHandler || errorHandler);
 

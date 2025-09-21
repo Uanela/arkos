@@ -53,7 +53,9 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (interceptors?.afterGetMe) {
           req.responseData = { data: user };
+          res.locals.data = { data: user };
           req.responseStatus = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -90,7 +92,9 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (interceptors?.afterUpdateMe) {
           req.responseData = { data: user };
+          res.locals.data = { data: user };
           req.responseStatus = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -114,7 +118,9 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (interceptors?.afterLogout) {
           req.responseData = null;
+          res.locals.data = null;
           req.responseStatus = 204;
+          res.locals.status = 204;
           return next();
         }
 
@@ -217,6 +223,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
           !authConfigs?.login?.sendAccessTokenThrough
         ) {
           req.responseData = { accessToken: token };
+          res.locals.data = { accessToken: token };
         }
 
         if (
@@ -230,7 +237,9 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (interceptors?.afterLogin) {
           req.additionalData = { user };
+          res.locals.additional = { user };
           req.responseStatus = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -265,7 +274,9 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (interceptors?.afterSignup) {
           req.responseData = { data: user };
+          res.locals.data = { data: user };
           req.responseStatus = 201;
+          res.locals.status = 201;
           return next();
         }
 
@@ -297,7 +308,9 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (interceptors?.afterDeleteMe) {
           req.responseData = { data: updatedUser };
+          res.locals.data = { data: updatedUser };
           req.responseStatus = 200;
+          res.locals.status = 200;
           return next();
         }
 
@@ -375,7 +388,12 @@ export const authControllerFactory = async (interceptors: any = {}) => {
             status: "success",
             message: "Password updated successfully!",
           };
+          res.locals.data = {
+            status: "success",
+            message: "Password updated successfully!",
+          };
           req.responseStatus = 200;
+          res.locals.status = 200;
           return next();
         }
 

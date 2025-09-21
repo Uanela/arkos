@@ -4,7 +4,7 @@ import { devCommand } from "../dev";
 import { startCommand } from "../start";
 import { getVersion } from "../utils/cli.helpers";
 
-// Mock dependencies
+jest.mock("../../prisma/prisma-schema-parser");
 jest.mock("commander", () => {
   const mockCommand: any = {
     name: jest.fn().mockReturnThis(),
