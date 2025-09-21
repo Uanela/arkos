@@ -59,19 +59,16 @@ export function addPrismaQueryOptionsToRequest<T extends Record<string, any>>(
   return (req: ArkosRequest, _: ArkosResponse, next: NextFunction) => {
     const configs = getArkosConfig();
 
-    // Resolve and merge all applicable options using the helper
     const resolvedOptions = resolvePrismaQueryOptions(
       prismaQueryOptions,
       action
     );
 
-    // Parse and merge any dangerous query options from request if allowed
     const requestQueryOptions = configs?.request?.parameters
       ?.allowDangerousPrismaQueryOptions
       ? JSON.parse((req.query?.prismaQueryOptions as string) || "{}")
       : {};
 
-    // Final merge with request options having the highest priority
     req.prismaQueryOptions = deepmerge(resolvedOptions, requestQueryOptions);
 
     next();

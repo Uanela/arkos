@@ -825,8 +825,8 @@ export type ArkosConfig = {
    *
    */
   debugging?: {
-    requests?: {
-      level?: number;
-    };
+    // requests?: {
+    level?: number;
+    // };
   };
 };

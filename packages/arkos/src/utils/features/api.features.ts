@@ -4,6 +4,7 @@ import { parseQueryParamsWithModifiers } from "../helpers/api.features.helpers";
 import AppError from "../../modules/error-handler/utils/app-error";
 import { getPrismaInstance } from "../helpers/prisma.helpers";
 import { ArkosRequest } from "../../types";
+import debuggerService from "../../modules/debugger/debugger.service";
 
 type ModelName = string;
 
@@ -11,7 +12,7 @@ export default class APIFeatures {
   req?: ArkosRequest;
   searchParams: any;
   searchParamsWithModifiers: any;
-  filters: any = {};
+  filters: Record<string, any> = {};
   reqFiltersSearchParam: any = {};
   modelName?: ModelName;
   excludedFields = [
@@ -41,14 +42,15 @@ export default class APIFeatures {
       try {
         parsedFilters = JSON.parse(filters as string);
       } catch (error) {
-        throw new AppError("Invalid filters JSON format", 400);
+        throw new AppError("Invalid req.query.filters JSON format", 400);
       }
 
       this.searchParams = deepmerge(
         parseQueryParamsWithModifiers(restOfQuery),
         parseQueryParamsWithModifiers(parsedFilters)
       );
-      (req as any).finalPrismaQueryOptions = this.searchParams;
+
+      debuggerService.handleTransformedQueryLog(this.searchParams);
     }
 
     if (modelName) this.modelName = modelName;
