@@ -228,6 +228,15 @@ export interface ArkosRequest<Body = any, Query = any> extends Request {
   prismaQueryOptions?: Record<string, any>;
   // query: Query extends Request['ParsedQs'];
   accessToken?: string;
+  /**
+   * This represents `req.query` after being handled and transformed.
+   */
+  transformedQuery?: Record<string, any>;
+  /**
+   * Return result of APIFeatures.filters
+   */
+  filters?: Record<string, any>;
+  modelName?: string;
 }
 
 export interface ArkosResponse extends Response {}

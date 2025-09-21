@@ -98,17 +98,15 @@ export function handleRelationFieldsInBody(
   let mutableBody = { ...body };
 
   relationFields?.list?.forEach((field) => {
-    if (!body[field.name]) return;
+    if (!body?.[field.name]) return;
 
     if (ignoreActions?.includes?.(body[field.name]?.apiAction)) {
       delete mutableBody[field.name];
       return;
     }
 
-    // Skip if the field is already in Prisma relation format
     if (isPrismaRelationFormat(body[field.name])) return;
 
-    // Skip if the field is not an array (likely already handled manually)
     if (!Array.isArray(body[field.name])) return;
 
     const createData: any[] = [];
@@ -129,13 +127,11 @@ export function handleRelationFieldsInBody(
       } else if (apiAction === "disconnect") {
         disconnectData.push({ id: bodyField.id });
       } else if (canBeUsedToConnect(field.type, bodyField)) {
-        // Handle connection with unique fields or ID
         const { apiAction, ...cleanedData } = bodyField;
 
         throwErrorIfApiActionIsInvalid(apiAction);
         connectData.push(cleanedData);
       } else if (!bodyField?.id) {
-        // If no ID, assume create operation
         let nestedRelations = getGroupedModelReations(field.type);
 
         let dataToPush = { ...bodyField };
@@ -158,7 +154,6 @@ export function handleRelationFieldsInBody(
 
         createData.push(dataToPush);
       } else {
-        // If ID and other fields, assume update operation
         const { id, apiAction, ...data } = bodyField;
 
         throwErrorIfApiActionIsInvalid(apiAction);
@@ -192,14 +187,13 @@ export function handleRelationFieldsInBody(
   });
 
   relationFields?.singular?.forEach((field) => {
-    if (!body[field.name]) return;
+    if (!body?.[field.name]) return;
 
     if (ignoreActions?.includes?.(body[field.name]?.apiAction)) {
       delete mutableBody[field.name];
       return;
     }
 
-    // Skip if the field is already in Prisma relation format
     if (isPrismaRelationFormat(body[field.name])) {
       return;
     }
@@ -208,20 +202,16 @@ export function handleRelationFieldsInBody(
     let nestedRelations = getGroupedModelReations(field.type);
 
     if (relationData?.apiAction === "delete") {
-      // Handle delete for singular relations
       mutableBody[field.name] = { delete: true };
     } else if (relationData?.apiAction === "disconnect") {
-      // Handle disconnect for singular relations
       mutableBody[field.name] = { disconnect: true };
     } else if (canBeUsedToConnect(field.type, relationData)) {
-      // Handle connection with unique fields or ID
       const { apiAction, ...cleanedData } = relationData;
 
       throwErrorIfApiActionIsInvalid(apiAction);
 
       mutableBody[field.name] = { connect: cleanedData };
     } else if (!relationData?.id) {
-      // If no ID, assume create operation
       let dataToCreate = { ...relationData };
 
       if (dataToCreate?.apiAction) {

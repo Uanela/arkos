@@ -1,5 +1,6 @@
 import authActionService from "../auth-action.service";
 
+jest.mock("fs");
 jest.mock("../../../../../server", () => ({
   getArkosConfig: jest.fn(() => ({ authentication: { mode: "dynamic" } })),
 }));

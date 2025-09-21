@@ -1,8 +1,13 @@
 import { Router } from "express";
 import pluralize from "pluralize";
 import { ArkosConfig, RouterConfig } from "../../../../exports";
-import { kebabCase } from "../../../../exports/utils";
-import { PrismaQueryOptions } from "../../../../types";
+import { APIFeatures, kebabCase } from "../../../../exports/utils";
+import {
+  ArkosNextFunction,
+  ArkosRequest,
+  ArkosResponse,
+  PrismaQueryOptions,
+} from "../../../../types";
 import {
   AuthRouterEndpoint,
   FileUploadRouterEndpoint,
@@ -20,6 +25,21 @@ import { processMiddleware } from "../../../../utils/helpers/routers.helpers";
 import routerValidator from "../router-validator";
 import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
+import debuggerService from "../../../debugger/debugger.service";
+
+export function handleModelsApiFeatures(modelName: string) {
+  return (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+    req.modelName = modelName;
+    req.query.filterMode = req.query?.filterMode || "AND";
+    req.filters = new APIFeatures(req, modelName)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate().filters;
+
+    next();
+  };
+}
 
 export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
@@ -40,7 +60,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
 
     const routerConfig: RouterConfig = customRouterModule?.config || {};
 
-    // Check if custom implementation exists
     const customRouter = (customRouterModule as Router) || {};
     const hasCustomImplementation = (path: string, method: string) => {
       return customRouter.stack?.some(
@@ -53,7 +72,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     };
 
-    // Helper to get the correct schema or DTO based on Arkos Config
     const getValidationSchemaOrDto = (key: string) => {
       const validationConfigs = arkosConfigs?.validation;
       if (validationConfigs?.resolver === "class-validator") {
@@ -64,7 +82,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       return undefined;
     };
 
-    // If the custom router has its own routes, add them
     if (
       typeof customRouterModule?.default === "function" &&
       !routerConfig?.disable
@@ -99,6 +116,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createOne"
         ),
+        handleModelsApiFeatures(model),
+        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeCreateOne),
         controller.createOne,
         ...processMiddleware(interceptors?.afterCreateOne),
@@ -127,6 +146,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findMany"
         ),
+        handleModelsApiFeatures(model),
+        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeFindMany),
         controller.findMany,
         ...processMiddleware(interceptors?.afterFindMany),
@@ -158,6 +179,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createMany"
         ),
+        handleModelsApiFeatures(model),
+        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeCreateMany),
         controller.createMany,
         ...processMiddleware(interceptors?.afterCreateMany),
@@ -189,6 +212,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
         ),
+        handleModelsApiFeatures(model),
+        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeUpdateMany),
         controller.updateMany,
         ...processMiddleware(interceptors?.afterUpdateMany),
@@ -220,6 +245,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteMany"
         ),
+        handleModelsApiFeatures(model),
+        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeDeleteMany),
         controller.deleteMany,
         ...processMiddleware(interceptors?.afterDeleteMany),
@@ -251,6 +278,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findOne"
         ),
+        handleModelsApiFeatures(model),
+        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeFindOne),
         controller.findOne,
         ...processMiddleware(interceptors?.afterFindOne),
@@ -282,6 +311,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateOne"
         ),
+        handleModelsApiFeatures(model),
+        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeUpdateOne),
         controller.updateOne,
         ...processMiddleware(interceptors?.afterUpdateOne),
@@ -313,6 +344,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteOne"
         ),
+        handleModelsApiFeatures(model),
+        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeDeleteOne),
         controller.deleteOne,
         ...processMiddleware(interceptors?.afterDeleteOne),
@@ -347,5 +380,5 @@ export function isParentEndpointAllowed(
   if (parentEndpoints === "*") return true;
   if (Array.isArray(parentEndpoints)) return parentEndpoints.includes(endpoint);
 
-  return true; // Default to allow if not specified
+  return true;
 }

@@ -8,6 +8,7 @@ import { getModuleComponents } from "../../../utils/dynamic-loader";
 import { getArkosConfig } from "../../../server";
 import { BaseService } from "../../base/base.service";
 
+jest.mock("fs");
 jest.mock("bcryptjs", () => ({
   default: {
     compare: jest.fn(),
