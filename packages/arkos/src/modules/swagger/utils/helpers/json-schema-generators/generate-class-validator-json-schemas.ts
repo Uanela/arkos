@@ -38,7 +38,6 @@ export async function generateClassValidatorJsonSchemas() {
             );
 
             if (schemas[schemaName]) {
-              console.log(dtoType, JSON.stringify(jsonSchema, null, 2));
               throw Error(
                 `Found more then 1 ${dtoClass.name} classes among your .dto.${getUserFileExtension()} files, there is no way to correctly generate json-schemas for swagger documentation.`
               );

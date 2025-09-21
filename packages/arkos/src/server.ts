@@ -41,6 +41,9 @@ export let _arkosConfig: ArkosConfig & { available?: boolean } = {
     strict: false,
   },
   available: false,
+  debugging: {
+    level: 1,
+  },
 };
 
 /**
