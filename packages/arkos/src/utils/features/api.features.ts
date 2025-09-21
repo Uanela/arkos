@@ -104,13 +104,11 @@ export default class APIFeatures {
     if (!!this.searchParams.search) {
       const prisma = getPrismaInstance();
 
-      if (!this.modelName) {
+      if (!this.modelName)
         throw new Error("Model name is required for search functionality");
-      }
 
-      if (!prisma[this.modelName] || !prisma[this.modelName].fields) {
+      if (!prisma[this.modelName] || !prisma[this.modelName].fields)
         throw new Error(`Model '${this.modelName}' not found or has no fields`);
-      }
 
       Object.keys((prisma as any)[this.modelName].fields).forEach((key) => {
         const field = ((prisma as any)[this.modelName!].fields as any)[key];

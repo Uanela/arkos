@@ -40,7 +40,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
 
     const routerConfig: RouterConfig = customRouterModule?.config || {};
 
-    // Check if custom implementation exists
     const customRouter = (customRouterModule as Router) || {};
     const hasCustomImplementation = (path: string, method: string) => {
       return customRouter.stack?.some(
@@ -53,7 +52,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     };
 
-    // Helper to get the correct schema or DTO based on Arkos Config
     const getValidationSchemaOrDto = (key: string) => {
       const validationConfigs = arkosConfigs?.validation;
       if (validationConfigs?.resolver === "class-validator") {
@@ -64,7 +62,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       return undefined;
     };
 
-    // If the custom router has its own routes, add them
     if (
       typeof customRouterModule?.default === "function" &&
       !routerConfig?.disable
