@@ -31,8 +31,8 @@ export function generateRouterTemplate(options: TemplateOptions): string {
       }"`;
 
   const controllerHandlerLine = controllerExists
-    ? `  ${modelName.camel}Controller.someHandler`
-    : `  ${modelName.camel}Controller.someHandler`;
+    ? `${modelName.camel}Controller.someHandler`
+    : `${modelName.camel}Controller.someHandler`;
 
   return `import { Router } from 'express'
 import { authService } from 'arkos/services'
