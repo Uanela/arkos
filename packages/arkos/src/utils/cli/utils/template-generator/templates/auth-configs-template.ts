@@ -1,4 +1,5 @@
 import { getUserFileExtension } from "../../../../helpers/fs.helpers";
+import { capitalize } from "../../../../helpers/text.helpers";
 import { TemplateOptions } from "../../template-generators";
 
 export function generateAuthConfigsTemplate(options: TemplateOptions): string {
@@ -18,20 +19,43 @@ export function generateAuthConfigsTemplate(options: TemplateOptions): string {
   const typeAnnotation = isTypeScript ? `: AuthConfigs` : "";
 
   return `${imports}
+import { authService } from "arkos/services";
+
+export const ${modelName.camel}Permissions = {
+  canCreate: authService.permission("Create", "${modelName.kebab}"),
+  canUpdate: authService.permission("Update", "${modelName.kebab}"),
+  canDelete: authService.permission("Delete", "${modelName.kebab}"),
+  canView: authService.permission("View", "${modelName.kebab}"),
+}
+
 const ${modelName.camel}AuthConfigs${typeAnnotation} = {
   authenticationControl: {
-    // Create: true,
-    // Update: true,
-    // Delete: true,
-    // View: false,
+    Create: true,
+    Update: true,
+    Delete: true,
+    View: true,
   },
-  
-  // Only when using Static RBAC
   accessControl: {
-    // Create: ["Admin"],
-    // Update: ["Admin", "Manager"],
-    // Delete: ["Admin"],
-    // View: ["User", "Admin", "Guest"],
+    // Create: {
+    //   roles: [],
+    //   name: "Create ${capitalize(modelName.kebab.replaceAll("-", ""))}",
+    //   description: "Permission to create new ${modelName.kebab.replaceAll("-", " ")} records"
+    // },
+    // Update: {
+    //   roles: [],
+    //   name: "Update ${capitalize(modelName.kebab.replaceAll("-", ""))}",
+    //   description: "Permission to update existing ${modelName.kebab.replaceAll("-", " ")} records"
+    // },
+    // Delete: {
+    //   roles: [],
+    //   name: "Delete ${capitalize(modelName.kebab.replaceAll("-", ""))}",
+    //   description: "Permission to delete ${modelName.kebab.replaceAll("-", " ")} records"
+    // },
+    // View: {
+    //   roles: [],
+    //   name: "View ${capitalize(modelName.kebab.replaceAll("-", ""))}",
+    //   description: "Permission to view ${modelName.kebab.replaceAll("-", " ")} records"
+    // },
   },
 };
 

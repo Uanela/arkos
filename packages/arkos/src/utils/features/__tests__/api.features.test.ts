@@ -1,12 +1,14 @@
 import APIFeatures from "../api.features";
 import AppError from "../../../modules/error-handler/utils/app-error";
 import { getPrismaInstance } from "../../helpers/prisma.helpers";
+import prismaSchemaParser from "../../prisma/prisma-schema-parser";
+import { pascalCase } from "../change-case.features";
 
-// Mock dependencies
+jest.mock("fs");
 jest.mock("../../helpers/prisma.helpers");
 jest.mock("../../helpers/deepmerge.helper", () => ({
   __esModule: true,
-  default: (obj1: object, obj2: object, obj3: object) => ({
+  default: (obj1: object, obj2: object, obj3?: object) => ({
     ...obj1,
     ...obj2,
     ...obj3,
@@ -15,22 +17,23 @@ jest.mock("../../helpers/deepmerge.helper", () => ({
 jest.mock("../../helpers/api.features.helpers", () => ({
   parseQueryParamsWithModifiers: jest.fn((query) => query),
 }));
+jest.mock("../../prisma/prisma-schema-parser");
+jest.mock("../change-case.features", () => ({
+  pascalCase: jest.fn((str) => str.toUpperCase()),
+}));
 
 describe("APIFeatures", () => {
   let req: any;
   let prismaInstanceMock: any;
 
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
 
-    // Setup request mock
     req = {
       query: {},
       params: {},
     } as any;
 
-    // Setup Prisma mock
     prismaInstanceMock = {
       user: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -43,122 +46,88 @@ describe("APIFeatures", () => {
           createdAt: { typeName: "DateTime", isList: false },
         },
       },
+      post: {
+        fields: {
+          id: { typeName: "String", isList: false },
+          title: { typeName: "String", isList: false },
+          content: { typeName: "String", isList: false },
+          authorId: { typeName: "String", isList: false },
+        },
+      },
     };
     (getPrismaInstance as jest.Mock).mockReturnValue(prismaInstanceMock);
-  });
 
-  describe("limitFields", () => {
-    test("should handle regular fields selection", () => {
-      req.query = { fields: "name,email" };
-      const apiFeatures = new APIFeatures(req, "user");
+    (prismaSchemaParser.models as any) = [
+      {
+        name: "user",
+        fields: [
+          { name: "id", type: "String" },
+          { name: "name", type: "String" },
+          { name: "email", type: "String" },
+          { name: "password", type: "String" },
+        ],
+      },
+      {
+        name: "post",
+        fields: [
+          { name: "id", type: "String" },
+          { name: "title", type: "String" },
+          { name: "content", type: "String" },
+        ],
+      },
+    ];
 
-      apiFeatures.limitFields();
-
-      expect(apiFeatures.filters).toEqual({
-        select: {
-          name: true,
-          email: true,
-        },
-      });
-    });
-
-    test("should handle fields with + prefix for inclusion", () => {
-      req.query = { fields: "+name,+email" };
-      const apiFeatures = new APIFeatures(req, "user");
-
-      apiFeatures.limitFields();
-
-      expect(apiFeatures.filters).toEqual({
-        select: {
-          name: true,
-          email: true,
-        },
-      });
-    });
-
-    test("should handle fields with - prefix for exclusion", () => {
-      req.query = { fields: "-password,-createdAt" };
-      const apiFeatures = new APIFeatures(req, "user");
-
-      apiFeatures.limitFields();
-
-      expect(apiFeatures.filters).toEqual({
-        select: {
-          password: false,
-          createdAt: false,
-        },
-      });
-    });
-
-    test("should handle mixed regular, + and - prefixed fields", () => {
-      req.query = { fields: "name,email,-password,+createdAt" };
-      const apiFeatures = new APIFeatures(req, "user");
-
-      apiFeatures.limitFields();
-
-      expect(apiFeatures.filters).toEqual({
-        select: {
-          name: true,
-          email: true,
-        },
-      });
-    });
-
-    test("should use regular fields as base selection when present", () => {
-      req.query = { fields: "id,name,+email,-password" };
-      const apiFeatures = new APIFeatures(req, "user");
-
-      apiFeatures.limitFields();
-
-      expect(apiFeatures.filters).toEqual({
-        select: {
-          id: true,
-          name: true,
-        },
-      });
-    });
-
-    test("should merge selection with relationFields when present", () => {
-      req.query = { fields: "name,email" };
-      const relationFields = { posts: true };
-      const apiFeatures = new APIFeatures(req, "user");
-      apiFeatures.filters.include = relationFields;
-
-      apiFeatures.limitFields();
-
-      expect(apiFeatures.filters.select).toEqual({
-        name: true,
-        email: true,
-      });
-      expect(apiFeatures.filters.include).toBeUndefined();
-    });
-
-    test("should throw error if deprecated addFields is used", () => {
-      req.query = { addFields: "+name" };
-      const apiFeatures = new APIFeatures(req, "user");
-
-      expect(() => {
-        apiFeatures.limitFields();
-      }).toThrow(AppError);
-      expect(() => {
-        apiFeatures.limitFields();
-      }).toThrow("The addFields and removeFields parameters are deprecated");
-    });
-
-    test("should throw error if deprecated removeFields is used", () => {
-      req.query = { removeFields: "-password" };
-      const apiFeatures = new APIFeatures(req, "user");
-
-      expect(() => {
-        apiFeatures.limitFields();
-      }).toThrow(AppError);
-      expect(() => {
-        apiFeatures.limitFields();
-      }).toThrow("The addFields and removeFields parameters are deprecated");
-    });
+    (pascalCase as jest.Mock).mockImplementation((str) => str);
   });
 
   describe("filter", () => {
+    test("should handle top-level OR operators correctly", () => {
+      req.query = {
+        name: "John",
+        OR: [{ age: 30 }, { email: "test@test.com" }],
+      };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.filter();
+
+      expect(apiFeatures.filters.where).toEqual({
+        OR: [{ name: "John" }, { age: 30 }, { email: "test@test.com" }],
+      });
+    });
+
+    test("should handle top-level AND operators correctly", () => {
+      req.query = {
+        name: "John",
+        AND: [{ age: 30 }, { email: "test@test.com" }],
+      };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.filter();
+
+      expect(apiFeatures.filters.where).toEqual({
+        OR: [{ name: "John" }],
+        AND: [{ age: 30 }, { email: "test@test.com" }],
+      });
+    });
+
+    test("should handle mixed top-level operators with filterMode", () => {
+      req.query = {
+        name: "John",
+        age: 30,
+        OR: [{ email: "test@test.com" }],
+        AND: [{ status: "active" }],
+        filterMode: "AND",
+      };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.filter();
+
+      expect(apiFeatures.filters.where).toEqual({
+        AND: [{ name: "John" }, { age: 30 }, { status: "active" }],
+        OR: [{ email: "test@test.com" }],
+      });
+    });
+
     test("should filter based on query parameters", () => {
       req.query = { name: "John", age: 30 };
       const apiFeatures = new APIFeatures(req, "user");
@@ -208,6 +177,155 @@ describe("APIFeatures", () => {
           AND: [{ name: "John" }, { age: 30 }],
         },
       });
+    });
+  });
+
+  describe("limitFields", () => {
+    test("should handle regular fields selection", () => {
+      req.query = { fields: "name,email" };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.limitFields();
+
+      expect(apiFeatures.filters).toEqual({
+        select: {
+          name: true,
+          email: true,
+        },
+        omit: {
+          password: true,
+        },
+      });
+    });
+
+    test("should handle native include syntax", () => {
+      req.query = { include: { posts: true } };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.limitFields();
+
+      expect(apiFeatures.filters).toEqual({
+        include: {
+          posts: true,
+        },
+        omit: {
+          password: true,
+        },
+      });
+    });
+
+    test("should handle native select syntax", () => {
+      req.query = { select: { name: true, email: true } };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.limitFields();
+
+      expect(apiFeatures.filters).toEqual({
+        select: {
+          name: true,
+          email: true,
+        },
+        omit: {
+          password: true,
+        },
+      });
+    });
+
+    test("should handle native omit syntax", () => {
+      req.query = { omit: { password: true } };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.limitFields();
+
+      expect(apiFeatures.filters).toEqual({
+        omit: {
+          password: true,
+        },
+      });
+    });
+
+    test("should merge legacy fields with native syntax", () => {
+      req.query = {
+        fields: "name,email",
+        include: { posts: true },
+        select: { createdAt: true },
+      };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.limitFields();
+
+      expect(apiFeatures.filters).toEqual({
+        select: {
+          name: true,
+          email: true,
+          createdAt: true,
+          posts: true,
+        },
+        omit: {
+          password: true,
+        },
+      });
+    });
+
+    test("should throw error when trying to expose user password via select", () => {
+      req.query = { select: { password: true } };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      expect(() => apiFeatures.limitFields()).toThrow(AppError);
+      expect(() => apiFeatures.limitFields()).toThrow(
+        "User password exposure detected"
+      );
+    });
+
+    test("should throw error when trying to expose user password via include", () => {
+      req.query = { include: { user: { select: { password: true } } } };
+      const apiFeatures = new APIFeatures(req, "post");
+
+      expect(() => apiFeatures.limitFields()).toThrow(AppError);
+      expect(() => apiFeatures.limitFields()).toThrow(
+        "User password exposure detected"
+      );
+    });
+
+    test("should throw error when trying to disable password omission", () => {
+      req.query = { omit: { password: false } };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      expect(() => apiFeatures.limitFields()).toThrow(AppError);
+      expect(() => apiFeatures.limitFields()).toThrow(
+        "Cannot disable password omission protection"
+      );
+    });
+
+    test("should not protect password for non-user models", () => {
+      req.query = { select: { password: true } };
+      const apiFeatures = new APIFeatures(req, "post");
+
+      apiFeatures.limitFields();
+
+      expect(apiFeatures.filters.select).toEqual({
+        password: true,
+      });
+    });
+
+    test("should handle nested user password exposure", () => {
+      req.query = {
+        include: {
+          author: {
+            include: {
+              user: {
+                select: { password: true },
+              },
+            },
+          },
+        },
+      };
+      const apiFeatures = new APIFeatures(req, "post");
+
+      expect(() => apiFeatures.limitFields()).toThrow(AppError);
+      expect(() => apiFeatures.limitFields()).toThrow(
+        "User password exposure detected"
+      );
     });
   });
 
@@ -273,9 +391,10 @@ describe("APIFeatures", () => {
   });
 
   describe("method chaining", () => {
-    test("should support method chaining", () => {
+    test("should support method chaining with new features", () => {
       req.query = {
         fields: "name,email",
+        include: { posts: true },
         sort: "-createdAt",
         page: "2",
         limit: "10",
@@ -288,11 +407,86 @@ describe("APIFeatures", () => {
       expect(result).toBe(apiFeatures);
       expect(apiFeatures.filters).toEqual({
         where: { OR: [{ email: "arkos@the-beast.com" }] },
-        select: { name: true, email: true },
+        select: { name: true, email: true, posts: true },
+        omit: { password: true },
         orderBy: [{ createdAt: "desc" }],
         skip: 10,
         take: 10,
       });
+    });
+  });
+
+  describe("edge cases", () => {
+    test("should merge include and select into a single selct even though with query merged from req.prismaQueryOptions", () => {
+      req.prismaQueryOptions = {
+        include: {
+          posts: true,
+          banners: true,
+        },
+      };
+      req.query = {
+        select: {
+          id: true,
+          name: true,
+        },
+      };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.filter().limitFields().sort().paginate();
+
+      expect(apiFeatures.filters).toEqual({
+        where: {},
+        omit: { password: true },
+        select: {
+          id: true,
+          name: true,
+          posts: true,
+          banners: true,
+        },
+        skip: 0,
+        take: 30,
+      });
+    });
+
+    test("should handle empty query", () => {
+      req.query = {};
+      const apiFeatures = new APIFeatures(req, "user");
+
+      apiFeatures.filter().limitFields().sort().paginate();
+
+      expect(apiFeatures.filters).toEqual({
+        where: {},
+        omit: { password: true },
+        skip: 0,
+        take: 30,
+      });
+    });
+
+    test("should handle invalid filters JSON", () => {
+      req.query = { filters: "invalid-json" };
+
+      expect(() => new APIFeatures(req, "user")).toThrow(AppError);
+      expect(() => new APIFeatures(req, "user")).toThrow(
+        "Invalid filters JSON format"
+      );
+    });
+
+    test("should handle missing model name for search", () => {
+      req.query = { search: "test" };
+      const apiFeatures = new APIFeatures(req);
+
+      expect(() => apiFeatures.filter()).toThrow(
+        "Model name is required for search functionality"
+      );
+    });
+
+    test("should handle non-existent model for search", () => {
+      req.query = { search: "test" };
+      const apiFeatures = new APIFeatures(req, "nonexistent");
+
+      expect(() => apiFeatures.filter()).toThrow(
+        "Model 'nonexistent' not found or has no fields"
+      );
     });
   });
 });

@@ -246,6 +246,19 @@ class Sheu {
     console.warn(result);
     return result;
   }
+
+  /**
+   * Debug label with magenta color [DEBUG]
+   */
+  debug(
+    message: any,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const label = `[\x1b[35mDebug\x1b[0m]`;
+    const result = this.formatText(message, { ...options, label });
+    console.debug(result);
+    return result;
+  }
 }
 
 const sheu = new Sheu();

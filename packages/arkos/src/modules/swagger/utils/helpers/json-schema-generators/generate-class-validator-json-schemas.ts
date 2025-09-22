@@ -4,6 +4,7 @@ import { getMetadataStorage } from "class-validator";
 import { getModuleComponents } from "../../../../../utils/dynamic-loader";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
+import { getUserFileExtension } from "../../../../../utils/helpers/fs.helpers";
 
 export async function generateClassValidatorJsonSchemas() {
   const requiredAppModules = [
@@ -22,28 +23,30 @@ export async function generateClassValidatorJsonSchemas() {
     refPointerPrefix: "#/components/schemas/",
   });
 
-  Object.entries(jsonSchema).forEach(([className, schema]) => {
-    schemas[className] = schema;
-  });
-
   requiredAppModules.forEach((modelName) => {
     const moduleComponents = getModuleComponents(modelName);
 
     if (moduleComponents?.dtos) {
       Object.entries(moduleComponents.dtos).forEach(([dtoType, dtoClass]) => {
-        if (dtoClass) {
+        const ignoredDtoTypes = ["createone", "updateone"];
+        if (dtoClass && !ignoredDtoTypes.includes(dtoType.toLowerCase())) {
           try {
             const schemaName = getCorrectJsonSchemaName(
               dtoType,
               modelName,
               "Dto"
             );
+
+            if (schemas[schemaName]) {
+              throw Error(
+                `Found more then 1 ${dtoClass.name} classes among your .dto.${getUserFileExtension()} files, there is no way to correctly generate json-schemas for swagger documentation.`
+              );
+            }
+
             schemas[schemaName] = jsonSchema[dtoClass.name] || {};
-            if (schemas[dtoClass.name]) delete schemas[dtoClass.name];
-          } catch (error) {
-            console.warn(
-              `Failed to generate schema for ${dtoType} ${modelName}:`,
-              error
+          } catch (err: any) {
+            throw new Error(
+              `Failed to generate schema for ${dtoType} ${modelName}: ${err.message}`
             );
           }
         }
@@ -51,5 +54,8 @@ export async function generateClassValidatorJsonSchemas() {
     }
   });
 
+  Object.entries(jsonSchema).forEach(([className, schema]) => {
+    if (!schemas[className]) schemas[className] = schema;
+  });
   return schemas;
 }

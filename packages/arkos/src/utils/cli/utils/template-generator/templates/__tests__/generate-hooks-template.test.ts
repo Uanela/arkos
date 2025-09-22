@@ -1,6 +1,6 @@
-import generateHooksTemplate from "../generate-hooks-template";
 import { TemplateOptions } from "../../../template-generators";
 import { getUserFileExtension } from "../../../../../helpers/fs.helpers";
+import generateHooksTemplate from "../hooks-template";
 
 jest.mock("../../../../../helpers/fs.helpers", () => ({
   getUserFileExtension: jest.fn().mockReturnValue("ts"),
@@ -166,10 +166,7 @@ describe("generateHooksTemplate", () => {
       'import blogPostService from "./blog-post.service";'
     );
     expect(result).toContain(
-      "export type BlogPostDelegate = typeof prisma.blogPost;"
-    );
-    expect(result).toContain(
-      "async function beforeFindOne({ context, filters, queryOptions }: BeforeFindOneHookArgs<BlogPostDelegate>) {}"
+      "async function beforeFindOne({ context, filters, queryOptions }: BeforeFindOneHookArgs<Prisma.BlogPostDelegate>) {}"
     );
   });
 });

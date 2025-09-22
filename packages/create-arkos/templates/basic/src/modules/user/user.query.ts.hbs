@@ -1,81 +1,78 @@
 {{#if typescript}}
-import prisma from "../../utils/prisma/index.js";
 import { PrismaQueryOptions } from 'arkos/prisma';
+import { Prisma } from "@prisma/client"
 
-const userQueryOptions: PrismaQueryOptions<typeof prisma.user> = {
+const userQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
 {{else}}
 /**
- * @type {import("arkos/prisma").PrismaQueryOptions<typeof import('../../utils/prisma/index.js').prisma.user>}
+ * @type {import("arkos/prisma").PrismaQueryOptions<typeof import("@prisma/client").Prisma.UserDelegate>}
  */
 const userQueryOptions = {
 {{/if}}
-    global: {},
-    find: {
-      omit: {
-        password: true,
-      }, 
-      {{#if (eq authentication.type "dynamic")}}
-      include: {
-        {{#if authentication.multipleRoles}}
-        roles: {
-          include: {
-            role: true,
-          }
-        },
-          {{else}}
-        role: {
-          include: {
-            role: true,
-          }
-        },
-        {{/if}}
+  global: {
+    omit: {
+      password: true,
+    }, 
+  },
+  find: {
+    {{#if (eq authentication.type "dynamic")}}
+    include: {
+      {{#if authentication.multipleRoles}}
+      roles: {
+        include: {
+          role: true,
+        }
+      },
+        {{else}}
+      role: {
+        include: {
+          role: true,
+        }
       },
       {{/if}}
     },
-    findOne: {
-      {{#if (eq authentication.type "dynamic")}}
-      include: {
-        {{#if authentication.multipleRoles}}
-        roles: {
-          include: {
-            role: {
-              include: {
-                permissions: true
-              }
+    {{/if}}
+  },
+  findOne: {
+    {{#if (eq authentication.type "dynamic")}}
+    include: {
+      {{#if authentication.multipleRoles}}
+      roles: {
+        include: {
+          role: {
+            include: {
+              permissions: true
             }
           }
-        },
-          {{else}}
-        role: {
-          include: {
-            role: {
-              include: {
-                permissions: true
-              }
+        }
+      },
+        {{else}}
+      role: {
+        include: {
+          role: {
+            include: {
+              permissions: true
             }
           }
-        },
-        {{/if}}
+        }
       },
       {{/if}}
     },
-    findMany: {},
-    update: {},
-    updateMany: {},
-    updateOne: {},
-    create: {},
-    createMany: {},
-    createOne: {},
-    save: {
-      omit: {
-        password: true,
-      },
-    },
-    saveMany: {},
-    saveOne: {},
-    delete: {},
-    deleteMany: {},
-    deleteOne: {},
+    {{/if}}
+  },
+  findMany: {},
+  update: {},
+  updateMany: {},
+  updateOne: {},
+  create: {},
+  createMany: {},
+  createOne: {},
+  save: {},
+  saveMany: {},
+  saveOne: {},
+  delete: {},
+  deleteMany: {},
+  deleteOne: {},
 }
 
 export default userQueryOptions;

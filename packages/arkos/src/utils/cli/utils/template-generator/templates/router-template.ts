@@ -1,4 +1,3 @@
-import pluralize from "pluralize";
 import {
   checkFileExists,
   getUserFileExtension,
@@ -26,17 +25,18 @@ export function generateRouterTemplate(options: TemplateOptions): string {
         imports?.controller ||
         `./${modelName.kebab}.controller${ext === "js" ? "." + "js" : ""}`
       }"`
-    : `// import ${modelName.camel}Controller from "${
+    : `import ${modelName.camel}Controller from "${
         imports?.controller ||
         `./${modelName.kebab}.controller${ext === "js" ? "." + "js" : ""}`
       }"`;
 
   const controllerHandlerLine = controllerExists
-    ? `  ${modelName.camel}Controller.someHandler`
-    : `  // ${modelName.camel}Controller.someHandler`;
+    ? `${modelName.camel}Controller.someHandler`
+    : `${modelName.camel}Controller.someHandler`;
 
   return `import { Router } from 'express'
 import { authService } from 'arkos/services'
+import { catchAsync } from 'arkos/error-handler'
 ${controllerImportLine}
 ${routerConfigTsTypeImport}
 
@@ -44,13 +44,11 @@ export const config${routerConfigTsType} = { }
 
 const ${modelName.camel}Router = Router()
 
-${modelName.camel}Router.post(
-  '/custom-endpoint', // resolves to /api/${pluralize(
-    modelName.kebab
-  )}/custom-endpoint
+${modelName.camel}Router.get(
+  '/custom-endpoint',
   authService.authenticate,
   authService.handleAccessControl('CustomAction', '${modelName.kebab}'),
-${controllerHandlerLine}
+  catchAsync(${controllerHandlerLine})
 )
 
 export default ${modelName.camel}Router

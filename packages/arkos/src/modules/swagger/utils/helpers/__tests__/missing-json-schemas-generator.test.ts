@@ -4,18 +4,14 @@ import { ArkosConfig } from "../../../../../exports";
 import PrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
 
 // Mock the enhanced generator
-jest.mock(
-  "../../../../../utils/prisma/prisma-json-schema-generator",
-  () => ({
-    generateModelSchemas: jest.fn(),
-  })
-);
+jest.mock("../../../../../utils/prisma/prisma-json-schema-generator", () => ({
+  generateModelSchemas: jest.fn(),
+}));
 
 describe("MissingJsonSchemasGenerator", () => {
-  const mockEnhancedGenerator =
-    PrismaJsonSchemaGenerator as jest.Mocked<
-      typeof PrismaJsonSchemaGenerator
-    >;
+  const mockEnhancedGenerator = PrismaJsonSchemaGenerator as jest.Mocked<
+    typeof PrismaJsonSchemaGenerator
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -249,7 +245,7 @@ describe("MissingJsonSchemasGenerator", () => {
         missingJsonSchemaGenerator["extractModelNameFromOperationId"](
           "createManyCategories"
         )
-      ).toBe("Categorie"); // Note: simple 's' removal
+      ).toBe("Category");
     });
 
     test("should handle auth operations", () => {
