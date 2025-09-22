@@ -1,10 +1,8 @@
 ![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp)
 
-# Arkos.js
+## The Express And Prisma RESTful Framework
 
-### The Express And Prisma RESTful Framework
-
-Arkos simplifies the development of secure and scalable RESTful APIs with minimal configuration, allowing developers to focus on what really matters for their business logic.
+Arkos.js simplifies the development of secure and scalable RESTful APIs with minimal configuration, allowing developers to focus on what really matters for their business logic.
 
 ## Features
 
@@ -26,6 +24,12 @@ Get started with Arkos.js in seconds:
 
 ```bash
 npm create arkos@latest my-project
+```
+
+Or get our night updates:
+
+```bash
+npm create arkos@canary my-project
 ```
 
 ## Documentation

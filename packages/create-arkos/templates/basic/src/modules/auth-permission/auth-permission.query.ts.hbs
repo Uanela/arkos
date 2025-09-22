@@ -1,11 +1,11 @@
 {{#if typescript}}
-import prisma from "../../utils/prisma/index.js";
+import { Prisma } from "@prisma/client"
 import { PrismaQueryOptions } from 'arkos/prisma';
 
-const authPermissionQueryOptions: PrismaQueryOptions<typeof prisma.authPermission> = {
+const authPermissionQueryOptions: PrismaQueryOptions<Prisma.AuthPermissionDelegate> = {
 {{else}}
 /**
- * @type {import("arkos/prisma").PrismaQueryOptions<typeof import('../../utils/prisma/index.js').prisma.authPermission>}
+ * @type {import("arkos/prisma").PrismaQueryOptions<typeof import("@prisma/client").Prisma.AuthPermissionDelegate>}
  */
 const authPermissionQueryOptions = {
 {{/if}}

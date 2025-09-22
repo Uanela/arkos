@@ -1,77 +1,83 @@
 {{#if typescript}}
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
-// export const beforeFindFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// export const beforeFindFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
+// }];
 // 
-// // There is not afterFindFile: because the main handler is handled by express.static()
-// 
-// export const beforeUploadFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// export const beforeUploadFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
+// }];
 // 
-// export const afterUploadFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// export const afterUploadFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
+// }];
+
+// export const onUploadFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+//   next();
+// }];
 // 
-// export const beforeUpdateFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// export const beforeUpdateFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
+// }];
 // 
-// export const afterUpdateFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// export const afterUpdateFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
+// }];
 // 
-// export const beforeDeleteFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// export const onUpdateFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
+// }];
+
+// export const beforeDeleteFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+//   next();
+// }];
 // 
-// export const afterDeleteFile = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   // Your logic here
+// export const afterDeleteFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
 //   next();
-// };
+// }];
+
+// export const onDeleteFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+//   next();
+// }];
 {{else}}
-// export const beforeFindFile = async (req, res, next) => {
-//   // Your logic here
+// export const beforeFindFile = [async (req, res, next) => {
 //   next();
-// };
+// }];
 // 
-// // There is not afterFindFile: because the main handler is handled by express.static()
-// 
-// export const beforeUploadFile = async (req, res, next) => {
-//   // Your logic here
+// export const beforeUploadFile = [async (req, res, next) => {
 //   next();
-// };
+// }];
 // 
-// export const afterUploadFile = async (req, res, next) => {
-//   // Your logic here
+// export const afterUploadFile = [async (req, res, next) => {
 //   next();
-// };
+// }];
 // 
-// export const beforeUpdateFile = async (req, res, next) => {
-//   // Your logic here
+// export const onUploadFileError = [async (err, req, res, next) => {
 //   next();
-// };
+// }];
+
+// export const beforeUpdateFile = [async (req, res, next) => {
+//   next();
+// }];
 // 
-// export const afterUpdateFile = async (req, res, next) => {
-//   // Your logic here
+// export const afterUpdateFile = [async (req, res, next) => {
 //   next();
-// };
+// }];
 // 
-// export const beforeDeleteFile = async (req, res, next) => {
-//   // Your logic here
+// export const onUpdateFileError = [async (err, req, res, next) => {
 //   next();
-// };
+// }];
+
+// export const beforeDeleteFile = [async (req, res, next) => {
+//   next();
+// }];
 // 
-// export const afterDeleteFile = async (req, res, next) => {
-//   // Your logic here
+// export const afterDeleteFile = [async (req, res, next) => {
 //   next();
-// };
+// }];
+
+// export const onDeleteFileError = [async (err, req, res, next) => {
+//   next();
+// }];
 {{/if}}

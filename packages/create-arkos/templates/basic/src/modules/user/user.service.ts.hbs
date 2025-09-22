@@ -1,19 +1,13 @@
+import { BaseService } from "arkos/services";
 {{#if typescript}}
-import prisma from "../../utils/prisma";
-import { BaseService } from "arkos/services";
+import { Prisma } from "@prisma/client"
 
-class UserService extends BaseService<typeof prisma.user> {
+class UserService extends BaseService<Prisma.UserDelegate> {}
 {{else}}
-import { BaseService } from "arkos/services";
 
-class UserService extends BaseService {
+class UserService extends BaseService {}
 {{/if}}
-  constructor() {
-    super("user");
-  }
-  // Add your custom service methods here
-}
 
-const userService = new UserService();
+const userService = new UserService("user");
 
 export default userService;

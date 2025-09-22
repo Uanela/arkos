@@ -16,6 +16,17 @@ All notable changes to Arkos.js will be documented in this file.
 
 ---
 
+## [1.3.3-beta] - 2025-09-21
+
+### Add
+
+- option to skip all hooks at once at service hooks by passing skip : "all", under the context.
+- added npx arkos prisma generate in order to correctly infer types for base service. (only be offically announced on 1.4-beta)
+- added error message when trying to gnerate existing component.
+- started working on debugging. (To be offically announced on 1.4-beta)
+
+---
+
 ## [1.3.0-beta] - 2025-09-09
 
 ### Added

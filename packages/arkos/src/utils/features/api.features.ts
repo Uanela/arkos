@@ -4,14 +4,15 @@ import { parseQueryParamsWithModifiers } from "../helpers/api.features.helpers";
 import AppError from "../../modules/error-handler/utils/app-error";
 import { getPrismaInstance } from "../helpers/prisma.helpers";
 import { ArkosRequest } from "../../types";
+import debuggerService from "../../modules/debugger/debugger.service";
 
 type ModelName = string;
 
 export default class APIFeatures {
   req?: ArkosRequest;
-  searchParams: any; // The query string parameters from the request
-  searchParamsWithModifiers: any; // The query string parameters from the request
-  filters: any = {};
+  searchParams: any;
+  searchParamsWithModifiers: any;
+  filters: Record<string, any> = {};
   reqFiltersSearchParam: any = {};
   modelName?: ModelName;
   excludedFields = [
@@ -28,92 +29,116 @@ export default class APIFeatures {
     "where",
     "prismaQueryOptions",
     "ignoredFields",
+    "select",
+    "omit",
   ];
 
   constructor(req?: Request, modelName?: ModelName) {
     if (req) {
       const { filters = "{}", ...restOfQuery } = req.query;
       this.req = req;
+
+      let parsedFilters = {};
+      try {
+        parsedFilters = JSON.parse(filters as string);
+      } catch (error) {
+        throw new AppError("Invalid req.query.filters JSON format", 400);
+      }
+
       this.searchParams = deepmerge(
         parseQueryParamsWithModifiers(restOfQuery),
-        parseQueryParamsWithModifiers(JSON.parse(filters as string))
+        parseQueryParamsWithModifiers(parsedFilters)
       );
-      (req as any).finalPrismaQueryOptions = this.searchParams;
+
+      debuggerService.handleTransformedQueryLog(this.searchParams);
     }
 
     if (modelName) this.modelName = modelName;
     this.filters = { ...this.filters };
-  }
-
-  setup(req: Request, modelName?: ModelName) {
-    if (req) {
-      const { filters = "{}", ...restOfQuery } = req.query;
-      this.req = req;
-      this.searchParams = deepmerge(
-        parseQueryParamsWithModifiers(restOfQuery),
-        parseQueryParamsWithModifiers(JSON.parse(filters as string))
-      );
-      (req as any).finalPrismaQueryOptions = this.searchParams;
-    }
-    if (modelName) this.modelName = modelName;
-    this.filters = { ...this.filters };
-
-    return this;
   }
 
   filter() {
     if (!this.req)
       throw new Error(
-        "Trying to use APIFeatures.filter() without passing request on class constructor or APIFeatures.setup() method. read more about at www.arkosjs.com/docs/advanced-guide/api-features-class"
+        "Trying to use APIFeatures.filter() without passing request on class constructor or APIFeatures.setup() method."
       );
-    const searchableFields: Record<string, any>[] = [];
 
+    const searchableFields: Record<string, any>[] = [];
     const queryObj = { ...this.searchParams };
 
     this.excludedFields.forEach((el) => delete queryObj[el]);
+
+    const topLevelOR = queryObj.OR;
+    const topLevelAND = queryObj.AND;
+    delete queryObj.OR;
+    delete queryObj.AND;
 
     const whereObj = { ...this.req.params, ...queryObj };
     const whereLogicalOperatorFilters = Object.keys(whereObj).map((key) => ({
       [key]: whereObj[key],
     }));
 
-    let whereOptions =
-      whereLogicalOperatorFilters.length > 0
-        ? {
-            [(this.req.query?.filterMode as string) ?? "OR"]:
-              whereLogicalOperatorFilters,
-          }
-        : {};
+    let whereOptions: any = {};
+
+    if (whereLogicalOperatorFilters.length > 0) {
+      whereOptions = {
+        [(this.req.query?.filterMode as string) ?? "OR"]:
+          whereLogicalOperatorFilters,
+      };
+    }
+
+    if (topLevelOR) {
+      if (whereOptions.OR) {
+        whereOptions.OR = [...whereOptions.OR, ...topLevelOR];
+      } else {
+        whereOptions.OR = topLevelOR;
+      }
+    }
+
+    if (topLevelAND) {
+      if (whereOptions.AND) {
+        whereOptions.AND = [...whereOptions.AND, ...topLevelAND];
+      } else {
+        whereOptions.AND = topLevelAND;
+      }
+    }
 
     if (!!this.searchParams.search) {
       const prisma = getPrismaInstance();
 
-      if (this.modelName)
-        Object.keys((prisma as any)[this.modelName].fields).forEach((key) => {
-          const field = ((prisma as any)[this.modelName!].fields as any)[key];
-          if (
-            field?.typeName === "String" &&
-            key !== "id" &&
-            key !== "password" &&
-            !field.isList &&
-            !key?.includes?.("Id") &&
-            !key?.includes?.("ID")
-          ) {
-            searchableFields.push({
-              [`${key}`]: {
-                contains: this.searchParams.search,
-                mode: "insensitive",
-              },
-            });
-          }
-        });
+      if (!this.modelName)
+        throw new Error("Model name is required for search functionality");
 
-      whereOptions = deepmerge(
-        {
-          OR: searchableFields,
-        },
-        whereOptions
-      );
+      if (!prisma[this.modelName] || !prisma[this.modelName].fields)
+        throw new Error(`Model '${this.modelName}' not found or has no fields`);
+
+      Object.keys((prisma as any)[this.modelName].fields).forEach((key) => {
+        const field = ((prisma as any)[this.modelName!].fields as any)[key];
+        if (
+          field?.typeName === "String" &&
+          key !== "id" &&
+          key !== "password" &&
+          !field.isList &&
+          !key?.includes?.("Id") &&
+          !key?.includes?.("ID")
+        ) {
+          searchableFields.push({
+            [`${key}`]: {
+              contains: this.searchParams.search,
+              mode: "insensitive",
+            },
+          });
+        }
+      });
+
+      if (searchableFields.length > 0) {
+        whereOptions = deepmerge(
+          {
+            OR: searchableFields,
+          },
+          whereOptions
+        );
+      }
     }
 
     const firstMerge = deepmerge(
@@ -124,17 +149,12 @@ export default class APIFeatures {
     );
 
     this.filters = deepmerge(firstMerge, this.filters);
-    return this;
-  }
+    this.searchParams = deepmerge(
+      this.searchParams || {},
+      this.req.prismaQueryOptions || {}
+    );
 
-  search() {
-    if (this.searchParams?.search) {
-      this.filters = deepmerge(this.filters, {
-        where: {
-          OR: [],
-        },
-      });
-    }
+    return this;
   }
 
   sort() {
@@ -152,10 +172,13 @@ export default class APIFeatures {
   }
 
   limitFields() {
+    let finalSelect: Record<string, any> = {};
+    let finalInclude: Record<string, any> = {};
+    let finalOmit: Record<string, any> = {};
+
     if (this.searchParams?.fields) {
       const fields = this.searchParams.fields.split(",");
 
-      // Separate fields into includes, excludes, and regular fields
       const regularFields = fields.filter(
         (field: string) => !field.startsWith("+") && !field.startsWith("-")
       );
@@ -166,12 +189,8 @@ export default class APIFeatures {
         .filter((field: string) => field.startsWith("-"))
         .map((field: string) => field.substring(1));
 
-      // Create selection object based on field type
-      let selection: Record<string, any> = {};
-
-      // If regular fields exist, use them as the base selection
       if (regularFields.length > 0) {
-        selection = regularFields.reduce(
+        finalSelect = regularFields.reduce(
           (acc: Record<string, any>, field: string) => {
             acc[field] = true;
             return acc;
@@ -179,38 +198,62 @@ export default class APIFeatures {
           {} as Record<string, any>
         );
       }
-      // Otherwise, use include fields as additions to any existing included fields
-      else {
-        // Start with current include fields if they exist
-        selection = this.filters.include || {};
 
-        // Add any explicitly included fields
-        includeFields.forEach((field: string) => {
-          selection[field] = true;
-        });
+      includeFields.forEach((field: string) => {
+        finalInclude[field] = true;
+      });
 
-        // Add any explicitly excluded fields
-        excludeFields.forEach((field: string) => {
-          selection[field] = false;
-        });
-      }
-
-      // Apply the selection to filters
-      this.filters = {
-        ...this.filters,
-        select: selection,
-      };
-
-      // Remove the include filter as it's now part of select
-      if (this.filters.include) {
-        delete this.filters.include;
-      }
+      excludeFields.forEach((field: string) => {
+        finalOmit[field] = true;
+      });
     }
 
-    // Remove any references to the now-unused parameters
+    if (this.searchParams.include || this.filters.include)
+      finalInclude = deepmerge(
+        finalInclude,
+        deepmerge(this.filters?.include || {}, this.searchParams?.include || {})
+      );
+
+    if (this.searchParams.select || this.filters.include)
+      finalSelect = deepmerge(
+        finalSelect,
+        deepmerge(this.filters?.select || {}, this.searchParams?.select || {})
+      );
+
+    if (this.searchParams.omit || this.filters.omit)
+      finalOmit = deepmerge(
+        finalOmit,
+        deepmerge(this.filters?.omit || {}, this.searchParams?.omit || {})
+      );
+
+    if (
+      Object.keys(finalSelect).length > 0 &&
+      Object.keys(finalInclude).length > 0
+    ) {
+      finalSelect = deepmerge(finalSelect, finalInclude);
+      finalInclude = {};
+      delete this.filters.include;
+      delete this.searchParams.include;
+    }
+
+    this._validateNoPasswordExposure(finalSelect, finalInclude, finalOmit);
+
+    // ALWAYS protect password field in finalOmit
+    if (finalOmit.password === false)
+      throw new AppError("Cannot disable password omission protection", 400);
+
+    if (this.modelName?.toLowerCase?.() === "user") finalOmit.password = true;
+
+    if (Object.keys(finalSelect).length > 0) this.filters.select = finalSelect;
+
+    if (Object.keys(finalInclude).length > 0)
+      this.filters.include = finalInclude;
+
+    if (Object.keys(finalOmit).length > 0) this.filters.omit = finalOmit;
+
     if (this.searchParams?.addFields || this.searchParams?.removeFields) {
       throw new AppError(
-        "The addFields and removeFields parameters are deprecated. Please use fields with + and - prefixes instead.",
+        "The addFields and removeFields parameters are deprecated.",
         400
       );
     }
@@ -218,18 +261,70 @@ export default class APIFeatures {
     return this;
   }
 
-  paginate() {
-    const page = parseInt(this.searchParams.page, 10) || 1;
-    const limit = parseInt(this.searchParams.limit, 10) || 30;
-    const skip = (page - 1) * limit;
+  private _validateNoPasswordExposure(
+    select: Record<string, any>,
+    include: Record<string, any>,
+    omit: Record<string, any>
+  ) {
+    const checkForPassword = (
+      obj: Record<string, any>,
+      path: string[] = []
+    ) => {
+      for (const [key, value] of Object.entries(obj)) {
+        const currentPath = [...path, key];
+
+        if (
+          key === "password" &&
+          (this.modelName?.toLowerCase() === "user" ||
+            currentPath.at(-3)?.toLowerCase?.() === "user")
+        ) {
+          if (value === false)
+            throw new AppError(
+              "Cannot disable password omission protection",
+              400,
+              { ...obj },
+              "CannotExposeUserPassword"
+            );
+
+          if (value === true && !omit?.["password"])
+            throw new AppError(
+              "User password exposure detected",
+              403,
+              {},
+              "UserPasswordExposureDetected"
+            );
+        }
+
+        if (
+          typeof value === "object" &&
+          value !== null &&
+          !Array.isArray(value)
+        ) {
+          checkForPassword(value, currentPath);
+        }
+      }
+    };
+
+    checkForPassword(select);
+    checkForPassword(include);
+    checkForPassword(omit);
+  }
+
+  paginate(): APIFeatures {
+    const paginationOptions = (() => {
+      if (this.searchParams.limit === "all") return {};
+
+      const page = parseInt(this.searchParams.page, 10) || 1;
+      const limit = parseInt(this.searchParams.limit, 10) || 30;
+      const skip = (page - 1) * limit;
+
+      return { skip, take: limit };
+    })();
 
     this.filters = {
       ...this.filters,
-      skip,
-      take: limit,
+      ...paginationOptions,
     };
     return this;
   }
 }
-
-export const apiFeatures = new APIFeatures();

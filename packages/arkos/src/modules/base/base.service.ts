@@ -768,6 +768,106 @@ export class BaseService<T extends ModelDelegate = any> {
   }
 
   /**
+   * Updates multiple records with different data in a single transaction.
+   *
+   * @param {Array<{filters: UpdateOneFilters<T>, data: UpdateOneData<T>}>} batchData - Array of objects containing filters and data for each update.
+   * @param {UpdateOneOptions<T>} [queryOptions] - Additional query options to modify the Prisma queries.
+   * @param {ServiceBaseContext} [context] - Request context containing user and accessToken for accessing HTTP-specific information.
+   * @returns {Promise<Array<UpdateOneResult<T>>>} Array of updated records.
+   */
+  async batchUpdate<TOptions extends UpdateOneOptions<T>>(
+    batchData: Array<{
+      filters: UpdateOneFilters<T>;
+      data: UpdateOneData<T>;
+    }>,
+    queryOptions?: TOptions,
+    context?: ServiceBaseContext
+  ): Promise<Array<UpdateOneResult<T>>> {
+    const serviceHooks = getModuleComponents(this.modelName)?.hooks;
+
+    try {
+      if (
+        serviceHooks?.beforeBatchUpdate &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      )
+        await serviceHooksManager.handleHook(serviceHooks.beforeBatchUpdate, {
+          batchData,
+          queryOptions,
+          context,
+        });
+
+      const prisma = getPrismaInstance();
+
+      const results = await prisma.$transaction(async (tx: any) => {
+        const updatePromises = batchData.map(async ({ filters, data }) => {
+          let processedData = data;
+          if (
+            kebabCase(this.modelName) === "user" &&
+            (processedData as any)?.password
+          ) {
+            if (!authService.isPasswordHashed((processedData as any).password!))
+              (processedData as any).password = await authService.hashPassword(
+                (processedData as any)?.password
+              );
+          }
+
+          const dataWithRelationFieldsHandled = handleRelationFieldsInBody(
+            processedData as Record<string, any>,
+            {
+              ...this.relationFields,
+            }
+          );
+
+          return await (tx[this.modelName] as T).update(
+            deepmerge(
+              {
+                where: filters,
+                data: dataWithRelationFieldsHandled,
+              },
+              (queryOptions as {}) || {}
+            ) as { where: any; data: any }
+          );
+        });
+
+        return await Promise.all(updatePromises);
+      });
+
+      if (
+        serviceHooks?.afterBatchUpdate &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
+        await serviceHooksManager.handleHook(serviceHooks.afterBatchUpdate, {
+          results,
+          batchData,
+          queryOptions,
+          context,
+        });
+
+      return results;
+    } catch (err: any) {
+      if (
+        serviceHooks?.onBatchUpdateError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
+        await serviceHooksManager.handleHook(serviceHooks.onBatchUpdateError, {
+          error: err,
+          batchData,
+          queryOptions,
+          context,
+        });
+
+      if (context?.throwOnError !== false) throw err;
+      return undefined as any;
+    }
+  }
+
+  /**
    * Deletes a single record by its ID.
    *
    * @param {DeleteOneFilters<T>} filters - The parameters to find the record by.
@@ -883,6 +983,81 @@ export class BaseService<T extends ModelDelegate = any> {
         await serviceHooksManager.handleHook(serviceHooks.onDeleteManyError, {
           error: err,
           filters,
+          context,
+        });
+
+      if (context?.throwOnError !== false) throw err;
+      return undefined as any;
+    }
+  }
+
+  /**
+   * Deletes multiple records with different filters in a single transaction.
+   *
+   * @param {Array<DeleteOneFilters<T>>} batchFilters - Array of filter objects for each deletion.
+   * @param {ServiceBaseContext} [context] - Request context containing user and accessToken for accessing HTTP-specific information.
+   * @returns {Promise<Array<DeleteOneResult<T>>>} Array of deleted records.
+   */
+  async batchDelete(
+    batchFilters: Array<DeleteOneFilters<T>>,
+    context?: ServiceBaseContext
+  ): Promise<Array<DeleteOneResult<T>>> {
+    const serviceHooks = getModuleComponents(this.modelName)?.hooks;
+
+    try {
+      if (
+        serviceHooks?.beforeBatchDelete &&
+        context?.skip !== "before" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("before")
+      )
+        await serviceHooksManager.handleHook(serviceHooks.beforeBatchDelete, {
+          batchFilters,
+          context,
+        });
+
+      const prisma = getPrismaInstance();
+
+      const results = await prisma.$transaction(async (tx: any) => {
+        const deletePromises = batchFilters.map(async (filters) => {
+          const filtersWithRelationFieldsHandled = handleRelationFieldsInBody(
+            filters as Record<string, any>,
+            {
+              ...this.relationFields,
+            }
+          );
+
+          return await (tx[this.modelName] as T).delete({
+            where: filtersWithRelationFieldsHandled,
+          });
+        });
+
+        return await Promise.all(deletePromises);
+      });
+
+      if (
+        serviceHooks?.afterBatchDelete &&
+        context?.skip !== "after" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("after")
+      )
+        await serviceHooksManager.handleHook(serviceHooks.afterBatchDelete, {
+          results,
+          batchFilters,
+          context,
+        });
+
+      return results;
+    } catch (err: any) {
+      if (
+        serviceHooks?.onBatchDeleteError &&
+        context?.skip !== "error" &&
+        context?.skip !== "all" &&
+        !context?.skip?.includes("error")
+      )
+        await serviceHooksManager.handleHook(serviceHooks.onBatchDeleteError, {
+          error: err,
+          batchFilters,
           context,
         });
 
