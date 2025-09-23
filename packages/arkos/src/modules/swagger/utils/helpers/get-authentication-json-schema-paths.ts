@@ -3,7 +3,7 @@ import {
   getSchemaRef,
   localValidatorFileExists,
 } from "./swagger.router.helpers";
-import { ArkosConfig } from "../../../../exports";
+import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.helpers";
 
@@ -36,7 +36,8 @@ export default async function getAuthenticationJsonSchemaPaths(
   if (!arkosConfig.swagger?.mode) return paths;
 
   const AuthModuleComponents = getModuleComponents("auth");
-  const routerConfig = AuthModuleComponents?.router?.config;
+  const routerConfig = AuthModuleComponents?.router
+    ?.config as RouterConfig<"auth">;
 
   if (routerConfig?.disable === true) return paths;
 

@@ -58,9 +58,9 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);
 
-    const routerConfig: RouterConfig = customRouterModule?.config || {};
+    const routerConfig: RouterConfig<any> = customRouterModule?.config || {};
 
-    const customRouter = (customRouterModule as Router) || {};
+    const customRouter = (customRouterModule?.default as Router) || {};
     const hasCustomImplementation = (path: string, method: string) => {
       return customRouter.stack?.some(
         (layer) =>
@@ -72,7 +72,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     };
 
-    const getValidationSchemaOrDto = (key: string) => {
+    const getValidationSchemaOrDto = (key: "create" | "update") => {
       const validationConfigs = arkosConfigs?.validation;
       if (validationConfigs?.resolver === "class-validator") {
         return dtos?.[key];
@@ -173,7 +173,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           authConfigs?.accessControl || {}
         ),
         handleRequestBodyValidationAndTransformation(
-          getValidationSchemaOrDto("createMany")
+          getValidationSchemaOrDto("create")
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
@@ -205,9 +205,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
-        handleRequestBodyValidationAndTransformation(
-          getValidationSchemaOrDto("updateMany")
-        ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
@@ -238,9 +235,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
-        handleRequestBodyValidationAndTransformation(
-          getValidationSchemaOrDto("deleteMany")
-        ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteMany"
@@ -270,9 +264,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           "View",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
-        ),
-        handleRequestBodyValidationAndTransformation(
-          getValidationSchemaOrDto("findOne")
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
@@ -337,9 +328,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs?.accessControl || {}
         ),
-        handleRequestBodyValidationAndTransformation(
-          getValidationSchemaOrDto("delete")
-        ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteOne"
@@ -356,8 +344,8 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
   });
 }
 
-export function isEndpointDisabled<RouterType extends string = "prisma">(
-  routerConfig: RouterConfig<RouterType>,
+export function isEndpointDisabled(
+  routerConfig: RouterConfig<any>,
   endpoint: RouterEndpoint | AuthRouterEndpoint | FileUploadRouterEndpoint
 ): boolean {
   if (!routerConfig?.disable) return false;

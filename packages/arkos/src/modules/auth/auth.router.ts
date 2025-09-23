@@ -2,7 +2,10 @@ import { Router } from "express";
 import { authControllerFactory } from "./auth.controller";
 import authService from "./auth.service";
 import rateLimit from "express-rate-limit";
-import { getModuleComponents } from "../../utils/dynamic-loader";
+import {
+  getModuleComponents,
+  ModuleComponents,
+} from "../../utils/dynamic-loader";
 import {
   addPrismaQueryOptionsToRequest,
   handleRequestBodyValidationAndTransformation,
@@ -30,7 +33,9 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
 
   if (routerConfig?.disable === true) return router;
 
-  const getValidationSchemaOrDto = (key: string) => {
+  const getValidationSchemaOrDto = (
+    key: "updateMe" | "updatePassword" | "login" | "signup"
+  ) => {
     const validationConfigs = arkosConfigs?.validation;
     if (validationConfigs?.resolver === "class-validator") {
       return dtos?.[key];
@@ -40,7 +45,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     return undefined;
   };
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "getMe")) {
+  if (!isEndpointDisabled(routerConfig, "getMe")) {
     router.get(
       "/users/me",
       authService.authenticate,
@@ -56,7 +61,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "updateMe")) {
+  if (!isEndpointDisabled(routerConfig, "updateMe")) {
     router.patch(
       "/users/me",
       authService.authenticate,
@@ -75,7 +80,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "deleteMe")) {
+  if (!isEndpointDisabled(routerConfig, "deleteMe")) {
     router.delete(
       "/users/me",
       authService.authenticate,
@@ -92,10 +97,10 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
   }
 
   if (
-    !isEndpointDisabled<"auth">(routerConfig, "login") ||
-    !isEndpointDisabled<"auth">(routerConfig, "logout") ||
-    !isEndpointDisabled<"auth">(routerConfig, "signup") ||
-    !isEndpointDisabled<"auth">(routerConfig, "updatePassword")
+    !isEndpointDisabled(routerConfig, "login") ||
+    !isEndpointDisabled(routerConfig, "logout") ||
+    !isEndpointDisabled(routerConfig, "signup") ||
+    !isEndpointDisabled(routerConfig, "updatePassword")
   ) {
     router.use(
       "/auth",
@@ -118,7 +123,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "login")) {
+  if (!isEndpointDisabled(routerConfig, "login")) {
     router.post(
       "/auth/login",
       handleRequestBodyValidationAndTransformation(
@@ -136,7 +141,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "logout")) {
+  if (!isEndpointDisabled(routerConfig, "logout")) {
     router.delete(
       "/auth/logout",
       authService.authenticate,
@@ -148,7 +153,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "signup")) {
+  if (!isEndpointDisabled(routerConfig, "signup")) {
     router.post(
       "/auth/signup",
       handleRequestBodyValidationAndTransformation(
@@ -166,7 +171,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "updatePassword")) {
+  if (!isEndpointDisabled(routerConfig, "updatePassword")) {
     router.post(
       "/auth/update-password",
       authService.authenticate,
@@ -187,7 +192,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "findManyAuthAction"))
+  if (!isEndpointDisabled(routerConfig, "findManyAuthAction"))
     router.get(
       "/auth-actions",
       authService.authenticate,
@@ -201,7 +206,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       })
     );
 
-  if (!isEndpointDisabled<"auth">(routerConfig, "findOneAuthAction"))
+  if (!isEndpointDisabled(routerConfig, "findOneAuthAction"))
     router.get(
       "/auth-actions/:resourceName",
       authService.authenticate,
