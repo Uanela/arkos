@@ -74,8 +74,6 @@
 
 ### Remove
 
-- completely remove support for `.prima-query-options.{js|ts}` and `.auht-configs.{js|ts}`
-
 ### Deprecate
 
 - deprecate .middlewares.ts files in favor of .interceptors.ts, add warnings to change, and also warn when find .middlewares.ts and .interceptors.ts with same structure tell which one will be used
@@ -83,3 +81,9 @@
 ### Annoucment
 
 - Announce the batch and delete methods
+
+## DONE
+
+### Removed
+
+- completely removed support for `.prima-query-options.{js|ts}` and `.auht-configs.{js|ts}` in favor of `.query.ts` and `.auth.ts`

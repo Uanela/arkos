@@ -21,7 +21,7 @@ let prismaModelsModules: Record<string, AppModuleComponent> = {};
 export function setModuleComponents(
   modelName: string,
   modules: AppModuleComponent
-): any {
+) {
   prismaModelsModules[pascalCase(modelName)] = modules;
 }
 
