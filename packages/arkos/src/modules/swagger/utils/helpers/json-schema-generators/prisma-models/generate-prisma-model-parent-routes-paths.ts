@@ -6,7 +6,7 @@ import {
   kebabToHuman,
   localValidatorFileExists,
 } from "../../swagger.router.helpers";
-import { ArkosConfig } from "../../../../../../exports";
+import { ArkosConfig, RouterConfig } from "../../../../../../exports";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
 
 export default async function generatePrismaModelParentRoutesPaths(
@@ -20,33 +20,28 @@ export default async function generatePrismaModelParentRoutesPaths(
   const humanReadableName = kebabToHuman(modelName);
   const humanReadableNamePlural = pluralize.plural(humanReadableName);
 
-  // Import model modules to get router config
   const moduleComponents = getModuleComponents(model);
-  const routerConfig = moduleComponents?.router?.config;
+  const routerConfig = moduleComponents?.router
+    ?.config as RouterConfig<"prisma">;
 
-  // Skip if router is completely disabled
   if (routerConfig?.disable === true) return;
   if (!routerConfig?.parent) return;
 
-  const parentModel = routerConfig.parent.model;
+  const parentModel = routerConfig.parent.model!;
   const parentRouteName = pluralize.plural(kebabCase(parentModel));
   const parentHumanName = kebabToHuman(kebabCase(parentModel));
 
-  // Check if parent endpoint is allowed
   const isParentEndpointAllowed = (endpoint: string): boolean => {
     const parentEndpoints = routerConfig?.parent?.endpoints;
 
-    // If endpoints is "*" or undefined, allow all
     if (!parentEndpoints || parentEndpoints === "*") return true;
 
-    // If endpoints is array, check if endpoint is included
     if (Array.isArray(parentEndpoints))
       return parentEndpoints.includes(endpoint as any);
 
     return false;
   };
 
-  // Helper function to determine the correct mode for schema ref
   const getSchemaMode = async (
     action: string
   ): Promise<"prisma" | "zod" | "class-validator"> => {
