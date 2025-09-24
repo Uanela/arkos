@@ -11,7 +11,6 @@
 ### Fix
 
 - strict routing only work for exported routers on swagger documenation
-- fix functions names at service hooks template
 - fix windows path handling when dealing with file uploads
 
 ### Remove
@@ -42,6 +41,8 @@
 ### Add
 
 ### Change
+
+- fix functions names at service hooks template
 
 ### Fix
 
