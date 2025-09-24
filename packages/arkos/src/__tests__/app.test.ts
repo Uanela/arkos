@@ -446,12 +446,10 @@ describe("App Bootstrap", () => {
       port: 3000,
     });
 
-    // Mock app.use to capture the calls
     const useCalls = (app.use as jest.Mock).mock.calls;
-    const lastButOneCall = useCalls[useCalls.length - 2];
+    const lastCall = useCalls[useCalls.length - 1];
 
-    // Check if the last middleware is the error handler
-    expect(lastButOneCall[0]).toBe(errorHandler);
+    expect(lastCall[0]).toBe(errorHandler);
   });
 
   // it("registers not found last", async () => {

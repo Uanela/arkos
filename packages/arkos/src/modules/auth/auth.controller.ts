@@ -296,7 +296,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        const userId = req.user!.id; // Assuming the authenticated user's ID is available in req.user
+        const userId = req.user!.id;
 
         const updatedUser = (await userService.updateOne(
           { id: userId },

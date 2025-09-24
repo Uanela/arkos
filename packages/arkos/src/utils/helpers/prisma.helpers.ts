@@ -22,11 +22,7 @@ export async function loadPrismaModule() {
       });
       prismaInstance = prismaModule.default;
 
-      if (
-        !prismaInstance ||
-        typeof prismaInstance[pascalCase(prismaSchemaParser.models?.[0].name)]
-          ?.findFirst !== "function"
-      )
+      if (!prismaInstance || typeof prismaInstance?.["$connect"] !== "function")
         throw new Error("Prisma not found");
     } catch (error: any) {
       if (error.message === "Prisma not found")

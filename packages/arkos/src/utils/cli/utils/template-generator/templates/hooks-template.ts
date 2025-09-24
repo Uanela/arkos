@@ -89,7 +89,7 @@ export default function generateHooksTemplate(
     const args = isTypeScript
       ? `{ ${params.join(", ")} }: ${argsType}`
       : `{ ${params.join(", ")} }`;
-    return `async function (${args}) {}`;
+    return `async (${args}) => {}`;
   };
 
   const hooks = `
