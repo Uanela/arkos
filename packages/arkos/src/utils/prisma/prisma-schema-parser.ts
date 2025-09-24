@@ -2,7 +2,6 @@ import path from "path";
 import { PrismaSchema, PrismaModel, PrismaEnum, PrismaField } from "./types";
 import { camelCase, pascalCase } from "../helpers/change-case.helpers";
 import fs from "fs";
-import { createInflate } from "zlib";
 
 /**
  * A parser for Prisma schema files that extracts models, enums, and their properties.

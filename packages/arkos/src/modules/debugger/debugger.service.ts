@@ -1,15 +1,11 @@
 import sheu from "../../utils/sheu";
-import {
-  ArkosNextFunction,
-  ArkosRequest,
-  ArkosResponse,
-  getArkosConfig,
-} from "../../exports";
+import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../exports";
 import { ModuleComponents } from "../../utils/dynamic-loader";
 import util from "util";
 import { crd } from "../../utils/helpers/fs.helpers";
 import loadedComponentsLogger from "./utils/loaded-components-logger";
 import { Router } from "express";
+import { getArkosConfig } from "../../server";
 
 class DebuggerService {
   logModuleFinalRouter(moduleName: string, router: Router) {

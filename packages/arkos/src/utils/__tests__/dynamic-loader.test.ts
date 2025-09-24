@@ -9,7 +9,7 @@ import sheu from "../sheu";
 
 export const prismaModelsUniqueFields: Record<string, any[]> = [] as any;
 
-// Mocking dependencies
+jest.mock("../../modules/debugger/debugger.service");
 jest.mock("path");
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
@@ -46,13 +46,9 @@ jest.mock("../helpers/fs.helpers", () => ({
   crd: jest.fn(() => "/project"),
 }));
 jest.mock("../prisma/prisma-schema-parser", () => ({
+  parse: jest.fn(),
   getModelsAsArrayOfStrings: jest.fn(() => ["User", "Post"]),
 }));
-
-// jest.mock("../dynamic-loader", () => ({
-//   ...jest.requireActual("../dynamic-loader"),
-//   importModuleComponents: jest.fn(),
-// }));
 
 describe("Dynamic Prisma Model Loader", () => {
   beforeEach(() => {
