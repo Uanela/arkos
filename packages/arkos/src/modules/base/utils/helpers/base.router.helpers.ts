@@ -79,7 +79,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.post(
         `/${routeName}`,
-        processAuthenticationMiddlewares(
+        ...processAuthenticationMiddlewares(
           "Create",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs
@@ -106,7 +106,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.get(
         `/${routeName}`,
-        processAuthenticationMiddlewares(
+        ...processAuthenticationMiddlewares(
           "View",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs
@@ -131,7 +131,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.post(
         `/${routeName}/many`,
-        processAuthenticationMiddlewares(
+        ...processAuthenticationMiddlewares(
           "Create",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs
@@ -159,7 +159,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.patch(
         `/${routeName}/many`,
-        processAuthenticationMiddlewares(
+        ...processAuthenticationMiddlewares(
           "Update",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs
@@ -168,7 +168,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
         ),
-
         ...processMiddleware(interceptors?.beforeUpdateMany),
         controller.updateMany,
         ...processMiddleware(interceptors?.afterUpdateMany),
@@ -184,7 +183,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.delete(
         `/${routeName}/many`,
-        processAuthenticationMiddlewares(
+        ...processAuthenticationMiddlewares(
           "Delete",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs
@@ -207,7 +206,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.get(
         `/${routeName}/:id`,
-        processAuthenticationMiddlewares(
+        ...processAuthenticationMiddlewares(
           "View",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs
@@ -231,7 +230,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.patch(
         `/${routeName}/:id`,
-        processAuthenticationMiddlewares(
+        ...processAuthenticationMiddlewares(
           "Update",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs
@@ -258,7 +257,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.delete(
         `/${routeName}/:id`,
-        processAuthenticationMiddlewares(
+        ...processAuthenticationMiddlewares(
           "Delete",
           kebabCase(pluralize.singular(modelNameInKebab)),
           authConfigs
