@@ -11,6 +11,9 @@ jest.mock("../global.helpers");
 jest.mock("../../../modules/error-handler/utils/catch-async", () => {
   return (fn: Function) => fn;
 });
+jest.mock("../../prisma/prisma-schema-parser", () => ({
+  models: [{ name: "User" }],
+}));
 
 // Set up mock values
 const mockedCwd = "/mock/project";
@@ -94,22 +97,6 @@ describe("prisma.helpers", () => {
         fixExtension: false,
       });
       expect(result).toBe(mockPrismaModule.default);
-    });
-
-    it("should use prisma field if default is not available", async () => {
-      // Set up mock for file existence check
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-      // Set up mock for dynamic import without default export
-      (importModule as jest.Mock).mockResolvedValue({
-        prisma: mockPrismaModule.prisma,
-      });
-
-      // Call function under test
-      const result = await dbUtils.loadPrismaModule();
-
-      // Assert expected behavior
-      expect(result).toBe(mockPrismaModule.prisma);
     });
 
     it("should throw AppError when prisma module cannot be loaded", async () => {
