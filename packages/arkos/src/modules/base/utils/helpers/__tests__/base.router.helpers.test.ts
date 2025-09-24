@@ -101,7 +101,6 @@ describe("setupRouters", () => {
   });
 
   it("should register all routes for a model with no customization", async () => {
-    // Mock the imported modules
     const mockModuleComponents = {
       interceptors: {},
       authConfigs: {},
@@ -578,7 +577,6 @@ describe("setupRouters", () => {
         expect.any(Function)
       );
 
-      // 8 routes per model
       expect(
         (router.get as jest.Mock).mock.calls.length +
           (router.post as jest.Mock).mock.calls.length +
@@ -595,6 +593,8 @@ describe("setupRouters", () => {
     beforeEach(() => {
       jest.clearAllMocks();
       router = Router();
+
+      jest.spyOn(routerValidator, "isExpressRouter").mockReturnValue(true);
 
       mockBaseController = {
         createOne: jest.fn(),
@@ -784,7 +784,6 @@ describe("setupRouters", () => {
         mockModuleComponents
       );
 
-      // Mock arkosConfigs with unknown resolver
       const arkosConfigs = {
         validation: {
           resolver: "unknown-resolver",
@@ -809,7 +808,6 @@ describe("setupRouters", () => {
       );
     });
 
-    // Test for different hasCustomImplementation path variations
     it("should detect custom implementation with different path formats", async () => {
       const mockModuleComponents = {
         interceptors: {},
@@ -835,7 +833,6 @@ describe("setupRouters", () => {
       const setupPromises = setupRouters(router, {});
       await Promise.all(await setupPromises);
 
-      // Should not register POST /users because custom implementation exists
       expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
     });
 
@@ -893,7 +890,6 @@ describe("setupRouters", () => {
       const setupPromises = setupRouters(router, {});
       await Promise.all(await setupPromises);
 
-      // Should not register PATCH /users because custom implementation exists
       expect(router.patch).not.toHaveBeenCalledWith(
         "/users",
         expect.anything()
@@ -925,7 +921,6 @@ describe("setupRouters", () => {
       const setupPromises = setupRouters(router, {});
       await Promise.all(await setupPromises);
 
-      // Should not register DELETE /users because custom implementation exists
       expect(router.delete).not.toHaveBeenCalledWith(
         "/users",
         expect.anything()
@@ -933,7 +928,6 @@ describe("setupRouters", () => {
     });
   });
 
-  // Additional tests for isEndpointDisabled function edge cases
   describe("isEndpointDisabled - Additional Coverage", () => {
     it("should return false when routerConfig is undefined", () => {
       const result = isEndpointDisabled(undefined as any, "createOne");

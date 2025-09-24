@@ -829,7 +829,7 @@ export type ArkosConfig = {
      * Controls debugging over HTTP request level
      */
     requests?: {
-      level?: 1 | 2 | 3;
+      level?: 0 | 1 | 2 | 3;
       filter?: (
         | "Query"
         | "Body"
@@ -849,7 +849,7 @@ export type ArkosConfig = {
        * 2 - All from 1 and detailed inspection per module component
        * 3 - All from 1 and 2, plus the final router component after merged with autho generated router.
        */
-      level?: 1 | 2 | 3;
+      level?: 0 | 1 | 2 | 3;
       filters?: {
         /**
          * Allows filtering by specific modules.
