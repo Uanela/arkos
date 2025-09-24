@@ -319,7 +319,7 @@ export function assignModuleToResult(
       sheu.warn(
         `Found ${kebabCaseAppModule}.middlewares.${ext} exporting ${exportedInterceptors.join(", ")}. Which by convention should go at ${kebabCaseAppModule}.interceptors.${ext} This is simply a warning that will stop from v1.5.0-beta`
       );
-    }
+    } else if (!result.interceptors) result.interceptors = module;
   } else if (key === "router") {
     result[key] = {
       ...module,
