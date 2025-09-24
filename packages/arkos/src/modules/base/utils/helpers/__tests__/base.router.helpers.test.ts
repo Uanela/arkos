@@ -39,7 +39,7 @@ jest.mock("express", () => {
 });
 jest.mock("../../../../../utils/dynamic-loader");
 jest.mock("../../../../auth/auth.service", () => ({
-  handleAuthenticationControl: jest.fn(() => jest.fn()),
+  authenticate: jest.fn(() => jest.fn()),
   handleAccessControl: jest.fn(() => jest.fn()),
 }));
 
@@ -112,11 +112,9 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    // Call the function
     const setupPromises = setupRouters(router, {});
     await Promise.all(await setupPromises);
 
-    // Verify all routes are registered
     expect(router.post).toHaveBeenCalledWith(
       "/users",
       expect.any(Function),
@@ -149,7 +147,6 @@ describe("setupRouters", () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
-      expect.any(Function),
       expect.any(Function)
     );
     expect(router.delete).toHaveBeenCalledWith(
@@ -158,12 +155,10 @@ describe("setupRouters", () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
-      expect.any(Function),
       expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
       "/users/:id",
-      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
@@ -181,7 +176,6 @@ describe("setupRouters", () => {
     );
     expect(router.delete).toHaveBeenCalledWith(
       "/users/:id",
-      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
@@ -230,7 +224,6 @@ describe("setupRouters", () => {
     );
     expect(router.get).toHaveBeenCalledWith(
       "/users/:id",
-      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),

@@ -314,6 +314,13 @@ export class BaseController {
         );
       }
 
+      if (req.query.filterMode === "OR")
+        throw new AppError(
+          "req.query.filterMode === OR is not valid for update many operation",
+          400
+        );
+
+      req.query.filterMode = "AND";
       const { where, ...queryOptions } = new APIFeatures(req, this.modelName)
         .filter()
         .sort()
@@ -460,6 +467,13 @@ export class BaseController {
         );
       }
 
+      if (req.query.filterMode === "OR")
+        throw new AppError(
+          "req.query.filterMode === OR is not valid for delete many operation",
+          400
+        );
+
+      req.query.filterMode = "AND";
       const { where } = new APIFeatures(req, this.modelName).filter().filters;
 
       const data = await this.service.deleteMany(where, {
