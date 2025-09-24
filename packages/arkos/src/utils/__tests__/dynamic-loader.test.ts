@@ -123,11 +123,10 @@ describe("Dynamic Prisma Model Loader", () => {
 
       expect(result.core).toEqual({
         hooks: "user.hooks.ts",
-        interceptors: "user.middlewares.ts",
-        authConfigs: "user.auth-configs.ts",
-        authConfigsNew: "user.auth.ts",
-        prismaQueryOptions: "user.prisma-query-options.ts",
-        prismaQueryOptionsNew: "user.query.ts",
+        interceptors: "user.interceptors.ts",
+        interceptorsOld: "user.middlewares.ts",
+        authConfigs: "user.auth.ts",
+        prismaQueryOptions: "user.query.ts",
         router: "user.router.ts",
       });
     });
@@ -257,100 +256,18 @@ describe("Dynamic Prisma Model Loader", () => {
   });
 
   describe("validateNamingConventions", () => {
-    it("should warn about deprecated prismaQueryOptions", () => {
+    it("should warn about deprecated .middlewares.js", () => {
       const result = {};
 
       dynamicLoader.validateNamingConventions(
-        "prismaQueryOptions",
-        "user.prisma-query-options.js",
+        "interceptorsOld",
+        "user.middlewares.js",
         result
       );
 
       expect(sheu.warn).toHaveBeenCalledWith(
-        "Found user.prisma-query-options.js which will be deprecated from 1.4.0-beta, consider switching to user.query.js."
+        "Found deprecated user.middlewares.js that will removed from v1.5.0-beta, consider switching to user.interceptors.js"
       );
-    });
-
-    it("should warn about deprecated authConfigs", () => {
-      const result = {};
-
-      dynamicLoader.validateNamingConventions(
-        "authConfigs",
-        "user.auth-configs.js",
-        result
-      );
-
-      expect(sheu.warn).toHaveBeenCalledWith(
-        "Found user.auth-configs.js which will be deprecated from 1.4.0-beta, consider switching to user.auth.js."
-      );
-    });
-
-    it("should throw error when conflicting prismaQueryOptions exist", () => {
-      const result = { prismaQueryOptions: {} };
-
-      try {
-        dynamicLoader.validateNamingConventions(
-          "prismaQueryOptions",
-          "user.prisma-query-options.ts",
-          result
-        );
-      } catch (error) {
-        expect(mockError).toHaveBeenCalledWith(
-          "\n Cannot use both user.prisma-query-options.ts and user.query.ts at once, please choose only one name convention. \n"
-        );
-      }
-      expect(killServerChildProcess).toHaveBeenCalled();
-    });
-
-    it("should throw error when conflicting authConfigs exist", () => {
-      const result = { authConfigs: {} };
-
-      try {
-        dynamicLoader.validateNamingConventions(
-          "authConfigs",
-          "user.auth-configs.ts",
-          result
-        );
-      } catch (error) {
-        expect(mockError).toHaveBeenCalledWith(
-          "\n Cannot use both user.auth-configs.ts and user.auth.ts at once, please choose only one name convention. \n"
-        );
-      }
-      expect(killServerChildProcess).toHaveBeenCalled();
-    });
-
-    it("should throw error when new naming conflicts with old prismaQueryOptions", () => {
-      const result = { prismaQueryOptions: {} };
-
-      try {
-        dynamicLoader.validateNamingConventions(
-          "prismaQueryOptionsNew",
-          "user.query.ts",
-          result
-        );
-      } catch (error) {
-        expect(mockError).toHaveBeenCalledWith(
-          "\n Cannot use both user.query.ts and user.prisma-query-options.ts at once, please choose only one name convention. \n"
-        );
-      }
-      expect(killServerChildProcess).toHaveBeenCalled();
-    });
-
-    it("should throw error when new naming conflicts with old authConfigs", () => {
-      const result = { authConfigs: {} };
-
-      try {
-        dynamicLoader.validateNamingConventions(
-          "authConfigsNew",
-          "user.auth.ts",
-          result
-        );
-      } catch (error) {
-        expect(mockError).toHaveBeenCalledWith(
-          "\n Cannot use both user.auth.ts and user.auth-configs.ts at once, please choose only one name convention. \n"
-        );
-      }
-      expect(killServerChildProcess).toHaveBeenCalled();
     });
   });
 
@@ -390,18 +307,18 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(result.prismaQueryOptions).toEqual({ query: "options" });
     });
 
-    it("should assign prismaQueryOptionsNew", () => {
-      const module = { default: { query: "options" } };
+    it("should assign interceptorsOld", () => {
+      const module = { beforeCreateOne: jest.fn() };
 
       dynamicLoader.assignModuleToResult(
         "User",
-        "prismaQueryOptionsNew",
+        "interceptorsOld",
         module,
         result,
         arkosConfig
       );
 
-      expect(result.prismaQueryOptions).toEqual({ query: "options" });
+      expect(result.interceptors).toEqual(module);
     });
 
     it("should assign authConfigs", () => {
@@ -410,20 +327,6 @@ describe("Dynamic Prisma Model Loader", () => {
       dynamicLoader.assignModuleToResult(
         "User",
         "authConfigs",
-        module,
-        result,
-        arkosConfig
-      );
-
-      expect(result.authConfigs).toEqual({ auth: "config" });
-    });
-
-    it("should assign authConfigsNew", () => {
-      const module = { default: { auth: "config" } };
-
-      dynamicLoader.assignModuleToResult(
-        "User",
-        "authConfigsNew",
         module,
         result,
         arkosConfig
@@ -620,23 +523,6 @@ describe("Dynamic Prisma Model Loader", () => {
 
       expect(sheu.error).toHaveBeenCalled();
       expect(killServerChildProcess).toHaveBeenCalled();
-    });
-
-    it("should handle validation naming conflicts and rethrow", async () => {
-      (pathExists as jest.Mock).mockResolvedValue(true);
-      (importModule as jest.Mock).mockResolvedValue({ default: {} });
-
-      expect(
-        await dynamicLoader.importModuleComponents(
-          "User",
-          baseArkosConfig,
-          true
-        )
-      );
-
-      expect(mockError).toHaveBeenCalledWith(
-        expect.stringContaining("Cannot use both")
-      );
     });
 
     it("should handle general errors and kill process", async () => {
