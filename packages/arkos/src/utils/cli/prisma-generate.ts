@@ -117,7 +117,8 @@ export declare class BaseService<
     fs.writeFileSync(filePath, content, {
         encoding: "utf8",
     });
+
     sheu.done(
-        "Types for @prisma/client and BaseService generated successfully!"
+        "Types for @prisma/client and base service generated successfully!"
     );
 }

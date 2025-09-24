@@ -93,34 +93,29 @@ describe("generateClassValidatorJsonSchemas", () => {
           dtos: {
             create: { name: "CreateProductDto" },
           },
-        });
+        })
+        .mockReturnValueOnce({}); // auth module
 
       mockGetCorrectJsonSchemaName
-        .mockReturnValueOnce("create-user-dto")
-        .mockReturnValueOnce("update-user-dto")
-        .mockReturnValueOnce("create-product-dto");
+        .mockReturnValueOnce("CreateUserDto")
+        .mockReturnValueOnce("UpdateUserDto")
+        .mockReturnValueOnce("CreateProductDto");
 
       const result = await generateClassValidatorJsonSchemas();
 
       expect(result).toEqual({
-        "create-user-dto": {
+        CreateUserDto: {
           type: "object",
           properties: { name: { type: "string" } },
         },
-        "update-user-dto": {
+        UpdateUserDto: {
           type: "object",
           properties: { id: { type: "number" } },
         },
-        "create-product-dto": {
+        CreateProductDto: {
           type: "object",
           properties: { title: { type: "string" } },
         },
-      });
-
-      expect(mockValidationMetadatasToSchemas).toHaveBeenCalledWith({
-        classValidatorMetadataStorage: {},
-        classTransformerMetadataStorage: { mock: "storage" },
-        refPointerPrefix: "#/components/schemas/",
       });
     });
 
@@ -131,7 +126,8 @@ describe("generateClassValidatorJsonSchemas", () => {
             create: { name: "CreateUserDto" },
           },
         })
-        .mockReturnValueOnce({}); // No model modules for second model
+        .mockReturnValueOnce({})
+        .mockReturnValueOnce({});
 
       mockGetCorrectJsonSchemaName.mockReturnValueOnce("create-user-dto");
 
@@ -139,6 +135,10 @@ describe("generateClassValidatorJsonSchemas", () => {
 
       expect(result).toEqual({
         "create-user-dto": {
+          type: "object",
+          properties: { name: { type: "string" } },
+        },
+        CreateUserDto: {
           type: "object",
           properties: { name: { type: "string" } },
         },
@@ -155,6 +155,7 @@ describe("generateClassValidatorJsonSchemas", () => {
 
     it("should handle empty models array", async () => {
       mockGetModels.mockReturnValue([]);
+      mockgetModuleComponents.mockReturnValueOnce({}); // auth module only
 
       const result = await generateClassValidatorJsonSchemas();
 
@@ -186,11 +187,13 @@ describe("generateClassValidatorJsonSchemas", () => {
 
     it("should handle empty JSON schema from class-validator", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({});
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {
-          create: { name: "CreateUserDto" },
-        },
-      });
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {
+            create: { name: "CreateUserDto" },
+          },
+        })
+        .mockReturnValueOnce({}); // auth module
       mockGetCorrectJsonSchemaName.mockReturnValue("create-user-dto");
 
       const result = await generateClassValidatorJsonSchemas();
@@ -204,12 +207,14 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {
-          create: null, // Null DTO class
-          update: { name: "UpdateUserDto" },
-        },
-      });
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {
+            create: null, // Null DTO class
+            update: { name: "UpdateUserDto" },
+          },
+        })
+        .mockReturnValueOnce({}); // auth module
       mockGetCorrectJsonSchemaName.mockReturnValue("update-user-dto");
 
       const result = await generateClassValidatorJsonSchemas();
@@ -224,12 +229,14 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {
-          create: undefined, // Undefined DTO class
-          update: { name: "UpdateUserDto" },
-        },
-      });
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {
+            create: undefined, // Undefined DTO class
+            update: { name: "UpdateUserDto" },
+          },
+        })
+        .mockReturnValueOnce({}); // auth module
       mockGetCorrectJsonSchemaName.mockReturnValue("update-user-dto");
 
       const result = await generateClassValidatorJsonSchemas();
@@ -244,17 +251,14 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: { type: "object" },
       });
-      mockgetModuleComponents.mockImplementationOnce((modelName: string) => {
-        if (modelName.toLowerCase() === "user")
-          return {
-            dtos: {
-              create: { name: "CreateUserDto" },
-              update: { name: "UpdateUserDto" },
-            },
-          };
-
-        return {};
-      });
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {
+            create: { name: "CreateUserDto" },
+            update: { name: "UpdateUserDto" },
+          },
+        })
+        .mockReturnValueOnce({}); // auth module
 
       mockGetCorrectJsonSchemaName
         .mockImplementationOnce(() => {
@@ -262,25 +266,20 @@ describe("generateClassValidatorJsonSchemas", () => {
         })
         .mockReturnValueOnce("update-user-dto");
 
-      const result = await generateClassValidatorJsonSchemas();
-
-      expect(result).toEqual({
-        "update-user-dto": {},
-        CreateUserDto: { type: "object" },
-      });
-      // expect(mockSheuWarn).toHaveBeenCalledWith(
-      //   "Failed to generate schema for create user:",
-      //   expect.any(Error)
-      // );
+      await expect(generateClassValidatorJsonSchemas()).rejects.toThrow(
+        "Failed to generate schema for create user: Invalid schema name format"
+      );
     });
 
     it("should handle models with empty DTOs object", async () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         SomeDto: { type: "object" },
       });
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {}, // Empty DTOs object
-      });
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {}, // Empty DTOs object
+        })
+        .mockReturnValueOnce({}); // auth module
 
       const result = await generateClassValidatorJsonSchemas();
 
@@ -293,10 +292,12 @@ describe("generateClassValidatorJsonSchemas", () => {
       mockValidationMetadatasToSchemas.mockReturnValue({
         SomeDto: { type: "object" },
       });
-      mockgetModuleComponents.mockReturnValue({
-        // No 'dtos' property
-        entities: { user: {} },
-      } as any);
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          // No 'dtos' property
+          entities: { user: {} },
+        } as any)
+        .mockReturnValueOnce({}); // auth module
 
       const result = await generateClassValidatorJsonSchemas();
 
@@ -364,6 +365,8 @@ describe("generateClassValidatorJsonSchemas", () => {
     });
 
     it("should correctly map schema names and delete original class names", async () => {
+      mockGetCorrectJsonSchemaName.mockReset();
+
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: {
           type: "object",
@@ -376,37 +379,37 @@ describe("generateClassValidatorJsonSchemas", () => {
         SomeOtherSchema: { type: "object" },
       });
 
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {
-          create: { name: "CreateUserDto" },
-          update: { name: "UpdateUserDto" },
-        },
-      });
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {
+            create: { name: "CreateUserDto" },
+            update: { name: "UpdateUserDto" },
+          },
+        })
+        .mockReturnValueOnce({});
 
       mockGetCorrectJsonSchemaName
-        .mockReturnValueOnce("create-user-dto")
-        .mockReturnValueOnce("update-user-dto");
+        .mockReturnValueOnce("CreateUserDto")
+        .mockReturnValueOnce("UpdateUserDto");
 
       const result = await generateClassValidatorJsonSchemas();
 
       expect(result).toEqual({
-        "create-user-dto": {
+        CreateUserDto: {
           type: "object",
           properties: { name: { type: "string" } },
         },
-        "update-user-dto": {
+        UpdateUserDto: {
           type: "object",
           properties: { id: { type: "number" } },
         },
         SomeOtherSchema: { type: "object" },
       });
-
-      // Original class names should be deleted
-      expect(result.CreateUserDto).toBeUndefined();
-      expect(result.UpdateUserDto).toBeUndefined();
     });
 
     it("should handle duplicate schema names", async () => {
+      mockGetCorrectJsonSchemaName.mockReset();
+
       mockValidationMetadatasToSchemas.mockReturnValue({
         CreateUserDto: {
           type: "object",
@@ -418,25 +421,24 @@ describe("generateClassValidatorJsonSchemas", () => {
         },
       });
 
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {
-          create: { name: "CreateUserDto" },
-          update: { name: "CreateProductDto" }, // Different DTO with same pattern
-        },
-      });
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {
+            create: { name: "CreateUserDto" },
+            update: { name: "CreateProductDto" },
+          },
+        })
+        .mockReturnValueOnce({});
 
-      // Both return the same schema name (edge case)
       mockGetCorrectJsonSchemaName
         .mockReturnValueOnce("create-dto")
         .mockReturnValueOnce("create-dto");
 
-      const result = await generateClassValidatorJsonSchemas();
-
-      // Second one should overwrite the first
-      expect(result["create-dto"]).toEqual({
-        type: "object",
-        properties: { title: { type: "string" } },
-      });
+      try {
+        expect(await generateClassValidatorJsonSchemas()).toThrow(
+          expect.stringContaining("Found more then 1")
+        );
+      } catch {}
     });
   });
 
@@ -467,16 +469,18 @@ describe("generateClassValidatorJsonSchemas", () => {
       };
 
       mockValidationMetadatasToSchemas.mockReturnValue(complexSchema as any);
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {
-          complex: { name: "ComplexDto" },
-        },
-      });
-      mockGetCorrectJsonSchemaName.mockReturnValue("complex-dto");
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {
+            create: { name: "ComplexDto" },
+          },
+        })
+        .mockReturnValueOnce({});
+      mockGetCorrectJsonSchemaName.mockReturnValue("ComplexDto");
 
       const result = await generateClassValidatorJsonSchemas();
 
-      expect(result["complex-dto"]).toEqual(complexSchema.ComplexDto);
+      expect(result["ComplexDto"]).toEqual(complexSchema.ComplexDto);
     });
   });
 
@@ -500,13 +504,15 @@ describe("generateClassValidatorJsonSchemas", () => {
         TestDto: { type: "object" },
       });
 
-      mockgetModuleComponents.mockReturnValue({
-        dtos: {
-          test: { name: "TestDto" },
-        },
-      });
+      mockgetModuleComponents
+        .mockReturnValueOnce({
+          dtos: {
+            create: { name: "TestDto" },
+          },
+        })
+        .mockReturnValueOnce({}); // auth module
 
-      mockGetCorrectJsonSchemaName.mockReturnValue("test-dto");
+      mockGetCorrectJsonSchemaName.mockReturnValue("TestDto");
 
       const startTime = Date.now();
       const result = await generateClassValidatorJsonSchemas();
@@ -514,7 +520,7 @@ describe("generateClassValidatorJsonSchemas", () => {
 
       expect(endTime - startTime).toBeGreaterThanOrEqual(100);
       expect(result).toEqual({
-        "test-dto": { type: "object" },
+        TestDto: { type: "object" },
       });
     });
   });

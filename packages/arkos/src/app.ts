@@ -17,6 +17,8 @@ import { queryParser } from "./utils/helpers/query-parser.helpers";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import { getSwaggerRouter } from "./modules/swagger/swagger.router";
 import { loadAllModuleComponents } from "./utils/dynamic-loader";
+import { AppError } from "./exports/error-handler";
+import debuggerService from "./modules/debugger/debugger.service";
 
 export const app: express.Express = express();
 const knowModulesRouter = Router();
@@ -33,6 +35,8 @@ export async function bootstrap(
   const middlewaresConfig = arkosConfig?.middlewares;
   const disabledMiddlewares = middlewaresConfig?.disable || [];
   const replacedMiddlewares = middlewaresConfig?.replace || {};
+
+  app.use(debuggerService.logLevel2RequestInfo);
 
   if (!disabledMiddlewares?.includes?.("compression"))
     app.use(
@@ -185,12 +189,17 @@ export async function bootstrap(
       app.use(router);
     });
 
+  app.use("*", (req) => {
+    throw new AppError(
+      "Route not found",
+      404,
+      { route: req.route },
+      "RouteNotFound"
+    );
+  });
+
   if (!disabledMiddlewares?.includes?.("global-error-handler"))
     app.use(replacedMiddlewares.globalErrorHandler || errorHandler);
-
-  app.use("*", (_, res) => {
-    res.status(404).json({ message: "Route not found!" });
-  });
 
   return app;
 }

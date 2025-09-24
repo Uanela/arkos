@@ -2,6 +2,7 @@ import path from "path";
 import { PrismaSchema, PrismaModel, PrismaEnum, PrismaField } from "./types";
 import { camelCase, pascalCase } from "../helpers/change-case.helpers";
 import fs from "fs";
+import { createInflate } from "zlib";
 
 /**
  * A parser for Prisma schema files that extracts models, enums, and their properties.
@@ -388,6 +389,22 @@ export class PrismaSchemaParser {
 
   getModelsAsArrayOfStrings() {
     return this.models.map(({ name }) => name);
+  }
+
+  getField(criteria: Partial<PrismaField>): PrismaField | undefined {
+    return this.models
+      .reduce((acc, model) => {
+        acc.push(...model.fields);
+        return acc;
+      }, [] as PrismaField[])
+      .find((field) => {
+        return Object.keys(criteria).every((key) => {
+          return (
+            field[key as keyof PrismaField] ===
+            criteria[key as keyof PrismaField]
+          );
+        });
+      });
   }
 }
 

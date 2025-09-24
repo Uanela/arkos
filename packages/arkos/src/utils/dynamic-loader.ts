@@ -2,7 +2,7 @@ import { z, ZodTypeAny } from "zod";
 import path from "path";
 import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
-import { ArkosConfig } from "../exports";
+import { ArkosConfig, RouterConfig } from "../exports";
 import sheu from "./sheu";
 import {
   applyStrictRoutingRules,
@@ -12,6 +12,9 @@ import { kebabCase, pascalCase } from "./helpers/change-case.helpers";
 import { crd, getUserFileExtension } from "./helpers/fs.helpers";
 import { importModule } from "./helpers/global.helpers";
 import prismaSchemaParser from "./prisma/prisma-schema-parser";
+import debuggerService from "../modules/debugger/debugger.service";
+import { PrismaQueryOptions } from "../types";
+import { ServiceHook } from "../modules/base/utils/service-hooks-manager";
 
 type AppModuleComponent = Awaited<ReturnType<typeof importModuleComponents>>;
 
@@ -165,15 +168,36 @@ export async function processSubdir(
   return result;
 }
 
-type importModuleComponentsReturnType = {
-  hooks?: any;
-  interceptors?: any;
-  interceptorsOld?: any;
+export type ModuleComponents = Omit<
+  ImportModuleComponentsReturnType,
+  "authConfigsNew" | "prismaQueryOptionsNew"
+>;
+
+type ImportModuleComponentsReturnType = {
+  hooks?: Record<string, ServiceHook | ServiceHook[]>;
+  interceptors?: Record<string, Function | Function[]>;
   authConfigs?: AuthConfigs;
-  prismaQueryOptions?: any;
-  router?: any;
-  dtos?: Record<string, any>;
-  schemas?: Record<string, any>;
+  interceptorsOld?: any;
+  authConfigsNew?: AuthConfigs;
+  prismaQueryOptions?: PrismaQueryOptions<any>;
+  prismaQueryOptionsNew?: PrismaQueryOptions<any>;
+  router?: { config?: RouterConfig<any>; default: RouterConfig };
+  dtos?: {
+    create?: any;
+    update?: any;
+    signup?: any;
+    login?: any;
+    updatePassword?: any;
+    updateMe?: any;
+  };
+  schemas?: {
+    create?: any;
+    update?: any;
+    signup?: any;
+    login?: any;
+    updatePassword?: any;
+    updateMe?: any;
+  };
 };
 
 const availableInterceptors = {
@@ -239,14 +263,14 @@ const availableInterceptors = {
  * Validates naming convention conflicts for prismaQueryOptions and authConfigs
  * @param {string} key - The current file key being processed
  * @param {string} fileName - The filename being imported
- * @param {importModuleComponentsReturnType} result - The current result object
+ * @param {ImportModuleComponentsReturnType} result - The current result object
  * @throws {Error} When conflicting naming conventions are detected
  */
 export function validateNamingConventions(
   modelName: string,
   key: string,
   fileName: string,
-  result: importModuleComponentsReturnType
+  result: ImportModuleComponentsReturnType
 ): void {
   const moduleName =
     kebabCase(modelName) === "auth"
@@ -280,13 +304,13 @@ export function validateNamingConventions(
  * Processes and assigns module to the result object based on the key
  * @param {string} key - The file key being processed
  * @param {any} module - The imported module
- * @param {importModuleComponentsReturnType} result - The result object to modify
+ * @param {ImportModuleComponentsReturnType} result - The result object to modify
  */
 export function assignModuleToResult(
   appModule: string,
   key: string,
   module: any,
-  result: importModuleComponentsReturnType,
+  result: ImportModuleComponentsReturnType,
   arkosConfig: ArkosConfig
 ): void {
   if (key === "prismaQueryOptions" || key === "prismaQueryOptionsNew") {
@@ -320,8 +344,8 @@ export async function importModuleComponents(
   modelName: string,
   arkosConfig: ArkosConfig,
   moduleDirExists?: boolean
-): Promise<importModuleComponentsReturnType> {
-  const result: importModuleComponentsReturnType = {
+): Promise<ImportModuleComponentsReturnType> {
+  const result: ImportModuleComponentsReturnType = {
     dtos: {},
     schemas: {},
   };
@@ -404,9 +428,9 @@ export async function importModuleComponents(
 
 export const appModules = Array.from(
   new Set([
-    ...prismaSchemaParser.getModelsAsArrayOfStrings(),
     "auth",
     "file-upload",
+    ...prismaSchemaParser.getModelsAsArrayOfStrings(),
   ])
 );
 
@@ -436,5 +460,21 @@ export async function loadAllModuleComponents(arkosConfig: ArkosConfig) {
       )
   );
 
-  await Promise.all(modulesComponentsImportPromises);
+  const modulesComponents = await Promise.all(modulesComponentsImportPromises);
+  debuggerService.logDynamicLoadedModulesComponents(
+    modulesComponents.map((components, i) => {
+      const moduleDir = path.resolve(
+        crd(),
+        "src",
+        "modules",
+        kebabCase(appModules[i])
+      );
+
+      return {
+        moduleName: kebabCase(appModules[i]),
+        moduleDir,
+        components,
+      };
+    })
+  );
 }
