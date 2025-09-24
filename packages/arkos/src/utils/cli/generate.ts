@@ -118,7 +118,7 @@ export const generateCommand = {
   interceptors: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "interceptors",
-      fileSuffix: "middlewares",
+      fileSuffix: "interceptors",
     });
   },
 

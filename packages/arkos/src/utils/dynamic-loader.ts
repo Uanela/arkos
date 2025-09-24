@@ -205,6 +205,9 @@ const availableInterceptors = {
     "beforeGetMe",
     "afterGetMe",
     "onGetMeError",
+    "beforeUpdateMe",
+    "afterUpdateMe",
+    "onUpdateMeError",
     "beforeLogin",
     "afterLogin",
     "onLoginError",
@@ -267,36 +270,15 @@ const availableInterceptors = {
  * @throws {Error} When conflicting naming conventions are detected
  */
 export function validateNamingConventions(
-  modelName: string,
   key: string,
   fileName: string,
   result: ImportModuleComponentsReturnType
 ): void {
-  const moduleName =
-    kebabCase(modelName) === "auth"
-      ? "auth"
-      : kebabCase(modelName) === "file-upload"
-        ? "file-upload"
-        : "prisma";
-
   if (key === "interceptorsOld") {
-    sheu.warn(
-      `Found deprecated ${fileName} that will removed from v1.5.0-beta, consider switching to ${fileName.replace("middlewares", "interceptors")}.`
-    );
-    if (!result.interceptors) result.interceptors = result.interceptorsOld;
-    if (
-      Object.keys(result.interceptorsOld).some((interceptorName) =>
-        availableInterceptors[moduleName].includes(interceptorName)
-      )
-    ) {
-      const exportedInterceptors = Object.keys(result.interceptorsOld).filter(
-        (interceptorName) =>
-          availableInterceptors[moduleName].includes(interceptorName)
-      );
+    if (!result.interceptors)
       sheu.warn(
-        `Found ${fileName} exporting ${exportedInterceptors.join(", ")}. Which by convention should go at ${fileName.replace("middlewares", "interceptors")}. This is simply a warning that will stop from v1.5.0-beta`
+        `Found deprecated ${fileName} that will removed from v1.5.0-beta, consider switching to ${fileName.replace("middlewares", "interceptors")}`
       );
-    }
   }
 }
 
@@ -313,12 +295,31 @@ export function assignModuleToResult(
   result: ImportModuleComponentsReturnType,
   arkosConfig: ArkosConfig
 ): void {
-  if (key === "prismaQueryOptions" || key === "prismaQueryOptionsNew") {
-    result.prismaQueryOptions = module.default || module;
-  } else if (key === "authConfigs" || key === "authConfigsNew") {
-    result.authConfigs = module.default || module;
-  } else if (key === "interceptors") {
-    result[key] = module;
+  if (key === "interceptors") result.interceptors = module;
+  else if (key === "interceptorsOld") {
+    const kebabCaseAppModule = kebabCase(appModule);
+    const moduleName =
+      kebabCaseAppModule === "auth"
+        ? "auth"
+        : kebabCaseAppModule === "file-upload"
+          ? "file-upload"
+          : "prisma";
+
+    if (
+      result.interceptors &&
+      Object.keys(module).some((interceptorName) =>
+        availableInterceptors[moduleName].includes(interceptorName)
+      )
+    ) {
+      const exportedInterceptors = Object.keys(module).filter(
+        (interceptorName) =>
+          availableInterceptors[moduleName].includes(interceptorName)
+      );
+      const ext = getUserFileExtension();
+      sheu.warn(
+        `Found ${kebabCaseAppModule}.middlewares.${ext} exporting ${exportedInterceptors.join(", ")}. Which by convention should go at ${kebabCaseAppModule}.interceptors.${ext} This is simply a warning that will stop from v1.5.0-beta`
+      );
+    }
   } else if (key === "router") {
     result[key] = {
       ...module,
@@ -402,8 +403,8 @@ export async function importModuleComponents(
         if (!module && key === "router" && usingStrictRouting) module = {};
 
         if (module) {
-          validateNamingConventions(modelName, key, fileName, result);
-
+          (result as any)[key] = module;
+          validateNamingConventions(key, fileName, result);
           assignModuleToResult(modelName, key, module, result, arkosConfig);
         }
       } catch (err: any) {
