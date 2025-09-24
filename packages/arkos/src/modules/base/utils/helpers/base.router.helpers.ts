@@ -1,13 +1,8 @@
 import { Router } from "express";
 import pluralize from "pluralize";
 import { ArkosConfig, RouterConfig } from "../../../../exports";
-import { APIFeatures, kebabCase } from "../../../../exports/utils";
-import {
-  ArkosNextFunction,
-  ArkosRequest,
-  ArkosResponse,
-  PrismaQueryOptions,
-} from "../../../../types";
+import { kebabCase } from "../../../../exports/utils";
+import { PrismaQueryOptions } from "../../../../types";
 import {
   AuthRouterEndpoint,
   FileUploadRouterEndpoint,
@@ -26,20 +21,7 @@ import routerValidator from "../router-validator";
 import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
-
-export function handleModelsApiFeatures(modelName: string) {
-  return (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-    req.modelName = modelName;
-    req.query.filterMode = req.query?.filterMode || "AND";
-    req.filters = new APIFeatures(req, modelName)
-      .filter()
-      .sort()
-      .limitFields()
-      .paginate().filters;
-
-    next();
-  };
-}
+import { AccessAction, AuthConfigs } from "../../../../types/auth";
 
 export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
@@ -60,9 +42,9 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
 
     const routerConfig: RouterConfig<any> = customRouterModule?.config || {};
 
-    const customRouter = (customRouterModule?.default as Router) || {};
+    const customRouter = customRouterModule?.default as Router;
     const hasCustomImplementation = (path: string, method: string) => {
-      return customRouter.stack?.some(
+      return customRouter?.stack?.some(
         (layer) =>
           (layer.path === `/api/${path}` ||
             layer.path === `api/${path}` ||
@@ -82,32 +64,25 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       return undefined;
     };
 
-    if (
-      typeof customRouterModule?.default === "function" &&
-      !routerConfig?.disable
-    )
-      if (routerValidator.isExpressRouter(customRouterModule?.default))
-        router.use(`/${routeName}`, customRouterModule.default);
+    if (customRouter && customRouterModule) {
+      if (routerValidator.isExpressRouter(customRouter))
+        router.use(`/${routeName}`, customRouter);
       else
         throw Error(
-          `Validation Error: The exported router from ${modelNameInKebab}.router.${getUserFileExtension()} is not a valid express Router.`
+          `ValidationError: The exported router from ${modelNameInKebab}.router.${getUserFileExtension()} is not a valid express Router.`
         );
+    }
 
-    // POST /{routeName} - Create One
     if (
       !isEndpointDisabled(routerConfig, "createOne") &&
       !hasCustomImplementation(`/${routeName}`, "post")
     ) {
       router.post(
         `/${routeName}`,
-        authService.handleAuthenticationControl(
-          "Create",
-          authConfigs?.authenticationControl
-        ),
-        authService.handleAccessControl(
+        processAuthenticationMiddlewares(
           "Create",
           kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs?.accessControl || {}
+          authConfigs
         ),
         handleRequestBodyValidationAndTransformation(
           getValidationSchemaOrDto("create")
@@ -116,8 +91,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createOne"
         ),
-        handleModelsApiFeatures(model),
-        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeCreateOne),
         controller.createOne,
         ...processMiddleware(interceptors?.afterCreateOne),
@@ -133,21 +106,16 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.get(
         `/${routeName}`,
-        authService.handleAuthenticationControl(
-          "View",
-          authConfigs?.authenticationControl
-        ),
-        authService.handleAccessControl(
+        processAuthenticationMiddlewares(
           "View",
           kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs?.accessControl || {}
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findMany"
         ),
-        handleModelsApiFeatures(model),
-        debuggerService.logLevel2RequestInfo,
+
         ...processMiddleware(interceptors?.beforeFindMany),
         controller.findMany,
         ...processMiddleware(interceptors?.afterFindMany),
@@ -163,14 +131,10 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.post(
         `/${routeName}/many`,
-        authService.handleAuthenticationControl(
-          "Create",
-          authConfigs?.authenticationControl
-        ),
-        authService.handleAccessControl(
+        processAuthenticationMiddlewares(
           "Create",
           kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs?.accessControl || {}
+          authConfigs
         ),
         handleRequestBodyValidationAndTransformation(
           getValidationSchemaOrDto("create")
@@ -179,8 +143,7 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createMany"
         ),
-        handleModelsApiFeatures(model),
-        debuggerService.logLevel2RequestInfo,
+
         ...processMiddleware(interceptors?.beforeCreateMany),
         controller.createMany,
         ...processMiddleware(interceptors?.afterCreateMany),
@@ -196,21 +159,16 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.patch(
         `/${routeName}/many`,
-        authService.handleAuthenticationControl(
-          "Update",
-          authConfigs?.authenticationControl
-        ),
-        authService.handleAccessControl(
+        processAuthenticationMiddlewares(
           "Update",
           kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs?.accessControl || {}
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
         ),
-        handleModelsApiFeatures(model),
-        debuggerService.logLevel2RequestInfo,
+
         ...processMiddleware(interceptors?.beforeUpdateMany),
         controller.updateMany,
         ...processMiddleware(interceptors?.afterUpdateMany),
@@ -226,21 +184,15 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.delete(
         `/${routeName}/many`,
-        authService.handleAuthenticationControl(
-          "Delete",
-          authConfigs?.authenticationControl
-        ),
-        authService.handleAccessControl(
+        processAuthenticationMiddlewares(
           "Delete",
           kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs?.accessControl || {}
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteMany"
         ),
-        handleModelsApiFeatures(model),
-        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeDeleteMany),
         controller.deleteMany,
         ...processMiddleware(interceptors?.afterDeleteMany),
@@ -249,28 +201,21 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    // GET /{routeName}/:id - Find One
     if (
       !isEndpointDisabled(routerConfig, "findOne") &&
       !hasCustomImplementation(`/${routeName}/:id`, "get")
     ) {
       router.get(
         `/${routeName}/:id`,
-        authService.handleAuthenticationControl(
-          "View",
-          authConfigs?.authenticationControl
-        ),
-        authService.handleAccessControl(
+        processAuthenticationMiddlewares(
           "View",
           kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs?.accessControl || {}
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findOne"
         ),
-        handleModelsApiFeatures(model),
-        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeFindOne),
         controller.findOne,
         ...processMiddleware(interceptors?.afterFindOne),
@@ -286,14 +231,10 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.patch(
         `/${routeName}/:id`,
-        authService.handleAuthenticationControl(
-          "Update",
-          authConfigs?.authenticationControl
-        ),
-        authService.handleAccessControl(
+        processAuthenticationMiddlewares(
           "Update",
           kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs?.accessControl || {}
+          authConfigs
         ),
         handleRequestBodyValidationAndTransformation(
           getValidationSchemaOrDto("update")
@@ -302,8 +243,6 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateOne"
         ),
-        handleModelsApiFeatures(model),
-        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeUpdateOne),
         controller.updateOne,
         ...processMiddleware(interceptors?.afterUpdateOne),
@@ -319,21 +258,15 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
     ) {
       router.delete(
         `/${routeName}/:id`,
-        authService.handleAuthenticationControl(
-          "Delete",
-          authConfigs?.authenticationControl
-        ),
-        authService.handleAccessControl(
+        processAuthenticationMiddlewares(
           "Delete",
           kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs?.accessControl || {}
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteOne"
         ),
-        handleModelsApiFeatures(model),
-        debuggerService.logLevel2RequestInfo,
         ...processMiddleware(interceptors?.beforeDeleteOne),
         controller.deleteOne,
         ...processMiddleware(interceptors?.afterDeleteOne),
@@ -341,7 +274,35 @@ export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         ...processMiddleware(interceptors?.onDeleteOneError, { type: "error" })
       );
     }
+
+    debuggerService.logModuleFinalRouter(modelNameInKebab, router);
   });
+}
+
+export function processAuthenticationMiddlewares(
+  action: AccessAction,
+  modelName: string,
+  authConfigs?: AuthConfigs
+) {
+  const authenticationControl = authConfigs?.authenticationControl;
+
+  if (
+    (authenticationControl &&
+      typeof authenticationControl === "object" &&
+      authenticationControl[action] === true) ||
+    authenticationControl === true ||
+    (!authenticationControl && authenticationControl !== false)
+  )
+    return [
+      authService.authenticate,
+      authService.handleAccessControl(
+        action,
+        kebabCase(pluralize.singular(modelName)),
+        authConfigs?.accessControl
+      ),
+    ];
+
+  return [];
 }
 
 export function isEndpointDisabled(

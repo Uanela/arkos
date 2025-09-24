@@ -7,6 +7,8 @@ import { getModuleComponents } from "../../utils/dynamic-loader";
 import pluralize from "pluralize";
 import sheu from "../../utils/sheu";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
+import { APIFeatures } from "../../exports/utils";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
 
 /**
  * The `BaseController` class provides standardized RESTful API endpoints
@@ -25,26 +27,11 @@ import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
  * - Middleware hooks: `afterCreateOne`, `afterUpdateMany`, etc.
  *
  * @class BaseController
- * @example
- *
- * **Extending the Controller**
- *
- * ```ts
- * // src/modules/product/product.controller.ts
- *
- * class ProductController extends BaseController {}
- *
- * const productController = new ProcutController("product")
- *
- * export default productController
- *
- * ```
  *
  * @param {string} modelName - The Prisma model name this controller handles.
  *
  * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-controller-class}
  *--
- *
  * **See about how Arkos handles routers**
  * @see {@link https://www.arkosjs.com/docs/guide/adding-custom-routers}
  */
@@ -88,9 +75,14 @@ export class BaseController {
    */
   createOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const { where, ...queryOptions } = new APIFeatures(
+        req,
+        this.modelName
+      ).limitFields().filters;
+
       const data = await this.service.createOne(
         req.body,
-        req.prismaQueryOptions,
+        deepmerge(req.prismaQueryOptions || {}, queryOptions),
         { user: req?.user, accessToken: req?.accessToken }
       );
 
@@ -115,9 +107,14 @@ export class BaseController {
    */
   createMany = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const { where, ...queryOptions } = new APIFeatures(
+        req,
+        this.modelName
+      ).limitFields().filters;
+
       const data = await this.service.createMany(
         req.body,
-        req.prismaQueryOptions,
+        deepmerge(req.prismaQueryOptions || {}, queryOptions),
         { user: req?.user, accessToken: req?.accessToken }
       );
 
@@ -151,7 +148,11 @@ export class BaseController {
    */
   findMany = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const { where, ...queryOptions } = req.filters!;
+      const { where, ...queryOptions } = new APIFeatures(req, this.modelName)
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate().filters;
 
       const [data, total] = (await Promise.all([
         this.service.findMany(where, queryOptions, {
@@ -185,9 +186,14 @@ export class BaseController {
    */
   findOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const { where, ...queryOptions } = new APIFeatures(
+        req,
+        this.modelName
+      ).limitFields().filters;
+
       const data = await this.service.findOne(
         req.params,
-        req.prismaQueryOptions,
+        deepmerge(req.prismaQueryOptions || {}, queryOptions),
         { user: req?.user, accessToken: req?.accessToken }
       );
 
@@ -240,10 +246,15 @@ export class BaseController {
    */
   updateOne = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const { where, ...queryOptions } = new APIFeatures(
+        req,
+        this.modelName
+      ).limitFields().filters;
+
       const data = await this.service.updateOne(
         req.params,
         req.body,
-        req.prismaQueryOptions,
+        deepmerge(req.prismaQueryOptions || {}, queryOptions),
         { user: req?.user, accessToken: req?.accessToken }
       );
 
@@ -303,7 +314,12 @@ export class BaseController {
         );
       }
 
-      const { where, ...queryOptions } = req.filters!;
+      const { where, ...queryOptions } = new APIFeatures(req, this.modelName)
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate().filters;
+
       delete queryOptions.include;
 
       const data = (await this.service.updateMany(
@@ -342,9 +358,14 @@ export class BaseController {
    */
   batchUpdate = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const { where, ...queryOptions } = new APIFeatures(
+        req,
+        this.modelName
+      ).limitFields().filters;
+
       const data = await this.service.batchUpdate(
         req.body,
-        req.prismaQueryOptions,
+        deepmerge(req.prismaQueryOptions || {}, queryOptions),
         { user: req?.user, accessToken: req?.accessToken }
       );
 
@@ -439,7 +460,7 @@ export class BaseController {
         );
       }
 
-      const { where } = req.filters!;
+      const { where } = new APIFeatures(req, this.modelName).filter().filters;
 
       const data = await this.service.deleteMany(where, {
         user: req?.user,
@@ -513,7 +534,7 @@ export class BaseController {
 export const getAvailableResources = catchAsync(
   async (_: any, res: ArkosResponse) => {
     sheu.warn(
-      "This route `/api/available-routes` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead."
+      "This route `/api/available-resources` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead."
     );
 
     res.status(200).json({

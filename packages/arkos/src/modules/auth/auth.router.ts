@@ -16,6 +16,7 @@ import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthPrismaQueryOptions } from "../../types";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
+import debuggerService from "../debugger/debugger.service";
 
 const router: Router = Router();
 
@@ -220,5 +221,6 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       })
     );
 
+  debuggerService.logModuleFinalRouter("auth", router);
   return router;
 }

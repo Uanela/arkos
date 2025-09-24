@@ -9,8 +9,27 @@ import { ModuleComponents } from "../../utils/dynamic-loader";
 import util from "util";
 import { crd } from "../../utils/helpers/fs.helpers";
 import loadedComponentsLogger from "./utils/loaded-components-logger";
+import { Router } from "express";
 
 class DebuggerService {
+  logModuleFinalRouter(moduleName: string, router: Router) {
+    const config = getArkosConfig();
+    const debugLevel = config.debugging?.dynamicLoader?.level || 0;
+    if (debugLevel < 3) return;
+
+    const moduleNameFilter = config.debugging?.dynamicLoader?.filters?.modules;
+    if (
+      (moduleNameFilter?.[0]?.length || 0) > 0 &&
+      !moduleNameFilter?.some((name) =>
+        moduleName.toLowerCase().startsWith(name.toLowerCase())
+      )
+    )
+      return;
+
+    sheu.debug(`${sheu.bold("Final Router Module:")} ${moduleName}`);
+    sheu.print(util.inspect(router, { depth: 2, colors: true }));
+  }
+
   logDynamicLoadedModulesComponents(
     appModules: {
       moduleName: string;
@@ -22,7 +41,7 @@ class DebuggerService {
     const debugLevel = config.debugging?.dynamicLoader?.level || 0;
 
     if (debugLevel < 1) return;
-    sheu.debug(`${sheu.bold("Loaded App Modules")}`, {
+    sheu.debug(`${sheu.bold("Dynamic Loader Components")}`, {
       timestamp: true,
     });
 
@@ -37,18 +56,13 @@ class DebuggerService {
       )
         return;
 
-      sheu.debug(`-------start-of-${moduleName}-------`, {
-        timestamp: true,
-      });
-      sheu.print(`${sheu.bold("Module:")} ${moduleName}
+      sheu.print(`\n${sheu.bold("Module:")} ${moduleName}
 ${sheu.bold("Path:")} ${moduleDir.replace(crd(), "")}
-${sheu.bold("Files:")} ${loadedComponentsLogger.getComponentsNameList(moduleName, components).join(", ")}\n${debugLevel >= 2 ? loadedComponentsLogger.getLogText(components) : ""}
-`);
-      sheu.debug(`-------end-of-${moduleName}-------`, {
-        timestamp: true,
-      });
+${sheu.bold("Components:")} ${loadedComponentsLogger.getComponentsNameList(moduleName, components).join(", ")}${debugLevel >= 2 ? `\n${loadedComponentsLogger.getLogText(components)}` : ""}
+${sheu.bold("Ending:")} ${moduleName}\n`);
     });
   }
+
   handleTransformedQueryLog(transformedQuery: Record<string, any>) {
     const config = getArkosConfig();
     const debugLevel = config.debugging?.requests?.level || 0;
@@ -74,16 +88,15 @@ ${sheu.bold("Files:")} ${loadedComponentsLogger.getComponentsNameList(moduleName
     const debugLevel = config.debugging?.requests?.level || 0;
     if (debugLevel < 2) return next();
 
-    if (req.modelName) {
+    if (req.modelName)
       sheu.debug(`Prisma Model Module\n${req.modelName}`, { timestamp: true });
-    }
 
-    if (Object.keys(req.query).length > 0) {
+    if (Object.keys(req.query).length > 0)
       sheu.debug(
         `Original Request Parameters (req.query)\n${JSON.stringify(req.query || {}, null, 2)}`,
         { timestamp: true }
       );
-    } else
+    else
       sheu.debug(`Original Request Parameters (req.query) - Empty`, {
         timestamp: true,
       });
