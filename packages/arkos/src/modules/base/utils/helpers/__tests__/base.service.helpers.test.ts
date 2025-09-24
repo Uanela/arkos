@@ -10,8 +10,8 @@ jest.mock("fs");
 
 // Mock the required helpers
 jest.mock("../../../../../utils/dynamic-loader", () => ({
-  RelationField: {}, // Add this to satisfy TypeScript if needed
-  RelationFields: {}, // Add this to satisfy TypeScript if needed
+  RelationField: {},
+  RelationFields: {},
 }));
 
 jest

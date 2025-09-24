@@ -153,7 +153,7 @@ export async function localValidatorFileExists(
   arkosConfig: ArkosConfig
 ) {
   if (arkosConfig?.swagger?.mode === "prisma") return false;
-  const moduleComponents = getModuleComponents(modelName);
+  const moduleComponents = getModuleComponents(modelName) as any;
 
   return !!moduleComponents?.[
     arkosConfig.validation?.resolver === "zod" ? "schemas" : "dtos"

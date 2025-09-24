@@ -276,6 +276,14 @@ export class AuthService {
     resource: string,
     accessControl?: AccessControlConfig
   ): ArkosRequestHandler {
+    if (
+      !accessControl &&
+      appModules.some(
+        (appModule) => kebabCase(appModule) === kebabCase(resource)
+      )
+    )
+      accessControl = getModuleComponents(resource)?.authConfigs?.accessControl;
+
     authActionService.add(action, resource, accessControl);
 
     return catchAsync(

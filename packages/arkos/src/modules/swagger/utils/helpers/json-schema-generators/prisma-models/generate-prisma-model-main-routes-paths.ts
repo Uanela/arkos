@@ -6,7 +6,7 @@ import {
 } from "../../swagger.router.helpers";
 import pluralize from "pluralize";
 import { isEndpointDisabled } from "../../../../../base/utils/helpers/base.router.helpers";
-import { ArkosConfig } from "../../../../../../exports";
+import { ArkosConfig, RouterConfig } from "../../../../../../exports";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
 
@@ -21,26 +21,21 @@ export async function generatePrismaModelMainRoutesPaths(
   const humanReadableName = kebabToHuman(modelName);
   const humanReadableNamePlural = pluralize.plural(humanReadableName);
 
-  // Import model modules to get router config
   const moduleComponents = getModuleComponents(model);
-  const routerConfig = moduleComponents?.router?.config;
+  const routerConfig = moduleComponents?.router
+    ?.config as RouterConfig<"prisma">;
 
-  // Skip if router is completely disabled
   if (routerConfig?.disable === true) return paths;
 
-  // Helper function to determine the correct mode for schema ref
   const getSchemaMode = async (
     action: string
   ): Promise<"prisma" | "zod" | "class-validator"> => {
     const swaggerMode = arkosConfig.swagger?.mode;
     const isStrict = arkosConfig.swagger?.strict;
 
-    if (isStrict) {
-      return swaggerMode || "prisma";
-    }
+    if (isStrict) return swaggerMode || "prisma";
 
-    // Convert action to ValidationFileMappingKey format if needed
-    const actionKey = action as any; // You may need to convert this based on the key mappings
+    const actionKey = action as any;
 
     const localFileExists = await localValidatorFileExists(
       actionKey,
@@ -48,7 +43,7 @@ export async function generatePrismaModelMainRoutesPaths(
       arkosConfig
     );
 
-    if (!localFileExists) return "prisma"; // Fallback to prisma when no local file exists and not strict
+    if (!localFileExists) return "prisma";
 
     return swaggerMode || "prisma";
   };

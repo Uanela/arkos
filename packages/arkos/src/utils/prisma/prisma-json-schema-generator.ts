@@ -193,7 +193,7 @@ export class PrismaJsonSchemaGenerator {
     arkosConfig: ArkosConfig,
     schemasToGenerate: ValidationFileMappingKey[],
     queryOptions?: PrismaQueryOptions<any>,
-    routerConfig?: RouterConfig
+    routerConfig?: RouterConfig<any>
   ) {
     const modelName = model.name;
 
@@ -783,7 +783,7 @@ export class PrismaJsonSchemaGenerator {
 
   private isEndpointDisabled(
     endpoint: string,
-    routerConfig?: RouterConfig
+    routerConfig?: RouterConfig<any>
   ): boolean {
     if (!routerConfig?.disable) return false;
 

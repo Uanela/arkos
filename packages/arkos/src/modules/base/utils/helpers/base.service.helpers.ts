@@ -144,7 +144,6 @@ export function handleRelationFieldsInBody(
           );
         }
 
-        // Ensure apiAction is removed
         if (dataToPush?.apiAction) {
           const { apiAction, ...rest } = dataToPush;
 
