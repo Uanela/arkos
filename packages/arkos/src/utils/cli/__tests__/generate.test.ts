@@ -258,7 +258,7 @@ describe("generateCommand", () => {
         },
       });
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-        `${mockCwd}/src/modules/auth/auth.middlewares.ts`,
+        `${mockCwd}/src/modules/auth/auth.interceptors.ts`,
         mockTemplateContent
       );
       expect(sheuDoneSpy).toHaveBeenCalledWith(
@@ -284,7 +284,7 @@ describe("generateCommand", () => {
         `${mockCwd}/src/middleware/validation`
       );
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-        `${mockCwd}/src/middleware/validation/validation.middlewares.ts`,
+        `${mockCwd}/src/middleware/validation/validation.interceptors.ts`,
         mockTemplateContent
       );
     });
