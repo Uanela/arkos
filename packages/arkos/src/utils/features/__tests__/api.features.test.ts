@@ -17,7 +17,10 @@ jest.mock("../../helpers/deepmerge.helper", () => ({
 jest.mock("../../helpers/api.features.helpers", () => ({
   parseQueryParamsWithModifiers: jest.fn((query) => query),
 }));
-jest.mock("../../prisma/prisma-schema-parser");
+jest.mock("../../prisma/prisma-schema-parser", () => ({
+  parse: jest.fn(),
+  getModelsAsArrayOfStrings: jest.fn(() => []),
+}));
 jest.mock("../change-case.features", () => ({
   pascalCase: jest.fn((str) => str.toUpperCase()),
 }));
@@ -467,7 +470,7 @@ describe("APIFeatures", () => {
 
       expect(() => new APIFeatures(req, "user")).toThrow(AppError);
       expect(() => new APIFeatures(req, "user")).toThrow(
-        "Invalid filters JSON format"
+        "Invalid req.query.filters JSON format"
       );
     });
 

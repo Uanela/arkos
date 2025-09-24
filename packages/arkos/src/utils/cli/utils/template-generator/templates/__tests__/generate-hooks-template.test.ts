@@ -19,7 +19,7 @@ describe("generateHooksTemplate", () => {
 
   it("should throw error when modelName is not provided", () => {
     expect(() => generateHooksTemplate({} as TemplateOptions)).toThrow(
-      "Model name is required for hooks template"
+      "Module name is required for hooks template"
     );
   });
 
@@ -38,34 +38,22 @@ describe("generateHooksTemplate", () => {
       expect(result).toContain('from "arkos/services"');
     });
 
-    it("should include prisma import with .ts extension", () => {
-      const result = generateHooksTemplate(tsOptions);
-      expect(result).toContain('import prisma from "../../utils/prisma";');
-    });
-
     it("should include service import without extension", () => {
       const result = generateHooksTemplate(tsOptions);
       expect(result).toContain('import userService from "./user.service";');
-    });
-
-    it("should include delegate export for TypeScript", () => {
-      const result = generateHooksTemplate(tsOptions);
-      expect(result).toContain(
-        "export type UserDelegate = typeof prisma.user;"
-      );
     });
 
     it("should generate all hook functions with TypeScript types", () => {
       const result = generateHooksTemplate(tsOptions);
 
       expect(result).toContain(
-        "async function beforeFindOne({ context, filters, queryOptions }: BeforeFindOneHookArgs<UserDelegate>) {}"
+        "async ({ context, filters, queryOptions }: BeforeFindOneHookArgs<Prisma.UserDelegate>) => {}"
       );
       expect(result).toContain(
-        "async function afterFindOne({ context, result, filters, queryOptions }: AfterFindOneHookArgs<UserDelegate>) {}"
+        "async ({ context, result, filters, queryOptions }: AfterFindOneHookArgs<Prisma.UserDelegate>) => {}"
       );
       expect(result).toContain(
-        "async function beforeUpdateOne({ context, filters, data, queryOptions }: BeforeUpdateOneHookArgs<UserDelegate>) {}"
+        "async ({ context, filters, data, queryOptions }: BeforeUpdateOneHookArgs<Prisma.UserDelegate>) => {}"
       );
     });
 
@@ -115,11 +103,6 @@ describe("generateHooksTemplate", () => {
       expect(result).not.toContain('from "arkos/services"');
     });
 
-    it("should include prisma import with .js extension", () => {
-      const result = generateHooksTemplate(jsOptions);
-      expect(result).toContain('import prisma from "../../utils/prisma.js";');
-    });
-
     it("should include service import with .js extension", () => {
       const result = generateHooksTemplate(jsOptions);
       expect(result).toContain('import userService from "./user.service.js";');
@@ -136,13 +119,13 @@ describe("generateHooksTemplate", () => {
       const result = generateHooksTemplate(jsOptions);
 
       expect(result).toContain(
-        "async function beforeFindOne({ context, filters, queryOptions }) {}"
+        "async ({ context, filters, queryOptions }) => {}"
       );
       expect(result).toContain(
-        "async function afterFindOne({ context, result, filters, queryOptions }) {}"
+        "async ({ context, result, filters, queryOptions }) => {}"
       );
       expect(result).toContain(
-        "async function beforeUpdateOne({ context, filters, data, queryOptions }) {}"
+        "async ({ context, filters, data, queryOptions }) => {}"
       );
     });
   });
@@ -166,7 +149,7 @@ describe("generateHooksTemplate", () => {
       'import blogPostService from "./blog-post.service";'
     );
     expect(result).toContain(
-      "async function beforeFindOne({ context, filters, queryOptions }: BeforeFindOneHookArgs<Prisma.BlogPostDelegate>) {}"
+      "async ({ context, filters, queryOptions }: BeforeFindOneHookArgs<Prisma.BlogPostDelegate>) => {}"
     );
   });
 });

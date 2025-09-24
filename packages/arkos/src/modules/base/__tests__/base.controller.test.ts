@@ -5,7 +5,6 @@ import APIFeatures from "../../../utils/features/api.features";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
 import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 
-// Mock dependencies
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
@@ -17,6 +16,10 @@ jest.mock("../../../utils/features/api.features");
 jest.mock("../../../server");
 jest.mock("../../../utils/dynamic-loader");
 jest.mock("../../../utils/sheu");
+jest.mock("../../../utils/prisma/prisma-schema-parser", () => ({
+  parse: jest.fn(),
+  getModelsAsArrayOfStrings: jest.fn(() => []),
+}));
 
 describe("BaseController", () => {
   let baseController: BaseController;

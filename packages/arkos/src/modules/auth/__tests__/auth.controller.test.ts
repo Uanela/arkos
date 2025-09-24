@@ -85,14 +85,6 @@ describe("Auth Controller Factory", () => {
       },
     });
 
-    // (getArkosConfig as jest.Mock).mockReturnValueOnce({
-    //   authentication: {
-    //     login: {
-    //       sendAccessTokenThrough: "both",
-    //     },
-    //   },
-    // });
-
     // Create request, response, and next function mocks
     req = {
       user: {
@@ -114,6 +106,7 @@ describe("Auth Controller Factory", () => {
       json: jest.fn(),
       cookie: jest.fn(),
       send: jest.fn(),
+      locals: {},
     };
 
     next = jest.fn();
