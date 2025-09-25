@@ -303,7 +303,11 @@ export class BaseController {
    */
   updateMany = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      if (!Object.keys(req.query).some((key) => key !== "prismaQueryOptions")) {
+      if (
+        Object.keys(req.query).every((key) =>
+          ["filterMode", "prismaQueryOptions"].includes(key)
+        )
+      ) {
         return next(
           new AppError(
             "Filter criteria not provided for bulk update.",
@@ -456,7 +460,11 @@ export class BaseController {
    */
   deleteMany = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      if (!Object.keys(req.query).some((key) => key !== "prismaQueryOptions")) {
+      if (
+        Object.keys(req.query).every((key) =>
+          ["filterMode", "prismaQueryOptions"].includes(key)
+        )
+      ) {
         return next(
           new AppError(
             "Filter criteria not provided for bulk deletion.",
