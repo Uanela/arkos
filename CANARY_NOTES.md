@@ -69,6 +69,8 @@
 
 ### Change
 
+- optimize base service and base controller classes by identifying common behaviors among the methods.
+
 ### Remove
 
 ### Deprecate
