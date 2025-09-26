@@ -93,11 +93,11 @@ ${sheu.bold("Ending:")} ${moduleName}\n`);
 
     if (Object.keys(req.query).length > 0)
       sheu.debug(
-        `Original Request Parameters (req.query)\n${JSON.stringify(req.query || {}, null, 2)}`,
+        `Original Request Params (req.params)\n${JSON.stringify(req.params || {}, null, 2)}`,
         { timestamp: true }
       );
     else
-      sheu.debug(`Original Request Parameters (req.query) - Empty`, {
+      sheu.debug(`Original Request Params (req.params) - Empty`, {
         timestamp: true,
       });
 
@@ -108,6 +108,16 @@ ${sheu.bold("Ending:")} ${moduleName}\n`);
       );
     else
       sheu.debug(`Original Request Body (req.body) - Empty`, {
+        timestamp: true,
+      });
+
+    if (Object.keys(req.query).length > 0)
+      sheu.debug(
+        `Original Request Query (req.query)\n${JSON.stringify(req.query || {}, null, 2)}`,
+        { timestamp: true }
+      );
+    else
+      sheu.debug(`Original Request Parameters (req.query) - Empty`, {
         timestamp: true,
       });
 
