@@ -833,6 +833,7 @@ export type ArkosConfig = {
       filter?: (
         | "Query"
         | "Body"
+        | "Params"
         | "TransformedQuery"
         | "ServiceArgs"
         | "FinalPrismaQueryArgs"
