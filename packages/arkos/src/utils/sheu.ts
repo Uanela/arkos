@@ -178,7 +178,7 @@ class Sheu {
    * Bold text formatting
    */
   bold(content: any, options?: { timestamp?: boolean | string }): string {
-    return this.formatText(content, { ...options, bold: true }); // Don't double-bold
+    return this.formatText(content, { ...options, bold: true });
   }
 
   /**
@@ -190,6 +190,18 @@ class Sheu {
   ): string {
     const label = `[\x1b[36mInfo\x1b[0m]`;
     const result = this.formatText(message, { ...options, label });
+    console.info(result);
+    return result;
+  }
+
+  /**
+   * Simple Log with no label
+   */
+  print(
+    message: any,
+    options?: { timestamp?: boolean | string; bold?: boolean }
+  ): string {
+    const result = this.formatText(message, { ...options });
     console.info(result);
     return result;
   }

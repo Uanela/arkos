@@ -4,6 +4,7 @@ import { getSwaggerRouter } from "../../../../src/modules/swagger/swagger.router
 import * as swaggerRouterHelpers from "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers";
 import missingJsonSchemaGenerator from "../../../../src/modules/swagger/utils/helpers/missing-json-schemas-generator";
 import getSwaggerDefaultConfig from "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs";
+import { object } from "zod";
 
 // Mock all dependencies
 jest.mock("fs", () => ({
@@ -125,7 +126,10 @@ describe("getSwaggerRouter", () => {
 
     expect(getSwaggerDefaultConfig).toHaveBeenCalledWith(
       mockPaths,
-      mockJsonSchemas
+      expect.objectContaining({
+        ...mockJsonSchemas,
+        FindManyAuthActionSystemSchema: expect.any(Object),
+      })
     );
   });
 

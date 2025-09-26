@@ -1,3 +1,4 @@
+import { getArkosConfig } from "../../../../../server";
 import authActionService from "../auth-action.service";
 
 jest.mock("fs");
@@ -19,20 +20,24 @@ describe("AuthActionService", () => {
       expect(authActionService.authActions[0]).toEqual({
         action: "Create",
         resource: "user",
-        name: "Create user",
+        name: "Create User",
         description: "Create User",
         errorMessage: "You do not have permission to perform this operation",
       });
     });
 
-    it("should add multi-word Pascal case actions", () => {
+    it("should add multi-word Pascal case actions with roles", () => {
+      (getArkosConfig as jest.Mock).mockReturnValueOnce({
+        authentication: { mode: "static" },
+      });
       authActionService.add("GenerateReport", "user");
 
       expect(authActionService.authActions).toHaveLength(1);
       expect(authActionService.authActions[0]).toEqual({
+        roles: [],
         action: "GenerateReport",
         resource: "user",
-        name: "GenerateReport user",
+        name: "Generate Report User",
         description: "Generate Report User",
         errorMessage: "You do not have permission to perform this operation",
       });
@@ -45,7 +50,7 @@ describe("AuthActionService", () => {
       expect(authActionService.authActions[0]).toEqual({
         action: "DownloadExcelFile",
         resource: "product",
-        name: "DownloadExcelFile product",
+        name: "Download Excel File Product",
         description: "Download Excel File Product",
         errorMessage: "You do not have permission to perform this operation",
       });
@@ -79,7 +84,7 @@ describe("AuthActionService", () => {
       expect(authActionService.authActions[0]).toEqual({
         action: "Create",
         resource: "user",
-        name: "Create user",
+        name: "Create User",
         description: "Create User",
         errorMessage: "You do not have permission to perform this operation",
       });
@@ -94,7 +99,7 @@ describe("AuthActionService", () => {
       expect(authActionService.authActions[0]).toEqual({
         action: "Create",
         resource: "user",
-        name: "Create user",
+        name: "Create User",
         description: "Create User",
         errorMessage: "You do not have permission to perform this operation",
       });
@@ -168,7 +173,7 @@ describe("AuthActionService", () => {
       expect(authActionService.authActions[0]).toEqual({
         action: "Create",
         resource: "user",
-        name: "Create user",
+        name: "Create User",
         description: "Create User",
         errorMessage: "You do not have permission to perform this operation",
       });
@@ -188,21 +193,21 @@ describe("AuthActionService", () => {
         {
           action: "Create",
           resource: "user",
-          name: "Create user",
+          name: "Create User",
           description: "Create User",
           errorMessage: "You do not have permission to perform this operation",
         },
         {
           action: "Update",
           resource: "user",
-          name: "Update user",
+          name: "Update User",
           description: "Update User",
           errorMessage: "You do not have permission to perform this operation",
         },
         {
           action: "View",
           resource: "product",
-          name: "View product",
+          name: "View Product",
           description: "View Product",
           errorMessage: "You do not have permission to perform this operation",
         },
@@ -228,7 +233,7 @@ describe("AuthActionService", () => {
       expect(result).toEqual({
         action: "Create",
         resource: "user",
-        name: "Create user",
+        name: "Create User",
         description: "Create User",
         errorMessage: "You do not have permission to perform this operation",
       });
@@ -299,21 +304,21 @@ describe("AuthActionService", () => {
         {
           action: "Create",
           resource: "user",
-          name: "Create user",
+          name: "Create User",
           description: "Create User",
           errorMessage: "You do not have permission to perform this operation",
         },
         {
           action: "Update",
           resource: "user",
-          name: "Update user",
+          name: "Update User",
           description: "Update User",
           errorMessage: "You do not have permission to perform this operation",
         },
         {
           action: "Delete",
           resource: "user",
-          name: "Delete user",
+          name: "Delete User",
           description: "Delete User",
           errorMessage: "You do not have permission to perform this operation",
         },
@@ -342,21 +347,21 @@ describe("AuthActionService", () => {
         {
           action: "Create",
           resource: "user",
-          name: "Create user",
+          name: "Create User",
           description: "Create User",
           errorMessage: "You do not have permission to perform this operation",
         },
         {
           action: "Create",
           resource: "product",
-          name: "Create product",
+          name: "Create Product",
           description: "Create Product",
           errorMessage: "You do not have permission to perform this operation",
         },
         {
           action: "Create",
           resource: "order",
-          name: "Create order",
+          name: "Create Order",
           description: "Create Order",
           errorMessage: "You do not have permission to perform this operation",
         },
@@ -403,7 +408,7 @@ describe("AuthActionService", () => {
       expect(authActionService.authActions[0]).toEqual({
         action: "Create",
         resource: "user",
-        name: "Create user",
+        name: "Create User",
         description: "Create User",
         errorMessage: "You do not have permission to perform this operation",
       });
@@ -415,7 +420,7 @@ describe("AuthActionService", () => {
       expect(authActionService.authActions[0]).toEqual({
         action: "Create",
         resource: "user",
-        name: "Create user",
+        name: "Create User",
         description: "Create User",
         errorMessage: "You do not have permission to perform this operation",
       });

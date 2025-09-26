@@ -28,9 +28,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
   let paths: OpenAPIV3.PathsObject;
   let arkosConfig: ArkosConfig;
   const mockgetModuleComponents =
-    modelsHelpers.getModuleComponents as jest.MockedFunction<
-      typeof modelsHelpers.getModuleComponents
-    >;
+    modelsHelpers.getModuleComponents as jest.MockedFunction<any>;
   const mockLocalValidatorFileExists =
     localValidatorFileExists as jest.MockedFunction<
       typeof localValidatorFileExists
@@ -69,7 +67,6 @@ describe("generatePrismaModelParentRoutesPaths", () => {
         router: {
           config: {
             disable: false,
-            // No parent config
           },
         },
       });

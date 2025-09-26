@@ -1,4 +1,4 @@
-type ServiceHook = (args: Record<string, any>) => Promise<void>;
+export type ServiceHook = (args: Record<string, any>) => Promise<void>;
 
 /**
  * Manages and handles service hooks implementation on the base service class

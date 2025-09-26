@@ -14,7 +14,6 @@ import {
 } from "./types";
 import { localValidatorFileExists } from "../../modules/swagger/utils/helpers/swagger.router.helpers";
 
-// Add these types to your existing types file
 export interface SchemaGenerationConfig {
   modelName: string;
   arkosConfig: ArkosConfig;
@@ -65,23 +64,19 @@ export class PrismaJsonSchemaGenerator {
     const authModuleModel = ["auth", "me", "password", "signup", "login"];
     const isAuthModule = authModuleModel.includes(modelName.toLowerCase());
 
-    // Check if generation should be skipped
     if (arkosConfig?.swagger?.strict && arkosConfig.swagger.mode !== "prisma")
       return {};
 
-    // Check if router is disabled
     if (routerConfig?.disable === true) return {};
 
     const model = this.schema.models.find(
       (m) => m.name.toLowerCase() === modelName.toLowerCase()
     );
     if (!model && !isAuthModule) return {};
-    // throw new Error(`Model ${modelName} not found in schema`);
 
     const schemas: { [key: string]: JsonSchema } = {};
 
     if (isAuthModule) {
-      // Generate auth-specific schemas
       await this.generateAuthSchemas(
         this.schema.models.find((m) => m.name.toLowerCase() === "user")!,
         schemas,
@@ -90,7 +85,6 @@ export class PrismaJsonSchemaGenerator {
         prismaQueryOptions as AuthPrismaQueryOptions<any>
       );
     } else {
-      // Generate standard CRUD schemas
       if (model)
         await this.generateCrudSchemas(
           model,
@@ -193,63 +187,9 @@ export class PrismaJsonSchemaGenerator {
     arkosConfig: ArkosConfig,
     schemasToGenerate: ValidationFileMappingKey[],
     queryOptions?: PrismaQueryOptions<any>,
-    routerConfig?: RouterConfig
+    routerConfig?: RouterConfig<any>
   ) {
     const modelName = model.name;
-
-    // // Create schemas
-    // if (
-    //   schemasToGenerate.includes("createOne") &&
-    //   !this.isEndpointDisabled("createOne", routerConfig) &&
-    //   !(await localValidatorFileExists("createOne", modelName, arkosConfig))
-    // ) {
-    //   schemas[`Create${modelName}ModelSchema`] = this.generateCreateSchema(
-    //     model,
-    //     this.resolvePrismaQueryOptions(queryOptions, "createOne")
-    //   );
-    // }
-
-    // if (
-    //   schemasToGenerate.includes("createMany") &&
-    //   !this.isEndpointDisabled("createMany", routerConfig) &&
-    //   !(await localValidatorFileExists("createMany", modelName, arkosConfig))
-    // ) {
-    //   schemas[`CreateMany${modelName}ModelSchema`] = {
-    //     type: "array",
-    //     items: { $ref: `#/components/schemas/Create${modelName}ModelSchema` },
-    //   };
-    // }
-
-    // // Update schemas
-    // if (
-    //   schemasToGenerate.includes("updateOne") &&
-    //   !this.isEndpointDisabled("updateOne", routerConfig) &&
-    //   !(await localValidatorFileExists("updateOne", modelName, arkosConfig))
-    // ) {
-    //   schemas[`Update${modelName}ModelSchema`] = this.generateUpdateSchema(
-    //     model,
-    //     this.resolvePrismaQueryOptions(queryOptions, "updateOne")
-    //   );
-    // }
-
-    // if (
-    //   schemasToGenerate.includes("updateMany") &&
-    //   !this.isEndpointDisabled("updateMany", routerConfig) &&
-    //   !(await localValidatorFileExists("updateMany", modelName, arkosConfig))
-    // ) {
-    //   schemas[`UpdateMany${modelName}ModelSchema`] = {
-    //     type: "object",
-    //     properties: {
-    //       data: {
-    //         type: "object",
-    //         $ref: `#/components/schemas/Update${modelName}ModelSchema`,
-    //       },
-    //       where: { type: "object" },
-    //     },
-    //     required: ["data"],
-    //   };
-    // }
-    // Helper function to ensure base schema exists
 
     const ensureBaseSchemaReference = async (
       operation: string,
@@ -258,7 +198,6 @@ export class PrismaJsonSchemaGenerator {
       const suffix =
         arkosConfig.validation?.resolver === "zod" ? "Schema" : "Dto";
 
-      // Check if local validator file exists for single operation
       const singleOpName = operation === "Create" ? "createOne" : "updateOne";
       const hasLocalValidator = await localValidatorFileExists(
         singleOpName,
@@ -266,15 +205,11 @@ export class PrismaJsonSchemaGenerator {
         arkosConfig
       );
 
-      if (hasLocalValidator) {
-        // Point to local validator schema (Schema or Dto)
-        return `${operation}${modelName}${suffix}`;
-      } else {
-        // Point to ModelSchema, generate if doesn't exist
+      if (hasLocalValidator) return `${operation}${modelName}${suffix}`;
+      else {
         const modelSchemaKey = `${operation}${modelName}ModelSchema`;
 
         if (!schemas[modelSchemaKey]) {
-          // Generate ModelSchema as fallback
           if (operation === "Create") {
             schemas[modelSchemaKey] = this.generateCreateSchema(
               model,
@@ -408,26 +343,34 @@ export class PrismaJsonSchemaGenerator {
       );
 
     for (const field of model.fields) {
-      // Skip ID fields
-      if (field.isId || restrictedFields.includes(field.name)) continue;
+      const isForeignKey = model.fields.some(
+        (_field) => _field.foreignKeyField === field.name
+      );
+      if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
+        continue;
 
-      // Handle relations
       if (this.isModelRelation(field.type)) {
-        // For single relations, include only the ID field
-        if (!field.isArray && field.connectionField) {
-          properties[field.connectionField] = {
-            type: this.mapPrismaTypeToJsonSchema(
-              model.fields.find(
-                (_field) => _field.name === field.connectionField
-              )?.type || "String"
-            ),
+        if (!field.isArray) {
+          const referencedModel = prismaSchemaParser.models.find(
+            (_model) => _model.name === field.type
+          )!;
+
+          properties[field.name] = {
+            type: "object",
+            properties: {
+              [field.foreignReferenceField || "id"]: {
+                type: this.mapPrismaTypeToJsonSchema(
+                  referencedModel?.fields.find(
+                    (_field) => _field.name === field.foreignReferenceField
+                  )?.type || "String"
+                ),
+              },
+            },
           };
 
-          // Check if relation ID is required
           if (!field.isOptional && field.defaultValue === undefined)
             required.push(field.name);
         }
-        // Skip array relations in create schema
         continue;
       }
 
@@ -462,22 +405,32 @@ export class PrismaJsonSchemaGenerator {
     const autoFillFields = ["createdAt", "updatedAt", "deletedAt", "id"];
 
     for (const field of model.fields) {
-      // Skip ID fields
-      if (field.isId || autoFillFields.includes(field.name)) continue;
+      const isForeignKey = model.fields.some(
+        (_field) => _field.foreignKeyField === field.name
+      );
+      if (field.isId || autoFillFields.includes(field.name) || isForeignKey)
+        continue;
 
-      // Handle relations
       if (this.isModelRelation(field.type)) {
-        // For single relations, include only the ID field
-        if (!field.isArray && field.connectionField)
-          properties[field.connectionField] = {
-            type: this.mapPrismaTypeToJsonSchema(
-              model.fields.find(
-                (_field) => _field.name === field.connectionField
-              )?.type || "String"
-            ),
-          };
+        if (!field.isArray) {
+          const referencedModel = prismaSchemaParser.models.find(
+            (_model) => _model.name === field.type
+          )!;
 
-        // Skip array relations in update schema
+          properties[field.name] = {
+            type: "object",
+            properties: {
+              [field.foreignReferenceField || "id"]: {
+                type: this.mapPrismaTypeToJsonSchema(
+                  referencedModel?.fields.find(
+                    (_field) => _field.name === field.foreignReferenceField
+                  )?.type || "String"
+                ),
+              },
+            },
+          };
+        }
+
         continue;
       }
 
@@ -783,7 +736,7 @@ export class PrismaJsonSchemaGenerator {
 
   private isEndpointDisabled(
     endpoint: string,
-    routerConfig?: RouterConfig
+    routerConfig?: RouterConfig<any>
   ): boolean {
     if (!routerConfig?.disable) return false;
 

@@ -24,6 +24,7 @@
 ### Add
 
 - add batch update and delete on services and control
+- make first stable debugging workable
 
 ### Change
 
@@ -65,7 +66,8 @@
 - add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
 - allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
 - change the paramter type of ServiceHookArgs to receive data type as second parameter "BeforeCreateOneHookArgs<Prisma.ProductDelegate, CreateProductDto>"
-- add question about unknow modules when generating compoents -> like to generate
+- add question about unknow modules when generating compoents -> like to generate in another place
+- add custom validation options under arkos configuration.
 
 ### Change
 

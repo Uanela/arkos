@@ -10,7 +10,10 @@ import {
 } from "../utils/helpers/file-upload.helpers";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
 
-// Mock dependencies
+jest.mock("../../../utils/prisma/prisma-schema-parser", () => ({
+  parse: jest.fn(),
+  getModelsAsArrayOfStrings: jest.fn(() => []),
+}));
 jest.mock("../file-upload.service");
 jest.mock("../../../server");
 jest.mock("../utils/helpers/file-upload.helpers");
@@ -50,6 +53,7 @@ describe("FileUploadController", () => {
       json: jest.fn().mockReturnThis(),
       writeHead: jest.fn(),
       pipe: jest.fn(),
+      locals: {},
     };
 
     mockNext = jest.fn();

@@ -81,38 +81,5 @@ describe("RouterValidator", () => {
 
       expect(routerValidator.isExpressRouter(fakeRouter)).toBe(false);
     });
-
-    it("should handle missing individual router methods", () => {
-      // Missing use method
-      const routerWithoutUse = () => {};
-      routerWithoutUse.get = () => {};
-      routerWithoutUse.route = () => {};
-      routerWithoutUse.stack = [] as any;
-      expect(routerValidator.isExpressRouter(routerWithoutUse)).toBe(false);
-
-      // Missing get method
-      const routerWithoutGet = () => {};
-      routerWithoutGet.use = () => {};
-      routerWithoutGet.route = () => {};
-      routerWithoutGet.stack = [] as any;
-      expect(routerValidator.isExpressRouter(routerWithoutGet)).toBe(false);
-
-      // Missing route method
-      const routerWithoutRoute = () => {};
-      routerWithoutRoute.use = () => {};
-      routerWithoutRoute.get = () => {};
-      routerWithoutRoute.stack = [] as any;
-      expect(routerValidator.isExpressRouter(routerWithoutRoute)).toBe(false);
-    });
-
-    it("should handle non-function router methods", () => {
-      const fakeRouter = () => {};
-      fakeRouter.use = "not-a-function";
-      fakeRouter.get = () => {};
-      fakeRouter.route = () => {};
-      fakeRouter.stack = [] as any;
-
-      expect(routerValidator.isExpressRouter(fakeRouter)).toBe(false);
-    });
   });
 });

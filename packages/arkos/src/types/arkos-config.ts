@@ -10,6 +10,7 @@ import { MsDuration } from "../modules/auth/utils/helpers/auth.controller.helper
 import { OpenAPIV3 } from "openapi-types";
 import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with { "resolution-mode": "import" };
 import nodemailer from "nodemailer";
+import { ModuleComponents } from "../utils/dynamic-loader";
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
  */
@@ -820,13 +821,48 @@ export type ArkosConfig = {
     scalarApiReferenceConfiguration?: Partial<ApiReferenceConfiguration>;
   };
   /**
-   * Helps in debugging some of the variables values that are used inside arkos generated api, services methods and tools.
-   *
+   * Helps in debugging some of the variables values that are used inside arkos from dynamic loaded components towhat is used into the generated api.
    *
    */
   debugging?: {
-    // requests?: {
-    level?: number;
-    // };
+    /**
+     * Controls debugging over HTTP request level
+     */
+    requests?: {
+      level?: 0 | 1 | 2 | 3;
+      filter?: (
+        | "Query"
+        | "Body"
+        | "Params"
+        | "TransformedQuery"
+        | "ServiceArgs"
+        | "FinalPrismaQueryArgs"
+      )[];
+    };
+    /**
+     * Controls debugging over the dynamic loaded modules and it's components on app starting
+     */
+    dynamicLoader?: {
+      /**
+       * Adjusts logging details
+       *
+       * 1 - Loaded modules and list of it's components files
+       * 2 - All from 1 and detailed inspection per module component
+       * 3 - All from 1 and 2, plus the final router component after merged with autho generated router.
+       */
+      level?: 0 | 1 | 2 | 3;
+      filters?: {
+        /**
+         * Allows filtering by specific modules.
+         *
+         * Supports only searching for the starting parts of the module name, e.g: If there is`user-profile`, `user`, `posts`, passing `["user"]` will match both `user-profile` and `user`.
+         */
+        modules?: string[];
+        /**
+         * Allows filtering by component's names
+         */
+        components?: keyof ModuleComponents[];
+      };
+    };
   };
 };

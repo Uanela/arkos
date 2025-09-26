@@ -1,13 +1,12 @@
 import { BaseService } from "../base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import authService from "../../auth/auth.service";
-import { handleRelationFieldsInBody } from "../utils/helpers/base.service.helpers";
+import * as baseServiceHelpers from "../utils/helpers/base.service.helpers";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
 import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 import { PrismaField } from "../../../utils/prisma/types";
 import serviceHooksManager from "../utils/service-hooks-manager";
 
-// Mock dependencies
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
@@ -15,7 +14,6 @@ jest.mock("fs", () => ({
 }));
 jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../auth/auth.service");
-jest.mock("../utils/helpers/base.service.helpers");
 jest.mock("../../../utils/dynamic-loader", () => ({
   ...jest.requireActual("../../../utils/dynamic-loader"),
   getPrismaModelRelations: jest.fn(),
@@ -38,6 +36,11 @@ jest.mock("../utils/service-hooks-manager", () => ({
   handleHook: jest.fn((hook, data) => hook(data)),
 }));
 
+const handleRelationFieldsInBody = jest.spyOn(
+  baseServiceHelpers,
+  "handleRelationFieldsInBody"
+);
+
 describe("BaseService", () => {
   let baseService: BaseService<any>;
   let mockPrisma: any;
@@ -49,7 +52,7 @@ describe("BaseService", () => {
     jest.spyOn(prismaSchemaParser, "getModelRelations").mockReturnValue([
       {
         name: "category",
-        connectionField: "categoryId",
+        foreignKeyField: "categoryId",
         isArray: false,
         isRelation: true,
       },
@@ -83,10 +86,11 @@ describe("BaseService", () => {
       },
     };
 
-    (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
-    (handleRelationFieldsInBody as jest.Mock).mockImplementation(
-      (body) => body
-    );
+    ((mockPrisma.$transaction = (fn: any) => fn(mockPrisma)),
+      (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma));
+    // (handleRelationFieldsInBody as jest.Mock).mockImplementation(
+    //   (body) => body
+    // );
     (getModuleComponents as jest.Mock).mockReturnValue({ hooks: {} });
 
     // Create instance for testing
@@ -100,7 +104,7 @@ describe("BaseService", () => {
         singular: [
           {
             name: "category",
-            connectionField: "categoryId",
+            foreignKeyField: "categoryId",
             isRelation: true,
             isArray: false,
           },
@@ -516,6 +520,119 @@ describe("BaseService", () => {
     });
   });
 
+  describe("batchUpdate", () => {
+    it("should batch update many record and return it", async () => {
+      const body = [
+        { id: "1", title: "Updated Title 1" },
+        { id: "2", title: "Updated Title 2" },
+        { id: "3", title: "Updated Title 3" },
+      ];
+      const prismaFieldOfTypePost = {
+        name: "posts",
+        type: "Post",
+        isArray: true,
+        isRelation: true,
+      };
+      jest
+        .spyOn(prismaSchemaParser, "getField")
+        .mockReturnValue(prismaFieldOfTypePost as PrismaField);
+
+      await baseService.batchUpdate(body);
+
+      body.forEach((post) => {
+        expect(handleRelationFieldsInBody).toHaveBeenCalledWith(
+          {
+            batchedData: {
+              ...post,
+              apiAction: "update",
+            },
+          },
+          {
+            list: [],
+            singular: [{ ...prismaFieldOfTypePost, name: "batchedData" }],
+          }
+        );
+      });
+
+      body.forEach((post) => {
+        expect(mockPrisma.post.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: post.id },
+            data: { title: post.title },
+          })
+        );
+      });
+    });
+
+    it("should hash password when updating users in batch", async () => {
+      baseService = new BaseService("User");
+      const body = [
+        { id: "1", name: "Updated User 1", password: "newpassword1" },
+        { id: "2", name: "Updated User 2", password: "newpassword2" },
+      ];
+      const hashedPasswords = ["hashed_password_1", "hashed_password_2"];
+
+      (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
+      (authService.hashPassword as jest.Mock)
+        .mockResolvedValueOnce(hashedPasswords[0])
+        .mockResolvedValueOnce(hashedPasswords[1]);
+
+      mockPrisma.user.update
+        .mockResolvedValueOnce({
+          id: "1",
+          name: "Updated User 1",
+          password: hashedPasswords[0],
+        })
+        .mockResolvedValueOnce({
+          id: "2",
+          name: "Updated User 2",
+          password: hashedPasswords[1],
+        });
+
+      await baseService.batchUpdate(body);
+
+      expect(authService.hashPassword).toHaveBeenCalledWith("newpassword1");
+      expect(authService.hashPassword).toHaveBeenCalledWith("newpassword2");
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: "1",
+          },
+          data: {
+            name: "Updated User 1",
+            password: hashedPasswords[0],
+          },
+        })
+      );
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: "2",
+          },
+          data: {
+            name: "Updated User 2",
+            password: hashedPasswords[1],
+          },
+        })
+      );
+    });
+
+    // it("should throw error if batch update fails", async () => {
+    //   const body = [
+    //     { id: "1", title: "Updated Title 1" },
+    //     { id: "999", title: "Non-existent Post" },
+    //   ];
+
+    //   mockPrisma.$transaction.mockRejectedValue(
+    //     new Error("Record to update not found")
+    //   );
+
+    //   await expect(baseService.batchUpdate(body)).rejects.toThrow(
+    //     "Record to update not found"
+    //   );
+    // });
+  });
+
   describe("deleteOne", () => {
     it("should delete a record by id", async () => {
       const filters = { id: "1" };
@@ -804,12 +921,10 @@ describe("BaseService", () => {
       );
       const deleted = await baseService.deleteOne({ id: created.id });
 
-      // Verify create was called correctly
       expect(mockPrisma.post.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: createData })
       );
 
-      // Verify find was called with correct ID
       expect(mockPrisma.post.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: "123" } })
       );
