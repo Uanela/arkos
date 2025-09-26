@@ -117,7 +117,7 @@ ${sheu.bold("Ending:")} ${moduleName}\n`);
         { timestamp: true }
       );
     else
-      sheu.debug(`Original Request Parameters (req.query) - Empty`, {
+      sheu.debug(`Original Request Query (req.query) - Empty`, {
         timestamp: true,
       });
 
