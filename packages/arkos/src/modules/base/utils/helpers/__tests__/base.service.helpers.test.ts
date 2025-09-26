@@ -38,7 +38,7 @@ jest
           name: "category",
           type: "Category",
           isRelation: true,
-          connectionField: "categoryId",
+          foreignKeyField: "categoryId",
         },
         {
           name: "tags",
@@ -56,7 +56,7 @@ jest
           name: "profile",
           type: "Profile",
           isRelation: true,
-          connectionField: "profileId",
+          foreignKeyField: "profileId",
         },
         ,
         { name: "posts", type: "Post", isRelation: true, isArray: true },
@@ -68,7 +68,7 @@ jest
           name: "author",
           type: "User",
           isRelation: true,
-          connectionField: "authorId",
+          foreignKeyField: "authorId",
         },
       ];
     }

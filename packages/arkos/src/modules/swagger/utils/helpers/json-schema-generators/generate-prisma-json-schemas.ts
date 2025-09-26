@@ -1,5 +1,5 @@
 import { ArkosConfig } from "../../../../../exports";
-import PrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
+import prismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 
 export async function generatePrismaJsonSchemas(arkosConfig: ArkosConfig) {
@@ -9,11 +9,10 @@ export async function generatePrismaJsonSchemas(arkosConfig: ArkosConfig) {
   ];
 
   try {
-    // Use Promise.all to handle all async operations properly
     const modelSchemasArray = await Promise.all(
       requiredAppModules.map(async (modelName) => {
         const modelSchemas =
-          await PrismaJsonSchemaGenerator.generateModelSchemas({
+          await prismaJsonSchemaGenerator.generateModelSchemas({
             modelName,
             arkosConfig,
           });
@@ -21,7 +20,6 @@ export async function generatePrismaJsonSchemas(arkosConfig: ArkosConfig) {
       })
     );
 
-    // Merge all schemas into a single object
     const schemas = modelSchemasArray.reduce((acc, modelSchemas) => {
       return { ...acc, ...modelSchemas };
     }, {});
