@@ -1,5 +1,4 @@
-import parser, { PrismaSchemaParser } from "../prisma-schema-parser";
-import fs from "fs";
+import parser from "../prisma-schema-parser";
 
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),
@@ -134,7 +133,8 @@ describe("PrismaSchemaParser", () => {
         isRelation: false,
         isArray: false,
         foreignKeyField: "",
-        defaultValue: undefined, // autoincrement() is a function
+        foreignReferenceField: "",
+        defaultValue: undefined,
         isId: true,
         isUnique: false,
         attributes: ["@id", "@default(autoincrement())"],
@@ -149,6 +149,7 @@ describe("PrismaSchemaParser", () => {
         isRelation: false,
         isArray: false,
         foreignKeyField: "",
+        foreignReferenceField: "",
         defaultValue: undefined,
         isId: false,
         isUnique: true,
