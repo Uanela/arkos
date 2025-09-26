@@ -1,5 +1,4 @@
-import parser, { PrismaSchemaParser } from "../prisma-schema-parser";
-import fs from "fs";
+import parser from "../prisma-schema-parser";
 
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),
@@ -133,8 +132,9 @@ describe("PrismaSchemaParser", () => {
         isOptional: false,
         isRelation: false,
         isArray: false,
-        connectionField: "",
-        defaultValue: undefined, // autoincrement() is a function
+        foreignKeyField: "",
+        foreignReferenceField: "",
+        defaultValue: undefined,
         isId: true,
         isUnique: false,
         attributes: ["@id", "@default(autoincrement())"],
@@ -148,7 +148,8 @@ describe("PrismaSchemaParser", () => {
         isOptional: false,
         isRelation: false,
         isArray: false,
-        connectionField: "",
+        foreignKeyField: "",
+        foreignReferenceField: "",
         defaultValue: undefined,
         isId: false,
         isUnique: true,
@@ -211,7 +212,7 @@ describe("PrismaSchemaParser", () => {
 
       const postModel = result.models.find((m) => m.name === "Post");
       const authorField = postModel?.fields.find((f) => f.name === "author");
-      expect(authorField?.connectionField).toBe("authorId");
+      expect(authorField?.foreignKeyField).toBe("authorId");
     });
   });
 
@@ -523,7 +524,7 @@ describe("PrismaSchemaParser", () => {
       // Check Post model relation
       const postModel = result.models.find((m) => m.name === "Post")!;
       const authorField = postModel.fields.find((f) => f.name === "author")!;
-      expect(authorField.connectionField).toBe("authorId");
+      expect(authorField.foreignKeyField).toBe("authorId");
 
       // Test helper methods
       expect(parser.isEnum("UserRole")).toBe(true);
@@ -613,7 +614,7 @@ describe("PrismaSchemaParser", () => {
       const postModel = result.models.find((m) => m.name === "Post");
       const authorField = postModel?.fields.find((f) => f.name === "author");
 
-      expect(authorField?.connectionField).toBe("authorId");
+      expect(authorField?.foreignKeyField).toBe("authorId");
       expect(authorField?.isRelation).toBe(true);
     });
 
@@ -636,7 +637,7 @@ describe("PrismaSchemaParser", () => {
       const postModel = result.models.find((m) => m.name === "Post");
       const authorField = postModel?.fields.find((f) => f.name === "author");
 
-      expect(authorField?.connectionField).toBe("authorId");
+      expect(authorField?.foreignKeyField).toBe("authorId");
     });
 
     it("should handle fields with single quoted connection fields", () => {
@@ -658,7 +659,7 @@ describe("PrismaSchemaParser", () => {
       const postModel = result.models.find((m) => m.name === "Post");
       const authorField = postModel?.fields.find((f) => f.name === "author");
 
-      expect(authorField?.connectionField).toBe("authorId");
+      expect(authorField?.foreignKeyField).toBe("authorId");
     });
 
     it("should handle fields without relation attributes", () => {
@@ -678,7 +679,7 @@ describe("PrismaSchemaParser", () => {
       const userModel = result.models.find((m) => m.name === "User");
       const postsField = userModel?.fields.find((f) => f.name === "posts");
 
-      expect(postsField?.connectionField).toBe("");
+      expect(postsField?.foreignKeyField).toBe("");
       expect(postsField?.isRelation).toBe(true);
     });
 
@@ -1226,13 +1227,13 @@ describe("PrismaSchemaParser", () => {
         expect(field1?.attributes).toEqual([]);
 
         const field3 = model.fields.find((f) => f.name === "field3");
-        expect(field3?.connectionField).toBe("id");
+        expect(field3?.foreignKeyField).toBe("id");
 
         const field4 = model.fields.find((f) => f.name === "field4");
-        expect(field4?.connectionField).toBe("id");
+        expect(field4?.foreignKeyField).toBe("id");
 
         const field5 = model.fields.find((f) => f.name === "field5");
-        expect(field5?.connectionField).toBe("id");
+        expect(field5?.foreignKeyField).toBe("id");
       });
     });
 

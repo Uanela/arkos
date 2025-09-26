@@ -32,7 +32,7 @@ describe("generateTemplate", () => {
         modelName: mockModelName,
       });
       expect(result).toContain("class UserController extends BaseController");
-      expect(result).toContain('super("user")');
+      expect(result).toContain('UserController("user")');
     });
 
     it("should generate service template", () => {
@@ -89,8 +89,9 @@ describe("generateTemplate", () => {
         'import { BaseController } from "arkos/controllers"'
       );
       expect(result).toContain("class UserController extends BaseController");
-      expect(result).toContain('super("user")');
-      expect(result).toContain("const userController = new UserController()");
+      expect(result).toContain(
+        'const userController = new UserController("user")'
+      );
       expect(result).toContain("export default userController");
     });
 
@@ -165,7 +166,7 @@ describe("generateTemplate", () => {
       expect(result).toContain("import { Router } from 'express'");
       expect(result).toContain("import { authService } from 'arkos/services'");
       expect(result).toContain(
-        '// import userController from "./user.controller"'
+        'import userController from "./user.controller"'
       );
       expect(result).toContain("const userRouter = Router()");
       expect(result).toContain("'/custom-endpoint'");
@@ -173,7 +174,7 @@ describe("generateTemplate", () => {
       expect(result).toContain(
         "authService.handleAccessControl('CustomAction', 'user')"
       );
-      expect(result).toContain("// userController.someHandler");
+      expect(result).toContain("userController.someHandler");
       expect(result).toContain("export default userRouter");
     });
 
@@ -233,9 +234,6 @@ describe("generateTemplate", () => {
 
       const result = generateTemplate("router", { modelName: kebabModelName });
 
-      expect(result).toContain(
-        "// resolves to /api/user-profiles/custom-endpoint"
-      );
       expect(result).toContain(
         "authService.handleAccessControl('CustomAction', 'user-profile')"
       );
@@ -335,7 +333,7 @@ describe("generateTemplate", () => {
 
     it("should throw error without model name", () => {
       expect(() => generateTemplate("query-options", {} as any)).toThrow(
-        "Model name is required for query config template"
+        "Module name is required for query config template"
       );
     });
   });
@@ -434,7 +432,7 @@ describe("generateTemplate", () => {
       });
 
       expect(result).toContain("class UserProfileController");
-      expect(result).toContain('super("user-profile")');
+      expect(result).toContain('UserProfileController("user-profile")');
     });
 
     it("should handle empty imports object", () => {

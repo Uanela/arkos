@@ -3,7 +3,8 @@ export interface PrismaField {
   type: string;
   isOptional: boolean;
   isArray: boolean;
-  connectionField?: string;
+  foreignKeyField?: string;
+  foreignReferenceField?: string;
   isRelation: boolean;
   defaultValue?: any;
   isId?: boolean;

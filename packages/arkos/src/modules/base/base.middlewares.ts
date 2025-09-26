@@ -129,18 +129,13 @@ export function handleRequestLogs(
   next(); // Pass control to the next middleware or route handler
 }
 
-// Overload for 'auth'
 export function handleRequestBodyValidationAndTransformation<T extends object>(
   schemaOrDtoClass?: ClassConstructor<T>,
   classValidatorValidationOptions?: ValidatorOptions
 ): ArkosRequestHandler;
-
-// Overload for other models
 export function handleRequestBodyValidationAndTransformation<T extends object>(
   schemaOrDtoClass?: ZodSchema<T>
 ): ArkosRequestHandler;
-
-// Implementation
 export function handleRequestBodyValidationAndTransformation<T extends object>(
   schemaOrDtoClass?: ZodSchema<T> | ClassConstructor<T>,
   classValidatorValidationOptions?: ValidatorOptions

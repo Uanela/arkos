@@ -1,4 +1,8 @@
-import { camelCase, kebabCase } from "../../utils/helpers/change-case.helpers";
+import {
+  camelCase,
+  kebabCase,
+  pascalCase,
+} from "../../utils/helpers/change-case.helpers";
 import { getModuleComponents } from "../../utils/dynamic-loader";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import {
@@ -770,16 +774,13 @@ export class BaseService<T extends ModelDelegate = any> {
   /**
    * Updates multiple records with different data in a single transaction.
    *
-   * @param {Array<{filters: UpdateOneFilters<T>, data: UpdateOneData<T>}>} batchData - Array of objects containing filters and data for each update.
+   * @param {Array<{filters: UpdateOneFilters<T>, data: UpdateOneData<T>}>} dataArray - Array of objects containing filters and data for each update.
    * @param {UpdateOneOptions<T>} [queryOptions] - Additional query options to modify the Prisma queries.
    * @param {ServiceBaseContext} [context] - Request context containing user and accessToken for accessing HTTP-specific information.
    * @returns {Promise<Array<UpdateOneResult<T>>>} Array of updated records.
    */
   async batchUpdate<TOptions extends UpdateOneOptions<T>>(
-    batchData: Array<{
-      filters: UpdateOneFilters<T>;
-      data: UpdateOneData<T>;
-    }>,
+    dataArray: UpdateOneData<T>[],
     queryOptions?: TOptions,
     context?: ServiceBaseContext
   ): Promise<Array<UpdateOneResult<T>>> {
@@ -793,7 +794,7 @@ export class BaseService<T extends ModelDelegate = any> {
         !context?.skip?.includes("before")
       )
         await serviceHooksManager.handleHook(serviceHooks.beforeBatchUpdate, {
-          batchData,
+          data: dataArray,
           queryOptions,
           context,
         });
@@ -801,7 +802,7 @@ export class BaseService<T extends ModelDelegate = any> {
       const prisma = getPrismaInstance();
 
       const results = await prisma.$transaction(async (tx: any) => {
-        const updatePromises = batchData.map(async ({ filters, data }) => {
+        const updatePromises = dataArray.map(async (data) => {
           let processedData = data;
           if (
             kebabCase(this.modelName) === "user" &&
@@ -813,19 +814,29 @@ export class BaseService<T extends ModelDelegate = any> {
               );
           }
 
-          const dataWithRelationFieldsHandled = handleRelationFieldsInBody(
-            processedData as Record<string, any>,
+          const finalPrismaQueryParams = handleRelationFieldsInBody(
             {
-              ...this.relationFields,
+              batchedData: {
+                ...(processedData as Record<string, any>),
+                apiAction: "update",
+              },
+            } as Record<string, any>,
+            {
+              singular: [
+                {
+                  ...prismaSchemaParser.getField({
+                    type: pascalCase(this.modelName),
+                  })!,
+                  name: "batchedData",
+                },
+              ],
+              list: [],
             }
           );
 
           return await (tx[this.modelName] as T).update(
             deepmerge(
-              {
-                where: filters,
-                data: dataWithRelationFieldsHandled,
-              },
+              finalPrismaQueryParams.batchedData?.update,
               (queryOptions as {}) || {}
             ) as { where: any; data: any }
           );
@@ -842,7 +853,7 @@ export class BaseService<T extends ModelDelegate = any> {
       )
         await serviceHooksManager.handleHook(serviceHooks.afterBatchUpdate, {
           results,
-          batchData,
+          data: dataArray,
           queryOptions,
           context,
         });
@@ -857,7 +868,7 @@ export class BaseService<T extends ModelDelegate = any> {
       )
         await serviceHooksManager.handleHook(serviceHooks.onBatchUpdateError, {
           error: err,
-          batchData,
+          data: dataArray,
           queryOptions,
           context,
         });

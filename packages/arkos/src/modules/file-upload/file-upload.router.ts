@@ -11,6 +11,7 @@ import { sendResponse } from "../base/base.middlewares";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import { adjustRequestUrl } from "./utils/helpers/file-upload.helpers";
 import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
+import debuggerService from "../debugger/debugger.service";
 
 const router: Router = Router();
 
@@ -24,7 +25,7 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
     router: customRouterModule,
   }: any = {};
 
-  if ((moduleComponents)) {
+  if (moduleComponents) {
     ({
       interceptors = {},
       authConfigs = {},
@@ -133,5 +134,6 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
     );
   }
 
+  debuggerService.logModuleFinalRouter("file-upload", router);
   return router;
 }

@@ -1,3 +1,4 @@
+import { getArkosConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import {
   AccessControlConfig,
@@ -7,7 +8,7 @@ import { capitalize } from "../../../../utils/helpers/text.helpers";
 
 interface AuthAction {
   /** role name, e.g Admin, Manager */
-  roles: string[];
+  roles?: string[];
   /** action name, e.g Create, View, Update, Download, Cancel */
   action: string;
   /** resource name, e.g user, user-role, product, author */
@@ -80,6 +81,10 @@ class AuthActionService {
       description: `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`,
       errorMessage: `You do not have permission to perform this operation`,
     };
+
+    const config = getArkosConfig();
+
+    if (config?.authentication?.mode === "dynamic") delete baseAuthAction.roles;
 
     // If accessControl is not provided, return the base action
     if (!accessControl) {

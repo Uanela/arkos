@@ -5,7 +5,6 @@ import APIFeatures from "../../../utils/features/api.features";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
 import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 
-// Mock dependencies
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
@@ -17,6 +16,10 @@ jest.mock("../../../utils/features/api.features");
 jest.mock("../../../server");
 jest.mock("../../../utils/dynamic-loader");
 jest.mock("../../../utils/sheu");
+jest.mock("../../../utils/prisma/prisma-schema-parser", () => ({
+  parse: jest.fn(),
+  getModelsAsArrayOfStrings: jest.fn(() => []),
+}));
 
 describe("BaseController", () => {
   let baseController: BaseController;
@@ -61,6 +64,7 @@ describe("BaseController", () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
       send: jest.fn(),
+      locals: {},
     };
     mockNext = jest.fn();
 
@@ -186,7 +190,7 @@ describe("BaseController", () => {
           {
             name: "category",
             type: "Category",
-            connectionField: "categoryId",
+            foreignKeyField: "categoryId",
             isArray: false,
             isRelation: true,
             isOptional: false,
@@ -449,7 +453,7 @@ describe("BaseController", () => {
       });
     });
 
-    it("should use provided filterMode", async () => {
+    it("should throw error when req.query.filterMode === OR", async () => {
       mockRequest.query = { title: "Test", filterMode: "OR" };
       const mockBody = { published: true };
       const mockResult = { count: 2 };
@@ -459,7 +463,7 @@ describe("BaseController", () => {
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
       expect(mockRequest.query.filterMode).toBe("OR");
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockNext).toHaveBeenCalled();
     });
 
     it("should call next with error if no records updated", async () => {
@@ -592,7 +596,6 @@ describe("BaseController", () => {
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
       expect(mockBaseService.deleteMany).toHaveBeenCalled();
-      expect(mockRequest.query.filterMode).toBe("AND");
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         results: mockResult.count,
@@ -600,15 +603,13 @@ describe("BaseController", () => {
       });
     });
 
-    it("should use provided filterMode", async () => {
+    it("should throw an error when trying to use OR as filterMode", async () => {
       mockRequest.query = { title: "Test", filterMode: "OR" };
       const mockResult = { count: 2 };
       mockBaseService.deleteMany.mockResolvedValue(mockResult);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
-
-      expect(mockRequest.query.filterMode).toBe("OR");
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockNext).toHaveBeenCalled(); // Means that req.query.filterMode OR was rejected
     });
 
     it("should call next with error if no records deleted", async () => {

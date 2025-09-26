@@ -37,10 +37,12 @@ jest.mock("../start", () => ({
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readFileSync: jest.fn(() => '{ "version": "1.2.3"}'),
+  readdirSync: jest.fn(),
 }));
 
 jest.mock("path", () => ({
   join: jest.fn().mockReturnValue("/mocked/path/to/package.json"),
+  resolve: jest.fn(),
 }));
 
 describe("CLI Index", () => {
