@@ -304,7 +304,7 @@ export class BaseController {
   updateMany = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       if (
-        !Object.keys(req.query).every((key) =>
+        Object.keys(req.query).every((key) =>
           ["filterMode", "prismaQueryOptions"].includes(key)
         )
       ) {
@@ -460,10 +460,8 @@ export class BaseController {
    */
   deleteMany = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      // const queryKeys = Object.keys(req.query || {});
-
       if (
-        !Object.keys(req.query).every((key) =>
+        Object.keys(req.query).every((key) =>
           ["filterMode", "prismaQueryOptions"].includes(key)
         )
       ) {

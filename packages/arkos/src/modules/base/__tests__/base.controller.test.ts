@@ -190,7 +190,7 @@ describe("BaseController", () => {
           {
             name: "category",
             type: "Category",
-            connectionField: "categoryId",
+            foreignKeyField: "categoryId",
             isArray: false,
             isRelation: true,
             isOptional: false,
