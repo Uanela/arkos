@@ -226,15 +226,21 @@ export class PrismaSchemaParser {
       defaultValue = this.parseDefaultValue(defaultMatch[1]);
     }
 
-    // Extract connection field from @relation
-    let connectionField = "";
+    let foreignKeyField = "";
     const relationMatch = attributesStr.match(
       /@relation\([^)]*fields:\s*\[([^\]]+)\]/
     );
-    if (relationMatch) {
-      // Extract the field name and clean it up (remove quotes and whitespace)
-      connectionField = relationMatch[1].trim().replace(/['"]/g, "");
-    }
+    if (relationMatch)
+      foreignKeyField = relationMatch[1].trim().replace(/['"]/g, "");
+
+    let foreignReferenceField = "";
+    const foreignReferenceFieldMatch = attributesStr.match(
+      /@relation\([^)]*references:\s*\[([^\]]+)\]/
+    );
+    if (foreignReferenceFieldMatch)
+      foreignReferenceField = foreignReferenceFieldMatch[1]
+        .trim()
+        .replace(/['"]/g, "");
 
     const isId = attributes.some((attr) => attr.startsWith("@id"));
     const isUnique = attributes.some((attr) => attr.startsWith("@unique"));
@@ -248,7 +254,8 @@ export class PrismaSchemaParser {
         models.map((model) => model.name).includes(type) ||
         this.getPrismaSchemasContent().includes(`model ${type} {`),
       isArray,
-      connectionField,
+      foreignKeyField,
+      foreignReferenceField,
       defaultValue,
       isId,
       isUnique,

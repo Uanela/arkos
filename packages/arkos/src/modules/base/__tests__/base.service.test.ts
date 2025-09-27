@@ -52,7 +52,7 @@ describe("BaseService", () => {
     jest.spyOn(prismaSchemaParser, "getModelRelations").mockReturnValue([
       {
         name: "category",
-        connectionField: "categoryId",
+        foreignKeyField: "categoryId",
         isArray: false,
         isRelation: true,
       },
@@ -104,7 +104,7 @@ describe("BaseService", () => {
         singular: [
           {
             name: "category",
-            connectionField: "categoryId",
+            foreignKeyField: "categoryId",
             isRelation: true,
             isArray: false,
           },
