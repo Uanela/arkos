@@ -149,7 +149,10 @@ describe("BaseController", () => {
         }
       );
       expect(mockResponse.status).toHaveBeenCalledWith(201);
-      expect(mockResponse.json).toHaveBeenCalledWith({ data: mockResult });
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        data: mockResult,
+        results: mockResult.count,
+      });
     });
 
     it("should call next with error if createMany returns null", async () => {
@@ -176,7 +179,10 @@ describe("BaseController", () => {
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
-      expect(mockRequest.responseData).toEqual({ data: mockResult });
+      expect(mockRequest.responseData).toEqual({
+        data: mockResult,
+        results: mockResult.count,
+      });
       expect(mockRequest.responseStatus).toBe(201);
       expect(mockNext).toHaveBeenCalled();
       expect(mockResponse.json).not.toHaveBeenCalled();

@@ -130,9 +130,7 @@ export class BaseController {
           );
         }
 
-        if (config.preventORFilter) {
-          req.query.filterMode = "AND";
-        }
+        if (config.preventORFilter) req.query.filterMode = "AND";
 
         let apiFeatures = new APIFeatures(req, this.modelName);
 
@@ -155,9 +153,8 @@ export class BaseController {
 
         const { where, ...queryOptions } = apiFeatures.filters;
 
-        if (config.hooks?.afterQuery) {
+        if (config.hooks?.afterQuery)
           await config.hooks.afterQuery({ where, queryOptions }, req);
-        }
 
         let serviceArgs = this.buildServiceArgs(
           config,
@@ -166,18 +163,16 @@ export class BaseController {
           queryOptions
         );
 
-        if (config.hooks?.beforeService) {
+        if (config.hooks?.beforeService)
           serviceArgs = await config.hooks.beforeService(serviceArgs, req);
-        }
 
         const serviceMethod = this.service[
           config.serviceMethod as keyof BaseService<any>
         ] as Function;
         let result = await serviceMethod.apply(this.service, serviceArgs);
 
-        if (config.hooks?.afterService) {
+        if (config.hooks?.afterService)
           result = await config.hooks.afterService(result, req);
-        }
 
         let data = result;
         let additionalData: any = null;
@@ -198,9 +193,7 @@ export class BaseController {
           ? config.errorHandler(data, req, this.modelName)
           : this.defaultErrorHandler(data, req, config.operationType);
 
-        if (error) {
-          return next(error);
-        }
+        if (error) return next(error);
 
         let responseData = config.responseBuilder
           ? config.responseBuilder(data, additionalData)
@@ -221,9 +214,8 @@ export class BaseController {
           return next();
         }
 
-        if (config.operationType === "deleteOne") {
+        if (config.operationType === "deleteOne")
           return res.status(config.successStatus).send();
-        }
 
         res.status(config.successStatus).json(responseData);
       }
