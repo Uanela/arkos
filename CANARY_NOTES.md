@@ -101,3 +101,4 @@
 
 - separete what goes into `arkos.init()` and `arkos.config.ts`.
 - separete the cli to own package cli (`arkos/cli`) -> it is basically development required.
+- tell about the new support for usernameFields, `user.profile.nickname` can now be written like `user__profile__nickname` to match pattern used in `req.query`
