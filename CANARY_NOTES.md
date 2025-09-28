@@ -85,3 +85,4 @@
 ### Annoucment
 
 - Announce the batch and delete methods
+- tell about the new support for usernameFields, `user.profile.nickname` can now be written like `user__profile__nickname` to match pattern used in `req.query`

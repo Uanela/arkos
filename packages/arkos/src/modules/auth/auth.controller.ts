@@ -157,22 +157,18 @@ export const authControllerFactory = async (interceptors: any = {}) => {
             new AppError(`Please provide both ${lastField} and password`, 400)
           );
 
-        // Create appropriate where clause for the query
         let whereClause: Record<string, any>;
 
         if (usernameField?.includes?.(".")) {
-          // For nested paths, we need to extract the actual value to search for
           const valueToFind = getNestedValue(req.body, usernameField);
           if (valueToFind === undefined) {
             return next(new AppError(`Invalid ${usernameField} provided`, 400));
           }
           whereClause = createPrismaWhereClause(usernameField, valueToFind);
         } else {
-          // Simple field case
           whereClause = { [usernameField]: usernameValue };
         }
 
-        // Use findFirst instead of findUnique for complex queries
         const user = (await userService.findOne(
           whereClause,
           req.prismaQueryOptions || {}
