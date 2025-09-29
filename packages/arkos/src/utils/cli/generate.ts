@@ -22,7 +22,7 @@ interface GenerateConfig {
   customValidation?: (modelName: string) => void;
   customImports?: (names: any) => any;
   customPath?: string;
-  useCreatePrefix?: boolean;
+  prefix?: string;
 }
 
 const generateFile = async (
@@ -48,7 +48,6 @@ const generateFile = async (
 
   const ext = getUserFileExtension();
 
-  // Replace {{module-name}} placeholder with actual kebab-cased module name
   const resolvedPath = (config.customPath || customPath).replaceAll(
     "{{module-name}}",
     names.kebab
@@ -56,9 +55,8 @@ const generateFile = async (
 
   const modulePath = path.join(process.cwd(), resolvedPath);
 
-  // Determine file name based on whether it needs "create-" prefix
-  const fileName = config.useCreatePrefix
-    ? `create-${names.kebab}.${config.fileSuffix}.${ext}`
+  const fileName = config.prefix
+    ? `${config.prefix}${names.kebab}.${config.fileSuffix}.${ext}`
     : `${names.kebab}.${config.fileSuffix}.${ext}`;
 
   const filePath = path.join(modulePath, fileName);
@@ -154,7 +152,7 @@ export const generateCommand = {
       templateName: "create-schema",
       fileSuffix: "schema",
       customPath: "src/modules/{{module-name}}/schemas",
-      useCreatePrefix: true,
+      prefix: "create-",
     });
   },
 
@@ -163,7 +161,7 @@ export const generateCommand = {
       templateName: "update-schema",
       fileSuffix: "schema",
       customPath: "src/modules/{{module-name}}/schemas",
-      useCreatePrefix: true,
+      prefix: "update-",
     });
   },
 
@@ -172,7 +170,7 @@ export const generateCommand = {
       templateName: "create-dto",
       fileSuffix: "dto",
       customPath: "src/modules/{{module-name}}/dtos",
-      useCreatePrefix: true,
+      prefix: "create-",
     });
   },
 
@@ -181,7 +179,7 @@ export const generateCommand = {
       templateName: "update-dto",
       fileSuffix: "dto",
       customPath: "src/modules/{{module-name}}/dtos",
-      useCreatePrefix: true,
+      prefix: "update-",
     });
   },
 
