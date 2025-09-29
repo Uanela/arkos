@@ -39,7 +39,7 @@ generate
   .command("controller")
   .alias("c")
   .description("Generate a new controller")
-  .requiredOption("-m, --model <name>", "Module name")
+  .requiredOption("-m, --model <name>, --module <name>", "Module name")
   .option("-p, --path <path>", "Custom path for the controller", "src/modules")
   .action(generateCommand.controller);
 
@@ -47,7 +47,7 @@ generate
   .command("service")
   .alias("s")
   .description("Generate a new service")
-  .requiredOption("-m, --model <name>", "Module name")
+  .requiredOption("-m, --model <name>, --module <name>", "Module name")
   .option("-p, --path <path>", "Custom path for the service", "src/modules")
   .action(generateCommand.service);
 
@@ -55,7 +55,7 @@ generate
   .command("router")
   .alias("r")
   .description("Generate a new router")
-  .requiredOption("-m, --model <name>", "Module name")
+  .requiredOption("-m, --model <name>, --module <name>", "Module name")
   .option("-p, --path <path>", "Custom path for the router", "src/modules")
   .action(generateCommand.router);
 
@@ -63,7 +63,7 @@ generate
   .command("auth-configs")
   .alias("a")
   .description("Generate auth configuration")
-  .requiredOption("-m, --model <name>", "Module name")
+  .requiredOption("-m, --model <name>, --module <name>", "Module name")
   .option("-p, --path <path>", "Custom path for the router", "src/modules")
   .action(generateCommand.authConfigs);
 
@@ -71,7 +71,7 @@ generate
   .command("query-options")
   .alias("q")
   .description("Generate prisma query options")
-  .requiredOption("-m, --model <name>", "Module name")
+  .requiredOption("-m, --model <name>, --module <name>", "Module name")
   .option("-p, --path <path>", "Custom path for query options", "src/modules")
   .action(generateCommand.queryOptions);
 
@@ -79,7 +79,7 @@ generate
   .command("middlewares")
   .alias("m")
   .description("Generate a new middleware file")
-  .requiredOption("-m, --model <name>", "Module name")
+  .requiredOption("-m, --model <name>, --module <name>", "Module name")
   .option("-p, --path <path>", "Custom path for middleware", "src/modules")
   .action(generateCommand.interceptors);
 
@@ -87,7 +87,7 @@ generate
   .command("interceptors")
   .alias("i")
   .description("Generate a new interceptors file")
-  .requiredOption("-m, --model <name>", "Module name")
+  .requiredOption("-m, --model <name>, --module <name>", "Module name")
   .option("-p, --path <path>", "Custom path for interceptors", "src/modules")
   .action(generateCommand.interceptors);
 
@@ -95,7 +95,7 @@ generate
   .command("hooks")
   .alias("h")
   .description("Generate a new service hooks file")
-  .requiredOption("-m, --model <name>", "Module name")
+  .requiredOption("-m, --model <name>, --module <name>", "Module name")
   .option("-p, --path <path>", "Custom path for hooks", "src/modules")
   .action(generateCommand.hooks);
 
