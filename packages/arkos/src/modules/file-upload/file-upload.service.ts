@@ -41,9 +41,8 @@ export class FileUploadService {
     this.allowedFileTypes = allowedFileTypes;
     this.maxCount = maxCount;
 
-    if (!fs.existsSync(this.uploadDir)) {
+    if (!fs.existsSync(this.uploadDir))
       fs.mkdirSync(this.uploadDir, { recursive: true });
-    }
 
     this.storage = multer.diskStorage({
       destination: (_, _1, cb) => {
