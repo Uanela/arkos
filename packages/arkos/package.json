@@ -89,7 +89,6 @@
     "buildTsup": "tsup && tsx scripts/post-build-scripts.ts",
     "minifyOld": "esbuild dist/cjs/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "minify": "esbuild $(find dist -type f -name '*.js') --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
-    "minifyOld2": "",
     "clean": "rm -r dist",
     "dev": "tsx --watch",
     "lint": "eslint src --ext .ts",
