@@ -20,7 +20,9 @@ import arkos from "arkos";
 arkos.init({
     authentication: {
         mode: "static", // Start with static, upgrade to dynamic later if needed
-        sendAccessTokenThrough: "both", // Options: "cookie-only", "response-only", "both"
+        login: {
+            sendAccessTokenThrough: "both", // Options: "cookie-only", "response-only", "both"
+        },
     },
 });
 ```
@@ -45,7 +47,9 @@ JWT_COOKIE_SAME_SITE=none
 arkos.init({
     authentication: {
         mode: "static",
-        sendAccessTokenThrough: "both",
+        login: {
+            sendAccessTokenThrough: "both",
+        },
         jwt: {
             secret: process.env.JWT_SECRET,
             expiresIn: process.env.JWT_EXPIRES_IN || "30d",
@@ -106,7 +110,7 @@ model User {
   // OR
   // roles                 UserRole[]                     // Multiple roles
 
-  // Add your custom fields here
+  // example of custom fields
   email                 String?   @unique
   firstName             String?
   lastName              String?
@@ -272,7 +276,7 @@ npx arkos generate auth-configs --module post
 **Shorthand:**
 
 ```bash
-npx arkos generate a -m post
+npx arkos g a -m post
 ```
 
 This creates `src/modules/post/post.auth.ts`:
