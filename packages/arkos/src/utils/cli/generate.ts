@@ -21,6 +21,8 @@ interface GenerateConfig {
   fileSuffix: string;
   customValidation?: (modelName: string) => void;
   customImports?: (names: any) => any;
+  customPath?: string;
+  useCreatePrefix?: boolean;
 }
 
 const generateFile = async (
@@ -36,7 +38,7 @@ const generateFile = async (
 
   if (config.customValidation) config.customValidation(modelName);
 
-  const { path: customPath = "src/modules" } = options;
+  const { path: customPath = "src/modules/{{module-name}}" } = options;
 
   const names = {
     pascal: pascalCase(modelName),
@@ -45,11 +47,22 @@ const generateFile = async (
   };
 
   const ext = getUserFileExtension();
-  const modulePath = path.join(process.cwd(), customPath, names.kebab);
-  const filePath = path.join(
-    modulePath,
-    `${names.kebab}.${config.fileSuffix}.${ext}`
+
+  // Replace {{module-name}} placeholder with actual kebab-cased module name
+  const resolvedPath = (config.customPath || customPath).replaceAll(
+    "{{module-name}}",
+    names.kebab
   );
+
+  const modulePath = path.join(process.cwd(), resolvedPath);
+
+  // Determine file name based on whether it needs "create-" prefix
+  const fileName = config.useCreatePrefix
+    ? `create-${names.kebab}.${config.fileSuffix}.${ext}`
+    : `${names.kebab}.${config.fileSuffix}.${ext}`;
+
+  const filePath = path.join(modulePath, fileName);
+
   const humamReadableTemplateName =
     config.templateName.charAt(0).toUpperCase() +
     config.templateName.slice(1).replaceAll("-", " ");
@@ -136,10 +149,30 @@ export const generateCommand = {
     });
   },
 
+  createSchema: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "create-schema",
+      fileSuffix: "schema",
+      customPath: "src/modules/{{module-name}}/schemas",
+      useCreatePrefix: true,
+    });
+  },
+
+  updateSchema: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "update-schema",
+      fileSuffix: "schema",
+      customPath: "src/modules/{{module-name}}/schemas",
+      useCreatePrefix: true,
+    });
+  },
+
   createDto: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "create-dto",
       fileSuffix: "dto",
+      customPath: "src/modules/{{module-name}}/dtos",
+      useCreatePrefix: true,
     });
   },
 
@@ -147,6 +180,8 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "update-dto",
       fileSuffix: "dto",
+      customPath: "src/modules/{{module-name}}/dtos",
+      useCreatePrefix: true,
     });
   },
 
