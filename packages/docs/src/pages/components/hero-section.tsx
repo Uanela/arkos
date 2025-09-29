@@ -67,7 +67,7 @@ export default function HeroSection(): ReactElement {
               }}
             >
               <p className="text-sky-100 py-0 my-0 font-mono text-base md:text-base cursor-pointer">
-                npx create-arkos@latest
+                npm create arkos@latest
               </p>
               <Tooltip
                 style={{
