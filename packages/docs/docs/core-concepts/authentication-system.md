@@ -20,7 +20,9 @@ import arkos from "arkos";
 arkos.init({
     authentication: {
         mode: "static", // Start with static, upgrade to dynamic later if needed
-        sendAccessTokenThrough: "both", // Options: "cookie-only", "response-only", "both"
+        login: {
+            sendAccessTokenThrough: "both", // Options: "cookie-only", "response-only", "both"
+        },
     },
 });
 ```
@@ -45,7 +47,9 @@ JWT_COOKIE_SAME_SITE=none
 arkos.init({
     authentication: {
         mode: "static",
-        sendAccessTokenThrough: "both",
+        login: {
+            sendAccessTokenThrough: "both",
+        },
         jwt: {
             secret: process.env.JWT_SECRET,
             expiresIn: process.env.JWT_EXPIRES_IN || "30d",
@@ -74,7 +78,7 @@ arkos.init({
 | `cookie.sameSite` | SameSite cookie attribute                                       | `JWT_COOKIE_SAME_SITE` | "lax" in dev, "none" in prod |
 
 :::warning Production Security
-Always set a strong `JWT_SECRET` in production (Otherwise Arkos will throw an error on login attempts when no JWT Secret is set under production). Never commit secrets to version control.
+Always set a `JWT_SECRET` (strong for better security) in production (Otherwise Arkos will throw an error on login attempts when no JWT Secret is set under production). Never commit secrets to version control.
 :::
 
 ## User Model Setup - Static RBAC Foundation
@@ -106,7 +110,7 @@ model User {
   // OR
   // roles                 UserRole[]                     // Multiple roles
 
-  // Add your custom fields here
+  // example of custom fields
   email                 String?   @unique
   firstName             String?
   lastName              String?
@@ -131,7 +135,7 @@ model User {
 
 **Role Assignment:**
 
-- Use `role` for single role per user
+- Use `role` for single role per user or
 - Use `roles` for multiple roles per user
 - Both approaches work with Static RBAC
 
@@ -257,7 +261,9 @@ This allows you to authenticate users based on fields within related models, pro
 
 This approach provides maximum flexibility while maintaining security and proper data validation through Prisma's type-safe query system.
 
-## Auth Config Files - Static RBAC
+## Handling Permission In Static Authentication
+
+### Auth Config Files - Static RBAC
 
 Each model can have its own authentication configuration file that defines which actions require authentication and which roles can perform them.
 
@@ -272,7 +278,7 @@ npx arkos generate auth-configs --module post
 **Shorthand:**
 
 ```bash
-npx arkos generate a -m post
+npx arkos g a -m post
 ```
 
 This creates `src/modules/post/post.auth.ts`:

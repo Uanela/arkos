@@ -1,4 +1,4 @@
-![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp)
+![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=2)
 
 ## The Express And Prisma RESTful Framework
 
