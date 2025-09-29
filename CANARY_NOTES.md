@@ -10,7 +10,6 @@
 
 ### Fix
 
-- strict routing only work for exported routers on swagger documenation
 - fix windows path handling when dealing with file uploads
 
 ### Remove
@@ -24,7 +23,6 @@
 ### Add
 
 - add batch update and delete on services and control
-- make first stable debugging workable
 
 ### Change
 
@@ -40,11 +38,15 @@
 
 ### Add
 
+- make first stable debugging workable
+
 ### Change
 
 - fix functions names at service hooks template
 
 ### Fix
+
+- strict routing only work for exported routers on swagger documenation (fixed)
 
 ### Remove
 
@@ -56,20 +58,15 @@
 
 ### Add
 
-- add dtos generation into cli
 - mimic base service class behavior into auth service
 - mimic file upload service class behavior into auth service
 - analyze custom forbidden error message per action
 - add docker-compose file into `create-arkos`
 - add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
 - allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
-- add question about unknow modules when generating compoents -> like to generate in another place
-- add custom validation options under arkos configuration.
-- add stable `debugging` with all levels correctly working
+- add `FileUpload` model to handle files uploads kind of like in django ORM.
 
 ### Change
-
-- optimize base service and base controller classes by identifying common behaviors among the methods.
 
 ### Remove
 
@@ -80,11 +77,24 @@
 - Announce the batch and delete methods
 - Announce debugging
 
+## DOING
+
+### Add
+
+- add dtos generation into cli
+- add stable `debugging` with all levels correctly working
+
+## Add
+
 ## DONE
 
 ### Deprecated
 
 - deprecated .middlewares.ts files in favor of .interceptors.ts, add warnings to change, and also warn when find .middlewares.ts and .interceptors.ts with same structure tell which one will be used
+
+### Changed
+
+- improved base service and base controller classes by identifying common behaviors among the methods (refactor).
 
 ### Removed
 
@@ -95,7 +105,8 @@
 ### Add
 
 - add a configuration process to customize global context object (`analyze very well because can fall into FAT MODELS trap (using service layer)`)
-- add `FileUpload` model to handle files uploads kind of like in django ORM.
+- add custom validation options under arkos configuration.
+- add question about unknow modules when generating compoents -> like to generate in another place
 
 ### Change
 
