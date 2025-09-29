@@ -56,6 +56,6 @@ export function generateTemplate(
     case "update-dto":
       return generateUpdateDtoTemplate(options);
     default:
-      throw new Error(`\nUnknown template type: ${type}`);
+      throw new Error(`Unknown template type: ${type}`);
   }
 }
