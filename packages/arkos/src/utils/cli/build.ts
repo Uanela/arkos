@@ -143,13 +143,10 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
   fs.writeFileSync(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
 
   try {
-    // Run TypeScript compiler
-    execSync(`npx rimraf ${BUILD_DIR} && npx tsc -p ${tempTsconfigPath}`, {
+    execSync(`npx trash ${BUILD_DIR} && npx tsc -p ${tempTsconfigPath}`, {
       stdio: "inherit",
       cwd: process.cwd(),
     });
-
-    // Copy non-TypeScript files
 
     copyAllNonSourceFiles(moduleType, [".ts", ".tsx"]);
 
@@ -165,14 +162,10 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
  * Build a JavaScript project
  */
 function buildJavaScriptProject(_: BuildOptions, moduleType: ModuleType) {
-  // Target directory
   const targetDir = path.join(BUILD_DIR);
 
   try {
-    // Copy JavaScript files based on module type
     if (moduleType === "esm") {
-      // Copy JS files for ESM (skip .cjs files as they are CommonJS)
-
       execSync(
         `npx copyfiles -u 0 "src/**/*.js" "src/**/*.jsx" "src/**/*.mjs" ${targetDir}`,
         {
@@ -181,11 +174,8 @@ function buildJavaScriptProject(_: BuildOptions, moduleType: ModuleType) {
         }
       );
 
-      // Note about CommonJS files
       console.info("Note: .cjs files are skipped in ESM build");
     } else {
-      // Copy all JS files for CommonJS
-
       execSync(
         `npx copyfiles -u 0 "src/**/*.js" "src/**/*.jsx" "src/**/*.cjs" "src/**/*.mjs" ${targetDir}`,
         {
@@ -195,7 +185,6 @@ function buildJavaScriptProject(_: BuildOptions, moduleType: ModuleType) {
       );
     }
 
-    // Copy all non-JS files
     copyAllNonSourceFiles(moduleType, [
       ".js",
       ".jsx",

@@ -30,7 +30,9 @@ export function extractRequestInfo(req: ArkosRequest) {
 
   // Determine the base URL for file access
   const protocol =
-    req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+    req.secure || req.headers["x-forwarded-proto"] === "https"
+      ? "https"
+      : "http";
   const baseURL = `${protocol}://${req.get?.("host")}`;
   const baseRoute = fileUpload?.baseRoute || "/api/uploads";
   return { baseURL, baseRoute };
