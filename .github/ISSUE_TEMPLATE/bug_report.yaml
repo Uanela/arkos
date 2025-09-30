@@ -1,0 +1,150 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in Arkos.js
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees:
+  - Uanela
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us investigate.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: When I try to upload a file using the file service...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide detailed steps to reproduce the behavior.
+      placeholder: |
+        1. Create a new Arkos project with `npx create-arkos@latest my-project`
+        2. Add a Post model with file upload
+        3. Configure file service with...
+        4. Try to upload a file via POST /api/posts
+        5. See error...
+      value: |
+        1. 
+        2. 
+        3. 
+        4. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: The file should be uploaded and the URL returned in the response...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Got error "Cannot read property 'path' of undefined"...
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: Provide a minimal code sample that reproduces the issue (if applicable)
+      render: typescript
+      placeholder: |
+        // post.router.ts
+        import { Router } from 'express';
+        
+        const router = Router();
+        // your code here...
+
+  - type: input
+    id: arkos-version
+    attributes:
+      label: Arkos.js Version
+      description: Which version of Arkos.js are you using?
+      placeholder: 1.3.3-beta
+    validations:
+      required: true
+
+  - type: dropdown
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: Which version of Node.js are you using?
+      options:
+        - 18.x
+        - 20.x
+        - 22.x
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database
+      description: Which database are you using?
+      options:
+        - PostgreSQL
+        - MySQL
+        - SQLite
+        - MongoDB
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: Which OS are you using?
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: Error Logs
+      description: If applicable, paste any error messages or stack traces
+      render: shell
+      placeholder: |
+        Error: Cannot read property 'path' of undefined
+            at FileService.upload (/node_modules/arkos/dist/services/file.js:45:20)
+            ...
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or information about the problem
+      placeholder: This only happens on Windows, works fine on macOS...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following before submitting
+      options:
+        - label: I have searched existing issues to ensure this bug hasn't been reported
+          required: true
+        - label: I have tested this on the latest beta version
+          required: false
+        - label: I can reproduce this bug consistently
+          required: false
