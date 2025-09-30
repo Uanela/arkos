@@ -67,10 +67,14 @@ export const processFile = async (
 ): Promise<string> => {
   const { baseURL, baseRoute } = extractRequestInfo(req);
 
-  const relativePath = generateRelativePath(filePath, req.params!.fileType);
-  return `${baseURL}${baseRoute === "/" ? "" : baseRoute}/${relativePath
-    .replace(/\\/g, "/")
-    .replace(/^\/+/, "")}`;
+  const relativePath = generateRelativePath(
+    filePath,
+    req.params!.fileType
+  ).replace(/\\/g, "/");
+
+  return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${
+    relativePath.startsWith("/") ? relativePath : `/${relativePath}`
+  }`;
 };
 
 /**
