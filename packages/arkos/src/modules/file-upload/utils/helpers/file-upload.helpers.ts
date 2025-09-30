@@ -30,7 +30,9 @@ export function extractRequestInfo(req: ArkosRequest) {
 
   // Determine the base URL for file access
   const protocol =
-    req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+    req.secure || req.headers["x-forwarded-proto"] === "https"
+      ? "https"
+      : "http";
   const baseURL = `${protocol}://${req.get?.("host")}`;
   const baseRoute = fileUpload?.baseRoute || "/api/uploads";
   return { baseURL, baseRoute };
@@ -44,10 +46,8 @@ const generateRelativePath = (filePath: string, fileType: string) => {
 
   const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
   if (baseUploadDir.startsWith("..")) {
-    // For paths outside project directory
     return path.join(fileType, path.basename(filePath));
   } else {
-    // For paths within project
     return fullCleanCwd(
       filePath
         .replace(`${baseUploadDir}/`, "")
@@ -68,7 +68,9 @@ export const processFile = async (
   const { baseURL, baseRoute } = extractRequestInfo(req);
 
   const relativePath = generateRelativePath(filePath, req.params!.fileType);
-  return `${baseURL}${baseRoute === "/" ? "" : baseRoute}/${relativePath}`;
+  return `${baseURL}${baseRoute === "/" ? "" : baseRoute}/${relativePath
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "")}`;
 };
 
 /**
@@ -79,18 +81,13 @@ export const processImage = async (
   filePath: string,
   options: Record<string, any>
 ): Promise<string | null> => {
-  const { baseURL, baseRoute } = extractRequestInfo(req);
-
   const ext = path.extname(filePath).toLowerCase();
   const originalFormat = ext.replace(".", "");
   const outputFormat = options.format || originalFormat;
 
-  if (!mimetype.lookup(ext)?.includes?.("image")) {
-    const relativePath = generateRelativePath(filePath, req.params!.fileType);
-    return `${baseURL}${baseRoute}/${relativePath}`;
-  }
+  if (!mimetype.lookup(ext)?.includes?.("image"))
+    return processFile(req, filePath);
 
-  // Create a temp filename with original name + random string
   const tempName = `${path.basename(filePath, ext)}_${Date.now()}${ext}`;
   const tempPath = path.join(path.dirname(filePath), tempName);
 
@@ -98,7 +95,6 @@ export const processImage = async (
     let transformer = sharp(filePath);
     const metadata = await transformer.metadata();
 
-    // Apply resize transformations if requested
     if (options.resizeTo && metadata.width && metadata.height) {
       const targetSize = options.resizeTo;
       const scaleFactor =
@@ -116,25 +112,16 @@ export const processImage = async (
       );
     }
 
-    // Apply format transformations if requested
-    if (outputFormat === "webp") {
-      transformer = transformer.toFormat("webp");
-    } else if (outputFormat === "jpeg" || outputFormat === "jpg") {
+    if (outputFormat === "webp") transformer = transformer.toFormat("webp");
+    else if (outputFormat === "jpeg" || outputFormat === "jpg")
       transformer = transformer.toFormat("jpeg");
-    }
 
-    // Save to temp file first
     await transformer.toFile(tempPath);
 
-    // Rename temp file to original filename
     await promisify(fs.rename)(tempPath, filePath);
 
-    // Return the public URL for the file
-    const relativePath = generateRelativePath(filePath, req?.params!.fileType);
-
-    return `${baseURL}${baseRoute}/${relativePath}`;
+    return processFile(req, filePath);
   } catch (error) {
-    // Clean up temp file if it exists
     try {
       await promisify(fs.stat)(tempPath);
       await promisify(fs.unlink)(tempPath);
