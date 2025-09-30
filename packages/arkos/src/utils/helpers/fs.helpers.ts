@@ -19,10 +19,7 @@ export function fullCleanCwd(path: string): string {
   cwd = process.cwd().replace(/\\+$/, ""); // remove trailing slashes
   const escapedCwd = cwd.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // escape regex special chars
 
-  return path
-    .replace(process.cwd(), "")
-    .replace(/\/+$/, "")
-    .replace(/\\+$/, ""); // remove cwd + optional slash
+  return path.replace(process.cwd(), "").replace(/\/+$/, "").replace("\\", "");
 }
 
 export let userFileExtension: "ts" | "js" | undefined;
