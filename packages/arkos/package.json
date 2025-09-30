@@ -71,21 +71,37 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/types/exports/*/index.d.ts"],
-      "services": ["./dist/types/exports/services/index.d.ts"],
-      "validation": ["./dist/types/exports/validation/index.d.ts"],
-      "error-handler": ["./dist/types/exports/error-handler/index.d.ts"],
-      "prisma": ["./dist/types/exports/prisma/index.d.ts"],
-      "auth": ["./dist/types/exports/auth/index.d.ts"],
-      "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
-      "utils": ["./dist/types/exports/utils/index.d.ts"]
+      "*": [
+        "./dist/types/exports/*/index.d.ts"
+      ],
+      "services": [
+        "./dist/types/exports/services/index.d.ts"
+      ],
+      "validation": [
+        "./dist/types/exports/validation/index.d.ts"
+      ],
+      "error-handler": [
+        "./dist/types/exports/error-handler/index.d.ts"
+      ],
+      "prisma": [
+        "./dist/types/exports/prisma/index.d.ts"
+      ],
+      "auth": [
+        "./dist/types/exports/auth/index.d.ts"
+      ],
+      "middlewares": [
+        "./dist/types/exports/middlewares/index.d.ts"
+      ],
+      "utils": [
+        "./dist/types/exports/utils/index.d.ts"
+      ]
     }
   },
   "scripts": {
     "build:esm": "tsc -p tsconfig.esm.json && npx tsx scripts/fix-esm-imports.ts",
     "build:types": "tsc -p tsconfig.types.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build": "npx rimraf dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && tsx scripts/post-build-scripts.ts",
+    "build": "npx trash dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && tsx scripts/post-build-scripts.ts",
     "buildTsup": "tsup && tsx scripts/post-build-scripts.ts",
     "minifyOld": "esbuild dist/cjs/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "minify": "esbuild $(find dist -type f -name '*.js') --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
@@ -132,7 +148,11 @@
     "url": "https://github.com/uanela/arkos/issues"
   },
   "homepage": "https://www.arkosjs.com",
-  "files": ["dist", "cli.js", "README.md"],
+  "files": [
+    "dist",
+    "cli.js",
+    "README.md"
+  ],
   "devDependencies": {
     "@babel/preset-typescript": "^7.27.1",
     "@prisma/client": "^6.4.1",
@@ -192,6 +212,7 @@
     "sharp": "^0.33.5",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "trash-cli": "6.0.0",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.6"
   },
