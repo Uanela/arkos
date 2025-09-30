@@ -1,0 +1,17 @@
+model User {
+  id                   String    @id @default(cuid())
+  username  String   @unique
+  password             String
+  passwordChangedAt    DateTime?
+  lastLoginAt          DateTime?
+  isSuperUser          Boolean   @default(false)
+  isStaff              Boolean   @default(false)
+  deletedSelfAccountAt DateTime?
+  isActive             Boolean   @default(true)
+  role                String     @default("User") // Roles examples: Admin, User
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  // other fields for your application
+}
+
+
