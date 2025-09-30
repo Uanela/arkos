@@ -103,7 +103,10 @@ describe("generateCommand", () => {
     });
 
     it("should generate controller with custom path", async () => {
-      const options = { model: "product", path: "custom/modules" } as any;
+      const options = {
+        model: "product",
+        path: "custom/modules/{{module-name}}",
+      } as any;
 
       await generateCommand.controller(options);
 
@@ -276,7 +279,10 @@ describe("generateCommand", () => {
     });
 
     it("should use custom path for interceptors", async () => {
-      const options = { model: "validation", path: "src/middleware" };
+      const options = {
+        model: "validation",
+        path: "src/middleware/{{module-name}}",
+      };
 
       await generateCommand.interceptors(options);
 

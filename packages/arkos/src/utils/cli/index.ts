@@ -40,7 +40,11 @@ generate
   .alias("c")
   .description("Generate a new controller")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for the controller", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for the controller",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.controller);
 
 generate
@@ -48,7 +52,11 @@ generate
   .alias("s")
   .description("Generate a new service")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for the service", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for the service",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.service);
 
 generate
@@ -56,7 +64,11 @@ generate
   .alias("r")
   .description("Generate a new router")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for the router", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for the router",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.router);
 
 generate
@@ -64,7 +76,11 @@ generate
   .alias("a")
   .description("Generate auth configuration")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for the router", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for the router",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.authConfigs);
 
 generate
@@ -72,7 +88,11 @@ generate
   .alias("q")
   .description("Generate prisma query options")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for query options", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for query options",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.queryOptions);
 
 generate
@@ -80,7 +100,11 @@ generate
   .alias("m")
   .description("Generate a new interceptors file")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for middleware", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for middleware",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.interceptors);
 
 generate
@@ -88,7 +112,11 @@ generate
   .alias("i")
   .description("Generate a new interceptors file")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for interceptors", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for interceptors",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.interceptors);
 
 generate
@@ -96,7 +124,11 @@ generate
   .alias("h")
   .description("Generate a new service hooks file")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for hooks", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for hooks",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.hooks);
 
 generate
@@ -104,7 +136,11 @@ generate
   .alias("cs")
   .description("Generate a new zod create schema file for a prisma model")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for hooks", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for hooks",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.createSchema);
 
 generate
@@ -112,7 +148,11 @@ generate
   .alias("us")
   .description("Generate a new zod update schema file for a prisma model")
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for hooks", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for hooks",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.updateSchema);
 
 generate
@@ -122,7 +162,11 @@ generate
     "Generate a new class-validator create dto file for a prisma model"
   )
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for hooks", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for hooks",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.createDto);
 
 generate
@@ -132,7 +176,11 @@ generate
     "Generate a new class-validator update dto file for a prisma model"
   )
   .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option("-p, --path <path>", "Custom path for hooks", "src/modules")
+  .option(
+    "-p, --path <path>",
+    "Custom path for hooks",
+    "src/modules/{{module-name}}"
+  )
   .action(generateCommand.updateDto);
 
 program
