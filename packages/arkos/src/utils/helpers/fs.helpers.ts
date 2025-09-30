@@ -15,10 +15,7 @@ export const crd = () =>
 export function fullCleanCwd(path: string): string {
   if (typeof path !== "string") throw new Error("Path must be a string");
 
-  const cwd = process.cwd().replace(/\/+$/, ""); // remove trailing slashes
-  const escapedCwd = cwd.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // escape regex special chars
-
-  return path.replace(new RegExp(`${escapedCwd}/?`, "g"), ""); // remove cwd + optional slash
+  return path.replace(process.cwd(), "").replace("/", "").replace("\\", "");
 }
 
 export let userFileExtension: "ts" | "js" | undefined;
@@ -34,17 +31,13 @@ export const getUserFileExtension = (): "ts" | "js" => {
   try {
     const currentDir = process.cwd();
 
-    // Check for tsconfig.json in current directory
     const hasTsConfig = fs.existsSync(path.join(currentDir, "tsconfig.json"));
 
-    // Check for main app files
     const hasAppTs = fs.existsSync(path.join(currentDir, "src", "app.ts"));
     const hasAppJs = fs.existsSync(path.join(currentDir, "src", "app.js"));
 
-    // Check environment variable for build mode
     const isBuildMode = process.env.ARKOS_BUILD === "true";
 
-    // Decision logic (prioritized)
     if (isBuildMode) userFileExtension = "js";
     else if (hasTsConfig && hasAppTs) userFileExtension = "ts";
     else if (hasAppTs && !hasAppJs) userFileExtension = "ts";
@@ -53,7 +46,6 @@ export const getUserFileExtension = (): "ts" | "js" => {
 
     return userFileExtension;
   } catch (e) {
-    // Default to js if anything goes wrong
     userFileExtension = "js";
     return userFileExtension;
   }

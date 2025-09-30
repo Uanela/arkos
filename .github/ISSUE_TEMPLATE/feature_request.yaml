@@ -1,0 +1,137 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Arkos.js
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees:
+  - Uanela
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! We're always looking to improve Arkos.js based on community feedback.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem? Please describe.
+      placeholder: I'm frustrated when I have to manually configure... It would be better if...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see
+      placeholder: |
+        Add a new configuration option in arkos.config.ts that allows...
+        
+        Example:
+        ```typescript
+        export default defineConfig({
+          newFeature: {
+            enabled: true,
+            options: {...}
+          }
+        })
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: I could manually write middleware for this, but it would be better if Arkos handled it natively...
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe your specific use case and how this feature would help
+      placeholder: I'm building a multi-tenant SaaS application and need to...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: Which area does this feature relate to?
+      options:
+        - Authentication & Authorization
+        - File Uploads & Storage
+        - Database & Prisma Integration
+        - API Generation & Routing
+        - Validation & Data Transformation
+        - Middleware & Interceptors
+        - Service Hooks
+        - CLI & Developer Tools
+        - Documentation & Swagger
+        - Performance & Optimization
+        - Testing & Debugging
+        - Configuration & Setup
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (Your Perspective)
+      description: How important is this feature to you?
+      options:
+        - Critical - Blocking my project
+        - High - Significantly improves workflow
+        - Medium - Nice to have
+        - Low - Minor improvement
+    validations:
+      required: true
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Similar Features in Other Frameworks
+      description: Do other frameworks (NestJS, Fastify, etc.) have similar features? How do they implement it?
+      placeholder: |
+        NestJS has a similar feature with @Injectable() decorators...
+        Django handles this with...
+
+  - type: textarea
+    id: api-design
+    attributes:
+      label: Proposed API Design (Optional)
+      description: If you have ideas about how the API should look, share them here
+      render: typescript
+      placeholder: |
+        // Example usage
+        import { useNewFeature } from 'arkos';
+        
+        const feature = useNewFeature({
+          option1: true,
+          option2: 'value'
+        });
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, mockups, or examples
+      placeholder: Here's a diagram showing how this would work...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues/discussions to ensure this hasn't been requested
+          required: true
+        - label: This feature aligns with Arkos.js's goal of simplifying RESTful API development
+          required: true
+        - label: I'm willing to help test this feature once implemented
+          required: false
+        - label: I'm willing to contribute to implementing this feature
+          required: false
