@@ -136,6 +136,20 @@ export const generateCommand = {
     });
   },
 
+  createDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "create-dto",
+      fileSuffix: "dto",
+    });
+  },
+
+  updateDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "update-dto",
+      fileSuffix: "dto",
+    });
+  },
+
   queryOptions: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "query-options",
