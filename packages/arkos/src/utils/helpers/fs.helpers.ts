@@ -15,11 +15,7 @@ export const crd = () =>
 export function fullCleanCwd(path: string): string {
   if (typeof path !== "string") throw new Error("Path must be a string");
 
-  let cwd = process.cwd().replace(/\/+$/, ""); // remove trailing slashes
-  cwd = process.cwd().replace(/\\+$/, ""); // remove trailing slashes
-  const escapedCwd = cwd.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // escape regex special chars
-
-  return path.replace(process.cwd(), "").replace(/\/+$/, "").replace("\\", "");
+  return path.replace(process.cwd(), "").replace("/", "").replace("\\", "");
 }
 
 export let userFileExtension: "ts" | "js" | undefined;
