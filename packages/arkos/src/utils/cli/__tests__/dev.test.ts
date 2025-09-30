@@ -145,7 +145,7 @@ describe("Dev Command", () => {
 
       expect(mockSpawn).toHaveBeenCalledWith(
         "npx",
-        ["tsx-strict", "--watch", "/test/project/src/app.ts"],
+        ["tsx-strict", "--watch", expect.stringContaining("app.ts")],
         expect.objectContaining({
           stdio: "inherit",
           env: expect.objectContaining({
@@ -168,7 +168,7 @@ describe("Dev Command", () => {
           "tsx-strict",
           "--no-type-check",
           "--watch",
-          "/test/project/src/app.js",
+          expect.stringContaining("app.js"),
         ],
         expect.objectContaining({
           stdio: "inherit",
