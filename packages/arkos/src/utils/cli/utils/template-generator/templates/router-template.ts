@@ -7,9 +7,9 @@ import { TemplateOptions } from "../../template-generators";
 export function generateRouterTemplate(options: TemplateOptions): string {
   const { modelName, imports } = options;
 
-  if (!modelName) throw new Error("Model name is required for router template");
+  if (!modelName)
+    throw new Error("Module name is required for router template");
 
-  // Check if controller file exists
   const ext = getUserFileExtension();
   const controllerPath =
     imports?.controller || `./${modelName.kebab}.controller.${ext}`;
@@ -30,9 +30,7 @@ export function generateRouterTemplate(options: TemplateOptions): string {
         `./${modelName.kebab}.controller${ext === "js" ? "." + "js" : ""}`
       }"`;
 
-  const controllerHandlerLine = controllerExists
-    ? `${modelName.camel}Controller.someHandler`
-    : `${modelName.camel}Controller.someHandler`;
+  const controllerHandlerLine = `${modelName.camel}Controller.someHandler`;
 
   return `import { Router } from 'express'
 import { authService } from 'arkos/services'
