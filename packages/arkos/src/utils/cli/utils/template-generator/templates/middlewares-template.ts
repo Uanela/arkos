@@ -44,7 +44,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onGetMeError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeLogin = 
@@ -59,7 +59,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onLoginError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeLogout = 
@@ -74,7 +74,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onLogoutError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeSignup = 
@@ -88,7 +88,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onSignupError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeUpdatePassword = 
@@ -103,7 +103,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onUpdatePasswordError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 `;
   }
@@ -119,7 +119,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onFindFileError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeUploadFile = 
@@ -134,7 +134,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onUploadFileError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeUpdateFile = 
@@ -149,7 +149,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onUpdateFileError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeDeleteFile = 
@@ -164,7 +164,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onDeleteFileError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 `;
   }
@@ -184,7 +184,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onCreateOneError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeFindOne = 
@@ -199,7 +199,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onFindOneError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeFindMany = 
@@ -214,7 +214,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onFindManyError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeUpdateOne = 
@@ -229,7 +229,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onUpdateOneError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeDeleteOne = 
@@ -244,7 +244,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onDeleteOneError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeCreateMany = 
@@ -259,7 +259,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onCreateManyError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeUpdateMany = 
@@ -274,7 +274,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onUpdateManyError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 
 // export const beforeDeleteMany = 
@@ -289,7 +289,7 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
 
 // export const onDeleteManyError =
 //   [async (${errorFunctionParams}) => {
-//     next();
+//     next(err);
 //   }]
 `;
 }
