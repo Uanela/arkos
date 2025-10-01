@@ -14,7 +14,7 @@ import { getModuleComponents } from "../../utils/dynamic-loader";
 /**
  * Handles files uploads and allow to be extended
  */
-class FileUploadController {
+export class FileUploadController {
   /**
    * Model-specific interceptors loaded from model modules
    * @private

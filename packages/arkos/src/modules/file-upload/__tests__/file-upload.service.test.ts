@@ -867,7 +867,7 @@ describe("FileUploadService", () => {
     it("should handle uploadDir ending with slash", async () => {
       const serviceWithSlash = new FileUploadService("uploads/images/");
       mockReq.file = {
-        path: "images/test.jpg",
+        path: "/images/test.jpg",
         originalname: "test.jpg",
       };
 
@@ -882,10 +882,10 @@ describe("FileUploadService", () => {
       expect(result).toContain("/api/uploads/images/test.jpg");
     });
 
-    it("should handle uploadDir not ending with slash", async () => {
+    it("should handle uploadDir not ending with slash on windows environment", async () => {
       const serviceWithoutSlash = new FileUploadService("uploads/videos");
       mockReq.file = {
-        path: "videos/test.mp4",
+        path: "\\videos\\test.mp4",
         originalname: "test.mp4",
       };
 

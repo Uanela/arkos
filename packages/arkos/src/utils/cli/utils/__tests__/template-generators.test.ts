@@ -74,7 +74,7 @@ describe("generateTemplate", () => {
 
     it("should handle throw an error when missing modelName", () => {
       expect(() => generateTemplate("controller", {} as any)).toThrow(
-        "Model name is required for controller template"
+        "Module name is required for controller template"
       );
     });
   });
@@ -109,7 +109,7 @@ describe("generateTemplate", () => {
 
     it("should throw error without model name", () => {
       expect(() => generateTemplate("controller", {} as any)).toThrow(
-        "Model name is required for controller template"
+        "Module name is required for controller template"
       );
     });
   });
@@ -119,9 +119,9 @@ describe("generateTemplate", () => {
       mockedGetUserFileExtension.mockReturnValue("ts");
       const result = generateTemplate("service", { modelName: mockModelName });
 
-      expect(result).toContain('import prisma from "../../utils/prisma"');
+      expect(result).toContain('import { Prisma } from "@prisma/client"');
       expect(result).toContain(
-        "class UserService extends BaseService<typeof prisma.user>"
+        "class UserService extends BaseService<Prisma.UserDelegate>"
       );
     });
 
@@ -146,7 +146,7 @@ describe("generateTemplate", () => {
 
     it("should throw error without model name", () => {
       expect(() => generateTemplate("service", {} as any)).toThrow(
-        "Model name is required for service template"
+        "Module name is required for service template"
       );
     });
   });
@@ -253,7 +253,7 @@ describe("generateTemplate", () => {
 
     it("should throw error without model name", () => {
       expect(() => generateTemplate("router", {} as any)).toThrow(
-        "Model name is required for router template"
+        "Module name is required for router template"
       );
     });
   });
@@ -283,7 +283,7 @@ describe("generateTemplate", () => {
 
     it("should throw error without model name", () => {
       expect(() => generateTemplate("auth-configs", {} as any)).toThrow(
-        "Model name is required for auth config template"
+        "Module name is required for auth config template"
       );
     });
   });
@@ -295,11 +295,11 @@ describe("generateTemplate", () => {
         modelName: mockModelName,
       });
 
-      expect(result).toContain('import prisma from "../../utils/prisma"');
+      expect(result).toContain('import { Prisma } from "@prisma/client"');
       expect(result).toContain(
         "import { PrismaQueryOptions } from 'arkos/prisma'"
       );
-      expect(result).toContain(": PrismaQueryOptions<typeof prisma.user>");
+      expect(result).toContain(": PrismaQueryOptions<Prisma.UserDelegate>");
       expect(result).toContain("findOne: {}");
       expect(result).toContain("createOne: {}");
     });
@@ -312,9 +312,11 @@ describe("generateTemplate", () => {
       });
 
       expect(result).toContain(
-        "import { AuthPrismaQueryOptions } from 'arkos/prisma'"
+        "import { PrismaQueryOptions } from 'arkos/prisma'"
       );
-      expect(result).toContain(": AuthPrismaQueryOptions<typeof prisma.auth>");
+      expect(result).toContain(
+        `: PrismaQueryOptions<Prisma.UserDelegate, "auth">`
+      );
       expect(result).toContain("getMe: {}");
       expect(result).toContain("login: {}");
       expect(result).toContain("signup: {}");

@@ -138,7 +138,7 @@ describe("generateCommand", () => {
       await generateCommand.controller(options);
 
       expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to generate controller")
+        expect.stringContaining("permission denied")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -153,7 +153,7 @@ describe("generateCommand", () => {
       await generateCommand.controller(options);
 
       expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to generate controller")
+        expect.stringContaining("cannot create directory")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -204,7 +204,7 @@ describe("generateCommand", () => {
       await generateCommand.service(options);
 
       expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to generate service")
+        expect.stringContaining("template generation failed")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -330,7 +330,7 @@ describe("generateCommand", () => {
       await generateCommand.authConfigs(options);
 
       expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to generate auth configs")
+        expect.stringContaining("auth config generation failed")
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
