@@ -133,11 +133,10 @@ export class BaseService<T extends ModelDelegate = any> {
           context
         );
 
-        if (config.hooks?.beforeOperation) {
+        if (config.hooks?.beforeOperation)
           await config.hooks.beforeOperation(
             this.buildHookParams(args, config)
           );
-        }
 
         let processedArgs = await this.processArguments(args, config);
 
