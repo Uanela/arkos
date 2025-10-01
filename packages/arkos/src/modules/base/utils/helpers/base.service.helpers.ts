@@ -301,7 +301,6 @@ export function canBeUsedToConnect(
   if (bodyField.apiAction && !["connect"]?.includes?.(bodyField.apiAction))
     return false;
 
-  // If explicitly marked for connect, allow it
   if (bodyField.apiAction === "connect") return true;
 
   if (Object.keys(bodyField)?.length === 1 && bodyField?.id) return true;
