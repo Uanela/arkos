@@ -8,14 +8,12 @@ export function generateAuthConfigsTemplate(options: TemplateOptions): string {
   const isTypeScript = ext === "ts";
 
   if (!modelName)
-    throw new Error("Model name is required for auth config template");
+    throw new Error("Module name is required for auth config template");
 
-  // Generate imports for TypeScript
   const imports = isTypeScript
     ? `import { AuthConfigs } from 'arkos/auth';\n`
     : "";
 
-  // Generate type annotation for TypeScript
   const typeAnnotation = isTypeScript ? `: AuthConfigs` : "";
 
   return `${imports}

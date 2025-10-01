@@ -280,6 +280,16 @@ describe("APIFeatures", () => {
       );
     });
 
+    test("should not throw error when passing user password to false via select", () => {
+      req.query = { select: { password: false } };
+      const apiFeatures = new APIFeatures(req, "user");
+
+      expect(() => apiFeatures.limitFields()).not.toThrow(AppError);
+      expect(() => apiFeatures.limitFields()).not.toThrow(
+        "User password exposure detected"
+      );
+    });
+
     test("should throw error when trying to expose user password via include", () => {
       req.query = { include: { user: { select: { password: true } } } };
       const apiFeatures = new APIFeatures(req, "post");
