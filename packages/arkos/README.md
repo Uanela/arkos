@@ -1,8 +1,12 @@
 ![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=2)
 
-<div align="center">
-[![Socket Badge](https://badge.socket.dev/npm/package/arkos/1.3.4-canary.9)](https://badge.socket.dev/npm/package/arkos/1.3.4-canary.9)
-</div>
+[![Socket Badge](https://badge.socket.dev/npm/package/arkos)](https://badge.socket.dev/npm/package/arkos)
+
+![npm](https://img.shields.io/npm/v/arkos)
+
+![npm](https://img.shields.io/npm/dt/arkos)
+
+![GitHub](https://img.shields.io/github/license/uanela/arkos)
 
 <div align="center">
 <h2>The Express And Prisma RESTful Framework</h2>
