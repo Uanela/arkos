@@ -2,8 +2,6 @@ name: Feature Request
 description: Suggest a new feature or enhancement for Arkos.js
 title: "[Feature]: "
 labels: ["enhancement", "needs-triage"]
-assignees:
-  - Uanela
 body:
   - type: markdown
     attributes:
@@ -94,9 +92,9 @@ body:
     id: examples
     attributes:
       label: Similar Features in Other Frameworks
-      description: Do other frameworks (NestJS, Fastify, etc.) have similar features? How do they implement it?
+      description: Do other frameworks (Django, Fastify, etc.) have similar features? How do they implement it?
       placeholder: |
-        NestJS has a similar feature with @Injectable() decorators...
+        Ruby has a similar feature with @Injectable() decorators...
         Django handles this with...
 
   - type: textarea

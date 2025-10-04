@@ -1,4 +1,4 @@
-# Canary Notes v1.3.4-beta
+# Canary Notes v1.3.5-beta
 
 ## TODO
 
@@ -11,7 +11,7 @@
 ### Fix
 
 - strict routing only work for exported routers on swagger documenation
-- fix functions names at service hooks template
+- make res.locals.someData on after middlewares work
 
 ### Remove
 
