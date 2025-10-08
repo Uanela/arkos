@@ -95,7 +95,14 @@ export class FileUploadController {
             data = await processFile(req, req.file.path);
           }
         } else {
-          return next(new AppError("No file uploaded", 400));
+          return next(
+            new AppError(
+              "No file or files were attached to the request as form data.",
+              400,
+              {},
+              "NoAttachedFile"
+            )
+          );
         }
 
         const jsonContent = {
