@@ -1,4 +1,4 @@
-# Canary Notes v1.3.4-beta
+# Canary Notes v1.3.5-beta
 
 ## TODO
 
@@ -11,6 +11,8 @@
 ### Fix
 
 - fix windows path handling when dealing with file uploads
+- strict routing only work for exported routers on swagger documenation
+- make res.locals.someData on after middlewares work
 
 ### Remove
 

@@ -1,0 +1,107 @@
+name: Documentation Issue
+description: Report missing, incorrect, or confusing documentation
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve Arkos.js documentation! Clear docs are crucial for framework adoption.
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - Missing Documentation
+        - Incorrect/Outdated Documentation
+        - Confusing/Unclear Documentation
+        - Typo or Grammar Issue
+        - Code Example Doesn't Work
+        - Need More Examples
+        - API Reference Missing
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Where is this documentation located? (URL, file path, or section name)
+      placeholder: https://arkosjs.com/docs/core-concepts or README.md section "Getting Started"
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's the Issue?
+      description: Describe what's missing, incorrect, or confusing
+      placeholder: |
+        The authentication documentation doesn't explain how to customize the JWT expiration time.
+        
+        OR
+        
+        The code example in "File Uploads" section throws an error when following exactly...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What Should It Say?
+      description: What information should be included or how should it be corrected?
+      placeholder: |
+        Should include a section explaining how to configure JWT options in the auth service:
+        
+        ```typescript
+        authService.configure({
+          jwt: {
+            expiresIn: '7d'
+          }
+        })
+        ```
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current Documentation (If Applicable)
+      description: Copy/paste the current incorrect or confusing text
+      placeholder: |
+        Current text says:
+        "Authentication is handled automatically"
+        
+        But it doesn't explain HOW to configure it...
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      description: How much does this documentation issue affect users?
+      options:
+        - Critical - Prevents users from using a feature
+        - High - Causes significant confusion or errors
+        - Medium - Somewhat confusing but workarounds exist
+        - Low - Minor improvement or typo
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information (screenshots, related issues, etc.)
+      placeholder: This came up when trying to implement custom authentication for a project...
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you like to help fix this documentation?
+      options:
+        - label: I'm willing to submit a PR to fix this documentation
+          required: false
+
+

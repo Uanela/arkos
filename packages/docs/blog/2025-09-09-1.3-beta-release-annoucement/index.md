@@ -182,12 +182,12 @@ arkos.init({
 ```typescript
 // src/modules/post/post.router.ts
 export const config: RouterConfig<"prisma"> = {
-    routes: {
-        createOne: true,
-        findMany: true,
-        findOne: true,
-        updateOne: false, // Disabled
-        deleteOne: false, // Disabled
+    disable: {
+        createOne: false,
+        findMany: false,
+        findOne: false,
+        updateOne: true, // Disabled
+        deleteOne: true, // Disabled
     },
 };
 ```
