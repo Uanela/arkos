@@ -1,0 +1,113 @@
+name: QOL (Quality of Life) Improvement
+description: Suggest improvements to developer experience and usability
+title: "[QOL]: "
+labels: ["QOL", "enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Quality of Life improvements make Arkos.js more pleasant to use! These are typically small but impactful changes.
+
+  - type: textarea
+    id: current-experience
+    attributes:
+      label: Current Experience
+      description: Describe the current behavior that could be improved
+      placeholder: |
+        Currently, when generating a new component with the CLI, I have to type the full path every time.
+        For example: `npx arkos generate service posts --path src/modules/blog/posts`
+    validations:
+      required: true
+
+  - type: textarea
+    id: improved-experience
+    attributes:
+      label: Improved Experience
+      description: How would you improve this experience?
+      placeholder: |
+        It would be nice if the CLI could remember the last used path or detect the module structure automatically.
+        
+        Or even better, prompt with a list of existing modules:
+        ```
+        ? Select target module: 
+        ❯ src/modules/blog
+          src/modules/users
+          src/modules/auth
+          [Create new module]
+        ```
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area of Improvement
+      description: Which area does this QOL improvement affect?
+      options:
+        - CLI / Developer Tools
+        - Error Messages
+        - Configuration / Setup
+        - Code Generation
+        - IDE Integration / TypeScript
+        - Logging / Debugging
+        - Performance
+        - File Organization
+        - API Design
+        - Testing
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact on Workflow
+      description: How often do you encounter this? How much time would this save?
+      placeholder: |
+        I generate new components multiple times per day. This would save 10-15 seconds each time,
+        and reduce errors from typos in paths.
+    validations:
+      required: true
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples from Other Tools
+      description: Do other frameworks or tools handle this better? How?
+      placeholder: |
+        BananaJs CLI has a similar feature where it auto-detects module structure.
+        Rails generators also remember your preferences.
+
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Implementation Effort (Your Guess)
+      description: How complex do you think this would be to implement?
+      options:
+        - Small - Quick win (hours)
+        - Medium - Moderate effort (days)
+        - Large - Significant work (weeks)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any mockups, examples, or other relevant information
+      placeholder: Attached is a screenshot of how the improved UX could look...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have checked if this improvement has already been suggested
+          required: true
+        - label: This is a QOL improvement, not a new feature
+          required: true
+        - label: I'm willing to help test this improvement
+          required: false
+
+
