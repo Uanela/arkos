@@ -1,9 +1,10 @@
-import express, { Router } from "express";
+import { Router } from "express";
 import { IArkosRouter, ArkosRouteConfig } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
 import RouteConfigRegistry from "./route-config-registry";
 import { extractArkosRoutes } from "./utils/helpers";
+import { authService } from "../../exports/services";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -58,6 +59,23 @@ export default function ArkosRouter(): IArkosRouter {
               const finalHandler = handlers[handlers.length - 1];
               RouteConfigRegistry.register(finalHandler, config, method);
             }
+            const middlewares = [];
+            if (config.authentication)
+              middlewares.push(authService.authenticate);
+            if (
+              typeof config.authentication === "object" &&
+              config.authentication.action &&
+              config.authentication.resource
+            )
+              middlewares.push(
+                authService.handleAccessControl(
+                  config.authentication.action,
+                  config.authentication.resource,
+                  {
+                    [config.authentication.action]: config.authentication?.rule,
+                  }
+                )
+              );
 
             return originalMethod.call(target, config.route, ...handlers);
           } else {
