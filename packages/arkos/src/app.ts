@@ -182,7 +182,7 @@ export async function bootstrap(
     (process.env.ARKOS_BUILD !== "true" ||
       arkosConfig.swagger.enableAfterBuild === true)
   )
-    app.use("/api", await getSwaggerRouter(arkosConfig));
+    app.use("/api", await getSwaggerRouter(arkosConfig, app));
 
   if (routersConfig?.additional)
     routersConfig.additional.forEach((router) => {

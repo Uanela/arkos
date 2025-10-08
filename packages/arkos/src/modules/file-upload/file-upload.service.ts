@@ -344,7 +344,14 @@ export class FileUploadService {
               data = await processFile(req, req.file.path);
             }
           } else {
-            return reject(new AppError("No file uploaded", 400));
+            return reject(
+              new AppError(
+                "No file or files were attached to the request as form data.",
+                400,
+                {},
+                "NoAttachedFile"
+              )
+            );
           }
 
           resolve(data);
