@@ -237,8 +237,6 @@ export class FileUploadService {
           throw new AppError(`Unsupported file type: ${fileType}`, 400);
       }
 
-      // Delete the file
-
       await promisify(fs.stat)(filePath);
       await promisify(fs.unlink)(filePath);
 
@@ -293,12 +291,10 @@ export class FileUploadService {
     fileUpload?.baseRoute || "/api/uploads";
 
     return new Promise((resolve, reject) => {
-      // Determine if it's a single or multiple file upload
       const isMultiple = Array.isArray(req.query.multiple)
         ? req.query.multiple[0] == "true"
         : req.query.multiple == "true";
 
-      // Use appropriate upload handler
       const uploadHandler = isMultiple
         ? this.getUpload().array(this.getFieldName(), this.maxCount)
         : this.getUpload().single(this.getFieldName());
@@ -307,22 +303,18 @@ export class FileUploadService {
         if (err) return reject(err);
 
         try {
-          // Determine the base URL for file access
           const protocol = req.get("host")?.includes?.("localhost")
             ? "http"
             : "https";
           `${protocol}://${req.get("host")}`;
 
-          // Get file type from uploadDir path
           const dirParts = this.uploadDir.split("/");
           (this.uploadDir.endsWith("/")
             ? dirParts[dirParts.length - 2]
             : dirParts[dirParts.length - 1]) || "files";
 
-          // Process all uploaded files
           let data;
           if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-            // Process multiple files
             const isImageUpload = this.uploadDir?.includes?.("/images");
             if (isImageUpload) {
               data = await Promise.all(
@@ -333,20 +325,17 @@ export class FileUploadService {
                 req.files.map((file) => processFile(req, file.path))
               );
             }
-            // Filter out any null values from failed processing
+
             data = data.filter((url) => url !== null);
           } else if (req.file) {
-            // Process a single file
             const isImageUpload = this.uploadDir?.includes?.("/images");
-            if (isImageUpload) {
+            if (isImageUpload)
               data = await processImage(req, req.file.path, options);
-            } else {
-              data = await processFile(req, req.file.path);
-            }
+            else data = await processFile(req, req.file.path);
           } else {
             return reject(
               new AppError(
-                "No file or files were attached to the request as form data.",
+                `No file or files were attached to the request as form data as ${req.params.fileType}`,
                 400,
                 {},
                 "NoAttachedFile"
