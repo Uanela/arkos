@@ -97,10 +97,10 @@ export class FileUploadController {
         } else {
           return next(
             new AppError(
-              "No file or files were attached to the request as form data.",
+              `No file or files were attached on field ${fileType} on the request body as form data.`,
               400,
               {},
-              "NoAttachedFile"
+              "NoFileOrFilesAttached"
             )
           );
         }
@@ -170,7 +170,6 @@ export class FileUploadController {
         const { fileUpload } = getArkosConfig();
         const baseUploadRoute = fileUpload?.baseRoute || "/api/uploads";
 
-        // This checks if the URL follows the expected format: /api/files/{fileType}/{fileName}
         const urlPattern = new RegExp(
           `${baseUploadRoute}/${fileType}/${fileName}`
         );
@@ -183,10 +182,8 @@ export class FileUploadController {
             req.originalUrl
           }`;
 
-          // URL matches expected pattern, use deleteFileByUrl
           await uploader.deleteFileByUrl(fullUrl);
         } else {
-          // URL doesn't match expected pattern, use deleteFileByName
           await uploader.deleteFileByName(fileName, fileType);
         }
 
@@ -197,11 +194,8 @@ export class FileUploadController {
 
         res.status(204).json();
       } catch (error) {
-        // Handle different types of errors
-        if (error instanceof AppError) {
-          return next(error);
-        }
-        // File doesn't exist or other error
+        if (error instanceof AppError) return next(error);
+
         return next(new AppError("File not found", 404));
       }
     }

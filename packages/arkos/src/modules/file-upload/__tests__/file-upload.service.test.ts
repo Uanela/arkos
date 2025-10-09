@@ -541,7 +541,12 @@ describe("FileUploadService", () => {
       await expect(
         fileUploadService.upload(mockReq, mockRes)
       ).rejects.toBeInstanceOf(AppError);
-      expect(AppError).toHaveBeenCalledWith("No file uploaded", 400);
+      expect(AppError).toHaveBeenCalledWith(
+        "No file or files were attached on field images on the request body as form data.",
+        400,
+        {},
+        "NoFileOrFilesAttached"
+      );
     });
 
     it("should handle upload errors", async () => {

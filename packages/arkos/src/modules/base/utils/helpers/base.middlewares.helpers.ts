@@ -42,27 +42,22 @@ export function resolvePrismaQueryOptions<T extends Record<string, any>>(
  * @param {ControllerActions} action - The controller action
  * @returns {Record<string, any> | null} The general options for the action type
  */
-function getGeneralOptionsForAction(
+export function getGeneralOptionsForAction(
   options: any,
   action: ControllerActions
-): Record<string, any> | null {
-  // Map actions to their general option categories
+): Record<string, any> {
   const actionMappings: Record<string, string[]> = {
-    // Find operations
     findMany: ["find"],
     findOne: ["find"],
 
-    // Create operations
     create: ["create", "save"],
     createOne: ["create", "save", "saveOne"],
     createMany: ["create", "save", "saveMany"],
 
-    // Update operations
     update: ["update", "save"],
     updateOne: ["update", "save", "saveOne"],
     updateMany: ["update", "save", "saveMany"],
 
-    // Delete operations
     delete: ["delete"],
     deleteOne: ["delete"],
     deleteMany: ["delete"],
@@ -71,12 +66,11 @@ function getGeneralOptionsForAction(
   const generalKeys = actionMappings[action] || [];
   let generalOptions = {};
 
-  // Merge all applicable general options in order of precedence
   for (const key of generalKeys) {
     if (options[key]) {
       generalOptions = deepmerge(generalOptions, options[key]);
     }
   }
 
-  return Object.keys(generalOptions).length > 0 ? generalOptions : null;
+  return generalOptions;
 }
