@@ -196,7 +196,31 @@ export type ArkosConfig = {
    *
    * @See [www.arkosjs.com/docs/core-concepts/request-data-validation](https://www.arkosjs.com/docs/core-concepts/request-data-validation) for more details.
    */
-  validation?:
+  validation?: {
+    /**
+     * Defines whether to use strict request validation, it means in every request using `ArkosRouter()` you must pass the validation options with all options (e.g: query, params, body, etc.).
+     *
+     * **How It Works:**
+     * - If it is true, Arkos will require all the options a stated above on the routes and if you don't pass it will throw an error.
+     * **What if you don't want to pass a validator to some options?**
+     * - You will need to pass `undefined` to the validator option (see example below), this way Arkos will throw an error if something is passed to `req.query` if you passed undefined as validator into `validation.query`
+     *
+     * ```ts
+     * import { ArkosRouter } from "arkos"
+     *
+     * const router = ArkosRouter()
+     *
+     * router.get({
+     *  route: "/api/posts",
+     *  validation: {
+     *    query: undefined
+     *  }
+     * })
+     *
+     * ```
+     */
+    strict?: boolean;
+  } & (
     | {
         resolver?: "class-validator";
         /**
@@ -214,7 +238,8 @@ export type ArkosConfig = {
     | {
         resolver?: "zod";
         validationOptions?: Record<string, any>;
-      };
+      }
+  );
   /**
    * Defines file upload configurations
    *

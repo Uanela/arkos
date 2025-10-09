@@ -21,24 +21,16 @@ export function resolvePrismaQueryOptions<T extends Record<string, any>>(
   const options = prismaQueryOptions as any;
   const actionOptions = options[action] || {};
 
-  // Start with deprecated queryOptions (for backward compatibility)
   let mergedOptions = options.queryOptions || {};
 
-  // Apply global options (replaces queryOptions)
-  if (options.global) {
-    mergedOptions = deepmerge(mergedOptions, options.global);
-  }
+  if (options.global) mergedOptions = deepmerge(mergedOptions, options.global);
 
-  // Apply general operation options based on action type
   const generalOptions = getGeneralOptionsForAction(options, action);
   if (generalOptions) {
     mergedOptions = deepmerge(mergedOptions, generalOptions);
   }
 
-  // Finally apply specific action options (highest priority)
-  if (actionOptions) {
-    mergedOptions = deepmerge(mergedOptions, actionOptions);
-  }
+  if (actionOptions) mergedOptions = deepmerge(mergedOptions, actionOptions);
 
   return mergedOptions;
 }
