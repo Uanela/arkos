@@ -17,11 +17,12 @@ const swaggerRouter = Router();
 
 export async function getSwaggerRouter(
   arkosConfig: ArkosConfig,
-  app?: express.Express
+  app: express.Express
 ): Promise<Router> {
   let defaultJsonSchemas = await getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const defaultModelsPaths = await generatePathsForModels(arkosConfig);
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
+
   const missingJsonSchemas =
     await missingJsonSchemaGenerator.generateMissingJsonSchemas(
       defaultModelsPaths,

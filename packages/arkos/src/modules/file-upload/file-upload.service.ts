@@ -164,24 +164,18 @@ export class FileUploadService {
    */
   public async deleteFileByUrl(fileUrl: string): Promise<boolean> {
     try {
-      // Get configuration values
       const { fileUpload } = getArkosConfig();
       const baseRoute = fileUpload?.baseRoute || "/api/uploads";
 
-      // Parse the URL to get the path
       let urlPath: string;
       if (fileUrl.startsWith("http")) {
         const url = new URL(fileUrl);
         urlPath = url.pathname;
-      } else {
-        urlPath = fileUrl;
-      }
+      } else urlPath = fileUrl;
 
-      // Extract the path after the base route
       const baseRouteIndex = urlPath.indexOf(baseRoute);
-      if (baseRouteIndex === -1) {
+      if (baseRouteIndex === -1)
         throw new AppError("Invalid file URL: base route not found", 400);
-      }
 
       const pathAfterBaseRoute = urlPath.substring(
         baseRouteIndex + baseRoute.length
@@ -190,7 +184,6 @@ export class FileUploadService {
         ? pathAfterBaseRoute.substring(1)
         : pathAfterBaseRoute;
 
-      // Determine file type and file name
       const fileTypes = ["images", "videos", "documents", "files"];
       let fileType: string | null = null;
       let fileName: string | null = null;
@@ -246,9 +239,7 @@ export class FileUploadService {
         throw error;
       }
 
-      if (error.code === "ENOENT") {
-        throw new AppError("File not found", 404);
-      }
+      if (error.code === "ENOENT") throw new AppError("File not found", 404);
 
       throw new AppError(`Failed to delete file: ${error.message}`, 500);
     }
@@ -335,10 +326,10 @@ export class FileUploadService {
           } else {
             return reject(
               new AppError(
-                `No file or files were attached to the request as form data as ${req.params.fileType}`,
+                `No file or files were attached on field ${req.params.fileType} on the request body as form data.`,
                 400,
                 {},
-                "NoAttachedFile"
+                "NoFileOrFilesAttached"
               )
             );
           }

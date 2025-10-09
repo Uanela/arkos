@@ -1,6 +1,8 @@
 import { extractArkosRoutes } from "../index";
 import RouteConfigRegistry from "../../../route-config-registry";
 
+jest.mock("fs");
+
 describe("extractArkosRoutes", () => {
   const handler1 = jest.fn();
   const handler2 = jest.fn();
