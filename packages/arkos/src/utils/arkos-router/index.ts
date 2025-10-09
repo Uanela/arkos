@@ -3,8 +3,10 @@ import { IArkosRouter, ArkosRouteConfig } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
 import RouteConfigRegistry from "./route-config-registry";
-import { extractArkosRoutes } from "./utils/helpers";
-import { authService } from "../../exports/services";
+import { extractArkosRoutes, getMiddlewareStack } from "./utils/helpers";
+import { getArkosConfig } from "../../exports";
+import { catchAsync } from "../../exports/error-handler";
+import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -50,37 +52,46 @@ export default function ArkosRouter(): IArkosRouter {
       ];
 
       if (httpMethods.includes(prop as string)) {
-        return function (firstArg: any, ...handlers: any[]) {
+        return function (
+          firstArg: any,
+          ...handlers: (ArkosRequestHandler | ArkosErrorRequestHandler)[]
+        ) {
+          let route = firstArg;
           if (RouteConfigValidator.isArkosRouteConfig(firstArg)) {
             const config = firstArg as ArkosRouteConfig;
             const method = prop as string;
+            route = config.route;
 
             if (handlers.length > 0) {
               const finalHandler = handlers[handlers.length - 1];
               RouteConfigRegistry.register(finalHandler, config, method);
             }
-            const middlewares = [];
-            if (config.authentication)
-              middlewares.push(authService.authenticate);
-            if (
-              typeof config.authentication === "object" &&
-              config.authentication.action &&
-              config.authentication.resource
-            )
-              middlewares.push(
-                authService.handleAccessControl(
-                  config.authentication.action,
-                  config.authentication.resource,
-                  {
-                    [config.authentication.action]: config.authentication?.rule,
-                  }
-                )
+
+            const arkosConfig = getArkosConfig();
+            const validationConfig = arkosConfig.validation;
+            const authenticationConfig = arkosConfig.authentication;
+
+            if (!validationConfig?.resolver && config.validation)
+              throw Error(
+                "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
               );
 
-            return originalMethod.call(target, config.route, ...handlers);
-          } else {
-            return originalMethod.call(target, firstArg, ...handlers);
+            if (!authenticationConfig?.mode && config.authentication)
+              throw Error(
+                "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
+              );
+
+            handlers = [
+              ...getMiddlewareStack(config),
+              ...handlers.map((handler) =>
+                catchAsync(handler, {
+                  type: handler.length > 3 ? "error" : "normal",
+                })
+              ),
+            ];
           }
+
+          return originalMethod.call(target, route, ...handlers);
         };
       }
       return originalMethod;

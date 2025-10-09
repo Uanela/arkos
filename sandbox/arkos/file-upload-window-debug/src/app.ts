@@ -1,11 +1,4 @@
 import arkos from "arkos";
-import ArkosRouter from "./utils/arkos-router";
-
-const router = ArkosRouter();
-
-router.get({ route: "/api/alo2" }, (req: any, res: any, next: any) => {
-  res.json({ message: "alloy" });
-});
 
 arkos.init({
   cors: {
@@ -20,7 +13,6 @@ arkos.init({
   },
   routers: {
     strict: true,
-    additional: [router as any],
   },
   validation: {
     resolver: "zod",
@@ -30,3 +22,7 @@ arkos.init({
     strict: false,
   },
 });
+
+const hello = (test: any, test2: any, test3: any) => {};
+
+console.log(hello.length);

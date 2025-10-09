@@ -41,9 +41,9 @@ export interface ArkosRouteConfig {
         rule?: any;
       };
   validation?: {
-    query?: ZodSchema | (new (...args: any[]) => object);
-    body?: ZodSchema | (new (...args: any[]) => object);
-    params?: ZodSchema | (new (...args: any[]) => object);
+    query?: ZodSchema | (new (...args: any[]) => object) | undefined;
+    body?: ZodSchema | (new (...args: any[]) => object) | undefined;
+    params?: ZodSchema | (new (...args: any[]) => object) | undefined;
   };
   openapi?: boolean | Partial<OpenAPIV3.OperationObject>;
 }

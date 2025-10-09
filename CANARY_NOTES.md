@@ -93,6 +93,8 @@
 ### Deprecated
 
 - deprecated .middlewares.ts files in favor of .interceptors.ts, add warnings to change, and also warn when find .middlewares.ts and .interceptors.ts with same structure tell which one will be used
+- no need to wrap handlers into catchAsync when using `ArkosRouter()`
+- added a new `ArkosRouter` a simple `Router` wrapper to enhance features
 
 ### Changed
 

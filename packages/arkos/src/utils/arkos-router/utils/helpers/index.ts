@@ -1,3 +1,5 @@
+import { authService } from "../../../../exports/services";
+import { validateRequestInputs } from "../../../../modules/base/base.middlewares";
 import RouteConfigRegistry from "../../route-config-registry";
 import { ArkosRouteConfig } from "../../types";
 
@@ -64,4 +66,28 @@ export function extractArkosRoutes(
   if (stack) extractFromStack(stack, basePath);
 
   return routes;
+}
+
+export function getMiddlewareStack(config: ArkosRouteConfig) {
+  const middlewares = [];
+  if (config.authentication) middlewares.push(authService.authenticate);
+  if (
+    typeof config.authentication === "object" &&
+    config.authentication.action &&
+    config.authentication.resource
+  )
+    middlewares.push(
+      authService.handleAccessControl(
+        config.authentication.action,
+        config.authentication.resource,
+        {
+          [config.authentication.action]: config.authentication?.rule,
+        }
+      )
+    );
+
+  if (typeof config?.validation === "object" && config?.validation)
+    middlewares.push(validateRequestInputs(config.validation));
+
+  return middlewares;
 }

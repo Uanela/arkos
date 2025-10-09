@@ -9,13 +9,16 @@ import {
 } from "../../types";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { catchAsync } from "../../exports/error-handler";
+import { AppError, catchAsync } from "../../exports/error-handler";
 import validateDto from "../../utils/validate-dto";
 import validateSchema from "../../utils/validate-schema";
 import { ZodSchema } from "zod";
 import { ClassConstructor } from "class-transformer";
 import { ValidatorOptions } from "class-validator";
 import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
+import { ArkosRouteConfig } from "../../utils/arkos-router/types";
+import { capitalize } from "../../utils/helpers/text.helpers";
+import { isClass, isZodSchema } from "../../utils/dynamic-loader";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -84,9 +87,8 @@ export function handleRequestLogs(
   res: Response,
   next: NextFunction
 ) {
-  const startTime = Date.now(); // Capture the start time
+  const startTime = Date.now();
 
-  // Define colors for each HTTP method
   const methodColors = {
     GET: "\x1b[36m", // Cyan
     POST: "\x1b[32m", // Green
@@ -97,25 +99,23 @@ export function handleRequestLogs(
     OPTIONS: "\x1b[34m", // Blue
   };
 
-  // Function to determine status code color
   const getStatusColor = (statusCode: number) => {
     if (statusCode >= 200 && statusCode < 300) return "\x1b[32m"; // Green
     if (statusCode >= 300 && statusCode < 400) return "\x1b[33m"; // Orange/Yellow
     if (statusCode >= 400 && statusCode < 500) return "\x1b[33m"; // Red
     if (statusCode >= 500) return "\x1b[31m"; // White on Red background
-    return "\x1b[0m"; // Default (no color)
+    return "\x1b[0m";
   };
 
   res.on("finish", () => {
-    const duration = Date.now() - startTime; // Calculate the time taken to process the request
+    const duration = Date.now() - startTime;
 
-    // Get the current date and time
     const now = new Date();
-    const time = now.toTimeString().split(" ")[0]; // Format as HH:MM:SS
+    const time = now.toTimeString().split(" ")[0];
 
     const methodColor =
-      methodColors[req.method as keyof typeof methodColors] || "\x1b[0m"; // Default to no color
-    const statusColor = getStatusColor(res.statusCode); // Get the color for the status code
+      methodColors[req.method as keyof typeof methodColors] || "\x1b[0m";
+    const statusColor = getStatusColor(res.statusCode);
 
     console.info(
       `[\x1b[36mInfo\x1b[0m] \x1b[90m${time}\x1b[0m ${methodColor}${
@@ -126,7 +126,7 @@ export function handleRequestLogs(
     );
   });
 
-  next(); // Pass control to the next middleware or route handler
+  next();
 }
 
 export function handleRequestBodyValidationAndTransformation<T extends object>(
@@ -159,6 +159,76 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
         );
       else if (validationConfigs?.resolver === "zod" && schemaOrDtoClass)
         req.body = await validateSchema(schemaOrDtoClass as ZodSchema<T>, body);
+
+      next();
+    }
+  );
+}
+
+export function validateRequestInputs(
+  validators: ArkosRouteConfig["validation"]
+) {
+  const arkosConfig = getArkosConfig();
+  const validationConfig = arkosConfig.validation;
+  const strictValidation = validationConfig?.strict;
+
+  if (!validationConfig?.resolver && validators)
+    throw Error(
+      "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: {} })."
+    );
+
+  if (strictValidation && !validators && validators !== false)
+    throw Error(
+      "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
+    );
+
+  const validatorFn: (validator: any, data: any) => Promise<any> =
+    validationConfig?.resolver == "zod" ? validateSchema : validateDto;
+  const validatorsKey: ("body" | "query" | "params")[] = [
+    "body",
+    "query",
+    "params",
+  ];
+
+  const isValidValidator =
+    validationConfig?.resolver == "zod" ? isZodSchema : isClass;
+  const validatorName =
+    validationConfig?.resolver == "zod" ? "Zod Schema" : "Class-Validator Dto";
+  const validatorNameType =
+    validationConfig?.resolver == "zod" ? "Schema" : "Dto";
+
+  if (validators)
+    validatorsKey.forEach((key) => {
+      if (strictValidation && !(key in validators))
+        throw Error(
+          `No { validation: { ${key}: ${validatorNameType} } } was found, while using strict validation you will need to pass undefined into ${key} in order to deny any request ${key} input.`
+        );
+
+      if (
+        key in validators &&
+        validators?.[key] !== undefined &&
+        !isValidValidator(validators[key])
+      )
+        throw Error(
+          `Please pass a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } }`
+        );
+    });
+
+  return catchAsync(
+    async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+      for (const key of validatorsKey) {
+        const validator = validators?.[key];
+
+        if (strictValidation && !validator && Object.keys(req[key]).length > 0)
+          throw new AppError(
+            `No request ${key} is allowed on this route`,
+            400,
+            { [key]: req[key] },
+            `NoRequest${capitalize(key)}Allowed`
+          );
+
+        if (validator) req[key] = await validatorFn(validator, req[key]);
+      }
 
       next();
     }
