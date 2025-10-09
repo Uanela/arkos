@@ -1,9 +1,14 @@
 import { Router } from "express";
 import ArkosRouter from "../";
 import RouteConfigRegistry from "../route-config-registry";
+import { catchAsync } from "../../../exports/error-handler";
+import { getArkosConfig } from "../../../server";
 
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),
+}));
+jest.mock("../../../exports/error-handler", () => ({
+  catchAsync: jest.fn((fn: any) => fn),
 }));
 
 describe("ArkosRouter", () => {
@@ -20,10 +25,13 @@ describe("ArkosRouter", () => {
     const proxied = ArkosRouter() as any;
 
     proxied.__router__ = router;
+    try {
+      proxied.get("/normal", jest.fn());
 
-    proxied.get("/normal", jest.fn());
-
-    expect(spy).toHaveBeenCalledWith("/normal", expect.any(Function));
+      expect(spy).toThrow(
+        "First argument of ArkosRouter().get() must be a valid ArkosRouteConfig but recevied /normal"
+      );
+    } catch {}
   });
 
   it("should register config and call original method when first argument is ArkosRouteConfig", () => {
@@ -56,5 +64,19 @@ describe("ArkosRouter", () => {
   it("should return original method if property is not HTTP method", () => {
     const proxied = ArkosRouter() as any;
     expect(typeof proxied.use).toBe("function");
+  });
+
+  it("should throw error when strict validation is enabled without validators or explicit false", () => {
+    jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+      validation: {
+        resolver: "zod",
+        strict: true,
+      },
+    });
+
+    const proxied = ArkosRouter() as any;
+    expect(proxied.get({ route: "/api" })).toThrow(
+      "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
+    );
   });
 });

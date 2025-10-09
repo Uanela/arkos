@@ -166,20 +166,16 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
 }
 
 export function validateRequestInputs(
-  validators: ArkosRouteConfig["validation"]
+  validationRouteConfig: Pick<ArkosRouteConfig, "validation">
 ) {
   const arkosConfig = getArkosConfig();
   const validationConfig = arkosConfig.validation;
   const strictValidation = validationConfig?.strict;
+  const validators = validationRouteConfig?.validation;
 
   if (!validationConfig?.resolver && validators)
     throw Error(
       "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: {} })."
-    );
-
-  if (strictValidation && !validators && validators !== false)
-    throw Error(
-      "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
     );
 
   const validatorFn: (validator: any, data: any) => Promise<any> =
@@ -210,7 +206,7 @@ export function validateRequestInputs(
         !isValidValidator(validators[key])
       )
         throw Error(
-          `Please pass a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } }`
+          `Please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } }`
         );
     });
 

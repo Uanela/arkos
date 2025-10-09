@@ -63,6 +63,12 @@ export default function ArkosRouter(): IArkosRouter {
             route = config.route;
 
             if (handlers.length > 0) {
+              handlers = handlers.map((handler) =>
+                catchAsync(handler, {
+                  type: handler.length > 3 ? "error" : "normal",
+                })
+              );
+
               const finalHandler = handlers[handlers.length - 1];
               RouteConfigRegistry.register(finalHandler, config, method);
             }
@@ -70,6 +76,16 @@ export default function ArkosRouter(): IArkosRouter {
             const arkosConfig = getArkosConfig();
             const validationConfig = arkosConfig.validation;
             const authenticationConfig = arkosConfig.authentication;
+
+            if (
+              validationConfig?.strict &&
+              "validation" in config &&
+              !config?.validation &&
+              config?.validation !== undefined
+            )
+              throw Error(
+                "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
+              );
 
             if (!validationConfig?.resolver && config.validation)
               throw Error(
@@ -81,15 +97,11 @@ export default function ArkosRouter(): IArkosRouter {
                 "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
               );
 
-            handlers = [
-              ...getMiddlewareStack(config),
-              ...handlers.map((handler) =>
-                catchAsync(handler, {
-                  type: handler.length > 3 ? "error" : "normal",
-                })
-              ),
-            ];
-          }
+            handlers = [...getMiddlewareStack(config), ...handlers];
+          } else
+            throw Error(
+              `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig but recevied ${firstArg}`
+            );
 
           return originalMethod.call(target, route, ...handlers);
         };

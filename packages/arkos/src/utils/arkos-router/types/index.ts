@@ -3,7 +3,7 @@ import { OpenAPIV3 } from "openapi-types";
 import { ZodSchema } from "zod";
 
 type MethodHandler = (
-  configOrPath: string | ArkosRouteConfig,
+  configOrPath: ArkosRouteConfig,
   ...handlers: (RequestHandler | ErrorRequestHandler)[]
 ) => IArkosRouter;
 
@@ -40,10 +40,12 @@ export interface ArkosRouteConfig {
         action: string;
         rule?: any;
       };
-  validation?: {
-    query?: ZodSchema | (new (...args: any[]) => object) | undefined;
-    body?: ZodSchema | (new (...args: any[]) => object) | undefined;
-    params?: ZodSchema | (new (...args: any[]) => object) | undefined;
-  };
+  validation?:
+    | undefined
+    | {
+        query?: ZodSchema | (new (...args: any[]) => object) | undefined;
+        body?: ZodSchema | (new (...args: any[]) => object) | undefined;
+        params?: ZodSchema | (new (...args: any[]) => object) | undefined;
+      };
   openapi?: boolean | Partial<OpenAPIV3.OperationObject>;
 }
