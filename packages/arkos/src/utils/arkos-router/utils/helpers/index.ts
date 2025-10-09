@@ -86,8 +86,7 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
       )
     );
 
-  if (typeof config?.validation === "object" && config?.validation)
-    middlewares.push(validateRequestInputs(config.validation));
+  middlewares.push(validateRequestInputs(config));
 
   return middlewares;
 }
