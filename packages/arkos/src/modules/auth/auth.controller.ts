@@ -52,8 +52,10 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         });
 
         if (interceptors?.afterGetMe) {
+          (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
+          (res as any).originalStatus = 200;
           req.responseStatus = 200;
           res.locals.status = 200;
           return next();
@@ -91,8 +93,10 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         });
 
         if (interceptors?.afterUpdateMe) {
+          (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
+          (res as any).originalStatus = 200;
           req.responseStatus = 200;
           res.locals.status = 200;
           return next();
@@ -117,8 +121,10 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         });
 
         if (interceptors?.afterLogout) {
+          (res as any).originalData = null;
           req.responseData = null;
           res.locals.data = null;
+          (res as any).originalStatus = 204;
           req.responseStatus = 204;
           res.locals.status = 204;
           return next();
@@ -232,8 +238,10 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         req.accessToken = token;
 
         if (interceptors?.afterLogin) {
+          (res as any).originalData = req.responseData;
           req.additionalData = { user };
           res.locals.additional = { user };
+          (res as any).originalStatus = 200;
           req.responseStatus = 200;
           res.locals.status = 200;
           return next();
@@ -269,8 +277,10 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         )) as Record<string, any>;
 
         if (interceptors?.afterSignup) {
+          (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
+          (res as any).originalStatus = 201;
           req.responseStatus = 201;
           res.locals.status = 201;
           return next();
@@ -303,8 +313,10 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         )) as Record<string, any>;
 
         if (interceptors?.afterDeleteMe) {
+          (res as any).originalData = { data: updatedUser };
           req.responseData = { data: updatedUser };
           res.locals.data = { data: updatedUser };
+          (res as any).originalStatus = 200;
           req.responseStatus = 200;
           res.locals.status = 200;
           return next();
@@ -376,27 +388,23 @@ export const authControllerFactory = async (interceptors: any = {}) => {
           }
         );
 
+        const responseData = {
+          status: "success",
+          message: "Password updated successfully!",
+        };
+
         if (interceptors?.afterUpdatePassword) {
-          req.additionalData = {
-            user,
-          };
-          req.responseData = {
-            status: "success",
-            message: "Password updated successfully!",
-          };
-          res.locals.data = {
-            status: "success",
-            message: "Password updated successfully!",
-          };
+          (res as any).originalData = responseData;
+          req.additionalData = { user };
+          req.responseData = responseData;
+          res.locals.data = responseData;
+          (res as any).originalStatus = 200;
           req.responseStatus = 200;
           res.locals.status = 200;
           return next();
         }
 
-        res.status(200).json({
-          status: "success",
-          message: "Password updated successfully!",
-        });
+        res.status(200).json(responseData);
       }
     ),
 
