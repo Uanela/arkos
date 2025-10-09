@@ -42,7 +42,7 @@ describe("generateTemplate", () => {
 
     it("should generate router template", () => {
       const result = generateTemplate("router", { modelName: mockModelName });
-      expect(result).toContain("const userRouter = Router()");
+      expect(result).toContain("const userRouter = ArkosRouter()");
     });
 
     it("should generate auth-configs template", () => {
@@ -163,16 +163,14 @@ describe("generateTemplate", () => {
 
       const result = generateTemplate("router", { modelName: mockModelName });
 
-      expect(result).toContain("import { Router } from 'express'");
-      expect(result).toContain("import { authService } from 'arkos/services'");
+      expect(result).toContain("import { ArkosRouter } from 'arkos'");
       expect(result).toContain(
         'import userController from "./user.controller"'
       );
-      expect(result).toContain("const userRouter = Router()");
-      expect(result).toContain("'/custom-endpoint'");
-      expect(result).toContain("authService.authenticate");
+      expect(result).toContain("const userRouter = ArkosRouter()");
+      expect(result).toContain(`"/custom-endpoint"`);
       expect(result).toContain(
-        "authService.handleAccessControl('CustomAction', 'user')"
+        `authentication: { action: "CustomAction", resource: "user" }`
       );
       expect(result).toContain("userController.someHandler");
       expect(result).toContain("export default userRouter");
@@ -183,8 +181,7 @@ describe("generateTemplate", () => {
 
       const result = generateTemplate("router", { modelName: mockModelName });
 
-      expect(result).toContain("import { Router } from 'express'");
-      expect(result).toContain("import { authService } from 'arkos/services'");
+      expect(result).toContain("import { ArkosRouter } from 'arkos'");
       expect(result).toContain(
         'import userController from "./user.controller"'
       );
@@ -235,7 +232,7 @@ describe("generateTemplate", () => {
       const result = generateTemplate("router", { modelName: kebabModelName });
 
       expect(result).toContain(
-        "authService.handleAccessControl('CustomAction', 'user-profile')"
+        `authentication: { action: "CustomAction", resource: "user-profile" }`
       );
     });
 
