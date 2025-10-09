@@ -21,20 +21,97 @@ export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
 }
 
-export function sendResponse(req: ArkosRequest, res: ArkosResponse) {
-  if (Number(req?.responseStatus) === 204)
-    res.status(Number(req?.responseStatus)).send();
-  else if (req.responseData && req?.responseStatus)
-    res.status(Number(req?.responseStatus)).json(req.responseData);
-  else if (Number(req?.responseStatus) && !req.responseData)
-    res.status(Number(req?.responseStatus)).send();
-  else
-    res
-      .status(500)
-      .json({ message: "No status or data attached to the response" });
+/**
+ * Deep comparison helper for objects
+ */
+function deepEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (typeof a !== "object" || typeof b !== "object") return a === b;
+
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) return false;
+
+  for (const key of keysA) {
+    if (!keysB.includes(key)) return false;
+    if (!deepEqual(a[key], b[key])) return false;
+  }
+
+  return true;
 }
 
-export function addRouteMiddlwaresAndConfigs() {}
+/**
+ * Sends response with backward compatibility support
+ * Compares current values against original values to detect middleware changes
+ * If values were modified by subsequent middleware, use the modified version
+ */
+export function sendResponse(req: ArkosRequest, res: ArkosResponse) {
+  let responseData;
+  let responseStatus;
+
+  // Get original values (set by controller)
+  const originalData = (res as any).originalData;
+  const originalStatus = (res as any).originalStatus;
+
+  // Get current values (potentially modified by middleware)
+  const currentReqData = req.responseData;
+  const currentReqStatus = req.responseStatus;
+  const currentLocalsData = res.locals?.data;
+  const currentLocalsStatus = res.locals?.status;
+
+  // Determine final data: use modified version if it differs from original
+  if (
+    currentReqData !== undefined &&
+    !deepEqual(currentReqData, originalData)
+  ) {
+    responseData = currentReqData;
+  } else if (
+    currentLocalsData !== undefined &&
+    !deepEqual(currentLocalsData, originalData)
+  ) {
+    responseData = currentLocalsData;
+  } else if (originalData !== undefined) {
+    responseData = originalData;
+  } else {
+    responseData = currentReqData ?? currentLocalsData;
+  }
+
+  // Determine final status: use modified version if it differs from original
+  if (currentReqStatus !== undefined && currentReqStatus !== originalStatus) {
+    responseStatus = currentReqStatus;
+  } else if (
+    currentLocalsStatus !== undefined &&
+    currentLocalsStatus !== originalStatus
+  ) {
+    responseStatus = currentLocalsStatus;
+  } else if (originalStatus !== undefined) {
+    responseStatus = originalStatus;
+  } else {
+    responseStatus = currentReqStatus ?? currentLocalsStatus;
+  }
+
+  // Send response
+
+  if (Number(responseStatus) === 204) {
+    res.status(Number(responseStatus)).send();
+  } else if (
+    (responseData !== undefined || responseData !== null) &&
+    responseStatus
+  ) {
+    res.status(Number(responseStatus)).json(responseData);
+  } else if (
+    Number(responseStatus) &&
+    (responseData === undefined || responseData === null)
+  ) {
+    res.status(Number(responseStatus)).send();
+  } else {
+    res.status(500).json({
+      message: "No status or data attached to the response",
+    });
+  }
+}
 
 /**
  * Type representing all possible actions that can be performed on a controller
@@ -126,7 +203,7 @@ export function handleRequestLogs(
     );
   });
 
-  next(); // Pass control to the next middleware or route handler
+  next();
 }
 
 export function handleRequestBodyValidationAndTransformation<T extends object>(
