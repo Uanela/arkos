@@ -36,7 +36,7 @@ class AppError extends Error {
   public missing?: boolean;
   public isOperational: boolean;
   code?: string = "Unknown";
-  meta?: Record<string, any> = {};
+  meta?: Record<string, any>;
 
   /**
    * Creates an instance of AppError.
@@ -59,9 +59,12 @@ class AppError extends Error {
     this.status = `${statusCode}`.startsWith("4") ? "fail" : "error";
     this.isOperational = true;
 
-    if (typeof code === typeof meta)
-      throw Error(
-        `meta and code must to both be ${typeof code}, one must be of type object and other string.`
+    if (code && meta && typeof code === typeof meta)
+      throw new AppError(
+        `meta and code must not both be ${typeof code}, one must be of type object and other string. but received ${JSON.stringify({ meta, code })}`,
+        500,
+        "AppErrorMisuse",
+        { meta, code }
       );
 
     if (typeof code === "string") this.code = code || "Unknown";

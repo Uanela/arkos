@@ -1,10 +1,10 @@
 import AppError from "./app-error";
 
 export interface PrismaError {
-  code?: string; // Prisma-specific error code
-  message: string; // Error message
-  meta?: Record<string, any>; // Metadata provided by Prisma
-  name?: string; // Error name
+  code?: string;
+  message: string;
+  meta?: Record<string, any>;
+  name?: string;
 }
 
 export function handleJWTError() {
