@@ -2,10 +2,7 @@ import { Router } from "express";
 import { authControllerFactory } from "./auth.controller";
 import authService from "./auth.service";
 import rateLimit from "express-rate-limit";
-import {
-  getModuleComponents,
-  ModuleComponents,
-} from "../../utils/dynamic-loader";
+import { getModuleComponents } from "../../utils/dynamic-loader";
 import {
   addPrismaQueryOptionsToRequest,
   handleRequestBodyValidationAndTransformation,
@@ -17,6 +14,8 @@ import { AuthPrismaQueryOptions } from "../../types";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
+import routerValidator from "../base/utils/router-validator";
+import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 
 const router: Router = Router();
 
@@ -30,6 +29,17 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
   } = getModuleComponents("auth") || {};
 
   const routerConfig = customRouterModule?.config || {};
+  const customRouter = customRouterModule?.default as Router;
+
+  if (customRouter && customRouterModule) {
+    if (routerValidator.isExpressRouter(customRouter))
+      router.use(`/auth`, customRouter);
+    else
+      throw Error(
+        `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express Router.`
+      );
+  }
+
   const authController = await authControllerFactory(interceptors);
 
   if (routerConfig?.disable === true) return router;
