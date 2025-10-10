@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.4.0-canary.8",
+  "version": "1.4.0-canary.9",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -197,6 +197,6 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "engines": {
-    "node": ">=14.16"
+    "node": ">=20.16"
   }
 }
