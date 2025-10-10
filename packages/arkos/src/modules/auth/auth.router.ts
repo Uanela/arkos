@@ -36,7 +36,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       router.use(`/auth`, customRouter);
     else
       throw Error(
-        `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express Router.`
+        `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express or arkos Router.`
       );
   }
 
