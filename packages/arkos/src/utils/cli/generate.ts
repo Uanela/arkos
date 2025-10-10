@@ -52,7 +52,6 @@ const generateFile = async (
     "{{module-name}}",
     names.kebab
   );
-  console.log(resolvedPath);
 
   const modulePath = path.join(process.cwd(), resolvedPath);
 

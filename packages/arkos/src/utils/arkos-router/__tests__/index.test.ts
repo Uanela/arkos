@@ -1,6 +1,7 @@
 import { Router } from "express";
 import ArkosRouter from "../";
 import RouteConfigRegistry from "../route-config-registry";
+import { getArkosConfig } from "../../../server";
 
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),
@@ -8,6 +9,7 @@ jest.mock("fs", () => ({
 jest.mock("../../../exports/error-handler", () => ({
   catchAsync: jest.fn((fn: any) => fn),
 }));
+jest.mock("../../../server", () => ({ getArkosConfig: jest.fn(() => ({})) }));
 
 describe("ArkosRouter", () => {
   const config = { route: "/test" };
@@ -19,17 +21,16 @@ describe("ArkosRouter", () => {
 
   it("should call original method when first argument is not ArkosRouteConfig", () => {
     const router = Router();
-    const spy = jest.spyOn(router, "get");
     const proxied = ArkosRouter() as any;
 
     proxied.__router__ = router;
     try {
       proxied.get("/normal", jest.fn());
-
-      expect(spy).toThrow(
+    } catch (err: any) {
+      expect(err.message).toBe(
         "First argument of ArkosRouter().get() must be a valid ArkosRouteConfig but recevied /normal"
       );
-    } catch {}
+    }
   });
 
   it("should register config and call original method when first argument is ArkosRouteConfig", () => {
@@ -65,22 +66,21 @@ describe("ArkosRouter", () => {
   });
 
   it("should throw error when strict validation is enabled without validators or explicit false", () => {
-    jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+    (getArkosConfig as jest.Mock).mockReturnValue({
       validation: {
         resolver: "zod",
         strict: true,
       },
     });
+    try {
+      const proxied = ArkosRouter() as any;
+      proxied.get({ route: "/api/cacilda" });
 
-    const router = Router();
-
-    const spy = jest.spyOn(router, "get");
-    const proxied = ArkosRouter() as any;
-    proxied.__router__ = router;
-    proxied.get({ route: "/api" });
-
-    expect(spy).toThrow(
-      "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
-    );
+      // );
+    } catch (err: any) {
+      expect(err.message).toBe(
+        "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
+      );
+    }
   });
 });

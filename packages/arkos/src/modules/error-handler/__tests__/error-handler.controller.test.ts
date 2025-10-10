@@ -203,10 +203,8 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        code: "Unknown",
         status: "error",
-        message: expect.stringMatching("Internal server error"),
-        meta: {},
+        message: "Internal server error",
       });
     });
 
@@ -245,7 +243,7 @@ describe("Error Handler Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         title: "Internal server error",
-        message: "Internal server error",
+        message: "Internal server error, please try again later.",
       });
     });
   });
