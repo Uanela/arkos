@@ -29,6 +29,7 @@ export function extractArkosRoutes(
 
           for (const handler of handlers) {
             const foundConfig = RouteConfigRegistry.get(handler.handle);
+            console.log(foundConfig, method, layer.route);
 
             if (foundConfig) {
               config = foundConfig;

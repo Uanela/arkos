@@ -10,9 +10,6 @@
 
 ### Fix
 
-- fix windows path handling when dealing with file uploads
-- strict routing only work for exported routers on swagger documenation
-
 ### Remove
 
 ### Deprecate
@@ -47,8 +44,6 @@
 
 ### Fix
 
-- strict routing only work for exported routers on swagger documenation (fixed)
-
 ### Remove
 
 ### Deprecate
@@ -59,9 +54,6 @@
 
 ### Add
 
-- mimic base service class behavior into auth service
-- mimic file upload service class behavior into auth service
-- analyze custom forbidden error message per action
 - add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
 - allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
 - add `FileUpload` model to handle files uploads kind of like in django ORM.

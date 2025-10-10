@@ -114,7 +114,8 @@ export default function ArkosRouter(): IArkosRouter {
 
 export function generateOpenAPIFromApp(app: any) {
   const routes = extractArkosRoutes(app);
-  const paths: Record<
+  console.log(JSON.stringify(routes, null, 2));
+  let paths: Record<
     string,
     Record<string, Partial<OpenAPIV3.OperationObject>>
   > = {};
@@ -140,7 +141,7 @@ export function generateOpenAPIFromApp(app: any) {
       summary: openapi?.summary || `${method} ${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Others"],
-      operationId: `${method}:${path}`,
+      operationId: `${method.toLowerCase()}:${path}`,
       ...openapi,
     };
   });
