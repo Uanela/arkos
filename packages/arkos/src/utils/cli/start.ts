@@ -25,7 +25,6 @@ export async function startCommand(options: StartOptions = {}) {
   try {
     const { port, host } = options;
 
-    // Check for built app file
     const entryPoint = path.join(process.cwd(), ".build", "src", "app.js");
 
     if (!fs.existsSync(path.join(entryPoint))) {
@@ -35,7 +34,6 @@ export async function startCommand(options: StartOptions = {}) {
       process.exit(1);
     }
 
-    // Set environment variables
     const env: { [x: string]: string } = {
       ...process.env,
       NODE_ENV: "production",
@@ -44,7 +42,6 @@ export async function startCommand(options: StartOptions = {}) {
       ARKOS_BUILD: "true",
     };
 
-    // Start the application
     child = spawn("node", [entryPoint], {
       stdio: "inherit",
       env,
@@ -53,9 +50,8 @@ export async function startCommand(options: StartOptions = {}) {
 
     // Handle process exit
     process.on("SIGINT", () => {
-      if (child) {
-        child.kill();
-      }
+      if (child) child.kill();
+
       process.exit(0);
     });
 
@@ -89,7 +85,6 @@ export async function startCommand(options: StartOptions = {}) {
       }
     };
 
-    // Try to get config periodically
     const waitForConfig = async () => {
       let attempts = 0;
       const maxAttempts = 15;
@@ -101,7 +96,6 @@ export async function startCommand(options: StartOptions = {}) {
         attempts++;
       }
 
-      // Fall back to defaults if config never became available
       if (attempts >= maxAttempts) {
         if (env.CLI_PORT || env.PORT) portAndHostAllocator.logWarnings();
 
