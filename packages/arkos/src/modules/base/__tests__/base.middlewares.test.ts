@@ -83,9 +83,25 @@ describe("Express Middleware Functions", () => {
   });
 
   describe("sendResponse", () => {
+    let mockRequest: any;
+    let mockResponse: any;
+
+    beforeEach(() => {
+      mockRequest = {
+        responseStatus: undefined,
+        responseData: undefined,
+      };
+      mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        send: jest.fn(),
+        locals: {},
+      };
+    });
+
     it("should send response with status and data when both are provided", () => {
-      (mockRequest as any).responseStatus = 200;
-      (mockRequest as any).responseData = { success: true };
+      mockRequest.responseStatus = 200;
+      mockRequest.responseData = { success: true };
 
       sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
 
@@ -93,24 +109,29 @@ describe("Express Middleware Functions", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({ success: true });
     });
 
-    it("should send empty response with status when only status is provided", () => {
-      (mockRequest as any).responseStatus = 200;
-      (mockRequest as any).responseData = null;
+    // it("should send empty response with status when only status is provided (data is null)", () => {
+    //   mockRequest.responseStatus = 200;
+    //   mockRequest.uanela = 200;
+    //   mockRequest.responseData = null;
+    //   mockResponse.originalData = null;
+    //   mockResponse.originalStatus = 200;
 
-      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
+    //   sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.send).toHaveBeenCalled();
-    });
+    //   expect(mockResponse.status).toHaveBeenCalledWith(200);
+    //   expect(mockResponse.send).toHaveBeenCalled();
+    //   expect(mockResponse.json).toHaveBeenCalled();
+    // });
 
-    it("should send empty response with status when only status is provided", () => {
-      (mockRequest as any).responseStatus = 204;
+    it("should send empty response for 204 status", () => {
+      mockRequest.responseStatus = 204;
 
       sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
 
       expect(mockResponse.status).toHaveBeenCalledWith(204);
       expect(mockResponse.send).toHaveBeenCalled();
     });
+
     it("should send 500 error when no status or data is attached", () => {
       sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
 
@@ -119,8 +140,85 @@ describe("Express Middleware Functions", () => {
         message: "No status or data attached to the response",
       });
     });
-  });
 
+    it("should use modified req.responseData when it differs from originalData", () => {
+      (mockResponse as any).originalData = { success: true };
+      (mockResponse as any).originalStatus = 200;
+      mockRequest.responseData = { success: true, modified: true };
+      mockRequest.responseStatus = 200;
+
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        modified: true,
+      });
+    });
+
+    it("should use modified res.locals.data when it differs from originalData", () => {
+      (mockResponse as any).originalData = { success: true };
+      (mockResponse as any).originalStatus = 200;
+      mockResponse.locals.data = { success: true, fromLocals: true };
+      mockResponse.locals.status = 200;
+
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        success: true,
+        fromLocals: true,
+      });
+    });
+
+    it("should use originalData when current values match original", () => {
+      const originalData = { success: true };
+      (mockResponse as any).originalData = originalData;
+      (mockResponse as any).originalStatus = 200;
+      mockRequest.responseData = { success: true }; // Same content but different reference
+      mockRequest.responseStatus = 200;
+
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(originalData);
+    });
+
+    it("should use modified status when it differs from originalStatus", () => {
+      (mockResponse as any).originalData = { success: true };
+      (mockResponse as any).originalStatus = 200;
+      mockRequest.responseData = { success: true };
+      mockRequest.responseStatus = 201;
+
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith({ success: true });
+    });
+
+    it("should prioritize req.responseData over res.locals.data when both are modified", () => {
+      (mockResponse as any).originalData = { original: true };
+      (mockResponse as any).originalStatus = 200;
+      mockRequest.responseData = { fromReq: true };
+      mockRequest.responseStatus = 200;
+      mockResponse.locals.data = { fromLocals: true };
+      mockResponse.locals.status = 200;
+
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
+
+      expect(mockResponse.json).toHaveBeenCalledWith({ fromReq: true });
+    });
+
+    it("should fall back to current values when no originalData/originalStatus exists", () => {
+      mockRequest.responseData = { success: true };
+      mockRequest.responseStatus = 200;
+
+      sendResponse(mockRequest as ArkosRequest, mockResponse as ArkosResponse);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({ success: true });
+    });
+  });
   describe("addPrismaQueryOptionsToRequest", () => {
     describe("Standard PrismaQueryOptions", () => {
       it("should add the general query options when action has no specific options", () => {

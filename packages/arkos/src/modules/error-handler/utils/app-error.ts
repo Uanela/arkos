@@ -15,10 +15,10 @@
  *
  * function getUser(id: string) {
  *   if (!id) {
- *     throw new AppError('User ID is required', 400, { field: 'id' }, 'USER_ID_MISSING');
+ *     throw new AppError('User ID is required', 400, 'UserIDMissing', { field: 'id' });
  *   }
  *   // Simulate a user not found scenario
- *   throw new AppError('User not found', 404, { userId: id }, 'USER_NOT_FOUND');
+ *   throw new AppError('User not found', 404, 'UserNotFound', { userId: id });
  * }
  *
  * try {
@@ -35,8 +35,8 @@ class AppError extends Error {
   status: string;
   public missing?: boolean;
   public isOperational: boolean;
-  code?: string;
-  meta?: Record<string, any>;
+  code?: string = "Unknown";
+  meta?: Record<string, any> = {};
 
   /**
    * Creates an instance of AppError.
@@ -49,8 +49,8 @@ class AppError extends Error {
   constructor(
     message: string,
     statusCode: number,
-    meta?: Record<string, any>,
-    code?: string
+    code?: string | Record<string, any>,
+    meta?: Record<string, any> | string
   ) {
     super(message);
 
@@ -58,8 +58,16 @@ class AppError extends Error {
     this.statusCode = statusCode;
     this.status = `${statusCode}`.startsWith("4") ? "fail" : "error";
     this.isOperational = true;
-    this.code = code || "Unknown";
-    this.meta = meta;
+
+    if (typeof code === typeof meta)
+      throw Error(
+        `meta and code must to both be ${typeof code}, one must be of type object and other string.`
+      );
+
+    if (typeof code === "string") this.code = code || "Unknown";
+    if (typeof code === "object") this.meta = code;
+    if (typeof meta === "string") this.code = meta || "Unknown";
+    if (typeof meta === "object") this.meta = meta;
     this.missing = false;
 
     Error.captureStackTrace(this, this.constructor);

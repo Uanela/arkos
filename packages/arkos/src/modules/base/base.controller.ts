@@ -231,8 +231,10 @@ export class BaseController {
     data: any,
     status: number
   ): void {
+    (res as any).originalData = data;
     req.responseData = data;
     res.locals.data = data;
+    (res as any).originalStatus = status;
     req.responseStatus = status;
     res.locals.status = status;
 
@@ -240,6 +242,7 @@ export class BaseController {
     if (status === 204) {
       req.additionalData = data;
       res.locals.additionalData = data;
+      (res as any).originalAdditionalData = data;
     }
   }
 
