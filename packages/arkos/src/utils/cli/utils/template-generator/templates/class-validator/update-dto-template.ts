@@ -22,6 +22,7 @@ export function generateUpdateDtoTemplate(options: TemplateOptions): string {
   const isUserModule = modelName.kebab === "user";
   const enumsUsed = new Set<string>();
   const validatorsUsed = new Set<string>();
+  const transformersUsed = new Set<string>();
   const nestedDtosUsed = new Set<string>();
 
   let dtoFields: string[] = [];
@@ -46,7 +47,7 @@ export function generateUpdateDtoTemplate(options: TemplateOptions): string {
         const typeModifier = isTypeScript ? "?" : "";
         validatorsUsed.add("IsOptional");
         validatorsUsed.add("ValidateNested");
-        validatorsUsed.add("Type");
+        transformersUsed.add("Type");
         nestedDtosUsed.add("OnlyIdDto");
 
         dtoFields.push(
@@ -79,7 +80,7 @@ export function generateUpdateDtoTemplate(options: TemplateOptions): string {
       ? `import { ${Array.from(nestedDtosUsed).join(", ")} } from "../../utils/dtos/only-id-dto";\n`
       : "";
 
-  const validatorImports = `import { ${Array.from(validatorsUsed).join(", ")} } from "class-validator";\nimport { Type } from "class-transformer";\n`;
+  const validatorImports = `import { ${Array.from(validatorsUsed).join(", ")} } from "class-validator";\nimport { ${Array.from(transformersUsed).join(", ")} } from "class-transformer";\n`;
 
   return `${validatorImports}${nestedDtoImports}${enumImports}
 export default class Update${modelName.pascal}Dto {
