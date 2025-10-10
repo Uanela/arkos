@@ -25,18 +25,12 @@ export default function errorHandler(
   _: NextFunction
 ): void {
   console.error("[\x1b[31mError\x1b[0m]:", err);
-  // Default error status
+
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
 
-  // If the environment is not production, send detailed error information
-  if (process.env.NODE_ENV !== "production")
-    return sendDevelopmentError(err, req, res);
-
-  // Prepare error object for response, copying the original error's properties
   let error = { ...err, message: err.message };
 
-  // Handle specific error cases (JWT errors, Prisma validation errors, etc.)
   if (err.name === "JsonWebTokenError")
     error = errorControllerHelper.handleJWTError();
   if (err.name === "TokenExpiredError")
@@ -80,9 +74,10 @@ export default function errorHandler(
 
   if (err.name === "NetworkError")
     error = errorControllerHelper.handleNetworkError(err);
-  if (!error.isOperational) error = new AppError("Internal server error", 500);
 
-  // Send the error response for production environment
+  if (process.env.NODE_ENV !== "production")
+    return sendDevelopmentError(err, req, res);
+
   sendProductionError(error, req, res);
 }
 
@@ -135,7 +130,7 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
         status: err.status,
         message: err.message,
         meta: err.meta || {},
-        code: err.code || "unknown",
+        code: err.code || "Unknown",
       });
     else
       res.status(500).json({
