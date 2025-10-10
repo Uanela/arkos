@@ -1,8 +1,6 @@
 import { Router } from "express";
 import ArkosRouter from "../";
 import RouteConfigRegistry from "../route-config-registry";
-import { catchAsync } from "../../../exports/error-handler";
-import { getArkosConfig } from "../../../server";
 
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),
@@ -74,8 +72,14 @@ describe("ArkosRouter", () => {
       },
     });
 
+    const router = Router();
+
+    const spy = jest.spyOn(router, "get");
     const proxied = ArkosRouter() as any;
-    expect(proxied.get({ route: "/api" })).toThrow(
+    proxied.__router__ = router;
+    proxied.get({ route: "/api" });
+
+    expect(spy).toThrow(
       "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
     );
   });
