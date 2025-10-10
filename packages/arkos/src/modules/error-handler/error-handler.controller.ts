@@ -151,7 +151,7 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
 
   res.status(err.statusCode).json({
     title: "Internal server error",
-    message: "Please try again later.",
+    message: "Internal server error, please try again later.",
   });
 }
 

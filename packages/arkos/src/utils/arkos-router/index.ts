@@ -79,9 +79,10 @@ export default function ArkosRouter(): IArkosRouter {
 
             if (
               validationConfig?.strict &&
-              "validation" in config &&
-              !config?.validation &&
-              config?.validation !== undefined
+              (!("validation" in config) ||
+                ("validation" in config &&
+                  !config.validation &&
+                  config.validation !== undefined))
             )
               throw Error(
                 "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
