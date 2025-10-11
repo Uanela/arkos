@@ -1,4 +1,4 @@
-import express, { NextFunction, Router } from "express";
+import express, { Router } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { getAuthRouter } from "./modules/auth/auth.router";
