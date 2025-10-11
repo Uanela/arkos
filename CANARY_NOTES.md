@@ -41,6 +41,8 @@
 
 ### Change
 
+- Send same error codes in production and development to easy frontend error mapping
+
 ### Fix
 
 ### Remove
