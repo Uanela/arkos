@@ -6,7 +6,6 @@ export function generateControllerTemplate(options: TemplateOptions): string {
   if (!modelName)
     throw new Error("Module name is required for controller template");
 
-  // Determine which controller to extend based on model name
   const camelName = modelName.camel.toLowerCase();
   let controllerType: "fileUpload" | "auth" | "email" | "base";
   let controllerName: string;
@@ -35,7 +34,9 @@ export function generateControllerTemplate(options: TemplateOptions): string {
   return `${controllerClassImport}
   
 class ${modelName.pascal}Controller extends ${controllerName} {}
+
 const ${modelName.camel}Controller = new ${modelName.pascal}Controller(${controllerType === "base" ? `"${modelName.kebab}"` : ""});
+
 export default ${modelName.camel}Controller;
 `;
 }

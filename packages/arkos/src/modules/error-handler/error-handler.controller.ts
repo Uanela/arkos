@@ -29,20 +29,20 @@ export default function errorHandler(
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
 
-  let error = { ...err, message: err.message };
+  let error = err;
+
+  if (process.env.NODE_ENV === "production")
+    error = { ...err, message: err.message };
 
   if (err.name === "JsonWebTokenError")
     error = errorControllerHelper.handleJWTError();
   if (err.name === "TokenExpiredError")
     error = errorControllerHelper.handleJWTExpired();
 
-  // Handle specific Prisma client validation errors
   if (err.name === "PrismaClientValidationError")
     error = errorControllerHelper.handlePrismaClientValidationError(err);
   if (err.name === "PrismaClientInitializationError")
     error = errorControllerHelper.handlePrismaClientInitializationError(err);
-
-  // Handle Prisma database-specific error codes (P1000 to P3005)
   if (err.code === "P1000")
     error = errorControllerHelper.handleAuthenticationError(err);
   if (err.code === "P1001")
@@ -76,7 +76,7 @@ export default function errorHandler(
     error = errorControllerHelper.handleNetworkError(err);
 
   if (process.env.NODE_ENV !== "production")
-    return sendDevelopmentError(err, req, res);
+    return sendDevelopmentError({ ...error, originalError: err }, req, res);
 
   sendProductionError(error, req, res);
 }
@@ -93,11 +93,7 @@ export default function errorHandler(
  *
  * @returns {void} - Sends the response with the error details to the client.
  */
-function sendDevelopmentError(
-  err: AppError,
-  req: Request,
-  res: Response
-): void {
+function sendDevelopmentError(err: any, req: Request, res: Response): void {
   if (req.originalUrl.startsWith("/api"))
     res.status(err.statusCode).json({
       ...err,

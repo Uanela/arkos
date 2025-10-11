@@ -40,7 +40,7 @@
 
 ### Change
 
-- fix functions names at service hooks template
+- Send same error codes in production and development to easy frontend error mapping
 
 ### Fix
 
