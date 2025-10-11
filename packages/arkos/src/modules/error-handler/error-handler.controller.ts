@@ -76,7 +76,7 @@ export default function errorHandler(
     error = errorControllerHelper.handleNetworkError(err);
 
   if (process.env.NODE_ENV !== "production")
-    return sendDevelopmentError(error, req, res);
+    return sendDevelopmentError({ ...error, originalError: err }, req, res);
 
   sendProductionError(error, req, res);
 }
@@ -93,11 +93,7 @@ export default function errorHandler(
  *
  * @returns {void} - Sends the response with the error details to the client.
  */
-function sendDevelopmentError(
-  err: AppError,
-  req: Request,
-  res: Response
-): void {
+function sendDevelopmentError(err: any, req: Request, res: Response): void {
   if (req.originalUrl.startsWith("/api"))
     res.status(err.statusCode).json({
       ...err,
