@@ -32,19 +32,12 @@ export function generateServiceTemplate(options: TemplateOptions): string {
     serviceImport = imports?.baseService || "arkos/services";
   }
 
-  const prismaImport =
-    isTypeScript && serviceType === "base"
-      ? `import { Prisma } from "@prisma/client";\n`
-      : "";
-
   const serviceClassImport = `import { ${serviceName} } from "${serviceImport}";`;
 
   const typeParameter =
-    isTypeScript && serviceType === "base"
-      ? `<Prisma.${modelName.pascal}Delegate>`
-      : "";
+    isTypeScript && serviceType === "base" ? `<"${modelName.kebab}">` : "";
 
-  return `${prismaImport}${serviceClassImport}
+  return `${serviceClassImport}
   
 class ${modelName.pascal}Service extends ${serviceName}${typeParameter} {}
 
