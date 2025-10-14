@@ -31,8 +31,8 @@ export default function errorHandler(
 
   let error = err;
 
-  if (process.env.NODE_ENV === "production")
-    error = { ...err, message: err.message };
+  // if (process.env.NODE_ENV === "production")
+  error = { ...err, message: err.message };
 
   if (err.name === "JsonWebTokenError")
     error = errorControllerHelper.handleJWTError();
