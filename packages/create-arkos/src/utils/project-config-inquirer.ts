@@ -93,27 +93,22 @@ class ProjectConfigInquirer {
       return "Project name cannot be empty";
     }
 
-    // Check for valid characters (letters, numbers, hyphens, underscores)
     if (!/^[a-zA-Z0-9_-]+$/.test(input)) {
       return "Project name can only contain letters, numbers, hyphens, and underscores";
     }
 
-    // Check if it starts with a letter or number (not hyphen or underscore)
     if (!/^[a-zA-Z0-9]/.test(input)) {
       return "Project name must start with a letter or number";
     }
 
-    // Check if it ends with a letter or number (not hyphen or underscore)
     if (!/[a-zA-Z0-9]$/.test(input)) {
       return "Project name must end with a letter or number";
     }
 
-    // Check length (reasonable limits)
     if (input.length > 50) {
       return "Project name must be 50 characters or less";
     }
 
-    // Check for reserved names
     const reservedNames = ["node_modules"];
     if (reservedNames.includes(input.toLowerCase())) {
       return "Project name cannot be a reserved name";

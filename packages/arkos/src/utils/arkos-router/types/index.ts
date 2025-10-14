@@ -3,7 +3,7 @@ import { OpenAPIV3 } from "openapi-types";
 import { ZodSchema } from "zod";
 
 type MethodHandler = (
-  configOrPath: ArkosRouteConfig,
+  config: ArkosRouteConfig,
   ...handlers: (RequestHandler | ErrorRequestHandler)[]
 ) => IArkosRouter;
 
