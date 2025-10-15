@@ -7,6 +7,8 @@ import { extractArkosRoutes, getMiddlewareStack } from "./utils/helpers";
 import { getArkosConfig } from "../../exports";
 import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
+import zodToJsonSchema from "zod-to-json-schema";
+import { importModule } from "../helpers/global.helpers";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -76,9 +78,12 @@ export default function ArkosRouter(): IArkosRouter {
             const arkosConfig = getArkosConfig();
             const validationConfig = arkosConfig.validation;
             const authenticationConfig = arkosConfig.authentication;
+            const strictValidation = validationConfig?.strict;
+
+            // if(strictValidation){}
 
             if (
-              validationConfig?.strict &&
+              strictValidation &&
               (!("validation" in config) ||
                 ("validation" in config &&
                   !config.validation &&
@@ -112,14 +117,16 @@ export default function ArkosRouter(): IArkosRouter {
   }) as IArkosRouter;
 }
 
-export function generateOpenAPIFromApp(app: any) {
+export async function generateOpenAPIFromApp(app: any) {
   const routes = extractArkosRoutes(app);
+
   let paths: Record<
     string,
     Record<string, Partial<OpenAPIV3.OperationObject>>
   > = {};
+  const arkosConfig = getArkosConfig();
 
-  routes.forEach(({ path, method, config }) => {
+  routes.forEach(async ({ path, method, config }) => {
     if (config?.openapi === false) return;
 
     if (!paths[path]) paths[path] = {};
@@ -136,11 +143,34 @@ export function generateOpenAPIFromApp(app: any) {
         ? config.openapi
         : {};
 
-    paths[path][method.toLowerCase()] = {
+    const validatorToJsonSchemaTransformer =
+      arkosConfig?.validation?.resolver === "zod"
+        ? zodToJsonSchema
+        : zodToJsonSchema;
+
+    // const { defaultMetadataStorage } = await importModule(
+    //   "class-transformer/cjs/storage.js"
+    // );
+
+    // console.log(defaultMetadataStorage);
+
+    (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${method} ${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Others"],
       operationId: `${method.toLowerCase()}:${path}`,
+      ...(!openapi.requestBody &&
+        config?.validation?.body && {
+          requestBody: {
+            content: {
+              "application/json": {
+                schema: validatorToJsonSchemaTransformer(
+                  config?.validation?.body as any
+                ),
+              },
+            },
+          },
+        }),
       ...openapi,
     };
   });

@@ -1171,7 +1171,9 @@ describe("Express Middleware Functions", () => {
           body: z.object({ name: z.string() }),
         };
 
-        expect(() => validateRequestInputs({ validation: validators })).toThrow(
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
           "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: {} })."
         );
       });
@@ -1190,7 +1192,9 @@ describe("Express Middleware Functions", () => {
           // params is missing
         };
 
-        expect(() => validateRequestInputs({ validation: validators })).toThrow(
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
           "No { validation: { params: Schema } } was found, while using strict validation you will need to pass undefined into params in order to deny any request params input."
         );
       });
@@ -1214,8 +1218,10 @@ describe("Express Middleware Functions", () => {
         const isZodSchema = jest.fn(() => false);
         jest.mock("../../../utils/dynamic-loader", () => isZodSchema);
 
-        expect(() => validateRequestInputs({ validation: validators })).toThrow(
-          "Please provide a valid Zod Schema in order to use in { validation: { body: Schema } }"
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "Please provide a valid zod schema in order to use in { validation: { body: Schema } }"
         );
       });
 
@@ -1224,8 +1230,10 @@ describe("Express Middleware Functions", () => {
           query: "not-a-schema",
         };
 
-        expect(() => validateRequestInputs({ validation: validators })).toThrow(
-          "Please provide a valid Zod Schema in order to use in { validation: { query: Schema } }"
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "Please provide a valid zod schema in order to use in { validation: { query: Schema } }"
         );
       });
 
@@ -1234,8 +1242,10 @@ describe("Express Middleware Functions", () => {
           params: 123,
         };
 
-        expect(() => validateRequestInputs({ validation: validators })).toThrow(
-          "Please provide a valid Zod Schema in order to use in { validation: { params: Schema } }"
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "Please provide a valid zod schema in order to use in { validation: { params: Schema } }"
         );
       });
     });
@@ -1254,8 +1264,10 @@ describe("Express Middleware Functions", () => {
           body: { invalid: "dto" }, // Not a class
         };
 
-        expect(() => validateRequestInputs({ validation: validators })).toThrow(
-          "Please provide a valid Class-Validator Dto in order to use in { validation: { body: Dto } }"
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "Please provide a valid class-validator dto in order to use in { validation: { body: Dto } }"
         );
       });
 
@@ -1264,8 +1276,10 @@ describe("Express Middleware Functions", () => {
           query: "not-a-class",
         };
 
-        expect(() => validateRequestInputs({ validation: validators })).toThrow(
-          "Please provide a valid Class-Validator Dto in order to use in { validation: { query: Dto } }"
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "Please provide a valid class-validator dto in order to use in { validation: { query: Dto } }"
         );
       });
 
@@ -1274,8 +1288,10 @@ describe("Express Middleware Functions", () => {
           params: null,
         };
 
-        expect(() => validateRequestInputs({ validation: validators })).toThrow(
-          "Please provide a valid Class-Validator Dto in order to use in { validation: { params: Dto } }"
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "Please provide a valid class-validator dto in order to use in { validation: { params: Dto } }"
         );
       });
     });
@@ -1297,7 +1313,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.body = { name: "test" };
         (validateSchema as jest.Mock).mockResolvedValue(validatedData);
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1319,7 +1337,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.query = { page: "1" };
         (validateSchema as jest.Mock).mockResolvedValue(validatedData);
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1341,7 +1361,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.params = { id: "123" };
         (validateSchema as jest.Mock).mockResolvedValue(validatedData);
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1371,7 +1393,9 @@ describe("Express Middleware Functions", () => {
           .mockResolvedValueOnce({ page: "1" })
           .mockResolvedValueOnce({ id: "123" });
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1402,7 +1426,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.body = { name: "test" };
         (validateDto as jest.Mock).mockResolvedValue(validatedData);
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1424,7 +1450,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.query = { page: "1" };
         (validateDto as jest.Mock).mockResolvedValue(validatedData);
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1446,7 +1474,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.params = { id: "123" };
         (validateDto as jest.Mock).mockResolvedValue(validatedData);
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1478,7 +1508,9 @@ describe("Express Middleware Functions", () => {
 
         mockRequest.body = { unwanted: "data" };
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
 
         await expect(
           middleware(
@@ -1498,7 +1530,9 @@ describe("Express Middleware Functions", () => {
 
         mockRequest.query = { unwanted: "param" };
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
 
         await expect(
           middleware(
@@ -1518,7 +1552,9 @@ describe("Express Middleware Functions", () => {
 
         mockRequest.params = { unwanted: "param" };
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
 
         await expect(
           middleware(
@@ -1536,7 +1572,9 @@ describe("Express Middleware Functions", () => {
           params: undefined,
         };
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1556,7 +1594,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.body = { name: "test" };
         (validateSchema as jest.Mock).mockResolvedValue({ name: "test" });
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1587,7 +1627,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.query = { extraParam: "allowed" };
         (validateSchema as jest.Mock).mockResolvedValue({ name: "test" });
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1607,7 +1649,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.body = { name: "test" };
         (validateSchema as jest.Mock).mockResolvedValue({ name: "test" });
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1635,7 +1679,9 @@ describe("Express Middleware Functions", () => {
         const validationError = new Error("Validation failed");
         (validateSchema as jest.Mock).mockRejectedValue(validationError);
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
 
         await expect(
           middleware(
@@ -1651,7 +1697,9 @@ describe("Express Middleware Functions", () => {
       it("should handle empty validators object", async () => {
         const validators: any = {};
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1669,7 +1717,9 @@ describe("Express Middleware Functions", () => {
         mockRequest.body = null;
         (validateSchema as jest.Mock).mockResolvedValue({});
 
-        const middleware = validateRequestInputs({ validation: validators });
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
         await middleware(
           mockRequest as ArkosRequest,
           mockResponse as ArkosResponse,
@@ -1688,7 +1738,7 @@ describe("Express Middleware Functions", () => {
           },
         });
 
-        validateRequestInputs({});
+        validateRequestInputs({} as any);
         expect(catchAsync).toHaveBeenCalled();
       });
     });

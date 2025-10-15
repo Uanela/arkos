@@ -242,13 +242,12 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
   );
 }
 
-export function validateRequestInputs(
-  validationRouteConfig: Pick<ArkosRouteConfig, "validation">
-) {
+export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const arkosConfig = getArkosConfig();
   const validationConfig = arkosConfig.validation;
   const strictValidation = validationConfig?.strict;
-  const validators = validationRouteConfig?.validation;
+  const validators = routeConfig?.validation;
+  const openapi = routeConfig?.openapi;
 
   if (!validationConfig?.resolver && validators)
     throw Error(
@@ -266,12 +265,35 @@ export function validateRequestInputs(
   const isValidValidator =
     validationConfig?.resolver == "zod" ? isZodSchema : isClass;
   const validatorName =
-    validationConfig?.resolver == "zod" ? "Zod Schema" : "Class-Validator Dto";
+    validationConfig?.resolver == "zod" ? "zod schema" : "class-validator dto";
   const validatorNameType =
     validationConfig?.resolver == "zod" ? "Schema" : "Dto";
 
   if (validators)
     validatorsKey.forEach((key) => {
+      if (
+        openapi &&
+        typeof openapi === "object" &&
+        openapi.parameters?.some((parameter: any) => parameter.in === key) &&
+        validators[key]
+      ) {
+        throw Error(
+          `When usign validation.${key} you must not define parameters unde openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+        );
+      }
+
+      if (
+        openapi &&
+        typeof openapi === "object" &&
+        openapi.requestBody &&
+        validators[key] &&
+        key === "body"
+      ) {
+        throw Error(
+          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+        );
+      }
+
       if (strictValidation && !(key in validators))
         throw Error(
           `No { validation: { ${key}: ${validatorNameType} } } was found, while using strict validation you will need to pass undefined into ${key} in order to deny any request ${key} input.`
@@ -296,8 +318,8 @@ export function validateRequestInputs(
           throw new AppError(
             `No request ${key} is allowed on this route`,
             400,
-            { [key]: req[key] },
-            `NoRequest${capitalize(key)}Allowed`
+            `NoRequest${capitalize(key)}Allowed`,
+            { [key]: req[key] }
           );
 
         if (validator) req[key] = await validatorFn(validator, req[key]);
