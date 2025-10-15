@@ -119,10 +119,7 @@ describe("generateTemplate", () => {
       mockedGetUserFileExtension.mockReturnValue("ts");
       const result = generateTemplate("service", { modelName: mockModelName });
 
-      expect(result).toContain('import { Prisma } from "@prisma/client"');
-      expect(result).toContain(
-        "class UserService extends BaseService<Prisma.UserDelegate>"
-      );
+      expect(result).toContain('class UserService extends BaseService<"user">');
     });
 
     it("should generate JavaScript service template", () => {

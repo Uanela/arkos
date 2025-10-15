@@ -98,7 +98,7 @@ function sendDevelopmentError(err: any, req: Request, res: Response): void {
     res.status(err.statusCode).json({
       ...err,
       message: err.message.split("\n")[err.message.split("\n").length - 1],
-      stack: err.stack?.split("\n"),
+      stack: err?.originalError?.stack?.split("\n"),
     });
   else
     res.status(err.statusCode).json({
