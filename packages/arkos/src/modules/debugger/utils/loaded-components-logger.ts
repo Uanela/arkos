@@ -54,7 +54,7 @@ class LoadedComponentsLogger {
   }
 
   getLogText(components: ModuleComponents) {
-    return `${sheu.bold("AuthConfigs:")} ${components?.authConfigs ? `\n${util.inspect(components.authConfigs, { depth: null, colors: true })}` : " -"}
+    return `${sheu.bold("AuthConfigs:")}${components?.authConfigs ? `\n${util.inspect(components.authConfigs, { depth: null, colors: true })}` : " -"}
 ${sheu.bold("PrismaQueryOptions:")}${components?.prismaQueryOptions ? `\n${util.inspect(components.prismaQueryOptions, { depth: null, colors: true })}` : " -"}
 ${sheu.bold("Router:")}${components?.router ? `\n${util.inspect(components.router, { depth: null, colors: true })}` : " -"}
 ${sheu.bold("Interceptors:")}${components?.interceptors ? `\n${util.inspect(components.interceptors, { depth: null, colors: true })}` : " -"}

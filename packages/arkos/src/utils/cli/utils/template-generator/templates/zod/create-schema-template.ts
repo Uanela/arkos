@@ -29,9 +29,8 @@ export function generateCreateSchemaTemplate(options: TemplateOptions): string {
       (f) => f.foreignKeyField === field.name
     );
 
-    if (field.isId || restrictedFields.includes(field.name) || isForeignKey) {
+    if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
       continue;
-    }
 
     if (field.isRelation) {
       if (field.isArray) continue;
@@ -46,7 +45,7 @@ export function generateCreateSchemaTemplate(options: TemplateOptions): string {
           (f) => f.name === refField
         );
 
-        const zodType = mapPrismaTypeToZod(refFieldType?.type || "String");
+        const zodType = mapPrismaTypeToZod(refFieldType?.type!);
         const isOptional = field.isOptional || field.defaultValue !== undefined;
 
         schemaFields.push(
@@ -56,9 +55,7 @@ export function generateCreateSchemaTemplate(options: TemplateOptions): string {
       continue;
     }
 
-    if (prismaSchemaParser.isEnum(field.type)) {
-      enumsUsed.add(field.type);
-    }
+    if (prismaSchemaParser.isEnum(field.type)) enumsUsed.add(field.type);
 
     const zodSchema = generateZodField(field, isUserModule);
     schemaFields.push(`  ${field.name}: ${zodSchema}`);
