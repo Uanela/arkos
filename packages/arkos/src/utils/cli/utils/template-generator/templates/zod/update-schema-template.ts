@@ -46,7 +46,7 @@ export function generateUpdateSchemaTemplate(options: TemplateOptions): string {
           (f) => f.name === refField
         );
 
-        const zodType = mapPrismaTypeToZod(refFieldType?.type || "String");
+        const zodType = mapPrismaTypeToZod(refFieldType?.type!);
 
         schemaFields.push(
           `  ${field.name}: z.object({ ${refField}: ${zodType} }).optional()`

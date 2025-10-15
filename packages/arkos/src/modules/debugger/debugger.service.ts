@@ -75,7 +75,7 @@ ${sheu.bold("Ending:")} ${moduleName}\n`);
       });
   }
 
-  logLevel2RequestInfo(
+  logRequestInfo(
     req: ArkosRequest,
     _: ArkosResponse,
     next: ArkosNextFunction
@@ -87,7 +87,7 @@ ${sheu.bold("Ending:")} ${moduleName}\n`);
     if (req.modelName)
       sheu.debug(`Prisma Model Module\n${req.modelName}`, { timestamp: true });
 
-    if (Object.keys(req.query).length > 0)
+    if (Object.keys(req.params).length > 0)
       sheu.debug(
         `Original Request Params (req.params)\n${JSON.stringify(req.params || {}, null, 2)}`,
         { timestamp: true }

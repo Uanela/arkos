@@ -1,5 +1,5 @@
 import prismaSchemaParser from "../../../../../prisma/prisma-schema-parser";
-import { PrismaField } from "../../../../../prisma/types";
+import { PrismaField, PrismaModel } from "../../../../../prisma/types";
 import { getUserFileExtension } from "../../../../../helpers/fs.helpers";
 import { TemplateOptions } from "../../../template-generators";
 
@@ -23,16 +23,19 @@ export function generateUpdateDtoTemplate(options: TemplateOptions): string {
   const enumsUsed = new Set<string>();
   const validatorsUsed = new Set<string>();
   const transformersUsed = new Set<string>();
-  const nestedDtosUsed = new Set<string>();
+  const nestedDtoClasses: string[] = [];
 
   let dtoFields: string[] = [];
 
   for (const field of model.fields) {
+    if (field.isId || restrictedFields.includes(field.name)) {
+      continue;
+    }
+
     const isForeignKey = model.fields.some(
       (f) => f.foreignKeyField === field.name
     );
-
-    if (field.isId || restrictedFields.includes(field.name) || isForeignKey) {
+    if (isForeignKey) {
       continue;
     }
 
@@ -44,14 +47,27 @@ export function generateUpdateDtoTemplate(options: TemplateOptions): string {
       );
 
       if (referencedModel) {
-        const typeModifier = isTypeScript ? "?" : "";
+        // ALL relations are optional in update DTO
         validatorsUsed.add("IsOptional");
         validatorsUsed.add("ValidateNested");
         transformersUsed.add("Type");
-        nestedDtosUsed.add("OnlyIdDto");
 
+        const relationDtoName = `${referencedModel.name}ForUpdate${modelName.pascal}Dto`;
+
+        // Generate the nested DTO class inline
+        const nestedDtoClass = generateNestedDtoClass(
+          field,
+          referencedModel,
+          relationDtoName,
+          validatorsUsed,
+          enumsUsed,
+          isTypeScript
+        );
+        nestedDtoClasses.push(nestedDtoClass);
+
+        const typeModifier = isTypeScript ? "?" : "";
         dtoFields.push(
-          `  @IsOptional()\n  @ValidateNested()\n  @Type(() => OnlyIdDto)\n  ${field.name}${typeModifier}: OnlyIdDto;`
+          `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`
         );
       }
       continue;
@@ -66,6 +82,7 @@ export function generateUpdateDtoTemplate(options: TemplateOptions): string {
       isUserModule,
       validatorsUsed
     );
+    // ALL fields are optional in update DTO
     const typeModifier = isTypeScript ? "?" : "";
     dtoFields.push(`${decorators}  ${field.name}${typeModifier}: ${type};`);
   }
@@ -75,16 +92,57 @@ export function generateUpdateDtoTemplate(options: TemplateOptions): string {
       ? `import { ${Array.from(enumsUsed).join(", ")} } from "@prisma/client";\n`
       : "";
 
-  const nestedDtoImports =
-    nestedDtosUsed.size > 0
-      ? `import { ${Array.from(nestedDtosUsed).join(", ")} } from "../../utils/dtos/only-id-dto";\n`
+  const validatorImports =
+    validatorsUsed.size > 0
+      ? `import { ${Array.from(validatorsUsed).join(", ")} } from "class-validator";\n`
       : "";
 
-  const validatorImports = `import { ${Array.from(validatorsUsed).join(", ")} } from "class-validator";\nimport { ${Array.from(transformersUsed).join(", ")} } from "class-transformer";\n`;
+  const transformerImports =
+    transformersUsed.size > 0
+      ? `import { ${Array.from(transformersUsed).join(", ")} } from "class-transformer";\n`
+      : "";
 
-  return `${validatorImports}${nestedDtoImports}${enumImports}
+  const nestedDtoSection =
+    nestedDtoClasses.length > 0 ? `\n${nestedDtoClasses.join("\n\n")}\n` : "";
+
+  return `${validatorImports}${transformerImports}${enumImports}${nestedDtoSection}
 export default class Update${modelName.pascal}Dto {
 ${dtoFields.join("\n\n")}
+}`;
+}
+
+function generateNestedDtoClass(
+  field: PrismaField,
+  referencedModel: PrismaModel,
+  dtoName: string,
+  validatorsUsed: Set<string>,
+  enumsUsed: Set<string>,
+  isTypeScript: boolean
+): string {
+  const fields: string[] = [];
+
+  const refFieldName = field.foreignReferenceField || "id";
+  const refFieldAsPrismaField = referencedModel.fields.find(
+    (f) => f.name === refFieldName
+  );
+
+  if (refFieldAsPrismaField) {
+    if (prismaSchemaParser.isEnum(refFieldAsPrismaField.type))
+      enumsUsed.add(refFieldAsPrismaField.type);
+
+    const { decorators, type } = generateClassValidatorField(
+      refFieldAsPrismaField,
+      false,
+      validatorsUsed
+    );
+    const typeModifier = isTypeScript ? "!" : "";
+    fields.push(
+      `${decorators}  ${refFieldAsPrismaField.name}${typeModifier}: ${type};`
+    );
+  }
+
+  return `class ${dtoName} {
+${fields.join("\n\n")}
 }`;
 }
 
@@ -96,7 +154,7 @@ function generateClassValidatorField(
   let decorators: string[] = [];
   let type = mapPrismaTypeToTS(field.type);
 
-  // All fields in update DTO are optional
+  // ALL fields in update DTO are optional
   decorators.push("@IsOptional()");
   validatorsUsed.add("IsOptional");
 
@@ -134,10 +192,12 @@ function getValidatorsForType(
   isUserModule: boolean
 ): string[] {
   const validators: string[] = [];
+  const arrayEach = field.isArray ? ", { each: true }" : "";
 
+  // User module special cases - keep validations even though optional
   if (isUserModule) {
     if (field.name === "email") {
-      return ["@IsEmail()"];
+      return ["@IsEmail()"]; // Only IsEmail, no IsString
     } else if (field.name === "password") {
       return [
         "@IsString()",
@@ -149,34 +209,26 @@ function getValidatorsForType(
 
   switch (field.type) {
     case "String":
-      validators.push(
-        field.isArray ? "@IsString({ each: true })" : "@IsString()"
-      );
+      validators.push(`@IsString(${arrayEach})`);
       break;
     case "Int":
     case "Float":
     case "Decimal":
-      validators.push(
-        field.isArray ? "@IsNumber({}, { each: true })" : "@IsNumber()"
-      );
+      validators.push(`@IsNumber({}${arrayEach})`);
       break;
     case "Boolean":
-      validators.push(
-        field.isArray ? "@IsBoolean({ each: true })" : "@IsBoolean()"
-      );
+      validators.push(`@IsBoolean(${arrayEach})`);
       break;
     case "DateTime":
-      validators.push(field.isArray ? "@IsDate({ each: true })" : "@IsDate()");
+      validators.push(`@IsDate(${arrayEach})`);
       break;
     case "BigInt":
-      validators.push(
-        field.isArray ? "@IsNumber({}, { each: true })" : "@IsNumber()"
-      );
+      validators.push(`@IsNumber({}${arrayEach})`);
       break;
     case "Json":
-      validators.push(
-        field.isArray ? "@IsObject({ each: true })" : "@IsObject()"
-      );
+      validators.push(`@IsObject(${arrayEach})`);
+      break;
+    case "Bytes":
       break;
     default:
       break;
@@ -204,6 +256,7 @@ function mapPrismaTypeToTS(prismaType: string): string {
     case "BigInt":
       return "bigint";
     default:
-      return "any";
+      // For enums and unknown types, return as any
+      return prismaSchemaParser.isEnum(prismaType) ? prismaType : "any";
   }
 }

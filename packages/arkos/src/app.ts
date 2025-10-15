@@ -36,7 +36,7 @@ export async function bootstrap(
   const disabledMiddlewares = middlewaresConfig?.disable || [];
   const replacedMiddlewares = middlewaresConfig?.replace || {};
 
-  app.use(debuggerService.logLevel2RequestInfo);
+  app.use(debuggerService.logRequestInfo);
 
   if (!disabledMiddlewares?.includes?.("compression"))
     app.use(
