@@ -1,10 +1,18 @@
-![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp)
+![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=2)
 
-# Arkos.js
+<div align="center">
 
-### The Express And Prisma Framework For RESTful API
+[![Socket Badge](https://badge.socket.dev/npm/package/arkos)](https://badge.socket.dev/npm/package/arkos)
+![npm](https://img.shields.io/npm/v/arkos)
+![npm](https://img.shields.io/npm/dt/arkos)
+![GitHub](https://img.shields.io/github/license/uanela/arkos)
+![GitHub Repo stars](https://img.shields.io/github/stars/uanela/arkos)
 
-Arkos simplifies the development of secure and scalable RESTful APIs with minimal configuration, allowing developers to focus on what really matters for their business logic.
+</div><div align="center">
+<h2>The Express And Prisma RESTful Framework</h2>
+</div>
+
+Arkos.js simplifies the development of secure and scalable RESTful APIs with minimal configuration, allowing developers to focus on what really matters for their business logic.
 
 ## Features
 
@@ -39,6 +47,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For questions, bug reports, or feature requests, please open a GitHub issue or contact [Uanela Como](mailto:uanelaluiswayne@gmail.com).
+
+## Getting Night Updates
+
+You can get the latest feature we are testing before realeasing them:
+
+```bash
+npm create arkos@canary my-project
+```
 
 ---
 

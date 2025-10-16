@@ -253,7 +253,6 @@ export function handleRelationFieldsInBody(
     }
   });
 
-  // Remove any remaining apiAction fields from the top level
   if (mutableBody?.apiAction) {
     throw new AppError(
       "Validation Error: Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple.",
@@ -297,25 +296,15 @@ export function canBeUsedToConnect(
   modelName: string,
   bodyField: Record<string, any> | undefined | null
 ): boolean {
-  // If the field is null or undefined, it can't be used to connect
   if (!bodyField) return false;
 
-  // If the field has an apiAction that's not for connecting, return false
-  if (bodyField.apiAction && !["connect"]?.includes?.(bodyField.apiAction)) {
+  if (bodyField.apiAction && !["connect"]?.includes?.(bodyField.apiAction))
     return false;
-  }
 
-  // If explicitly marked for connect, allow it
-  if (bodyField.apiAction === "connect") {
-    return true;
-  }
+  if (bodyField.apiAction === "connect") return true;
 
-  // If only ID is present, it can be used to connect
-  if (Object.keys(bodyField)?.length === 1 && bodyField?.id) {
-    return true;
-  }
+  if (Object.keys(bodyField)?.length === 1 && bodyField?.id) return true;
 
-  // Get unique fields for the model
   const uniqueFields = prismaSchemaParser.getModelUniqueFields(modelName) || [];
 
   // If the field has exactly one property and it's a unique field, it can be used to connect

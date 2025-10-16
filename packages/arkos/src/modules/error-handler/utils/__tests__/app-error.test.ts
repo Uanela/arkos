@@ -17,6 +17,16 @@ describe("AppError", () => {
       expect(error.stack).toBeDefined();
     });
 
+    it("should throw an error when meta and code both are string", () => {
+      try {
+        new AppError("Test error", 400, "code", "meta");
+      } catch (err: any) {
+        expect(err.message).toBe(
+          `meta and code must not both be string, one must be of type object and other string. but received ${JSON.stringify({ meta: "meta", code: "code" })}`
+        );
+      }
+    });
+
     it("should create an instance with all parameters", () => {
       const meta = { field: "username" };
       const error = new AppError("Test error", 400, meta, "VALIDATION_ERROR");

@@ -10,18 +10,16 @@ export function generateQueryOptionsTemplate(options: TemplateOptions): string {
   if (!modelName)
     throw new Error("Module name is required for query config template");
 
-  const imports = isAuth
-    ? `import { AuthPrismaQueryOptions } from 'arkos/prisma'`
-    : `import { PrismaQueryOptions } from 'arkos/prisma'`;
+  const imports = `import { PrismaQueryOptions } from 'arkos/prisma'`;
 
   const typeAnnotation = isTypeScript
     ? isAuth
-      ? `: AuthPrismaQueryOptions<typeof prisma.${modelName.camel}>`
-      : `: PrismaQueryOptions<typeof prisma.${modelName.camel}>`
+      ? `: PrismaQueryOptions<Prisma.UserDelegate, "auth">`
+      : `: PrismaQueryOptions<Prisma.${modelName.pascal}Delegate>`
     : "";
 
   const prismaImport = isTypeScript
-    ? `import prisma from "../../utils/prisma";\n`
+    ? `import { Prisma } from "@prisma/client";\n`
     : "";
 
   if (isAuth) {

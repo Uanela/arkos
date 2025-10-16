@@ -88,7 +88,6 @@ export async function devCommand(options: DevOptions = {}) {
       }
     };
 
-    // Function to handle server restart with debouncing
     const scheduleRestart = (reason: string, filePath?: string) => {
       if (filePath) restartingFiles.add(filePath);
 
@@ -111,7 +110,6 @@ export async function devCommand(options: DevOptions = {}) {
       }, 1000);
     };
 
-    // Setup environment file watching
     const setupEnvWatcher = () => {
       const envWatcher = chokidar.watch(
         fullCleanCwd(envFiles?.join(",") || "")
@@ -135,10 +133,8 @@ export async function devCommand(options: DevOptions = {}) {
       return envWatcher;
     };
 
-    // Start the server
     startServer();
 
-    // Setup watchers
     const envWatcher = setupEnvWatcher();
 
     const env = getEnv();
@@ -157,7 +153,6 @@ export async function devCommand(options: DevOptions = {}) {
         .replaceAll("/", "")}\n`
     );
 
-    // Enhanced cleanup function
     const cleanup = () => {
       if (restartTimeout) clearTimeout(restartTimeout);
 
@@ -166,7 +161,6 @@ export async function devCommand(options: DevOptions = {}) {
       if (child) {
         child.kill("SIGTERM");
 
-        // Force kill after 5 seconds if still running
         setTimeout(() => {
           if (child && !child.killed) child.kill("SIGKILL");
         }, 5000);

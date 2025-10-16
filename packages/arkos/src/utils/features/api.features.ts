@@ -268,6 +268,7 @@ export default class APIFeatures {
   ) {
     const checkForPassword = (
       obj: Record<string, any>,
+      prismaKey: string,
       path: string[] = []
     ) => {
       for (const [key, value] of Object.entries(obj)) {
@@ -278,7 +279,7 @@ export default class APIFeatures {
           (this.modelName?.toLowerCase() === "user" ||
             currentPath.at(-3)?.toLowerCase?.() === "user")
         ) {
-          if (value === false)
+          if (value === false && prismaKey === "omit")
             throw new AppError(
               "Cannot disable password omission protection",
               400,
@@ -286,7 +287,7 @@ export default class APIFeatures {
               "CannotExposeUserPassword"
             );
 
-          if (value === true && !omit?.["password"])
+          if (value === true && ["include", "select"].includes(prismaKey))
             throw new AppError(
               "User password exposure detected",
               403,
@@ -300,14 +301,14 @@ export default class APIFeatures {
           value !== null &&
           !Array.isArray(value)
         ) {
-          checkForPassword(value, currentPath);
+          checkForPassword(value, prismaKey, currentPath);
         }
       }
     };
 
-    checkForPassword(select);
-    checkForPassword(include);
-    checkForPassword(omit);
+    checkForPassword(select, "select");
+    checkForPassword(include, "include");
+    checkForPassword(omit, "omit");
   }
 
   paginate(): APIFeatures {

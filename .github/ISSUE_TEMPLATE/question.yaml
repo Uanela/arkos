@@ -1,0 +1,85 @@
+
+name: Question / Help
+description: Ask for help or clarification about using Arkos.js
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using Arkos.js? We're here to help!
+        
+        **Note:** For general discussions, consider using [GitHub Discussions](../../discussions) instead.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: How do I configure custom validation rules for file uploads in Arkos.js?
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-tried
+    attributes:
+      label: What Have You Tried?
+      description: Describe any approaches you've already attempted
+      placeholder: |
+        I tried adding a custom validator in the file service configuration:
+        
+        ```typescript
+        arkos.init({
+          fileUpload: {
+            baseUploadDir: "/custom-uploads",
+          },
+        });
+        ```
+        
+        But I get an error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Provide relevant code, configuration, or use case details
+      render: typescript
+      placeholder: |
+        // My current setup
+        arkos.init({
+          //
+        });
+
+  - type: input
+    id: arkos-version
+    attributes:
+      label: Arkos.js Version
+      description: Which version are you using?
+      placeholder: 1.3.3-beta
+    validations:
+      required: true
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      description: How urgent is this question?
+      options:
+        - Blocking my work
+        - Need answer soon
+        - Not urgent, just curious
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm before submitting
+      options:
+        - label: I have checked the documentation
+          required: true
+        - label: I have searched existing issues and discussions
+          required: true
