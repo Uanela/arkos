@@ -55,9 +55,10 @@
 ### Add
 
 - add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
-- allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
 - add `FileUpload` model to handle files uploads kind of like in django ORM.
 - add question about unknow modules when generating compoents -> like to generate in another place
+- add the api features options under `ArkosRouter`
+- add rate limiting in `ArkosRouter`
 
 ### Change
 
@@ -82,17 +83,18 @@
 
 - add dtos generation into cli
 - Automatic wrap handlers into catchAsync when using `ArkosRouter()`
+- added a new `ArkosRouter` a simple `Router` wrapper to enhance features
 
 ### Deprecated
 
 - deprecated .middlewares.ts files in favor of .interceptors.ts, add warnings to change, and also warn when find .middlewares.ts and .interceptors.ts with same structure tell which one will be used
-- no need to wrap handlers into catchAsync when using `ArkosRouter()`
-- added a new `ArkosRouter` a simple `Router` wrapper to enhance features
 
 ### Changed
 
 - improved base service and base controller classes by identifying common behaviors among the methods (refactor).
 - changed router template to use ArkosRouter by default
+- no need to wrap handlers into catchAsync when using `ArkosRouter()`
+- order of `ArkosRequest<Params, Body, Query>` types
 
 ### Removed
 
@@ -105,6 +107,7 @@
 - add a configuration process to customize global context object (`analyze very well because can fall into FAT MODELS trap (using service layer)`)
 - add custom validation options under arkos configuration.
 - add docker-compose file into `create-arkos`
+- allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
 
 ### Change
 
