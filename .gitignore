@@ -12,7 +12,12 @@ node_modules/
 .build/
 packages/create-arkos-api
 <<<<<<< HEAD
+<<<<<<< HEAD
 documentation/.next
 =======
 debug.log
 >>>>>>> 0e24f27098acfc74184300fc6c58306de2a29d4e
+=======
+documentation/.next
+debug.log
+>>>>>>> f8993f6856ec8f89a642ead083c3bbcb8395e372
