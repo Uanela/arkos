@@ -15,7 +15,16 @@ export const crd = () =>
 export function fullCleanCwd(path: string): string {
   if (typeof path !== "string") throw new Error("Path must be a string");
 
-  return path.replace(process.cwd(), "").replace("/", "").replace("\\", "");
+  if (
+    path.startsWith(`/${process.cwd()}`) ||
+    path.startsWith(`${process.cwd()}`) ||
+    path.startsWith(`${process.cwd()}/`)
+  )
+    return path
+      .replace(process.cwd(), "")
+      .replace(/^\/+/g, "")
+      .replace("\\", "");
+  else return path;
 }
 
 export let userFileExtension: "ts" | "js" | undefined;

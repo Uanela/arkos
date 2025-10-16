@@ -95,30 +95,94 @@ describe("EmailService", () => {
   });
 
   describe("getEmailConfig (private method tested indirectly)", () => {
-    it("should throw an AppError inside send() if email config is not set", async () => {
+    beforeEach(() => {
+      // Clear environment variables before each test
+      delete process.env.EMAIL_HOST;
+      delete process.env.EMAIL_PORT;
+      delete process.env.EMAIL_SECURE;
+      delete process.env.EMAIL_USER;
+      delete process.env.EMAIL_PASSWORD;
+      delete process.env.EMAIL_NAME;
+    });
+
+    it("should throw an AppError inside send() if email config is not set in both arkosConfig and env", async () => {
       (getArkosConfig as jest.Mock).mockReturnValue({ email: null });
       (AppError as any as jest.Mock).mockReturnValue(new Error());
 
       await expect(emailService.send(testEmailOptions)).rejects.toThrow();
       expect(AppError).toHaveBeenCalledWith(
-        expect.any(String),
+        expect.stringContaining("without setting email configurations"),
         500,
         expect.any(Object)
       );
     });
 
-    it("should return false from verifyConnection() if email config is not set", async () => {
+    it("should return false from verifyConnection() if email config is not set in both arkosConfig and env", async () => {
       (getArkosConfig as jest.Mock).mockReturnValue({ email: null });
-      console.error = jest.fn(); // Mock console.error
+      console.error = jest.fn();
 
       const result = await emailService.verifyConnection();
-
       expect(result).toBe(false);
       expect(console.error).toHaveBeenCalled();
       expect(AppError).toHaveBeenCalled();
     });
 
-    it("should use default values for port and secure if not provided", async () => {
+    it("should use environment variables as fallback when arkosConfig.email is not set", async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({ email: null });
+
+      process.env.EMAIL_HOST = "env.smtp.com";
+      process.env.EMAIL_PORT = "587";
+      process.env.EMAIL_SECURE = "false";
+      process.env.EMAIL_USER = "env@test.com";
+      process.env.EMAIL_PASSWORD = "envpass123";
+      process.env.EMAIL_NAME = "Env Service";
+
+      await emailService.verifyConnection();
+
+      expect(nodemailer.createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: "env.smtp.com",
+          port: 587,
+          secure: false,
+          auth: {
+            user: "env@test.com",
+            pass: "envpass123",
+          },
+          name: "Env Service",
+        })
+      );
+    });
+
+    it("should prioritize arkosConfig over environment variables", async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        email: {
+          host: "config.smtp.com",
+          port: 465,
+          auth: {
+            user: "config@test.com",
+            pass: "configpass",
+          },
+        },
+      });
+
+      process.env.EMAIL_HOST = "env.smtp.com";
+      process.env.EMAIL_USER = "env@test.com";
+      process.env.EMAIL_PASSWORD = "envpass";
+
+      await emailService.verifyConnection();
+
+      expect(nodemailer.createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: "config.smtp.com",
+          auth: {
+            user: "config@test.com",
+            pass: "configpass",
+          },
+        })
+      );
+    });
+
+    it("should use default values for port and secure if not provided in both sources", async () => {
       (getArkosConfig as jest.Mock).mockReturnValue({
         email: {
           host: "smtp.example.com",
@@ -139,7 +203,31 @@ describe("EmailService", () => {
       );
     });
 
-    it("should use custom config provided in constructor instead of Arkos config", async () => {
+    it("should mix arkosConfig and env variables when some values are missing", async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        email: {
+          host: "config.smtp.com",
+          // auth missing from config
+        },
+      });
+
+      process.env.EMAIL_USER = "env@test.com";
+      process.env.EMAIL_PASSWORD = "envpass";
+
+      await emailService.verifyConnection();
+
+      expect(nodemailer.createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: "config.smtp.com",
+          auth: {
+            user: "env@test.com",
+            pass: "envpass",
+          },
+        })
+      );
+    });
+
+    it("should use custom config provided in constructor instead of Arkos config or env", async () => {
       const customConfig: SMTPConnectionOptions = {
         host: "constructor.smtp.com",
         port: 1234,
@@ -149,10 +237,13 @@ describe("EmailService", () => {
         },
       };
 
+      process.env.EMAIL_HOST = "env.smtp.com";
+      process.env.EMAIL_USER = "env@test.com";
+      process.env.EMAIL_PASSWORD = "envpass";
+
       const customEmailService = new EmailService(customConfig);
       await customEmailService.send(testEmailOptions);
 
-      // Should use constructor config instead of getArkosConfig
       expect(nodemailer.createTransport).toHaveBeenCalledWith(
         expect.objectContaining({
           host: "constructor.smtp.com",
@@ -211,7 +302,7 @@ describe("EmailService", () => {
           to: "recipient@example.com",
           subject: "Test Email",
           html: "<p>Hello World</p>",
-          from: "test@example.com",
+          from: "env@test.com",
           text: "converted-<p>Hello World</p>",
         })
       );

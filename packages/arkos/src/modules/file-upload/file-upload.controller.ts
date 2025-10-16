@@ -14,7 +14,7 @@ import { getModuleComponents } from "../../utils/dynamic-loader";
 /**
  * Handles files uploads and allow to be extended
  */
-class FileUploadController {
+export class FileUploadController {
   /**
    * Model-specific interceptors loaded from model modules
    * @private
@@ -107,8 +107,10 @@ class FileUploadController {
         };
 
         if (this.interceptors?.afterUploadFile) {
+          (res as any).originalData = jsonContent;
           req.responseData = jsonContent;
           res.locals.data = jsonContent;
+          (res as any).originalStatus = 200;
           req.responseStatus = 200;
           res.locals.status = 200;
           return next();
@@ -331,8 +333,10 @@ class FileUploadController {
         };
 
         if (this.interceptors.afterUpdateFile) {
+          (res as any).originalData = jsonContent;
           req.responseData = jsonContent;
           res.locals.data = jsonContent;
+          (res as any).originalStatus = 200;
           req.responseStatus = 200;
           res.locals.status = 200;
           return next();

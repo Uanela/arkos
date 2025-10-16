@@ -1,4 +1,4 @@
-# Canary Notes v1.3.4-beta
+# Canary Notes v1.3.6-beta
 
 ## TODO
 
@@ -11,7 +11,6 @@
 ### Fix
 
 - strict routing only work for exported routers on swagger documenation
-- fix functions names at service hooks template
 
 ### Remove
 
@@ -41,6 +40,8 @@
 ### Add
 
 ### Change
+
+- Send same error codes in production and development to easy frontend error mapping
 
 ### Fix
 
