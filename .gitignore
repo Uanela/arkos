@@ -1,4 +1,5 @@
 node_modules/
+node_modules
 dist/
 build/
 coverage/
@@ -10,4 +11,8 @@ coverage/
 node_modules/
 .build/
 packages/create-arkos-api
+<<<<<<< HEAD
 documentation/.next
+=======
+debug.log
+>>>>>>> 0e24f27098acfc74184300fc6c58306de2a29d4e
