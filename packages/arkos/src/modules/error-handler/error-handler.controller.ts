@@ -79,7 +79,16 @@ export default function errorHandler(
     error = errorControllerHelper.handleNetworkError(err);
 
   if (process.env.NODE_ENV !== "production")
-    return sendDevelopmentError({ ...error, originalError: err }, req, res);
+    return sendDevelopmentError(
+      {
+        ...error,
+        message: error.message,
+        stack: err.stack,
+        originalError: err,
+      },
+      req,
+      res
+    );
 
   sendProductionError(error, req, res);
 }
