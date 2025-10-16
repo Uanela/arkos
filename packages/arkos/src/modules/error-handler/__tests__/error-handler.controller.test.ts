@@ -210,6 +210,7 @@ describe("Error Handler Middleware", () => {
         status: "error",
         message: "Internal server error, please try again later.",
         meta: {},
+        code: "Unknown",
       });
     });
 
