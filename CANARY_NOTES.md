@@ -44,6 +44,8 @@
 
 ### Fix
 
+- Fixing empty authConfigs.authenticationControl|accessControl object deactivates autentication
+
 ### Remove
 
 ### Deprecate

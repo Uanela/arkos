@@ -119,7 +119,11 @@ describe("Error Handler Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
+          code: "Unknown",
+          status: "fail",
+          isOperational: true,
           statusCode: 400,
+          missing: false,
           message: "Test error",
           stack: expect.arrayContaining([
             "Error: Test error",
@@ -204,7 +208,8 @@ describe("Error Handler Middleware", () => {
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         status: "error",
-        message: "Internal server error",
+        message: "Internal server error, please try again later.",
+        meta: {},
       });
     });
 
@@ -225,6 +230,7 @@ describe("Error Handler Middleware", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({
         title: "Internal server error",
         message: "Test operational error",
+        code: "Unknown",
       });
     });
 

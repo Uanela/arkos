@@ -29,10 +29,13 @@ export default function errorHandler(
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
 
-  let error = err;
+  let error: any = {
+    ...err,
+    message: err.message,
+    stack: err?.stack || undefined,
+  };
 
-  // if (process.env.NODE_ENV === "production")
-  error = { ...err, message: err.message };
+  if (process.env.NODE_ENV == "production") delete error?.stack;
 
   if (err.name === "JsonWebTokenError")
     error = errorControllerHelper.handleJWTError();
@@ -131,7 +134,9 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
     else
       res.status(500).json({
         status: "error",
-        message: "Internal server error",
+        message: "Internal server error, please try again later.",
+        code: "Unknown",
+        meta: {},
       });
 
     return;
@@ -141,6 +146,7 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
     res.status(err.statusCode).json({
       title: "Internal server error",
       message: err.message,
+      code: "Unknown",
     });
     return;
   }
