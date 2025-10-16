@@ -186,7 +186,6 @@ describe("prismaGenerateCommand", () => {
     prismaGenerateCommand();
 
     const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
 
     expect(kebabCase).toHaveBeenCalledWith("UserProfile");
     expect(kebabCase).toHaveBeenCalledWith("OrderItem");
