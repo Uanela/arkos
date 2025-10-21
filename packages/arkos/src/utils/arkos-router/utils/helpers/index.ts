@@ -4,6 +4,7 @@ import { validateRequestInputs } from "../../../../modules/base/base.middlewares
 import RouteConfigRegistry from "../../route-config-registry";
 import { ArkosRouteConfig } from "../../types";
 import cors from "cors";
+import express from "express";
 
 export function extractArkosRoutes(
   app: any,
@@ -91,6 +92,14 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
   if (config.rateLimit) middlewares.push(rateLimit(config.rateLimit));
 
   if (config.cors) middlewares.push(cors(config.cors.options));
+
+  if (
+    typeof config?.bodyParser === "object" &&
+    ["json", "urlencoded", "raw", "text"].includes(config?.bodyParser?.parser)
+  )
+    middlewares.push(
+      express[config.bodyParser.parser](config.bodyParser.options)
+    );
 
   middlewares.push(validateRequestInputs(config));
 

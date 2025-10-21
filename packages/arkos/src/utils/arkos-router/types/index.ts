@@ -5,6 +5,7 @@ import { Options as RateLimitOptions } from "express-rate-limit";
 import { AccessControlRules } from "../../../types/auth";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../../types";
 import { CorsOptions } from "cors";
+import express from "express";
 
 type MethodHandler = (
   config: ArkosRouteConfig,
@@ -72,4 +73,28 @@ export interface ArkosRouteConfig {
     allowedOrigins?: string | string[] | "*";
     options?: CorsOptions;
   };
+  /**
+   * Configuration for request body parsing.
+   *
+   * @property {("json" | "urlencoded" | "raw" | "text")} parser - The type of body parser to use.
+   * @property {object} [options] - Parser-specific options passed to the corresponding Express body parser middleware.
+   *
+   * @remarks
+   * - When `parser` is `"json"`, options are passed to `express.json()`.
+   * - When `parser` is `"urlencoded"`, options are passed to `express.urlencoded()`.
+   * - When `parser` is `"raw"`, options are passed to `express.raw()`.
+   * - When `parser` is `"text"`, options are passed to `express.text()`.
+   * - Set to `false` to disable body parsing for this route.
+   *
+   * See https://expressjs.com/en/api.html#express.json
+   */
+  bodyParser?:
+    | { parser: "json"; options?: Parameters<typeof express.json>[0] }
+    | {
+        parser: "urlencoded";
+        options?: Parameters<typeof express.urlencoded>[0];
+      }
+    | { parser: "raw"; options?: Parameters<typeof express.raw>[0] }
+    | { parser: "text"; options?: Parameters<typeof express.text>[0] }
+    | false;
 }
