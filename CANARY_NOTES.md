@@ -10,8 +10,6 @@
 
 ### Fix
 
-- strict routing only work for exported routers on swagger documenation
-
 ### Remove
 
 ### Deprecate
@@ -21,9 +19,6 @@
 ## DOING
 
 ### Add
-
-- add batch update and delete on services and control
-- make first stable debugging workable
 
 ### Change
 
@@ -39,13 +34,18 @@
 
 ### Add
 
+- add batch update and delete on services and control
+
 ### Change
 
-- Send same error codes in production and development to easy frontend error mapping
+- make first stable debugging workable
 
 ### Fix
 
-- Fixing empty authConfigs.authenticationControl|accessControl object deactivates autentication
+- Fixed empty authConfigs.authenticationControl|accessControl object deactivates autentication
+- Manually added messae and stack on development to ensure those in non production env.
+- Send same error codes in production and development to easy frontend error mapping
+- fixed strict routing only work for exported routers on swagger documenation
 
 ### Remove
 
