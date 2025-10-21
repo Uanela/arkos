@@ -36,8 +36,6 @@ export async function bootstrap(
   const disabledMiddlewares = middlewaresConfig?.disable || [];
   const replacedMiddlewares = middlewaresConfig?.replace || {};
 
-  app.use(debuggerService.logRequestInfo);
-
   if (!disabledMiddlewares?.includes?.("compression"))
     app.use(
       replacedMiddlewares.compression ||
@@ -134,6 +132,8 @@ export async function bootstrap(
     arkosConfig.middlewares.additional.forEach((middleware) => {
       app.use(middleware);
     });
+
+  app.use(debuggerService.logRequestInfo);
 
   const routersConfig = arkosConfig?.routers;
   const disabledRouters = routersConfig?.disable || [];
