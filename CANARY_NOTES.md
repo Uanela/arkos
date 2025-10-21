@@ -58,9 +58,9 @@
 
 - add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
 - add `FileUpload` model to handle files uploads kind of like in django ORM.
-- add question about unknow modules when generating compoents -> like to generate in another place
 - add the api features options under `ArkosRouter`
 - add rate limiting in `ArkosRouter`
+- Throw an error when trying to generate component for unknow modules
 
 ### Change
 
@@ -110,6 +110,7 @@
 - add custom validation options under arkos configuration.
 - add docker-compose file into `create-arkos`
 - allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
+- add question about unknow modules when generating compoents -> like to generate in another place
 
 ### Change
 
