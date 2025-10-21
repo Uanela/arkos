@@ -20,8 +20,6 @@
 
 ### Add
 
-- add batch update and delete on services and control
-
 ### Change
 
 ### Fix
@@ -37,14 +35,16 @@
 ### Add
 
 - make first stable debugging workable
+- add batch update and delete on services and control
 
 ### Change
 
-- Send same error codes in production and development to easy frontend error mapping
-
 ### Fix
 
-- Fixing empty authConfigs.authenticationControl|accessControl object deactivates autentication
+- Fixed empty authConfigs.authenticationControl|accessControl object deactivates autentication
+- Manually added messae and stack on development to ensure those in non production env.
+- Send same error codes in production and development to easy frontend error mapping
+- fixed strict routing only work for exported routers on swagger documenation
 
 ### Remove
 
@@ -61,6 +61,7 @@
 - add the api features options under `ArkosRouter`
 - add rate limiting in `ArkosRouter`
 - Throw an error when trying to generate component for unknow modules
+- add correct logic to only allowedOrigins from ArkosConfig if there is nothing in the RouteConfig
 
 ### Change
 
