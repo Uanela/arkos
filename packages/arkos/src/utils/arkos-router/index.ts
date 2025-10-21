@@ -8,7 +8,8 @@ import { getArkosConfig } from "../../exports";
 import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 import zodToJsonSchema from "zod-to-json-schema";
-import { importModule } from "../helpers/global.helpers";
+import deepmerge from "../helpers/deepmerge.helper";
+import defaultConfigs from "./utils/default-configs";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -53,22 +54,33 @@ export default function ArkosRouter(): IArkosRouter {
         "options",
       ];
 
+      type ArkosAnyRequestHandler =
+        | ArkosRequestHandler
+        | ArkosErrorRequestHandler;
+
       if (httpMethods.includes(prop as string)) {
         return function (
-          firstArg: any,
-          ...handlers: (ArkosRequestHandler | ArkosErrorRequestHandler)[]
+          config: ArkosRouteConfig,
+          ...handlers: ArkosAnyRequestHandler[]
         ) {
-          let route = firstArg;
-          if (RouteConfigValidator.isArkosRouteConfig(firstArg)) {
-            const config = firstArg as ArkosRouteConfig;
+          const route = config.route;
+
+          if (RouteConfigValidator.isArkosRouteConfig(config)) {
             const method = prop as string;
-            route = config.route;
+            config = deepmerge(defaultConfigs, config);
 
             if (handlers.length > 0) {
-              handlers = handlers.map((handler) =>
-                catchAsync(handler, {
-                  type: handler.length > 3 ? "error" : "normal",
-                })
+              handlers = handlers.map(
+                (handler: ArkosAnyRequestHandler | ArkosAnyRequestHandler[]) =>
+                  typeof handler === "function"
+                    ? catchAsync(handler, {
+                        type: handler.length > 3 ? "error" : "normal",
+                      })
+                    : handler.map((nesteHandler: any) =>
+                        catchAsync(nesteHandler, {
+                          type: handler.length > 3 ? "error" : "normal",
+                        })
+                      )
               );
 
               const finalHandler = handlers[handlers.length - 1];
@@ -79,8 +91,6 @@ export default function ArkosRouter(): IArkosRouter {
             const validationConfig = arkosConfig.validation;
             const authenticationConfig = arkosConfig.authentication;
             const strictValidation = validationConfig?.strict;
-
-            // if(strictValidation){}
 
             if (
               strictValidation &&
@@ -106,7 +116,7 @@ export default function ArkosRouter(): IArkosRouter {
             handlers = [...getMiddlewareStack(config), ...handlers];
           } else
             throw Error(
-              `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig but recevied ${firstArg}`
+              `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig but recevied ${config}`
             );
 
           return originalMethod.call(target, route, ...handlers);
@@ -148,29 +158,23 @@ export async function generateOpenAPIFromApp(app: any) {
         ? zodToJsonSchema
         : zodToJsonSchema;
 
-    // const { defaultMetadataStorage } = await importModule(
-    //   "class-transformer/cjs/storage.js"
-    // );
-
-    // console.log(defaultMetadataStorage);
-
     (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${method} ${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Others"],
       operationId: `${method.toLowerCase()}:${path}`,
-      ...(!openapi.requestBody &&
-        config?.validation?.body && {
-          requestBody: {
-            content: {
-              "application/json": {
-                schema: validatorToJsonSchemaTransformer(
-                  config?.validation?.body as any
-                ),
-              },
-            },
-          },
-        }),
+      // ...(!openapi.requestBody &&
+      //   config?.validation?.body && {
+      //     requestBody: {
+      //       content: {
+      //         "application/json": {
+      //           schema: validatorToJsonSchemaTransformer(
+      //             config?.validation?.body as any
+      //           ),
+      //         },
+      //       },
+      //     },
+      //   }),
       ...openapi,
     };
   });

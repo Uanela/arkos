@@ -1,7 +1,9 @@
+import rateLimit from "express-rate-limit";
 import { authService } from "../../../../exports/services";
 import { validateRequestInputs } from "../../../../modules/base/base.middlewares";
 import RouteConfigRegistry from "../../route-config-registry";
 import { ArkosRouteConfig } from "../../types";
+import cors from "cors";
 
 export function extractArkosRoutes(
   app: any,
@@ -70,7 +72,9 @@ export function extractArkosRoutes(
 
 export function getMiddlewareStack(config: ArkosRouteConfig) {
   const middlewares = [];
+
   if (config.authentication) middlewares.push(authService.authenticate);
+
   if (
     typeof config.authentication === "object" &&
     config.authentication.action &&
@@ -80,11 +84,13 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
       authService.handleAccessControl(
         config.authentication.action,
         config.authentication.resource,
-        {
-          [config.authentication.action]: config.authentication?.rule,
-        }
+        config.authentication?.rule
       )
     );
+
+  if (config.rateLimit) middlewares.push(rateLimit(config.rateLimit));
+
+  if (config.cors) middlewares.push(cors(config.cors.options));
 
   middlewares.push(validateRequestInputs(config));
 

@@ -254,6 +254,11 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
       "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: {} })."
     );
 
+  if ((validators as any) === true)
+    throw Error(
+      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`
+    );
+
   const validatorFn: (validator: any, data: any) => Promise<any> =
     validationConfig?.resolver == "zod" ? validateSchema : validateDto;
   const validatorsKey: ("body" | "query" | "params")[] = [
@@ -269,7 +274,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const validatorNameType =
     validationConfig?.resolver == "zod" ? "Schema" : "Dto";
 
-  if (validators)
+  if (typeof validators === "object")
     validatorsKey.forEach((key) => {
       if (
         openapi &&
@@ -312,6 +317,14 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   return catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       for (const key of validatorsKey) {
+        if (typeof validators === "boolean" && validators === false)
+          throw new AppError(
+            `No request ${key} is allowed on this route`,
+            400,
+            `NoRequest${capitalize(key)}Allowed`,
+            { [key]: req[key] }
+          );
+
         const validator = validators?.[key];
 
         if (strictValidation && !validator && Object.keys(req[key]).length > 0)

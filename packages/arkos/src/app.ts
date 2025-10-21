@@ -51,7 +51,7 @@ export async function bootstrap(
           deepmerge(
             {
               windowMs: 60 * 1000,
-              limit: 500,
+              limit: 300,
               standardHeaders: "draft-7",
               legacyHeaders: false,
               handler: (_, res) => {
@@ -79,16 +79,14 @@ export async function bootstrap(
                   ) => {
                     const allowed = arkosConfig?.cors?.allowedOrigins;
 
-                    if (allowed === "*") {
-                      cb(null, true);
-                    } else if (Array.isArray(allowed)) {
+                    if (allowed === "*") cb(null, true);
+                    else if (Array.isArray(allowed))
                       cb(null, !origin || allowed?.includes?.(origin));
-                    } else if (typeof allowed === "string") {
+                    else if (typeof allowed === "string")
                       cb(null, !origin || allowed === origin);
-                    } else {
-                      cb(null, false);
-                    }
+                    else cb(null, false);
                   },
+
                   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
                   allowedHeaders: [
                     "Content-Type",
