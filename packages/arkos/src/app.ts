@@ -36,8 +36,6 @@ export async function bootstrap(
   const disabledMiddlewares = middlewaresConfig?.disable || [];
   const replacedMiddlewares = middlewaresConfig?.replace || {};
 
-  app.use(debuggerService.logLevel2RequestInfo);
-
   if (!disabledMiddlewares?.includes?.("compression"))
     app.use(
       replacedMiddlewares.compression ||
@@ -149,6 +147,8 @@ export async function bootstrap(
           res.status(200).json({ message: arkosConfig.welcomeMessage });
         })
     );
+
+  app.use(debuggerService.logRequestInfo);
 
   if (!disabledRouters?.includes?.("file-upload")) {
     const fileUploadRouter = replacedRouters.fileUpload

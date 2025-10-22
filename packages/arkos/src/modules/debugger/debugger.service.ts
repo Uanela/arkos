@@ -79,7 +79,7 @@ ${sheu.bold("Ending:")} ${moduleName}\n`);
       });
   }
 
-  logLevel2RequestInfo(
+  logRequestInfo(
     req: ArkosRequest,
     _: ArkosResponse,
     next: ArkosNextFunction
