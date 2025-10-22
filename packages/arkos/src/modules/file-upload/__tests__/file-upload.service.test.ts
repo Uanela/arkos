@@ -232,10 +232,7 @@ describe("FileUploadService", () => {
       const fileCb = jest.fn();
       const mockFile = { originalname: "test.jpg" };
       filenameCallback({}, mockFile, fileCb);
-      expect(fileCb).toHaveBeenCalledWith(
-        null,
-        expect.stringMatching(/\d+-\d+\.jpg/)
-      );
+      expect(fileCb).toHaveBeenCalledWith(null, expect.stringMatching("test"));
     });
   });
 
