@@ -14,7 +14,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onUploadFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
+//   next(err);
 // }];
 // 
 // export const beforeUpdateFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
@@ -26,7 +26,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 // 
 // export const onUpdateFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeDeleteFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
@@ -38,7 +38,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onDeleteFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
+//   next(err);
 // }];
 {{else}}
 // export const beforeFindFile = [async (req, res, next) => {
@@ -54,7 +54,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 // 
 // export const onUploadFileError = [async (err, req, res, next) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeUpdateFile = [async (req, res, next) => {
@@ -66,7 +66,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 // 
 // export const onUpdateFileError = [async (err, req, res, next) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeDeleteFile = [async (req, res, next) => {
@@ -78,6 +78,6 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onDeleteFileError = [async (err, req, res, next) => {
-//   next();
+//   next(err);
 // }];
 {{/if}}

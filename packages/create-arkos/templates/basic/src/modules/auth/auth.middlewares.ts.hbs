@@ -10,7 +10,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onGetMeError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeLogin = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
@@ -22,7 +22,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onLoginError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeLogout = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
@@ -34,7 +34,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onLogoutError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeSignup = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
@@ -46,7 +46,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onSignupError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeUpdatePassword = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
@@ -58,7 +58,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onUpdatePasswordError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
+//   next(err);
 // }];
 {{else}}
 // export const beforeGetMe = [async (req, res, next) => {
@@ -70,7 +70,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onGetMeError = [async (err, req, res, next) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeLogin = [async (req, res, next) => {
@@ -82,7 +82,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onLoginError = [async (err, req, res, next) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeLogout = [async (req, res, next) => {
@@ -94,7 +94,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onLogoutError = [async (err, req, res, next) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeSignup = [async (req, res, next) => {
@@ -106,7 +106,7 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onSignupError = [async (err, req, res, next) => {
-//   next();
+//   next(err);
 // }];
 
 // export const beforeUpdatePassword = [async (req, res, next) => {
@@ -118,6 +118,6 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 // }];
 
 // export const onUpdatePasswordError = [async (err, req, res, next) => {
-//   next();
+//   next(err);
 // }];
 {{/if}}

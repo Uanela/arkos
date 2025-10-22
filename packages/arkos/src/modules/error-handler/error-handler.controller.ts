@@ -25,30 +25,27 @@ export default function errorHandler(
   _: NextFunction
 ): void {
   console.error("[\x1b[31mError\x1b[0m]:", err);
-  // Default error status
+
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
 
-  // If the environment is not production, send detailed error information
-  if (process.env.NODE_ENV !== "production")
-    return sendDevelopmentError(err, req, res);
+  let error: any = {
+    ...err,
+    message: err.message,
+    stack: err?.stack || undefined,
+  };
 
-  // Prepare error object for response, copying the original error's properties
-  let error = { ...err, message: err.message };
+  if (process.env.NODE_ENV == "production") delete error?.stack;
 
-  // Handle specific error cases (JWT errors, Prisma validation errors, etc.)
   if (err.name === "JsonWebTokenError")
     error = errorControllerHelper.handleJWTError();
   if (err.name === "TokenExpiredError")
     error = errorControllerHelper.handleJWTExpired();
 
-  // Handle specific Prisma client validation errors
   if (err.name === "PrismaClientValidationError")
     error = errorControllerHelper.handlePrismaClientValidationError(err);
   if (err.name === "PrismaClientInitializationError")
     error = errorControllerHelper.handlePrismaClientInitializationError(err);
-
-  // Handle Prisma database-specific error codes (P1000 to P3005)
   if (err.code === "P1000")
     error = errorControllerHelper.handleAuthenticationError(err);
   if (err.code === "P1001")
@@ -80,9 +77,19 @@ export default function errorHandler(
 
   if (err.name === "NetworkError")
     error = errorControllerHelper.handleNetworkError(err);
-  if (!error.isOperational) error = new AppError("Internal server error", 500);
 
-  // Send the error response for production environment
+  if (process.env.NODE_ENV !== "production")
+    return sendDevelopmentError(
+      {
+        ...error,
+        message: error.message,
+        stack: err.stack,
+        originalError: err,
+      },
+      req,
+      res
+    );
+
   sendProductionError(error, req, res);
 }
 
@@ -98,11 +105,7 @@ export default function errorHandler(
  *
  * @returns {void} - Sends the response with the error details to the client.
  */
-function sendDevelopmentError(
-  err: AppError,
-  req: Request,
-  res: Response
-): void {
+function sendDevelopmentError(err: any, req: Request, res: Response): void {
   if (req.originalUrl.startsWith("/api"))
     res.status(err.statusCode).json({
       ...err,
@@ -135,12 +138,14 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
         status: err.status,
         message: err.message,
         meta: err.meta || {},
-        code: err.code || "unknown",
+        code: err.code || "Unknown",
       });
     else
       res.status(500).json({
         status: "error",
-        message: "Internal server error",
+        message: "Internal server error, please try again later.",
+        code: "Unknown",
+        meta: {},
       });
 
     return;
@@ -150,13 +155,14 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
     res.status(err.statusCode).json({
       title: "Internal server error",
       message: err.message,
+      code: "Unknown",
     });
     return;
   }
 
   res.status(err.statusCode).json({
     title: "Internal server error",
-    message: "Please try again later.",
+    message: "Internal server error, please try again later.",
   });
 }
 

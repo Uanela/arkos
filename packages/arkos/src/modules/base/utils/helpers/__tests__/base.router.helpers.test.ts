@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   isEndpointDisabled,
   isParentEndpointAllowed,
+  processAuthenticationMiddlewares,
   setupRouters,
 } from "../base.router.helpers"; // Adjust the import path
 import * as importHelpers from "../../../../../utils/dynamic-loader";
@@ -10,6 +11,7 @@ import pluralize from "pluralize";
 import catchAsync from "../../../../error-handler/utils/catch-async";
 import routerValidator from "../../router-validator";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
+import { AccessAction } from "../../../../../types/auth";
 
 jest.mock("../../../../error-handler/utils/catch-async");
 // Mocks
@@ -723,6 +725,42 @@ describe("setupRouters", () => {
       );
     });
 
+    it("should keep autentication even authConfigs.authenticationControl is an empty object", async () => {
+      const mockModuleComponents = {
+        interceptors: {},
+        authConfigs: { authenticationControl: {} },
+        prismaQueryOptions: {},
+        router: undefined,
+        dtos: {
+          create: jest.fn(),
+        },
+        schemas: {
+          create: jest.fn(),
+        },
+      };
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
+        mockModuleComponents
+      );
+
+      // Mock arkosConfigs without validation config
+      const arkosConfigs = {};
+
+      const setupPromises = setupRouters(router, arkosConfigs);
+      await Promise.all(await setupPromises);
+
+      // Should still register routes but without specific validation (tests line 342)
+      expect(router.post).toHaveBeenCalledWith(
+        "/users",
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function)
+      );
+    });
+
     it("should return undefined when validation resolver is not configured", async () => {
       const mockModuleComponents = {
         interceptors: {},
@@ -999,3 +1037,172 @@ describe("setupRouters", () => {
     });
   });
 });
+
+// describe("processAuthenticationMiddlewares", () => {
+//   const mockAuthenticate = jest.fn();
+//   const mockHandleAccessControl = jest.fn((...args: any) => jest.fn());
+
+//   // Mock the auth service
+//   jest.mock("../../../../auth/auth.service", () => ({
+//     authenticate: mockAuthenticate,
+//     handleAccessControl: mockHandleAccessControl,
+//   }));
+//   (catchAsync as jest.Mock).mockImplementation((fn: any) => fn);
+
+//   beforeEach(() => {
+//     jest.clearAllMocks();
+//   });
+
+//   describe("when authentication should be enabled", () => {
+//     it("should return auth middlewares when authConfigs is undefined", () => {
+//       const result = processAuthenticationMiddlewares(
+//         "Create",
+//         "user",
+//         undefined
+//       );
+
+//       expect(result).toBe([
+//         mockAuthenticate,
+//         mockHandleAccessControl("Create", "user", undefined),
+//       ]);
+//     });
+
+//     it("should return auth middlewares when authenticationControl is true", () => {
+//       const authConfigs = { authenticationControl: true };
+//       const result = processAuthenticationMiddlewares(
+//         "View",
+//         "post",
+//         authConfigs
+//       );
+
+//       expect(result).toEqual([
+//         mockAuthenticate,
+//         mockHandleAccessControl("View", "post", authConfigs),
+//       ]);
+//     });
+
+//     it("should return auth middlewares when authenticationControl object has action set to true", () => {
+//       const authConfigs = {
+//         authenticationControl: {
+//           Create: true,
+//           View: false,
+//         },
+//       };
+
+//       const result = processAuthenticationMiddlewares(
+//         "Create",
+//         "user",
+//         authConfigs
+//       );
+
+//       expect(result).toEqual([
+//         mockAuthenticate,
+//         mockHandleAccessControl("Create", "user", authConfigs),
+//       ]);
+//     });
+
+//     it("should return auth middlewares when authenticationControl object has action not set to false", () => {
+//       const authConfigs = {
+//         authenticationControl: {
+//           Create: "enabled", // truthy value
+//           View: false,
+//         } as any,
+//       };
+
+//       const result = processAuthenticationMiddlewares(
+//         "Create",
+//         "user",
+//         authConfigs
+//       );
+
+//       expect(result).toEqual([
+//         mockAuthenticate,
+//         mockHandleAccessControl("Create", "user", authConfigs),
+//       ]);
+//     });
+
+//     it("should return auth middlewares when authenticationControl object has undefined action", () => {
+//       const authConfigs = {
+//         authenticationControl: {
+//           View: true,
+//           // Create is undefined
+//         },
+//       };
+
+//       const result = processAuthenticationMiddlewares(
+//         "Create",
+//         "user",
+//         authConfigs
+//       );
+
+//       expect(result).toEqual([
+//         mockAuthenticate,
+//         mockHandleAccessControl("Create", "user", authConfigs),
+//       ]);
+//     });
+//   });
+
+//   describe("when authentication should be disabled", () => {
+//     it("should return empty array when authenticationControl is false", () => {
+//       const authConfigs = { authenticationControl: false };
+//       const result = processAuthenticationMiddlewares(
+//         "Delete",
+//         "user",
+//         authConfigs
+//       );
+
+//       expect(result).toEqual([]);
+//     });
+
+//     it("should return empty array when authenticationControl object has action set to false", () => {
+//       const authConfigs = {
+//         authenticationControl: {
+//           Create: false,
+//           View: true,
+//         },
+//       };
+
+//       const result = processAuthenticationMiddlewares(
+//         "Create",
+//         "user",
+//         authConfigs
+//       );
+
+//       expect(result).toEqual([]);
+//     });
+//   });
+
+//   describe("edge cases", () => {
+//     it("should handle all action types", () => {
+//       const actions: AccessAction[] = ["Create", "View", "Update", "Delete"];
+//       const authConfigs = { authenticationControl: true };
+
+//       actions.forEach((action) => {
+//         const result = processAuthenticationMiddlewares(
+//           action,
+//           "user",
+//           authConfigs
+//         );
+
+//         expect(result).toEqual([
+//           mockAuthenticate,
+//           mockHandleAccessControl(action, "user", authConfigs),
+//         ]);
+//       });
+//     });
+
+//     it("should handle empty authenticationControl object", () => {
+//       const authConfigs = { authenticationControl: {} };
+//       const result = processAuthenticationMiddlewares(
+//         "Create",
+//         "user",
+//         authConfigs
+//       );
+
+//       expect(result).toEqual([
+//         mockAuthenticate,
+//         mockHandleAccessControl("Create", "user", authConfigs),
+//       ]);
+//     });
+//   });
+// });

@@ -288,7 +288,8 @@ export function processAuthenticationMiddlewares(
   if (
     (authenticationControl &&
       typeof authenticationControl === "object" &&
-      authenticationControl[action] === true) ||
+      (authenticationControl[action] === true ||
+        authenticationControl[action] !== false)) ||
     authenticationControl === true ||
     (!authenticationControl && authenticationControl !== false)
   )
