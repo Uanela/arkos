@@ -148,6 +148,8 @@ export async function bootstrap(
         })
     );
 
+  app.use(debuggerService.logRequestInfo);
+
   if (!disabledRouters?.includes?.("file-upload")) {
     const fileUploadRouter = replacedRouters.fileUpload
       ? await replacedRouters.fileUpload(arkosConfig)
