@@ -39,7 +39,7 @@ export interface IArkosRouter
 export interface ArkosRouteConfig {
   route: string;
   authentication?:
-    | false
+    | boolean
     | {
         resource: string;
         action: string;
