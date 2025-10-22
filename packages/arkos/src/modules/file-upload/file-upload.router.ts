@@ -12,6 +12,8 @@ import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import { adjustRequestUrl } from "./utils/helpers/file-upload.helpers";
 import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
+import routerValidator from "../base/utils/router-validator";
+import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 
 const router: Router = Router();
 
@@ -25,16 +27,26 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
     router: customRouterModule,
   }: any = {};
 
-  if (moduleComponents) {
+  if (moduleComponents)
     ({
       interceptors = {},
       authConfigs = {},
       router: customRouterModule,
     } = moduleComponents);
-  }
 
   const routerConfig = customRouterModule?.config || {};
   if (routerConfig?.disable === true) return router;
+
+  const customRouter = customRouterModule?.default as Router;
+
+  if (customRouter && customRouterModule) {
+    if (routerValidator.isExpressRouter(customRouter))
+      router.use(`/file-upload`, customRouter);
+    else
+      throw Error(
+        `ValidationError: The exported router from file-upload.router.${getUserFileExtension()} is not a valid express or arkos Router.`
+      );
+  }
 
   let basePathname = fileUpload?.baseRoute || "/api/uploads/";
 

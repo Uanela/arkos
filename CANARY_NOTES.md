@@ -1,4 +1,4 @@
-# Canary Notes v1.3.5-beta
+# Canary Notes v1.3.6-beta
 
 ## TODO
 
@@ -10,9 +10,6 @@
 
 ### Fix
 
-- strict routing only work for exported routers on swagger documenation
-- make res.locals.someData on after middlewares work
-
 ### Remove
 
 ### Deprecate
@@ -22,9 +19,6 @@
 ## DOING
 
 ### Add
-
-- add batch update and delete on services and control
-- make first stable debugging workable
 
 ### Change
 
@@ -40,9 +34,18 @@
 
 ### Add
 
+- add batch update and delete on services and control
+
 ### Change
 
+- make first stable debugging workable
+
 ### Fix
+
+- Fixed empty authConfigs.authenticationControl|accessControl object deactivates autentication
+- Manually added messae and stack on development to ensure those in non production env.
+- Send same error codes in production and development to easy frontend error mapping
+- fixed strict routing only work for exported routers on swagger documenation
 
 ### Remove
 

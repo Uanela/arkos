@@ -1,9 +1,10 @@
 packages:
   - packages/*
+  - sandbox/*
 onlyBuiltDependencies:
-  - '@prisma/client'
-  - '@prisma/engines'
-  - '@scarf/scarf'
+  - "@prisma/client"
+  - "@prisma/engines"
+  - "@scarf/scarf"
   - core-js
   - core-js-pure
   - esbuild
