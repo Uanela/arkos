@@ -41,6 +41,7 @@ describe("generateCommand", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    jest.spyOn(console, "info").mockImplementation(jest.fn());
     sheuErrorSpy = jest.spyOn(sheu, "error").mockImplementation();
     sheuDoneSpy = jest.spyOn(sheu, "done").mockImplementation();
     processExitSpy = jest.spyOn(process, "exit").mockImplementation();
