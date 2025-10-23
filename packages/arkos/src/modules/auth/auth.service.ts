@@ -19,7 +19,7 @@ import {
   AccessControlConfig,
   AuthenticationControlConfig,
 } from "../../types/auth";
-import { MsDuration } from "./utils/helpers/auth.controller.helpers";
+import { MsDuration, toMs } from "./utils/helpers/auth.controller.helpers";
 import { appModules, getModuleComponents } from "../../utils/dynamic-loader";
 import { kebabCase } from "../../exports/utils";
 import {
@@ -27,6 +27,7 @@ import {
   loginRequiredError,
 } from "./utils/auth-error-objects";
 import authActionService from "./utils/services/auth-action.service";
+import { CookieOptions } from "express";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -78,6 +79,64 @@ export class AuthService {
     return jwt.sign({ id }, secret, {
       expiresIn: expiresIn as MsDuration,
     });
+  }
+
+  /**
+   * Retrieves cookie configuration options for JWT authentication.
+   *
+   * Merges configuration from multiple sources in order of precedence:
+   * 1. Arkos configuration file
+   * 2. Environment variables
+   * 3. Request properties (for secure flag)
+   * 4. Default fallback values
+   *
+   * @param req - ArkosRequest object used to determine if the connection is secure
+   * @returns Cookie options object with expires, httpOnly, secure, and sameSite properties
+   *
+   * @example
+   * ```typescript
+   * const cookieOptions = authService.getJwtCookieOptions(req);
+   * res.cookie('jwt', token, cookieOptions);
+   * ```
+   */
+  getJwtCookieOptions(req: ArkosRequest): CookieOptions {
+    const arkosConfig = getArkosConfig();
+    const authConfigs = arkosConfig?.authentication;
+
+    if (!req)
+      throw new Error("Missing req object in order get jwt cookie options");
+
+    return {
+      expires: new Date(
+        Date.now() +
+          Number(
+            toMs(
+              authConfigs?.jwt?.expiresIn ||
+                (process.env.JWT_EXPIRES_IN as MsDuration) ||
+                (arkosEnv.JWT_EXPIRES_IN as MsDuration)
+            )
+          )
+      ),
+      httpOnly:
+        authConfigs?.jwt?.cookie?.httpOnly ??
+        (process.env.JWT_COOKIE_HTTP_ONLY !== undefined
+          ? process.env.JWT_COOKIE_HTTP_ONLY === "true"
+          : undefined) ??
+        true,
+      secure:
+        authConfigs?.jwt?.cookie?.secure ??
+        (process.env.JWT_COOKIE_SECURE === "true" ||
+          req.secure ||
+          req.headers["x-forwarded-proto"] === "https"),
+      sameSite:
+        authConfigs?.jwt?.cookie?.sameSite ||
+        (process.env.JWT_COOKIE_SAME_SITE as
+          | "none"
+          | "lax"
+          | "strict"
+          | undefined) ||
+        (process.env.NODE_ENV === "production" ? "none" : "lax"),
+    };
   }
 
   /**
