@@ -205,10 +205,10 @@ export const authControllerFactory = async (interceptors: any = {}) => {
             process.env.JWT_COOKIE_HTTP_ONLY === "true" ||
             true,
           secure:
-            authConfigs?.jwt?.cookie?.secure ||
-            process.env.JWT_COOKIE_SECURE === "true" ||
-            req.secure ||
-            req.headers["x-forwarded-proto"] === "https",
+            authConfigs?.jwt?.cookie?.secure ??
+            (process.env.JWT_COOKIE_SECURE === "true" ||
+              req.secure ||
+              req.headers["x-forwarded-proto"] === "https"),
           sameSite:
             authConfigs?.jwt?.cookie?.sameSite ||
             (process.env.JWT_COOKIE_SAME_SITE as
