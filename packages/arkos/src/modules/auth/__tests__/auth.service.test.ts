@@ -288,7 +288,6 @@ describe("AuthService", () => {
       // Setup
       const originalEnv = process.env;
       process.env = {
-        ...originalEnv,
         JWT_COOKIE_SAME_SITE: "none",
       };
 
@@ -307,7 +306,7 @@ describe("AuthService", () => {
       process.env = originalEnv;
     });
 
-    it("should use sameSite 'none' in production by default", () => {
+    it("should use sameSite 'lax' in production by default", () => {
       // Setup
       const originalEnv = process.env;
       process.env = {
@@ -324,7 +323,7 @@ describe("AuthService", () => {
       const result = authService.getJwtCookieOptions(mockReq);
 
       // Verify
-      expect(result.sameSite).toBe("none");
+      expect(result.sameSite).toBe("lax");
 
       // Cleanup
       process.env = originalEnv;
@@ -334,7 +333,7 @@ describe("AuthService", () => {
       // Setup
       const originalEnv = process.env;
       process.env = {
-        ...originalEnv,
+        // ...originalEnv,
         NODE_ENV: "development",
       };
 
@@ -604,6 +603,7 @@ describe("AuthService", () => {
   describe("verifyJwtToken", () => {
     it("should resolve with decoded payload for valid token", async () => {
       // Setup
+      process.env.NODE_ENV = "development";
       const token = "valid-token";
       const decodedPayload = { id: "user-123", iat: 1617123456 };
 

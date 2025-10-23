@@ -1,4 +1,4 @@
-# Canary Notes v1.3.6-beta
+# Canary Notes v1.3.7-beta
 
 ## TODO
 
@@ -7,6 +7,8 @@
 - add documentain about stric mode routing and update jsdocs on arkos config
 
 ### Change
+
+- Always pass the data of service to hooks functions already with relation fields handled
 
 ### Fix
 
