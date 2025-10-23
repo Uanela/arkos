@@ -153,6 +153,278 @@ describe("AuthService", () => {
     });
   });
 
+  describe("getJwtCookieOptions", () => {
+    it("should throw error when req is not provided", () => {
+      // Execute & Verify
+      expect(() => authService.getJwtCookieOptions(null as any)).toThrow(
+        "Missing req object in order get jwt cookie options"
+      );
+    });
+
+    it("should return cookie options with default values", () => {
+      // Setup
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result).toHaveProperty("expires");
+      expect(result.expires).toBeInstanceOf(Date);
+      expect(result.httpOnly).toBe(true);
+      expect(result.secure).toBe(false);
+      expect(result.sameSite).toBe("lax"); // default for non-production
+    });
+
+    it("should use config values when available", () => {
+      // Setup
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: {
+          jwt: {
+            expiresIn: "2h",
+            cookie: {
+              httpOnly: false,
+              secure: true,
+              sameSite: "strict",
+            },
+          },
+        },
+      });
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.httpOnly).toBe(false);
+      expect(result.secure).toBe(true);
+      expect(result.sameSite).toBe("strict");
+    });
+
+    it("should set secure to true when req.secure is true", () => {
+      // Setup
+      const mockReq = {
+        secure: true,
+        headers: {},
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.secure).toBe(true);
+    });
+
+    it("should set secure to true when x-forwarded-proto header is https", () => {
+      // Setup
+      const mockReq = {
+        secure: false,
+        headers: {
+          "x-forwarded-proto": "https",
+        },
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.secure).toBe(true);
+    });
+
+    it("should use environment variable JWT_COOKIE_HTTP_ONLY when set to true", () => {
+      // Setup
+      const originalEnv = process.env;
+      process.env = {
+        ...originalEnv,
+        JWT_COOKIE_HTTP_ONLY: "true",
+      };
+
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.httpOnly).toBe(true);
+
+      // Cleanup
+      process.env = originalEnv;
+    });
+
+    it("should use environment variable JWT_COOKIE_SECURE when set to true", () => {
+      // Setup
+      const originalEnv = process.env;
+      process.env = {
+        ...originalEnv,
+        JWT_COOKIE_SECURE: "true",
+      };
+
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.secure).toBe(true);
+
+      // Cleanup
+      process.env = originalEnv;
+    });
+
+    it("should use environment variable JWT_COOKIE_SAME_SITE", () => {
+      // Setup
+      const originalEnv = process.env;
+      process.env = {
+        ...originalEnv,
+        JWT_COOKIE_SAME_SITE: "none",
+      };
+
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.sameSite).toBe("none");
+
+      // Cleanup
+      process.env = originalEnv;
+    });
+
+    it("should use sameSite 'none' in production by default", () => {
+      // Setup
+      const originalEnv = process.env;
+      process.env = {
+        ...originalEnv,
+        NODE_ENV: "production",
+      };
+
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.sameSite).toBe("none");
+
+      // Cleanup
+      process.env = originalEnv;
+    });
+
+    it("should use sameSite 'lax' in development by default", () => {
+      // Setup
+      const originalEnv = process.env;
+      process.env = {
+        ...originalEnv,
+        NODE_ENV: "development",
+      };
+
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.sameSite).toBe("lax");
+
+      // Cleanup
+      process.env = originalEnv;
+    });
+
+    it("should calculate expires based on JWT_EXPIRES_IN from config", () => {
+      // Setup
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: {
+          jwt: {
+            expiresIn: "1h",
+          },
+        },
+      });
+
+      const beforeTime = Date.now();
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      const afterTime = Date.now();
+      const oneHourInMs = 60 * 60 * 1000;
+
+      expect(result.expires?.getTime()).toBeGreaterThanOrEqual(
+        beforeTime + oneHourInMs
+      );
+      expect(result.expires?.getTime()).toBeLessThanOrEqual(
+        afterTime + oneHourInMs + 100
+      );
+    });
+
+    it("should prioritize config over environment variables", () => {
+      // Setup
+      const originalEnv = process.env;
+      process.env = {
+        ...originalEnv,
+        JWT_COOKIE_HTTP_ONLY: "false",
+        JWT_COOKIE_SECURE: "false",
+        JWT_COOKIE_SAME_SITE: "lax",
+      };
+
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: {
+          jwt: {
+            cookie: {
+              httpOnly: true,
+              secure: true,
+              sameSite: "strict",
+            },
+          },
+        },
+      });
+
+      const mockReq = {
+        secure: false,
+        headers: {},
+      } as any;
+
+      // Execute
+      const result = authService.getJwtCookieOptions(mockReq);
+
+      // Verify
+      expect(result.httpOnly).toBe(true);
+      expect(result.secure).toBe(true);
+      expect(result.sameSite).toBe("strict");
+
+      // Cleanup
+      process.env = originalEnv;
+    });
+  });
+
   describe("isCorrectPassword", () => {
     it("should return true if passwords match", async () => {
       // Setup
