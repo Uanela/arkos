@@ -99,12 +99,21 @@ export class AuthService {
    * res.cookie('jwt', token, cookieOptions);
    * ```
    */
-  getJwtCookieOptions(req: ArkosRequest): CookieOptions {
+  getJwtCookieOptions(req: ArkosRequest) {
     const arkosConfig = getArkosConfig();
     const authConfigs = arkosConfig?.authentication;
 
     if (!req)
       throw new Error("Missing req object in order get jwt cookie options");
+
+    const sameSite =
+      authConfigs?.jwt?.cookie?.sameSite ||
+      (process.env.JWT_COOKIE_SAME_SITE as
+        | "none"
+        | "lax"
+        | "strict"
+        | undefined) ||
+      "lax";
 
     return {
       expires: new Date(
@@ -127,15 +136,9 @@ export class AuthService {
         authConfigs?.jwt?.cookie?.secure ??
         (process.env.JWT_COOKIE_SECURE === "true" ||
           req.secure ||
-          req.headers["x-forwarded-proto"] === "https"),
-      sameSite:
-        authConfigs?.jwt?.cookie?.sameSite ||
-        (process.env.JWT_COOKIE_SAME_SITE as
-          | "none"
-          | "lax"
-          | "strict"
-          | undefined) ||
-        (process.env.NODE_ENV === "production" ? "none" : "lax"),
+          req.headers["x-forwarded-proto"] === "https" ||
+          sameSite === "none"),
+      sameSite,
     };
   }
 
