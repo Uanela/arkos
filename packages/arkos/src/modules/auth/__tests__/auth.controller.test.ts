@@ -29,8 +29,6 @@ jest.mock("../auth.service", () => ({
   getJwtCookieOptions: jest.fn(),
 }));
 
-console.log(authService);
-
 jest.mock("../../base/base.service", () => ({
   getBaseServices: jest.fn(),
   BaseService: jest.fn(),
