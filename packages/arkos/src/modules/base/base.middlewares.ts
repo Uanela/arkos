@@ -55,13 +55,11 @@ export function sendResponse(req: ArkosRequest, res: ArkosResponse) {
   const originalData = (res as any).originalData;
   const originalStatus = (res as any).originalStatus;
 
-  // Get current values (potentially modified by middleware)
   const currentReqData = req.responseData;
   const currentReqStatus = req.responseStatus;
   const currentLocalsData = res.locals?.data;
   const currentLocalsStatus = res.locals?.status;
 
-  // Determine final data: use modified version if it differs from original
   if (
     currentReqData !== undefined &&
     !deepEqual(currentReqData, originalData)
@@ -78,7 +76,6 @@ export function sendResponse(req: ArkosRequest, res: ArkosResponse) {
     responseData = currentReqData ?? currentLocalsData;
   }
 
-  // Determine final status: use modified version if it differs from original
   if (currentReqStatus !== undefined && currentReqStatus !== originalStatus) {
     responseStatus = currentReqStatus;
   } else if (
@@ -174,25 +171,23 @@ export function handleRequestLogs(
     OPTIONS: "\x1b[34m", // Blue
   };
 
-  // Function to determine status code color
   const getStatusColor = (statusCode: number) => {
-    if (statusCode >= 200 && statusCode < 300) return "\x1b[32m"; // Green
-    if (statusCode >= 300 && statusCode < 400) return "\x1b[33m"; // Orange/Yellow
-    if (statusCode >= 400 && statusCode < 500) return "\x1b[33m"; // Red
-    if (statusCode >= 500) return "\x1b[31m"; // White on Red background
-    return "\x1b[0m"; // Default (no color)
+    if (statusCode >= 200 && statusCode < 300) return "\x1b[32m";
+    if (statusCode >= 300 && statusCode < 400) return "\x1b[33m";
+    if (statusCode >= 400 && statusCode < 500) return "\x1b[33m";
+    if (statusCode >= 500) return "\x1b[31m";
+    return "\x1b[0m";
   };
 
   res.on("finish", () => {
-    const duration = Date.now() - startTime; // Calculate the time taken to process the request
+    const duration = Date.now() - startTime;
 
-    // Get the current date and time
     const now = new Date();
-    const time = now.toTimeString().split(" ")[0]; // Format as HH:MM:SS
+    const time = now.toTimeString().split(" ")[0];
 
     const methodColor =
-      methodColors[req.method as keyof typeof methodColors] || "\x1b[0m"; // Default to no color
-    const statusColor = getStatusColor(res.statusCode); // Get the color for the status code
+      methodColors[req.method as keyof typeof methodColors] || "\x1b[0m";
+    const statusColor = getStatusColor(res.statusCode);
 
     console.info(
       `[\x1b[36mInfo\x1b[0m] \x1b[90m${time}\x1b[0m ${methodColor}${
