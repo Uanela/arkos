@@ -126,12 +126,15 @@ export function handleRelationFieldsInBody(
         deleteManyIds.push(bodyField.id);
       } else if (apiAction === "disconnect") {
         disconnectData.push({ id: bodyField.id });
-      } else if (canBeUsedToConnect(field.type, bodyField)) {
+      } else if (
+        bodyField?.apiAction !== "update" &&
+        canBeUsedToConnect(field.type, bodyField)
+      ) {
         const { apiAction, ...cleanedData } = bodyField;
 
         throwErrorIfApiActionIsInvalid(apiAction);
         connectData.push(cleanedData);
-      } else if (!bodyField?.id) {
+      } else if (bodyField?.apiAction !== "update" && !bodyField?.id) {
         let nestedRelations = getGroupedModelReations(field.type);
 
         let dataToPush = { ...bodyField };
@@ -153,7 +156,29 @@ export function handleRelationFieldsInBody(
 
         createData.push(dataToPush);
       } else {
-        const { id, apiAction, ...data } = bodyField;
+        const { apiAction, ...data } = bodyField;
+        let foreignKeyFieldName = bodyField?.id ? "id" : "";
+        let foreignKeyFieldValue = bodyField?.id ? bodyField.id : "";
+
+        if (!foreignKeyFieldName) {
+          for (const [key, value] of Object.entries(data)) {
+            if (canBeUsedToConnect(field.type, { [key]: value })) {
+              foreignKeyFieldName = key;
+              break;
+            }
+          }
+
+          if (!foreignKeyFieldName)
+            throw new AppError(
+              "No unique fields to be used in the prisma where clause",
+              400,
+              "NoFieldToIsInPrismaWhereClause",
+              { data: body }
+            );
+        }
+
+        foreignKeyFieldValue = data[foreignKeyFieldName];
+        delete data[foreignKeyFieldName];
 
         throwErrorIfApiActionIsInvalid(apiAction);
         let nestedRelations = getGroupedModelReations(field.type);
@@ -168,7 +193,7 @@ export function handleRelationFieldsInBody(
         }
 
         updateData.push({
-          where: { id },
+          where: { [foreignKeyFieldName]: foreignKeyFieldValue },
           data: dataToPush,
         });
       }
@@ -204,13 +229,16 @@ export function handleRelationFieldsInBody(
       mutableBody[field.name] = { delete: true };
     } else if (relationData?.apiAction === "disconnect") {
       mutableBody[field.name] = { disconnect: true };
-    } else if (canBeUsedToConnect(field.type, relationData)) {
+    } else if (
+      relationData?.apiAction !== "update" &&
+      canBeUsedToConnect(field.type, relationData)
+    ) {
       const { apiAction, ...cleanedData } = relationData;
 
       throwErrorIfApiActionIsInvalid(apiAction);
 
       mutableBody[field.name] = { connect: cleanedData };
-    } else if (!relationData?.id) {
+    } else if (relationData?.apiAction !== "update" && !relationData?.id) {
       let dataToCreate = { ...relationData };
 
       if (dataToCreate?.apiAction) {
@@ -307,7 +335,6 @@ export function canBeUsedToConnect(
 
   const uniqueFields = prismaSchemaParser.getModelUniqueFields(modelName) || [];
 
-  // If the field has exactly one property and it's a unique field, it can be used to connect
   if (Object.keys(bodyField).length === 1 && uniqueFields?.length > 0) {
     const fieldName = Object.keys(bodyField)[0];
     return uniqueFields?.some((field: PrismaField) => field.name === fieldName);

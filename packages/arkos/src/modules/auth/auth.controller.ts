@@ -187,7 +187,6 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         const cookieOptions = authService.getJwtCookieOptions(req);
 
-        console.log(cookieOptions, req, authConfigs);
         if (
           authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
           authConfigs?.login?.sendAccessTokenThrough === "both" ||

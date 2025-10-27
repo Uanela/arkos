@@ -89,6 +89,7 @@
 - add dtos generation into cli
 - Automatic wrap handlers into catchAsync when using `ArkosRouter()`
 - added a new `ArkosRouter` a simple `Router` wrapper to enhance features
+- allowed nested update without id field
 
 ### Deprecated
 
