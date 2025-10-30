@@ -10,8 +10,12 @@ import missingJsonSchemaGenerator from "./utils/helpers/missing-json-schemas-gen
 import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs";
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
 import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/generate-system-json-schemas";
+<<<<<<< HEAD
 import { generateOpenAPIFromApp } from "../../utils/arkos-router";
 import express from "express";
+=======
+import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-schema-paths";
+>>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
 
 const swaggerRouter = Router();
 
@@ -21,8 +25,12 @@ export async function getSwaggerRouter(
 ): Promise<Router> {
   let defaultJsonSchemas = await getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const defaultModelsPaths = await generatePathsForModels(arkosConfig);
+<<<<<<< HEAD
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
 
+=======
+  const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(arkosConfig);
+>>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
   const missingJsonSchemas =
     await missingJsonSchemaGenerator.generateMissingJsonSchemas(
       defaultModelsPaths,
@@ -38,7 +46,14 @@ export async function getSwaggerRouter(
 
   const swaggerConfigs = deepmerge(
     (await getSwaggerDefaultConfig(
+<<<<<<< HEAD
       { ...defaultModelsPaths, ...pathsFromCustomArkosRouters },
+=======
+      {
+        ...defaultModelsPaths,
+        ...fileUploadDefaultPaths,
+      },
+>>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
       defaultJsonSchemas
     )) || {},
     arkosConfig.swagger || {}

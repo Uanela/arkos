@@ -1,0 +1,37 @@
+This is a [Arkos.js](https://arkosjs.com) project scaffolded with [`create-arkos`](https://arkosjs.com/docs/cli/create-arkos).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+pnpm dev
+# or
+npm run dev
+# or
+yarn dev
+# or
+bun dev
+```
+
+- Visit [http://localhost:8000/api/docs](http://localhost:8000/api/docs) with your browser to see the swagger api documentation.
+- Start sending requests to [http://localhost:8000/api](http://localhost:8000/api) using your api client.
+
+You can start editing the application by modifying `src/app.ts`. The api auto-updates as you edit the file.
+
+This project uses [`Express.js`](https://expressjs.com) to handle HTTP requests and [`Prisma ORM`](https://prisma.io) for database management.
+
+## Learn More
+
+To learn more about Arkos.js, take a look at the following resources:
+
+- [Arkos.js Documentation](https://arkosjs.com/docs) - learn about Arkos.js features and API.
+- [Learn Arkos.js](https://arkosjs.com/learn) - an interactive Arkos.js tutorial.
+
+You can check out [the Arkos.js GitHub repository](https://github.com/uanela/arkos) - your feedback and contributions are welcome!
+
+## Deploy
+
+The easiest way to deploy your Arkos.js app is by simply running `arkos build` and follow any [Node.js](https://nodejs.org) deployment guide.
+
+Check out our [Arkos.js Deployment Documentation Guide](https://www.arkosjs.com/docs/getting-started/deployment) for some guidance.

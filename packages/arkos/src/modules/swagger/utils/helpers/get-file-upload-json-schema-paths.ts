@@ -5,9 +5,7 @@ import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.help
 import deepmerge from "../../../../utils/helpers/deepmerge.helper";
 import { fileUploadDefaultRestrictions } from "../../../file-upload/file-upload.service";
 
-export default async function getFileUploadJsonSchemaPaths(
-  arkosConfig: ArkosConfig
-) {
+export default function getFileUploadJsonSchemaPaths(arkosConfig: ArkosConfig) {
   const paths: OpenAPIV3.PathsObject = {};
 
   if (!arkosConfig.fileUpload) return paths;
