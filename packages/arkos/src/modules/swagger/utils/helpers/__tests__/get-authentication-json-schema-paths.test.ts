@@ -163,7 +163,7 @@ describe("getSchemaMode", () => {
     expect(result).toBe("prisma");
     expect(localValidatorFileExists).toHaveBeenCalledWith(
       "login",
-      "user",
+      "auth",
       mockConfig
     );
   });
@@ -183,7 +183,7 @@ describe("getSchemaMode", () => {
       expect(result).toBe("zod");
       expect(localValidatorFileExists).toHaveBeenCalledWith(
         action,
-        "user",
+        "auth",
         mockConfig
       );
     }
