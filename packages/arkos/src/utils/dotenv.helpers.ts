@@ -16,16 +16,14 @@ export function loadEnvironmentVariables() {
   const cwd = process.cwd();
   let loadedEnvs: string[] = [];
 
-  // Define files in order of increasing priority
   const envFiles = [
     path.resolve(cwd, `.env.defaults`),
     path.resolve(cwd, `.env.${ENV}`),
-    path.resolve(cwd, `.env.${ENV}.local`), // Environment-specific local overrides
+    path.resolve(cwd, `.env.${ENV}.local`),
     path.resolve(cwd, ".env.local"),
     path.resolve(cwd, ".env"),
   ];
 
-  // Load each file if it exists
   envFiles.forEach((filePath) => {
     if (fs.existsSync(filePath)) {
       if (ENV === "production" && filePath.endsWith(".local"))
@@ -42,8 +40,7 @@ export function loadEnvironmentVariables() {
     }
   });
 
-  // Validate required environment variables if needed
-  const requiredVars = ["DATABASE_URL"]; // Add your required vars
+  const requiredVars = ["DATABASE_URL"];
   const missingVars = requiredVars.filter((varName) => !process.env[varName]);
 
   if (missingVars.length > 0) {
@@ -51,7 +48,6 @@ export function loadEnvironmentVariables() {
       "Missing required environment variables:",
       missingVars.join(", ")
     );
-    // Optionally throw an error based on your framework's needs
     // throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
   }
 
