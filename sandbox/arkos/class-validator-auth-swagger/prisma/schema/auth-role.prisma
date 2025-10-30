@@ -1,0 +1,10 @@
+model AuthRole {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  description String?
+  permissions AuthPermission[]
+  users       UserRole[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
