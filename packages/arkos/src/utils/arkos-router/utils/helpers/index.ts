@@ -89,7 +89,7 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
       )
     );
 
-  if (config.rateLimit) middlewares.push(rateLimit(config.rateLimit));
+  // if (config.rateLimit) middlewares.push(rateLimit(config.rateLimit));
 
   // if (config.cors) middlewares.push(cors(config.cors.options));
 
