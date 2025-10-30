@@ -38,17 +38,16 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
   if (routerConfig?.disable === true) return router;
 
   const customRouter = customRouterModule?.default as Router;
+  let basePathname = fileUpload?.baseRoute || "/api/uploads/";
 
   if (customRouter && customRouterModule) {
     if (routerValidator.isExpressRouter(customRouter))
-      router.use(`/file-upload`, customRouter);
+      router.use(basePathname, customRouter);
     else
       throw Error(
         `ValidationError: The exported router from file-upload.router.${getUserFileExtension()} is not a valid express or arkos Router.`
       );
   }
-
-  let basePathname = fileUpload?.baseRoute || "/api/uploads/";
 
   if (!basePathname.startsWith("/")) basePathname = "/" + basePathname;
   if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
