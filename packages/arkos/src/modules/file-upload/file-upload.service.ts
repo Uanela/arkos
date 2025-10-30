@@ -321,10 +321,8 @@ export class FileUploadService {
             ? dirParts[dirParts.length - 2]
             : dirParts[dirParts.length - 1]) || "files";
 
-          // Process all uploaded files
           let data;
           if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-            // Process multiple files
             const isImageUpload = this.uploadDir?.includes?.("/images");
             if (isImageUpload) {
               data = await Promise.all(
@@ -369,7 +367,6 @@ export class FileUploadService {
     try {
       if (!fileType) throw new AppError("File type parameter is required", 400);
 
-      // Validate file type
       const validFileTypes = ["images", "videos", "documents", "files"];
       if (!validFileTypes.includes(fileType)) {
         throw new AppError(
@@ -436,37 +433,9 @@ export const getFileUploadServices = () => {
   const { fileUpload } = getArkosConfig();
   const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
 
-  // Default upload restrictions
-  const defaultRestrictions = {
-    images: {
-      maxCount: 30,
-      maxSize: 1024 * 1024 * 15, // 15 MB
-      supportedFilesRegex:
-        /jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif|heic|ico|jfif|raw|cr2|nef|orf|sr2|arw|dng|pef|raf|rw2|psd|ai|eps|xcf|jxr|wdp|hdp|jp2|j2k|jpf|jpx|jpm|mj2|avif/,
-    },
-    videos: {
-      maxCount: 10,
-      maxSize: 1024 * 1024 * 5096, // 5 GB
-      supportedFilesRegex:
-        /mp4|avi|mov|mkv|flv|wmv|webm|mpg|mpeg|3gp|m4v|ts|rm|rmvb|vob|ogv|dv|qt|asf|m2ts|mts|divx|f4v|swf|mxf|roq|nsv|mvb|svi|mpe|m2v|mp2|mpv|h264|h265|hevc/,
-    },
-    documents: {
-      maxCount: 30,
-      maxSize: 1024 * 1024 * 50, // 50 MB
-      supportedFilesRegex:
-        /pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odg|odp|txt|rtf|csv|epub|md|tex|pages|numbers|key|xml|json|yaml|yml|ini|cfg|conf|log|html|htm|xhtml|djvu|mobi|azw|azw3|fb2|lit|ps|wpd|wps|dot|dotx|xlt|xltx|pot|potx|oft|one|onetoc2|opf|oxps|hwp/,
-    },
-    files: {
-      maxCount: 10,
-      maxSize: 1024 * 1024 * 5096, // 5 GB
-      supportedFilesRegex: /.*/,
-    },
-  };
-
-  // Merge with user configuration (if any)
   const restrictions = fileUpload?.restrictions
-    ? deepmerge(defaultRestrictions, fileUpload.restrictions)
-    : defaultRestrictions;
+    ? deepmerge(fileUploadDefaultRestrictions, fileUpload.restrictions)
+    : fileUploadDefaultRestrictions;
 
   /**
    * Specialized file uploader service for handling image uploads.
@@ -514,4 +483,30 @@ export const getFileUploadServices = () => {
     documentUploadService,
     fileUploadService,
   };
+};
+
+export const fileUploadDefaultRestrictions = {
+  images: {
+    maxCount: 30,
+    maxSize: 1024 * 1024 * 15, // 15 MB
+    supportedFilesRegex:
+      /jpeg|jpg|png|gif|webp|svg|bmp|tiff|heif|heic|ico|jfif|raw|cr2|nef|orf|sr2|arw|dng|pef|raf|rw2|psd|ai|eps|xcf|jxr|wdp|hdp|jp2|j2k|jpf|jpx|jpm|mj2|avif/,
+  },
+  videos: {
+    maxCount: 10,
+    maxSize: 1024 * 1024 * 5096, // 5 GB
+    supportedFilesRegex:
+      /mp4|avi|mov|mkv|flv|wmv|webm|mpg|mpeg|3gp|m4v|ts|rm|rmvb|vob|ogv|dv|qt|asf|m2ts|mts|divx|f4v|swf|mxf|roq|nsv|mvb|svi|mpe|m2v|mp2|mpv|h264|h265|hevc/,
+  },
+  documents: {
+    maxCount: 30,
+    maxSize: 1024 * 1024 * 50, // 50 MB
+    supportedFilesRegex:
+      /pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odg|odp|txt|rtf|csv|epub|md|tex|pages|numbers|key|xml|json|yaml|yml|ini|cfg|conf|log|html|htm|xhtml|djvu|mobi|azw|azw3|fb2|lit|ps|wpd|wps|dot|dotx|xlt|xltx|pot|potx|oft|one|onetoc2|opf|oxps|hwp/,
+  },
+  files: {
+    maxCount: 10,
+    maxSize: 1024 * 1024 * 5096, // 5 GB
+    supportedFilesRegex: /.*/,
+  },
 };
