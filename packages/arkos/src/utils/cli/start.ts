@@ -19,7 +19,6 @@ let envFiles: string[] | undefined;
  * Production start command for the arkos CLI
  */
 export async function startCommand(options: StartOptions = {}) {
-  process.env.NODE_ENV = "production";
   envFiles = loadEnvironmentVariables();
 
   try {
@@ -35,8 +34,8 @@ export async function startCommand(options: StartOptions = {}) {
     }
 
     const env: { [x: string]: string } = {
-      ...process.env,
       NODE_ENV: "production",
+      ...process.env,
       ...(port && { CLI_PORT: port }),
       ...(host && { CLI_HOST: host }),
       ARKOS_BUILD: "true",
