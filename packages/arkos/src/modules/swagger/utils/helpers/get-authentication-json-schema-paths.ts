@@ -20,7 +20,7 @@ export const getSchemaMode = async (
   const actionKey = action as any;
   const localFileExists = await localValidatorFileExists(
     actionKey,
-    "user",
+    "auth",
     arkosConfig
   );
 
