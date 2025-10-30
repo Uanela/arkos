@@ -19,6 +19,7 @@ let envFiles: string[] | undefined;
  * Production start command for the arkos CLI
  */
 export async function startCommand(options: StartOptions = {}) {
+  if (process.env.NODE_ENV === "test") process.env.NODE_ENV = "production";
   envFiles = loadEnvironmentVariables();
 
   try {
@@ -47,7 +48,6 @@ export async function startCommand(options: StartOptions = {}) {
       shell: true,
     });
 
-    // Handle process exit
     process.on("SIGINT", () => {
       if (child) child.kill();
 
