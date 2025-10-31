@@ -1,18 +1,14 @@
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
-import { CookieOptions } from "express";
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import authService from "./auth.service";
 import { BaseService } from "../base/base.service";
 import { User } from "../../types";
-import arkosEnv from "../../utils/arkos-env";
 import { getArkosConfig } from "../../server";
 import {
   createPrismaWhereClause,
   determineUsernameField,
   getNestedValue,
-  MsDuration,
-  toMs,
 } from "./utils/helpers/auth.controller.helpers";
 import authActionService from "./utils/services/auth-action.service";
 
@@ -189,35 +185,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         const token = authService.signJwtToken(user.id!);
 
-        const cookieOptions: CookieOptions = {
-          expires: new Date(
-            Date.now() +
-              Number(
-                toMs(
-                  authConfigs?.jwt?.expiresIn ||
-                    (process.env.JWT_EXPIRES_IN as MsDuration) ||
-                    (arkosEnv.JWT_EXPIRES_IN as MsDuration)
-                )
-              )
-          ),
-          httpOnly:
-            authConfigs?.jwt?.cookie?.httpOnly ||
-            process.env.JWT_COOKIE_HTTP_ONLY === "true" ||
-            true,
-          secure:
-            authConfigs?.jwt?.cookie?.secure ||
-            process.env.JWT_COOKIE_SECURE === "true" ||
-            req.secure ||
-            req.headers["x-forwarded-proto"] === "https",
-          sameSite:
-            authConfigs?.jwt?.cookie?.sameSite ||
-            (process.env.JWT_COOKIE_SAME_SITE as
-              | "none"
-              | "lax"
-              | "strict"
-              | undefined) ||
-            (process.env.NODE_ENV === "production" ? "none" : "lax"),
-        };
+        const cookieOptions = authService.getJwtCookieOptions(req);
 
         if (
           authConfigs?.login?.sendAccessTokenThrough === "response-only" ||

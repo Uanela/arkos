@@ -18,6 +18,7 @@ jest.mock("bcryptjs", () => ({
 
 // Mock dependencies
 jest.mock("../auth.service", () => ({
+  ...jest.requireActual("../auth.service"),
   isCorrectPassword: jest.fn(),
   signJwtToken: jest.fn(),
   isPasswordStrong: jest.fn(),
@@ -25,6 +26,7 @@ jest.mock("../auth.service", () => ({
   authenticate: jest.fn(),
   handleAuthenticationControl: jest.fn(),
   handleAccessControl: jest.fn(),
+  getJwtCookieOptions: jest.fn(),
 }));
 
 jest.mock("../../base/base.service", () => ({
@@ -68,6 +70,8 @@ describe("Auth Controller Factory", () => {
   beforeEach(async () => {
     // Reset mocks
     jest.resetAllMocks();
+
+    (authService.getJwtCookieOptions as jest.Mock).mockReturnValue({});
 
     mockPrisma = {
       user: {
@@ -351,7 +355,7 @@ describe("Auth Controller Factory", () => {
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      (getArkosConfig as jest.Mock).mockReturnValueOnce({
+      (getArkosConfig as jest.Mock).mockReturnValue({
         authentication: {
           login: {
             sendAccessTokenThrough: "both",
@@ -441,7 +445,7 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should call next middleware when afterLogin is provided and send cookies strategy response-only or both", async () => {
-      (getArkosConfig as jest.Mock).mockReturnValueOnce({
+      (getArkosConfig as jest.Mock).mockReturnValue({
         authentication: {
           login: {
             sendAccessTokenThrough: "both",

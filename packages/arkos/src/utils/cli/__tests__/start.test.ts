@@ -105,7 +105,7 @@ describe("startCommand", () => {
     process.on = mockProcessOn;
 
     // Reset environment
-    process.env = { ...process.env };
+    process.env = { ...process.env, NODE_ENV: "test" };
 
     // Mock process.cwd
     jest.spyOn(process, "cwd").mockReturnValue("/mock/project/root");
@@ -168,6 +168,7 @@ describe("startCommand", () => {
   it("should start production server when built app file exists", () => {
     // Mock fs.existsSync to return true for entry point
     (fs.existsSync as jest.Mock).mockReturnValue(true);
+    process.env.NODE_ENV = "staging";
 
     // Call the start command with port and host
     startCommand({ port: "3000", host: "localhost" });
@@ -192,7 +193,7 @@ describe("startCommand", () => {
       expect.objectContaining({
         stdio: "inherit",
         env: expect.objectContaining({
-          NODE_ENV: "production",
+          NODE_ENV: "staging",
           ARKOS_BUILD: "true",
           CLI_PORT: "3000",
           CLI_HOST: "localhost",
