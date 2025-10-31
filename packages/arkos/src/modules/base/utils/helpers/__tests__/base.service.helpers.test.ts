@@ -21,7 +21,7 @@ jest
       return [{ name: "name" }];
     }
     if (modelName === "Tag") {
-      return [{ name: "name" }];
+      return [{ name: "name" }, { name: "number" }];
     }
     if (modelName === "User") {
       return [{ name: "email" }, { name: "username" }];
@@ -47,6 +47,7 @@ jest
           isArray: true,
         },
         { name: "comments", type: "Comment", isRelation: true, isArray: true },
+        { name: "number", type: "String", isUnique: true },
         ,
       ];
     }
@@ -355,6 +356,33 @@ describe("handleRelationFieldsInBody", () => {
           update: [
             { where: { id: "1" }, data: { name: "Updated JavaScript" } },
             { where: { id: "2" }, data: { name: "Updated TypeScript" } },
+          ],
+        },
+      });
+    });
+
+    it("should handle update operation for list relation items with a different unique field and other fields", () => {
+      const body = {
+        title: "My Post",
+        tags: [
+          { number: "1", name: "Updated JavaScript", apiAction: "update" },
+          { number: "2", name: "Updated TypeScript", apiAction: "update" },
+        ],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "tags", type: "Tag" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        title: "My Post",
+        tags: {
+          update: [
+            { where: { number: "1" }, data: { name: "Updated JavaScript" } },
+            { where: { number: "2" }, data: { name: "Updated TypeScript" } },
           ],
         },
       });
