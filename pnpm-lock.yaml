@@ -310,8 +310,8 @@ importers:
         specifier: ^6.18.0
         version: 6.18.0(prisma@6.18.0(magicast@0.3.5)(typescript@5.8.3))(typescript@5.8.3)
       arkos:
-        specifier: file:../../../packages/arkos
-        version: file:packages/arkos(@prisma/client@6.18.0(prisma@6.18.0(magicast@0.3.5)(typescript@5.8.3))(typescript@5.8.3))(@scalar/express-api-reference@0.8.13)(bcryptjs@3.0.2)(class-transformer@0.5.1)(class-validator-jsonschema@5.0.2(class-transformer@0.5.1)(class-validator@0.14.2))(class-validator@0.14.2)(compression@1.8.1)(cookie-parser@1.4.7)(cors@2.8.5)(dotenv@16.6.1)(express-rate-limit@7.5.1(express@4.21.2))(express@4.21.2)(html-to-text@9.0.5)(jsonwebtoken@9.0.2)(mimetype@0.0.8)(multer@2.0.1)(nodemailer@6.10.1)(sharp@0.33.5)(swagger-jsdoc@6.2.8(openapi-types@12.1.3))(swagger-ui-express@5.0.1(express@4.21.2))(trash-cli@6.0.0)(zod-to-json-schema@3.24.6(zod@3.25.76))(zod@3.25.76)
+        specifier: 1.3.7-canary.8
+        version: 1.3.7-canary.8(@prisma/client@6.18.0(prisma@6.18.0(magicast@0.3.5)(typescript@5.8.3))(typescript@5.8.3))(@scalar/express-api-reference@0.8.13)(bcryptjs@3.0.2)(class-transformer@0.5.1)(class-validator-jsonschema@5.0.2(class-transformer@0.5.1)(class-validator@0.14.2))(class-validator@0.14.2)(compression@1.8.1)(cookie-parser@1.4.7)(cors@2.8.5)(dotenv@16.6.1)(express-rate-limit@7.5.1(express@4.21.2))(express@4.21.2)(html-to-text@9.0.5)(jsonwebtoken@9.0.2)(mimetype@0.0.8)(multer@2.0.1)(nodemailer@6.10.1)(sharp@0.33.5)(swagger-jsdoc@6.2.8(openapi-types@12.1.3))(swagger-ui-express@5.0.1(express@4.21.2))(trash-cli@6.0.0)(zod-to-json-schema@3.24.6(zod@3.25.76))(zod@3.25.76)
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -3133,9 +3133,14 @@ packages:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   arkos@file:packages/arkos:
     resolution: {directory: packages/arkos, type: directory}
+=======
+  arkos@1.3.7-canary.8:
+    resolution: {integrity: sha512-xT/q89k9Wph6ardXRcYIRjWMsb3C4ORgMzYNZvB/95At980YbD6f7E0fkONJXeQ9ePSR+zwA4xB5Vs5XwF+w7g==}
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
     engines: {node: '>=14.16'}
     hasBin: true
     peerDependencies:
@@ -3163,7 +3168,12 @@ packages:
       zod: ^3.24.2
       zod-to-json-schema: ^3.24.6
 
+<<<<<<< HEAD
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+=======
+>>>>>>> 23e1ef79a7b05701ca03883fbb224606b45ade88
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   array-flatten@1.1.1:
     resolution: {integrity: sha512-PCVAQswWemu6UdxsDFFX/+gVeYqKAod3D3UVm91jHwynguOwAvYPhx8nNlM++NqRcK6CxxpUafjmhIdKiHibqg==}
 
@@ -3591,12 +3601,15 @@ packages:
     engines: {node: '>=18'}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   commander@14.0.2:
     resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
     engines: {node: '>=20'}
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
@@ -3643,11 +3656,14 @@ packages:
     engines: {'0': node >= 6.0}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   confbox@0.2.2:
     resolution: {integrity: sha512-1NB+BKqhtNipMsov4xI/NnhCKp9XG9NamYp5PVm9klAT0fsrNPjaFICsCFhNhwZJKNh7zB/3q8qXz0E9oaMNtQ==}
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   config-chain@1.1.13:
     resolution: {integrity: sha512-qj+f8APARXHrM0hraqXYb2/bOVSV4PvJQlNZ/DVj0QrmNM2q2euizkeuVckQ57J+W0mRH6Hvi+k50M4Jul2VRQ==}
 
@@ -6185,11 +6201,14 @@ packages:
     engines: {node: '>=14.16'}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   pkg-types@2.3.0:
     resolution: {integrity: sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig==}
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   pkg-up@3.1.0:
     resolution: {integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==}
     engines: {node: '>=8'}
@@ -6691,6 +6710,7 @@ packages:
     engines: {node: '>= 0.10'}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   ps-tree@1.2.0:
     resolution: {integrity: sha512-0VnamPPYHl4uaU/nSFeZZpR21QAWRz+sRv4iW9+v/GS/J5U5iZB5BNN6J0RMoOvdx2gWM2+ZFMIm58q24e4UYA==}
@@ -6698,6 +6718,8 @@ packages:
     hasBin: true
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   pump@3.0.3:
     resolution: {integrity: sha512-todwxLMY7/heScKmntwQG8CXVkWUOdYxIvY2s0VWAAMh/nd8SoYiRaKjlr7+iCs984f2P8zvrfWcDDYVb73NfA==}
 
@@ -7249,11 +7271,14 @@ packages:
     engines: {node: '>=6.0.0'}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   split@0.3.3:
     resolution: {integrity: sha512-wD2AeVmxXRBoX44wAycgjVpMhvbwdI2aZjCkvfNcH1YqHQvJVa1duWc73OyVGJUc05fhFaTZeQ/PYsrmyH0JVA==}
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
 
@@ -11252,6 +11277,7 @@ snapshots:
       '@prisma/engines-version': 6.18.0-8.34b5a692b7bd79939a9a2c3ef97d816e749cda2f
       '@prisma/get-platform': 6.18.0
 
+<<<<<<< HEAD
   '@prisma/get-platform@6.12.0':
     dependencies:
       '@prisma/debug': 6.12.0
@@ -11263,6 +11289,8 @@ snapshots:
       '@prisma/debug': 6.18.0
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   '@rollup/rollup-android-arm-eabi@4.49.0':
     optional: true
 
@@ -12165,8 +12193,12 @@ snapshots:
   argparse@2.0.1: {}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   arkos@file:packages/arkos(@prisma/client@6.18.0(prisma@6.18.0(magicast@0.3.5)(typescript@5.8.3))(typescript@5.8.3))(@scalar/express-api-reference@0.8.13)(bcryptjs@3.0.2)(class-transformer@0.5.1)(class-validator-jsonschema@5.0.2(class-transformer@0.5.1)(class-validator@0.14.2))(class-validator@0.14.2)(compression@1.8.1)(cookie-parser@1.4.7)(cors@2.8.5)(dotenv@16.6.1)(express-rate-limit@7.5.1(express@4.21.2))(express@4.21.2)(html-to-text@9.0.5)(jsonwebtoken@9.0.2)(mimetype@0.0.8)(multer@2.0.1)(nodemailer@6.10.1)(sharp@0.33.5)(swagger-jsdoc@6.2.8(openapi-types@12.1.3))(swagger-ui-express@5.0.1(express@4.21.2))(trash-cli@6.0.0)(zod-to-json-schema@3.24.6(zod@3.25.76))(zod@3.25.76):
+=======
+  arkos@1.3.7-canary.8(@prisma/client@6.18.0(prisma@6.18.0(magicast@0.3.5)(typescript@5.8.3))(typescript@5.8.3))(@scalar/express-api-reference@0.8.13)(bcryptjs@3.0.2)(class-transformer@0.5.1)(class-validator-jsonschema@5.0.2(class-transformer@0.5.1)(class-validator@0.14.2))(class-validator@0.14.2)(compression@1.8.1)(cookie-parser@1.4.7)(cors@2.8.5)(dotenv@16.6.1)(express-rate-limit@7.5.1(express@4.21.2))(express@4.21.2)(html-to-text@9.0.5)(jsonwebtoken@9.0.2)(mimetype@0.0.8)(multer@2.0.1)(nodemailer@6.10.1)(sharp@0.33.5)(swagger-jsdoc@6.2.8(openapi-types@12.1.3))(swagger-ui-express@5.0.1(express@4.21.2))(trash-cli@6.0.0)(zod-to-json-schema@3.24.6(zod@3.25.76))(zod@3.25.76):
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
     dependencies:
       '@prisma/client': 6.18.0(prisma@6.18.0(magicast@0.3.5)(typescript@5.8.3))(typescript@5.8.3)
       '@scalar/express-api-reference': 0.8.13
@@ -12195,7 +12227,12 @@ snapshots:
       zod: 3.25.76
       zod-to-json-schema: 3.24.6(zod@3.25.76)
 
+<<<<<<< HEAD
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+=======
+>>>>>>> 23e1ef79a7b05701ca03883fbb224606b45ade88
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   array-flatten@1.1.1: {}
 
   array-union@1.0.2:
@@ -12688,10 +12725,13 @@ snapshots:
   commander@13.1.0: {}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   commander@14.0.2: {}
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   commander@2.20.3: {}
 
   commander@4.1.1: {}
@@ -12735,10 +12775,13 @@ snapshots:
       typedarray: 0.0.6
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   confbox@0.2.2: {}
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   config-chain@1.1.13:
     dependencies:
       ini: 1.3.8
@@ -13725,10 +13768,13 @@ snapshots:
       pathe: 2.0.3
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   github-slugger@1.5.0: {}
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   glob-parent@5.1.2:
     dependencies:
       is-glob: 4.0.3
@@ -15855,6 +15901,7 @@ snapshots:
       find-up: 6.3.0
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   pkg-types@2.3.0:
     dependencies:
@@ -15863,6 +15910,8 @@ snapshots:
       pathe: 2.0.3
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   pkg-up@3.1.0:
     dependencies:
       find-up: 3.0.0
@@ -17142,12 +17191,15 @@ snapshots:
       - supports-color
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   split@0.3.3:
     dependencies:
       through: 2.3.8
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   sprintf-js@1.0.3: {}
 
   srcset@4.0.0: {}
@@ -17513,6 +17565,7 @@ snapshots:
   tslib@2.8.1: {}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   tsx-strict@0.1.4(tsx@4.20.6):
     dependencies:
@@ -17524,6 +17577,8 @@ snapshots:
       tsx: 4.20.6
 
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
   tsx@4.20.3:
     dependencies:
       esbuild: 0.25.8
@@ -17538,9 +17593,13 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 <<<<<<< HEAD
+<<<<<<< HEAD
     optional: true
 =======
 >>>>>>> 84a6c14ce0aeb22f948b9fb116dd0544da588aab
+=======
+    optional: true
+>>>>>>> ec5a1e816e149daff3516c1837ed572ba5753da2
 
   type-check@0.4.0:
     dependencies:
