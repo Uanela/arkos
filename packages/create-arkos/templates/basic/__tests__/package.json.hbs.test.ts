@@ -108,7 +108,7 @@ describe("Package.json template rendering", () => {
     const packageJson = JSON.parse(result);
 
     // Should have basic dependencies without validation libraries
-    expect(packageJson.dependencies.arkos).toBe("^1.4.0-canary.6");
+    expect(packageJson.dependencies.arkos).toBe("^1.4.0-canary.27");
     expect(packageJson.dependencies.express).toBe("^4.21.2");
     expect(packageJson.dependencies["@prisma/client"]).toBe("^6.4.1");
     expect(packageJson.dependencies["swagger-jsdoc"]).toBe("^6.2.8");
