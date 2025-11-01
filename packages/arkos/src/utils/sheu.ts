@@ -29,7 +29,6 @@ class Sheu {
       : "";
     let result = `${label}${content}`;
 
-    // Apply timestamp if requested
     if (options.timestamp) {
       const timestamp = this.getTimestamp();
       if (options.timestamp === true)

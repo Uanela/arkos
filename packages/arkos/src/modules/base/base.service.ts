@@ -258,9 +258,7 @@ export class BaseService<T extends ModelDelegate = any> {
     const hookName = `${hookType === "error" ? "on" : hookType}${operationType.charAt(0).toUpperCase()}${operationType.slice(1)}${hookType === "error" ? "Error" : ""}`;
     const hook = serviceHooks[hookName as keyof typeof serviceHooks];
 
-    if (hook && typeof hook === "function") {
-      await serviceHooksManager.handleHook(hook, params);
-    }
+    if (hook) await serviceHooksManager.handleHook(hook, params);
   }
 
   private buildHookParams(args: any[], config: ServiceOperationConfig): any {
