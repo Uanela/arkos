@@ -33,7 +33,13 @@ jest.mock("../../../server", () => ({
   getArkosConfig: jest.fn(() => ({ validation: true })),
 }));
 jest.mock("../utils/service-hooks-manager", () => ({
-  handleHook: jest.fn((hook, data) => hook(data)),
+  handleHook: jest.fn((hook: any, data) => {
+    if (Array.isArray(hook)) {
+      for (const hookItem of hook) {
+        hookItem(data);
+      }
+    } else hook(data);
+  }),
 }));
 
 const handleRelationFieldsInBody = jest.spyOn(
@@ -211,6 +217,24 @@ describe("BaseService", () => {
       );
     });
 
+    it("should execute beforeCreateOne hook as array of functions", async () => {
+      const mockHook = [jest.fn()];
+      const data = { title: "Test" };
+
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: { beforeCreateOne: mockHook },
+      });
+
+      mockPrisma.post.create.mockResolvedValue({ id: "1", ...data });
+
+      await baseService.createOne(data);
+
+      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
+        mockHook,
+        expect.objectContaining({ data })
+      );
+    });
+
     it("should execute afterCreateOne hook with result", async () => {
       const mockHook = jest.fn();
       const data = { title: "Test" };
@@ -227,6 +251,24 @@ describe("BaseService", () => {
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
         mockHook,
         expect.objectContaining({ result, data })
+      );
+    });
+
+    it("should execute afterCreateOne hook as array of functions", async () => {
+      const mockHook = [jest.fn()];
+      const data = { title: "Test" };
+
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: { afterCreateOne: mockHook },
+      });
+
+      mockPrisma.post.create.mockResolvedValue({ id: "1", ...data });
+
+      await baseService.createOne(data);
+
+      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
+        mockHook,
+        expect.objectContaining({ data })
       );
     });
 
