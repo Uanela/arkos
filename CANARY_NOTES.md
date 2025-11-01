@@ -64,6 +64,7 @@
 - add rate limiting in `ArkosRouter`
 - Throw an error when trying to generate component for unknow modules
 - add correct logic to only allowedOrigins from ArkosConfig if there is nothing in the RouteConfig
+- Add depth search operation under models endpoints.
 
 ### Change
 
