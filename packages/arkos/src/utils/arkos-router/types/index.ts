@@ -10,7 +10,7 @@ import express from "express";
 type MethodHandler = (
   config: ArkosRouteConfig,
   ...handlers: (ArkosRequestHandler | ArkosErrorRequestHandler)[]
-) => IArkosRouter;
+) => IRouter;
 
 export interface IArkosRouter
   extends Omit<

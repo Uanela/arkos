@@ -1,9 +1,7 @@
-import rateLimit from "express-rate-limit";
 import { authService } from "../../../../exports/services";
 import { validateRequestInputs } from "../../../../modules/base/base.middlewares";
 import RouteConfigRegistry from "../../route-config-registry";
 import { ArkosRouteConfig } from "../../types";
-import cors from "cors";
 import express from "express";
 
 export function extractArkosRoutes(

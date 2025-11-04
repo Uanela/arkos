@@ -177,6 +177,15 @@ export async function bootstrap(
   app.use(knowModulesRouter);
   app.use("/api", getAvailableResourcesAndRoutesRouter());
 
+  if (routersConfig?.additional)
+    routersConfig.additional.forEach((router) => {
+      app.use(router as any);
+    });
+
+  /**
+   * Must be last called in order to be able to get all
+   * routes built using ArkosRouter
+   */
   if (
     arkosConfig.swagger &&
     (process.env.ARKOS_BUILD !== "true" ||
@@ -184,16 +193,11 @@ export async function bootstrap(
   )
     app.use("/api", await getSwaggerRouter(arkosConfig, app));
 
-  if (routersConfig?.additional)
-    routersConfig.additional.forEach((router) => {
-      app.use(router);
-    });
-
   app.use("*", (req) => {
     throw new AppError(
       "Route not found",
       404,
-      { route: req.route },
+      { route: req.path },
       "RouteNotFound"
     );
   });
