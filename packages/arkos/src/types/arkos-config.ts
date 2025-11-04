@@ -11,6 +11,7 @@ import { OpenAPIV3 } from "openapi-types";
 import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with { "resolution-mode": "import" };
 import nodemailer from "nodemailer";
 import { ModuleComponents } from "../utils/dynamic-loader";
+import { IArkosRouter } from "../utils/arkos-router/types";
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
  */
@@ -521,7 +522,7 @@ export type ArkosConfig = {
      *
      * Read more about The Arkos Middleware Stack at [www.arkosjs.com/docs/the-middleware-stack](https://www.arkosjs.com/docs/the-middleware-stack) for in-depth details.
      */
-    additional?: express.Router[];
+    additional?: express.Router[] | IArkosRouter[];
     disable?: (
       | "auth-router"
       | "prisma-models-router"
