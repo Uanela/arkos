@@ -1,8 +1,11 @@
+import rateLimit from "express-rate-limit";
 import { authService } from "../../../../exports/services";
 import { validateRequestInputs } from "../../../../modules/base/base.middlewares";
 import RouteConfigRegistry from "../../route-config-registry";
 import { ArkosRouteConfig } from "../../types";
 import express from "express";
+import compression from "compression";
+import { queryParser } from "../../../helpers/query-parser.helpers";
 
 export function extractArkosRoutes(
   app: any,
@@ -87,9 +90,9 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
       )
     );
 
-  // if (config.rateLimit) middlewares.push(rateLimit(config.rateLimit));
-
-  // if (config.cors) middlewares.push(cors(config.cors.options));
+  if (config.rateLimit) middlewares.push(rateLimit(config.rateLimit));
+  if (config.compression) middlewares.push(compression(config.compression));
+  if (config.queryParser) middlewares.push(queryParser(config.queryParser));
 
   if (
     typeof config?.bodyParser === "object" &&

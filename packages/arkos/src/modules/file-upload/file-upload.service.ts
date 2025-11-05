@@ -129,11 +129,7 @@ export class FileUploadService {
   public handleMultipleUpload(): ArkosRequestHandler {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
       const upload = this.getUpload().array(this.getFieldName(), this.maxCount);
-      upload(req, res, (err) => {
-        if (err instanceof multer.MulterError) return next(err);
-        else if (err) return next(err);
-        next();
-      });
+      upload(req, res, next);
     };
   }
 

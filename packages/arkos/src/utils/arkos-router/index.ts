@@ -9,7 +9,6 @@ import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import deepmerge from "../helpers/deepmerge.helper";
-import defaultConfigs from "./utils/default-configs";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -67,7 +66,6 @@ export default function ArkosRouter(): IArkosRouter {
 
           if (RouteConfigValidator.isArkosRouteConfig(config)) {
             const method = prop as string;
-            config = deepmerge(defaultConfigs, config);
 
             if (handlers.length > 0) {
               handlers = handlers.map(
@@ -161,7 +159,7 @@ export async function generateOpenAPIFromApp(app: any) {
     (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${method} ${path}`,
       description: openapi?.description || `${method} ${path}`,
-      tags: openapi?.tags || ["Others"],
+      tags: openapi?.tags || ["Defaults"],
       operationId: `${method.toLowerCase()}:${path}`,
       // ...(!openapi.requestBody &&
       //   config?.validation?.body && {

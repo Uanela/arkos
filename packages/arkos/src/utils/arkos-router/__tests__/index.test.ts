@@ -264,73 +264,12 @@ describe("generateOpenAPIFromApp", () => {
   });
 
   it("should handle routes without config in registry", async () => {
-    // Mock that no config is found for a handler
     (RouteConfigRegistry.get as jest.Mock).mockReturnValue(null);
 
     const openapiPaths = await generateOpenAPIFromApp(mockApp);
 
-    // Should not include routes without config
     expect(openapiPaths).toEqual({});
   });
-
-  // it("should handle different HTTP methods on same path", async () => {
-  //   // Add routes with different methods on same path
-  //   mockApp._router.stack.push(
-  //     {
-  //       route: {
-  //         path: "/users",
-  //         methods: { post: true },
-  //         stack: [{ handle: {} }],
-  //       },
-  //     },
-  //     {
-  //       route: {
-  //         path: "/users",
-  //         methods: { put: true },
-  //         stack: [{ handle: {} }],
-  //       },
-  //     },
-  //     {
-  //       route: {
-  //         path: "/users",
-  //         methods: { delete: true },
-  //         stack: [{ handle: {} }],
-  //       },
-  //     }
-  //   );
-
-  //   mockRoutes.push(
-  //     {
-  //       path: "/users",
-  //       method: "POST",
-  //       config: { openapi: { summary: "Create user" } },
-  //     },
-  //     {
-  //       path: "/users",
-  //       method: "PUT",
-  //       config: { openapi: { summary: "Update user" } },
-  //     },
-  //     {
-  //       path: "/users",
-  //       method: "DELETE",
-  //       config: { openapi: { summary: "Delete user" } },
-  //     }
-  //   );
-
-  //   console.log(
-  //     "somelogs",
-  //     JSON.stringify(mockRoutes, null, 2),
-  //     JSON.stringify(mockApp, null, 2)
-  //   );
-  //   const openapiPaths = await generateOpenAPIFromApp(mockApp);
-
-  //   expect(openapiPaths["/users"]).toHaveProperty("post");
-  //   expect(openapiPaths["/users"]).toHaveProperty("put");
-  //   expect(openapiPaths["/users"]).toHaveProperty("delete");
-  //   expect(openapiPaths["/users"]["post"].summary).toBe("Create user");
-  //   expect(openapiPaths["/users"]["put"].summary).toBe("Update user");
-  //   expect(openapiPaths["/users"]["delete"].summary).toBe("Delete user");
-  // });
 
   it("should handle boolean openapi config true", async () => {
     mockRoutes[0].config.openapi = true;
@@ -339,7 +278,7 @@ describe("generateOpenAPIFromApp", () => {
 
     expect(openapiPaths["/users"]["get"].summary).toBe("GET /users");
     expect(openapiPaths["/users"]["get"].description).toBe("GET /users");
-    expect(openapiPaths["/users"]["get"].tags).toEqual(["Others"]);
+    expect(openapiPaths["/users"]["get"].tags).toEqual(["Defaults"]);
   });
 
   it("should convert boolean openapi config to object", async () => {
@@ -347,11 +286,10 @@ describe("generateOpenAPIFromApp", () => {
 
     const openapiPaths = await generateOpenAPIFromApp(mockApp);
 
-    // Should convert true to empty object and use defaults
     expect(openapiPaths["/users"]["get"]).toMatchObject({
       summary: "GET /users",
       description: "GET /users",
-      tags: ["Others"],
+      tags: ["Defaults"],
       operationId: "get:/users",
     });
   });
