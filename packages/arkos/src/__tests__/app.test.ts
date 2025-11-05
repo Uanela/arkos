@@ -135,7 +135,7 @@ describe("App Bootstrap", () => {
       expect(express.json).toHaveBeenCalled();
       expect(cookieParser).toHaveBeenCalled();
       expect(queryParser).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledTimes(12);
+      expect(app.use).toHaveBeenCalledTimes(13);
     });
 
     it("skips disabled middlewares", async () => {
@@ -221,7 +221,7 @@ describe("App Bootstrap", () => {
       expect(deepmerge).toHaveBeenCalledWith(
         expect.objectContaining({
           windowMs: 60 * 1000,
-          limit: 500,
+          limit: 300,
         }),
         rateLimitOptions
       );

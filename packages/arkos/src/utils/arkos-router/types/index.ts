@@ -2,16 +2,31 @@ import { IRouter } from "express";
 import { OpenAPIV3 } from "openapi-types";
 import { ZodSchema } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
+import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
 import { AccessControlRules } from "../../../types/auth";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../../types";
-import { CorsOptions } from "cors";
 import express from "express";
+import compression from "compression";
 
+/**
+ * Handler function for HTTP methods that accepts route configuration and request handlers.
+ *
+ * @param {ArkosRouteConfig} config - The route configuration object.
+ * @param {...(ArkosRequestHandler | ArkosErrorRequestHandler)[]} handlers - Request and error handlers for the route.
+ * @returns {IRouter} The Express router instance.
+ */
 type MethodHandler = (
   config: ArkosRouteConfig,
   ...handlers: (ArkosRequestHandler | ArkosErrorRequestHandler)[]
 ) => IRouter;
 
+/**
+ * Extended Express router interface with custom method handlers that accept route configuration.
+ *
+ * @remarks
+ * All standard HTTP methods (get, post, put, etc.) are replaced with enhanced versions
+ * that accept ArkosRouteConfig as the first parameter.
+ */
 export interface IArkosRouter
   extends Omit<
     IRouter,
@@ -25,19 +40,45 @@ export interface IArkosRouter
     | "trace"
     | "all"
   > {
+  /** GET method handler with route configuration support */
   get: MethodHandler;
+  /** POST method handler with route configuration support */
   post: MethodHandler;
+  /** PUT method handler with route configuration support */
   put: MethodHandler;
+  /** PATCH method handler with route configuration support */
   patch: MethodHandler;
+  /** DELETE method handler with route configuration support */
   delete: MethodHandler;
+  /** OPTIONS method handler with route configuration support */
   options: MethodHandler;
+  /** HEAD method handler with route configuration support */
   head: MethodHandler;
+  /** TRACE method handler with route configuration support */
   trace: MethodHandler;
+  /** ALL methods handler with route configuration support */
   all: MethodHandler;
 }
 
+/**
+ * Configuration object for defining routes in the Arkos framework.
+ */
 export interface ArkosRouteConfig {
+  /**
+   * The URL path pattern for the route.
+   *
+   * @example "/api/users/:id"
+   */
   route: string;
+
+  /**
+   * Authentication and authorization configuration.
+   *
+   * @remarks
+   * - Set to `true` to require authentication without specific permissions.
+   * - Set to `false` or omit to allow unauthenticated access.
+   * - Provide an object to specify resource-based access control with resource name, action, and optional custom rules.
+   */
   authentication?:
     | boolean
     | {
@@ -45,6 +86,14 @@ export interface ArkosRouteConfig {
         action: string;
         rule?: AccessControlRules;
       };
+  /**
+   * Request validation configuration using Zod schemas or class constructors.
+   *
+   * @remarks
+   * - Set to `false` to disable all validation.
+   * - Provide an object with `query`, `body`, and/or `params` properties to validate specific parts of the request.
+   * - Each property accepts a Zod schema, a class constructor, or `false` to disable validation for that part.
+   */
   validation?:
     | false
     | {
@@ -52,27 +101,57 @@ export interface ArkosRouteConfig {
         body?: ZodSchema | (new (...args: any[]) => object) | false;
         params?: ZodSchema | (new (...args: any[]) => object) | false;
       };
-  openapi?: boolean | Partial<OpenAPIV3.OperationObject>;
-  rateLimit?: Partial<RateLimitOptions>;
   /**
-   * Configuration for CORS (Cross-Origin Resource Sharing).
-   *
-   * @property {string | string[] | "all"} [allowedOrigins] - List of allowed origins. If set to `"all"`, all origins are accepted.
-   * @property {import('cors').CorsOptions} [options] - Additional CORS options passed directly to the `cors` middleware.
-   * @property {import('cors').CorsOptionsDelegate} [customMiddleware] - A custom middleware function that overrides the default behavior.
+   * OpenAPI specification for this route.
    *
    * @remarks
-   * If `customMiddleware` is provided, both `allowedOrigins` and `options` will be ignored in favor of the custom logic.
-   *
-   * See https://www.npmjs.com/package/cors
+   * - Set to `false` to exclude this route from OpenAPI documentation.
+   * - Provide a partial OpenAPI operation object to document the route.
    */
-  cors?: {
-    /**
-     * Defines allowed origins to acess the API.
-     */
-    allowedOrigins?: string | string[] | "*";
-    options?: CorsOptions;
-  };
+  openapi?: false | Partial<OpenAPIV3.OperationObject>;
+
+  /**
+   * Rate limiting configuration for this route.
+   *
+   * @see {@link https://www.npmjs.com/package/express-rate-limit express-rate-limit} for available options.
+   */
+  rateLimit?: Partial<RateLimitOptions>;
+
+  /**
+   * Allows to define options for npm package compression.
+   * Nothing is passed by default.
+   *
+   * @see {@link https://www.npmjs.com/package/compression compression} for further details.
+   */
+  compression?: compression.CompressionOptions;
+  /**
+   * Options to define how query must be parsed.
+   *
+   * @example
+   * ```
+   * GET /api/product?saleId=null
+   * ```
+   *
+   * Normally would parsed to { saleId: "null" } so query parser
+   * trough setting option `parseNull` will transform { saleId: null }
+   *
+   * @default
+   * ```
+   * {
+   *   parseNull: true,
+   *   parseUndefined: true,
+   *   parseBoolean: true,
+   * }
+   * ```
+   *
+   * @remarks
+   * parseNumber may convert fields that are string but you only passed
+   * numbers to query pay attention to this.
+   *
+   * Soon a feature to converted the query to the end prisma type will be added.
+   */
+  queryParser?: QueryParserOptions;
+
   /**
    * Configuration for request body parsing.
    *
@@ -86,7 +165,7 @@ export interface ArkosRouteConfig {
    * - When `parser` is `"text"`, options are passed to `express.text()`.
    * - Set to `false` to disable body parsing for this route.
    *
-   * See https://expressjs.com/en/api.html#express.json
+   * @see {@link https://expressjs.com/en/api.html#express.json Express body parser documentation}
    */
   bodyParser?:
     | { parser: "json"; options?: Parameters<typeof express.json>[0] }

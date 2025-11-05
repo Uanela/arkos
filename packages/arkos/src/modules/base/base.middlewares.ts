@@ -54,7 +54,6 @@ export function sendResponse(req: ArkosRequest, res: ArkosResponse) {
   let responseData;
   let responseStatus;
 
-  // Get original values (set by controller)
   const originalData = (res as any).originalData;
   const originalStatus = (res as any).originalStatus;
 
