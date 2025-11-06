@@ -7,7 +7,6 @@ import fs from "fs";
 import path from "path";
 import sheu from "../sheu";
 import portAndHostAllocator from "../features/port-and-host-allocator";
-// import smartFsWatcher from "./utils/smart-fs-watcher";
 
 interface DevOptions {
   port?: string;
@@ -21,7 +20,8 @@ let envFiles: string[] | undefined;
  * Dev server command for the arkos CLI
  */
 export async function devCommand(options: DevOptions = {}) {
-  process.env.NODE_ENV = "development";
+  if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
+    process.env.NODE_ENV = "development";
   envFiles = loadEnvironmentVariables();
   child = null;
   let restartTimeout: NodeJS.Timeout | null = null;
@@ -149,7 +149,7 @@ export async function devCommand(options: DevOptions = {}) {
     );
     console.info(
       `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-        .replaceAll(`${process.cwd()}/`, "")
+        .replaceAll(`\\`, "")
         .replaceAll("/", "")}\n`
     );
 
