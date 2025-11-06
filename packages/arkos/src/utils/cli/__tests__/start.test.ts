@@ -4,17 +4,12 @@ import { spawn } from "child_process";
 import { startCommand } from "../start";
 import { importModule } from "../../helpers/global.helpers";
 import portAndHostAllocator from "../../features/port-and-host-allocator";
-import { getArkosConfig } from "../../../server";
 
-// Mock dependencies
 jest.mock("child_process", () => ({
   spawn: jest.fn(() => ({
     kill: jest.fn(),
   })),
 }));
-
-// Don't mock the index file since we're not importing from it directly
-// Remove or comment out: jest.mock("../index");
 
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
@@ -31,7 +26,6 @@ jest.mock("path", () => ({
 
 jest.mock("../../../utils/features/port-and-host-allocator");
 
-// Mock console methods
 const originalConsoleInfo = console.info;
 const originalConsoleError = console.error;
 const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
@@ -39,7 +33,6 @@ const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
   return "" as never;
 });
 
-// Mock server module
 jest.mock("../../../server", () => ({
   getArkosConfig: jest.fn().mockReturnValue({
     available: true,
@@ -48,7 +41,6 @@ jest.mock("../../../server", () => ({
   }),
 }));
 
-// Mock dotenv helpers
 jest.mock("../../dotenv.helpers", () => ({
   loadEnvironmentVariables: jest.fn().mockReturnValue([".env"]),
 }));
@@ -88,13 +80,10 @@ jest.mock("commander", () => ({
 }));
 
 describe("startCommand", () => {
-  // Rest of your test remains the same...
-  // Store original process.on implementation
   const originalProcessOn = process.on;
   const mockProcessOn = jest.fn();
 
   beforeEach(() => {
-    // Clear all mocks
     jest.clearAllMocks();
 
     // Mock console methods to prevent output during tests
@@ -202,36 +191,28 @@ describe("startCommand", () => {
       })
     );
 
-    // Verify SIGINT handler was registered
     expect(mockProcessOn).toHaveBeenCalledWith("SIGINT", expect.any(Function));
   });
 
   it("should exit with code 1 when built app file does not exist", () => {
-    // Mock fs.existsSync to return false for entry point
     (fs.existsSync as jest.Mock).mockReturnValue(false);
 
-    // Call the start command
     startCommand();
 
-    // Check fs.existsSync was called
     expect(fs.existsSync).toHaveBeenCalled();
 
-    // Check that the process tried to exit with code 1
     expect(mockExit).toHaveBeenCalledWith(1);
 
-    // Verify error message
     expect(console.error).toHaveBeenCalledWith(
       "❌ Could not find built application entry point at .build/src/app.js"
     );
   });
 
   it("should use default options when none are provided", async () => {
-    // Set up all mocks before calling the function
     jest
       .spyOn(require("../../../server"), "getArkosConfig")
       .mockResolvedValue({ getArkosConfig: () => ({ available: true }) });
 
-    // Setup mock for importModule to return a resolved promise
     (importModule as jest.Mock).mockImplementation(async (path) => {
       return {
         getArkosConfig: () => ({ available: true }),
@@ -247,13 +228,10 @@ describe("startCommand", () => {
       };
     });
 
-    // Mock fs.existsSync to return true for entry point
     (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-    // Call the start command with no options
     await startCommand();
 
-    // Check environment variables were set correctly
     expect(spawn).toHaveBeenCalledWith(
       "node",
       [`${process.cwd()}/.build/src/app.js`],
@@ -265,55 +243,42 @@ describe("startCommand", () => {
       })
     );
 
-    // Fast-forward timers to allow waitForConfig to complete
     jest.useFakeTimers({ advanceTimers: 500 });
 
-    // Wait for promises to resolve
     await new Promise((resolve) => setImmediate(resolve));
-    // To check a function was called with specific args:
     expect(importModule).toHaveBeenCalled();
 
-    // To verify console output:
     expect(console.info).toHaveBeenCalledWith(
       expect.stringContaining("Arkos.js")
     );
   });
 
   it("should register a SIGINT handler that kills the child process", () => {
-    // Mock fs.existsSync to return true
     (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-    // Mock child process
     const mockChild = { kill: jest.fn() };
     (spawn as jest.Mock).mockReturnValue(mockChild);
 
-    // Call the start command
     startCommand();
 
-    // Get the SIGINT handler that was registered
     const sigintHandler = mockProcessOn.mock.calls.find(
       (call) => call[0] === "SIGINT"
     )[1];
 
-    // Call the handler
     sigintHandler();
 
-    // Verify the child process was killed
     expect(mockChild.kill).toHaveBeenCalled();
     expect(mockExit).toHaveBeenCalledWith(0);
   });
 
   it("should exit with code 1 when an error occurs", () => {
-    // Mock fs.existsSync to throw an error
     const err = new Error("Test error");
     (fs.existsSync as jest.Mock).mockImplementation(() => {
       throw err;
     });
 
-    // Call the start command
     startCommand();
 
-    // Verify error message
     expect(console.error).toHaveBeenCalledWith(
       "❌ Production server failed to start:",
       err
@@ -322,13 +287,10 @@ describe("startCommand", () => {
   });
 
   it("should include custom port and host in environment variables", () => {
-    // Mock fs.existsSync to return true
     (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-    // Call with custom port and host
     startCommand({ port: "5000", host: "0.0.0.0" });
 
-    // Check environment variables contain custom PORT and HOST
     expect(spawn).toHaveBeenCalledWith(
       "node",
       [`${process.cwd()}/.build/src/app.js`],
@@ -341,10 +303,7 @@ describe("startCommand", () => {
     );
   });
 
-  // Additional tests to add to your start.test.ts file
-
   it("should correctly display configuration when getArkosConfig is successful", async () => {
-    // Mock fs.existsSync to return true
     (fs.existsSync as jest.Mock).mockReturnValue(true);
     jest
       .spyOn(require("../../helpers/global.helpers"), "importModule")
@@ -356,7 +315,6 @@ describe("startCommand", () => {
         }),
       });
 
-    // Mock environment variables loading
     const loadEnvMock = jest.requireMock(
       "../../dotenv.helpers"
     ).loadEnvironmentVariables;
@@ -374,16 +332,12 @@ describe("startCommand", () => {
       };
     });
 
-    // Call the start command
     startCommand();
 
-    // Fast-forward timers to allow waitForConfig to complete
     jest.useFakeTimers({ advanceTimers: 500 });
 
-    // Wait for promises to resolve
     await new Promise((resolve) => setImmediate(resolve));
 
-    // Check console output contains the correct information
     expect(console.info).toHaveBeenCalledWith(
       expect.stringContaining("Arkos.js")
     );
@@ -439,61 +393,4 @@ describe("startCommand", () => {
       expect.stringContaining("- Local:")
     );
   });
-
-  // it("should handle errors during config retrieval gracefully", async () => {
-  //   // Mock fs.existsSync to return true
-  //   (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-  //   // Mock getArkosConfig to throw an error
-  //   const getArkosConfigMock =
-  //     jest.requireMock("../../../server").getArkosConfig;
-  //   getArkosConfigMock.mockImplementation(() => {
-  //     throw new Error("Module not found");
-  //   });
-
-  //   // Use jest.spyOn to track console.info calls
-  //   const infoSpy = jest.spyOn(console, "info");
-
-  //   // This should complete without errors
-  //   startCommand();
-
-  //   // Fast-forward timers
-  //   jest.useFakeTimers(10000);
-
-  //   // Wait for any promises to resolve
-
-  //   // Should fall back to default config display
-  //   expect(infoSpy).toHaveBeenCalledWith(
-  //     expect.stringMatching(/Local:.+http:/)
-  //   );
-  // }, 10000); // Increase timeout to avoid timeout errors
-
-  // it("should correctly handle environment file path display", () => {
-  //   // Mock fs.existsSync to return true
-  //   (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-  //   // Mock a variety of environment files
-  //   const loadEnvMock = jest.requireMock(
-  //     "../../dotenv.helpers"
-  //   ).loadEnvironmentVariables;
-  //   loadEnvMock.mockReturnValue([
-  //     "/mock/project/root/.env",
-  //     "/mock/project/root/.env.local",
-  //     "/mock/project/root/.env.production",
-  //   ]);
-
-  //   // Use jest.spyOn to track console.info calls
-  //   const infoSpy = jest.spyOn(console, "info");
-
-  //   // Call the start command
-  //   startCommand();
-
-  //   // Run any pending timers
-  //   jest.useFakeTimers(1000);
-
-  //   // Check that paths are displayed without the project root prefix
-  //   expect(infoSpy).toHaveBeenCalledWith(
-  //     expect.stringContaining(".env, .env.local, .env.production")
-  //   );
-  // });
 });
