@@ -1,3 +1,4 @@
+import { fullCleanCwd } from "../../helpers/fs.helpers";
 import { getVersion } from "./cli.helpers";
 
 /**
@@ -19,11 +20,12 @@ class WatermarkStamper {
     console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
     if (host && port) console.info(`  - Local:        http://${host}:${port}`);
     if (envFiles?.length || 0 > 1)
-      console.info(
-        `  - Environments: ${envFiles
-          ?.join(", ")
-          .replaceAll(`${process.cwd()}/`, "")}\n`
-      );
+      if (envFiles?.length || 0 > 1)
+        console.info(
+          `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
+            .replaceAll(`\\`, "")
+            .replaceAll("/", "")}\n`
+        );
   }
 }
 
