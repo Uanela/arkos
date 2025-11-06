@@ -66,7 +66,7 @@ Help test new features and beta releases
 
 ### Prerequisites
 
-- **Node.js**: >= 14.16 (we recommend using the latest LTS version)
+- **Node.js**: >= 22.09 (we recommend using the latest LTS version)
 - **pnpm**: We use pnpm for package management
 - **Git**: For version control
 - **Database** (for integration tests): PostgreSQL, MySQL, SQLite, or MongoDB
@@ -189,7 +189,7 @@ We use strict TypeScript settings:
 - **Linter**: ESLint with TypeScript plugin
 - **Naming Conventions**:
     - `camelCase` for variables and functions
-    - `PascalCase` for classes and types
+    - `PascalCase` for classes, types, interfaces and enums
     - `SCREAMING_SNAKE_CASE` for constants
     - Files match their export: `base.service.ts` exports `BaseService`
 
