@@ -85,7 +85,7 @@ export default function ArkosRouter(): IArkosRouter {
               RouteConfigRegistry.register(finalHandler, config, method);
             }
             await new Promise((resolve) => {
-              setTimeout(resolve, 100);
+              setTimeout(resolve, 50);
             });
 
             const arkosConfig = getArkosConfig();
