@@ -20,7 +20,8 @@ let envFiles: string[] | undefined;
  * Dev server command for the arkos CLI
  */
 export async function devCommand(options: DevOptions = {}) {
-  if (process.env.NODE_ENV === "test") process.env.NODE_ENV = "development";
+  if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
+    process.env.NODE_ENV = "development";
   envFiles = loadEnvironmentVariables();
   child = null;
   let restartTimeout: NodeJS.Timeout | null = null;
