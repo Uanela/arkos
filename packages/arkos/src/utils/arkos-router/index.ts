@@ -58,7 +58,7 @@ export default function ArkosRouter(): IArkosRouter {
         | ArkosErrorRequestHandler;
 
       if (httpMethods.includes(prop as string)) {
-        return function (
+        return async function (
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
@@ -84,6 +84,9 @@ export default function ArkosRouter(): IArkosRouter {
               const finalHandler = handlers[handlers.length - 1];
               RouteConfigRegistry.register(finalHandler, config, method);
             }
+            await new Promise((resolve) => {
+              setTimeout(resolve, 100);
+            });
 
             const arkosConfig = getArkosConfig();
             const validationConfig = arkosConfig.validation;
