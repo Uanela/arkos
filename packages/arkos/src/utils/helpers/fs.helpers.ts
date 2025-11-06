@@ -21,9 +21,9 @@ export function fullCleanCwd(path: string): string {
     path.startsWith(`${process.cwd()}/`)
   )
     return path
-      .replace(process.cwd(), "")
-      .replace(/^\/+/g, "")
-      .replace("\\", "");
+      .replaceAll(process.cwd(), "")
+      .replaceAll(/^\/+/g, "")
+      .replaceAll("\\", "");
   else return path;
 }
 
