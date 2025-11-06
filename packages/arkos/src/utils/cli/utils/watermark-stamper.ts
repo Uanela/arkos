@@ -1,3 +1,4 @@
+import { fullCleanCwd } from "../../helpers/fs.helpers";
 import { getVersion } from "./cli.helpers";
 
 /**
@@ -20,9 +21,9 @@ class WatermarkStamper {
     if (host && port) console.info(`  - Local:        http://${host}:${port}`);
     if (envFiles?.length || 0 > 1)
       console.info(
-        `  - Environments: ${envFiles
-          ?.join(", ")
-          .replaceAll(`${process.cwd()}/`, "")}\n`
+        `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
+          .replaceAll(`\\`, "")
+          .replaceAll("/", "")}\n`
       );
   }
 }

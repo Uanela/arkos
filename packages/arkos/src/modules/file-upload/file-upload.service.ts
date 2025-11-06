@@ -291,10 +291,10 @@ export class FileUploadService {
         if (err) return reject(err);
 
         try {
-          const protocol = req.get("host")?.includes?.("localhost")
-            ? "http"
-            : "https";
-          `${protocol}://${req.get("host")}`;
+          // const protocol = req.get("host")?.includes?.("localhost")
+          //   ? "http"
+          //   : "https";
+          // `${protocol}://${req.get("host")}`;
 
           const dirParts = this.uploadDir.split("/");
           (this.uploadDir.endsWith("/")
