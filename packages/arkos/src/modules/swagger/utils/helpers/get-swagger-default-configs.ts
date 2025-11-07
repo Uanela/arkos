@@ -24,7 +24,7 @@ export default async function getSwaggerDefaultConfig(
         },
         servers: [
           {
-            url: `http://${portAndHost.host}:${portAndHost.port}`,
+            url: `http://${["0.0.0.0", "localhost", "127.0.0.1"].includes(portAndHost.host) ? "localhost" : portAndHost.host}:${portAndHost.port}`,
             description: `Local ${capitalize(process.env.NODE_ENV || "development")} Server`,
           },
         ],
