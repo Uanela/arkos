@@ -80,7 +80,9 @@ export class FileUploadController {
         if (req.files && Array.isArray(req.files) && req.files.length > 0) {
           if (fileType === "images") {
             data = await Promise.all(
-              req.files.map((file) => processImage(req, file.path, options))
+              req.files.map((file) =>
+                processImage(req, next, file.path, options)
+              )
             );
           } else {
             data = await Promise.all(
@@ -90,7 +92,7 @@ export class FileUploadController {
           data = data.filter((url) => url !== null);
         } else if (req.file) {
           if (fileType === "images") {
-            data = await processImage(req, req.file.path, options);
+            data = await processImage(req, next, req.file.path, options);
           } else {
             data = await processFile(req, req.file.path);
           }
@@ -301,7 +303,9 @@ export class FileUploadController {
           if (fileType === "images") {
             // Process multiple image files with image transformations
             data = await Promise.all(
-              req.files.map((file) => processImage(req, file.path, options))
+              req.files.map((file) =>
+                processImage(req, next, file.path, options)
+              )
             );
           } else {
             // Just store other file types without processing
@@ -314,7 +318,7 @@ export class FileUploadController {
         } else if (req.file) {
           // Process a single file
           if (fileType === "images") {
-            data = await processImage(req, req.file.path, options);
+            data = await processImage(req, next, req.file.path, options);
           } else {
             data = await processFile(req, req.file.path);
           }
