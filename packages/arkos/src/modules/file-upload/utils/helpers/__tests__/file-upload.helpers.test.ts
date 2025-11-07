@@ -74,6 +74,7 @@ describe("File Upload Helpers", () => {
       "x-forwarded-proto": "https",
     },
   } as any;
+  let mockNext = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -181,7 +182,12 @@ describe("File Upload Helpers", () => {
 
       mockReq.params.fileType = "documents";
 
-      const result = await processImage(mockReq, mockFilePath, options);
+      const result = await processImage(
+        mockReq,
+        mockNext,
+        mockFilePath,
+        options
+      );
 
       expect(sharp).not.toHaveBeenCalled();
       expect(result).toBe("https://example.com/api/uploads/documents/test.pdf");
@@ -194,7 +200,12 @@ describe("File Upload Helpers", () => {
 
       mockReq.params.fileType = "images";
 
-      const result = await processImage(mockReq, mockFilePath, options);
+      const result = await processImage(
+        mockReq,
+        mockNext,
+        mockFilePath,
+        options
+      );
 
       expect(sharp).toHaveBeenCalledWith(mockFilePath);
       expect(sharp().resize).toHaveBeenCalledWith(625, 500);
@@ -209,7 +220,12 @@ describe("File Upload Helpers", () => {
 
       mockReq.params.fileType = "images";
 
-      const result = await processImage(mockReq, mockFilePath, options);
+      const result = await processImage(
+        mockReq,
+        mockNext,
+        mockFilePath,
+        options
+      );
 
       expect(sharp).toHaveBeenCalledWith(mockFilePath);
       expect(sharp().resize).toHaveBeenCalledWith(300, 200, { fit: "inside" });
@@ -222,7 +238,12 @@ describe("File Upload Helpers", () => {
 
       mockReq.params.fileType = "images";
 
-      const result = await processImage(mockReq, mockFilePath, options);
+      const result = await processImage(
+        mockReq,
+        mockNext,
+        mockFilePath,
+        options
+      );
 
       expect(sharp).toHaveBeenCalledWith(mockFilePath);
       expect(sharp().toFormat).toHaveBeenCalledWith("webp");
@@ -235,7 +256,12 @@ describe("File Upload Helpers", () => {
 
       mockReq.params.fileType = "images";
 
-      const result = await processImage(mockReq, mockFilePath, options);
+      const result = await processImage(
+        mockReq,
+        mockNext,
+        mockFilePath,
+        options
+      );
 
       expect(sharp).toHaveBeenCalledWith(mockFilePath);
       expect(sharp().toFormat).toHaveBeenCalledWith("jpeg");
@@ -251,11 +277,12 @@ describe("File Upload Helpers", () => {
       (sharp().toFile as jest.Mock).mockRejectedValue(error);
 
       await expect(
-        processImage(mockReq, mockFilePath, options)
-      ).rejects.toThrow(error);
+        processImage(mockReq, mockNext, mockFilePath, options)
+      ).resolves.toBe(null);
 
       expect(fs.stat).toHaveBeenCalled();
       expect(fs.unlink).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalled();
     });
 
     it("should handle non-existent temp files gracefully", async () => {
@@ -269,11 +296,12 @@ describe("File Upload Helpers", () => {
       });
 
       await expect(
-        processImage(mockReq, mockFilePath, options)
-      ).rejects.toThrow(error);
+        processImage(mockReq, mockNext, mockFilePath, options)
+      ).resolves.toBe(null);
 
       expect(fs.stat).toHaveBeenCalled();
       expect(fs.unlink).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalled();
     });
   });
 });

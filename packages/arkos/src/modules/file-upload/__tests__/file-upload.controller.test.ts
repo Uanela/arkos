@@ -162,12 +162,17 @@ describe("FileUploadController", () => {
 
       await fileUploadController.uploadFile(mockReq, mockRes, mockNext);
 
-      expect(processImage).toHaveBeenCalledWith(mockReq, "/tmp/test.jpg", {
-        format: "webp",
-        width: "800",
-        height: "600",
-        resizeTo: undefined,
-      });
+      expect(processImage).toHaveBeenCalledWith(
+        mockReq,
+        mockNext,
+        "/tmp/test.jpg",
+        {
+          format: "webp",
+          width: "800",
+          height: "600",
+          resizeTo: undefined,
+        }
+      );
       expect(mockRes.status).toHaveBeenCalledWith(200);
     });
 
