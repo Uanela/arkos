@@ -102,9 +102,7 @@ export class BaseController {
         res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        if (config.hooks?.beforeQuery) {
-          await config.hooks.beforeQuery(req);
-        }
+        if (config.hooks?.beforeQuery) await config.hooks.beforeQuery(req);
 
         if (config.requiresQueryForBulk) {
           if (
@@ -421,7 +419,7 @@ export class BaseController {
     operationType: "createMany",
     serviceMethod: "createMany",
     successStatus: 201,
-    queryFeatures: ["limitFields"],
+    queryFeatures: [],
     usesRequestBody: true,
   });
 
@@ -465,7 +463,7 @@ export class BaseController {
     operationType: "updateMany",
     serviceMethod: "updateMany",
     successStatus: 200,
-    queryFeatures: ["filter", "sort", "limitFields", "paginate"],
+    queryFeatures: ["filter"],
     requiresQueryForBulk: true,
     preventORFilter: true,
     usesRequestBody: true,

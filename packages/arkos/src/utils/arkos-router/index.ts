@@ -8,7 +8,6 @@ import { getArkosConfig } from "../../exports";
 import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 import zodToJsonSchema from "zod-to-json-schema";
-import deepmerge from "../helpers/deepmerge.helper";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -58,71 +57,74 @@ export default function ArkosRouter(): IArkosRouter {
         | ArkosErrorRequestHandler;
 
       if (httpMethods.includes(prop as string)) {
-        return async function (
+        return function (
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
           const route = config.route;
 
-          if (RouteConfigValidator.isArkosRouteConfig(config)) {
-            const method = prop as string;
-
-            if (handlers.length > 0) {
-              handlers = handlers.map(
-                (handler: ArkosAnyRequestHandler | ArkosAnyRequestHandler[]) =>
-                  typeof handler === "function"
-                    ? catchAsync(handler, {
-                        type: handler.length > 3 ? "error" : "normal",
-                      })
-                    : handler.map((nesteHandler: any) =>
-                        catchAsync(nesteHandler, {
-                          type: handler.length > 3 ? "error" : "normal",
-                        })
-                      )
-              );
-
-              const finalHandler = handlers[handlers.length - 1];
-              RouteConfigRegistry.register(finalHandler, config, method);
-            }
-            await new Promise((resolve) => {
-              setTimeout(resolve, 50);
-            });
-
-            const arkosConfig = getArkosConfig();
-            const validationConfig = arkosConfig.validation;
-            const authenticationConfig = arkosConfig.authentication;
-            const strictValidation = validationConfig?.strict;
-
-            if (
-              strictValidation &&
-              (!("validation" in config) ||
-                ("validation" in config &&
-                  !config.validation &&
-                  config.validation !== undefined))
-            )
-              throw Error(
-                "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
-              );
-
-            if (!validationConfig?.resolver && config.validation)
-              throw Error(
-                "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
-              );
-
-            if (!authenticationConfig?.mode && config.authentication)
-              throw Error(
-                "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
-              );
-
-            handlers = [...getMiddlewareStack(config), ...handlers];
-          } else
+          if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
               `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig but recevied ${config}`
             );
 
+          // return function () {
+          const method = prop as string;
+
+          if (handlers.length > 0) {
+            handlers = handlers.map(
+              (handler: ArkosAnyRequestHandler | ArkosAnyRequestHandler[]) =>
+                typeof handler === "function"
+                  ? catchAsync(handler, {
+                      type: handler.length > 3 ? "error" : "normal",
+                    })
+                  : handler.map((nesteHandler: any) =>
+                      catchAsync(nesteHandler, {
+                        type: handler.length > 3 ? "error" : "normal",
+                      })
+                    )
+            );
+
+            const finalHandler = handlers[handlers.length - 1];
+            RouteConfigRegistry.register(finalHandler, config, method);
+          }
+          // TEMPORARY: Wait for async initArkos() to complete
+          // TODO(v1.5): Remove when migrating to arkos.config.ts (synchronous load)
+          const start = Date.now();
+          while (Date.now() - start < 100) {}
+
+          const arkosConfig = getArkosConfig();
+          const validationConfig = arkosConfig.validation;
+          const authenticationConfig = arkosConfig.authentication;
+          const strictValidation = validationConfig?.strict;
+
+          if (
+            strictValidation &&
+            (!("validation" in config) ||
+              ("validation" in config &&
+                !config.validation &&
+                config.validation !== undefined))
+          )
+            throw Error(
+              "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
+            );
+
+          if (!validationConfig?.resolver && config.validation)
+            throw Error(
+              "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
+            );
+
+          if (!authenticationConfig?.mode && config.authentication)
+            throw Error(
+              "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
+            );
+
+          handlers = [...getMiddlewareStack(config), ...handlers];
+
           return originalMethod.call(target, route, ...handlers);
         };
       }
+      // }
       return originalMethod;
     },
   }) as IArkosRouter;
