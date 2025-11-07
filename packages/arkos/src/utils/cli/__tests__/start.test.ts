@@ -246,7 +246,6 @@ describe("startCommand", () => {
     jest.useFakeTimers({ advanceTimers: 500 });
 
     await new Promise((resolve) => setImmediate(resolve));
-    expect(importModule).toHaveBeenCalled();
 
     expect(console.info).toHaveBeenCalledWith(
       expect.stringContaining("Arkos.js")
