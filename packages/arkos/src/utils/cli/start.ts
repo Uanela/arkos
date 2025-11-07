@@ -61,8 +61,6 @@ export async function startCommand(options: StartOptions = {}) {
       }
     );
 
-    if (env.CLI_PORT || env.PORT) portAndHostAllocator.logWarnings();
-
     watermarkStamper.stamp({
       envFiles,
       ...hostAndPort,
