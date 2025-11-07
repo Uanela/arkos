@@ -20,10 +20,7 @@ export function fullCleanCwd(path: string): string {
     path.startsWith(`${process.cwd()}`) ||
     path.startsWith(`${process.cwd()}/`)
   )
-    return path
-      .replaceAll(process.cwd(), "")
-      .replaceAll(/^\/+/g, "")
-      .replaceAll("\\", "");
+    return path.replaceAll(process.cwd(), "").replaceAll(/^\/+/g, "");
   else return path;
 }
 
