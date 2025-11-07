@@ -61,7 +61,6 @@ describe("BaseController", () => {
         sort: jest.fn().mockReturnThis(),
         limitFields: jest.fn().mockReturnThis(),
         paginate: jest.fn().mockImplementation(function (this: any) {
-          console.log("beastbro", req, modelName);
           this.filters = {
             ...this.filters,
             take: 30,
