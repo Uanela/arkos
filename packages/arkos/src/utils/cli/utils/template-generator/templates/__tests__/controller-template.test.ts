@@ -1,5 +1,6 @@
+import { pascalCase } from "../../../../../helpers/change-case.helpers";
 import { TemplateOptions } from "../../../template-generators";
-import { generateControllerTemplate } from "../controller-template";
+import { generateControllerTemplate } from "../generate-controller-template";
 
 describe("generateControllerTemplate", () => {
   describe("Error Handling", () => {
@@ -154,12 +155,10 @@ describe("generateControllerTemplate", () => {
 
       const result = generateControllerTemplate(options);
 
-      expect(result).toContain(
-        'import { AuthController } from "arkos/controllers"'
+      expect(result).not.toContain(
+        'import { AuthController as ArkosAuthController } from "arkos/controllers"'
       );
-      expect(result).toContain(
-        "class AuthController extends AuthController {}"
-      );
+      expect(result).toContain("class AuthController {}");
       expect(result).toContain("const authController = new AuthController();");
       expect(result).not.toContain('"auth"'); // No model name parameter
     });
@@ -178,9 +177,10 @@ describe("generateControllerTemplate", () => {
 
       const result = generateControllerTemplate(options);
 
-      expect(result).toContain(
+      expect(result).not.toContain(
         'import { AuthController } from "../../auth/controllers"'
       );
+      expect(result).toContain("class AuthController");
     });
   });
 
@@ -196,33 +196,14 @@ describe("generateControllerTemplate", () => {
 
       const result = generateControllerTemplate(options);
 
-      expect(result).toContain(
+      expect(result).not.toContain(
         'import { EmailController } from "arkos/controllers"'
       );
-      expect(result).toContain(
-        "class EmailController extends EmailController {}"
-      );
+      expect(result).toContain("class EmailController {}");
       expect(result).toContain(
         "const emailController = new EmailController();"
       );
       expect(result).not.toContain('"email"'); // No model name parameter
-    });
-
-    it("should use custom import path for EmailController", () => {
-      const options: TemplateOptions = {
-        modelName: {
-          pascal: "Email",
-          camel: "email",
-          kebab: "email",
-        },
-        imports: {
-          emailController: "@lib/email",
-        },
-      };
-
-      const result = generateControllerTemplate(options);
-
-      expect(result).toContain('import { EmailController } from "@lib/email"');
     });
   });
 
@@ -317,36 +298,6 @@ describe("generateControllerTemplate", () => {
         'const post2023Controller = new Post2023Controller("post-2023");'
       );
     });
-
-    it("should handle all special controller types with mixed case", () => {
-      const testCases = [
-        {
-          pascal: "FileUpload",
-          camel: "fileUpload",
-          type: "FileUploadController",
-        },
-        {
-          pascal: "Fileupload",
-          camel: "fileupload",
-          type: "FileUploadController",
-        },
-        { pascal: "Auth", camel: "auth", type: "AuthController" },
-        { pascal: "Email", camel: "email", type: "EmailController" },
-      ];
-
-      testCases.forEach(({ pascal, camel, type }) => {
-        const options: TemplateOptions = {
-          modelName: {
-            pascal,
-            camel,
-            kebab: camel,
-          },
-        };
-
-        const result = generateControllerTemplate(options);
-        expect(result).toContain(`import { ${type} }`);
-      });
-    });
   });
 
   describe("Import Overrides", () => {
@@ -430,7 +381,7 @@ describe("generateControllerTemplate", () => {
       testCases.forEach(({ camel, shouldMatch }) => {
         const options: TemplateOptions = {
           modelName: {
-            pascal: camel,
+            pascal: pascalCase(camel),
             camel,
             kebab: camel.toLowerCase(),
           },

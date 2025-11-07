@@ -168,10 +168,10 @@ describe("generateServiceTemplate", () => {
       const result = generateServiceTemplate(options);
 
       expect(result).toContain(
-        'import { FileUploadService } from "arkos/services"'
+        'import { FileUploadService as ArkosFileUploadService } from "arkos/services"'
       );
       expect(result).toContain(
-        "class FileUploadService extends FileUploadService {}"
+        "class FileUploadService extends ArkosFileUploadService {}"
       );
       expect(result).toContain(
         "const fileUploadService = new FileUploadService();"
@@ -193,7 +193,7 @@ describe("generateServiceTemplate", () => {
 
       expect(result).not.toContain('<"file-upload">');
       expect(result).toContain(
-        "class FileUploadService extends FileUploadService {}"
+        "class FileUploadService extends ArkosFileUploadService {}"
       );
     });
 
@@ -212,7 +212,7 @@ describe("generateServiceTemplate", () => {
       const result = generateServiceTemplate(options);
 
       expect(result).toContain(
-        'import { FileUploadService } from "@custom/services"'
+        'import { FileUploadService as ArkosFileUploadService } from "@custom/services"'
       );
     });
   });
@@ -233,8 +233,10 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('import { AuthService } from "arkos/services"');
-      expect(result).toContain("class AuthService extends AuthService {}");
+      expect(result).toContain(
+        'import { AuthService as ArkosAuthService } from "arkos/services"'
+      );
+      expect(result).toContain("class AuthService extends ArkosAuthService {}");
       expect(result).toContain("const authService = new AuthService();");
       expect(result).not.toContain('"auth"');
       expect(result).not.toContain("<");
@@ -269,7 +271,7 @@ describe("generateServiceTemplate", () => {
       const result = generateServiceTemplate(options);
 
       expect(result).toContain(
-        'import { AuthService } from "../../auth/services"'
+        'import { AuthService as ArkosAuthService } from "../../auth/services"'
       );
     });
   });
@@ -290,8 +292,12 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('import { EmailService } from "arkos/services"');
-      expect(result).toContain("class EmailService extends EmailService {}");
+      expect(result).toContain(
+        'import { EmailService as ArkosEmailService } from "arkos/services"'
+      );
+      expect(result).toContain(
+        "class EmailService extends ArkosEmailService {}"
+      );
       expect(result).toContain("const emailService = new EmailService();");
       expect(result).not.toContain('"email"');
       expect(result).not.toContain("<");
@@ -325,7 +331,9 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('import { EmailService } from "@lib/email"');
+      expect(result).toContain(
+        'import { EmailService as ArkosEmailService } from "@lib/email"'
+      );
     });
   });
 
