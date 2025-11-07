@@ -125,13 +125,16 @@ export const processImage = async (
     await promisify(fs.rename)(tempPath, filePath);
 
     return processFile(req, filePath);
-  } catch (error) {
+  } catch (error: any) {
     try {
       await promisify(fs.stat)(tempPath);
       await promisify(fs.unlink)(tempPath);
     } catch (err) {
       // If temp file doesn't exist, no need to clean up
     }
+
+    if (error.message === "Input file contains unsupported image format")
+      return processFile(req, filePath);
     throw error;
   }
 };
