@@ -84,7 +84,7 @@ describe("Server Module", () => {
         expect.objectContaining({
           welcomeMessage: expect.any(String),
           port: 8000,
-          host: "localhost",
+          host: "0.0.0.0",
           fileUpload: expect.any(Object),
           available: true,
         })
@@ -110,7 +110,7 @@ describe("Server Module", () => {
         expect.objectContaining({
           welcomeMessage: "Custom Welcome",
           port: 9000,
-          host: "localhost",
+          host: "0.0.0.0",
         })
       );
     });
@@ -169,7 +169,7 @@ describe("Server Module", () => {
       expect(console.error).toHaveBeenCalledWith(error);
     });
 
-    it("handles case where portAndHostAllocator returns undefined", async () => {
+    it("handles case where portAndHostAllocator returns undefined before build", async () => {
       (
         portAndHostAllocator.getHostAndAvailablePort as jest.Mock
       ).mockResolvedValue(undefined);
@@ -179,7 +179,22 @@ describe("Server Module", () => {
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({
           port: 8000, // Should fall back to default
-          host: "localhost", // Should fall back to default
+          host: "0.0.0.0", // Should fall back to default
+        })
+      );
+    });
+
+    it("handles case where portAndHostAllocator returns undefined after build", async () => {
+      (
+        portAndHostAllocator.getHostAndAvailablePort as jest.Mock
+      ).mockResolvedValue(undefined);
+
+      await initApp();
+
+      expect(bootstrap).toHaveBeenCalledWith(
+        expect.objectContaining({
+          port: 8000, // Should fall back to default
+          host: "0.0.0.0", // Should fall back to default
         })
       );
     });
@@ -192,7 +207,7 @@ describe("Server Module", () => {
 
       expect(config).toMatchObject({
         port: 8000,
-        host: "localhost",
+        host: "0.0.0.0",
         available: true,
         fileUpload: expect.any(Object),
       });
