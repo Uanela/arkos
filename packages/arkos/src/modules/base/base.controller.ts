@@ -419,7 +419,7 @@ export class BaseController {
     operationType: "createMany",
     serviceMethod: "createMany",
     successStatus: 201,
-    queryFeatures: ["limitFields"],
+    queryFeatures: [],
     usesRequestBody: true,
   });
 
