@@ -95,7 +95,9 @@ async function initApp(
         Number(portAndHost?.port),
         portAndHost.host! === "localhost" ? "127.0.0.1" : portAndHost.host!,
         () => {
-          const message = `${sheu.gray(time)} {{server}} waiting on http://${portAndHost?.host === "0.0.0.0" ? "localhost" : portAndHost?.host}:${portAndHost?.port}`;
+          const host =
+            portAndHost?.host === "0.0.0.0" ? "localhost" : portAndHost?.host;
+          const message = `${sheu.gray(time)} {{server}} waiting on http://${host}:${portAndHost?.port}`;
 
           sheu.ready(
             message.replace(
@@ -105,10 +107,12 @@ async function initApp(
           );
           if (networkHost && portAndHost.host === "0.0.0.0")
             sheu.ready(
-              message.replace(
-                "{{server}}",
-                `Network ${process.env.NODE_ENV || "development"} server`
-              )
+              message
+                .replace(
+                  "{{server}}",
+                  `Network ${process.env.NODE_ENV || "development"} server`
+                )
+                .replace(host, networkHost)
             );
           if (_arkosConfig?.swagger?.mode)
             sheu.ready(
