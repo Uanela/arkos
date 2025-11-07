@@ -233,13 +233,14 @@ describe("BaseController", () => {
       const mockTotal = 1;
       mockBaseService.findMany.mockResolvedValue(mockData);
       mockBaseService.count.mockResolvedValue(mockTotal);
+      mockRequest.query = { published: true };
 
       await baseController.findMany(mockRequest, mockResponse, mockNext);
 
       expect(APIFeatures).toHaveBeenCalled();
       expect(mockBaseService.findMany).toHaveBeenCalledWith(
         { published: true },
-        expect.any(Object),
+        { take: 30, skip: 0 },
         {
           accessToken: undefined,
           user: undefined,
