@@ -31,7 +31,15 @@ export function generateControllerTemplate(options: TemplateOptions): string {
 
   const controllerClassImport = `import { ${controllerName} } from "${controllerImport}";`;
 
-  return `${controllerClassImport}
+  if (["email", "auth"].includes(camelName))
+    return `class ${modelName.pascal}Controller {}
+
+const ${modelName.camel}Controller = new ${modelName.pascal}Controller(${controllerType === "base" ? `"${modelName.kebab}"` : ""});
+
+export default ${modelName.camel}Controller;
+`;
+  else
+    return `${controllerClassImport}
   
 class ${modelName.pascal}Controller extends ${controllerName} {}
 

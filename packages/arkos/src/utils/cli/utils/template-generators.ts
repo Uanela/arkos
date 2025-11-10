@@ -1,4 +1,4 @@
-import { generateControllerTemplate } from "./template-generator/templates/controller-template";
+import { generateControllerTemplate } from "./template-generator/templates/generate-controller-template";
 import { generateAuthConfigsTemplate } from "./template-generator/templates/auth-configs-template";
 import { generateMiddlewaresTemplate } from "./template-generator/templates/middlewares-template";
 import { generateQueryOptionsTemplate } from "./template-generator/templates/query-options-template";

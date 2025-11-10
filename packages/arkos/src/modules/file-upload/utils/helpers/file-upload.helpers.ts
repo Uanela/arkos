@@ -10,6 +10,7 @@ import {
   ArkosResponse,
 } from "../../../../types";
 import { fullCleanCwd } from "../../../../utils/helpers/fs.helpers";
+import AppError from "../../../error-handler/utils/app-error";
 
 export function adjustRequestUrl(
   req: ArkosRequest,
@@ -78,6 +79,7 @@ export const processFile = async (
  */
 export const processImage = async (
   req: ArkosRequest,
+  next: ArkosNextFunction,
   filePath: string,
   options: Record<string, any>
 ): Promise<string | null> => {
@@ -121,13 +123,17 @@ export const processImage = async (
     await promisify(fs.rename)(tempPath, filePath);
 
     return processFile(req, filePath);
-  } catch (error) {
+  } catch (error: any) {
     try {
       await promisify(fs.stat)(tempPath);
       await promisify(fs.unlink)(tempPath);
     } catch (err) {
       // If temp file doesn't exist, no need to clean up
     }
-    throw error;
+
+    if (error.message === "Input file contains unsupported image format")
+      return processFile(req, filePath);
+    next(new AppError(error.message, 400, "CannotProcessImage", { error }));
+    return null;
   }
 };

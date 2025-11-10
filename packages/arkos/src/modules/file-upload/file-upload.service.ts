@@ -6,7 +6,12 @@ import AppError from "../error-handler/utils/app-error";
 import { promisify } from "util";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { ArkosRequest, ArkosRequestHandler, ArkosResponse } from "../../types";
+import {
+  ArkosNextFunction,
+  ArkosRequest,
+  ArkosRequestHandler,
+  ArkosResponse,
+} from "../../types";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { removeBothSlashes } from "../../utils/helpers/text.helpers";
 
@@ -284,6 +289,7 @@ export class FileUploadService {
   public async upload(
     req: ArkosRequest,
     res: ArkosResponse,
+    next: ArkosNextFunction,
     options: {
       format?: string;
       width?: number;
@@ -326,7 +332,9 @@ export class FileUploadService {
             const isImageUpload = this.uploadDir?.includes?.("/images");
             if (isImageUpload) {
               data = await Promise.all(
-                req.files.map((file) => processImage(req, file.path, options))
+                req.files.map((file) =>
+                  processImage(req, next, file.path, options)
+                )
               );
             } else {
               data = await Promise.all(
@@ -339,7 +347,7 @@ export class FileUploadService {
             // Process a single file
             const isImageUpload = this.uploadDir?.includes?.("/images");
             if (isImageUpload) {
-              data = await processImage(req, req.file.path, options);
+              data = await processImage(req, next, req.file.path, options);
             } else {
               data = await processFile(req, req.file.path);
             }

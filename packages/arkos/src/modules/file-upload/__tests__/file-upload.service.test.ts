@@ -459,7 +459,7 @@ describe("FileUploadService", () => {
         }
       );
 
-      const result = await fileUploadService.upload(mockReq, mockRes);
+      const result = await fileUploadService.upload(mockReq, mockRes, mockNext);
 
       expect(result).toBe("http://localhost:3000/api/uploads/images/test.jpg");
     });
@@ -480,7 +480,7 @@ describe("FileUploadService", () => {
         }
       );
 
-      const result = await fileUploadService.upload(mockReq, mockRes);
+      const result = await fileUploadService.upload(mockReq, mockRes, mockNext);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(2);
@@ -508,11 +508,16 @@ describe("FileUploadService", () => {
         }
       );
 
-      const result = await imageUploadService.upload(mockReq, mockRes, {
-        width: 300,
-        height: 200,
-        format: "webp",
-      });
+      const result = await imageUploadService.upload(
+        mockReq,
+        mockRes,
+        mockNext,
+        {
+          width: 300,
+          height: 200,
+          format: "webp",
+        }
+      );
 
       expect(sharp).toHaveBeenCalledWith("images/test.jpg");
       expect(mockSharp.resize).toHaveBeenCalledWith(
@@ -536,7 +541,7 @@ describe("FileUploadService", () => {
       );
 
       await expect(
-        fileUploadService.upload(mockReq, mockRes)
+        fileUploadService.upload(mockReq, mockRes, mockNext)
       ).rejects.toBeInstanceOf(AppError);
       expect(AppError).toHaveBeenCalledWith("No file uploaded", 400);
     });
@@ -548,9 +553,9 @@ describe("FileUploadService", () => {
         (req: any, res: any, next: Function) => next(uploadError)
       );
 
-      await expect(fileUploadService.upload(mockReq, mockRes)).rejects.toEqual(
-        uploadError
-      );
+      await expect(
+        fileUploadService.upload(mockReq, mockRes, mockNext)
+      ).rejects.toEqual(uploadError);
     });
 
     it("should handle image processing errors", async () => {
@@ -574,8 +579,11 @@ describe("FileUploadService", () => {
       mockSharp.toFile.mockRejectedValueOnce(processingError);
 
       await expect(
-        imageUploadService.upload(mockReq, mockRes, { format: "webp" })
-      ).rejects.toEqual(processingError);
+        imageUploadService.upload(mockReq, mockRes, mockNext, {
+          format: "webp",
+        })
+      ).resolves.toBe(null);
+      expect(mockNext).toHaveBeenCalled();
     });
   });
 
@@ -834,7 +842,7 @@ describe("FileUploadService", () => {
         }
       );
 
-      const result = await fileUploadService.upload(mockReq, mockRes);
+      const result = await fileUploadService.upload(mockReq, mockRes, mockNext);
       expect(result).toBe("http://example.com/api/uploads/images/test.jpg");
     });
 
@@ -855,7 +863,7 @@ describe("FileUploadService", () => {
         }
       );
 
-      const result = await fileUploadService.upload(mockReq, mockRes);
+      const result = await fileUploadService.upload(mockReq, mockRes, mockNext);
       expect(result).toBe("http://localhost:3000/api/uploads/images/test.jpg");
     });
   });
@@ -875,7 +883,7 @@ describe("FileUploadService", () => {
         }
       );
 
-      const result = await serviceWithSlash.upload(mockReq, mockRes);
+      const result = await serviceWithSlash.upload(mockReq, mockRes, mockNext);
       expect(result).toContain("/api/uploads/images/test.jpg");
     });
 
@@ -893,7 +901,11 @@ describe("FileUploadService", () => {
         }
       );
 
-      const result = await serviceWithoutSlash.upload(mockReq, mockRes);
+      const result = await serviceWithoutSlash.upload(
+        mockReq,
+        mockRes,
+        mockNext
+      );
       expect(result).toContain("/api/uploads/videos/test.mp4");
     });
   });
@@ -922,7 +934,7 @@ describe("FileUploadService", () => {
       );
 
       const imageService = new FileUploadService("uploads/images");
-      const result = await imageService.upload(mockReq, mockRes);
+      const result = await imageService.upload(mockReq, mockRes, mockNext);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(1);
