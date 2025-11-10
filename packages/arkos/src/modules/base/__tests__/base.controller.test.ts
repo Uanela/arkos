@@ -43,13 +43,33 @@ describe("BaseController", () => {
     });
 
     // Setup mock for API features
-    (APIFeatures as jest.Mock).mockImplementation(() => ({
-      filter: jest.fn().mockReturnThis(),
-      sort: jest.fn().mockReturnThis(),
-      limitFields: jest.fn().mockReturnThis(),
-      paginate: jest.fn().mockReturnThis(),
-      filters: { where: { published: true } },
-    }));
+    (APIFeatures as jest.Mock).mockImplementation(function (
+      req: any,
+      modelName: string
+    ) {
+      return {
+        filters: {},
+        filter: jest.fn().mockImplementation(function (this: any) {
+          let whereClause = req.query;
+          if (req.query.filterMode) {
+            const { filterMode, ...restOfQuery } = req.query;
+            whereClause = { AND: restOfQuery };
+          }
+          this.filters = { ...this.filters, where: whereClause };
+          return this;
+        }),
+        sort: jest.fn().mockReturnThis(),
+        limitFields: jest.fn().mockReturnThis(),
+        paginate: jest.fn().mockImplementation(function (this: any) {
+          this.filters = {
+            ...this.filters,
+            take: 30,
+            skip: 0,
+          };
+          return this;
+        }),
+      };
+    });
 
     // Setup mock request, response, and next
     mockRequest = {
@@ -212,13 +232,14 @@ describe("BaseController", () => {
       const mockTotal = 1;
       mockBaseService.findMany.mockResolvedValue(mockData);
       mockBaseService.count.mockResolvedValue(mockTotal);
+      mockRequest.query = { published: true };
 
       await baseController.findMany(mockRequest, mockResponse, mockNext);
 
       expect(APIFeatures).toHaveBeenCalled();
       expect(mockBaseService.findMany).toHaveBeenCalledWith(
         { published: true },
-        expect.any(Object),
+        { take: 30, skip: 0 },
         {
           accessToken: undefined,
           user: undefined,
@@ -447,10 +468,20 @@ describe("BaseController", () => {
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
       mockBaseService.updateMany.mockResolvedValue(mockResult);
+      // const baseControllerExecuteOperationSpy = jest.spyOn(
+      //   baseController,
+      //   "executeOperation" as any
+      // );
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
       expect(mockBaseService.updateMany).toHaveBeenCalled();
+      expect(mockBaseService.updateMany).toHaveBeenCalledWith(
+        { AND: { title: "Test" } },
+        { published: true },
+        {},
+        expect.any(Object)
+      );
       expect(mockRequest.query.filterMode).toBe("AND");
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({

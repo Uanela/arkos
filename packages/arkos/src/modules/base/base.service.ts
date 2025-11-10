@@ -45,6 +45,28 @@ import {
 import serviceHooksManager from "./utils/service-hooks-manager";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 
+export interface ServiceOperationHooks {
+  beforeOperation?: (params: any) => void | Promise<void>;
+  afterOperation?: (result: any, params: any) => void | Promise<void>;
+  beforePrisma?: (prismaArgs: any, params: any) => any | Promise<any>;
+  afterPrisma?: (result: any, params: any) => any | Promise<any>;
+}
+
+interface ServiceOperationConfig {
+  operationType: string;
+  prismaMethod: string;
+  requiresPasswordHashing?: boolean;
+  relationFieldsHandling?: string[];
+  returnsFallback?: any;
+  customPrismaLogic?: (
+    args: any[],
+    prisma: any,
+    config: ServiceOperationConfig,
+    context: BaseService<any>
+  ) => Promise<any>;
+  hooks?: ServiceOperationHooks;
+}
+
 /**
  * Base service class for handling CRUD operations on a specific model.
  * This class provides standard implementation of data operations that can be extended
@@ -81,28 +103,6 @@ import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
  * @see {@link https://www.arkosjs.com/docs/guide/accessing-request-context-in-services}
  *
  */
-export interface ServiceOperationHooks {
-  beforeOperation?: (params: any) => void | Promise<void>;
-  afterOperation?: (result: any, params: any) => void | Promise<void>;
-  beforePrisma?: (prismaArgs: any, params: any) => any | Promise<any>;
-  afterPrisma?: (result: any, params: any) => any | Promise<any>;
-}
-
-interface ServiceOperationConfig {
-  operationType: string;
-  prismaMethod: string;
-  requiresPasswordHashing?: boolean;
-  relationFieldsHandling?: string[];
-  returnsFallback?: any;
-  customPrismaLogic?: (
-    args: any[],
-    prisma: any,
-    config: ServiceOperationConfig,
-    context: BaseService<any>
-  ) => Promise<any>;
-  hooks?: ServiceOperationHooks;
-}
-
 export class BaseService<T extends ModelDelegate = any> {
   modelName: string;
   relationFields: ModelGroupRelationFields;
@@ -126,24 +126,29 @@ export class BaseService<T extends ModelDelegate = any> {
       const context = args[args.length - 1] as ServiceBaseContext;
 
       try {
+        let argsWithRelationFieldsHandled =
+          await this.processRelationFieldsInBody(args, config);
+        let prismaFinalArgs = await this.handlePasswordHashing(
+          argsWithRelationFieldsHandled,
+          config
+        );
+
         await this.executeHooks(
           "before",
           config.operationType,
-          this.buildHookParams(args, config),
+          this.buildHookParams(argsWithRelationFieldsHandled, config),
           context
         );
 
         if (config.hooks?.beforeOperation)
           await config.hooks.beforeOperation(
-            this.buildHookParams(args, config)
+            this.buildHookParams(argsWithRelationFieldsHandled, config)
           );
 
-        let processedArgs = await this.processArguments(args, config);
-
         if (config.hooks?.beforePrisma) {
-          processedArgs = await config.hooks.beforePrisma(
-            processedArgs,
-            this.buildHookParams(args, config)
+          argsWithRelationFieldsHandled = await config.hooks.beforePrisma(
+            argsWithRelationFieldsHandled,
+            this.buildHookParams(argsWithRelationFieldsHandled, config)
           );
         }
 
@@ -152,13 +157,13 @@ export class BaseService<T extends ModelDelegate = any> {
 
         if (config.customPrismaLogic) {
           result = await config.customPrismaLogic(
-            processedArgs,
+            argsWithRelationFieldsHandled,
             prisma,
             config,
             this
           );
         } else {
-          const prismaArgs = this.buildPrismaArgs(processedArgs, config);
+          const prismaArgs = this.buildPrismaArgs(prismaFinalArgs, config);
           result = await (prisma[this.modelName] as T)[
             config.prismaMethod as keyof T
           ](prismaArgs);
@@ -167,21 +172,24 @@ export class BaseService<T extends ModelDelegate = any> {
         if (config.hooks?.afterPrisma) {
           result = await config.hooks.afterPrisma(
             result,
-            this.buildHookParams(args, config)
+            this.buildHookParams(argsWithRelationFieldsHandled, config)
           );
         }
 
         await this.executeHooks(
           "after",
           config.operationType,
-          { ...this.buildHookParams(args, config), result },
+          {
+            ...this.buildHookParams(argsWithRelationFieldsHandled, config),
+            result,
+          },
           context
         );
 
         if (config.hooks?.afterOperation) {
           await config.hooks.afterOperation(
             result,
-            this.buildHookParams(args, config)
+            this.buildHookParams(argsWithRelationFieldsHandled, config)
           );
         }
 
@@ -204,16 +212,26 @@ export class BaseService<T extends ModelDelegate = any> {
       const context = args[args.length - 1] as ServiceBaseContext;
 
       try {
+        let argsWithRelationFieldsHandled =
+          await this.processRelationFieldsInBody(args, config);
+        let prismaFinalArgs = await this.handlePasswordHashing(
+          argsWithRelationFieldsHandled,
+          config
+        );
+
         await this.executeHooks(
           "before",
           config.operationType,
-          this.buildTransactionHookParams(args, config),
+          this.buildTransactionHookParams(
+            argsWithRelationFieldsHandled,
+            config
+          ),
           context
         );
 
         const prisma = getPrismaInstance();
         const results = await this.executeTransactionLogic(
-          args,
+          prismaFinalArgs,
           config,
           prisma
         );
@@ -221,7 +239,13 @@ export class BaseService<T extends ModelDelegate = any> {
         await this.executeHooks(
           "after",
           config.operationType,
-          { ...this.buildTransactionHookParams(args, config), results },
+          {
+            ...this.buildTransactionHookParams(
+              argsWithRelationFieldsHandled,
+              config
+            ),
+            results,
+          },
           context
         );
         return results;
@@ -245,7 +269,6 @@ export class BaseService<T extends ModelDelegate = any> {
     context?: ServiceBaseContext
   ): Promise<void> {
     const serviceHooks = getModuleComponents(this.modelName)?.hooks;
-
     if (!serviceHooks) return;
 
     const skipCondition =
@@ -258,9 +281,7 @@ export class BaseService<T extends ModelDelegate = any> {
     const hookName = `${hookType === "error" ? "on" : hookType}${operationType.charAt(0).toUpperCase()}${operationType.slice(1)}${hookType === "error" ? "Error" : ""}`;
     const hook = serviceHooks[hookName as keyof typeof serviceHooks];
 
-    if (hook && typeof hook === "function") {
-      await serviceHooksManager.handleHook(hook, params);
-    }
+    if (hook) await serviceHooksManager.handleHook(hook, params);
   }
 
   private buildHookParams(args: any[], config: ServiceOperationConfig): any {
@@ -317,22 +338,81 @@ export class BaseService<T extends ModelDelegate = any> {
     }
   }
 
-  private async processArguments(
+  private async handlePasswordHashing(
     args: any[],
     config: ServiceOperationConfig
   ): Promise<any[]> {
     let processedArgs = [...args];
 
     if (config.requiresPasswordHashing) {
-      const dataIndex =
-        config.operationType.includes("update") &&
-        config.operationType !== "updateMany"
-          ? 1
-          : 0;
+      const dataIndex = config.operationType.includes("update") ? 1 : 0;
       const data = processedArgs[dataIndex];
 
-      if (this.shouldHashPassword(data)) {
+      if (Array.isArray(data)) {
+        for (const i in data) {
+          if (this.shouldHashPassword(data[i]))
+            processedArgs[dataIndex][i] = await this.processPasswordHashing(
+              data[i]
+            );
+        }
+      } else if (this.shouldHashPassword(data)) {
         processedArgs[dataIndex] = await this.processPasswordHashing(data);
+      }
+    }
+
+    return processedArgs;
+  }
+
+  private async processRelationFieldsInBody(
+    args: any[],
+    config: ServiceOperationConfig
+  ): Promise<any[]> {
+    let processedArgs = [...args];
+
+    if (config.relationFieldsHandling) {
+      const dataIndex = config.operationType.includes("update") ? 1 : 0;
+
+      if (config.operationType === "batchUpdate") {
+        const dataArray = processedArgs[0];
+        if (Array.isArray(dataArray)) {
+          processedArgs[0] = dataArray.map((data) =>
+            handleRelationFieldsInBody(
+              data as Record<string, any>,
+              this.relationFields,
+              config.relationFieldsHandling
+            )
+          );
+        }
+      } else if (config.operationType === "batchDelete") {
+        const batchFilters = processedArgs[0];
+        if (Array.isArray(batchFilters)) {
+          processedArgs[0] = batchFilters.map((filters) =>
+            handleRelationFieldsInBody(
+              filters as Record<string, any>,
+              this.relationFields
+            )
+          );
+        }
+      } else if (config.operationType === "createMany") {
+        const data = processedArgs[dataIndex];
+        if (Array.isArray(data)) {
+          processedArgs[dataIndex] = data.map((item) =>
+            handleRelationFieldsInBody(
+              item as Record<string, any>,
+              this.relationFields,
+              config.relationFieldsHandling
+            )
+          );
+        }
+      } else {
+        const data = processedArgs[dataIndex];
+        if (data) {
+          processedArgs[dataIndex] = handleRelationFieldsInBody(
+            data as Record<string, any>,
+            this.relationFields,
+            config.relationFieldsHandling
+          );
+        }
       }
     }
 
@@ -343,14 +423,7 @@ export class BaseService<T extends ModelDelegate = any> {
     switch (config.operationType) {
       case "createOne":
       case "createMany":
-        const data = config.relationFieldsHandling
-          ? handleRelationFieldsInBody(
-              args[0] as Record<string, any>,
-              this.relationFields,
-              config.relationFieldsHandling
-            )
-          : args[0];
-        return deepmerge({ data }, args[1] || {});
+        return deepmerge({ data: args[0] }, args[1] || {});
 
       case "findMany":
         return deepmerge({ where: args[0] }, args[1] || {});
@@ -362,13 +435,7 @@ export class BaseService<T extends ModelDelegate = any> {
         return deepmerge({ where: args[0] }, args[1] || {});
 
       case "updateOne":
-        const updateData = config.relationFieldsHandling
-          ? handleRelationFieldsInBody(
-              args[1] as Record<string, any>,
-              this.relationFields
-            )
-          : args[1];
-        return deepmerge({ where: args[0], data: updateData }, args[2] || {});
+        return deepmerge({ where: args[0], data: args[1] }, args[2] || {});
 
       case "updateMany":
         const firstMerge = deepmerge({ data: args[1] }, args[2] || {});
@@ -439,13 +506,8 @@ export class BaseService<T extends ModelDelegate = any> {
 
       return await prisma.$transaction(async (tx: any) => {
         const deletePromises = batchFilters.map(async (filters: any) => {
-          const filtersWithRelationFieldsHandled = handleRelationFieldsInBody(
-            filters as Record<string, any>,
-            this.relationFields
-          );
-
           return await (tx[this.modelName] as T).delete({
-            where: filtersWithRelationFieldsHandled,
+            where: filters,
           });
         });
 
@@ -514,37 +576,6 @@ export class BaseService<T extends ModelDelegate = any> {
       requiresPasswordHashing: true,
       relationFieldsHandling: ["delete", "disconnect", "update"],
       returnsFallback: undefined,
-      customPrismaLogic: async (args, prisma, _, serviceContext) => {
-        const data = args[0];
-        const queryOptions = args[1];
-        const dataWithRelationFieldsHandled: any[] = [];
-
-        if (Array.isArray(data)) {
-          for (let i = 0; i < data.length; i++) {
-            let curr = data[i];
-            if ("password" in curr && serviceContext.modelName === "user") {
-              if (!authService.isPasswordHashed(curr.password!)) {
-                curr = {
-                  ...curr,
-                  password: await authService.hashPassword(curr.password!),
-                };
-              }
-            }
-            dataWithRelationFieldsHandled[i] = handleRelationFieldsInBody(
-              curr as Record<string, any>,
-              serviceContext.relationFields,
-              ["delete", "disconnect", "update"]
-            );
-          }
-        }
-
-        return await (prisma[serviceContext.modelName] as T).createMany(
-          deepmerge(
-            { data: dataWithRelationFieldsHandled },
-            queryOptions || {}
-          ) as { data: any }
-        );
-      },
     })(data, queryOptions, context);
   }
 
@@ -638,33 +669,8 @@ export class BaseService<T extends ModelDelegate = any> {
       operationType: "updateMany",
       prismaMethod: "updateMany",
       requiresPasswordHashing: true,
+      relationFieldsHandling: [],
       returnsFallback: undefined,
-      customPrismaLogic: async (args, prisma, _, serviceContext) => {
-        const filters = args[0];
-        const data = args[1];
-        const queryOptions = args[2];
-
-        let processedData = data;
-        if (serviceContext.modelName === "user" && data?.password) {
-          if (!authService.isPasswordHashed(data.password)) {
-            processedData = {
-              ...data,
-              password: await authService.hashPassword(data.password),
-            };
-          }
-        }
-
-        const firstMerge = deepmerge(
-          { data: processedData },
-          queryOptions || {}
-        );
-        return await (prisma[serviceContext.modelName] as T).updateMany(
-          deepmerge({ where: filters }, firstMerge) as {
-            where: any;
-            data: any;
-          }
-        );
-      },
     })(filters, data, queryOptions, context);
   }
 
@@ -699,6 +705,7 @@ export class BaseService<T extends ModelDelegate = any> {
       operationType: "batchUpdate",
       prismaMethod: "update",
       requiresPasswordHashing: true,
+      relationFieldsHandling: [],
       returnsFallback: undefined,
     })(dataArray, queryOptions, context);
   }
@@ -710,6 +717,7 @@ export class BaseService<T extends ModelDelegate = any> {
     return this.executeTransactionOperation({
       operationType: "batchDelete",
       prismaMethod: "delete",
+      relationFieldsHandling: [],
       returnsFallback: undefined,
     })(batchFilters, context);
   }

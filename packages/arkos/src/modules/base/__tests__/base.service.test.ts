@@ -33,7 +33,13 @@ jest.mock("../../../server", () => ({
   getArkosConfig: jest.fn(() => ({ validation: true })),
 }));
 jest.mock("../utils/service-hooks-manager", () => ({
-  handleHook: jest.fn((hook, data) => hook(data)),
+  handleHook: jest.fn((hook: any, data) => {
+    if (Array.isArray(hook)) {
+      for (const hookItem of hook) {
+        hookItem(data);
+      }
+    } else hook(data);
+  }),
 }));
 
 const handleRelationFieldsInBody = jest.spyOn(
@@ -160,6 +166,16 @@ describe("BaseService", () => {
       const data = { email: "test@test.com", password: "plaintext" };
       const hashedPassword = "hashed_password";
 
+      const mockBeforeHook = jest.fn();
+      const mockAfterHook = jest.fn();
+
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: {
+          beforeCreateOne: mockBeforeHook,
+          afterCreateOne: mockAfterHook,
+        },
+      });
+
       (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
       (authService.hashPassword as jest.Mock).mockResolvedValue(hashedPassword);
       mockPrisma.user.create.mockResolvedValue({
@@ -170,6 +186,10 @@ describe("BaseService", () => {
 
       await userService.createOne(data);
 
+      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
+        mockBeforeHook,
+        expect.objectContaining({ data })
+      );
       expect(authService.isPasswordHashed).toHaveBeenCalledWith("plaintext");
       expect(authService.hashPassword).toHaveBeenCalledWith("plaintext");
       expect(mockPrisma.user.create).toHaveBeenCalledWith({
@@ -193,8 +213,36 @@ describe("BaseService", () => {
       });
     });
 
-    it("should execute beforeCreateOne hook", async () => {
+    it("should execute beforeCreateOne hook with already handled relation fields", async () => {
       const mockHook = jest.fn();
+      const data = {
+        title: "Test",
+        tags: [{ id: "123" }, { name: "hello", color: "#f00" }],
+      };
+      const transformedData = {
+        tags: {
+          connect: [{ id: "123" }],
+          create: [{ color: "#f00", name: "hello" }],
+        },
+        title: "Test",
+      };
+
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: { beforeCreateOne: mockHook },
+      });
+
+      mockPrisma.post.create.mockResolvedValue({ id: "1", title: "Test" });
+
+      await baseService.createOne(data);
+
+      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
+        mockHook,
+        expect.objectContaining({ data: transformedData })
+      );
+    });
+
+    it("should execute beforeCreateOne hook as array of functions", async () => {
+      const mockHook = [jest.fn()];
       const data = { title: "Test" };
 
       (getModuleComponents as jest.Mock).mockReturnValue({
@@ -227,6 +275,24 @@ describe("BaseService", () => {
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
         mockHook,
         expect.objectContaining({ result, data })
+      );
+    });
+
+    it("should execute afterCreateOne hook as array of functions", async () => {
+      const mockHook = [jest.fn()];
+      const data = { title: "Test" };
+
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        hooks: { afterCreateOne: mockHook },
+      });
+
+      mockPrisma.post.create.mockResolvedValue({ id: "1", ...data });
+
+      await baseService.createOne(data);
+
+      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
+        mockHook,
+        expect.objectContaining({ data })
       );
     });
 
@@ -357,8 +423,41 @@ describe("BaseService", () => {
   describe("createMany", () => {
     it("should create multiple records successfully", async () => {
       const data = [
-        { title: "Post 1", content: "Content 1" },
-        { title: "Post 2", content: "Content 2" },
+        { title: "Post 1", content: "Content 1", tags: [{ id: "4321" }] },
+        {
+          title: "Post 2",
+          content: "Content 2",
+          tags: [{ name: "boss" }, { id: "1324" }],
+        },
+      ];
+      const transformedData = [
+        {
+          content: "Content 1",
+          tags: {
+            connect: [
+              {
+                id: "4321",
+              },
+            ],
+          },
+          title: "Post 1",
+        },
+        {
+          content: "Content 2",
+          tags: {
+            connect: [
+              {
+                id: "1324",
+              },
+            ],
+            create: [
+              {
+                name: "boss",
+              },
+            ],
+          },
+          title: "Post 2",
+        },
       ];
 
       mockPrisma.post.createMany.mockResolvedValue({ count: 2 });
@@ -367,7 +466,7 @@ describe("BaseService", () => {
 
       expect(handleRelationFieldsInBody).toHaveBeenCalledTimes(2);
       expect(mockPrisma.post.createMany).toHaveBeenCalledWith({
-        data: data,
+        data: transformedData,
       });
       expect(result).toEqual({ count: 2 });
     });
@@ -871,7 +970,26 @@ describe("BaseService", () => {
   describe("updateOne", () => {
     it("should update a record successfully", async () => {
       const filters = { id: "1" };
-      const data = { title: "Updated Title" };
+      const data = {
+        title: "Updated Title",
+        tags: [{ id: "1234", color: "#ff3" }],
+      };
+      const transformedData = {
+        tags: {
+          update: [
+            {
+              data: {
+                color: "#ff3",
+              },
+              where: {
+                id: "1234",
+              },
+            },
+          ],
+        },
+        title: "Updated Title",
+      };
+
       const expectedResult = { id: "1", title: "Updated Title" };
 
       mockPrisma.post.update.mockResolvedValue(expectedResult);
@@ -880,11 +998,12 @@ describe("BaseService", () => {
 
       expect(handleRelationFieldsInBody).toHaveBeenCalledWith(
         data,
-        baseService.relationFields
+        baseService.relationFields,
+        []
       );
       expect(mockPrisma.post.update).toHaveBeenCalledWith({
         where: filters,
-        data: data,
+        data: transformedData,
       });
       expect(result).toEqual(expectedResult);
     });
@@ -1001,7 +1120,7 @@ describe("BaseService", () => {
   describe("updateMany", () => {
     it("should update multiple records successfully", async () => {
       const filters = { published: false };
-      const data = { published: true };
+      const data = { published: true, tags: [{ name: "sheu", color: "pink" }] };
       const expectedResult = { count: 3 };
 
       mockPrisma.post.updateMany.mockResolvedValue(expectedResult);
@@ -1010,7 +1129,17 @@ describe("BaseService", () => {
 
       expect(mockPrisma.post.updateMany).toHaveBeenCalledWith({
         where: filters,
-        data: data,
+        data: {
+          published: true,
+          tags: {
+            create: [
+              {
+                color: "pink",
+                name: "sheu",
+              },
+            ],
+          },
+        },
       });
       expect(result).toEqual(expectedResult);
     });

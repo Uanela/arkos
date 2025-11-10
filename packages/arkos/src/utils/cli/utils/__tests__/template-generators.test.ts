@@ -125,6 +125,25 @@ describe("generateTemplate", () => {
       );
     });
 
+    it("should generate TypeScript service template from special modules", () => {
+      mockedGetUserFileExtension.mockReturnValue("ts");
+      const result = generateTemplate("service", {
+        modelName: {
+          camel: "fileUpload",
+          pascal: "FileUpload",
+          kebab: "file-upload",
+        },
+      });
+
+      expect(result).not.toContain('import { Prisma } from "@prisma/client"');
+      expect(result).toContain(
+        'import { FileUploadService as ArkosFileUploadService } from "arkos/services"'
+      );
+      expect(result).toContain(
+        "class FileUploadService extends ArkosFileUploadService"
+      );
+    });
+
     it("should generate JavaScript service template", () => {
       mockedGetUserFileExtension.mockReturnValue("js");
       const result = generateTemplate("service", { modelName: mockModelName });
