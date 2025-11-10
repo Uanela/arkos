@@ -16,6 +16,48 @@ All notable changes to Arkos.js will be documented in this file.
 
 ---
 
+## [1.3.8-beta] - 2025-11-10
+
+### Added
+
+- **CLI Enhancements**
+    - Added built-in CLI for generating Arkos and Express components (controllers, routers, services, middlewares, query options, auth configs)
+    - Added `create-arkos` CLI for quickly scaffolding new Arkos.js projects with interactive setup
+    - Added smart detection for TypeScript vs JavaScript based on project configuration
+    - Added file existence checking and import adjustments in CLI generation
+    - Added support for multiple naming conventions (camelCase, PascalCase, kebab-case) in CLI
+    - Added specialized templates for `auth` and `fileUpload` models in CLI
+- **File Upload System**
+    - Added file upload interceptor middlewares (`beforeUploadFile`, `afterUploadFile`, `beforeUpdateFile`, `afterUpdateFile`, `beforeDeleteFile`, `afterDeleteFile`, `beforeFindFile`)
+    - Added `PATCH /api/uploads/:fileType/:fileName` endpoint for auto-updating uploaded files with complete file replacement workflow
+- **Prisma Query Options**
+    - Added simplified grouped query options: `find`, `save`, `create`, `update`, `delete`, `saveOne`, `saveMany` for controlling related operations together
+    - Added simplified naming convention from `model.prisma-query-options.ts` to `model.query.ts`
+    - Added backward compatibility for old naming convention
+- **Authentication**
+    - Added `authService.isPasswordHashed` method to prevent double password encryption
+    - Added simplified naming convention from `model.auth-configs.ts` to `model.auth.ts`
+- **Development Experience**
+    - Added automatic file watcher for hot reload on file creation/deletion under src directory
+    - Added environment file change detection (.env, .env.local, .env.development, etc.)
+    - Added package.json and configuration file change detection (tsconfig.json, arkos.config.\*)
+    - Added timestamped restart messages for better development feedback
+- **API Exports**
+    - Added `getArkosConfig()` function to access running ArkosConfig instance
+
+### Changed
+
+- Renamed `queryOptions` property to `global` in PrismaQueryOptions for better clarity
+- Enhanced CLI to automatically wrap generated code with required patterns (e.g., no manual `catchAsync` needed for middlewares)
+
+### Fixed
+
+### Removed
+
+### Deprecated
+
+---
+
 ## [1.3.3-beta] - 2025-09-21
 
 ### Add
