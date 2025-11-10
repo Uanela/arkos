@@ -156,7 +156,11 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (!usernameValue || !password)
           return next(
-            new AppError(`Please provide both ${lastField} and password`, 400)
+            new AppError(
+              `Please provide both ${lastField} and password`,
+              400,
+              `MissingCredentialFields`
+            )
           );
 
         let whereClause: Record<string, any>;
@@ -180,7 +184,13 @@ export const authControllerFactory = async (interceptors: any = {}) => {
           !user ||
           !(await authService.isCorrectPassword(password, user.password))
         ) {
-          return next(new AppError(`Incorrect ${lastField} or password`, 401));
+          return next(
+            new AppError(
+              `Incorrect ${lastField} or password`,
+              401,
+              `IncorrectCredentials`
+            )
+          );
         }
 
         const token = authService.signJwtToken(user.id!);
@@ -313,7 +323,11 @@ export const authControllerFactory = async (interceptors: any = {}) => {
 
         if (!currentPassword || !newPassword)
           return next(
-            new AppError("currentPassword and newPassword are required", 400)
+            new AppError(
+              "currentPassword and newPassword are required",
+              400,
+              "SameCurrentAndNewPassword"
+            )
           );
 
         const user = req.user;
@@ -321,7 +335,6 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         if (!user || user?.isActive === false || user?.deletedSelfAccountAt)
           return next(new AppError("User not found!", 404));
 
-        // Check if the current password is correct
         const isPasswordCorrect = await authService.isCorrectPassword(
           String(currentPassword),
           String(user.password)
@@ -331,9 +344,14 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         const initAuthConfigs = configs?.authentication;
 
         if (!isPasswordCorrect)
-          return next(new AppError("Current password is incorrect.", 400));
+          return next(
+            new AppError(
+              "Current password is incorrect",
+              400,
+              "IncorrentCurrentPassword"
+            )
+          );
 
-        // Check password strength (optional but recommended)
         if (
           !authService.isPasswordStrong(String(newPassword)) &&
           !configs?.validation
@@ -342,12 +360,12 @@ export const authControllerFactory = async (interceptors: any = {}) => {
             new AppError(
               initAuthConfigs?.passwordValidation?.message ||
                 "The new password must contain at least one uppercase letter, one lowercase letter, and one number",
-              400
+              400,
+              "PasswordDotNotMeetRequirements"
             )
           );
         }
 
-        // Update the password
         await userService.updateOne(
           { id: user.id },
           {
@@ -399,7 +417,11 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         const resourceName = req.params?.resourceName;
 
         if (!resourceName)
-          throw new AppError(`Please provide a resoureName`, 400);
+          throw new AppError(
+            `Please provide a resoureName`,
+            400,
+            "MissiongResourseName"
+          );
 
         const authActions = authActionService
           .getByResource(req.params?.resourceName)
@@ -412,7 +434,8 @@ export const authControllerFactory = async (interceptors: any = {}) => {
         if (!authActions)
           throw new AppError(
             `No auth action with resource name ${resourceName}`,
-            404
+            404,
+            "AuthActionNotFound"
           );
 
         res.json({

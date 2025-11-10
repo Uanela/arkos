@@ -16,11 +16,8 @@
       console.error("Error checking package.json:", err);
     }
 
-    if (useEsm) {
-      await import("./dist/esm/utils/cli/index.js");
-    } else {
-      await import("./dist/cjs/utils/cli/index.js");
-    }
+    if (useEsm) await import("./dist/esm/utils/cli/index.js");
+    else await import("./dist/cjs/utils/cli/index.js");
   } catch (err) {
     console.error("Failed to load CLI:", err);
     process.exit(1);
