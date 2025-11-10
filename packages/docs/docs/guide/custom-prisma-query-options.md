@@ -1,10 +1,3 @@
----
-sidebar_position: 3
----
-
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 # Custom Prisma Query Options
 
 Arkos automatically generates API endpoints based on your Prisma models while still giving you full control over the underlying database queries. The `PrismaQueryOptions` configuration allows you to define default query parameters for each operation type, ensuring consistent data access patterns while maintaining flexibility.
@@ -22,12 +15,16 @@ The `prismaQueryOptions` configuration lets you set default options for all Pris
 
 ## Configuration Structure
 
-For it to work you must delcares create a file `src/modules/model-name/model-name.prisma-query-options.ts` so that **Arkos** can find it and make usage of it.
+For it to work you must create a file `src/modules/model-name/model-name.query.ts` so that **Arkos** can find it and make usage of it.
+
+:::info Naming Convention Change
+Since v1.2.0-beta, the recommended filename pattern is `model-name.query.ts`. The previous pattern `model-name.prisma-query-options.ts` is still supported for backward compatibility, but you cannot use both naming conventions for the same model in the same directory.
+:::
 
 Arkos supports customizing options for all standard Prisma operations:
 
 ```ts
-// src/modules/author/author.prisma-query-options.ts
+// src/modules/author/author.query.ts
 
 import { Prisma } from "@prisma/client";
 import { PrismaQueryOptions } from "arkos/prisma";
@@ -35,9 +32,18 @@ import { prisma } from "../../utils/prisma";
 
 const authorPrismaQueryOptions: PrismaQueryOptions<typeof prisma.author> = {
   // Global options applied to all operations (params are the same as findMany)
-  queryOptions: { ... },
+  global: { ... },
 
-  // Operation-specific options
+  // Grouped operation options (added in v1.2.0)
+  find: { ... },      // Controls both findOne and findMany
+  save: { ... },      // Controls createOne, updateOne, createMany, updateMany
+  create: { ... },    // Controls both createOne and createMany
+  update: { ... },    // Controls both updateOne and updateMany
+  delete: { ... },    // Controls both deleteOne and deleteMany
+  saveOne: { ... },   // Controls createOne and updateOne
+  saveMany: { ... },  // Controls createMany and updateMany
+
+  // Individual operation options
   findOne: { ... },
   findMany: { ... },
   createOne: { ... },
@@ -51,8 +57,22 @@ const authorPrismaQueryOptions: PrismaQueryOptions<typeof prisma.author> = {
 export default authorPrismaQueryOptions;
 ```
 
-:::danger
-Is very important to follow the file name conventions and folder structure stated above in order for this to work, you can also read more about **Arkos** overall project structure [`clicking here`](/docs/project-structure).
+:::danger Important
+Follow the file name conventions and folder structure stated above for this to work. Read more about **Arkos** overall project structure [here](/docs/project-structure).
+:::
+
+## Generating Query Options Files
+
+:::tip CLI Generation
+Since v1.2.0-beta, you can quickly generate query options files using the built-in CLI:
+
+```bash
+npx arkos generate query-options --module post
+# or shorthand
+npx arkos g q -m post
+```
+
+This will create a properly structured file at `src/modules/post/post.query.{ts|js}` with all available options.
 :::
 
 ## Available Query Options
@@ -61,51 +81,62 @@ The `PrismaQueryOptions` type supports all standard Prisma query parameters:
 
 ```typescript
 type PrismaQueryOptions<T extends Record<string, any>> = {
-    // Global options applied to all operations
-    queryOptions?: Partial<Parameters<T["findMany"]>[0]>;
+  // Global options applied to all operations
+  global?: Partial<Parameters<T["findMany"]>[0]>;
 
-    // Read operations
-    findOne?: Partial<Parameters<T["findFirst"]>[0]>;
-    findMany?: Partial<Parameters<T["findMany"]>[0]>;
+  // Grouped options (added in v1.2.0)
+  find?: Partial<Parameters<T["findMany"]>[0]>; // findMany + findOne
+  save?: Partial<Parameters<T["create"]>[0]>; // create + update operations
+  create?: Partial<Parameters<T["create"]>[0]>; // createOne + createMany
+  update?: Partial<Parameters<T["update"]>[0]>; // updateOne + updateMany
+  delete?: Partial<Parameters<T["delete"]>[0]>; // deleteOne + deleteMany
+  saveOne?: Partial<Parameters<T["create"]>[0]>; // createOne + updateOne
+  saveMany?: Partial<Parameters<T["createMany"]>[0]>; // createMany + updateMany
 
-    // Write operations
-    createOne?: Partial<Parameters<T["Create"]>[0]>;
-    updateOne?: Partial<Parameters<T["Update"]>[0]>;
-    deleteOne?: Partial<Parameters<T["Delete"]>[0]>;
-
-    // Bulk operations
-    deleteMany?: Partial<Parameters<T["deleteMany"]>[0]>;
-    updateMany?: Partial<Parameters<T["updateMany"]>[0]>;
-    createMany?: Partial<Parameters<T["createMany"]>[0]>;
+  // Individual operation options
+  findOne?: Partial<Parameters<T["findFirst"]>[0]>;
+  findMany?: Partial<Parameters<T["findMany"]>[0]>;
+  createOne?: Partial<Parameters<T["create"]>[0]>;
+  updateOne?: Partial<Parameters<T["update"]>[0]>;
+  deleteOne?: Partial<Parameters<T["delete"]>[0]>;
+  deleteMany?: Partial<Parameters<T["deleteMany"]>[0]>;
+  updateMany?: Partial<Parameters<T["updateMany"]>[0]>;
+  createMany?: Partial<Parameters<T["createMany"]>[0]>;
 };
 ```
+
+### Grouped Options (v1.2.0+)
+
+The grouped options simplify configuration by allowing you to apply settings to multiple related operations at once:
+
+- **`find`** - Controls both `findMany` and `findOne` operations
+- **`save`** - Controls `createOne`, `updateOne`, `createMany`, and `updateMany` operations
+- **`create`** - Controls both `createOne` and `createMany` operations
+- **`update`** - Controls both `updateOne` and `updateMany` operations
+- **`delete`** - Controls both `deleteOne` and `deleteMany` operations
+- **`saveOne`** - Specifically for `createOne` and `updateOne` operations
+- **`saveMany`** - Specifically for `createMany` and `updateMany` operations
+
+These wrapper options reduce repetition when you want the same settings across related operations.
 
 Each operation type supports the full range of Prisma options including:
 
 - `select`: Specify which fields to include in the response
 - `include`: Configure which relations to load
+- `omit`: Specify which fields to omit in the response
 - `where`: Add default filters
 - `orderBy`: Set default sorting
 - `take` & `skip`: Configure pagination defaults
 - `distinct`: Select distinct records
-
-## Configuration Location
-
-Place your Prisma query options in a file following this naming convention:
-
-```
-src/modules/[model-name]/[model-name].prisma-query-options.ts
-```
-
-Arkos will automatically discover and apply these options when generating your API endpoints.
 
 ## Priority and Merging Behavior
 
 Arkos follows a clear precedence order when applying query options:
 
 1. **Request query parameters** (highest priority)
-2. **Operation-specific options** (e.g., `findMany`, `createOne`)
-3. **Global query options** (lowest priority)
+2. **Individual operation options** (e.g., `findMany`, `createOne`)
+3. **Grouped operation options** (e.g., `find`, `save`) - _added in v1.2.0_
+4. **Global query options** (lowest priority)
 
 Options are intelligently merged at each level, with object properties being deep-merged rather than replaced.
 
@@ -113,118 +144,154 @@ Options are intelligently merged at each level, with object properties being dee
 Request query parameters always take precedence over configured defaults, allowing API consumers to override your defaults when needed, as mentioned they are deep-merged rather than replaced.
 :::
 
-You can read more about how **Arkos** allows developers to handle request query parameters [clicking here](/docs/guide/request-query-parameters)
+You can read more about how **Arkos** allows developers to handle request query parameters [here](/docs/guide/request-query-parameters)
 
 ## Usage Examples
 
 ### Basic Example: Excluding Sensitive Data
 
 ```typescript
-// src/modules/user/user.prisma-query-options.ts
+// src/modules/user/user.query.ts
 import { Prisma } from "@prisma/client";
 import { PrismaQueryOptions } from "arkos/prisma";
 import { prisma } from "../../utils/prisma";
 
 const userPrismaQueryOptions: PrismaQueryOptions<typeof prisma.user> = {
-    queryOptions: {
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            createdAt: true,
-            updatedAt: true,
-            // Explicitly exclude sensitive fields
-            password: false,
-            resetToken: false,
-            twoFactorSecret: false,
-        },
+  global: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      updatedAt: true,
+      // Explicitly exclude sensitive fields
+      password: false,
+      resetToken: false,
+      twoFactorSecret: false,
     },
+  },
 };
 
 export default userPrismaQueryOptions;
 ```
 
-### Advanced Example: Different Behaviors Per Operation
+### Using Grouped Options (v1.2.0+)
 
 ```typescript
-// src/modules/post/post.prisma-query-options.ts
+// src/modules/post/post.query.ts
 import { Prisma } from "@prisma/client";
 import { PrismaQueryOptions } from "arkos/prisma";
 import { prisma } from "../../utils/prisma";
 
 const postPrismaQueryOptions: PrismaQueryOptions<typeof prisma.post> = {
-    // Global defaults for all operations
-    queryOptions: {
+  // Apply to all read operations (findOne and findMany)
+  find: {
+    where: {
+      published: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  },
+
+  // Apply to all save operations (create and update)
+  save: {
+    include: {
+      author: true,
+      tags: true,
+    },
+  },
+
+  // Override for specific operation if needed
+  findMany: {
+    take: 10, // Default page size for lists only
+  },
+};
+
+export default postPrismaQueryOptions;
+```
+
+### Advanced Example: Different Behaviors Per Operation
+
+```typescript
+// src/modules/post/post.query.ts
+import { Prisma } from "@prisma/client";
+import { PrismaQueryOptions } from "arkos/prisma";
+import { prisma } from "../../utils/prisma";
+
+const postPrismaQueryOptions: PrismaQueryOptions<typeof prisma.post> = {
+  // Global defaults for all operations
+  global: {
+    where: {
+      published: true, // Default to only published posts
+    },
+    orderBy: {
+      createdAt: "desc", // Newest first
+    },
+  },
+
+  // List view shows less data
+  findMany: {
+    select: {
+      id: true,
+      title: true,
+      excerpt: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      createdAt: true,
+      tags: true,
+    },
+    take: 10, // Default page size
+  },
+
+  // Detailed view includes comments and full content
+  findOne: {
+    include: {
+      author: {
+        select: {
+          id: true,
+          name: true,
+          bio: true,
+        },
+      },
+      comments: {
         where: {
-            published: true, // Default to only published posts
+          approved: true,
         },
         orderBy: {
-            createdAt: "desc", // Newest first
+          createdAt: "asc",
         },
-    },
-
-    // List view shows less data
-    findMany: {
-        select: {
-            id: true,
-            title: true,
-            excerpt: true,
-            author: {
-                select: {
-                    id: true,
-                    name: true,
-                },
-            },
-            createdAt: true,
-            tags: true,
-        },
-        take: 10, // Default page size
-    },
-
-    // Detailed view includes comments and full content
-    findOne: {
         include: {
-            author: {
-                select: {
-                    id: true,
-                    name: true,
-                    bio: true,
-                },
+          author: {
+            select: {
+              id: true,
+              name: true,
             },
-            comments: {
-                where: {
-                    approved: true,
-                },
-                orderBy: {
-                    createdAt: "asc",
-                },
-                include: {
-                    author: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                },
-            },
-            tags: true,
+          },
         },
+      },
+      tags: true,
     },
+  },
 
-    // Creating/updating includes validation
-    createOne: {
-        include: {
-            author: true,
-            tags: true,
-        },
+  // Creating/updating includes validation
+  createOne: {
+    include: {
+      author: true,
+      tags: true,
     },
+  },
 
-    // Admin operations can see unpublished posts too
-    deleteOne: {
-        where: {
-            // No default filters, allowing deletion of unpublished posts
-        },
+  // Admin operations can see unpublished posts too
+  deleteOne: {
+    where: {
+      // No default filters, allowing deletion of unpublished posts
     },
+  },
 };
 
 export default postPrismaQueryOptions;
@@ -233,80 +300,80 @@ export default postPrismaQueryOptions;
 ### Complex Relations: User Model with Role Management
 
 ```typescript
-// src/modules/user/user.prisma-query-options.ts
+// src/modules/user/user.query.ts
 import { Prisma } from "@prisma/client";
 import { PrismaQueryOptions } from "arkos/prisma";
 import { prisma } from "../../utils/prisma";
 
 const userPrismaQueryOptions: PrismaQueryOptions<typeof prisma.user> = {
-    queryOptions: {
-        // Base configuration for all operations
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            createdAt: true,
-            updatedAt: true,
-            // Sensitive data excluded by default
-            password: false,
-            isActive: true,
-        },
+  global: {
+    // Base configuration for all operations
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      updatedAt: true,
+      // Sensitive data excluded by default
+      password: false,
+      isActive: true,
     },
+  },
 
-    // For listing users, include their roles
-    findMany: {
-        include: {
-            roles: {
-                select: {
-                    role: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                },
+  // For listing users, include their roles
+  findMany: {
+    include: {
+      roles: {
+        select: {
+          role: {
+            select: {
+              id: true,
+              name: true,
             },
+          },
         },
+      },
+    },
+    where: {
+      isActive: true,
+      deletedAt: null,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  },
+
+  // User profile view includes more details
+  findOne: {
+    include: {
+      roles: {
+        select: {
+          role: true,
+        },
+      },
+      posts: {
         where: {
-            isActive: true,
-            deletedAt: null,
+          published: true,
+        },
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
         },
         orderBy: {
-            name: "asc",
+          createdAt: "desc",
         },
+        take: 5,
+      },
     },
+  },
 
-    // User profile view includes more details
-    findOne: {
-        include: {
-            roles: {
-                select: {
-                    role: true,
-                },
-            },
-            posts: {
-                where: {
-                    published: true,
-                },
-                select: {
-                    id: true,
-                    title: true,
-                    createdAt: true,
-                },
-                orderBy: {
-                    createdAt: "desc",
-                },
-                take: 5,
-            },
-        },
+  // When creating users, auto-include created roles
+  createOne: {
+    include: {
+      roles: true,
     },
-
-    // When creating users, auto-include created roles
-    createOne: {
-        include: {
-            roles: true,
-        },
-    },
+  },
 };
 
 export default userPrismaQueryOptions;
@@ -326,8 +393,18 @@ This would override any conflicting `select`, `include`, or `where` parameters i
 
 ## Best Practices
 
-1. **Security First**: Always exclude sensitive fields in your `queryOptions` global configuration
-2. **Pagination Defaults**: Set reasonable `take` limits to prevent performance issues
-3. **Deep Relations**: Be cautious with deeply nested `include` statements
-4. **Documentation**: Document your default behavior for API consumers
-5. **Performance**: Use `select` instead of `include` when possible to minimize data transfer
+1. **Security First**: Always exclude sensitive fields in your `global` configuration
+2. **Use Grouped Options**: Leverage the grouped options (v1.2.0+) like `find`, `save`, `create` to reduce repetition
+3. **Pagination Defaults**: Set reasonable `take` limits to prevent performance issues
+4. **Deep Relations**: Be cautious with deeply nested `include` statements
+5. **Documentation**: Document your default behavior for API consumers
+6. **Performance**: Use `select` instead of `include` when possible to minimize data transfer
+7. **Generate with CLI**: Use `npx arkos g q -m modelName` to quickly scaffold query options files
+
+## Version History
+
+- **v1.2.0-beta**:
+  - Added grouped query options (`find`, `save`, `create`, `update`, `delete`, `saveOne`, `saveMany`)
+  - Simplified naming convention from `model.prisma-query-options.ts` to `model.query.ts`
+  - Added CLI command for generating query options files
+  - Changed `queryOptions` property to `global` for clarity
