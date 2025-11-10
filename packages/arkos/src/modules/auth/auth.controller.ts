@@ -361,7 +361,7 @@ export const authControllerFactory = async (interceptors: any = {}) => {
               initAuthConfigs?.passwordValidation?.message ||
                 "The new password must contain at least one uppercase letter, one lowercase letter, and one number",
               400,
-              "PasswordDotNotMeetRequirements"
+              "PasswordDoesNotMeetRequirements"
             )
           );
         }
