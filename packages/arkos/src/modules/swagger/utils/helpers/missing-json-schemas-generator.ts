@@ -187,6 +187,9 @@ class MissingJsonSchemasGenerator {
     return match ? match[1] : null;
   }
 
+  /**
+   * When using swagger with strict set to false and needs fallback to prisma for the required json schemas that where not manually provided through zod schemas or class validator classes.
+   */
   async generateMissingJsonSchemas(
     currentPaths: OpenAPIV3.PathsObject,
     currentJsonSchemas: Record<string, any>,
@@ -194,33 +197,27 @@ class MissingJsonSchemasGenerator {
   ): Promise<Record<string, any>> {
     const missingSchemas: Record<string, any> = {};
 
-    // Extract all schema references with their context (operationId, method, path)
     const schemaRefsWithContext = this.extractPathSchemaRefs(currentPaths);
 
-    // Group missing schemas by model and collect required actions
     const modelActions = new Map<string, Set<string>>();
 
     for (const [ref, context] of schemaRefsWithContext) {
       const schemaName = this.getSchemaNameFromRef(ref);
       if (!schemaName) continue;
 
-      // Check if schema already exists
       if (currentJsonSchemas[schemaName]) continue;
 
-      // Only process ModelSchema references
       if (!schemaName.includes("ModelSchema") && !schemaName.includes("Schema"))
         continue;
 
       let modelName: string | null = null;
       let action: string | null = null;
 
-      // First try to get model and action from operationId (more reliable)
       if (context.operationId) {
         modelName = this.extractModelNameFromOperationId(context.operationId);
         action = this.extractActionFromOperationId(context.operationId);
       }
 
-      // Fallback to schema ref analysis if operationId didn't work
       if (!modelName || !action) {
         modelName = modelName || this.extractModelNameFromSchemaRef(ref);
         action = action || this.extractActionFromSchemaRef(ref);
@@ -246,14 +243,12 @@ class MissingJsonSchemasGenerator {
             schemasToGenerate: actionsArray,
           });
 
-        // Map generated schemas to the expected naming convention
         Object.entries(generatedSchemas).forEach(([key, schema]) => {
           // The enhanced generator might use different naming conventions
           // We need to map them to match what's expected in the $refs
           let mappedKey = key;
           const authModuleModel = ["auth", "login", "me", "password", "me"];
 
-          // Handle auth schemas
           if (authModuleModel.includes(modelName.toLowerCase())) {
             if (key === "LoginSchema") mappedKey = "LoginSchema";
             else if (key === "SignupSchema") mappedKey = "SignupSchema";
@@ -262,19 +257,13 @@ class MissingJsonSchemasGenerator {
             else if (key === "UpdatePasswordSchema")
               mappedKey = "UpdatePasswordSchema";
           } else {
-            // Handle model schemas - ensure they match the expected naming pattern
-            if (key.includes("ModelSchema")) {
-              mappedKey = key;
-            } else {
-              // Add ModelSchema suffix if missing
-              mappedKey = `${key}ModelSchema`;
-            }
+            if (key.includes("ModelSchema")) mappedKey = key;
+            else mappedKey = `${key}ModelSchema`;
           }
 
           missingSchemas[mappedKey] = schema;
         });
       } catch (error) {
-        // FIXME: check if all models are being generarted if so simply keep the error ssilent
         // console.warn(
         //   `Failed to generate schemas for model ${modelName}:`,
         //   error
