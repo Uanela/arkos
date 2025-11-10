@@ -230,7 +230,7 @@ Or shorthand:
 npx arkos g q -m post
 ```
 
-Generates Prisma query configuration under `src/modules/post/post.queryOptions.{ts|js}` to customize database queries for each operation.
+Generates Prisma query configuration under `src/modules/post/post.query.{ts|js}` to customize database queries for each operation.
 
 **Output:**
 
@@ -287,7 +287,7 @@ Or shorthand:
 npx arkos g a -m post
 ```
 
-Creates authentication and authorization configurations under `src/modules/post/post.authConfigs.{ts|js}` to control access to your endpoints, read more about this topic at [Static Role-Based Access Control Guide](/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior).
+Creates authentication and authorization configurations under `src/modules/post/post.auth.{ts|js}` to control access to your endpoints, read more about this topic at [Static Role-Based Access Control Guide](/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior).
 
 **Output:**
 
