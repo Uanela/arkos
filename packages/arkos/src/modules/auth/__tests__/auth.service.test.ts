@@ -133,16 +133,14 @@ describe("AuthService", () => {
 
       process.env = {
         JWT_SECRET: undefined,
-        NODE_ENV: "production",
+        ARKOS_BUILD: "true",
       };
 
       let result: string | undefined = undefined;
       try {
-        // Execute
         result = authService.signJwtToken(userId);
       } catch {}
 
-      // Verify
       expect(jwt.sign).not.toHaveBeenCalledWith(
         { id: userId },
         expect.any(String),

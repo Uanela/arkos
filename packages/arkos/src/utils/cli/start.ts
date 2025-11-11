@@ -20,6 +20,8 @@ let envFiles: string[] | undefined;
 export async function startCommand(options: StartOptions = {}) {
   if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
     process.env.NODE_ENV = "production";
+  process.env.ARKOS_BUILD = "true";
+
   envFiles = loadEnvironmentVariables();
 
   try {
