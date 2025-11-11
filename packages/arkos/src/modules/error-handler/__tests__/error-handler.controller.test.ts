@@ -168,9 +168,9 @@ describe("Error Handler Middleware", () => {
     });
   });
 
-  describe("Production Mode", () => {
+  describe("Production Mode (After build)", () => {
     beforeEach(() => {
-      process.env.NODE_ENV = "production";
+      process.env.ARKOS_BUILD = "true";
     });
 
     it("should send operational error details for API routes", () => {
@@ -411,7 +411,7 @@ describe("Error Handler Middleware", () => {
 
   describe("Process Signal Handling", () => {
     it("should exit immediately in development mode", () => {
-      process.env.NODE_ENV = "development";
+      process.env.ARKOS_BUILD = "false";
 
       // Manually trigger the SIGTERM handler
       const sigTermListeners = process.listeners("SIGTERM");
@@ -423,19 +423,7 @@ describe("Error Handler Middleware", () => {
     });
 
     it("should gracefully shut down in production mode", () => {
-      process.env.NODE_ENV = "production";
-
-      // Manually trigger the SIGTERM handler
-      const sigTermListeners = process.listeners("SIGTERM");
-      const sigTermHandler = sigTermListeners[sigTermListeners.length - 1];
-      (sigTermHandler as any)();
-
-      expect(mockProcessExit).toHaveBeenCalled();
-      expect(server.close).toHaveBeenCalled();
-    });
-
-    it("should gracefully shut down in staging mode", () => {
-      process.env.NODE_ENV = "staging";
+      process.env.ARKOS_BUILD = "true";
 
       // Manually trigger the SIGTERM handler
       const sigTermListeners = process.listeners("SIGTERM");
