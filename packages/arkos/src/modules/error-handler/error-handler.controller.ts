@@ -176,10 +176,7 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
  * @returns {void}
  */
 process.on("SIGTERM", () => {
-  if (
-    process.env.NODE_ENV !== "production" &&
-    process.env.NODE_ENV !== "staging"
-  ) {
+  if (process.env.ARKOS_BUILD !== "true") {
     process.exit();
   } else {
     console.error("SIGTERM RECEIVED in Production. Shutting down gracefully!");
