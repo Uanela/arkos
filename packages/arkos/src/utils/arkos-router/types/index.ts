@@ -103,7 +103,7 @@ export interface ArkosRouteConfig {
     | {
         resource: string;
         action: string;
-        rule?: DetailedAccessControlRule;
+        rule?: DetailedAccessControlRule | string[];
       };
   /**
    * Request validation configuration using Zod schemas or class constructors.
