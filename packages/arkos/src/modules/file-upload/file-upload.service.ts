@@ -70,13 +70,17 @@ export class FileUploadService {
     const extName = this.allowedFileTypes.test(
       path.extname(file.originalname).toLowerCase()
     );
-    const mimeType = this.allowedFileTypes.test(file.mimetype);
 
-    if (mimeType && extName) {
-      cb(null, true);
-    } else {
-      cb(new AppError("Invalid file type", 400));
-    }
+    if (extName) cb(null, true);
+    else
+      cb(
+        new AppError(
+          `File type not allowed, allowed files are ${String(this.allowedFileTypes).split("|").join(", ")}`,
+          400,
+          "NotAllowedFileType",
+          { filename: file.originalname }
+        )
+      );
   };
 
   /**
