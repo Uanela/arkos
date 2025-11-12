@@ -27,7 +27,6 @@ import {
   loginRequiredError,
 } from "./utils/auth-error-objects";
 import authActionService from "./utils/services/auth-action.service";
-import { CookieOptions } from "express";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -54,14 +53,13 @@ export class AuthService {
     const { authentication: configs } = getArkosConfig();
 
     if (
-      process.env.NODE_ENV === "production" &&
+      process.env.ARKOS_BUILD === "true" &&
       !process.env.JWT_SECRET &&
       !configs?.jwt?.secret
     )
       throw new AppError(
         "Missing JWT secret on production!",
         500,
-        {},
         "MissingJWTOnProduction"
       );
 
@@ -241,11 +239,15 @@ export class AuthService {
     const { authentication: configs } = getArkosConfig();
 
     if (
-      process.env.NODE_ENV === "production" &&
+      process.env.ARKOS_BUILD === "true" &&
       !process.env.JWT_SECRET &&
       !configs?.jwt?.secret
     )
-      throw new AppError("Missing JWT secret!", 500);
+      throw new AppError(
+        "Missing JWT secret in production",
+        500,
+        "MissingJWTSecretInProduction"
+      );
 
     secret =
       secret ||

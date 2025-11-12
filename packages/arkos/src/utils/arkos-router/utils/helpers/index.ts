@@ -102,6 +102,8 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
       express[config.bodyParser.parser](config.bodyParser.options)
     );
 
+  middlewares.push();
+
   middlewares.push(validateRequestInputs(config));
 
   return middlewares;

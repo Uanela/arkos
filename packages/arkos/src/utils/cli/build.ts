@@ -7,7 +7,6 @@ import { getVersion } from "./utils/cli.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
 import sheu from "../sheu";
 
-// Constants
 const BUILD_DIR = ".build";
 const MODULE_TYPES = ["cjs", "esm"] as const;
 type ModuleType = (typeof MODULE_TYPES)[number];
@@ -22,8 +21,9 @@ interface BuildOptions {
  */
 export function buildCommand(options: BuildOptions = {}) {
   const fileExt = getUserFileExtension();
-  process.env.NODE_ENV = "production";
-  process.env.NODE_ENV = "true";
+  if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
+    process.env.NODE_ENV = "production";
+  process.env.ARKOS_BUILD = "true";
 
   const envFiles = loadEnvironmentVariables();
   const moduleType = validateModuleType(options.module);
@@ -40,13 +40,8 @@ export function buildCommand(options: BuildOptions = {}) {
 
     ensureBuildDir();
 
-    // Detect project type
-
-    if (fileExt === "ts") {
-      buildTypeScriptProject(options, moduleType);
-    } else {
-      buildJavaScriptProject(options, moduleType);
-    }
+    if (fileExt === "ts") buildTypeScriptProject(options, moduleType);
+    else buildJavaScriptProject(options, moduleType);
 
     const packageManger = detectPackageManagerFromUserAgent();
 
@@ -71,19 +66,11 @@ function validateModuleType(moduleType?: string): ModuleType {
 
   const normalizedType = moduleType.toLowerCase();
 
-  // Map common terms to our module types
-  if (normalizedType === "cjs" || normalizedType === "commonjs") {
-    return "cjs";
-  } else if (
-    ["esm", "es", "es2020", "esnext", "module"].includes(normalizedType)
-  ) {
+  if (normalizedType === "cjs" || normalizedType === "commonjs") return "cjs";
+  else if (["esm", "es", "es2020", "esnext", "module"].includes(normalizedType))
     return "esm";
-  }
 
-  // Default to CJS if unrecognized
-  console.warn(
-    `⚠️ Unrecognized module type "${moduleType}", defaulting to "cjs"`
-  );
+  sheu.warn(`Unrecognized module type "${moduleType}", defaulting to "cjs"`);
   return "cjs";
 }
 
@@ -91,11 +78,8 @@ function validateModuleType(moduleType?: string): ModuleType {
  * Ensure the build directory exists
  */
 function ensureBuildDir() {
-  if (!fs.existsSync(BUILD_DIR)) {
-    fs.mkdirSync(BUILD_DIR, { recursive: true });
-  }
+  if (!fs.existsSync(BUILD_DIR)) fs.mkdirSync(BUILD_DIR, { recursive: true });
 
-  // Create module-specific subdirectories
   for (const moduleType of MODULE_TYPES) {
     const moduleDir = path.join(BUILD_DIR, moduleType);
     if (!fs.existsSync(moduleDir)) {
@@ -108,7 +92,6 @@ function ensureBuildDir() {
  * Build a TypeScript project
  */
 function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
-  // Read the user's tsconfig.json
   const tsconfigPath = path.join(
     process.cwd(),
     options.config || "tsconfig.json"
@@ -122,17 +105,14 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
     }
   } catch (error) {
     console.error("❌ Error reading tsconfig.json:", error);
-    // Continue with default config
   }
 
-  // Create a custom tsconfig that outputs to our build directory with the correct module type
   const tempTsconfig = {
     ...tsconfig,
     compilerOptions: {
       ...(tsconfig.compilerOptions || {}),
       rootDir: ".",
       outDir: path.join(`./${BUILD_DIR}`),
-      // module: moduleType === "esm" ? "ESNext" : "CommonJS",
     },
   };
 
