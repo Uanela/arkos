@@ -75,7 +75,7 @@ export class FileUploadService {
     else
       cb(
         new AppError(
-          `File type not allowed, allowed files are ${String(this.allowedFileTypes).split("|").join(", ")}`,
+          `File type not allowed, allowed files are ${String(this.allowedFileTypes).replaceAll("/", "").split("|").join(", ")}`,
           400,
           "NotAllowedFileType",
           { filename: file.originalname }
