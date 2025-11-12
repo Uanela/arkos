@@ -3,7 +3,10 @@ import { OpenAPIV3 } from "openapi-types";
 import { ZodSchema } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
-import { AccessControlRules } from "../../../types/auth";
+import {
+  AccessControlRules,
+  DetailedAccessControlRule,
+} from "../../../types/auth";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../../types";
 import express from "express";
 import compression from "compression";
@@ -21,11 +24,28 @@ type MethodHandler = (
 ) => IRouter;
 
 /**
- * Extended Express router interface with custom method handlers that accept route configuration.
+ * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
  *
- * @remarks
- * All standard HTTP methods (get, post, put, etc.) are replaced with enhanced versions
- * that accept ArkosRouteConfig as the first parameter.
+ * The ArkosRouter extends the standard Express Router with the ability to
+ * automatically capture OpenAPI metadata from route configurations.
+ *
+ * @example
+ * const router = ArkosRouter();
+ *
+ * router.get(
+ *   {
+ *     route: "/users/:id",
+ *     openapi: {
+ *       summary: "Get user by ID",
+ *       tags: ["Users"]
+ *     }
+ *   },
+ *   (req, res) => { ... }
+ * );
+ *
+ * @returns {IArkosRouter} A proxied Express Router instance with enhanced OpenAPI capabilities
+ *
+ * @see {@link ArkosRouteConfig} for configuration options
  */
 export interface IArkosRouter
   extends Omit<
@@ -70,7 +90,6 @@ export interface ArkosRouteConfig {
    * @example "/api/users/:id"
    */
   route: string;
-
   /**
    * Authentication and authorization configuration.
    *
@@ -84,7 +103,7 @@ export interface ArkosRouteConfig {
     | {
         resource: string;
         action: string;
-        rule?: AccessControlRules;
+        rule?: DetailedAccessControlRule;
       };
   /**
    * Request validation configuration using Zod schemas or class constructors.
@@ -151,7 +170,6 @@ export interface ArkosRouteConfig {
    * Soon a feature to converted the query to the end prisma type will be added.
    */
   queryParser?: QueryParserOptions;
-
   /**
    * Configuration for request body parsing.
    *
@@ -176,4 +194,8 @@ export interface ArkosRouteConfig {
     | { parser: "raw"; options?: Parameters<typeof express.raw>[0] }
     | { parser: "text"; options?: Parameters<typeof express.text>[0] }
     | false;
+  /**
+   * Defines
+   *
+   */
 }

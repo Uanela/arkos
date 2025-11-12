@@ -68,7 +68,6 @@ export default function ArkosRouter(): IArkosRouter {
               `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig but recevied ${config}`
             );
 
-          // return function () {
           const method = prop as string;
 
           if (handlers.length > 0) {
@@ -88,6 +87,7 @@ export default function ArkosRouter(): IArkosRouter {
             const finalHandler = handlers[handlers.length - 1];
             RouteConfigRegistry.register(finalHandler, config, method);
           }
+
           // TEMPORARY: Wait for async initArkos() to complete
           // TODO(v1.5): Remove when migrating to arkos.config.ts (synchronous load)
           const start = Date.now();
