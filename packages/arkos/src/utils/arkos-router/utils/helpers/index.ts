@@ -86,7 +86,7 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
       authService.handleAccessControl(
         config.authentication.action,
         config.authentication.resource,
-        config.authentication?.rule
+        { [config.authentication.action]: config.authentication?.rule }
       )
     );
 
