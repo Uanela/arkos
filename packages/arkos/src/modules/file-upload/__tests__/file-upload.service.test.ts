@@ -270,7 +270,7 @@ describe("FileUploadService", () => {
       expect(AppError).toHaveBeenCalledWith(
         "File type not allowed, allowed files are jpeg, jpg, png",
         400,
-        "NotAllowedFileType",
+        "FileTypeNotAllowed",
         { filename: "test.pdf" }
       );
     });
