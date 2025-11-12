@@ -195,7 +195,74 @@ export interface ArkosRouteConfig {
     | { parser: "text"; options?: Parameters<typeof express.text>[0] }
     | false;
   /**
-   * Defines
-   *
+   * Experimental features to be battled tested before being stable
    */
+  experimental?: {
+    /**
+     * Defines multer like upload middlewares
+     *
+     */
+    uploads?: /**
+     * Creates middleware that processes a single file associated with the
+     * given form field.
+     *
+     * The `Request` object will be populated with a `file` object containing
+     * information about the processed file.
+     *
+     * @param fieldName Name of the multipart form field to process.
+     */
+    (
+      | { type: "single"; field: string; deleteOnError?: boolean }
+      /**
+       * Returns middleware that processes multiple files sharing the same field
+       * name.
+       *
+       * The `Request` object will be populated with a `files` array containing
+       * an information object for each processed file.
+       *
+       * @param fieldName Shared name of the multipart form fields to process.
+       * @param maxCount Optional. Maximum number of files to process. (default: Infinity)
+       * @throws `MulterError('LIMIT_UNEXPECTED_FILE')` if more than `maxCount` files are associated with `fieldName`
+       */
+      | {
+          type: "array";
+          field: string;
+          maxCount?: number;
+          deleteOnError?: boolean;
+        }
+      /**
+       * Creates middleware that processes multiple files associated with the
+       * given form fields.
+       *
+       * The `Request` object will be populated with a `files` object which
+       * maps each field name to an array of the associated file information
+       * objects.
+       *
+       * @param fields Array of `Field` objects describing multipart form fields to process.
+       * @throws `MulterError('LIMIT_UNEXPECTED_FILE')` if more than `maxCount` files are associated with `fieldName` for any field.
+       */
+      | {
+          type: "fields";
+          fields: {
+            field: string;
+            maxCount?: number;
+            deleteOnError?: boolean;
+          }[];
+        }
+      /**
+       * Creates middleware that processes all files contained in the multipart
+       * request.
+       *
+       * The `Request` object will be populated with a `files` array containing
+       * an information object for each processed file.
+       */
+      | { type: "any"; deleteOnError?: boolean }
+      /**
+       * Creates middleware that accepts only non-file multipart form fields.
+       *
+       * @throws `MulterError('LIMIT_UNEXPECTED_FILE')` if any file is encountered.
+       */
+      | { type: "none" }
+    )[];
+  };
 }
