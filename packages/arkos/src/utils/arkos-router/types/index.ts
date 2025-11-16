@@ -3,10 +3,7 @@ import { OpenAPIV3 } from "openapi-types";
 import { ZodSchema } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
-import {
-  AccessControlRules,
-  DetailedAccessControlRule,
-} from "../../../types/auth";
+import { DetailedAccessControlRule } from "../../../types/auth";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../../types";
 import express from "express";
 import compression from "compression";
@@ -120,14 +117,6 @@ export interface ArkosRouteConfig {
         body?: ZodSchema | (new (...args: any[]) => object) | false;
         params?: ZodSchema | (new (...args: any[]) => object) | false;
       };
-  /**
-   * OpenAPI specification for this route.
-   *
-   * @remarks
-   * - Set to `false` to exclude this route from OpenAPI documentation.
-   * - Provide a partial OpenAPI operation object to document the route.
-   */
-  openapi?: false | Partial<OpenAPIV3.OperationObject>;
 
   /**
    * Rate limiting configuration for this route.
@@ -196,8 +185,18 @@ export interface ArkosRouteConfig {
     | false;
   /**
    * Experimental features to be battled tested before being stable
+   *
+   * PS: These features may be changed without any previous warning.
    */
   experimental?: {
+    /**
+     * OpenAPI specification for this route.
+     *
+     * @remarks
+     * - Set to `false` to exclude this route from OpenAPI documentation.
+     * - Provide a partial OpenAPI operation object to document the route.
+     */
+    openapi?: false | Partial<OpenAPIV3.OperationObject>;
     /**
      * Defines multer like upload middlewares
      *
@@ -211,8 +210,7 @@ export interface ArkosRouteConfig {
      *
      * @param fieldName Name of the multipart form field to process.
      */
-    (
-      | { type: "single"; field: string; deleteOnError?: boolean }
+    | { type: "single"; field: string; options?: ArkosRouterUploadOptions }
       /**
        * Returns middleware that processes multiple files sharing the same field
        * name.
@@ -228,7 +226,7 @@ export interface ArkosRouteConfig {
           type: "array";
           field: string;
           maxCount?: number;
-          deleteOnError?: boolean;
+          options?: ArkosRouterUploadOptions;
         }
       /**
        * Creates middleware that processes multiple files associated with the
@@ -246,23 +244,14 @@ export interface ArkosRouteConfig {
           fields: {
             field: string;
             maxCount?: number;
-            deleteOnError?: boolean;
+            options?: ArkosRouterUploadOptions;
           }[];
-        }
-      /**
-       * Creates middleware that processes all files contained in the multipart
-       * request.
-       *
-       * The `Request` object will be populated with a `files` array containing
-       * an information object for each processed file.
-       */
-      | { type: "any"; deleteOnError?: boolean }
-      /**
-       * Creates middleware that accepts only non-file multipart form fields.
-       *
-       * @throws `MulterError('LIMIT_UNEXPECTED_FILE')` if any file is encountered.
-       */
-      | { type: "none" }
-    )[];
+        };
   };
 }
+
+export type ArkosRouterUploadOptions = {
+  uploadDir?: "images" | "videos" | "files" | "documents";
+  deleteOnError?: boolean;
+  attachToBodyAs?: "pathname" | "full-url" | "full-file";
+};

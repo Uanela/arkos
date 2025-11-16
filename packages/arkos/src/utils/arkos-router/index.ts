@@ -57,7 +57,7 @@ export default function ArkosRouter(): IArkosRouter {
         | ArkosErrorRequestHandler;
 
       if (httpMethods.includes(prop as string)) {
-        return function (
+        return async function (
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
@@ -87,11 +87,6 @@ export default function ArkosRouter(): IArkosRouter {
             const finalHandler = handlers[handlers.length - 1];
             RouteConfigRegistry.register(finalHandler, config, method);
           }
-
-          // TEMPORARY: Wait for async initArkos() to complete
-          // TODO(v1.5): Remove when migrating to arkos.config.ts (synchronous load)
-          const start = Date.now();
-          while (Date.now() - start < 100) {}
 
           const arkosConfig = getArkosConfig();
           const validationConfig = arkosConfig.validation;
@@ -140,20 +135,24 @@ export async function generateOpenAPIFromApp(app: any) {
   const arkosConfig = getArkosConfig();
 
   routes.forEach(async ({ path, method, config }) => {
-    if (config?.openapi === false) return;
+    if (config?.experimental?.openapi === false) return;
 
     if (!paths[path]) paths[path] = {};
 
-    if (typeof config?.openapi === "boolean") {
+    if (typeof config?.experimental?.openapi === "boolean") {
       config = {
         ...config,
-        openapi: {},
+        experimental: {
+          ...config.experimental,
+          openapi: {},
+        },
       };
     }
 
     const openapi =
-      typeof config?.openapi === "object" && config.openapi !== null
-        ? config.openapi
+      typeof config?.experimental?.openapi === "object" &&
+      config.experimental.openapi !== null
+        ? config.experimental.openapi
         : {};
 
     const validatorToJsonSchemaTransformer =

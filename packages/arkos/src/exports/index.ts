@@ -9,7 +9,8 @@ import {
   ArkosNextFunction,
   ArkosRequestHandler,
 } from "../types";
-import { ArkosConfig } from "../types/arkos-config";
+import { ArkosConfig } from "../types/new-arkos-config";
+import { ArkosInitConfig } from "../types/arkos-config";
 
 /**
  * Initializes the Arkos application.
@@ -28,6 +29,7 @@ export {
   ArkosRequestHandler,
   BaseController,
   ArkosConfig,
+  ArkosInitConfig,
   RouterConfig,
   getArkosConfig,
   /**

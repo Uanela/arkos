@@ -65,7 +65,9 @@ describe("RouteConfigValidator", () => {
     const config = {
       route: "/test",
       validation: { query: z.object({}) },
-      openapi: { parameters: [{ in: "query" }] },
+      experimental: {
+        openapi: { parameters: [{ in: "query" }] },
+      },
     };
     expect(() => RouteConfigValidator.validate(config as any)).toThrow(
       /Duplicate query validation definitions/
@@ -77,7 +79,9 @@ describe("RouteConfigValidator", () => {
     const config = {
       route: "/test",
       validation: { params: z.object({}) },
-      openapi: { parameters: [{ in: "path" }] },
+      experimental: {
+        openapi: { parameters: [{ in: "path" }] },
+      },
     };
     expect(() => RouteConfigValidator.validate(config as any)).toThrow(
       /Duplicate path parameter validation definitions/
@@ -89,7 +93,9 @@ describe("RouteConfigValidator", () => {
     const config = {
       route: "/test",
       validation: { body: z.object({}) },
-      openapi: { requestBody: {} },
+      experimental: {
+        openapi: { requestBody: {} },
+      },
     };
     expect(() => RouteConfigValidator.validate(config as any)).toThrow(
       /Duplicate request body validation definitions/

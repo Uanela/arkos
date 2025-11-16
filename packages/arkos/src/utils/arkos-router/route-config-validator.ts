@@ -41,8 +41,9 @@ export default class RouteConfigValidator {
       }
     }
 
-    if (config.validation && typeof config.openapi === "object") {
-      const openapi = config.openapi as Partial<OpenAPIV3.OperationObject>;
+    if (config.validation && typeof config.experimental?.openapi === "object") {
+      const openapi = config.experimental
+        .openapi as Partial<OpenAPIV3.OperationObject>;
 
       if (
         config.validation.query &&

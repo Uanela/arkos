@@ -1,7 +1,5 @@
 import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
-import { ArkosConfig } from "../../types/arkos-config";
-import deepmerge from "../../utils/helpers/deepmerge.helper";
 import {
   generatePathsForModels,
   getOpenAPIJsonSchemasByConfigMode,
@@ -13,6 +11,8 @@ import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/ge
 import { generateOpenAPIFromApp } from "../../utils/arkos-router";
 import express from "express";
 import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-schema-paths";
+import { ArkosConfig } from "../../exports";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
 
 const swaggerRouter = Router();
 
