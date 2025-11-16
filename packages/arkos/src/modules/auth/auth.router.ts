@@ -8,7 +8,7 @@ import {
   handleRequestBodyValidationAndTransformation,
   sendResponse,
 } from "../base/base.middlewares";
-import { ArkosConfig } from "../../types/arkos-config";
+import { ArkosConfig } from "../../types/new-arkos-config";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthPrismaQueryOptions } from "../../types";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";

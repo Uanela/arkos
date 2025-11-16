@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getAvailableResources } from "./base.controller";
 import authService from "../auth/auth.service";
-import { ArkosConfig } from "../../types/arkos-config";
+import { ArkosConfig } from "../../types/new-arkos-config";
 import { setupRouters } from "./utils/helpers/base.router.helpers";
 
 export async function getPrismaModelsRouter(arkosConfigs: ArkosConfig) {

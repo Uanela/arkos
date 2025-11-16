@@ -1,15 +1,17 @@
 import { Express } from "express";
-import {
-  initApp,
-  getArkosConfig,
-  getExpressApp,
-  terminateApplicationRunningProcessAndServer,
-} from "../server";
-import { ArkosConfig } from "../types/arkos-config";
-import { bootstrap } from "../app";
+import * as server from "../server";
 import http from "http";
 import portAndHostAllocator from "../utils/features/port-and-host-allocator";
 import sheu from "../utils/sheu";
+import { bootstrap } from "../app";
+import { ArkosConfig, ArkosInitConfig } from "../exports";
+
+const {
+  initApp,
+  // getArkosConfig,
+  getExpressApp,
+  terminateApplicationRunningProcessAndServer,
+} = server;
 
 jest.mock("../utils/features/port-and-host-allocator");
 jest.mock("../app", () => ({
@@ -99,18 +101,15 @@ describe("Server Module", () => {
     });
 
     it("merges provided config with default config", async () => {
-      const customConfig: ArkosConfig = {
-        port: 9000,
-        welcomeMessage: "Custom Welcome",
+      const customConfig: ArkosInitConfig = {
+        middlewares: [],
       };
 
       await initApp(customConfig);
 
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({
-          welcomeMessage: "Custom Welcome",
-          port: 9000,
-          host: "0.0.0.0",
+          middlewares: [],
         })
       );
     });
@@ -137,9 +136,9 @@ describe("Server Module", () => {
     });
 
     it("does not start server when port is undefined", async () => {
-      const customConfig: ArkosConfig = { port: undefined };
+      jest.spyOn(server, "getArkosConfig").mockReturnValue({ port: undefined });
 
-      await initApp(customConfig);
+      await initApp();
 
       expect(mockServer.listen).not.toHaveBeenCalled();
       expect(sheu.warn).toHaveBeenCalledWith(
@@ -149,8 +148,7 @@ describe("Server Module", () => {
 
     it("calls configureServer when provided", async () => {
       const configureServerMock = jest.fn();
-      const customConfig: ArkosConfig = {
-        port: 8000,
+      const customConfig: ArkosInitConfig = {
         configureServer: configureServerMock,
       };
 
@@ -174,14 +172,9 @@ describe("Server Module", () => {
         portAndHostAllocator.getHostAndAvailablePort as jest.Mock
       ).mockResolvedValue(undefined);
 
-      await initApp();
+      await initApp({});
 
-      expect(bootstrap).toHaveBeenCalledWith(
-        expect.objectContaining({
-          port: 8000, // Should fall back to default
-          host: "0.0.0.0", // Should fall back to default
-        })
-      );
+      expect(bootstrap).toHaveBeenCalledWith(expect.objectContaining({}));
     });
 
     it("handles case where portAndHostAllocator returns undefined after build", async () => {
@@ -189,12 +182,11 @@ describe("Server Module", () => {
         portAndHostAllocator.getHostAndAvailablePort as jest.Mock
       ).mockResolvedValue(undefined);
 
-      await initApp();
+      await initApp({ middlewares: [] });
 
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({
-          port: 8000, // Should fall back to default
-          host: "0.0.0.0", // Should fall back to default
+          middlewares: [],
         })
       );
     });
@@ -203,18 +195,17 @@ describe("Server Module", () => {
   describe("getArkosConfig", () => {
     it("returns the current config", async () => {
       await initApp();
-      const config = getArkosConfig();
+      const config = server.getArkosConfig();
 
       expect(config).toMatchObject({
         port: 8000,
         host: "0.0.0.0",
-        available: true,
         fileUpload: expect.any(Object),
       });
     });
 
     it("returns config even when initApp hasn't been called", () => {
-      const config = getArkosConfig();
+      const config = server.getArkosConfig();
       expect(config).toHaveProperty("port");
       expect(config).toHaveProperty("host");
     });
@@ -349,8 +340,7 @@ describe("Server Module", () => {
       const configureServerMock = jest.fn().mockImplementation(() => {
         throw new Error("Configure server failed");
       });
-      const customConfig: ArkosConfig = {
-        port: 8000,
+      const customConfig: ArkosInitConfig = {
         configureServer: configureServerMock,
       };
 

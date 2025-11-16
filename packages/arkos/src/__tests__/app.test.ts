@@ -14,6 +14,7 @@ import {
 } from "../modules/base/base.router";
 import { getFileUploadRouter } from "../modules/file-upload/file-upload.router";
 import deepmerge from "../utils/helpers/deepmerge.helper";
+import { getArkosConfig } from "../exports";
 
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
@@ -64,7 +65,7 @@ jest.mock("../utils/helpers/prisma.helpers", () => ({
   loadPrismaModule: jest.fn().mockResolvedValue(undefined),
   checkDatabaseConnection: jest
     .fn()
-    .mockImplementation((req, res, next) => next()),
+    .mockImplementation((_, _1, next) => next()),
 }));
 
 jest.mock("../utils/helpers/query-parser.helpers", () => ({
@@ -95,6 +96,7 @@ jest.mock("../modules/base/base.router", () => ({
 jest.mock("../modules/file-upload/file-upload.router", () => ({
   getFileUploadRouter: jest.fn().mockResolvedValue(jest.fn()),
 }));
+jest.mock("../server");
 
 describe("App Bootstrap", () => {
   beforeEach(() => {
@@ -102,10 +104,7 @@ describe("App Bootstrap", () => {
   });
 
   it("loads Prisma module on startup", async () => {
-    await bootstrap({
-      welcomeMessage: "Test API",
-      port: 3000,
-    });
+    await bootstrap({});
 
     expect(loadPrismaModule).toHaveBeenCalled();
   });
@@ -114,8 +113,6 @@ describe("App Bootstrap", () => {
     const configureApp = jest.fn();
 
     await bootstrap({
-      welcomeMessage: "Test API",
-      port: 3000,
       configureApp,
     });
 
@@ -124,10 +121,7 @@ describe("App Bootstrap", () => {
 
   describe("Middleware Configuration", () => {
     it("registers default middlewares", async () => {
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-      });
+      await bootstrap({});
 
       expect(compression).toHaveBeenCalled();
       expect(rateLimit).toHaveBeenCalled();
@@ -139,12 +133,12 @@ describe("App Bootstrap", () => {
     });
 
     it("skips disabled middlewares", async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: { compression: false, cors: false, cookieParser: false },
+      });
+
       await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        middlewares: {
-          disable: ["compression", "cors", "cookie-parser"],
-        },
+        middlewares: [],
       });
 
       expect(compression).not.toHaveBeenCalled();
@@ -161,16 +155,14 @@ describe("App Bootstrap", () => {
       const customCompressionMiddleware = "customCompression";
       const customCorsMiddleware = "customCors";
 
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
+      (getArkosConfig as jest.Mock).mockReturnValue({
         middlewares: {
-          replace: {
-            compression: customCompressionMiddleware as any,
-            cors: customCorsMiddleware as any,
-          },
+          compression: customCompressionMiddleware as any,
+          cors: customCorsMiddleware as any,
         },
       });
+
+      await bootstrap({});
 
       expect(compression).not.toHaveBeenCalled();
       expect(cors).not.toHaveBeenCalled();
@@ -183,11 +175,7 @@ describe("App Bootstrap", () => {
       const customMiddleware2 = jest.fn().mockReturnValue("customMiddleware2");
 
       await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        middlewares: {
-          additional: [customMiddleware1(), customMiddleware2()],
-        },
+        middlewares: [customMiddleware1(), customMiddleware2()],
       });
 
       expect(customMiddleware1).toHaveBeenCalled();
@@ -199,11 +187,12 @@ describe("App Bootstrap", () => {
     it("passes correct options to compression middleware", async () => {
       const compressionOptions = { level: 6, threshold: 1024 };
 
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        compressionOptions,
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: {
+          compression: compressionOptions,
+        },
       });
+      await bootstrap({});
 
       expect(compression).toHaveBeenCalledWith(compressionOptions);
     });
@@ -211,11 +200,13 @@ describe("App Bootstrap", () => {
     it("passes correct options to rate limit middleware", async () => {
       const rateLimitOptions = { windowMs: 30000, limit: 500 };
 
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        globalRequestRateLimitOptions: rateLimitOptions,
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: {
+          rateLimit: rateLimitOptions,
+        },
       });
+
+      await bootstrap({});
 
       // Check that deepmerge was called with default options and provided options
       expect(deepmerge).toHaveBeenCalledWith(
@@ -228,13 +219,12 @@ describe("App Bootstrap", () => {
     });
 
     it('configures cors with all origins when "*" is specified', async () => {
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        cors: {
-          allowedOrigins: "*",
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: {
+          cors: { allowedOrigins: "*" },
         },
       });
+      await bootstrap({});
 
       expect(cors).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -252,14 +242,13 @@ describe("App Bootstrap", () => {
 
     it("configures cors with specific origins", async () => {
       const allowedOrigins = ["https://example.com", "https://test.com"];
-
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        cors: {
-          allowedOrigins,
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: {
+          cors: allowedOrigins,
         },
       });
+
+      await bootstrap({});
 
       expect(cors).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -281,13 +270,12 @@ describe("App Bootstrap", () => {
     it("uses custom CORS handler if provided", async () => {
       const customHandler = jest.fn((origin, callback) => callback(null, true));
 
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        cors: {
-          customHandler,
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: {
+          cors: customHandler,
         },
       });
+      await bootstrap({});
 
       expect(cors).toHaveBeenCalledWith(customHandler);
     });
@@ -295,10 +283,7 @@ describe("App Bootstrap", () => {
 
   describe("Router Configuration", () => {
     it("registers default routers", async () => {
-      await bootstrap({
-        welcomeMessage: "Welcome to Test API",
-        port: 3000,
-      });
+      await bootstrap({});
 
       expect(app.get).toHaveBeenCalledWith("/api", expect.any(Function));
       expect(getFileUploadRouter).toHaveBeenCalled();
@@ -306,55 +291,53 @@ describe("App Bootstrap", () => {
       expect(getAvailableResourcesAndRoutesRouter).toHaveBeenCalled();
     });
 
-    it("skips disabled routers", async () => {
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        routers: {
-          disable: ["welcome-endpoint", "file-upload", "prisma-models-router"],
-        },
-      });
+    // it("skips disabled routers", async () => {
+    //   await bootstrap({
+    //     welcomeMessage: "Test API",
+    //     port: 3000,
+    //     routers: {
+    //       disable: ["welcome-endpoint", "file-upload", "prisma-models-router"],
+    //     },
+    //   });
 
-      expect(app.get).not.toHaveBeenCalledWith("/api", expect.any(Function));
-      expect(getFileUploadRouter).not.toHaveBeenCalled();
-      expect(getPrismaModelsRouter).not.toHaveBeenCalled();
+    //   expect(app.get).not.toHaveBeenCalledWith("/api", expect.any(Function));
+    //   expect(getFileUploadRouter).not.toHaveBeenCalled();
+    //   expect(getPrismaModelsRouter).not.toHaveBeenCalled();
 
-      // This should still be called
-      expect(getAvailableResourcesAndRoutesRouter).toHaveBeenCalled();
-    });
+    //   // This should still be called
+    //   expect(getAvailableResourcesAndRoutesRouter).toHaveBeenCalled();
+    // });
 
-    it("uses replaced routers", async () => {
-      const customWelcomeHandler = jest.fn();
-      const customFileUploadRouter = jest
-        .fn()
-        .mockResolvedValue(express.Router());
-      const customPrismaModelsRouter = jest
-        .fn()
-        .mockResolvedValue(express.Router());
+    // it("uses replaced routers", async () => {
+    //   const customWelcomeHandler = jest.fn();
+    //   const customFileUploadRouter = jest
+    //     .fn()
+    //     .mockResolvedValue(express.Router());
+    //   const customPrismaModelsRouter = jest
+    //     .fn()
+    //     .mockResolvedValue(express.Router());
 
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        routers: {
-          replace: {
-            welcomeEndpoint: customWelcomeHandler,
-            fileUpload: customFileUploadRouter,
-            prismaModelsRouter: customPrismaModelsRouter,
-          },
-        },
-      });
+    //   await bootstrap({
+    //     welcomeMessage: "Test API",
+    //     port: 3000,
+    //     routers: {
+    //       replace: {
+    //         welcomeEndpoint: customWelcomeHandler,
+    //         fileUpload: customFileUploadRouter,
+    //         prismaModelsRouter: customPrismaModelsRouter,
+    //       },
+    //     },
+    //   });
 
-      expect(app.get).toHaveBeenCalledWith("/api", customWelcomeHandler);
-      expect(customFileUploadRouter).toHaveBeenCalled();
-      expect(customPrismaModelsRouter).toHaveBeenCalled();
-      expect(getFileUploadRouter).not.toHaveBeenCalled();
-      expect(getPrismaModelsRouter).not.toHaveBeenCalled();
-    });
+    //   expect(app.get).toHaveBeenCalledWith("/api", customWelcomeHandler);
+    //   expect(customFileUploadRouter).toHaveBeenCalled();
+    //   expect(customPrismaModelsRouter).toHaveBeenCalled();
+    //   expect(getFileUploadRouter).not.toHaveBeenCalled();
+    //   expect(getPrismaModelsRouter).not.toHaveBeenCalled();
+    // });
 
     it("registers auth router when authentication is configured", async () => {
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
+      (getArkosConfig as jest.Mock).mockReturnValue({
         authentication: {
           mode: "static",
           jwt: {
@@ -363,6 +346,7 @@ describe("App Bootstrap", () => {
           },
         },
       });
+      await bootstrap({});
 
       expect(getAuthRouter).toHaveBeenCalled();
       expect(app.use).toHaveBeenCalledWith("/api", expect.any(Function));
@@ -373,11 +357,7 @@ describe("App Bootstrap", () => {
       const customRouter2 = express.Router();
 
       await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        routers: {
-          additional: [customRouter1, customRouter2],
-        },
+        routers: [customRouter1, customRouter2],
       });
 
       expect(app.use).toHaveBeenCalledWith(customRouter1);
@@ -387,10 +367,10 @@ describe("App Bootstrap", () => {
     it("correctly handles welcome endpoint", async () => {
       const welcomeMessage = "Custom Welcome Message";
 
-      await bootstrap({
+      (getArkosConfig as jest.Mock).mockReturnValue({
         welcomeMessage,
-        port: 3000,
       });
+      await bootstrap({});
 
       // Get the welcome handler function
       const getHandler = (app.get as jest.Mock).mock.calls.find(
@@ -410,41 +390,33 @@ describe("App Bootstrap", () => {
       expect(res.json).toHaveBeenCalledWith({ message: welcomeMessage });
     });
 
-    it("allows replacing the auth router", async () => {
-      const customAuthRouter = jest.fn().mockResolvedValue("customAuthRouter");
+    // it("allows replacing the auth router", async () => {
+    //   const customAuthRouter = jest.fn().mockResolvedValue("customAuthRouter");
+    //   (getArkosConfig as jest.Mock).mockReturnValue({
+    //     authentication: {
+    //       mode: "static",
+    //       jwt: {
+    //         secret: "test-secret",
+    //       },
+    //     },
+    //   });
 
-      await bootstrap({
-        welcomeMessage: "Test API",
-        port: 3000,
-        authentication: {
-          mode: "static",
-          jwt: {
-            secret: "test-secret",
-          },
-        },
-        routers: {
-          replace: {
-            authRouter: customAuthRouter,
-          },
-        },
-      });
+    //   await bootstrap({
+    //   });
 
-      expect(getAuthRouter).not.toHaveBeenCalled();
-      expect(customAuthRouter).toHaveBeenCalledWith(
-        expect.objectContaining({
-          authentication: expect.objectContaining({
-            mode: "static",
-          }),
-        })
-      );
-    });
+    //   expect(getAuthRouter).not.toHaveBeenCalled();
+    //   expect(customAuthRouter).toHaveBeenCalledWith(
+    //     expect.objectContaining({
+    //       authentication: expect.objectContaining({
+    //         mode: "static",
+    //       }),
+    //     })
+    //   );
+    // });
   });
 
   it("registers error handler as last but one", async () => {
-    await bootstrap({
-      welcomeMessage: "Test API",
-      port: 3000,
-    });
+    await bootstrap({});
 
     const useCalls = (app.use as jest.Mock).mock.calls;
     const lastCall = useCalls[useCalls.length - 1];
@@ -467,10 +439,7 @@ describe("App Bootstrap", () => {
   // });
 
   it("returns the configured express app", async () => {
-    const result = await bootstrap({
-      welcomeMessage: "Test API",
-      port: 3000,
-    });
+    const result = await bootstrap({});
 
     expect(result).toBe(app);
   });

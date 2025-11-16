@@ -243,7 +243,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const validationConfig = arkosConfig.validation;
   const strictValidation = validationConfig?.strict;
   const validators = routeConfig?.validation;
-  const openapi = routeConfig?.openapi;
+  const openapi = routeConfig?.experimental?.openapi;
 
   if (!validationConfig?.resolver && validators)
     throw Error(
@@ -270,18 +270,23 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const validatorNameType =
     validationConfig?.resolver == "zod" ? "Schema" : "Dto";
 
+  if ((openapi as any)?.parameters)
+    throw Error(
+      "Invalid field openapi.parameters, if you would like to define documenation parameters define them under validation.body, validation.query or validation.params fields and they will be transformed to openapi json schemas."
+    );
+
   if (typeof validators === "object")
     validatorsKey.forEach((key) => {
-      if (
-        openapi &&
-        typeof openapi === "object" &&
-        openapi.parameters?.some((parameter: any) => parameter.in === key) &&
-        validators[key]
-      ) {
-        throw Error(
-          `When usign validation.${key} you must not define parameters unde openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
-        );
-      }
+      // if (
+      //   openapi &&
+      //   typeof openapi === "object" &&
+      //   openapi.parameters?.some((parameter: any) => parameter.in === key) &&
+      //   validators[key]
+      // ) {
+      //   throw Error(
+      //     `When usign validation.${key} you must not define parameters unde openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+      //   );
+      // }
 
       if (
         openapi &&

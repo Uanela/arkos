@@ -67,7 +67,7 @@ describe("File Upload Router", () => {
       fileUpload: {
         baseRoute: "/api/uploads/",
         baseUploadDir: "uploads",
-        expressStaticOptions: {
+        expressStatic: {
           maxAge: "30d",
         },
       },
@@ -591,7 +591,7 @@ describe("File Upload Router", () => {
     const configWithCustomStaticOptions = {
       fileUpload: {
         ...mockArkosConfig.fileUpload,
-        expressStaticOptions: customStaticOptions,
+        expressStatic: customStaticOptions,
       },
     };
 
