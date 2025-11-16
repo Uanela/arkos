@@ -7,10 +7,10 @@ import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.helpers";
 
-export const getSchemaMode = async (
+export const getSchemaMode = (
   action: string,
   arkosConfig: ArkosConfig
-): Promise<"prisma" | "zod" | "class-validator"> => {
+): "prisma" | "zod" | "class-validator" => {
   const swaggerMode = arkosConfig.swagger?.mode;
   const isStrict = arkosConfig.swagger?.strict;
 
@@ -18,7 +18,7 @@ export const getSchemaMode = async (
   if (isStrict) return swaggerMode;
 
   const actionKey = action as any;
-  const localFileExists = await localValidatorFileExists(
+  const localFileExists = localValidatorFileExists(
     actionKey,
     "auth",
     arkosConfig
@@ -28,7 +28,7 @@ export const getSchemaMode = async (
   return swaggerMode;
 };
 
-export default async function getAuthenticationJsonSchemaPaths(
+export default function getAuthenticationJsonSchemaPaths(
   arkosConfig: ArkosConfig
 ) {
   const paths: OpenAPIV3.PathsObject = {};
@@ -46,7 +46,7 @@ export default async function getAuthenticationJsonSchemaPaths(
   };
 
   if (!isAuthEndpointDisabled("login")) {
-    const loginMode = await getSchemaMode("login", arkosConfig);
+    const loginMode = getSchemaMode("login", arkosConfig);
     paths["/api/auth/login"] = {
       post: {
         tags: ["Authentication"],
@@ -113,8 +113,8 @@ export default async function getAuthenticationJsonSchemaPaths(
   }
 
   if (!isAuthEndpointDisabled("signup")) {
-    const signupMode = await getSchemaMode("signup", arkosConfig);
-    const userMode = await getSchemaMode("user", arkosConfig);
+    const signupMode = getSchemaMode("signup", arkosConfig);
+    const userMode = getSchemaMode("user", arkosConfig);
     paths["/api/auth/signup"] = {
       post: {
         tags: ["Authentication"],
@@ -155,10 +155,7 @@ export default async function getAuthenticationJsonSchemaPaths(
   }
 
   if (!isAuthEndpointDisabled("updatePassword")) {
-    const updatePasswordMode = await getSchemaMode(
-      "updatePassword",
-      arkosConfig
-    );
+    const updatePasswordMode = getSchemaMode("updatePassword", arkosConfig);
     paths["/api/auth/update-password"] = {
       post: {
         tags: ["Authentication"],
@@ -210,7 +207,7 @@ export default async function getAuthenticationJsonSchemaPaths(
   }
 
   if (!isAuthEndpointDisabled("getMe")) {
-    const findMeMode = await getSchemaMode("getMe", arkosConfig);
+    const findMeMode = getSchemaMode("getMe", arkosConfig);
     paths["/api/users/me"] = {
       get: {
         tags: ["Authentication"],
@@ -239,8 +236,8 @@ export default async function getAuthenticationJsonSchemaPaths(
   }
 
   if (!isAuthEndpointDisabled("updateMe")) {
-    const updateMeMode = await getSchemaMode("updateMe", arkosConfig);
-    const userMode = await getSchemaMode("user", arkosConfig);
+    const updateMeMode = getSchemaMode("updateMe", arkosConfig);
+    const userMode = getSchemaMode("user", arkosConfig);
     if (!paths["/api/users/me"]) paths["/api/users/me"] = {};
     paths["/api/users/me"]!.patch = {
       tags: ["Authentication"],

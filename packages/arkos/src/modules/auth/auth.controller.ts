@@ -25,7 +25,7 @@ export const defaultExcludedUserFields = {
  * @param interceptors - Optional middleware functions to execute after controller actions
  * @returns An object containing all authentication controller methods
  */
-export const authControllerFactory = async (interceptors: any = {}) => {
+export const authControllerFactory = (interceptors: any = {}) => {
   const userService = new BaseService("user");
 
   return {

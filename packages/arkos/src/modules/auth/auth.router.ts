@@ -19,7 +19,7 @@ import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 
 const router: Router = Router();
 
-export async function getAuthRouter(arkosConfigs: ArkosConfig) {
+export function getAuthRouter(arkosConfigs: ArkosConfig) {
   const {
     interceptors,
     dtos,
@@ -40,7 +40,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       );
   }
 
-  const authController = await authControllerFactory(interceptors);
+  const authController = authControllerFactory(interceptors);
 
   if (routerConfig?.disable === true) return router;
 

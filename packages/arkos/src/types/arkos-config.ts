@@ -1,13 +1,14 @@
 import http from "http";
 import express from "express";
 import { IArkosRouter } from "../utils/arkos-router/types";
+import { ArkosErrorRequestHandler, ArkosRequestHandler } from ".";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
  */
 export type ArkosInitConfig = {
   /**
-   * Allows to add an array of custom express middlewares into the default middleware stack.
+   * Allows to add an array of custom express routers/middlewares into the default middleware/routers stack.
    *
    * **Tip**: If you would like to acess the express app before everthing use `configureApp` and pass a function.
    *
@@ -17,8 +18,7 @@ export type ArkosInitConfig = {
    *
    * Read more about The Arkos Middleware Stack at [www.arkosjs.com/docs/the-middleware-stack](https://www.arkosjs.com/docs/the-middleware-stack) for in-depth details.
    */
-  middlewares?: express.RequestHandler[];
-  routers?: express.Router[] | IArkosRouter[];
+  use?: IArkosRouter[] | ArkosRequestHandler[] | ArkosErrorRequestHandler[];
   /**
    * Gives acess to the underlying express app so that you can add custom configurations beyong **Arkos** customization capabilities
    *

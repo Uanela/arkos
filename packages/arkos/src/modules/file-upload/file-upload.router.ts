@@ -17,7 +17,7 @@ import path from "path";
 
 const router: Router = Router();
 
-export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
+export function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const { fileUpload } = arkosConfig;
 
   const moduleComponents = getModuleComponents("file-upload");

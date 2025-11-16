@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express, { IRouter, Router } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { getAuthRouter } from "./modules/auth/auth.router";
@@ -53,9 +53,14 @@ export async function bootstrap(
           deepmerge(
             {
               windowMs: 60 * 1000,
-              limit: 1000,
+              limit: 300,
               standardHeaders: "draft-7",
               legacyHeaders: false,
+              handler: (_, res) => {
+                res.status(429).json({
+                  message: "Too many requests, please try again later",
+                });
+              },
             },
             middlewaresConfig?.rateLimit || {}
           )
@@ -165,17 +170,20 @@ export async function bootstrap(
     }
   }
 
-  app.use(debuggerService.logRequestInfo);
+  if (initConfig?.use)
+    for (const mwOrRouter of initConfig.use) {
+      app.use(mwOrRouter as IRouter);
+    }
 
-  const fileUploadRouter = await getFileUploadRouter(arkosConfig);
+  const fileUploadRouter = getFileUploadRouter(arkosConfig);
   knowModulesRouter.use(fileUploadRouter);
 
   if (arkosConfig.authentication) {
-    const authRouter = await getAuthRouter(arkosConfig);
+    const authRouter = getAuthRouter(arkosConfig);
     knowModulesRouter.use("/api", authRouter);
   }
 
-  const modelsRouter = await getPrismaModelsRouter(arkosConfig);
+  const modelsRouter = getPrismaModelsRouter(arkosConfig);
   knowModulesRouter.use("/api", modelsRouter);
 
   app.use(knowModulesRouter);

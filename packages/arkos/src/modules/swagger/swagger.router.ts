@@ -23,14 +23,14 @@ export async function getSwaggerRouter(
   let [defaultJsonSchemas, defaultModelsPaths, pathsFromCustomArkosRouters] =
     await Promise.all([
       await getOpenAPIJsonSchemasByConfigMode(arkosConfig),
-      await generatePathsForModels(arkosConfig),
-      await generateOpenAPIFromApp(app),
+      generatePathsForModels(arkosConfig),
+      generateOpenAPIFromApp(app),
     ]);
 
   const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(arkosConfig);
 
   const missingJsonSchemas =
-    await missingJsonSchemaGenerator.generateMissingJsonSchemas(
+    missingJsonSchemaGenerator.generateMissingJsonSchemas(
       defaultModelsPaths,
       defaultJsonSchemas,
       arkosConfig

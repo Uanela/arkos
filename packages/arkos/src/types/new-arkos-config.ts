@@ -64,6 +64,7 @@ export type ArkosConfig = {
    * See [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for details.
    */
   authentication?: {
+    enable?: boolean;
     /**
      * Defines whether to use Static or Dynamic Role-Based Acess Control
      *
