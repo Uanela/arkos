@@ -124,10 +124,12 @@ describe("generateOpenAPIFromApp", () => {
         path: "/users",
         method: "GET",
         config: {
-          openapi: {
-            summary: "Get all users",
-            description: "Retrieve a list of all users",
-            tags: ["Users"],
+          experimental: {
+            openapi: {
+              summary: "Get all users",
+              description: "Retrieve a list of all users",
+              tags: ["Users"],
+            },
           },
         },
       },
@@ -135,7 +137,9 @@ describe("generateOpenAPIFromApp", () => {
         path: "/users/:id",
         method: "POST",
         config: {
-          openapi: false, // Should be skipped
+          experimental: {
+            openapi: false, // Should be skipped
+          },
         },
       },
       {
@@ -234,7 +238,7 @@ describe("generateOpenAPIFromApp", () => {
   // });
 
   it("should handle routes with object openapi config", async () => {
-    mockRoutes[0].config.openapi = {
+    mockRoutes[0].config.experimental.openapi = {
       summary: "Custom summary",
       description: "Custom description",
       tags: ["Custom"],
@@ -272,7 +276,7 @@ describe("generateOpenAPIFromApp", () => {
   });
 
   it("should handle boolean openapi config true", async () => {
-    mockRoutes[0].config.openapi = true;
+    mockRoutes[0].config.experimental.openapi = true;
 
     const openapiPaths = await generateOpenAPIFromApp(mockApp);
 
@@ -282,7 +286,7 @@ describe("generateOpenAPIFromApp", () => {
   });
 
   it("should convert boolean openapi config to object", async () => {
-    mockRoutes[0].config.openapi = true;
+    mockRoutes[0].config.experimental.openapi = true;
 
     const openapiPaths = await generateOpenAPIFromApp(mockApp);
 

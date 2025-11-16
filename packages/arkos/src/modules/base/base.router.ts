@@ -4,10 +4,10 @@ import authService from "../auth/auth.service";
 import { ArkosConfig } from "../../types/new-arkos-config";
 import { setupRouters } from "./utils/helpers/base.router.helpers";
 
-export async function getPrismaModelsRouter(arkosConfigs: ArkosConfig) {
+export function getPrismaModelsRouter(arkosConfigs: ArkosConfig) {
   const router: Router = Router();
 
-  await Promise.all(await setupRouters(router, arkosConfigs));
+  setupRouters(router, arkosConfigs);
 
   return router;
 }

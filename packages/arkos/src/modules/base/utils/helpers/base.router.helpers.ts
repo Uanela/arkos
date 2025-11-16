@@ -23,7 +23,7 @@ import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { AccessAction, AuthConfigs } from "../../../../types/auth";
 
-export async function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
+export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
     const modelModules = getModuleComponents(modelNameInKebab) || {};

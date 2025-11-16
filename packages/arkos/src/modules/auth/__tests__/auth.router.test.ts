@@ -99,7 +99,7 @@ describe("Auth Router", () => {
       updatePassword: { where: { active: true } },
     };
 
-    (authControllerFactory as jest.Mock).mockResolvedValue(mockAuthController);
+    (authControllerFactory as jest.Mock).mockReturnValue(mockAuthController);
     (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       prismaQueryOptions: mockPrismaQueryOptions,
@@ -123,7 +123,7 @@ describe("Auth Router", () => {
 
   test("should create router with default middleware configuration when no custom interceptors", async () => {
     // Act
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
     // Assert
     expect(Router).toHaveBeenCalled();

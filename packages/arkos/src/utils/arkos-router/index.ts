@@ -57,7 +57,7 @@ export default function ArkosRouter(): IArkosRouter {
         | ArkosErrorRequestHandler;
 
       if (httpMethods.includes(prop as string)) {
-        return async function (
+        return function (
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
@@ -109,7 +109,10 @@ export default function ArkosRouter(): IArkosRouter {
               "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
             );
 
-          if (!authenticationConfig?.mode && config.authentication)
+          if (
+            (!authenticationConfig?.mode && config.authentication) ||
+            (authenticationConfig && authenticationConfig?.enable !== false)
+          )
             throw Error(
               "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
             );
@@ -125,7 +128,7 @@ export default function ArkosRouter(): IArkosRouter {
   }) as IArkosRouter;
 }
 
-export async function generateOpenAPIFromApp(app: any) {
+export function generateOpenAPIFromApp(app: any) {
   const routes = extractArkosRoutes(app);
 
   let paths: Record<

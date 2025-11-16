@@ -1,7 +1,7 @@
 import { OpenAPIV3 } from "openapi-types";
 import { ArkosConfig } from "../../../../exports";
 import PrismaJsonSchemaGenerator from "../../../../utils/prisma/prisma-json-schema-generator";
-import { singular } from "pluralize";
+import pluralize from "pluralize";
 
 /**
  * Used to backfill missing json schema contained in paths in situation such as when using a `arkosConfig.swagger.mode` different from prisma and `strict` to false, in this situation the jsonSchemas paths are filled with $ref pointing to non existent jsonSchema components.
@@ -106,7 +106,7 @@ class MissingJsonSchemasGenerator {
       return "Auth";
     }
 
-    return singular(modelName) || null;
+    return pluralize.singular(modelName) || null;
   }
 
   /**
@@ -190,11 +190,11 @@ class MissingJsonSchemasGenerator {
   /**
    * When using swagger with strict set to false and needs fallback to prisma for the required json schemas that where not manually provided through zod schemas or class validator classes.
    */
-  async generateMissingJsonSchemas(
+  generateMissingJsonSchemas(
     currentPaths: OpenAPIV3.PathsObject,
     currentJsonSchemas: Record<string, any>,
     arkosConfig: ArkosConfig
-  ): Promise<Record<string, any>> {
+  ): Record<string, any> {
     const missingSchemas: Record<string, any> = {};
 
     const schemaRefsWithContext = this.extractPathSchemaRefs(currentPaths);
@@ -236,12 +236,13 @@ class MissingJsonSchemasGenerator {
       try {
         const actionsArray = Array.from(actions) as any[];
 
-        const generatedSchemas =
-          await PrismaJsonSchemaGenerator.generateModelSchemas({
+        const generatedSchemas = PrismaJsonSchemaGenerator.generateModelSchemas(
+          {
             modelName,
             arkosConfig,
             schemasToGenerate: actionsArray,
-          });
+          }
+        );
 
         Object.entries(generatedSchemas).forEach(([key, schema]) => {
           // The enhanced generator might use different naming conventions

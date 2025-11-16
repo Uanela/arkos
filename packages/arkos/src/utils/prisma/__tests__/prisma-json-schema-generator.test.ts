@@ -245,7 +245,7 @@ describe("PrismaJsonSchemaGenerator", () => {
       router: { config: {} },
       prismaQueryOptions: {},
     });
-    mockLocalValidatorFileExists.mockResolvedValue(false);
+    mockLocalValidatorFileExists.mockReturnValue(false);
     mockDeepmerge.mockImplementation((a, b) => ({ ...a, ...b }));
   });
 
@@ -316,7 +316,7 @@ describe("PrismaJsonSchemaGenerator", () => {
     });
 
     it("should skip schema generation when local validator exists", async () => {
-      mockLocalValidatorFileExists.mockResolvedValue(true);
+      mockLocalValidatorFileExists.mockReturnValue(true);
 
       const config = {
         modelName: "User",
