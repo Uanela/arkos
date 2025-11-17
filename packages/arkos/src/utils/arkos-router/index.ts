@@ -8,6 +8,7 @@ import { getArkosConfig } from "../../exports";
 import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 import zodToJsonSchema from "zod-to-json-schema";
+import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -109,12 +110,7 @@ export default function ArkosRouter(): IArkosRouter {
               "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
             );
 
-          if (
-            config.authentication &&
-            (!authenticationConfig?.mode ||
-              ("enabled" in authenticationConfig &&
-                authenticationConfig?.enabled !== true))
-          )
+          if (config.authentication && !authenticationConfig?.mode)
             throw Error(
               "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
             );
@@ -163,13 +159,14 @@ export function generateOpenAPIFromApp(app: any) {
     const validatorToJsonSchemaTransformer =
       arkosConfig?.validation?.resolver === "zod"
         ? zodToJsonSchema
-        : zodToJsonSchema;
+        : classValidatorToJsonSchema;
 
     (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${method} ${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Defaults"],
       operationId: `${method.toLowerCase()}:${path}`,
+      parameters: openapi.parameters || [{ in: "query" }],
       // ...(!openapi.requestBody &&
       //   config?.validation?.body && {
       //     requestBody: {

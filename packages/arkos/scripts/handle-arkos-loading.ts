@@ -10,7 +10,7 @@ const serverReplacements: ServerReplacement[] = [
   {
     filePath: "dist/cjs/server.js",
     replacement:
-      "__importDefault(require(`${process.cwd()}/arkos.config.${fs_helpers_1.getUserFileExtension()}`))",
+      "__importDefault(require(`${fs_helpers_1.crd()}/arkos.config.${fs_helpers_1.getUserFileExtension()}`))",
     old: '"HandledByPostBuild"',
   },
   {
@@ -21,13 +21,13 @@ const serverReplacements: ServerReplacement[] = [
   {
     filePath: "dist/esm/server.js",
     replacement:
-      "await importModule(`${process.cwd()}/arkos.config.${getUserFileExtension()}`)",
+      "await importModule(`${crd()}/arkos.config.${getUserFileExtension()}`)",
     old: '"HandledByPostBuild"',
   },
   {
     filePath: "dist/esm/server.js",
     replacement: `import { importModule } from "./utils/helpers/global.helpers";
-import { getUserFileExtension } from "./utils/helpers/fs.helpers";
+import { getUserFileExtension, crd } from "./utils/helpers/fs.helpers";
 `,
     old: '("ImportMissing");',
   },
