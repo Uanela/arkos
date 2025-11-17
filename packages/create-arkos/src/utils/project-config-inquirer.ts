@@ -46,7 +46,6 @@ class ProjectConfigInquirer {
     await this.promptAuthentication();
     await this.promptStrictRouting();
 
-    // If user passed ".", use current directory name
     if (this.config.projectName === ".") {
       this.config.projectName = path.basename(process.cwd());
       this.config.projectPath = path.resolve(process.cwd());
@@ -282,7 +281,7 @@ class ProjectConfigInquirer {
         };
       } else if (this.config.prisma.provider === "sqlite") {
         console.info(
-          `\nSkipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
+          `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
         );
       }
     }

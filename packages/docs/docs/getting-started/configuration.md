@@ -186,4 +186,3 @@ In version `v1.4-beta`, configuration will be split between:
 - **Static configurations** (cors, validation, etc.) in `arkos.config.ts`
 - **Dynamic configurations** (middleware, routers, etc) in `arkos.init()`
 
-For complete configuration details, see the [Configuration API Reference](/docs/api-reference/arkos-configuration).

@@ -110,8 +110,10 @@ export default function ArkosRouter(): IArkosRouter {
             );
 
           if (
-            (!authenticationConfig?.mode && config.authentication) ||
-            (authenticationConfig && authenticationConfig?.enable !== false)
+            config.authentication &&
+            (!authenticationConfig?.mode ||
+              ("enabled" in authenticationConfig &&
+                authenticationConfig?.enabled !== true))
           )
             throw Error(
               "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"

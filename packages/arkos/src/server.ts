@@ -12,9 +12,9 @@ import { killProductionServerChildProcess } from "./utils/cli/start";
 import { ArkosConfig } from "./types/new-arkos-config";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import { ArkosInitConfig } from "./exports";
-("ImportMissing");
+("ImportMissing"); // This will be filled by post build script
 
-const definedArkosConfig = "HandledByPostBuild";
+const definedArkosConfig = "HandledByPostBuild"; // This will be filled by post build script
 
 export const defaultArkosConfig: ArkosConfig & { available?: boolean } = {
   welcomeMessage:
@@ -75,7 +75,7 @@ let _app: Express;
  * 1. The `port` argument passed to the function.
  * 2. Defaults to `8000` if neither is provided.
  *
- * @param {ArkosConfig} arkosConfig - initial configs for the api ( authentication, port).
+ * @param {ArkosInitConfig} initConfig - initial configs for the api ( authentication, port).
  * @returns {Promise<Express>} This function returns the Express App after all middlewares configurations.
  * You can prevent it from listen py passing port as undefined
  *
