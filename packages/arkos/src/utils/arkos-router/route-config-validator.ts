@@ -14,9 +14,9 @@ export default class RouteConfigValidator {
 
     if (config.validation) {
       const validators = [
-        { key: "query", schema: config.validation.query },
-        { key: "body", schema: config.validation.body },
-        { key: "params", schema: config.validation.params },
+        { key: "query", schema: config.validation?.query },
+        { key: "body", schema: config.validation?.body },
+        { key: "params", schema: config.validation?.params },
       ];
 
       for (const { key, schema } of validators) {
@@ -58,7 +58,7 @@ export default class RouteConfigValidator {
 
       if (
         config.validation.params &&
-        openapi.parameters?.some((p: any) => p.in === "path")
+        openapi.parameters?.some((p: any) => p.in === "params")
       ) {
         throw new Error(
           "Duplicate path parameter validation definitions. " +
@@ -70,7 +70,7 @@ export default class RouteConfigValidator {
       if (config.validation.body && openapi.requestBody) {
         throw new Error(
           "Duplicate request body validation definitions. " +
-            "When using validation.body, do not define requestBody in openapi. " +
+            "When using validation.body, do not define openapi.requestBody in openapi. " +
             "It will be automatically migrated to OpenAPI specification."
         );
       }
