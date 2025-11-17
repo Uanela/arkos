@@ -178,7 +178,10 @@ export async function bootstrap(
   const fileUploadRouter = getFileUploadRouter(arkosConfig);
   knowModulesRouter.use(fileUploadRouter);
 
-  if (arkosConfig.authentication) {
+  if (
+    arkosConfig.authentication &&
+    arkosConfig.authentication?.enabled !== false
+  ) {
     const authRouter = getAuthRouter(arkosConfig);
     knowModulesRouter.use("/api", authRouter);
   }
