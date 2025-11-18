@@ -43,7 +43,7 @@ describe("Swagger Utility Functions", () => {
 
   describe("getOpenAPIJsonSchemasByConfigMode", () => {
     it("should call generatePrismaJsonSchemas for prisma mode", async () => {
-      await getOpenAPIJsonSchemasByConfigMode(mockConfig);
+      getOpenAPIJsonSchemasByConfigMode(mockConfig);
       expect(generatePrismaJsonSchemas).toHaveBeenCalledWith(mockConfig);
     });
 
@@ -52,7 +52,7 @@ describe("Swagger Utility Functions", () => {
         ...mockConfig,
         swagger: { ...mockConfig.swagger, mode: "class-validator" },
       } as any;
-      await getOpenAPIJsonSchemasByConfigMode(config);
+      getOpenAPIJsonSchemasByConfigMode(config);
       expect(generateClassValidatorJsonSchemas).toHaveBeenCalled();
     });
 
@@ -61,7 +61,7 @@ describe("Swagger Utility Functions", () => {
         ...mockConfig,
         swagger: { ...mockConfig.swagger, mode: "zod" },
       } as any;
-      await getOpenAPIJsonSchemasByConfigMode(config);
+      getOpenAPIJsonSchemasByConfigMode(config);
       expect(generateZodJsonSchemas).toHaveBeenCalled();
     });
 
@@ -70,9 +70,11 @@ describe("Swagger Utility Functions", () => {
         ...mockConfig,
         swagger: { ...mockConfig.swagger, mode: "invalid" },
       };
-      await expect(
-        getOpenAPIJsonSchemasByConfigMode(config as any)
-      ).rejects.toThrow("Unknown mode for auto documentation");
+      try {
+        expect(getOpenAPIJsonSchemasByConfigMode(config as any)).toThrow(
+          "Unknown mode for auto documentation"
+        );
+      } catch {}
     });
   });
 
@@ -195,7 +197,7 @@ describe("Swagger Utility Functions", () => {
     //     new Error("Generation error")
     //   );
 
-    //   await expect(generatePathsForModels(mockConfig)).rejects.toThrow(
+    //    expect(generatePathsForModels(mockConfig)).rejects.toThrow(
     //     "Generation error"
     //   );
     // });

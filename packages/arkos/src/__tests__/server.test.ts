@@ -350,9 +350,7 @@ describe("Server Module", () => {
       const error = new Error("Server listen failed");
       mockServer.listen.mockImplementationOnce(
         (_: number, _1: string, callback: Function) => {
-          console.log("insideit", callback(new Error()));
           if (typeof callback === "function") {
-            console.log("throwingit");
             callback(error);
           }
           return mockServer;

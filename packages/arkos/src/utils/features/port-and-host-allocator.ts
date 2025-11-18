@@ -4,9 +4,9 @@ import sheu from "../sheu";
 import os from "os";
 
 class PortAndHostAllocator {
-  private host: string | undefined;
+  host: string | undefined;
   private networkHost: string | undefined;
-  private port: string | undefined;
+  port: string | undefined;
   private prevWarnings = new Set<string>();
 
   getFirstNonLocalIp() {

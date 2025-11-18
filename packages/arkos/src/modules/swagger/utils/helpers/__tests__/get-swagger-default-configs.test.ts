@@ -5,7 +5,13 @@ import { capitalize } from "../../../../../utils/helpers/text.helpers";
 import getSwaggerDefaultConfig from "../get-swagger-default-configs";
 
 // Mock dependencies
-jest.mock("../../../../../utils/features/port-and-host-allocator");
+jest.mock("../../../../../utils/features/port-and-host-allocator", () => ({
+  __esModule: true,
+  default: {
+    host: "localhost",
+    port: 3000,
+  },
+}));
 jest.mock("../../../../../utils/helpers/text.helpers");
 
 describe("getSwaggerDefaultConfig", () => {
@@ -28,22 +34,16 @@ describe("getSwaggerDefaultConfig", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (
-      portAndHostAllocator.getHostAndAvailablePort as jest.Mock
-    ).mockResolvedValue({
-      host: "localhost",
-      port: 3000,
-    });
     (capitalize as jest.Mock).mockImplementation(
       (str) => str.charAt(0).toUpperCase() + str.slice(1)
     );
   });
 
   it("should return default swagger config with correct structure", async () => {
-    const result = (await getSwaggerDefaultConfig(
+    const result = getSwaggerDefaultConfig(
       mockDefaultModelsPaths,
       mockDefaultJsonSchemas
-    )) as any;
+    ) as any;
 
     expect(result).toHaveProperty("endpoint", "/docs");
     expect(result).toHaveProperty("mode", "prisma");
@@ -55,10 +55,10 @@ describe("getSwaggerDefaultConfig", () => {
   });
 
   it("should use provided models and schemas", async () => {
-    const result = (await getSwaggerDefaultConfig(
+    const result = getSwaggerDefaultConfig(
       mockDefaultModelsPaths,
       mockDefaultJsonSchemas
-    )) as any;
+    ) as any;
 
     expect(result.options.definition.paths).toEqual(mockDefaultModelsPaths);
     expect(result.options.definition.components.schemas).toEqual(
@@ -67,10 +67,10 @@ describe("getSwaggerDefaultConfig", () => {
   });
 
   it("should include BearerAuth security scheme", async () => {
-    const result = (await getSwaggerDefaultConfig(
+    const result = getSwaggerDefaultConfig(
       mockDefaultModelsPaths,
       mockDefaultJsonSchemas
-    )) as any;
+    ) as any;
 
     expect(
       result.options.definition.components.securitySchemes.BearerAuth
@@ -83,10 +83,10 @@ describe("getSwaggerDefaultConfig", () => {
 
   it("should use capitalized NODE_ENV in server description", async () => {
     process.env.NODE_ENV = "production";
-    const result = (await getSwaggerDefaultConfig(
+    const result = getSwaggerDefaultConfig(
       mockDefaultModelsPaths,
       mockDefaultJsonSchemas
-    )) as any;
+    ) as any;
 
     expect(result.options.definition.servers[0].description).toBe(
       "Local Production Server"
@@ -96,10 +96,10 @@ describe("getSwaggerDefaultConfig", () => {
 
   it("should use capitalized NODE_ENV fallback (development) in server description", async () => {
     process.env.NODE_ENV = "";
-    const result = (await getSwaggerDefaultConfig(
+    const result = getSwaggerDefaultConfig(
       mockDefaultModelsPaths,
       mockDefaultJsonSchemas
-    )) as any;
+    ) as any;
 
     expect(result.options.definition.servers[0].description).toBe(
       "Local Development Server"
@@ -108,20 +108,17 @@ describe("getSwaggerDefaultConfig", () => {
   });
 
   it("should handle empty paths and schemas", async () => {
-    const result = (await (getSwaggerDefaultConfig as any)(
-      {},
-      undefined
-    )) as any;
+    const result = (getSwaggerDefaultConfig as any)({}, undefined) as any;
 
     expect(result.options.definition.paths).toEqual({});
     expect(result.options.definition.components.schemas).toEqual({});
   });
 
   it("should include scalar API reference configuration", async () => {
-    const result = (await getSwaggerDefaultConfig(
+    const result = getSwaggerDefaultConfig(
       mockDefaultModelsPaths,
       mockDefaultJsonSchemas
-    )) as any;
+    ) as any;
 
     expect(result.scalarApiReferenceConfiguration).toEqual({
       theme: "deepSpace",
@@ -135,15 +132,5 @@ describe("getSwaggerDefaultConfig", () => {
       },
       pageTitle: "Arkos.js API Documentation",
     });
-  });
-
-  it("should handle port allocation errors gracefully", async () => {
-    (
-      portAndHostAllocator.getHostAndAvailablePort as jest.Mock
-    ).mockRejectedValue(new Error("Port error"));
-
-    await expect(
-      getSwaggerDefaultConfig(mockDefaultModelsPaths, mockDefaultJsonSchemas)
-    ).rejects.toThrow("Port error");
   });
 });

@@ -1,21 +1,17 @@
 import { validationMetadatasToSchemas } from "class-validator-jsonschema";
-import { importModule } from "../../../../../utils/helpers/global.helpers";
 import { getMetadataStorage } from "class-validator";
 import { getModuleComponents } from "../../../../../utils/dynamic-loader";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 import { getUserFileExtension } from "../../../../../utils/helpers/fs.helpers";
+import { defaultMetadataStorage } from "class-transformer/cjs/storage";
 
-export async function generateClassValidatorJsonSchemas() {
+export function generateClassValidatorJsonSchemas() {
   const requiredAppModules = [
     ...prismaSchemaParser.getModelsAsArrayOfStrings(),
     "auth",
   ];
   const schemas: Record<string, any> = {};
-
-  const { defaultMetadataStorage } = await importModule(
-    "class-transformer/cjs/storage.js"
-  );
 
   const jsonSchema = validationMetadatasToSchemas({
     classValidatorMetadataStorage: getMetadataStorage(),
