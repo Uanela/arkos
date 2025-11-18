@@ -18,14 +18,12 @@ import {
 /**
  * Helps choosing the right json schemas according to swagger configurations
  */
-export async function getOpenAPIJsonSchemasByConfigMode(
-  arkosConfig: ArkosConfig
-) {
+export function getOpenAPIJsonSchemasByConfigMode(arkosConfig: ArkosConfig) {
   switch (arkosConfig?.swagger!.mode) {
     case "prisma":
       return generatePrismaJsonSchemas(arkosConfig);
     case "class-validator":
-      return await generateClassValidatorJsonSchemas();
+      return generateClassValidatorJsonSchemas();
     case "zod":
       return generateZodJsonSchemas();
     default:

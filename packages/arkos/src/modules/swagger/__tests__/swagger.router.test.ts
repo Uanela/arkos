@@ -1,4 +1,3 @@
-import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import { getSwaggerRouter } from "../../../../src/modules/swagger/swagger.router";
 import * as swaggerRouterHelpers from "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers";
@@ -87,19 +86,17 @@ describe("getSwaggerRouter", () => {
 
     (
       swaggerRouterHelpers.getOpenAPIJsonSchemasByConfigMode as jest.Mock
-    ).mockResolvedValue(mockJsonSchemas);
+    ).mockReturnValue(mockJsonSchemas);
 
-    (
-      swaggerRouterHelpers.generatePathsForModels as jest.Mock
-    ).mockResolvedValue(mockPaths);
+    (swaggerRouterHelpers.generatePathsForModels as jest.Mock).mockReturnValue(
+      mockPaths
+    );
 
     (
       missingJsonSchemaGenerator.generateMissingJsonSchemas as jest.Mock
-    ).mockResolvedValue({});
+    ).mockReturnValue({});
 
-    (getSwaggerDefaultConfig as jest.Mock).mockResolvedValue(
-      mockConfig.swagger
-    );
+    (getSwaggerDefaultConfig as jest.Mock).mockReturnValue(mockConfig.swagger);
   });
 
   it("should return a router instance", async () => {

@@ -80,7 +80,7 @@ describe("RouteConfigValidator", () => {
       route: "/test",
       validation: { params: z.object({}) },
       experimental: {
-        openapi: { parameters: [{ in: "path" }] },
+        openapi: { parameters: [{ in: "params" }] },
       },
     };
     expect(() => RouteConfigValidator.validate(config as any)).toThrow(

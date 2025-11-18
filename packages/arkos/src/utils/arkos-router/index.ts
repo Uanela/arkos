@@ -9,6 +9,7 @@ import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
+import jsonSchemaToOpeApiParameters from "../../modules/swagger/utils/helpers/json-schema-to-openapi-parameters";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -135,7 +136,7 @@ export function generateOpenAPIFromApp(app: any) {
   > = {};
   const arkosConfig = getArkosConfig();
 
-  routes.forEach(async ({ path, method, config }) => {
+  routes.forEach(({ path, method, config }) => {
     if (config?.experimental?.openapi === false) return;
 
     if (!paths[path]) paths[path] = {};
@@ -156,29 +157,51 @@ export function generateOpenAPIFromApp(app: any) {
         ? config.experimental.openapi
         : {};
 
-    const validatorToJsonSchemaTransformer =
+    const validatorToJsonSchema =
       arkosConfig?.validation?.resolver === "zod"
         ? zodToJsonSchema
         : classValidatorToJsonSchema;
+
+    let parameters = [];
+    const validationToParameterMapping = {
+      query: "query",
+      params: "path",
+      headers: "header",
+      cookies: "cookie",
+    };
+
+    if (typeof config?.validation !== "boolean" && config?.validation) {
+      for (const [key, val] of Object.entries(config?.validation)) {
+        if (["body"].includes(key)) continue;
+        if ((config?.validation as any)[key]) {
+          const jsonSchema = validatorToJsonSchema(val as any);
+
+          const params = jsonSchemaToOpeApiParameters(
+            (validationToParameterMapping as any)[key],
+            jsonSchema
+          );
+          parameters.push(...params);
+        }
+      }
+    }
 
     (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${method} ${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Defaults"],
       operationId: `${method.toLowerCase()}:${path}`,
-      parameters: openapi.parameters || [{ in: "query" }],
-      // ...(!openapi.requestBody &&
-      //   config?.validation?.body && {
-      //     requestBody: {
-      //       content: {
-      //         "application/json": {
-      //           schema: validatorToJsonSchemaTransformer(
-      //             config?.validation?.body as any
-      //           ),
-      //         },
-      //       },
-      //     },
-      //   }),
+      parameters: [...(openapi.parameters || []), ...parameters],
+      ...(!openapi.requestBody &&
+        config?.validation &&
+        config?.validation?.body && {
+          requestBody: {
+            content: {
+              "application/json": {
+                schema: validatorToJsonSchema(config?.validation?.body as any),
+              },
+            },
+          },
+        }),
       ...openapi,
     };
   });

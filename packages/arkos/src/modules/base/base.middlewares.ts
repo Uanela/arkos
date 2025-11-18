@@ -245,9 +245,16 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const validators = routeConfig?.validation;
   const openapi = routeConfig?.experimental?.openapi;
 
+  const validationToParameterMapping = {
+    query: "query",
+    params: "path",
+    headers: "header",
+    cookies: "cookie",
+  };
+
   if (!validationConfig?.resolver && validators)
     throw Error(
-      "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: {} })."
+      "Trying to pass validators into route config validation option without choosing a validation resolver under arkos config { validation: {} }."
     );
 
   if ((validators as any) === true)
@@ -270,23 +277,21 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const validatorNameType =
     validationConfig?.resolver == "zod" ? "Schema" : "Dto";
 
-  if ((openapi as any)?.parameters)
-    throw Error(
-      "Invalid field openapi.parameters, if you would like to define documenation parameters define them under validation.body, validation.query or validation.params fields and they will be transformed to openapi json schemas."
-    );
-
   if (typeof validators === "object")
     validatorsKey.forEach((key) => {
-      // if (
-      //   openapi &&
-      //   typeof openapi === "object" &&
-      //   openapi.parameters?.some((parameter: any) => parameter.in === key) &&
-      //   validators[key]
-      // ) {
-      //   throw Error(
-      //     `When usign validation.${key} you must not define parameters unde openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
-      //   );
-      // }
+      if (
+        openapi &&
+        typeof openapi === "object" &&
+        key != "body" &&
+        openapi.parameters?.some(
+          (parameter: any) => parameter.in === validationToParameterMapping[key]
+        ) &&
+        validators[key]
+      ) {
+        throw Error(
+          `When usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+        );
+      }
 
       if (
         openapi &&
@@ -296,7 +301,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         key === "body"
       ) {
         throw Error(
-          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
         );
       }
 
@@ -311,7 +316,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         !isValidValidator(validators[key])
       )
         throw Error(
-          `Please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } }`
+          `Your validation resolver is set to ${arkosConfig.validation!.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } }`
         );
     });
 

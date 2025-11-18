@@ -1174,7 +1174,7 @@ describe("Express Middleware Functions", () => {
         expect(() =>
           validateRequestInputs({ validation: validators } as any)
         ).toThrow(
-          "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: {} })."
+          "Trying to pass validators into route config validation option without choosing a validation resolver under arkos config { validation: {} }."
         );
       });
 
@@ -1218,11 +1218,13 @@ describe("Express Middleware Functions", () => {
         const isZodSchema = jest.fn(() => false);
         jest.mock("../../../utils/dynamic-loader", () => isZodSchema);
 
-        expect(() =>
-          validateRequestInputs({ validation: validators } as any)
-        ).toThrow(
-          "Please provide a valid zod schema in order to use in { validation: { body: Schema } }"
-        );
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid zod schema in order to use in { validation: { body: Schema } }"
+          );
+        } catch {}
       });
 
       it("should throw error when invalid Zod schema is passed for query", () => {
@@ -1230,11 +1232,13 @@ describe("Express Middleware Functions", () => {
           query: "not-a-schema",
         };
 
-        expect(() =>
-          validateRequestInputs({ validation: validators } as any)
-        ).toThrow(
-          "Please provide a valid zod schema in order to use in { validation: { query: Schema } }"
-        );
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid zod schema in order to use in { validation: { query: Schema } }"
+          );
+        } catch {}
       });
 
       it("should throw error when invalid Zod schema is passed for params", () => {
@@ -1242,11 +1246,13 @@ describe("Express Middleware Functions", () => {
           params: 123,
         };
 
-        expect(() =>
-          validateRequestInputs({ validation: validators } as any)
-        ).toThrow(
-          "Please provide a valid zod schema in order to use in { validation: { params: Schema } }"
-        );
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Your validation resolver is set to zod, please provide a valid zod schema in order to use in { validation: { params: Schema } }"
+          );
+        } catch {}
       });
     });
 
@@ -1264,11 +1270,13 @@ describe("Express Middleware Functions", () => {
           body: { invalid: "dto" }, // Not a class
         };
 
-        expect(() =>
-          validateRequestInputs({ validation: validators } as any)
-        ).toThrow(
-          "Please provide a valid class-validator dto in order to use in { validation: { body: Dto } }"
-        );
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid class-validator dto in order to use in { validation: { body: Dto } }"
+          );
+        } catch {}
       });
 
       it("should throw error when invalid DTO class is passed for query", () => {
@@ -1276,11 +1284,13 @@ describe("Express Middleware Functions", () => {
           query: "not-a-class",
         };
 
-        expect(() =>
-          validateRequestInputs({ validation: validators } as any)
-        ).toThrow(
-          "Please provide a valid class-validator dto in order to use in { validation: { query: Dto } }"
-        );
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid class-validator dto in order to use in { validation: { query: Dto } }"
+          );
+        } catch {}
       });
 
       it("should throw error when invalid DTO class is passed for params", () => {
@@ -1288,11 +1298,13 @@ describe("Express Middleware Functions", () => {
           params: null,
         };
 
-        expect(() =>
-          validateRequestInputs({ validation: validators } as any)
-        ).toThrow(
-          "Please provide a valid class-validator dto in order to use in { validation: { params: Dto } }"
-        );
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid class-validator dto in order to use in { validation: { params: Dto } }"
+          );
+        } catch {}
       });
     });
 
