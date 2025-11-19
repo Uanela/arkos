@@ -352,6 +352,7 @@ describe("Server Module", () => {
         (_: number, _1: string, callback: Function) => {
           if (typeof callback === "function") {
             callback(error);
+            throw error;
           }
           return mockServer;
         }

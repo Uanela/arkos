@@ -9,7 +9,7 @@ import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
-import jsonSchemaToOpeApiParameters from "../../modules/swagger/utils/helpers/json-schema-to-openapi-parameters";
+import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -129,12 +129,12 @@ export default function ArkosRouter(): IArkosRouter {
 
 export function generateOpenAPIFromApp(app: any) {
   const routes = extractArkosRoutes(app);
+  const arkosConfig = getArkosConfig();
 
   let paths: Record<
     string,
     Record<string, Partial<OpenAPIV3.OperationObject>>
   > = {};
-  const arkosConfig = getArkosConfig();
 
   routes.forEach(({ path, method, config }) => {
     if (config?.experimental?.openapi === false) return;
@@ -175,8 +175,7 @@ export function generateOpenAPIFromApp(app: any) {
         if (["body"].includes(key)) continue;
         if ((config?.validation as any)[key]) {
           const jsonSchema = validatorToJsonSchema(val as any);
-
-          const params = jsonSchemaToOpeApiParameters(
+          const params = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
             (validationToParameterMapping as any)[key],
             jsonSchema
           );
@@ -185,13 +184,16 @@ export function generateOpenAPIFromApp(app: any) {
       }
     }
 
+    const convertedOpenAPI =
+      openApiSchemaConverter.convertOpenAPIConfig(openapi);
+
     (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${method} ${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Defaults"],
       operationId: `${method.toLowerCase()}:${path}`,
-      parameters: [...(openapi.parameters || []), ...parameters],
-      ...(!openapi.requestBody &&
+      parameters: [...(convertedOpenAPI.parameters || []), ...parameters],
+      ...(!convertedOpenAPI.requestBody &&
         config?.validation &&
         config?.validation?.body && {
           requestBody: {
@@ -202,7 +204,7 @@ export function generateOpenAPIFromApp(app: any) {
             },
           },
         }),
-      ...openapi,
+      ...convertedOpenAPI,
     };
   });
 
