@@ -42,12 +42,12 @@ export function extractRequestInfo(req: ArkosRequest) {
 /**
  * Generates the correct relative path regardless of upload directory location
  */
-const generateRelativePath = (filePath: string, fileType: string) => {
+export function generateRelativePath(filePath: string, uploadDir: string) {
   const { fileUpload } = getArkosConfig();
 
   const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
   if (baseUploadDir.startsWith("..")) {
-    return path.join(fileType, path.basename(filePath));
+    return path.join(uploadDir, path.basename(filePath));
   } else {
     return fullCleanCwd(
       filePath
@@ -57,7 +57,7 @@ const generateRelativePath = (filePath: string, fileType: string) => {
         .replace(`${baseUploadDir}`, "")
     );
   }
-};
+}
 
 /**
  * Handles basic file processing for non-image files
