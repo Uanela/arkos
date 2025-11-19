@@ -1,5 +1,5 @@
-import { ArkosConfig } from "../types/new-arkos-config";
+// import { ArkosConfig } from "../types/new-arkos-config";
 
-export default function defineConfig(config: ArkosConfig) {
-  return config;
-}
+// export default function defineConfig(config: ArkosConfig) {
+//   return config;
+// }

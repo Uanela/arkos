@@ -11,7 +11,6 @@ import {
 } from "../types";
 import { ArkosConfig } from "../types/new-arkos-config";
 import { ArkosInitConfig } from "../types/arkos-config";
-import defineConfig from "../utils/define-config";
 
 /**
  * Initializes the Arkos application.
@@ -59,7 +58,6 @@ export {
    */
   ArkosRouter,
   ArkosRouteConfig,
-  defineConfig,
 };
 
 /**
