@@ -10,6 +10,7 @@ import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
+import uploadManager from "./utils/helpers/upload-manager";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -117,6 +118,17 @@ export default function ArkosRouter(): IArkosRouter {
             );
 
           handlers = [...getMiddlewareStack(config), ...handlers];
+
+          if (
+            config.experimental?.uploads &&
+            config.experimental.uploads.deleteOnError !== false
+          )
+            handlers.push(
+              catchAsync(
+                uploadManager.handleFileCleanup(config.experimental.uploads),
+                { type: "error" }
+              )
+            );
 
           return originalMethod.call(target, route, ...handlers);
         };
