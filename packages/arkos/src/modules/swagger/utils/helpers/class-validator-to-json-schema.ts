@@ -18,7 +18,7 @@ export default function classValidatorToJsonSchema(
   return resolveReferences(targetSchema, jsonSchemas);
 }
 
-function resolveReferences(
+export function resolveReferences(
   schema: any,
   allSchemas: Record<string, any>,
   visited = new Set<string>()
@@ -59,7 +59,7 @@ function resolveReferences(
   return result;
 }
 
-function extractSchemaName(ref: string): string {
+export function extractSchemaName(ref: string): string {
   const parts = ref.split("/");
   return parts[parts.length - 1];
 }
