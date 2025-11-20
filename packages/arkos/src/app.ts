@@ -187,7 +187,7 @@ export async function bootstrap(
   }
 
   const modelsRouter = getPrismaModelsRouter(arkosConfig);
-  knowModulesRouter.use("/api", modelsRouter);
+  knowModulesRouter.use("/api", modelsRouter as any);
 
   app.use(knowModulesRouter);
   app.use("/api", getAvailableResourcesAndRoutesRouter());

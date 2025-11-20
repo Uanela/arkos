@@ -86,6 +86,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
           authConfigs
         ),
         validation: validationSchema ? { body: validationSchema } : undefined,
+        experimental: { openapi: false },
       };
 
       const endpointConfig = (routerConfig as any)[endpoint];
