@@ -1,6 +1,6 @@
 import { Router } from "express";
 import pluralize from "pluralize";
-import { ArkosConfig, ArkosRouter, RouterConfig } from "../../../../exports";
+import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
 import {
@@ -21,6 +21,7 @@ import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { AccessAction, AuthConfigs } from "../../../../types/auth";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
+import deepmerge from "../../../../utils/helpers/deepmerge.helper";
 
 export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
@@ -90,7 +91,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
       };
 
       const endpointConfig = (routerConfig as any)[endpoint];
-      if (endpointConfig) Object.assign(config, endpointConfig);
+      if (endpointConfig) deepmerge(config, endpointConfig);
 
       return config;
     };
