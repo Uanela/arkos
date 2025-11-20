@@ -125,7 +125,6 @@ class UploadManager {
       _: ArkosResponse,
       next: ArkosNextFunction
     ) => {
-      console.log(req.files);
       const deleteFile = async (file: Express.Multer.File) => {
         try {
           await fs.promises.unlink(file.path);

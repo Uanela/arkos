@@ -79,7 +79,7 @@ export interface IArkosRouter
 }
 
 /**
- * Configuration object for defining routes in the Arkos framework.
+ * Configuration object for defining routes in Arkos.js.
  */
 export interface ArkosRouteConfig {
   /**

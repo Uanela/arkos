@@ -1,6 +1,6 @@
 import { Router } from "express";
 import pluralize from "pluralize";
-import { ArkosConfig, RouterConfig } from "../../../../exports";
+import { ArkosConfig, ArkosRouter, RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
 import {
@@ -9,11 +9,9 @@ import {
   RouterEndpoint,
 } from "../../../../types/router-config";
 import { getModuleComponents } from "../../../../utils/dynamic-loader";
-import authService from "../../../auth/auth.service";
 import { BaseController } from "../../base.controller";
 import {
   addPrismaQueryOptionsToRequest,
-  handleRequestBodyValidationAndTransformation,
   sendResponse,
 } from "../../base.middlewares";
 import { processMiddleware } from "../../../../utils/helpers/routers.helpers";
@@ -22,8 +20,9 @@ import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { AccessAction, AuthConfigs } from "../../../../types/auth";
+import { IArkosRouter } from "../../../../utils/arkos-router/types";
 
-export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
+export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
     const modelModules = getModuleComponents(modelNameInKebab) || {};
@@ -73,20 +72,32 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
         );
     }
 
-    if (
-      !isEndpointDisabled(routerConfig, "createOne") &&
-      !hasCustomImplementation(`/${routeName}`, "post")
-    ) {
-      router.post(
-        `/${routeName}`,
-        ...processAuthenticationMiddlewares(
-          "Create",
-          kebabCase(pluralize.singular(modelNameInKebab)),
+    const createRouteConfig = (
+      endpoint: RouterEndpoint,
+      path: string,
+      validationSchema?: any
+    ) => {
+      const config: any = {
+        route: `/${routeName}${path}`,
+        disabled: isEndpointDisabled(routerConfig, endpoint),
+        authentication: getAuthenticationConfig(
+          endpoint,
+          modelNameInKebab,
           authConfigs
         ),
-        handleRequestBodyValidationAndTransformation(
-          getValidationSchemaOrDto("create")
-        ),
+        validation: validationSchema ? { body: validationSchema } : undefined,
+      };
+
+      const endpointConfig = (routerConfig as any)[endpoint];
+      if (endpointConfig) Object.assign(config, endpointConfig);
+
+      return config;
+    };
+
+    // CREATE ONE
+    if (!hasCustomImplementation(`/${routeName}`, "post")) {
+      router.post(
+        createRouteConfig("createOne", "", getValidationSchemaOrDto("create")),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createOne"
@@ -99,23 +110,14 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    // GET /{routeName} - Find Many
-    if (
-      !isEndpointDisabled(routerConfig, "findMany") &&
-      !hasCustomImplementation(`/${routeName}`, "get")
-    ) {
+    // FIND MANY
+    if (!hasCustomImplementation(`/${routeName}`, "get")) {
       router.get(
-        `/${routeName}`,
-        ...processAuthenticationMiddlewares(
-          "View",
-          kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs
-        ),
+        createRouteConfig("findMany", ""),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findMany"
         ),
-
         ...processMiddleware(interceptors?.beforeFindMany),
         controller.findMany,
         ...processMiddleware(interceptors?.afterFindMany),
@@ -124,26 +126,18 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    // POST /{routeName}/many - Create Many
-    if (
-      !isEndpointDisabled(routerConfig, "createMany") &&
-      !hasCustomImplementation(`/${routeName}/many`, "post")
-    ) {
+    // CREATE MANY
+    if (!hasCustomImplementation(`/${routeName}/many`, "post")) {
       router.post(
-        `/${routeName}/many`,
-        ...processAuthenticationMiddlewares(
-          "Create",
-          kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs
-        ),
-        handleRequestBodyValidationAndTransformation(
+        createRouteConfig(
+          "createMany",
+          "/many",
           getValidationSchemaOrDto("create")
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "createMany"
         ),
-
         ...processMiddleware(interceptors?.beforeCreateMany),
         controller.createMany,
         ...processMiddleware(interceptors?.afterCreateMany),
@@ -152,18 +146,10 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    // PATCH /{routeName}/many - Update Many
-    if (
-      !isEndpointDisabled(routerConfig, "updateMany") &&
-      !hasCustomImplementation(`/${routeName}/many`, "patch")
-    ) {
+    // UPDATE MANY
+    if (!hasCustomImplementation(`/${routeName}/many`, "patch")) {
       router.patch(
-        `/${routeName}/many`,
-        ...processAuthenticationMiddlewares(
-          "Update",
-          kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs
-        ),
+        createRouteConfig("updateMany", "/many"),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "updateMany"
@@ -176,18 +162,10 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    // DELETE /{routeName}/many - Delete Many
-    if (
-      !isEndpointDisabled(routerConfig, "deleteMany") &&
-      !hasCustomImplementation(`/${routeName}/many`, "delete")
-    ) {
+    // DELETE MANY
+    if (!hasCustomImplementation(`/${routeName}/many`, "delete")) {
       router.delete(
-        `/${routeName}/many`,
-        ...processAuthenticationMiddlewares(
-          "Delete",
-          kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs
-        ),
+        createRouteConfig("deleteMany", "/many"),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteMany"
@@ -200,17 +178,10 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    if (
-      !isEndpointDisabled(routerConfig, "findOne") &&
-      !hasCustomImplementation(`/${routeName}/:id`, "get")
-    ) {
+    // FIND ONE
+    if (!hasCustomImplementation(`/${routeName}/:id`, "get")) {
       router.get(
-        `/${routeName}/:id`,
-        ...processAuthenticationMiddlewares(
-          "View",
-          kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs
-        ),
+        createRouteConfig("findOne", "/:id"),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "findOne"
@@ -223,19 +194,12 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    // PATCH /{routeName}/:id - Update One
-    if (
-      !isEndpointDisabled(routerConfig, "updateOne") &&
-      !hasCustomImplementation(`/${routeName}/:id`, "patch")
-    ) {
+    // UPDATE ONE
+    if (!hasCustomImplementation(`/${routeName}/:id`, "patch")) {
       router.patch(
-        `/${routeName}/:id`,
-        ...processAuthenticationMiddlewares(
-          "Update",
-          kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs
-        ),
-        handleRequestBodyValidationAndTransformation(
+        createRouteConfig(
+          "updateOne",
+          "/:id",
           getValidationSchemaOrDto("update")
         ),
         addPrismaQueryOptionsToRequest<any>(
@@ -250,18 +214,10 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    // DELETE /{routeName}/:id - Delete One
-    if (
-      !isEndpointDisabled(routerConfig, "deleteOne") &&
-      !hasCustomImplementation(`/${routeName}/:id`, "delete")
-    ) {
+    // DELETE ONE
+    if (!hasCustomImplementation(`/${routeName}/:id`, "delete")) {
       router.delete(
-        `/${routeName}/:id`,
-        ...processAuthenticationMiddlewares(
-          "Delete",
-          kebabCase(pluralize.singular(modelNameInKebab)),
-          authConfigs
-        ),
+        createRouteConfig("deleteOne", "/:id"),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
           "deleteOne"
@@ -274,15 +230,28 @@ export function setupRouters(router: Router, arkosConfigs: ArkosConfig) {
       );
     }
 
-    debuggerService.logModuleFinalRouter(modelNameInKebab, router);
+    debuggerService.logModuleFinalRouter(modelNameInKebab, router as any);
   });
 }
 
-export function processAuthenticationMiddlewares(
-  action: AccessAction,
+// Helper function to create authentication config
+function getAuthenticationConfig(
+  endpoint: RouterEndpoint,
   modelName: string,
   authConfigs?: AuthConfigs
 ) {
+  const actionMap: Record<RouterEndpoint, AccessAction> = {
+    createOne: "Create",
+    findMany: "View",
+    createMany: "Create",
+    updateMany: "Update",
+    deleteMany: "Delete",
+    findOne: "View",
+    updateOne: "Update",
+    deleteOne: "Delete",
+  };
+
+  const action = actionMap[endpoint];
   const authenticationControl = authConfigs?.authenticationControl;
 
   if (
@@ -292,17 +261,15 @@ export function processAuthenticationMiddlewares(
         authenticationControl[action] !== false)) ||
     authenticationControl === true ||
     (!authenticationControl && authenticationControl !== false)
-  )
-    return [
-      authService.authenticate,
-      authService.handleAccessControl(
-        action,
-        kebabCase(pluralize.singular(modelName)),
-        authConfigs?.accessControl
-      ),
-    ];
+  ) {
+    return {
+      resource: kebabCase(pluralize.singular(modelName)),
+      action: action,
+      rule: authConfigs?.accessControl,
+    };
+  }
 
-  return [];
+  return false;
 }
 
 export function isEndpointDisabled(
