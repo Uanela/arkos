@@ -64,6 +64,8 @@ export default function ArkosRouter(): IArkosRouter {
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
+          if (config.disabled) return;
+
           const route = config.route;
 
           if (!RouteConfigValidator.isArkosRouteConfig(config))
