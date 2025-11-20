@@ -83,6 +83,10 @@ export interface IArkosRouter
  */
 export interface ArkosRouteConfig {
   /**
+   * Disables the route by not mounting it internally.
+   */
+  disabled?: boolean;
+  /**
    * The URL path pattern for the route.
    *
    * @example "/api/users/:id"
