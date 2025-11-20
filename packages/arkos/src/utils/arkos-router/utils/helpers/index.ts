@@ -103,15 +103,15 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
       express[config.bodyParser.parser](config.bodyParser.options)
     );
 
-  middlewares.push(validateRequestInputs(config));
-
   if (config.experimental?.uploads) {
     middlewares.push(uploadManager.handleUpload(config.experimental.uploads));
+
+    middlewares.push(validateRequestInputs(config));
 
     middlewares.push(
       uploadManager.handlePostUpload(config.experimental.uploads)
     );
-  }
+  } else middlewares.push(validateRequestInputs(config));
 
   return middlewares;
 }

@@ -168,9 +168,19 @@ class UploadManager {
   handlePostUpload(config: UploadConfig) {
     return (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       const { baseURL, baseRoute } = extractRequestInfo(req);
+      const arkosConfig = getArkosConfig();
 
       const normalizePath = (filePath: string): string => {
-        return filePath.replace(/\\/g, "/").replaceAll(process.cwd(), "");
+        let fullBaseUploadDir = path.resolve(
+          path.join(process.cwd(), arkosConfig.fileUpload?.baseUploadDir!)
+        );
+        fullBaseUploadDir = fullBaseUploadDir.replace(process.cwd(), "");
+
+        return filePath
+          .replace(/\\/g, "/")
+          .replaceAll(process.cwd(), "")
+          .replace(`/${fullBaseUploadDir}`, "")
+          .replace(fullBaseUploadDir, "");
       };
 
       const buildFileURL = (file: Express.Multer.File): string => {
