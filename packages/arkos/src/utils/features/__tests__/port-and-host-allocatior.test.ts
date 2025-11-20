@@ -25,7 +25,6 @@ describe("PortAndHostAllocator", () => {
 
     (net.createConnection as jest.Mock).mockImplementation(() => mockSocket);
 
-    // Reset singleton state
     (portAndHostAllocator as any).host = undefined;
     (portAndHostAllocator as any).port = undefined;
     (portAndHostAllocator as any).prevWarnings = new Set();
