@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   isEndpointDisabled,
   isParentEndpointAllowed,
-  processAuthenticationMiddlewares,
+  // processAuthenticationMiddlewares,
   setupRouters,
 } from "../base.router.helpers"; // Adjust the import path
 import * as importHelpers from "../../../../../utils/dynamic-loader";
@@ -12,8 +12,11 @@ import catchAsync from "../../../../error-handler/utils/catch-async";
 import routerValidator from "../../router-validator";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 import { AccessAction } from "../../../../../types/auth";
+import { getArkosConfig } from "../../../../../server";
+import { validateRequestInputs } from "../../../base.middlewares";
 
 jest.mock("../../../../error-handler/utils/catch-async");
+jest.mock("../../../../../server");
 // Mocks
 jest.mock("express", () => {
   const mockRouter = {
@@ -48,6 +51,7 @@ jest.mock("../../../../auth/auth.service", () => ({
 jest.mock("../../../base.middlewares", () => ({
   addPrismaQueryOptionsToRequest: jest.fn(() => jest.fn()),
   sendResponse: jest.fn(),
+  validateRequestInputs: jest.fn(),
   handleRequestBodyValidationAndTransformation: jest.fn(() => jest.fn()),
 }));
 
@@ -82,10 +86,12 @@ describe("setupRouters", () => {
     // Clear all mocks
     jest.clearAllMocks();
 
-    // Setup router mock
+    (getArkosConfig as jest.Mock).mockImplementation(() => ({
+      authentication: { mode: "static" },
+      validation: { resolver: "zod" },
+    }));
     router = Router();
 
-    // Setup BaseController mock
     mockBaseController = {
       createOne: jest.fn(),
       findMany: jest.fn(),
@@ -118,68 +124,93 @@ describe("setupRouters", () => {
     await Promise.all(await setupPromises);
 
     expect(router.post).toHaveBeenCalledWith(
-      "/users",
-      expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users",
+        authentication: { action: "Create", resource: "user", rule: undefined },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
-      "/users",
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users",
+        authentication: { action: "View", resource: "user", rule: undefined },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.post).toHaveBeenCalledWith(
-      "/users/many",
-      expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users/many",
+        authentication: { action: "Create", resource: "user", rule: undefined },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.patch).toHaveBeenCalledWith(
-      "/users/many",
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users/many",
+        authentication: { action: "Update", resource: "user", rule: undefined },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
+
     expect(router.delete).toHaveBeenCalledWith(
-      "/users/many",
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users/many",
+        authentication: { action: "Delete", resource: "user", rule: undefined },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
+
     expect(router.get).toHaveBeenCalledWith(
-      "/users/:id",
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users/:id",
+        authentication: { action: "View", resource: "user", rule: undefined },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
+
     expect(router.patch).toHaveBeenCalledWith(
-      "/users/:id",
-      expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users/:id",
+        authentication: { action: "Update", resource: "user", rule: undefined },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
+
     expect(router.delete).toHaveBeenCalledWith(
-      "/users/:id",
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users/:id",
+        authentication: { action: "Delete", resource: "user", rule: undefined },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
@@ -206,28 +237,30 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    // Call the function
-    const setupPromises = setupRouters(router, {});
-    await Promise.all(await setupPromises);
+    setupRouters(router, {});
 
-    // Verify disabled routes are not registered
     expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
 
     // Verify other routes are registered
     expect(router.post).toHaveBeenCalledWith(
-      "/users/many",
-      expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
+      {
+        authentication: { action: "Create", resource: "user", rule: undefined },
+        disabled: false,
+        route: "/users/many",
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
-      "/users/:id",
-      expect.any(Function),
-      expect.any(Function),
+      {
+        authentication: { action: "View", resource: "user", rule: undefined },
+        disabled: false,
+        route: "/users/:id",
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
@@ -253,14 +286,54 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    const setupPromises = setupRouters(router, {});
-    await Promise.all(await setupPromises);
+    setupRouters(router, {});
 
     // Verify no routes are registered
-    expect(router.get).not.toHaveBeenCalled();
-    expect(router.post).not.toHaveBeenCalled();
-    expect(router.patch).not.toHaveBeenCalled();
-    expect(router.delete).not.toHaveBeenCalled();
+
+    expect(router.get).toHaveBeenCalledWith(
+      {
+        authentication: { action: "View", resource: "user", rule: undefined },
+        disabled: true,
+        route: "/users",
+        validation: undefined,
+      },
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
+    );
+    expect(router.post).toHaveBeenCalledWith(
+      {
+        authentication: { action: "Create", resource: "user", rule: undefined },
+        disabled: true,
+        route: "/users",
+        validation: undefined,
+      },
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
+    );
+    expect(router.patch).toHaveBeenCalledWith(
+      {
+        authentication: { action: "Update", resource: "user", rule: undefined },
+        disabled: true,
+        route: "/users/:id",
+        validation: undefined,
+      },
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
+    );
+    expect(router.delete).toHaveBeenCalledWith(
+      {
+        authentication: { action: "Delete", resource: "user", rule: undefined },
+        disabled: true,
+        route: "/users/:id",
+        validation: undefined,
+      },
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
+    );
   });
 
   it("should use custom middleware when provided as function", async () => {
@@ -279,16 +352,20 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    // Call the function
-    const setupPromises = setupRouters(router, {});
-    await Promise.all(await setupPromises);
+    setupRouters(router, {});
 
-    // Verify custom middleware is used
     expect(router.get).toHaveBeenCalledWith(
-      "/users",
-      expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users",
+        authentication: {
+          action: "View",
+          resource: "user",
+          rule: undefined,
+        },
+        disabled: false,
+        validation: undefined,
+      },
+      expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeFindMany
       expect.any(Function), // findManyHandler
       expect.any(Function), // afterFindMany
@@ -318,10 +395,17 @@ describe("setupRouters", () => {
 
     // Verify custom middleware is used - should spread the array
     expect(router.get).toHaveBeenCalledWith(
-      "/users",
-      expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users",
+        authentication: {
+          action: "View",
+          resource: "user",
+          rule: undefined,
+        },
+        disabled: false,
+        validation: undefined,
+      },
+      expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // first beforeFindMany
       expect.any(Function), // second beforeFindMany
       expect.any(Function), // third beforeFindMany
@@ -425,19 +509,20 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    // Call the function
-    const setupPromises = setupRouters(router, {});
-    await Promise.all(await setupPromises);
+    setupRouters(router, {});
 
-    // Verify the route with custom implementation is not registered
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
-
-    // Verify other routes are still registered
     expect(router.post).toHaveBeenCalledWith(
-      "/users/many",
-      expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users/many",
+        authentication: {
+          action: "Create",
+          resource: "user",
+          rule: undefined,
+        },
+        disabled: false,
+        validation: undefined,
+      },
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
@@ -616,15 +701,19 @@ describe("setupRouters", () => {
     it("should handle when getModuleComponents returns falsy value", async () => {
       (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(null);
 
-      const setupPromises = setupRouters(router, {});
-      await Promise.all(await setupPromises);
+      setupRouters(router, {});
 
-      // Should still register routes with default empty objects
       expect(router.post).toHaveBeenCalledWith(
-        "/users",
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
+        {
+          route: "/users/many",
+          authentication: {
+            action: "Create",
+            resource: "user",
+            rule: undefined,
+          },
+          disabled: false,
+          validation: undefined,
+        },
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
@@ -633,13 +722,14 @@ describe("setupRouters", () => {
 
     // Test for lines 333, 340-346: validation configuration branches
     it("should use class-validator DTOs when resolver is class-validator", async () => {
+      const CreateManyDto = jest.fn();
       const mockModuleComponents = {
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
         router: undefined,
         dtos: {
-          create: jest.fn(),
+          create: CreateManyDto,
           update: jest.fn(),
           findOne: jest.fn(),
           createMany: jest.fn(),
@@ -664,15 +754,20 @@ describe("setupRouters", () => {
         },
       };
 
-      const setupPromises = setupRouters(router, arkosConfigs as any);
-      await Promise.all(await setupPromises);
+      setupRouters(router, arkosConfigs as any);
 
       // Verify that DTOs are used (this tests line 333)
       expect(router.post).toHaveBeenCalledWith(
-        "/users",
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function), // This should be the DTO
+        {
+          route: "/users/many",
+          authentication: {
+            action: "Create",
+            resource: "user",
+            rule: undefined,
+          },
+          disabled: false,
+          validation: { body: CreateManyDto },
+        },
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
@@ -680,6 +775,7 @@ describe("setupRouters", () => {
     });
 
     it("should use zod schemas when resolver is zod", async () => {
+      const CreateManySchema = jest.fn();
       const mockModuleComponents = {
         interceptors: {},
         authConfigs: {},
@@ -689,7 +785,7 @@ describe("setupRouters", () => {
           create: jest.fn(),
         },
         schemas: {
-          create: jest.fn(),
+          create: CreateManySchema,
           update: jest.fn(),
           findOne: jest.fn(),
           createMany: jest.fn(),
@@ -710,15 +806,20 @@ describe("setupRouters", () => {
         },
       };
 
-      const setupPromises = setupRouters(router, arkosConfigs as any);
-      await Promise.all(await setupPromises);
+      setupRouters(router, arkosConfigs as any);
 
       // Verify that schemas are used (this tests line 340)
       expect(router.post).toHaveBeenCalledWith(
-        "/users",
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function), // This should be the schema
+        {
+          route: "/users/many",
+          authentication: {
+            action: "Create",
+            resource: "user",
+            rule: undefined,
+          },
+          disabled: false,
+          validation: { body: CreateManySchema },
+        },
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
@@ -751,10 +852,16 @@ describe("setupRouters", () => {
 
       // Should still register routes but without specific validation (tests line 342)
       expect(router.post).toHaveBeenCalledWith(
-        "/users",
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
+        {
+          route: "/users",
+          authentication: {
+            action: "Create",
+            resource: "user",
+            rule: undefined,
+          },
+          disabled: false,
+          validation: undefined,
+        },
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
@@ -779,18 +886,22 @@ describe("setupRouters", () => {
         mockModuleComponents
       );
 
-      // Mock arkosConfigs without validation config
       const arkosConfigs = {};
 
-      const setupPromises = setupRouters(router, arkosConfigs);
-      await Promise.all(await setupPromises);
+      setupRouters(router, arkosConfigs);
 
       // Should still register routes but without specific validation (tests line 342)
       expect(router.post).toHaveBeenCalledWith(
-        "/users",
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
+        {
+          route: "/users",
+          authentication: {
+            action: "Create",
+            resource: "user",
+            rule: undefined,
+          },
+          disabled: false,
+          validation: undefined,
+        },
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
@@ -825,14 +936,19 @@ describe("setupRouters", () => {
         .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
         .mockReturnValue(["User"]);
 
-      const setupPromises = setupRouters(router, arkosConfigs as any);
-      await Promise.all(await setupPromises);
+      setupRouters(router, arkosConfigs as any);
 
       expect(router.post).toHaveBeenCalledWith(
-        "/users",
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
+        {
+          route: "/users",
+          authentication: {
+            action: "Create",
+            resource: "user",
+            rule: undefined,
+          },
+          disabled: false,
+          validation: undefined,
+        },
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
