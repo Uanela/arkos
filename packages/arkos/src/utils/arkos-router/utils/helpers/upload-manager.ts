@@ -16,7 +16,7 @@ import fs from "fs";
 import { removeBothSlashes } from "../../../helpers/text.helpers";
 import { promisify } from "util";
 import sheu from "../../../sheu";
-import { AppError } from "../../../../exports/error-handler";
+import AppError from "../../../../modules/error-handler/utils/app-error";
 import { RequestHandler } from "express";
 import {
   extractRequestInfo,
@@ -284,7 +284,7 @@ class UploadManager {
     const ext = path.extname(file.originalname).toLowerCase();
     let isAllowed = false;
     if (Array.isArray(allowedFileTypes))
-      isAllowed = allowedFileTypes.includes(`.${ext}`);
+      isAllowed = allowedFileTypes.includes(ext);
     else isAllowed = allowedFileTypes.test(ext);
 
     if (isAllowed) cb(null, true);

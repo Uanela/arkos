@@ -17,7 +17,7 @@ jest.mock("fs", () => ({
 }));
 jest.mock("util");
 jest.mock("../../../../../exports");
-jest.mock("../../../../../exports/error-handler");
+// jest.mock("../../../../../exports/error-handler");
 jest.mock("../../../../sheu");
 jest.mock("../../../../helpers/deepmerge.helper");
 jest.mock(
@@ -524,23 +524,23 @@ describe("UploadManager", () => {
     });
 
     it("should determine correct upload dir for images", () => {
-      const file = { mimetype: "image/jpeg", originalname: "test.jpg" };
       const config = { type: "single" as const, field: "avatar" };
-      uploadManager.handleUpload(config);
+      const uploadMw = uploadManager.handleUpload(config);
+      uploadMw(mockReq, mockRes, mockNext);
       expect(mockMulterInstance.single).toHaveBeenCalled();
     });
 
     it("should determine correct upload dir for videos", () => {
-      const file = { mimetype: "video/mp4", originalname: "test.mp4" };
       const config = { type: "single" as const, field: "video" };
-      uploadManager.handleUpload(config);
+      const uploadMw = uploadManager.handleUpload(config);
+      uploadMw(mockReq, mockRes, mockNext);
       expect(mockMulterInstance.single).toHaveBeenCalled();
     });
 
     it("should determine correct upload dir for documents", () => {
-      const file = { mimetype: "application/pdf", originalname: "test.pdf" };
       const config = { type: "single" as const, field: "document" };
-      uploadManager.handleUpload(config);
+      const uploadMw = uploadManager.handleUpload(config);
+      uploadMw(mockReq, mockRes, mockNext);
       expect(mockMulterInstance.single).toHaveBeenCalled();
     });
   });

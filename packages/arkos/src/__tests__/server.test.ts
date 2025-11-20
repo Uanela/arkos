@@ -5,11 +5,13 @@ import portAndHostAllocator from "../utils/features/port-and-host-allocator";
 import sheu from "../utils/sheu";
 import { bootstrap } from "../app";
 import { ArkosInitConfig } from "../exports";
+import * as deep from "../utils/helpers/deepmerge.helper";
 
 const { initApp, getExpressApp, terminateApplicationRunningProcessAndServer } =
   server;
 
 jest.mock("../utils/features/port-and-host-allocator");
+// jest.mock("../utils/helpers/deepmerge.helper");
 jest.mock("../app", () => ({
   bootstrap: jest.fn().mockResolvedValue({}),
 }));
@@ -49,10 +51,6 @@ describe("Server Module", () => {
 
     originalProcessEnv = { ...process.env };
     process.env.NODE_ENV = "test";
-
-    jest
-      .spyOn(server, "getArkosConfig")
-      .mockReturnValue(server.defaultArkosConfig);
 
     originalConsoleError = jest.spyOn(console, "error").mockImplementation();
   });
@@ -128,9 +126,7 @@ describe("Server Module", () => {
     });
 
     it("does not start server when port is undefined", async () => {
-      jest
-        .spyOn(server, "getArkosConfig")
-        .mockReturnValueOnce({ port: undefined });
+      jest.spyOn(deep, "default").mockReturnValueOnce({ port: undefined });
 
       await initApp();
 
