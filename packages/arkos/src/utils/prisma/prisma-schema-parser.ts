@@ -161,19 +161,15 @@ export class PrismaSchemaParser {
    */
   private parseFields(block: string): PrismaField[] {
     const fields: PrismaField[] = [];
+    console.log(block, "theblock");
     const fieldLines = block
       .split("\n")
       .map((line) => line.trim())
-      .filter(
-        (line) =>
-          line &&
-          !line.startsWith("model") &&
-          !line.startsWith("{") &&
-          !line.startsWith("}")
-      );
+      .filter((line) => line && !line.startsWith("{") && !line.startsWith("}"));
 
     for (const line of fieldLines) {
       if (line.startsWith("//") || line.startsWith("@@")) continue;
+      if (/^model\s+\w+\s*\{/.test(line)) continue;
 
       const field = this.parseFieldLine(line);
       if (field) {
