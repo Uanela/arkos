@@ -115,12 +115,18 @@ export class FileUploadService {
             removeBothSlashes(configs?.baseUploadDir!),
             removeBothSlashes(oldFilePath)
           );
-          try {
+      
+         try {
             const stats = await promisify(fs.stat)(filePath);
             if (stats) await promisify(fs.unlink)(filePath);
           } catch (err) {
-            console.error(err);
+            // Silently ignore if file doesn't exist (already deleted or never existed)
+            if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+              console.error('Failed to delete old file:', err);
+            }
           }
+
+          
         }
 
         next();
@@ -157,7 +163,10 @@ export class FileUploadService {
           await promisify(fs.unlink)(filePath);
         }
       } catch (err) {
-        console.error(err);
+        // Silently ignore if file doesn't exist (already deleted or never existed)
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+          console.error('Failed to delete file:', err);
+        }
       }
 
       next();

@@ -14,21 +14,49 @@ export function capitalize(text: string): string {
     .join(" ");
 }
 
-// Function to remove the beginning slash
+/**
+ * Removes the leading slash from a string if present.
+ *
+ * @param {string} str - The input string to process
+ * @returns {string} The string without a leading slash
+ *
+ * @example
+ * removeBeginningSlash("/api/users") // Returns "api/users"
+ * removeBeginningSlash("api/users")  // Returns "api/users"
+ */
 export function removeBeginningSlash(str: string) {
   if (str.startsWith("/")) return str.substring(1);
 
   return str;
 }
 
-// Function to remove the ending slash
+/**
+ * Removes the trailing slash from a string if present.
+ *
+ * @param {string} str - The input string to process
+ * @returns {string} The string without a trailing slash
+ *
+ * @example
+ * removeEndingSlash("api/users/") // Returns "api/users"
+ * removeEndingSlash("api/users")  // Returns "api/users"
+ */
 export function removeEndingSlash(str: string) {
   if (str.endsWith("/")) return str.substring(0, str.length - 1);
 
   return str;
 }
 
-// Function to remove both beginning and ending slashes
+/**
+ * Removes both leading and trailing slashes from a string.
+ *
+ * @param {string} str - The input string to process
+ * @returns {string} The string without leading or trailing slashes
+ *
+ * @example
+ * removeBothSlashes("/api/users/") // Returns "api/users"
+ * removeBothSlashes("/api/users")  // Returns "api/users"
+ * removeBothSlashes("api/users/")  // Returns "api/users"
+ */
 export function removeBothSlashes(str: string) {
   return removeEndingSlash(removeBeginningSlash(str));
 }
