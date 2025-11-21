@@ -466,7 +466,7 @@ export class AuthService {
    */
   authenticate = catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      if (isAuthenticationEnabled()) {
+      if (!isAuthenticationEnabled()) {
         next();
         return;
       }
