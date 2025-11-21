@@ -1206,6 +1206,19 @@ describe("PrismaSchemaParser", () => {
     });
 
     describe("field parsing edge cases", () => {
+      const schemaContent = `
+        enum Status {
+          ACTIVE
+          INACTIVE
+        }
+
+        model User {
+          id    Int    @id @default(autoincrement())
+          email String @unique
+          status Status
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
       it("should handle fields with various attribute patterns", () => {
         const schemaContent = `
         model Test {
@@ -1237,8 +1250,49 @@ describe("PrismaSchemaParser", () => {
       });
     });
 
+    it("should handle models with fields called model", () => {
+      const schemaContent = `
+        model Test {
+          field1 String // no attributes
+          field2 String @map("custom_name")
+          model String @relation(fields: [id], references: [id])
+          field4 String @relation(fields: ['id'], references: ['id'])
+          field5 String @relation(fields: ["id"], references: ["id"])
+        }
+      `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+      const model = result.models[0];
+
+      expect(model.fields).toHaveLength(5);
+
+      const field1 = model.fields.find((f) => f.name === "field1");
+      expect(field1?.attributes).toEqual([]);
+
+      const field3 = model.fields.find((f) => f.name === "model");
+      expect(field3?.foreignKeyField).toBe("id");
+
+      const field4 = model.fields.find((f) => f.name === "field4");
+      expect(field4?.foreignKeyField).toBe("id");
+
+      const field5 = model.fields.find((f) => f.name === "field5");
+      expect(field5?.foreignKeyField).toBe("id");
+    });
+
     describe("regex extraction edge cases", () => {
       it("should handle models with no valid blocks", () => {
+        mockGetPrismaSchemasContent.mockReturnValue(
+          "invalid content without proper models"
+        );
+
+        const result = parser.parse({ override: true });
+
+        expect(result.models).toHaveLength(0);
+        expect(result.enums).toHaveLength(0);
+      });
+
+      it("should handle models with fields called model", () => {
         mockGetPrismaSchemasContent.mockReturnValue(
           "invalid content without proper models"
         );
