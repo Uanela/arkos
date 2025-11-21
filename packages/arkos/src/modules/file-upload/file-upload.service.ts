@@ -297,8 +297,8 @@ export class FileUploadService {
       resizeTo?: number;
     } = {}
   ): Promise<string | string[] | null> {
-    const { fileUpload } = getArkosConfig();
-    fileUpload?.baseRoute || "/api/uploads";
+      const { fileUpload } = getArkosConfig();
+      const baseRoute = fileUpload?.baseRoute || "/api/uploads";
 
     return new Promise((resolve, reject) => {
       // Determine if it's a single or multiple file upload
@@ -316,16 +316,16 @@ export class FileUploadService {
 
         try {
           // Determine the base URL for file access
-          const protocol = req.get("host")?.includes?.("localhost")
-            ? "http"
-            : "https";
-          `${protocol}://${req.get("host")}`;
+      const protocol = req.get("host")?.includes?.("localhost")
+        ? "http"
+        : "https";
+      const baseUrl = `${protocol}://${req.get("host")}`;
 
           // Get file type from uploadDir path
-          const dirParts = this.uploadDir.split("/");
-          (this.uploadDir.endsWith("/")
-            ? dirParts[dirParts.length - 2]
-            : dirParts[dirParts.length - 1]) || "files";
+            const dirParts = this.uploadDir.split("/");
+      const fileType = (this.uploadDir.endsWith("/")
+        ? dirParts[dirParts.length - 2]
+        : dirParts[dirParts.length - 1]) || "files";
 
           let data;
           if (req.files && Array.isArray(req.files) && req.files.length > 0) {
