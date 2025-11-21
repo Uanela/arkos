@@ -20,6 +20,7 @@ import { AppError } from "./exports/error-handler";
 import debuggerService from "./modules/debugger/debugger.service";
 import { getArkosConfig } from "./exports";
 import { ArkosInitConfig } from "./types/arkos-config";
+import { isAuthenticationEnabled } from "./utils/helpers/arkos-config.helpers";
 export const app: express.Express = express();
 const knowModulesRouter = Router();
 
@@ -178,10 +179,7 @@ export async function bootstrap(
   const fileUploadRouter = getFileUploadRouter(arkosConfig);
   knowModulesRouter.use(fileUploadRouter);
 
-  if (
-    arkosConfig.authentication &&
-    arkosConfig.authentication?.enabled !== false
-  ) {
+  if (isAuthenticationEnabled()) {
     const authRouter = getAuthRouter(arkosConfig);
     knowModulesRouter.use("/api", authRouter);
   }
