@@ -1,21 +1,31 @@
-import { Router } from "express";
-import { getAuthRouter } from "../auth.router";
 import { authControllerFactory } from "../auth.controller";
-import authService from "../auth.service";
 import rateLimit from "express-rate-limit";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
 import {
   sendResponse,
   addPrismaQueryOptionsToRequest,
-  handleRequestBodyValidationAndTransformation,
 } from "../../base/base.middlewares";
 import deepmerge from "../../../utils/helpers/deepmerge.helper";
 import { getArkosConfig } from "../../../server";
 import catchAsync from "../../error-handler/utils/catch-async";
+import ArkosRouter from "../../../utils/arkos-router";
+import { getAuthRouter } from "../auth.router";
 
-// Mock dependencies
 jest.mock("../../error-handler/utils/catch-async");
 jest.mock("fs");
+jest.mock("../../../utils/arkos-router", () => {
+  const mockRouter = {
+    get: jest.fn().mockReturnThis(),
+    post: jest.fn().mockReturnThis(),
+    patch: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    use: jest.fn().mockReturnThis(),
+  };
+  return {
+    __esModule: true,
+    default: jest.fn(() => mockRouter),
+  };
+});
 jest.mock("express", () => {
   const mockRouter = {
     get: jest.fn().mockReturnThis(),
@@ -25,17 +35,13 @@ jest.mock("express", () => {
     use: jest.fn().mockReturnThis(),
   };
 
-  // Create a mock express function
   const mockExpress: any = jest.fn(() => ({
     use: jest.fn().mockReturnThis(),
     listen: jest.fn().mockReturnThis(),
-    // Add any other express app methods you need
   }));
 
-  // Add Router as a property to the function
   mockExpress.Router = jest.fn(() => mockRouter);
 
-  // Setup for ES modules
   mockExpress.default = mockExpress;
 
   // Add other express exports you might need
@@ -76,8 +82,14 @@ describe("Auth Router", () => {
     // Reset mocks
     jest.clearAllMocks();
 
+    (getArkosConfig as jest.Mock).mockImplementation(() => ({
+      authentication: { mode: "static" },
+      validation: { resolver: "zod" },
+    }));
+
     // Setup mocks
-    mockRouter = Router();
+
+    mockRouter = ArkosRouter();
     mockAuthController = {
       getMe: jest.fn(),
       updateMe: jest.fn(),
@@ -86,6 +98,8 @@ describe("Auth Router", () => {
       logout: jest.fn(),
       signup: jest.fn(),
       updatePassword: jest.fn(),
+      findOneAuthAction: jest.fn(),
+      findManyAuthAction: jest.fn(),
     };
 
     (catchAsync as jest.Mock).mockImplementation((fn) => fn);
@@ -109,10 +123,12 @@ describe("Auth Router", () => {
       ...obj1,
       ...obj2,
     }));
-    (getArkosConfig as jest.Mock).mockReturnValue({});
+    // (getArkosConfig as jest.Mock).mockReturnValue({});
 
     mockArkosConfig = {
+      validation: { resolver: "zod" },
       authentication: {
+        mode: "static",
         requestRateLimitOptions: {
           windowMs: 10000,
           limit: 5,
@@ -122,35 +138,50 @@ describe("Auth Router", () => {
   });
 
   test("should create router with default middleware configuration when no custom interceptors", async () => {
-    // Act
     getAuthRouter(mockArkosConfig);
 
-    // Assert
-    expect(Router).toHaveBeenCalled();
+    expect(ArkosRouter).toHaveBeenCalled();
     expect(getModuleComponents).toHaveBeenCalledWith("auth");
     expect(authControllerFactory).toHaveBeenCalled();
 
-    // Check routes are defined with the new middleware
+    // GET /users/me - protected route
     expect(mockRouter.get).toHaveBeenCalledWith(
-      "/users/me",
-      authService.authenticate,
-      expect.any(Function), // addPrismaQueryOptionsToRequest middleware
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function), // addPrismaQueryOptionsToRequest
       mockAuthController.getMe,
       sendResponse
     );
 
+    // POST /auth/login - public route
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/login",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation middleware
-      expect.any(Function), // addPrismaQueryOptionsToRequest middleware
+      {
+        route: "/auth/login",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function), // addPrismaQueryOptionsToRequest
       mockAuthController.login,
       sendResponse
     );
 
+    // POST /auth/signup - public route
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/signup",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation middleware
-      expect.any(Function), // addPrismaQueryOptionsToRequest middleware
+      {
+        route: "/auth/signup",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function), // addPrismaQueryOptionsToRequest
       mockAuthController.signup,
       sendResponse
     );
@@ -171,11 +202,8 @@ describe("Auth Router", () => {
   });
 
   test("should call addPrismaQueryOptionsToRequest with correct parameters for each route", async () => {
-    // Act
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
-    // Assert
-    // Check that the middleware was called with correct parameters for each route
     expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
       mockPrismaQueryOptions,
       "getMe"
@@ -208,7 +236,6 @@ describe("Auth Router", () => {
   });
 
   test("should create router with custom middleware configuration", async () => {
-    // Arrange
     const customMiddlewares = {
       beforeGetMe: jest.fn(),
       afterGetMe: jest.fn(),
@@ -227,35 +254,50 @@ describe("Auth Router", () => {
       prismaQueryOptions: mockPrismaQueryOptions,
     });
 
-    // Act
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
-    // Assert
-    // Check routes have custom middleware chains with addPrismaQueryOptionsToRequest
+    // GET /users/me with custom interceptors
     expect(mockRouter.get).toHaveBeenCalledWith(
-      "/users/me",
-      authService.authenticate,
-      expect.any(Function), // addPrismaQueryOptionsToRequest middleware
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function), // addPrismaQueryOptionsToRequest
       customMiddlewares.beforeGetMe,
       mockAuthController.getMe,
       customMiddlewares.afterGetMe,
       sendResponse
     );
 
+    // POST /auth/login with custom interceptors
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/login",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation middleware
-      expect.any(Function), // addPrismaQueryOptionsToRequest middleware
+      {
+        route: "/auth/login",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function), // addPrismaQueryOptionsToRequest
       customMiddlewares.beforeLogin,
       mockAuthController.login,
       customMiddlewares.afterLogin,
       sendResponse
     );
 
+    // POST /auth/signup with custom interceptors
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/signup",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation middleware
-      expect.any(Function), // addPrismaQueryOptionsToRequest middleware
+      {
+        route: "/auth/signup",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function), // addPrismaQueryOptionsToRequest
       customMiddlewares.beforeSignup,
       mockAuthController.signup,
       customMiddlewares.afterSignup,
@@ -263,8 +305,7 @@ describe("Auth Router", () => {
     );
   });
 
-  test("should pass correct DTOs or schemas to handleRequestBodyValidationAndTransformation based on config", async () => {
-    // Arrange
+  test("should pass correct DTOs or schemas to validation config based on resolver", async () => {
     const mockDtos = {
       updateMe: "UpdateMeDto",
       login: "LoginDto",
@@ -292,21 +333,32 @@ describe("Auth Router", () => {
       authentication: { mode: "static" },
     };
 
-    // Act
-    await getAuthRouter(classValidatorConfig as any);
+    getAuthRouter(classValidatorConfig as any);
 
-    // Assert - check that DTOs were passed
-    expect(handleRequestBodyValidationAndTransformation).toHaveBeenCalledWith(
-      mockDtos.updateMe
+    expect(mockRouter.patch).toHaveBeenCalledWith(
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: { body: mockDtos.updateMe },
+        experimental: { openapi: false },
+      },
+      expect.any(Function),
+      mockAuthController.updateMe,
+      sendResponse
     );
-    expect(handleRequestBodyValidationAndTransformation).toHaveBeenCalledWith(
-      mockDtos.login
-    );
-    expect(handleRequestBodyValidationAndTransformation).toHaveBeenCalledWith(
-      mockDtos.signup
-    );
-    expect(handleRequestBodyValidationAndTransformation).toHaveBeenCalledWith(
-      mockDtos.updatePassword
+
+    expect(mockRouter.post).toHaveBeenCalledWith(
+      {
+        route: "/auth/login",
+        disabled: false,
+        authentication: false,
+        validation: { body: mockDtos.login },
+        experimental: { openapi: false },
+      },
+      expect.any(Function),
+      mockAuthController.login,
+      sendResponse
     );
 
     // Reset for next test
@@ -324,86 +376,135 @@ describe("Auth Router", () => {
       authentication: { mode: "dynamic" },
     };
 
-    // Act
-    await getAuthRouter(zodConfig as any);
+    getAuthRouter(zodConfig as any);
 
-    // Assert - check that schemas were passed
-    expect(handleRequestBodyValidationAndTransformation).toHaveBeenCalledWith(
-      mockSchemas.updateMe
+    expect(mockRouter.patch).toHaveBeenCalledWith(
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: { body: mockSchemas.updateMe },
+        experimental: { openapi: false },
+      },
+      expect.any(Function),
+      mockAuthController.updateMe,
+      sendResponse
     );
-    expect(handleRequestBodyValidationAndTransformation).toHaveBeenCalledWith(
-      mockSchemas.login
-    );
-    expect(handleRequestBodyValidationAndTransformation).toHaveBeenCalledWith(
-      mockSchemas.signup
-    );
-    expect(handleRequestBodyValidationAndTransformation).toHaveBeenCalledWith(
-      mockSchemas.updatePassword
+
+    expect(mockRouter.post).toHaveBeenCalledWith(
+      {
+        route: "/auth/login",
+        disabled: false,
+        authentication: false,
+        validation: { body: mockSchemas.login },
+        experimental: { openapi: false },
+      },
+      expect.any(Function),
+      mockAuthController.login,
+      sendResponse
     );
   });
 
   test("should create all required routes with no interceptors passed", async () => {
-    // Act
     (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: undefined,
       prismaQueryOptions: mockPrismaQueryOptions,
     });
 
-    await getAuthRouter({});
+    getAuthRouter({});
 
-    // Assert
+    // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function),
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function),
       expect.any(Function),
       sendResponse
     );
 
+    // PATCH /users/me
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function),
       expect.any(Function),
       sendResponse
     );
 
+    // DELETE /users/me
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function),
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function),
       expect.any(Function),
       sendResponse
     );
 
+    // POST /auth/login
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/login",
-      expect.any(Function),
+      {
+        route: "/auth/login",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function),
       expect.any(Function),
       sendResponse
     );
 
+    // DELETE /auth/logout
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/auth/logout",
+      {
+        route: "/auth/logout",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function),
+      sendResponse
+    );
+
+    // POST /auth/signup
+    expect(mockRouter.post).toHaveBeenCalledWith(
+      {
+        route: "/auth/signup",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function),
       expect.any(Function),
       sendResponse
     );
 
+    // POST /auth/update-password
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/signup",
-      expect.any(Function),
-      expect.any(Function),
-      expect.any(Function),
-      sendResponse
-    );
-
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/update-password",
-      expect.any(Function),
-      expect.any(Function),
+      {
+        route: "/auth/update-password",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function),
       expect.any(Function),
       sendResponse
@@ -411,7 +512,6 @@ describe("Auth Router", () => {
   });
 
   test("should create all required routes with after interceptors passed to all routes", async () => {
-    // Act
     (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {
         afterGetMe: jest.fn(),
@@ -426,65 +526,104 @@ describe("Auth Router", () => {
     });
     await getAuthRouter(mockArkosConfig);
 
-    // Assert
+    // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // getMe
       expect.any(Function), // afterGetMe
       sendResponse
     );
 
+    // PATCH /users/me
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // updateMe
       expect.any(Function), // afterUpdateMe
       sendResponse
     );
 
+    // DELETE /users/me
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // deleteMe
       expect.any(Function), // afterDeleteMe
       sendResponse
     );
 
+    // POST /auth/login
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/login",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/login",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // login
       expect.any(Function), // afterLogin
       sendResponse
     );
 
+    // DELETE /auth/logout
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/auth/logout",
-      expect.any(Function), // authenticate
+      {
+        route: "/auth/logout",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // logout
       expect.any(Function), // afterLogout
       sendResponse
     );
 
+    // POST /auth/signup
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/signup",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/signup",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // signup
       expect.any(Function), // afterSignup
       sendResponse
     );
 
+    // POST /auth/update-password
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/update-password",
-      expect.any(Function), // authenticate
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/update-password",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // updatePassword
       expect.any(Function), // afterUpdatePassword
@@ -493,7 +632,6 @@ describe("Auth Router", () => {
   });
 
   test("should create all required routes with before interceptors passed to all routes", async () => {
-    // Act
     (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {
         beforeGetMe: jest.fn(),
@@ -508,65 +646,104 @@ describe("Auth Router", () => {
     });
     await getAuthRouter(mockArkosConfig);
 
-    // Assert
+    // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeGetMe
       expect.any(Function), // getMe
       sendResponse
     );
 
+    // PATCH /users/me
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeUpdateMe
       expect.any(Function), // updateMe
       sendResponse
     );
 
+    // DELETE /users/me
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeDeleteMe
       expect.any(Function), // deleteMe
       sendResponse
     );
 
+    // POST /auth/login
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/login",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/login",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeLogin
       expect.any(Function), // login
       sendResponse
     );
 
+    // DELETE /auth/logout
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/auth/logout",
-      expect.any(Function), // authenticate
+      {
+        route: "/auth/logout",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // beforeLogout
       expect.any(Function), // logout
       sendResponse
     );
 
+    // POST /auth/signup
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/signup",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/signup",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeSignup
       expect.any(Function), // signup
       sendResponse
     );
 
+    // POST /auth/update-password
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/update-password",
-      expect.any(Function), // authenticate
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/update-password",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeUpdatePassword
       expect.any(Function), // updatePassword
@@ -575,7 +752,6 @@ describe("Auth Router", () => {
   });
 
   test("should create all required routes with before and after interceptors passed to all routes", async () => {
-    // Act
     (getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {
         beforeGetMe: jest.fn(),
@@ -610,10 +786,15 @@ describe("Auth Router", () => {
     });
     await getAuthRouter(mockArkosConfig);
 
-    // Assert
+    // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeGetMe
       expect.any(Function), // getMe
@@ -622,10 +803,15 @@ describe("Auth Router", () => {
       expect.any(Function) // Error handler middleware
     );
 
+    // PATCH /users/me
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeUpdateMe
       expect.any(Function), // updateMe
@@ -634,9 +820,15 @@ describe("Auth Router", () => {
       expect.any(Function) // Error handler middleware
     );
 
+    // DELETE /users/me
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/users/me",
-      expect.any(Function), // authenticate
+      {
+        route: "/users/me",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeDeleteMe
       expect.any(Function), // deleteMe
@@ -645,9 +837,15 @@ describe("Auth Router", () => {
       expect.any(Function) // Error handler middleware
     );
 
+    // POST /auth/login
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/login",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/login",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeLogin
       expect.any(Function), // login
@@ -656,9 +854,15 @@ describe("Auth Router", () => {
       expect.any(Function) // Error handler middleware
     );
 
+    // DELETE /auth/logout
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      "/auth/logout",
-      expect.any(Function), // authenticate
+      {
+        route: "/auth/logout",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // beforeLogout
       expect.any(Function), // logout
       expect.any(Function), // afterLogout
@@ -666,9 +870,15 @@ describe("Auth Router", () => {
       expect.any(Function) // Error handler middleware
     );
 
+    // POST /auth/signup
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/signup",
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/signup",
+        disabled: false,
+        authentication: false,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeSignup
       expect.any(Function), // signup
@@ -677,16 +887,71 @@ describe("Auth Router", () => {
       expect.any(Function) // Error handler middleware
     );
 
+    // POST /auth/update-password
     expect(mockRouter.post).toHaveBeenCalledWith(
-      "/auth/update-password",
-      expect.any(Function), // authenticate
-      expect.any(Function), // handleRequestBodyValidationAndTransformation
+      {
+        route: "/auth/update-password",
+        disabled: false,
+        authentication: true,
+        validation: undefined,
+        experimental: { openapi: false },
+      },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeUpdatePassword
       expect.any(Function), // updatePassword
       expect.any(Function), // afterUpdatePassword
       sendResponse,
       expect.any(Function) // Error handler middleware
+    );
+  });
+
+  test("should handle auth-action routes with proper authentication config", async () => {
+    const mockAuthConfigs = {
+      accessControl: {
+        View: { roles: ["admin"] },
+      },
+    };
+
+    (getModuleComponents as jest.Mock).mockReturnValue({
+      interceptors: {},
+      prismaQueryOptions: mockPrismaQueryOptions,
+      authConfigs: mockAuthConfigs,
+    });
+
+    getAuthRouter(mockArkosConfig);
+
+    // GET /auth-actions
+    expect(mockRouter.get).toHaveBeenCalledWith(
+      {
+        route: "/auth-actions",
+        disabled: false,
+        authentication: {
+          resource: "auth",
+          action: "View",
+          rule: { roles: ["admin"] },
+        },
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function), // findManyAuthAction
+      sendResponse
+    );
+
+    // GET /auth-actions/:resourceName
+    expect(mockRouter.get).toHaveBeenCalledWith(
+      {
+        route: "/auth-actions/:resourceName",
+        disabled: false,
+        authentication: {
+          resource: "auth",
+          action: "View",
+          rule: { roles: ["admin"] },
+        },
+        validation: undefined,
+        experimental: { openapi: false },
+      },
+      expect.any(Function), // findOneAuthAction
+      sendResponse
     );
   });
 });

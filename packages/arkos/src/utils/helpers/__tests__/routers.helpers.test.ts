@@ -6,6 +6,7 @@ jest.mock("../../../modules/error-handler/utils/catch-async", () => ({
   __esModule: true,
   default: jest.fn(),
 }));
+jest.mock("fs");
 
 const mockedCatchAsync = catchAsync as jest.MockedFunction<typeof catchAsync>;
 
