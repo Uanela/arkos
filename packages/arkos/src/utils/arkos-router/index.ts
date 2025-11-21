@@ -75,11 +75,9 @@ export default function ArkosRouter(): IArkosRouter {
 
           const method = prop as string;
 
-          console.log("theboss", handlers, config);
           if (handlers.length > 0) {
             handlers = handlers.map(
               (handler: ArkosAnyRequestHandler | ArkosAnyRequestHandler[]) => {
-                // console.log("theboss", handler);
                 return typeof handler === "function"
                   ? catchAsync(handler, {
                       type: handler.length > 3 ? "error" : "normal",
