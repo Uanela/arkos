@@ -267,7 +267,12 @@ describe("FileUploadService", () => {
       fileFilter({}, mockFile, cb);
 
       expect(cb).toHaveBeenCalledWith(expect.any(AppError));
-      expect(AppError).toHaveBeenCalledWith("Invalid file type", 400);
+      expect(AppError).toHaveBeenCalledWith(
+        "File type not allowed, allowed files are jpeg, jpg, png",
+        400,
+        "FileTypeNotAllowed",
+        { filename: "test.pdf" }
+      );
     });
   });
 

@@ -73,7 +73,6 @@ export function getSchemaRef(
   mode: "prisma" | "zod" | "class-validator"
 ): string {
   schemaName = pascalCase(schemaName);
-  // Check if schemaName (lowercase) contains any of the specified keywords
   const specialCases = [
     "getme",
     "updateme",
@@ -87,7 +86,6 @@ export function getSchemaRef(
     (keyword) => keyword === schemaName.toLowerCase()
   );
 
-  // If it's a special case and mode is prisma, return zod style instead
   if (isSpecialCase && mode === "prisma")
     return `#/components/schemas/${schemaName}Schema`;
 
@@ -117,20 +115,16 @@ export async function generatePathsForModels(
   const models = prismaSchemaParser.getModelsAsArrayOfStrings();
 
   for (const model of models) {
-    // Generate main routes
     await generatePrismaModelMainRoutesPaths(model, paths, arkosConfig);
 
-    // Generate parent routes if configured
     await generatePrismaModelParentRoutePaths(model, paths, arkosConfig);
   }
 
-  // Add system routes
   paths = {
     ...paths,
     ...getSystemJsonSchemaPaths(),
   };
 
-  // Add authentication routes
   paths = {
     ...paths,
     ...((await getAuthenticationJsonSchemaPaths(arkosConfig)) || {}),

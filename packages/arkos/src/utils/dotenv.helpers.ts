@@ -26,7 +26,7 @@ export function loadEnvironmentVariables() {
 
   envFiles.forEach((filePath) => {
     if (fs.existsSync(filePath)) {
-      if (ENV === "production" && filePath.endsWith(".local"))
+      if (process.env.ARKOS_BUILD === "true" && filePath.endsWith(".local"))
         console.info(
           `Skipping the local ${filePath.replace(cwd, "")} files in production`
         );
@@ -48,7 +48,9 @@ export function loadEnvironmentVariables() {
       "Missing required environment variables:",
       missingVars.join(", ")
     );
-    // throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(", ")}`
+    );
   }
 
   if (loadedEnvs) return loadedEnvs;
