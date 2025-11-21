@@ -763,11 +763,33 @@ describe("PrismaJsonSchemaGenerator", () => {
 
       expect(result).toHaveProperty("UpdateManyUserModelSchema");
       expect(result.UpdateManyUserModelSchema.type).toBe("object");
-      expect(result.UpdateManyUserModelSchema.properties).toHaveProperty(
+      expect(result.UpdateManyUserModelSchema.properties).not.toHaveProperty(
         "data"
       );
-      expect(result.UpdateManyUserModelSchema.properties).toHaveProperty(
+      expect(result.UpdateManyUserModelSchema.properties).not.toHaveProperty(
         "where"
+      );
+      expect(result).toStrictEqual(
+        expect.objectContaining({
+          UpdateUserModelSchema: {
+            type: "object",
+            properties: {
+              email: { type: "string" },
+              name: { type: "string" },
+              password: { type: "string" },
+              profile: {
+                properties: { id: { type: "string" } },
+                type: "object",
+              },
+              role: {
+                default: "USER",
+                enum: ["ADMIN", "USER", "MODERATOR"],
+                type: "string",
+              },
+            },
+            required: [],
+          },
+        })
       );
     });
 

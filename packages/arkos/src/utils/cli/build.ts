@@ -22,8 +22,9 @@ interface BuildOptions {
  */
 export function buildCommand(options: BuildOptions = {}) {
   const fileExt = getUserFileExtension();
-  process.env.NODE_ENV = "production";
-  process.env.NODE_ENV = "true";
+  if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
+    process.env.NODE_ENV = "production";
+  process.env.ARKOS_BUILD = "true";
 
   const envFiles = loadEnvironmentVariables();
   const moduleType = validateModuleType(options.module);

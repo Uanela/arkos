@@ -164,7 +164,6 @@ export class PrismaJsonSchemaGenerator {
       );
     }
 
-    // GetMe response schema
     if (
       schemasToGenerate.includes("getMe") &&
       !this.isEndpointDisabled("getMe", routerConfig) &&
@@ -227,7 +226,6 @@ export class PrismaJsonSchemaGenerator {
       }
     };
 
-    // Create schemas (unchanged)
     if (
       schemasToGenerate.includes("createOne") &&
       !this.isEndpointDisabled("createOne", routerConfig) &&
@@ -244,7 +242,6 @@ export class PrismaJsonSchemaGenerator {
       !this.isEndpointDisabled("createMany", routerConfig) &&
       !(await localValidatorFileExists("createMany", modelName, arkosConfig))
     ) {
-      // Only fix the reference
       const baseSchemaKey = await ensureBaseSchemaReference(
         "Create",
         modelName
@@ -255,7 +252,6 @@ export class PrismaJsonSchemaGenerator {
       };
     }
 
-    // Update schemas (unchanged)
     if (
       schemasToGenerate.includes("updateOne") &&
       !this.isEndpointDisabled("updateOne", routerConfig) &&
@@ -272,25 +268,15 @@ export class PrismaJsonSchemaGenerator {
       !this.isEndpointDisabled("updateMany", routerConfig) &&
       !(await localValidatorFileExists("updateMany", modelName, arkosConfig))
     ) {
-      // Only fix the reference
-
-      const baseSchemaKey = await ensureBaseSchemaReference(
-        "Update",
-        modelName
+      // const baseSchemaKey = await ensureBaseSchemaReference(
+      //   "Update",
+      //   modelName
+      // );
+      schemas[`UpdateMany${modelName}ModelSchema`] = this.generateUpdateSchema(
+        model,
+        this.resolvePrismaQueryOptions(queryOptions, "updateOne")
       );
-      schemas[`UpdateMany${modelName}ModelSchema`] = {
-        type: "object",
-        properties: {
-          data: {
-            type: "object",
-            $ref: `#/components/schemas/${baseSchemaKey}`,
-          },
-          where: { type: "object" },
-        },
-        required: ["data"],
-      };
     }
-    // Response schemas
     if (
       schemasToGenerate.includes("findOne") &&
       !this.isEndpointDisabled("findOne", routerConfig) &&
