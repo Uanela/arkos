@@ -161,7 +161,6 @@ export class PrismaSchemaParser {
    */
   private parseFields(block: string): PrismaField[] {
     const fields: PrismaField[] = [];
-    console.log(block, "theblock");
     const fieldLines = block
       .split("\n")
       .map((line) => line.trim())
