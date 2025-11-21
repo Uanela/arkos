@@ -35,7 +35,7 @@ export default function errorHandler(
     stack: err?.stack || undefined,
   };
 
-  if (process.env.NODE_ENV == "production") delete error?.stack;
+  if (process.env.ARKOS_BUILD === "true") delete error?.stack;
 
   if (err.name === "JsonWebTokenError")
     error = errorControllerHelper.handleJWTError();
@@ -78,7 +78,7 @@ export default function errorHandler(
   if (err.name === "NetworkError")
     error = errorControllerHelper.handleNetworkError(err);
 
-  if (process.env.NODE_ENV !== "production")
+  if (process.env.ARKOS_BUILD !== "true")
     return sendDevelopmentError(
       {
         ...error,
@@ -176,10 +176,7 @@ function sendProductionError(err: AppError, req: Request, res: Response): void {
  * @returns {void}
  */
 process.on("SIGTERM", () => {
-  if (
-    process.env.NODE_ENV !== "production" &&
-    process.env.NODE_ENV !== "staging"
-  ) {
+  if (process.env.ARKOS_BUILD !== "true") {
     process.exit();
   } else {
     console.error("SIGTERM RECEIVED in Production. Shutting down gracefully!");
