@@ -1,4 +1,18 @@
 import { Router } from "express";
+const mockRouter = {
+  get: jest.fn().mockReturnThis(),
+  post: jest.fn().mockReturnThis(),
+  put: jest.fn().mockReturnThis(),
+  delete: jest.fn().mockReturnThis(),
+  use: jest.fn().mockReturnThis(),
+};
+jest.mock("../../../utils/arkos-router", () => {
+  return {
+    __esModule: true,
+    default: jest.fn(() => mockRouter),
+  };
+});
+
 import {
   getPrismaModelsRouter,
   getAvailableResourcesAndRoutesRouter,
@@ -7,43 +21,6 @@ import * as baseController from "../base.controller";
 import authService from "../../auth/auth.service";
 import * as routerHelpers from "../utils/helpers/base.router.helpers";
 import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
-import ArkosRouter from "../../../utils/arkos-router";
-
-// Mock the dependencies
-jest.mock("../../../utils/arkos-router", () => {
-  return {
-    __esModule: true,
-    default: jest.fn(() => ({
-      get: jest.fn().mockReturnThis(),
-      post: jest.fn().mockReturnThis(),
-      put: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      use: jest.fn().mockReturnThis(),
-    })),
-  };
-});
-jest.mock("express", () => {
-  const mockRouter = {
-    get: jest.fn().mockReturnThis(),
-    post: jest.fn().mockReturnThis(),
-    put: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    use: jest.fn().mockReturnThis(),
-  };
-
-  const mockExpress = jest.fn(() => ({
-    get: jest.fn(),
-    use: jest.fn(),
-    listen: jest.fn(),
-    set: jest.fn(),
-  }));
-
-  (mockExpress as any).static = jest.fn(() => mockRouter);
-  (mockExpress as any).Router = jest.fn(() => mockRouter);
-  (mockExpress as any).json = jest.fn(() => "express.json");
-
-  return mockExpress;
-});
 
 jest.mock("../../../utils/dynamic-loader");
 jest.mock("../base.controller");
@@ -71,7 +48,6 @@ describe("Base Router", () => {
       ]);
 
       // Call the function
-      const mockRouter = ArkosRouter();
       const result = getPrismaModelsRouter({});
 
       expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
@@ -94,15 +70,15 @@ describe("Base Router", () => {
       const mockArkosConfig = { authentication: { mode: "dynamic" } };
 
       // Call the function
-      const mockRouter = Router();
+      // const mockRouter = ArkosRouter();
       const result = getPrismaModelsRouter(mockArkosConfig as any);
 
       // Assertions
       expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
-      // expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
-      //   mockRouter,
-      //   mockArkosConfig
-      // );
+      expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
+        mockRouter,
+        mockArkosConfig
+      );
       expect(result).toBe(mockRouter);
     });
   });

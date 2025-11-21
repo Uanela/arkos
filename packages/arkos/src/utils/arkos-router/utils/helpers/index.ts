@@ -1,5 +1,5 @@
 import rateLimit from "express-rate-limit";
-import { authService } from "../../../../exports/services";
+import authService from "../../../../modules/auth/auth.service";
 import { validateRequestInputs } from "../../../../modules/base/base.middlewares";
 import RouteConfigRegistry from "../../route-config-registry";
 import { ArkosRouteConfig } from "../../types";
