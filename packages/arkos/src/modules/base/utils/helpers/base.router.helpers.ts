@@ -236,7 +236,6 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
   });
 }
 
-// Helper function to create authentication config
 function getAuthenticationConfig(
   endpoint: RouterEndpoint,
   modelName: string,
@@ -267,7 +266,9 @@ function getAuthenticationConfig(
     return {
       resource: kebabCase(pluralize.singular(modelName)),
       action: action,
-      rule: authConfigs?.accessControl,
+      rule: Array.isArray(authConfigs?.accessControl)
+        ? authConfigs?.accessControl
+        : (authConfigs?.accessControl || {})?.[action],
     };
   }
 

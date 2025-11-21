@@ -316,7 +316,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         !isValidValidator(validators[key])
       )
         throw Error(
-          `Your validation resolver is set to ${arkosConfig.validation!.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } }`
+          `Your validation resolver is set to ${arkosConfig.validation!.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.route}`
         );
     });
 
