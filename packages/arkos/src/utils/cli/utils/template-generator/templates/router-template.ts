@@ -45,7 +45,10 @@ ${modelName.camel}Router.get(
     route: "/custom-endpoint",
     authentication: { action: "CustomAction", resource: "${modelName.kebab}" },
     validation: {},
-    openapi: {}
+    experimental: {
+      openapi: {},
+      uploads: {}
+    }
   },
   ${controllerHandlerLine}
 )
