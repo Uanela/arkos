@@ -47,7 +47,7 @@ ${modelName.camel}Router.get(
     validation: {},
     experimental: {
       openapi: {},
-      uploads: {}
+      // uploads: {}
     }
   },
   ${controllerHandlerLine}
