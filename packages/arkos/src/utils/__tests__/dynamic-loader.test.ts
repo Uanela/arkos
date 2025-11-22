@@ -3,9 +3,11 @@ import * as dynamicLoader from "../dynamic-loader";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import { importModule } from "../helpers/global.helpers";
 import { pathExists } from "../helpers/dynamic-loader.helpers";
-import { applyStrictRoutingRules } from "../helpers/dynamic-loader.helpers";
+import * as dynamicLoaderHelpers from "../helpers/dynamic-loader.helpers";
 import { killServerChildProcess } from "../cli/utils/cli.helpers";
 import sheu from "../sheu";
+
+// const { applyStrictRoutingRules } = dynamicLoaderHelpers;
 
 export const prismaModelsUniqueFields: Record<string, any[]> = [] as any;
 
@@ -21,10 +23,10 @@ jest.mock("fs", () => ({
 jest.mock("../helpers/global.helpers", () => ({
   importModule: jest.fn(),
 }));
-jest.mock("../helpers/dynamic-loader.helpers", () => ({
-  pathExists: jest.fn(),
-  applyStrictRoutingRules: jest.fn(),
-}));
+// jest.mock("../helpers/dynamic-loader.helpers", () => ({
+//   ...jest.requireActual("../helpers/dynamic-loader.helpers"),
+//   pathExists: jest.fn(),
+// }));
 jest.mock("../cli/utils/cli.helpers", () => ({
   killServerChildProcess: jest.fn(),
 }));
@@ -51,15 +53,23 @@ jest.mock("../prisma/prisma-schema-parser", () => ({
 }));
 
 describe("Dynamic Prisma Model Loader", () => {
+  let mockApplyStrictRoutingRules: any;
+
+  mockApplyStrictRoutingRules = jest
+    .spyOn(dynamicLoaderHelpers, "pathExists")
+    .mockImplementation(jest.fn());
+
   beforeEach(() => {
     jest.clearAllMocks();
-
+    mockApplyStrictRoutingRules = jest.spyOn(
+      dynamicLoaderHelpers,
+      "applyStrictRoutingRules"
+    );
     // Reset Error mock
     mockError.mockClear();
     mockError.mockImplementation((message) => {
       const error = new originalError(message);
       error.name = "MockError";
-      // console.info(error);
       if (message === "Path check failed") return error;
       return {};
     });
@@ -74,11 +84,6 @@ describe("Dynamic Prisma Model Loader", () => {
 
     // Default pathExists to true
     (pathExists as jest.Mock).mockResolvedValue(true);
-
-    // Default applyStrictRoutingRules mock
-    (applyStrictRoutingRules as jest.Mock).mockImplementation(
-      (_, _1, config) => config
-    );
 
     // Clear any cached modules
     dynamicLoader.setModuleComponents("User", null as any);
@@ -447,11 +452,7 @@ describe("Dynamic Prisma Model Loader", () => {
     });
 
     it("should assign router with strict routing rules applied", () => {
-      const module = { routes: [], config: { path: "/users" } };
-      (applyStrictRoutingRules as jest.Mock).mockReturnValue({
-        path: "/users",
-        strict: true,
-      });
+      const module = { routes: [], config: { some: "/users" } };
 
       dynamicLoader.assignModuleToResult(
         "User",
@@ -463,12 +464,24 @@ describe("Dynamic Prisma Model Loader", () => {
 
       expect(result.router).toEqual({
         routes: [],
-        config: { path: "/users", strict: true },
+        config: {
+          disable: {
+            createMany: true,
+            createOne: true,
+            deleteMany: true,
+            deleteOne: true,
+            findMany: true,
+            findOne: true,
+            updateMany: true,
+            updateOne: true,
+          },
+          some: "/users",
+        },
       });
-      expect(applyStrictRoutingRules).toHaveBeenCalledWith(
+      expect(mockApplyStrictRoutingRules).toHaveBeenCalledWith(
         "User",
         arkosConfig,
-        { path: "/users" }
+        { some: "/users" }
       );
     });
 
@@ -483,7 +496,7 @@ describe("Dynamic Prisma Model Loader", () => {
         arkosConfig
       );
 
-      expect(applyStrictRoutingRules).toHaveBeenCalledWith(
+      expect(mockApplyStrictRoutingRules).toHaveBeenCalledWith(
         "User",
         arkosConfig,
         {}
@@ -565,7 +578,7 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should process modules with dto validation", async () => {
       const arkosConfig = { validation: { resolver: "zod" as const } };
       (pathExists as jest.Mock).mockResolvedValue(true);
-      (importModule as jest.Mock).mockResolvedValue({
+      (importModule as jest.Mock).mockResolvedValueOnce({
         default: { test: "data" },
       });
 
@@ -583,6 +596,7 @@ describe("Dynamic Prisma Model Loader", () => {
         routers: { strict: true },
         validation: { resolver: "zod" as const },
       };
+      const promiseAllSpy = jest.spyOn(Promise, "all");
       (pathExists as jest.Mock).mockImplementation((filePath) => {
         return !filePath.includes("router");
       });
@@ -594,7 +608,30 @@ describe("Dynamic Prisma Model Loader", () => {
         true
       );
 
-      expect(result.router).toBeDefined();
+      // Checks correctly if the first promises array was destructed
+      expect(promiseAllSpy).toHaveBeenCalled();
+      const passedArray = promiseAllSpy.mock.calls[0][0];
+      // Helps ensuring that all of the values on promise all where Promises
+      // This is comment is here because of previous found Bug, because the test
+      // is obvious by itself.
+      expect(passedArray.every((item: any) => item instanceof Promise)).toBe(
+        true
+      );
+      expect(importModule).toHaveBeenCalledTimes(13);
+      expect(result.router).toEqual({
+        config: {
+          disable: {
+            createMany: true,
+            createOne: true,
+            deleteMany: true,
+            deleteOne: true,
+            findMany: true,
+            findOne: true,
+            updateMany: true,
+            updateOne: true,
+          },
+        },
+      });
     });
 
     it("should skip router when not using strict routing and file doesn't exist", async () => {
