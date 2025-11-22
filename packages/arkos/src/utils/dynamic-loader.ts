@@ -325,9 +325,8 @@ export async function importModuleComponents(
       : "dtos"
     : null;
 
-  // Batch process core files
   const [_, validators] = await Promise.all([
-    Object.entries(fileStructure.core).map(async ([key, fileName]) => {
+    ...Object.entries(fileStructure.core).map(async ([key, fileName]) => {
       if (
         ["createMany", "findMany", "findOne", "updateMany"].includes(key) ||
         !fileName
@@ -364,10 +363,7 @@ export async function importModuleComponents(
         if (!module && key === "router" && usingStrictRouting) module = {};
 
         if (module) {
-          // Validate naming conventions before assignment
           validateNamingConventions(key, fileName, result);
-
-          // Assign module to result
           assignModuleToResult(modelName, key, module, result, arkosConfig);
         }
       } catch (err: any) {
