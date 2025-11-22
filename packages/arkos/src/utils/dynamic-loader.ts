@@ -366,7 +366,7 @@ export async function importModuleComponents(
     : null;
 
   const [_, validators] = await Promise.all([
-    Object.entries(fileStructure.core).map(async ([key, fileName]) => {
+    ...Object.entries(fileStructure.core).map(async ([key, fileName]) => {
       if (
         ["createMany", "findMany", "findOne", "updateMany"].includes(key) ||
         !fileName
