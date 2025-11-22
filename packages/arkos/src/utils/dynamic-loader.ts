@@ -7,6 +7,7 @@ import sheu from "./sheu";
 import {
   applyStrictRoutingRules,
   pathExists,
+  validateRouterConfigConsistency,
 } from "./helpers/dynamic-loader.helpers";
 import { kebabCase, pascalCase } from "./helpers/change-case.helpers";
 import { crd, getUserFileExtension } from "./helpers/fs.helpers";
@@ -329,6 +330,7 @@ export function assignModuleToResult(
         module?.config || {}
       ),
     };
+    validateRouterConfigConsistency(result[key]?.config || {});
   } else {
     result[key as keyof typeof result] = module.default || module;
   }

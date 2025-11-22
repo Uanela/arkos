@@ -355,7 +355,10 @@ describe("Dynamic Prisma Model Loader", () => {
     });
 
     it("should assign router with strict routing rules applied", () => {
-      const module = { routes: [], config: { some: "/users" } };
+      const module = {
+        routes: [],
+        config: { some: "/users", findMany: { experimental: { openapi: {} } } },
+      };
 
       dynamicLoader.assignModuleToResult(
         "User",
@@ -378,13 +381,38 @@ describe("Dynamic Prisma Model Loader", () => {
             updateMany: true,
             updateOne: true,
           },
+          createMany: {
+            disabled: true,
+          },
+          createOne: {
+            disabled: true,
+          },
+          deleteMany: {
+            disabled: true,
+          },
+          deleteOne: {
+            disabled: true,
+          },
+          findMany: {
+            disabled: true,
+            experimental: { openapi: {} },
+          },
+          findOne: {
+            disabled: true,
+          },
+          updateMany: {
+            disabled: true,
+          },
+          updateOne: {
+            disabled: true,
+          },
           some: "/users",
         },
       });
       expect(mockApplyStrictRoutingRules).toHaveBeenCalledWith(
         "User",
         arkosConfig,
-        { some: "/users" }
+        { some: "/users", findMany: { experimental: { openapi: {} } } }
       );
     });
 
@@ -532,6 +560,30 @@ describe("Dynamic Prisma Model Loader", () => {
             findOne: true,
             updateMany: true,
             updateOne: true,
+          },
+          createMany: {
+            disabled: true,
+          },
+          createOne: {
+            disabled: true,
+          },
+          deleteMany: {
+            disabled: true,
+          },
+          deleteOne: {
+            disabled: true,
+          },
+          findMany: {
+            disabled: true,
+          },
+          findOne: {
+            disabled: true,
+          },
+          updateMany: {
+            disabled: true,
+          },
+          updateOne: {
+            disabled: true,
           },
         },
       });
