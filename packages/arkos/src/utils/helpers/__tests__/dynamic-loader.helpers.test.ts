@@ -1,4 +1,8 @@
-import { applyStrictRoutingRules, pathExists } from "../dynamic-loader.helpers";
+import {
+  applyStrictRoutingRules,
+  pathExists,
+  validateRouterConfigConsistency,
+} from "../dynamic-loader.helpers";
 import { ArkosConfig, RouterConfig } from "../../../exports";
 
 // Mock the dynamic-loader helpers
@@ -170,7 +174,26 @@ describe("applyStrictRoutingRules", () => {
 
       const result = applyStrictRoutingRules("auth", strictArkosConfig, config);
 
-      expect(result.disable).toBe(true);
+      expect(result).toEqual({
+        deleteMe: { disabled: true },
+        disable: {
+          deleteMe: true,
+          findManyAuthAction: true,
+          getMe: true,
+          login: true,
+          logout: true,
+          signup: true,
+          updateMe: true,
+          updatePassword: true,
+        },
+        findManyAuthAction: { disabled: true },
+        getMe: { disabled: true },
+        login: { disabled: true },
+        logout: { disabled: true },
+        signup: { disabled: true },
+        updateMe: { disabled: true },
+        updatePassword: { disabled: true },
+      });
     });
   });
 
@@ -220,12 +243,55 @@ describe("applyStrictRoutingRules", () => {
 
     it("should respect boolean disable config for prisma models", () => {
       const config: RouterConfig = {
-        disable: true,
+        disable: false,
       };
 
       const result = applyStrictRoutingRules("user", noBulkArkosConfig, config);
 
-      expect(result.disable).toBe(true);
+      expect(result).toEqual({
+        createMany: { disabled: false },
+        createOne: { disabled: false },
+        deleteMany: { disabled: false },
+        deleteOne: { disabled: false },
+        disable: {
+          createMany: false,
+          createOne: false,
+          deleteMany: false,
+          deleteOne: false,
+          findMany: false,
+          findOne: false,
+          updateMany: false,
+          updateOne: false,
+        },
+        findMany: { disabled: false },
+        updateMany: { disabled: false },
+        findOne: { disabled: false },
+        updateOne: { disabled: false },
+      });
+    });
+
+    it("should respect no-bulk routing config for prisma models", () => {
+      const config: RouterConfig = {
+        updateOne: { disabled: true },
+        disable: { findOne: false },
+      };
+
+      const result = applyStrictRoutingRules("user", noBulkArkosConfig, config);
+
+      expect(result).toEqual({
+        createMany: { disabled: true },
+        deleteMany: { disabled: true },
+        disable: {
+          createMany: true,
+          deleteMany: true,
+          findOne: false,
+          updateMany: true,
+          updateOne: true,
+        },
+        findOne: { disabled: false },
+        updateMany: { disabled: true },
+        updateOne: { disabled: true },
+      });
     });
   });
 
@@ -309,6 +375,81 @@ describe("applyStrictRoutingRules", () => {
 
         expect(result).toBe(true);
       });
+    });
+  });
+
+  describe("validateRouterConfigConsistency", () => {
+    it("should not throw error when disable is undefined", () => {
+      const config = {};
+      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+    });
+
+    it("should not throw error when disable is boolean", () => {
+      const config = { disable: true };
+      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+    });
+
+    it("should not throw error when only old way is used", () => {
+      const config = {
+        disable: { findMany: true, createOne: false },
+      };
+      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+    });
+
+    it("should not throw error when only new way is used", () => {
+      const config = {
+        findMany: { disabled: true },
+        createOne: { disabled: false },
+      };
+      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+    });
+
+    it("should not throw error when both ways have same value", () => {
+      const config = {
+        disable: { findMany: true, createOne: false },
+        findMany: { disabled: true },
+        createOne: { disabled: false },
+      };
+      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+    });
+
+    it("should not throw error when one value is undefined", () => {
+      const config = {
+        disable: { findMany: true },
+        createOne: { disabled: false },
+      };
+      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+    });
+
+    it("should throw error when values conflict", () => {
+      const config = {
+        disable: { findMany: true },
+        findMany: { disabled: false },
+      };
+      expect(() => validateRouterConfigConsistency(config)).toThrow(
+        'Conflicting disabled values for endpoint "findMany": disable.findMany = true, but findMany.disabled = false'
+      );
+    });
+
+    it("should throw error when multiple endpoints conflict", () => {
+      const config = {
+        disable: { findMany: true, createOne: false },
+        findMany: { disabled: false },
+        createOne: { disabled: false },
+      };
+      expect(() => validateRouterConfigConsistency(config)).toThrow(
+        'Conflicting disabled values for endpoint "findMany"'
+      );
+    });
+
+    it("should throw error with correct endpoint name in message", () => {
+      const config = {
+        disable: { updateOne: false },
+        updateOne: { disabled: true },
+      };
+      expect(() => validateRouterConfigConsistency(config)).toThrow(
+        "disable.updateOne = false, but updateOne.disabled = true"
+      );
     });
   });
 });
