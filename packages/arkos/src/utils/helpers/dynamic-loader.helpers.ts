@@ -97,52 +97,10 @@ export function applyStrictRoutingRules<T extends string>(
 
     const endpointConfigs: Record<string, any> = {};
     for (const endpoint of Object.keys(strictDefaults)) {
-      endpointConfigs[endpoint] = deepmerge((config as any)[endpoint] || {}, {
-        disabled: strictDefaults[endpoint],
-      });
-    }
-
-    const syncedDisable: Record<string, boolean> = { ...disableConfig };
-    for (const endpoint of allEndpoints) {
-      const endpointDisabled = (config as any)[endpoint]?.disabled;
-      if (endpointDisabled !== undefined) {
-        syncedDisable[endpoint] = endpointDisabled;
-      }
-    }
-
-    const syncedEndpoints: Record<string, any> = { ...endpointConfigs };
-    for (const endpoint of allEndpoints) {
-      if (disableConfig[endpoint] !== undefined) {
-        syncedEndpoints[endpoint] = deepmerge(syncedEndpoints[endpoint] || {}, {
-          disabled: disableConfig[endpoint],
-        });
-      }
-    }
-
-    return deepmerge(config, {
-      disable: syncedDisable,
-      ...syncedEndpoints,
-    }) as RouterConfig<T>;
-  } else if (
-    strictMode === "no-bulk" &&
-    !["auth", "file-upload"].includes(appModule.toLowerCase())
-  ) {
-    const noBulkDefaults: any = {
-      createMany: true,
-      updateMany: true,
-      deleteMany: true,
-    };
-
-    const disableConfig: any = deepmerge(
-      noBulkDefaults,
-      (config.disable as any) || {}
-    );
-
-    const endpointConfigs: Record<string, any> = {};
-    for (const endpoint of Object.keys(noBulkDefaults)) {
-      endpointConfigs[endpoint] = deepmerge((config as any)[endpoint] || {}, {
-        disabled: noBulkDefaults[endpoint],
-      });
+      endpointConfigs[endpoint] = deepmerge(
+        { disabled: strictDefaults[endpoint] },
+        (config as any)[endpoint] || {}
+      );
     }
 
     const syncedDisable: Record<string, boolean> = { ...disableConfig };
@@ -166,12 +124,58 @@ export function applyStrictRoutingRules<T extends string>(
       disable: syncedDisable,
       ...syncedEndpoints,
     }) as RouterConfig<T>;
+  } else if (
+    strictMode === "no-bulk" &&
+    !["auth", "file-upload"].includes(appModule.toLowerCase())
+  ) {
+    const noBulkDefaults: any = {
+      createMany: true,
+      updateMany: true,
+      deleteMany: true,
+    };
+
+    const disableConfig: any = deepmerge(
+      noBulkDefaults,
+      (config.disable as any) || {}
+    );
+
+    const endpointConfigs: Record<string, any> = {};
+    for (const endpoint of Object.keys(noBulkDefaults)) {
+      endpointConfigs[endpoint] = deepmerge(
+        { disabled: noBulkDefaults[endpoint] },
+        (config as any)[endpoint] || {}
+      );
+    }
+
+    const syncedDisable: Record<string, boolean> = { ...disableConfig };
+    for (const endpoint of allEndpoints) {
+      const endpointDisabled = (config as any)[endpoint]?.disabled;
+      if (endpointDisabled !== undefined) {
+        syncedDisable[endpoint] = endpointDisabled;
+      }
+    }
+
+    const syncedEndpoints: Record<string, any> = { ...endpointConfigs };
+    for (const endpoint of allEndpoints) {
+      if (syncedDisable[endpoint] !== undefined) {
+        syncedEndpoints[endpoint] = deepmerge(
+          { disabled: syncedDisable[endpoint] },
+          syncedEndpoints[endpoint] || {}
+        );
+      }
+    }
+
+    return deepmerge(config as any, {
+      disable: syncedDisable,
+      ...syncedEndpoints,
+    }) as RouterConfig<T>;
   }
 
   return config;
 }
 
 export function validateRouterConfigConsistency(
+  appModule: string,
   config: Record<string, any>
 ): void {
   if (!config.disable || typeof config.disable === "boolean") return;
@@ -188,7 +192,7 @@ export function validateRouterConfigConsistency(
       oldWayValue !== newWayValue
     ) {
       throw new Error(
-        `Conflicting disabled values for endpoint "${endpoint}": ` +
+        `Conflicting disabled values for endpoint "${endpoint}" of module ${appModule}: ` +
           `disable.${endpoint} = ${oldWayValue}, but ${endpoint}.disabled = ${newWayValue}. ` +
           `Please use only one method to disable endpoints.`
       );
