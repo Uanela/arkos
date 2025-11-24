@@ -45,6 +45,7 @@ export async function devCommand(options: DevOptions = {}) {
         ...process.env,
         ...(port && { CLI_PORT: port }),
         ...(host && { CLI_HOST: host }),
+        CLI: "false",
       }) as { [x: string]: string };
 
     const startServer = () => {
