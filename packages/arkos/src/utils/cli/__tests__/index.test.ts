@@ -4,7 +4,13 @@ import { devCommand } from "../dev";
 import { startCommand } from "../start";
 import { getVersion } from "../utils/cli.helpers";
 
-jest.mock("../../prisma/prisma-schema-parser");
+jest.mock("../../prisma/prisma-schema-parser", () => ({
+  __esModule: true,
+  default: {
+    getModelsAsArrayOfStrings: jest.fn(() => []),
+    parse: jest.fn(),
+  },
+}));
 jest.mock("commander", () => {
   const mockCommand: any = {
     name: jest.fn().mockReturnThis(),

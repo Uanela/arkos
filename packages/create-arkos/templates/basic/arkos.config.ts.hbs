@@ -6,9 +6,6 @@ const config: ArkosConfig = {
 /** @type {import('arkos').ArkosConfig} */
 const config = {
 {{/if}}
-  cors: {
-    allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
-  },
   {{#if authentication.type}}
   authentication: {
     mode: '{{authentication.type}}',
@@ -36,6 +33,11 @@ const config = {
     mode: 'prisma', 
     {{/if}}
     strict: false,
+  },
+  middlewares: {
+    cors: {
+      allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+    },
   }
 }
 

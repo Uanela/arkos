@@ -15,7 +15,9 @@ import {
 import { getFileUploadRouter } from "../modules/file-upload/file-upload.router";
 import deepmerge from "../utils/helpers/deepmerge.helper";
 import { getArkosConfig } from "../exports";
+import { isAuthenticationEnabled } from "../utils/helpers/arkos-config.helpers";
 
+jest.mock("../utils/helpers/arkos-config.helpers");
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
@@ -293,15 +295,7 @@ describe("App Bootstrap", () => {
     });
 
     it("registers auth router when authentication is configured", async () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        authentication: {
-          mode: "static",
-          jwt: {
-            secret: "test-secret",
-            expiresIn: "1d",
-          },
-        },
-      });
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
       await bootstrap({});
 
       expect(getAuthRouter).toHaveBeenCalled();

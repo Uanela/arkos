@@ -9,7 +9,7 @@ export default function prismaGenerateCommand() {
     const content = `
 import { ModelGroupRelationFields } from "./utils/helpers/base.service.helpers";
 import { ServiceBaseContext } from "./types/base.service.types";
-import { Prisma } from "@prisma/client"
+import { Prisma, PrismaClient } from "@prisma/client"
 
 export declare type ModelsGetPayload<T extends Record<string, any>> = {
 ${prismaSchemaParser.models.map(
@@ -41,7 +41,7 @@ export declare class BaseService<
 > {
     modelName: TModelName;
     relationFields: ModelGroupRelationFields;
-    prisma: any;
+    prisma: PrismaClient;
     
     constructor(modelName: TModelName);
     

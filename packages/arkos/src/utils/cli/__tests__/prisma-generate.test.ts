@@ -228,7 +228,7 @@ describe("prismaGenerateCommand", () => {
     );
     expect(fileContent).toContain("modelName: TModelName");
     expect(fileContent).toContain("relationFields: ModelGroupRelationFields");
-    expect(fileContent).toContain("prisma: any");
+    expect(fileContent).toContain("prisma: PrismaClient");
     expect(fileContent).toContain("constructor(modelName: TModelName)");
   });
 });

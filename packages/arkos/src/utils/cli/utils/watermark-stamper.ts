@@ -14,9 +14,9 @@ class WatermarkStamper {
     host,
     port,
   }: {
-    envFiles: string[] | undefined;
-    host: string | undefined;
-    port: string | undefined;
+    envFiles?: string[];
+    host?: string;
+    port?: string;
   }) {
     console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
     if (host && port) {

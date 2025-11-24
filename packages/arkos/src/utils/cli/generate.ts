@@ -10,10 +10,19 @@ import {
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import sheu from "../sheu";
 import { capitalize } from "../helpers/text.helpers";
+import prismaSchemaParser from "../prisma/prisma-schema-parser";
+import { kebabToHuman } from "../../modules/swagger/utils/helpers/swagger.router.helpers";
+
+const models = prismaSchemaParser
+  .getModelsAsArrayOfStrings()
+  .map((val) => kebabCase(val));
+
+const knownModules = [...models, "file-upload", "auth"];
 
 interface GenerateOptions {
   path?: string;
-  model: string;
+  model?: string;
+  module?: string;
 }
 
 interface GenerateConfig {
@@ -23,18 +32,33 @@ interface GenerateConfig {
   customImports?: (names: any) => any;
   customPath?: string;
   prefix?: string;
+  allowedModules: string[];
 }
 
 const generateFile = async (
   options: GenerateOptions,
   config: GenerateConfig
 ) => {
-  const modelName = options.model;
+  const modelName = options.module || options.model;
 
-  if (!modelName) {
-    sheu.error("Module name is required!");
-    process.exit(1);
-  }
+  if (options.module && options.model)
+    throw Error(
+      "You must either pass --module or --model, prefer --module to align with future updates."
+    );
+
+  if (!modelName?.trim()) throw new Error("Module name is required!");
+
+  const isAllowedModule = config.allowedModules.includes(kebabCase(modelName));
+  const isKnowModule = config.allowedModules.includes(kebabCase(modelName));
+
+  if (!isKnowModule)
+    throw new Error(
+      `Generate command are only available for know modules such as all prisma models, file-upload and auth. And you passed ${modelName}.`
+    );
+  else if (!isAllowedModule)
+    throw Error(
+      `${kebabToHuman(kebabCase(config.templateName))} are not available for module ${modelName}`
+    );
 
   if (config.customValidation) config.customValidation(modelName);
 
@@ -101,6 +125,7 @@ export const generateCommand = {
       customImports: () => ({
         baseController: "arkos/controllers",
       }),
+      allowedModules: knownModules,
     });
   },
 
@@ -111,6 +136,7 @@ export const generateCommand = {
       customImports: () => ({
         baseService: "arkos/services",
       }),
+      allowedModules: knownModules,
     });
   },
 
@@ -122,6 +148,7 @@ export const generateCommand = {
         baseRouter: "arkos",
         controller: `./${names.kebab}.controller`,
       }),
+      allowedModules: knownModules,
     });
   },
 
@@ -129,6 +156,7 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "interceptors",
       fileSuffix: "interceptors",
+      allowedModules: knownModules,
     });
   },
 
@@ -136,6 +164,7 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "auth-configs",
       fileSuffix: "auth",
+      allowedModules: knownModules,
     });
   },
 
@@ -143,6 +172,7 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "hooks",
       fileSuffix: "hooks",
+      allowedModules: knownModules,
     });
   },
 
@@ -152,6 +182,7 @@ export const generateCommand = {
       fileSuffix: "schema",
       customPath: "src/modules/{{module-name}}/schemas",
       prefix: "create-",
+      allowedModules: models,
     });
   },
 
@@ -161,6 +192,7 @@ export const generateCommand = {
       fileSuffix: "schema",
       customPath: "src/modules/{{module-name}}/schemas",
       prefix: "update-",
+      allowedModules: models,
     });
   },
 
@@ -170,6 +202,7 @@ export const generateCommand = {
       fileSuffix: "dto",
       customPath: "src/modules/{{module-name}}/dtos",
       prefix: "create-",
+      allowedModules: models,
     });
   },
 
@@ -179,6 +212,7 @@ export const generateCommand = {
       fileSuffix: "dto",
       customPath: "src/modules/{{module-name}}/dtos",
       prefix: "update-",
+      allowedModules: models,
     });
   },
 
@@ -186,14 +220,7 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "query-options",
       fileSuffix: "query",
-      customValidation: (modelName) => {
-        if (modelName === "file-upload") {
-          sheu.error(
-            "Prisma query options are not available to file-upload resource"
-          );
-          process.exit(1);
-        }
-      },
+      allowedModules: knownModules,
     });
   },
 };

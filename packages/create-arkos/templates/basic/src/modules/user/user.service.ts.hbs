@@ -2,7 +2,7 @@ import { BaseService } from "arkos/services";
 {{#if typescript}}
 import { Prisma } from "@prisma/client"
 
-class UserService extends BaseService<Prisma.UserDelegate> {}
+class UserService extends BaseService<"user"> {}
 {{else}}
 
 class UserService extends BaseService {}
