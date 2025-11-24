@@ -195,6 +195,68 @@ describe("applyStrictRoutingRules", () => {
         updatePassword: { disabled: true },
       });
     });
+
+    it("should reverse fill disable keys correctly when only new whey is defined", () => {
+      const config = {
+        findMany: { disabled: false },
+        findOne: { disabled: false },
+        createOne: { disabled: false },
+        updateOne: { disabled: false },
+        deleteOne: { disabled: false },
+      };
+
+      const result = applyStrictRoutingRules("user", strictArkosConfig, config);
+
+      expect(result).toEqual({
+        createMany: { disabled: true },
+        createOne: { disabled: false },
+        deleteMany: { disabled: true },
+        deleteOne: { disabled: false },
+        disable: {
+          createMany: true,
+          createOne: false,
+          deleteMany: true,
+          deleteOne: false,
+          findMany: false,
+          findOne: false,
+          updateMany: true,
+          updateOne: false,
+        },
+        findMany: { disabled: false },
+        updateMany: { disabled: true },
+        findOne: { disabled: false },
+        updateOne: { disabled: false },
+      });
+    });
+
+    it("should correctly handle auth route configs on strict mode", () => {
+      const config: RouterConfig<"auth"> = {
+        disable: { login: false },
+      };
+
+      const result = applyStrictRoutingRules("auth", strictArkosConfig, config);
+
+      expect(result).toEqual({
+        deleteMe: { disabled: true },
+        disable: {
+          deleteMe: true,
+          findManyAuthAction: true,
+          getMe: true,
+          login: false,
+          logout: true,
+          signup: true,
+          updateMe: true,
+          updatePassword: true,
+        },
+        findManyAuthAction: { disabled: true },
+        getMe: { disabled: true },
+        login: { disabled: false },
+        logout: { disabled: true },
+        signup: { disabled: true },
+        updateMe: { disabled: true },
+        updatePassword: { disabled: true },
+      });
+    });
   });
 
   describe("when strictMode is no-bulk", () => {
@@ -381,19 +443,25 @@ describe("applyStrictRoutingRules", () => {
   describe("validateRouterConfigConsistency", () => {
     it("should not throw error when disable is undefined", () => {
       const config = {};
-      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+      expect(() =>
+        validateRouterConfigConsistency("user", config)
+      ).not.toThrow();
     });
 
     it("should not throw error when disable is boolean", () => {
       const config = { disable: true };
-      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+      expect(() =>
+        validateRouterConfigConsistency("user", config)
+      ).not.toThrow();
     });
 
     it("should not throw error when only old way is used", () => {
       const config = {
         disable: { findMany: true, createOne: false },
       };
-      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+      expect(() =>
+        validateRouterConfigConsistency("user", config)
+      ).not.toThrow();
     });
 
     it("should not throw error when only new way is used", () => {
@@ -401,7 +469,9 @@ describe("applyStrictRoutingRules", () => {
         findMany: { disabled: true },
         createOne: { disabled: false },
       };
-      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+      expect(() =>
+        validateRouterConfigConsistency("user", config)
+      ).not.toThrow();
     });
 
     it("should not throw error when both ways have same value", () => {
@@ -410,7 +480,9 @@ describe("applyStrictRoutingRules", () => {
         findMany: { disabled: true },
         createOne: { disabled: false },
       };
-      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+      expect(() =>
+        validateRouterConfigConsistency("user", config)
+      ).not.toThrow();
     });
 
     it("should not throw error when one value is undefined", () => {
@@ -418,7 +490,9 @@ describe("applyStrictRoutingRules", () => {
         disable: { findMany: true },
         createOne: { disabled: false },
       };
-      expect(() => validateRouterConfigConsistency(config)).not.toThrow();
+      expect(() =>
+        validateRouterConfigConsistency("user", config)
+      ).not.toThrow();
     });
 
     it("should throw error when values conflict", () => {
@@ -426,8 +500,8 @@ describe("applyStrictRoutingRules", () => {
         disable: { findMany: true },
         findMany: { disabled: false },
       };
-      expect(() => validateRouterConfigConsistency(config)).toThrow(
-        'Conflicting disabled values for endpoint "findMany": disable.findMany = true, but findMany.disabled = false'
+      expect(() => validateRouterConfigConsistency("user", config)).toThrow(
+        'Conflicting disabled values for endpoint "findMany" of module user: disable.findMany = true, but findMany.disabled = false'
       );
     });
 
@@ -437,7 +511,7 @@ describe("applyStrictRoutingRules", () => {
         findMany: { disabled: false },
         createOne: { disabled: false },
       };
-      expect(() => validateRouterConfigConsistency(config)).toThrow(
+      expect(() => validateRouterConfigConsistency("user", config)).toThrow(
         'Conflicting disabled values for endpoint "findMany"'
       );
     });
@@ -447,7 +521,7 @@ describe("applyStrictRoutingRules", () => {
         disable: { updateOne: false },
         updateOne: { disabled: true },
       };
-      expect(() => validateRouterConfigConsistency(config)).toThrow(
+      expect(() => validateRouterConfigConsistency("user", config)).toThrow(
         "disable.updateOne = false, but updateOne.disabled = true"
       );
     });

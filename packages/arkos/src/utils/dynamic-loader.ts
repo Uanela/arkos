@@ -330,7 +330,10 @@ export function assignModuleToResult(
         module?.config || {}
       ),
     };
-    validateRouterConfigConsistency(result[key]?.config || {});
+    validateRouterConfigConsistency(
+      kebabCase(appModule),
+      result[key]?.config || {}
+    );
   } else {
     result[key as keyof typeof result] = module.default || module;
   }
