@@ -466,12 +466,8 @@ export class AuthService {
    */
   authenticate = catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      if (!isAuthenticationEnabled()) {
-        next();
-        return;
-      }
-
-      req.user = (await this.getAuthenticatedUser(req)) as User;
+      if (isAuthenticationEnabled())
+        req.user = (await this.getAuthenticatedUser(req)) as User;
       next();
     }
   );

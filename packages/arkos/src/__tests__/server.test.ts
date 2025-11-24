@@ -11,10 +11,13 @@ const { initApp, getExpressApp, terminateApplicationRunningProcessAndServer } =
   server;
 
 jest.mock("../utils/features/port-and-host-allocator");
-// jest.mock("../utils/helpers/deepmerge.helper");
+jest.mock("../utils/prisma/prisma-schema-parser", () => ({
+  getModelsAsArrayOfStrings: jest.fn(() => []),
+}));
 jest.mock("../app", () => ({
   bootstrap: jest.fn().mockResolvedValue({}),
 }));
+jest.mock("fs");
 jest.mock("../utils/sheu");
 jest.mock("http", () => {
   const mockServer = {

@@ -32,7 +32,6 @@ export async function devCommand(options: DevOptions = {}) {
     let restartingFiles = new Set<string>();
 
     const fileExt = getUserFileExtension();
-
     const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
 
     if (!fs.existsSync(entryPoint)) {

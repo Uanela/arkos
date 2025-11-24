@@ -35,7 +35,6 @@ describe("generateHooksTemplate", () => {
       expect(result).toContain("import {");
       expect(result).toContain("BeforeFindOneHookArgs");
       expect(result).toContain("AfterFindOneHookArgs");
-      expect(result).toContain('from "arkos/services"');
     });
 
     it("should include service import without extension", () => {

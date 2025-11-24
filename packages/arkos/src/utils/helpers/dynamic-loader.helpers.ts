@@ -41,6 +41,9 @@ export function applyStrictRoutingRules<T extends string>(
 
   const hadBooleanDisable = typeof config.disable === "boolean";
 
+  // IMPORTANT: Order matters in deepmerge!
+  // User config must be SECOND argument to override defaults
+
   if (hadBooleanDisable) {
     const disableValue = config.disable;
     const disableObject: Record<string, boolean> = {};

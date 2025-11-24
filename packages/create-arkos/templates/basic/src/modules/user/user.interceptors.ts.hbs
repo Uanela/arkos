@@ -1,195 +1,99 @@
 {{#if typescript}}
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
-// export const beforeCreateOne = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeCreateOne = [];
 
-// export const afterCreateOne = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterCreateOne = [];
 
-// export const onCreateOneError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onCreateOneError = [];
 
-// export const beforeFindOne = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeFindOne = [];
 
-// export const afterFindOne = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterFindOne = [];
 
-// export const onFindOneError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onFindOneError = [];
 
-// export const beforeFindMany = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeFindMany = [];
 
-// export const afterFindMany = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterFindMany = [];
 
-// export const onFindManyError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onFindManyError = [];
 
-// export const beforeUpdateOne = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeUpdateOne = [];
 
-// export const afterUpdateOne = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterUpdateOne = [];
 
-// export const onUpdateOneError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onUpdateOneError = [];
 
-// export const beforeDeleteOne = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeDeleteOne = [];
 
-// export const afterDeleteOne = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterDeleteOne = [];
 
-// export const onDeleteOneError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onDeleteOneError = [];
 
-// export const beforeCreateMany = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeCreateMany = [];
 
-// export const afterCreateMany = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterCreateMany = [];
 
-// export const onCreateManyError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onCreateManyError = [];
 
-// export const beforeUpdateMany = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeUpdateMany = [];
 
-// export const afterUpdateMany = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterUpdateMany = [];
 
-// export const onUpdateManyError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onUpdateManyError = [];
 
-// export const beforeDeleteMany = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeDeleteMany = [];
 
-// export const afterDeleteMany = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterDeleteMany = [];
 
-// export const onDeleteManyError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onDeleteManyError = [];
 {{else}}
-// export const beforeCreateOne = [async (req, res, next) => {
-//   next();
-// }];
+export const beforeCreateOne = [];
 
-// export const afterCreateOne = [async (req, res, next) => {
-//   next();
-// }];
+export const afterCreateOne = [];
 
-// export const onCreateOneError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onCreateOneError = [];
 
-// export const beforeFindOne = [async (req, res, next) => {
-//   next();
-// }];
+export const beforeFindOne = [];
 
-// export const afterFindOne = [async (req, res, next) => {
-//   next();
-// }];
+export const afterFindOne = [];
 
-// export const onFindOneError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onFindOneError = [];
 
-// export const beforeFindMany = [async (req, res, next) => {
-//   next();
-// }];
+export const beforeFindMany = [];
 
-// export const afterFindMany = [async (req, res, next) => {
-//   next();
-// }];
+export const afterFindMany = [];
 
-// export const onFindManyError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onFindManyError = [];
 
-// export const beforeUpdateOne = [async (req, res, next) => {
-//   next();
-// }];
+export const beforeUpdateOne = [];
 
-// export const afterUpdateOne = [async (req, res, next) => {
-//   next();
-// }];
+export const afterUpdateOne = [];
 
-// export const onUpdateOneError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onUpdateOneError = [];
 
-// export const beforeDeleteOne = [async (req, res, next) => {
-//   next();
-// }];
+export const beforeDeleteOne = [];
 
-// export const afterDeleteOne = [async (req, res, next) => {
-//   next();
-// }];
+export const afterDeleteOne = [];
 
-// export const onDeleteOneError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onDeleteOneError = [];
 
-// export const beforeCreateMany = [async (req, res, next) => {
-//   next();
-// }];
+export const beforeCreateMany = [];
 
-// export const afterCreateMany = [async (req, res, next) => {
-//   next();
-// }];
+export const afterCreateMany = [];
 
-// export const onCreateManyError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onCreateManyError = [];
 
-// export const beforeUpdateMany = [async (req, res, next) => {
-//   next();
-// }];
+export const beforeUpdateMany = [];
 
-// export const afterUpdateMany = [async (req, res, next) => {
-//   next();
-// }];
+export const afterUpdateMany = [];
 
-// export const onUpdateManyError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onUpdateManyError = [];
 
-// export const beforeDeleteMany = [async (req, res, next) => {
-//   next();
-// }];
+export const beforeDeleteMany = [];
 
-// export const afterDeleteMany = [async (req, res, next) => {
-//   next();
-// }];
+export const afterDeleteMany = [];
 
-// export const onDeleteManyError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onDeleteManyError = [];
 {{/if}}

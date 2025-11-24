@@ -1,83 +1,43 @@
 {{#if typescript}}
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
-// export const beforeFindFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
-// 
-// export const beforeUploadFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
-// 
-// export const afterUploadFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const beforeFindFile = [];
 
-// export const onUploadFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
-// 
-// export const beforeUpdateFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
-// 
-// export const afterUpdateFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
-// 
-// export const onUpdateFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const beforeUploadFile = [];
 
-// export const beforeDeleteFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
-// 
-// export const afterDeleteFile = [async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next();
-// }];
+export const afterUploadFile = [];
 
-// export const onDeleteFileError = [async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-//   next(err);
-// }];
+export const onUploadFileError = [];
+
+export const beforeUpdateFile = [];
+
+export const afterUpdateFile = [];
+
+export const onUpdateFileError = [];
+
+export const beforeDeleteFile = [];
+
+export const afterDeleteFile = [];
+
+export const onDeleteFileError = [];
 {{else}}
-// export const beforeFindFile = [async (req, res, next) => {
-//   next();
-// }];
-// 
-// export const beforeUploadFile = [async (req, res, next) => {
-//   next();
-// }];
-// 
-// export const afterUploadFile = [async (req, res, next) => {
-//   next();
-// }];
-// 
-// export const onUploadFileError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const beforeFindFile = [];
 
-// export const beforeUpdateFile = [async (req, res, next) => {
-//   next();
-// }];
-// 
-// export const afterUpdateFile = [async (req, res, next) => {
-//   next();
-// }];
-// 
-// export const onUpdateFileError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const beforeUploadFile = [];
 
-// export const beforeDeleteFile = [async (req, res, next) => {
-//   next();
-// }];
-// 
-// export const afterDeleteFile = [async (req, res, next) => {
-//   next();
-// }];
+export const afterUploadFile = [];
 
-// export const onDeleteFileError = [async (err, req, res, next) => {
-//   next(err);
-// }];
+export const onUploadFileError = [];
+
+export const beforeUpdateFile = [];
+
+export const afterUpdateFile = [];
+
+export const onUpdateFileError = [];
+
+export const beforeDeleteFile = [];
+
+export const afterDeleteFile = [];
+
+export const onDeleteFileError = [];
 {{/if}}

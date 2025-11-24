@@ -24,34 +24,34 @@ const authRoleAuthConfigs = {
   },
   {{#if (eq authentication.type "static")}}
   accessControl: {
-    // Create: {
+    Create: {
     {{#if (eq authentication.type "static")}}
-    //   roles: [],
+      roles: [],
     {{/if}}
-    //   name: "Create New Auth Role",
-    //   description: "Permission to create auth role records"
-    // },
-    // Update: {
+      name: "Create New Auth Role",
+      description: "Permission to create auth role records"
+    },
+    Update: {
     {{#if (eq authentication.type "static")}}
-    //   roles: [],
+      roles: [],
     {{/if}}
-    //   name: "Update Auth Role",
-    //   description: "Permission to update auth role records"
-    // },
-    // Delete: {
+      name: "Update Auth Role",
+      description: "Permission to update auth role records"
+    },
+    Delete: {
     {{#if (eq authentication.type "static")}}
-    //   roles: [],
+      roles: [],
     {{/if}}
-    //   name: "Delete Auth Role",
-    //   description: "Permission to delete auth role records"
-    // },
-    // View: {
+      name: "Delete Auth Role",
+      description: "Permission to delete auth role records"
+    },
+    View: {
     {{#if (eq authentication.type "static")}}
-    //   roles: [],
+      roles: [],
     {{/if}}
-    //   name: "View Auth Role",
-    //   description: "Permission to update auth role records"
-    // },
+      name: "View Auth Role",
+      description: "Permission to update auth role records"
+    },
   },
   {{/if}}
 };

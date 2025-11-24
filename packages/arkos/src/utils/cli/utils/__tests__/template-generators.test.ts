@@ -360,10 +360,10 @@ describe("generateTemplate", () => {
         modelName: mockModelName,
       });
 
-      expect(result).toContain(
+      expect(result).not.toContain(
         "import { ArkosRequest, ArkosResponse, ArkosNextFunction }"
       );
-      expect(result).toContain(
+      expect(result).not.toContain(
         "req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction"
       );
       expect(result).toContain("beforeCreateOne");
@@ -409,7 +409,7 @@ describe("generateTemplate", () => {
       });
 
       expect(result).not.toContain("ArkosRequest");
-      expect(result).toContain("req, res, next");
+      expect(result).toContain("[]");
       expect(result).toContain("beforeCreateOne");
     });
 

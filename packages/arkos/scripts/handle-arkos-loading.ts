@@ -8,28 +8,28 @@ interface ServerReplacement {
 
 const serverReplacements: ServerReplacement[] = [
   {
-    filePath: "dist/cjs/server.js",
+    filePath: "dist/cjs/utils/helpers/arkos-config.helpers.js",
     replacement:
       "__importDefault(require(`${fs_helpers_1.crd()}/arkos.config.${fs_helpers_1.getUserFileExtension()}`))",
-    old: '"HandledByPostBuild"',
+    old: '"ReplaceWithDynamicImport"',
   },
   {
-    filePath: "dist/cjs/server.js",
-    replacement: `const fs_helpers_1 = require("./utils/helpers/fs.helpers");`,
-    old: '("ImportMissing");',
+    filePath: "dist/cjs/utils/helpers/arkos-config.helpers.js",
+    replacement: `const fs_helpers_1 = require("./fs.helpers");`,
+    old: '("ReplaceWithNeededImportsForArkosConfig");',
   },
   {
-    filePath: "dist/esm/server.js",
+    filePath: "dist/esm/utils/helpers/arkos-config.helpers.js",
     replacement:
       "await importModule(`${crd()}/arkos.config.${getUserFileExtension()}`)",
-    old: '"HandledByPostBuild"',
+    old: '"ReplaceWithDynamicImport"',
   },
   {
-    filePath: "dist/esm/server.js",
-    replacement: `import { importModule } from "./utils/helpers/global.helpers";
-import { getUserFileExtension, crd } from "./utils/helpers/fs.helpers";
+    filePath: "dist/esm/utils/helpers/arkos-config.helpers.js",
+    replacement: `import { importModule } from "./global.helpers";
+import { getUserFileExtension, crd } from "./fs.helpers";
 `,
-    old: '("ImportMissing");',
+    old: '("ReplaceWithNeededImportsForArkosConfig");',
   },
 ];
 

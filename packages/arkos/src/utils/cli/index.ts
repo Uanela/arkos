@@ -5,6 +5,7 @@ import { startCommand } from "./start";
 import { generateCommand } from "./generate";
 import { getVersion } from "./utils/cli.helpers";
 import prismaGenerateCommand from "./prisma-generate";
+import exportAuthActionCommand from "./export-auth-action";
 
 const program = new Command();
 
@@ -39,7 +40,8 @@ generate
   .command("controller")
   .alias("c")
   .description("Generate a new controller")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for the controller",
@@ -51,7 +53,8 @@ generate
   .command("service")
   .alias("s")
   .description("Generate a new service")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for the service",
@@ -63,7 +66,9 @@ generate
   .command("router")
   .alias("r")
   .description("Generate a new router")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for the router",
@@ -75,7 +80,8 @@ generate
   .command("auth-configs")
   .alias("a")
   .description("Generate auth configuration")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for the router",
@@ -87,7 +93,8 @@ generate
   .command("query-options")
   .alias("q")
   .description("Generate prisma query options")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for query options",
@@ -96,22 +103,13 @@ generate
   .action(generateCommand.queryOptions);
 
 generate
-  .command("middlewares")
-  .alias("m")
-  .description("Generate a new interceptors file")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
-  .option(
-    "-p, --path <path>",
-    "Custom path for middleware",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.interceptors);
-
-generate
   .command("interceptors")
   .alias("i")
+  .alias("middlewares")
+  .alias("m")
   .description("Generate a new interceptors file")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for interceptors",
@@ -123,7 +121,9 @@ generate
   .command("hooks")
   .alias("h")
   .description("Generate a new service hooks file")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for hooks",
@@ -135,7 +135,8 @@ generate
   .command("create-schema")
   .alias("cs")
   .description("Generate a new zod create schema file for a prisma model")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for hooks",
@@ -147,7 +148,8 @@ generate
   .command("update-schema")
   .alias("us")
   .description("Generate a new zod update schema file for a prisma model")
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for hooks",
@@ -161,7 +163,8 @@ generate
   .description(
     "Generate a new class-validator create dto file for a prisma model"
   )
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for hooks",
@@ -175,7 +178,8 @@ generate
   .description(
     "Generate a new class-validator update dto file for a prisma model"
   )
-  .requiredOption("-m, --model <name>, --module <name>", "Module name")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
     "Custom path for hooks",
@@ -188,6 +192,14 @@ program
   .command("generate")
   .description("Generate your @prisma/client and BaseService class types")
   .action(prismaGenerateCommand);
+
+program
+  .command("export")
+  .command("auth-action")
+  .description("Export file with an array containing all auth-actions")
+  .option("-o, --overwrite", "Overwrites all the changes on the object")
+  .option("-p, --path <path>", "Custom path for auth-actions", "cache/auth")
+  .action(exportAuthActionCommand);
 
 program.parse(process.argv);
 

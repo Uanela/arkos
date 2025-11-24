@@ -436,7 +436,7 @@ export const appModules = Array.from(
   new Set([
     "auth",
     "file-upload",
-    ...prismaSchemaParser.getModelsAsArrayOfStrings(),
+    ...(prismaSchemaParser.getModelsAsArrayOfStrings() || []),
   ])
 );
 
