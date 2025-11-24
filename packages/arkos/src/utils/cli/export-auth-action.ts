@@ -31,6 +31,7 @@ export default async function exportAuthActionCommand(options: {
       ({
         NODE_ENV: "development",
         ...process.env,
+        CLI: "false",
       }) as { [x: string]: string };
 
     const startServer = () => {
