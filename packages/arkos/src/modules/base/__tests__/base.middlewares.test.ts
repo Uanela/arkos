@@ -1313,6 +1313,7 @@ describe("Express Middleware Functions", () => {
         jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
           validation: {
             resolver: "zod",
+            validationOptions: { whitelist: true },
           },
         });
       });
@@ -1334,9 +1335,13 @@ describe("Express Middleware Functions", () => {
           nextFunction
         );
 
-        expect(validateSchema).toHaveBeenCalledWith(mockSchema, {
-          name: "test",
-        });
+        expect(validateSchema).toHaveBeenCalledWith(
+          mockSchema,
+          {
+            name: "test",
+          },
+          { whitelist: true }
+        );
         expect(mockRequest.body).toEqual(validatedData);
         expect(nextFunction).toHaveBeenCalledTimes(1);
       });
@@ -1358,9 +1363,13 @@ describe("Express Middleware Functions", () => {
           nextFunction
         );
 
-        expect(validateSchema).toHaveBeenCalledWith(mockSchema, {
-          page: "1",
-        });
+        expect(validateSchema).toHaveBeenCalledWith(
+          mockSchema,
+          {
+            page: "1",
+          },
+          { whitelist: true }
+        );
         expect(mockRequest.query).toEqual(validatedData);
         expect(nextFunction).toHaveBeenCalledTimes(1);
       });
@@ -1382,9 +1391,13 @@ describe("Express Middleware Functions", () => {
           nextFunction
         );
 
-        expect(validateSchema).toHaveBeenCalledWith(mockSchema, {
-          id: "123",
-        });
+        expect(validateSchema).toHaveBeenCalledWith(
+          mockSchema,
+          {
+            id: "123",
+          },
+          { whitelist: true }
+        );
         expect(mockRequest.params).toEqual(validatedData);
         expect(nextFunction).toHaveBeenCalledTimes(1);
       });
@@ -1447,7 +1460,11 @@ describe("Express Middleware Functions", () => {
           nextFunction
         );
 
-        expect(validateDto).toHaveBeenCalledWith(BodyDto, { name: "test" });
+        expect(validateDto).toHaveBeenCalledWith(
+          BodyDto,
+          { name: "test" },
+          undefined
+        );
         expect(mockRequest.body).toEqual(validatedData);
         expect(nextFunction).toHaveBeenCalledTimes(1);
       });
@@ -1471,7 +1488,11 @@ describe("Express Middleware Functions", () => {
           nextFunction
         );
 
-        expect(validateDto).toHaveBeenCalledWith(QueryDto, { page: "1" });
+        expect(validateDto).toHaveBeenCalledWith(
+          QueryDto,
+          { page: "1" },
+          undefined
+        );
         expect(mockRequest.query).toEqual(validatedData);
         expect(nextFunction).toHaveBeenCalledTimes(1);
       });
@@ -1495,7 +1516,11 @@ describe("Express Middleware Functions", () => {
           nextFunction
         );
 
-        expect(validateDto).toHaveBeenCalledWith(ParamsDto, { id: "123" });
+        expect(validateDto).toHaveBeenCalledWith(
+          ParamsDto,
+          { id: "123" },
+          undefined
+        );
         expect(mockRequest.params).toEqual(validatedData);
         expect(nextFunction).toHaveBeenCalledTimes(1);
       });

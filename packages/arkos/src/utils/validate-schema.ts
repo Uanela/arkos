@@ -28,7 +28,8 @@ import AppError from "../modules/error-handler/utils/app-error";
  */
 export default async function validateSchema<T>(
   schema: ZodSchema<T>,
-  data: unknown
+  data: unknown,
+  options?: any
 ): Promise<T> {
   const result = schema.safeParse(data);
   if (!result.success) {
