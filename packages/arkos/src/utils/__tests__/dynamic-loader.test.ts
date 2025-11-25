@@ -6,6 +6,7 @@ import { pathExists } from "../helpers/dynamic-loader.helpers";
 import * as dynamicLoaderHelpers from "../helpers/dynamic-loader.helpers";
 import { killServerChildProcess } from "../cli/utils/cli.helpers";
 import sheu from "../sheu";
+import z from "zod";
 
 // const { applyStrictRoutingRules } = dynamicLoaderHelpers;
 
@@ -493,8 +494,14 @@ describe("Dynamic Prisma Model Loader", () => {
 
     it("should process modules with zod validation", async () => {
       (pathExists as jest.Mock).mockResolvedValue(true);
-      (importModule as jest.Mock).mockResolvedValue({
-        default: { test: "data" },
+      const CreateUserSchema = z.object({});
+      (importModule as jest.Mock).mockImplementation(async (path: string) => {
+        if (path.includes("create-user.schema.js"))
+          return { default: CreateUserSchema };
+
+        return {
+          default: { test: "data" },
+        };
       });
 
       const result = await dynamicLoader.importModuleComponents(
@@ -503,7 +510,14 @@ describe("Dynamic Prisma Model Loader", () => {
         true
       );
 
-      expect(result).toHaveProperty("schemas");
+      expect(result).toStrictEqual(
+        expect.objectContaining({
+          schemas: expect.objectContaining({
+            create: CreateUserSchema,
+            createOne: CreateUserSchema,
+          }),
+        })
+      );
     });
 
     it("should process modules with dto validation", async () => {

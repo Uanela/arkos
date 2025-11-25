@@ -55,12 +55,14 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
       );
     };
 
-    const getValidationSchemaOrDto = (key: "create" | "update") => {
+    const getValidationSchemaOrDto = (
+      key: "create" | "update" | "createMany" | "updateMany"
+    ) => {
       const validationConfigs = arkosConfigs?.validation;
       if (validationConfigs?.resolver === "class-validator") {
-        return dtos?.[key];
+        return (dtos as any)?.[key];
       } else if (validationConfigs?.resolver === "zod") {
-        return schemas?.[key];
+        return (schemas as any)?.[key];
       }
       return undefined;
     };
@@ -131,7 +133,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
           routerConfig,
           modelNameInKebab,
           authConfigs,
-          getValidationSchemaOrDto("create")
+          getValidationSchemaOrDto("createMany")
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,

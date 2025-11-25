@@ -11,6 +11,7 @@ import catchAsync from "../../../../error-handler/utils/catch-async";
 import routerValidator from "../../router-validator";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 import { getArkosConfig } from "../../../../../server";
+import z from "zod";
 
 jest.mock("../../../../error-handler/utils/catch-async");
 jest.mock("../../../../../server");
@@ -106,25 +107,31 @@ describe("setupRouters", () => {
   });
 
   it("should register all routes for a model with no customization", async () => {
+    const CreateUserSchema = z.object({});
+    const UpdateUserSchema = z.object({});
     const mockModuleComponents = {
       interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
+      schemas: {
+        create: CreateUserSchema,
+        update: UpdateUserSchema,
+      },
     };
 
     (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
       mockModuleComponents
     );
 
-    setupRouters(router, {});
+    setupRouters(router, { validation: { resolver: "zod" } });
 
     expect(router.post).toHaveBeenCalledWith(
       {
         route: "/users",
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
+        validation: { body: CreateUserSchema },
         experimental: { openapi: false },
       },
       expect.any(Function),
@@ -199,7 +206,7 @@ describe("setupRouters", () => {
         route: "/users/:id",
         authentication: { action: "Update", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
+        validation: { body: UpdateUserSchema },
         experimental: { openapi: false },
       },
       expect.any(Function),
@@ -802,7 +809,7 @@ describe("setupRouters", () => {
           create: CreateManyDto,
           update: jest.fn(),
           findOne: jest.fn(),
-          createMany: jest.fn(),
+          createMany: CreateManyDto,
           updateMany: jest.fn(),
           deleteMany: jest.fn(),
           delete: jest.fn(),
@@ -859,7 +866,7 @@ describe("setupRouters", () => {
           create: CreateManySchema,
           update: jest.fn(),
           findOne: jest.fn(),
-          createMany: jest.fn(),
+          createMany: CreateManySchema,
           updateMany: jest.fn(),
           deleteMany: jest.fn(),
           delete: jest.fn(),
