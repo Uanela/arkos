@@ -2,400 +2,415 @@
 sidebar_position: 5
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<!-- import SmallTag from "../components/small-tag" -->
+
 # Adding Custom Routers
 
-Arkos provides a powerful routing system built on top of Express Router, enhanced with batteries-included features for modern API development. Think of it as Express Router on steroids - all the flexibility you know and love, with built-in validation, authentication, OpenAPI documentation, file uploads, and more.
+Arkos provides a flexible routing system that lets you create custom API endpoints alongside the auto-generated Prisma model routes. Whether you need standalone endpoints for complex business logic or want to extend your model APIs with custom functionality, Arkos has you covered.
 
-**New in v1.4.0-beta**: ArkosRouter is now the preferred way to create routes in Arkos. While Express Router still works for backward compatibility, we highly recommend using ArkosRouter to take advantage of its enhanced features.
+**New in v1.4.0-beta**: ArkosRouter brings batteries-included features like validation, authentication, rate limiting, and OpenAPI documentation through declarative configuration. While Express Router still works for backward compatibility, we highly recommend using ArkosRouter.
 
-Arkos offers two main approaches for routing:
+## Quick Start
 
-1. **Custom Routers**: For creating entirely new endpoints separate from your Prisma models
-2. **Customizing Prisma Model Routers**: For extending or modifying the auto-generated endpoints for your Prisma models
-
-This guide covers both approaches and explains how they work together in your Arkos application.
-
-## Understanding ArkosRouter
-
-ArkosRouter is a proxied Express Router that extends the standard Express routing capabilities with powerful features:
-
-- **Smart Request Validation**: Zod schemas or class-validator DTOs
-- **Built-in Authentication**: Integrate auth with a simple config option
-- **OpenAPI Documentation**: Auto-generate API docs from your route configs
-- **File Upload Handling**: Streamlined file upload management
-- **Rate Limiting**: Per-route rate limiting configuration
-- **Query Parsing**: Intelligent query parameter parsing (null, boolean, etc.)
-- **Compression**: Per-route response compression
-- **Error Handling**: Automatic async error catching
-
-All of this is configured declaratively through a simple route configuration object.
-
-## 1. Working With Custom Routers
-
-Custom routers allow you to define specialized API endpoints that may not fit into the auto-generated model endpoints pattern.
-
-### When to Use Custom Routers
-
-Custom routers are perfect for:
-
-- Complex business logic operations that span multiple models
-- Custom authentication flows or specialized API endpoints
-- Feature-based endpoints that don't directly map to a single Prisma model
-- Any API functionality not covered by the auto-generated Prisma model routers
-
-### Basic Custom Router
-
-Let's start with a simple custom router using ArkosRouter:
-
-```typescript
-// src/routers/product-stats.router.ts
-import { ArkosRouter } from "arkos";
-import productStatsController from "../controllers/product-stats.controller";
-
-const productStatsRouter = ArkosRouter();
-
-productStatsRouter.get(
-  {
-    route: "/api/products-stats",
-  },
-  productStatsController.getProductStats
-);
-
-productStatsRouter.get(
-  {
-    route: "/api/admin/top-sellers",
-  },
-  productStatsController.getTopSellingProducts
-);
-
-export default productStatsRouter;
-```
-
-:::tip
-Notice how we pass a configuration object as the first argument instead of just a path string. This is the ArkosRouter way - declarative configuration that unlocks powerful features.
-:::
-
-:::danger
-Custom routers are not prefixed with `/api` automatically. You must include this prefix in your route paths if you want to maintain consistency with Arkos's auto-generated routes.
-:::
-
-### Registering Custom Routers
-
-> From `v1.4.0-beta`
-
-Add your custom router to Arkos by including it in the `use` array when initializing your application:
-
-:::tip
-Is important to notice that the `use` array was added on `v1.4.0-beta` to better align with Express `app.use` method, if you are using a version prior to `v1.4.0-beta` you can check previous documentations.
-:::
-
-```typescript
-// src/app.ts
-import arkos from "arkos";
-import productStatsRouter from "./routers/product-stats.router";
-import adminRouter from "./routers/admin.router";
-
-arkos.init({
-  use: [productStatsRouter, adminRouter], // register routers and middlewares
-});
-```
-
-**Important:** Custom routers specified in the `use` array are added after all built-in Arkos routers in the middleware stack. They will not overwrite any built-in routes.
-
-## Adding Request Validation
-
-One of ArkosRouter's most powerful features is declarative request validation. Let's add validation using Zod:
-
-```ts
-// src/schemas/analytics/requests/analytics-metrics-query.schema.ts
-const DateRangeQuerySchema = z.object({
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
-  metric: z.enum(["sales", "visits", "conversions"]).optional(),
-});
-```
-
-```ts
-// src/schemas/analytics/requests/analytics-reports-body.schema.ts
-const GenerateReportBodySchema = z.object({
-  reportType: z.enum(["summary", "detailed", "export"]),
-  format: z.enum(["pdf", "csv", "json"]),
-  filters: z
-    .object({
-      category: z.string().optional(),
-      minValue: z.number().optional(),
-    })
-    .optional(),
-});
-```
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 // src/routers/analytics.router.ts
 import { ArkosRouter } from "arkos";
-import { z } from "zod";
 import analyticsController from "../controllers/analytics.controller";
 
 const analyticsRouter = ArkosRouter();
 
 analyticsRouter.get(
   {
-    route: "/api/analytics/metrics",
-    validation: {
-      query: DateRangeQuerySchema,
+    route: "/api/analytics/dashboard",
+    authentication: {
+      action: "View",
+      resource: "dashboard",
+      rule: ["Admin", "Coordinator"],
     },
+    rateLimit: { windowMs: 60000, max: 100 },
   },
-  analyticsController.getMetrics
-);
-
-// Route with body validation
-analyticsRouter.post(
-  {
-    route: "/api/analytics/reports",
-    validation: {
-      body: GenerateReportSchema,
-    },
-  },
-  analyticsController.generateReport
+  analyticsController.getDashboard
 );
 
 export default analyticsRouter;
 ```
 
-You can also use class-validator DTOs if you prefer:
-
 ```typescript
-// src/dtos/create-report.dto.ts
-import { IsEnum, IsOptional, ValidateNested } from "class-validator";
-import { Type } from "class-transformer";
+// src/app.ts
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
 
-class ReportFilters {
-  @IsOptional()
-  category?: string;
-
-  @IsOptional()
-  minValue?: number;
-}
-
-export class CreateReportDto {
-  @IsEnum(["summary", "detailed", "export"])
-  reportType: string;
-
-  @IsEnum(["pdf", "csv", "json"])
-  format: string;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ReportFilters)
-  filters?: ReportFilters;
-}
+arkos.init({
+  use: [analyticsRouter], // Register your routers
+});
 ```
 
-```typescript
-// Using the DTO in your router
-import { CreateReportDto } from "../dtos/create-report.dto";
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
-analyticsRouter.post(
-  {
-    route: "/api/analytics/reports",
-    validation: {
-      body: CreateReportDto,
-    },
-  },
-  analyticsController.generateReport
+```typescript
+// src/routers/analytics.router.ts
+import { Router } from "express";
+import { authService } from "arkos/services";
+import analyticsController from "../controllers/analytics.controller";
+
+const analyticsRouter = Router();
+
+analyticsRouter.get(
+  "/api/analytics/dashboard",
+  authService.authenticate,
+  authService.handleAccessControl("View", "dasboard", {
+    View: ["Admin", "Coordinator"],
+  }),
+  analyticsController.getDashboard
 );
+
+export default analyticsRouter;
 ```
 
-:::info
-Arkos automatically validates and transforms the request data before it reaches your controller. Invalid requests are rejected with detailed error messages. Learn more in the [Request Data Validation](/docs/core-concepts/request-data-validation) guide.
-:::
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
 
-### Adding Authentication
+arkos.init({
+  routers: {
+    additional: [analyticsRouter],
+  },
+});
+```
 
-ArkosRouter makes authentication simple with built-in support for Arkos's authentication system:
+</TabItem>
+</Tabs>
+
+## Understanding Your Options
+
+Arkos offers two approaches for custom routing:
+
+### 1. Custom Routers
+
+**Use when**: Creating standalone endpoints that don't relate to a specific Prisma model
+
+**Examples**:
+
+- Analytics dashboards
+- Complex operations spanning multiple models
+- Custom authentication flows
+- Feature-based APIs (search, exports, webhooks)
+
+**Location**: Anywhere (typically `src/routers/`)
+
+### 2. Customizing Prisma Model Routers
+
+**Use when**: Extending or modifying auto-generated model endpoints
+
+**Examples**:
+
+- Adding a "share" action to posts
+- Custom search for products
+- Disabling bulk operations
+- Overriding default behavior
+
+**Location**: `src/modules/{model-name}/{model-name}.router.ts`
+
+:::tip Decision Flow
+**Does your endpoint directly relate to a single Prisma model?**
+
+- **Yes** → Customize the Prisma Model Router
+- **No** → Create a Custom Router
+  :::
+
+## Custom Routers
+
+Custom routers let you define entirely new API endpoints separate from your Prisma models.
+
+### Creating a Custom Router
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
 
 ```typescript
-// src/routers/admin.router.ts
+// src/routers/reports.router.ts
 import { ArkosRouter } from "arkos";
-import { z } from "zod";
-import adminController from "../controllers/admin.controller";
+import z from "zod";
+import reportsController from "../controllers/reports.controller";
 
-const adminRouter = ArkosRouter();
+const reportsRouter = ArkosRouter();
 
-const UpdateSettingsSchema = z.object({
-  maintenanceMode: z.boolean(),
-  allowRegistration: z.boolean(),
-  maxUploadSize: z.number().positive(),
+reportsRouter.get(
+  { route: "/api/reports/summary" },
+  reportsController.getSummary
+);
+
+const GenerateReportSchema = z.object({
+  type: z.enum(["sales", "inventory", "customers"]),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
 });
 
-// Simple authentication - just require login
-adminRouter.get(
+reportsRouter.post(
+  {
+    route: "/api/reports/generate",
+    authentication: {
+      resource: "report",
+      action: "Generate",
+      rule: ["Admin", "Manager"],
+    },
+    validation: { body: GenerateReportSchema },
+    rateLimit: { windowMs: 60000, max: 10 },
+  },
+  reportsController.generateReport
+);
+
+export default reportsRouter;
+```
+
+:::tip Configuration Object
+Notice the configuration object as the first argument. This declarative approach gives you access to validation, authentication, rate limiting, and more. See [ArkosRouter API Reference](/docs/api/arkos-router-config) for all options.
+:::
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/routers/reports.router.ts
+import { Router } from "express";
+import { authService } from "arkos/services";
+import { handleRequestBodyValidationAndTransformation } from "arkos/middlewares";
+import { GenerateReportSchema } from "../schemas/reports.schema";
+import reportsController from "../controllers/reports.controller";
+
+const reportsRouter = Router();
+
+const authConfigs = {
+  accessControl: {
+    Generate: ["Admin", "Manager"],
+  },
+};
+
+reportsRouter.get("/api/reports/summary", reportsController.getSummary);
+
+reportsRouter.post(
+  "/api/reports/generate",
+  authService.authenticate,
+  authService.handleAccessControl(
+    "Generate",
+    "report",
+    authConfigs.accessControl
+  ),
+  handleRequestBodyValidationAndTransformation(GenerateReportSchema),
+  reportsController.generateReport
+);
+
+export default reportsRouter;
+```
+
+</TabItem>
+</Tabs>
+
+:::danger Path Prefix
+Custom routers are NOT automatically prefixed with `/api`. You must include the full path in your route definitions to maintain consistency with Arkos's auto-generated routes.
+:::
+
+### Registering Custom Routers
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
+
+Add your router to the `use` array in your Arkos initialization:
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import reportsRouter from "./routers/reports.router";
+import webhooksRouter from "./routers/webhooks.router";
+
+arkos.init({
+  use: [reportsRouter, webhooksRouter],
+});
+```
+
+:::info Middleware Stack
+Custom routers in the `use` array are added **after** all built-in Arkos routers. They will not overwrite any built-in routes.
+:::
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+Add your router to the `routers.additional` array:
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import reportsRouter from "./routers/reports.router";
+import webhooksRouter from "./routers/webhooks.router";
+
+arkos.init({
+  routers: {
+    additional: [reportsRouter, webhooksRouter],
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+### Adding Features to Routes
+
+ArkosRouter supports declarative configuration for common needs:
+
+#### Authentication
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
+
+```typescript
+// Simple authentication
+router.get(
   {
     route: "/api/admin/dashboard",
     authentication: true,
   },
-  adminController.getDashboard
+  controller.getDashboard
 );
 
-// Authentication with RBAC (Role-Based Access Control)
-adminRouter.post(
+// With role-based access control
+router.post(
   {
     route: "/api/admin/settings",
     authentication: {
-      resource: "admin-settings",
+      resource: "settings",
       action: "Update",
-      rule: ["Admin", "SuperAdmin"], // Only these roles can access
-    },
-    validation: {
-      body: UpdateSettingsSchema,
+      rule: ["Admin"],
     },
   },
-  adminController.updateSettings
+  controller.updateSettings
 );
-
-// Dynamic RBAC (rules stored in database)
-adminRouter.delete(
-  {
-    route: "/api/admin/users/:id",
-    authentication: {
-      resource: "user",
-      action: "Delete",
-      // No rule array - will check database for permissions
-    },
-  },
-  adminController.deleteUser
-);
-
-export default adminRouter;
 ```
 
-:::info
-Authentication requires proper configuration in your Arkos initialization. Learn more about [Static RBAC](/docs/core-concepts/authentication-system) and [Dynamic RBAC](/docs/core-concepts/authentication-system#upgrading-to-dynamic-rbac).
-:::
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
-### Other Enhanced Features
+```typescript
+import { authService } from "arkos/services";
 
-ArkosRouter provides many more features that can be configured per-route:
+const authConfigs = {
+  accessControl: {
+    Update: ["Admin"],
+  },
+};
+
+router.post(
+  "/api/admin/settings",
+  authService.authenticate,
+  authService.handleAccessControl(
+    "Update",
+    "settings",
+    authConfigs.accessControl
+  ),
+  controller.updateSettings
+);
+```
+
+</TabItem>
+</Tabs>
+
+Learn more: [Authentication System](/docs/core-concepts/authentication-system)
+
+#### Validation
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
+
+```typescript
+import z from "zod";
+
+const CreateUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2),
+  role: z.enum(["User", "Admin"]),
+});
+
+router.post(
+  {
+    route: "/api/users",
+    validation: {
+      body: CreateUserSchema,
+    },
+  },
+  controller.createUser
+);
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+import { handleRequestBodyValidationAndTransformation } from "arkos/middlewares";
+import { CreateUserSchema } from "../schemas/user.schema";
+
+router.post(
+  "/api/users",
+  handleRequestBodyValidationAndTransformation(CreateUserSchema),
+  controller.createUser
+);
+```
+
+</TabItem>
+</Tabs>
+
+Learn more: [Request Data Validation](/docs/core-concepts/request-data-validation)
 
 #### Rate Limiting
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
+
 ```typescript
-productStatsRouter.get(
+router.post(
   {
-    route: "/api/products-stats",
+    route: "/api/reports/generate",
     rateLimit: {
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // Limit each IP to 100 requests per window
-      message: "Too many requests, please try again later",
+      max: 5, // 5 requests per window
+      message: "Too many report requests, try again later",
     },
   },
-  productStatsController.getProductStats
+  controller.generateReport
 );
 ```
 
-#### Response Compression
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
-analyticsRouter.get(
-  {
-    route: "/api/analytics/large-dataset",
-    compression: {
-      level: 6, // Compression level (0-9)
-      threshold: 1024, // Only compress responses larger than 1kb
-    },
-  },
-  analyticsController.getLargeDataset
-);
+import rateLimit from "express-rate-limit";
+
+const reportLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Too many report requests, try again later",
+});
+
+router.post("/api/reports/generate", reportLimiter, controller.generateReport);
 ```
 
-#### Query Parser Configuration
+</TabItem>
+</Tabs>
+
+#### File Uploads
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
 
 ```typescript
-productStatsRouter.get(
-  {
-    route: "/api/products",
-    queryParser: {
-      parseNull: true, // "null" string → null
-      parseBoolean: true, // "true"/"false" → boolean
-      parseNumber: true, // "123" → 123
-      parseUndefined: true, // "undefined" string → undefined
-    },
-  },
-  productStatsController.getProducts
-);
-```
-
-#### Custom Body Parser
-
-```typescript
-webhookRouter.post(
-  {
-    route: "/api/webhooks/stripe",
-    bodyParser: {
-      parser: "raw",
-      options: {
-        type: "application/json",
-      },
-    },
-  },
-  webhookController.handleStripeWebhook
-);
-```
-
-### Experimental Features
-
-ArkosRouter includes powerful experimental features that have been heavily tested and are ready for production use. We're marking them as experimental to gather community feedback and iterate based on real-world usage.
-
-#### OpenAPI Documentation (Experimental)
-
-Automatically generate OpenAPI/Swagger documentation from your route configurations:
-
-```typescript
-analyticsRouter.post(
-  {
-    route: "/api/analytics/reports",
-    validation: {
-      body: GenerateReportSchema,
-    },
-    experimental: {
-      openapi: {
-        summary: "Generate analytics report",
-        description: "Creates a custom analytics report based on filters",
-        tags: ["Analytics"],
-        responses: {
-          200: {
-            description: "Report generated successfully",
-            content: {
-              "application/json": {
-                schema: ReportResponseSchema,
-              },
-            },
-          },
-          400: {
-            description: "Invalid request parameters",
-          },
-        },
-      },
-    },
-  },
-  analyticsController.generateReport
-);
-```
-
-:::info
-Learn more about OpenAPI documentation in the [OpenAPI/Swagger Guide](/docs/guide/openapi-swagger).
-:::
-
-#### File Uploads (Experimental)
-
-Handle file uploads with ease:
-
-```typescript
-import { ArkosRouter } from "arkos";
-
-const uploadRouter = ArkosRouter();
-
-// Single file upload
-uploadRouter.post(
+router.post(
   {
     route: "/api/upload/avatar",
     authentication: true,
@@ -405,102 +420,119 @@ uploadRouter.post(
         field: "avatar",
         uploadDir: "avatars",
         maxSize: 1024 * 1024 * 5, // 5MB
-        allowedFileTypes: [".jpg", ".png", ".gif"],
-        deleteOnError: true,
+        allowedFileTypes: [".jpg", ".png"],
       },
     },
   },
-  uploadController.uploadAvatar
+  controller.uploadAvatar
 );
-
-// Multiple files
-uploadRouter.post(
-  {
-    route: "/api/upload/gallery",
-    authentication: true,
-    experimental: {
-      uploads: {
-        type: "array",
-        field: "photos",
-        maxCount: 10,
-        uploadDir: "gallery",
-        maxSize: 1024 * 1024 * 10, // 10MB per file
-      },
-    },
-  },
-  uploadController.uploadGallery
-);
-
-export default uploadRouter;
 ```
 
-:::info
-Learn more about file uploads in the [File Upload Guide](/docs/guide/file-uploads).
-:::
-
-### Disabling Routes
-
-You can temporarily disable routes without removing the code:
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
-analyticsRouter.post(
-  {
-    route: "/api/analytics/experimental-feature",
-    disabled: true, // This route won't be registered
-    validation: {
-      body: ExperimentalSchema,
-    },
-  },
-  analyticsController.experimentalFeature
+import multer from "multer";
+
+const upload = multer({
+  dest: "uploads/avatars",
+  limits: { fileSize: 1024 * 1024 * 5 },
+});
+
+router.post(
+  "/api/upload/avatar",
+  authService.authenticate,
+  upload.single("avatar"),
+  controller.uploadAvatar
 );
 ```
 
-## 2. Customizing Prisma Model Routers
+</TabItem>
+</Tabs>
 
-While custom routers create entirely new endpoints, you often need to extend or modify the auto-generated endpoints for your Prisma models. With v1.4.0-beta, Prisma model routers now also benefit from ArkosRouter's enhanced features.
+Learn more: [File Upload Guide](/docs/guide/file-uploads)
 
-### When to Use Prisma Model Router Customization
+#### OpenAPI Documentation
 
-Use this approach when you want to:
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
 
-- Add new endpoints to an existing Prisma model's API
-- Override specific auto-generated endpoints with custom implementation
-- Disable certain auto-generated endpoints
-- Configure validation, authentication, or other features for auto-generated endpoints
-- Create nested routes for related models
+```typescript
+router.post(
+  {
+    route: "/api/reports/generate",
+    validation: {
+      body: GenerateReportSchema,
+    },
+    experimental: {
+      openapi: {
+        summary: "Generate custom report",
+        description: "Creates a report based on the provided parameters",
+        tags: ["Reports"],
+        responses: {
+          200: { description: "Report generated successfully" },
+          400: { description: "Invalid parameters" },
+        },
+      },
+    },
+  },
+  controller.generateReport
+);
+```
 
-:::tip
-Prisma model routers, file-upload routers, and auth routers can all be easily managed and customized using the same ArkosRouter configuration approach. All the features you've learned about custom routers apply here too!
-:::
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
-### Adding Custom Endpoints to Model Routers
+OpenAPI documentation requires manual configuration. See the [OpenAPI Guide](/docs/guide/openapi-swagger) for v1.3 setup.
 
-To add custom endpoints to an existing Prisma model router (such as adding a `/share` endpoint to the auto-generated `/api/posts` routes):
+</TabItem>
+</Tabs>
+
+Learn more: [OpenAPI/Swagger Guide](/docs/guide/openapi-swagger)
+
+### Other ArkosRouter Features
+
+ArkosRouter supports many more features through declarative configuration:
+
+- **Query Parsing**: Automatic type conversion for query parameters
+- **Compression**: Per-route response compression
+- **Custom Body Parsers**: For webhooks and special content types
+- **Error Handling**: Automatic async error catching
+
+See the complete [ArkosRouter API Reference](/docs/api/arkos-router-config) for all available options.
+
+## Customizing Prisma Model Routers
+
+Prisma model routers are auto-generated from your schema, but you can extend them with custom endpoints or modify their behavior.
+
+### Adding Custom Endpoints
+
+To add custom endpoints to an existing model's API:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
 
 ```typescript
 // src/modules/post/post.router.ts
-
 import { ArkosRouter } from "arkos";
 import { RouterConfig } from "arkos";
-import { z } from "zod";
+import z from "zod";
 import postController from "./post.controller";
 
-// Export configuration for the auto-generated endpoints
+// Configuration for auto-generated endpoints
 export const config: RouterConfig = {
-  // Configuration options here (can be empty if you're just adding endpoints)
+  // Leave empty if you're just adding endpoints
 };
 
-// Create an ArkosRouter for custom endpoints
+// Create router for custom endpoints
 const router = ArkosRouter();
 
-// Define validation schema
+// Add custom "share" endpoint → /api/posts/:id/share
 const SharePostSchema = z.object({
   recipients: z.array(z.string().email()),
   message: z.string().max(500).optional(),
 });
 
-// Add a custom "share" endpoint to the posts model
-// This will be accessible at /api/posts/:id/share
 router.post(
   {
     route: "/:id/share",
@@ -511,92 +543,121 @@ router.post(
     },
     validation: {
       body: SharePostSchema,
-      params: z.object({
-        id: z.string(),
-      }),
+      params: z.object({ id: z.string() }),
     },
   },
   postController.sharePost
 );
 
-// Add a custom "featured" endpoint
-// This will be accessible at /api/posts/featured
+// Add custom "featured" endpoint → /api/posts/featured
 router.get(
   {
     route: "/featured",
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 30,
-    },
+    rateLimit: { windowMs: 60000, max: 50 },
   },
   postController.getFeaturedPosts
 );
 
-// Export the router as default
 export default router;
 ```
 
-:::tip Path resolution
-When customizing a Prisma model router, you don't need to include the full path like `/api/posts/share`. Arkos automatically prefixes your paths with the model's base path (`/api/posts` in this example). Just specify the part after the model name (`/share`).
-:::
-
-:::danger Important naming conventions
-The router configuration **must** be exported as `config` (lowercase) and your custom router **must** be exported as the default export. If these naming conventions aren't followed, Arkos won't recognize your customizations.
-:::
-
-### Configuring Auto-Generated Endpoints (New in v1.4.0-beta)
-
-You can now configure individual auto-generated endpoints with all of ArkosRouter's features:
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.router.ts
+import { Router } from "express";
+import { RouterConfig } from "arkos";
+import { authService } from "arkos/services";
+import { handleRequestBodyValidationAndTransformation } from "arkos/middlewares";
+import { SharePostSchema } from "./schemas/share-post.schema";
+import postController from "./post.controller";
+
+export const config: RouterConfig = {};
+
+const router = Router();
+
+const authConfigs = {
+  accessControl: {
+    Share: ["User", "Admin"],
+  },
+};
+
+// /api/posts/:id/share
+router.post(
+  "/:id/share",
+  authService.authenticate,
+  authService.handleAccessControl("Share", "post", authConfigs.accessControl),
+  handleRequestBodyValidationAndTransformation(SharePostSchema),
+  postController.sharePost
+);
+
+// /api/posts/featured
+router.get("/featured", postController.getFeaturedPosts);
+
+export default router;
+```
+
+</TabItem>
+</Tabs>
+
+:::tip Path Resolution
+Paths are automatically prefixed with the model's base path (`/api/posts`). Just specify the part after the model name (`/:id/share`, not `/api/posts/:id/share`).
+:::
+
+:::danger Naming Conventions
+
+- Export configuration as `config` (lowercase)
+- Export router as the default export
+
+If these conventions aren't followed, Arkos won't recognize your customizations.
+:::
+
+### Configuring Auto-Generated Endpoints
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
+
+You can configure individual auto-generated endpoints with all ArkosRouter features:
+
+```typescript
+// src/modules/product/product.router.ts
 import { ArkosRouter } from "arkos";
 import { RouterConfig } from "arkos";
 
 export const config: RouterConfig = {
   // Configure the findMany endpoint
   findMany: {
-    authentication: {
-      resource: "post",
-      action: "View",
-      rule: ["User", "Admin"],
-    },
+    authentication: false, // Public
     rateLimit: {
-      windowMs: 60 * 1000,
+      windowMs: 60000,
       max: 100,
     },
-    queryParser: {
-      parseNull: true,
-      parseBoolean: true,
-    },
   },
 
-  // Configure the createOne endpoint
+  // Configure createOne endpoint
   createOne: {
     authentication: {
-      resource: "post",
+      resource: "product",
       action: "Create",
-      rule: ["Admin", "Editor"],
+      rule: ["Admin", "Manager"],
     },
     rateLimit: {
-      windowMs: 60 * 1000,
-      max: 10,
+      windowMs: 60000,
+      max: 20,
     },
   },
 
-  // Configure the deleteMany endpoint
-  deleteMany: {
+  // Configure deleteOne endpoint
+  deleteOne: {
     authentication: {
-      resource: "post",
+      resource: "product",
       action: "Delete",
       rule: ["Admin"],
     },
-    experimental: {
-      openapi: {
-        summary: "Bulk delete posts",
-        description: "Delete multiple posts by ID",
-        tags: ["Posts - Admin"],
-      },
+    rateLimit: {
+      windowMs: 60000,
+      max: 5,
     },
   },
 };
@@ -604,11 +665,18 @@ export const config: RouterConfig = {
 export default ArkosRouter();
 ```
 
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+Configuration of auto-generated endpoints is not available in v1.3. You must override endpoints to add features. See [Overriding Endpoints](#overriding-auto-generated-endpoints).
+
+</TabItem>
+</Tabs>
+
 ### Disabling Auto-Generated Endpoints
 
-You can selectively disable specific auto-generated endpoints using two approaches:
-
-#### New Approach (Preferred - v1.4.0-beta+)
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -616,7 +684,7 @@ import { ArkosRouter } from "arkos";
 import { RouterConfig } from "arkos";
 
 export const config: RouterConfig = {
-  // Disable specific endpoints individually
+  // Disable specific endpoints
   createMany: {
     disabled: true,
   },
@@ -631,15 +699,20 @@ export const config: RouterConfig = {
 export default ArkosRouter();
 ```
 
-#### Legacy Approach (Backward Compatible)
+:::tip Preferred Syntax
+While `disable: true` and `disable: { createMany: true }` still work for backward compatibility, we recommend the new syntax (`createMany: { disabled: true }`) for consistency.
+:::
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.router.ts
-import { ArkosRouter } from "arkos";
+import { Router } from "express";
 import { RouterConfig } from "arkos";
 
 export const config: RouterConfig = {
-  // Disable all endpoints for this model
+  // Disable all endpoints
   disable: true,
 
   // Or disable specific endpoints
@@ -650,14 +723,13 @@ export const config: RouterConfig = {
   },
 };
 
-export default ArkosRouter();
+export default Router();
 ```
 
-:::tip
-While both approaches work, we recommend using the new syntax (`endpointName: { disabled: true }`) as it's more consistent with the rest of the configuration and allows you to add other options alongside `disabled` if needed in the future.
-:::
+</TabItem>
+</Tabs>
 
-When `disable: true` is set, Arkos will not generate any of the following endpoints:
+When all endpoints are disabled, Arkos will not generate:
 
 - `POST /api/posts`
 - `GET /api/posts/:id`
@@ -670,7 +742,8 @@ When `disable: true` is set, Arkos will not generate any of the following endpoi
 
 ### Configuring Nested Routes
 
-You can specify which nested endpoints to generate and configure them:
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -680,16 +753,15 @@ import { RouterConfig } from "arkos";
 export const config: RouterConfig = {
   parent: {
     model: "author",
-    foreignKeyField: "authorId", // Default is parent model name + Id
-    // Only generate these specific nested endpoints
+    foreignKeyField: "authorId",
     endpoints: ["findMany", "findOne", "createOne"],
   },
 
-  // Configure parent endpoints with ArkosRouter features
+  // Configure parent endpoints
   findMany: {
     authentication: true,
     rateLimit: {
-      windowMs: 60 * 1000,
+      windowMs: 60000,
       max: 50,
     },
   },
@@ -698,35 +770,57 @@ export const config: RouterConfig = {
 export default ArkosRouter();
 ```
 
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/modules/post/post.router.ts
+import { Router } from "express";
+import { RouterConfig } from "arkos";
+
+export const config: RouterConfig = {
+  parent: {
+    model: "author",
+    foreignKeyField: "authorId",
+    endpoints: ["findMany", "findOne", "createOne"],
+  },
+};
+
+export default Router();
+```
+
+</TabItem>
+</Tabs>
+
 ### Overriding Auto-Generated Endpoints
 
-You can completely replace an auto-generated endpoint with your own implementation:
+To completely replace an auto-generated endpoint:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
 
 ```typescript
 // src/modules/post/post.router.ts
 import { ArkosRouter } from "arkos";
 import { RouterConfig } from "arkos";
-import { z } from "zod";
+import z from "zod";
 import { prisma } from "../../utils/prisma";
 
 export const config: RouterConfig = {
-  // Disable the endpoint you're overriding
   findMany: {
-    disabled: true,
+    disabled: true, // Disable the endpoint you're overriding
   },
 };
 
 const router = ArkosRouter();
 
-// Define custom query schema
 const PostQuerySchema = z.object({
   published: z.boolean().optional(),
   authorId: z.string().optional(),
   tag: z.string().optional(),
 });
 
-// Override the default GET /api/posts endpoint
-// No need to specify the full path - just use "/"
+// Override GET /api/posts
 router.get(
   {
     route: "/",
@@ -735,12 +829,11 @@ router.get(
       query: PostQuerySchema,
     },
     rateLimit: {
-      windowMs: 60 * 1000,
+      windowMs: 60000,
       max: 100,
     },
   },
   async (req, res) => {
-    // Custom implementation for listing posts
     const { published, authorId, tag } = req.query;
 
     const posts = await prisma.post.findMany({
@@ -751,16 +844,10 @@ router.get(
       },
       include: {
         author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
         },
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     });
 
     res.json(posts);
@@ -770,895 +857,157 @@ router.get(
 export default router;
 ```
 
-:::warning Important
-When overriding auto-generated endpoints, you gain full control but must manually implement features like validation, authentication, and error handling using ArkosRouter's configuration options. The example above shows how to do this properly.
-:::
-
-## Migrating from Express Router to ArkosRouter
-
-Migrating from Express Router to ArkosRouter is straightforward. Here's how to upgrade your existing custom routers:
-
-### Before (Express Router)
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
-// src/routers/analytics.router.ts
+// src/modules/post/post.router.ts
 import { Router } from "express";
-import { authService } from "arkos/services";
-import { handleRequestBodyValidationAndTransformation } from "arkos/middlewares";
-import { GenerateReportSchema } from "../schemas/analytics.schema";
-import analyticsController from "../controllers/analytics.controller";
-
-const analyticsRouter = Router();
-
-const authConfigs = {
-  accessControl: {
-    View: ["Analyst", "Admin"],
-    GenerateReport: ["Analyst", "Admin"],
-  },
-};
-
-analyticsRouter.get(
-  "/api/analytics/dashboard",
-  authService.authenticate,
-  authService.handleAccessControl(
-    "View",
-    "analytics",
-    authConfigs.accessControl
-  ),
-  analyticsController.getDashboard
-);
-
-analyticsRouter.post(
-  "/api/analytics/reports",
-  authService.authenticate,
-  authService.handleAccessControl(
-    "GenerateReport",
-    "analytics",
-    authConfigs.accessControl
-  ),
-  handleRequestBodyValidationAndTransformation(GenerateReportSchema),
-  analyticsController.generateReport
-);
-
-export default analyticsRouter;
-```
-
-### After (ArkosRouter)
-
-```typescript
-// src/routers/analytics.router.ts
-import { ArkosRouter } from "arkos";
-import { GenerateReportSchema } from "../schemas/analytics.schema";
-import analyticsController from "../controllers/analytics.controller";
-
-const analyticsRouter = ArkosRouter();
-
-// All middleware logic moved to configuration
-analyticsRouter.get(
-  {
-    route: "/api/analytics/dashboard",
-    authentication: {
-      resource: "analytics",
-      action: "View",
-      rule: ["Analyst", "Admin"],
-    },
-  },
-  analyticsController.getDashboard
-);
-
-analyticsRouter.post(
-  {
-    route: "/api/analytics/reports",
-    authentication: {
-      resource: "analytics",
-      action: "GenerateReport",
-      rule: ["Analyst", "Admin"],
-    },
-    validation: {
-      body: GenerateReportSchema,
-    },
-  },
-  analyticsController.generateReport
-);
-
-export default analyticsRouter;
-```
-
-### Key Migration Benefits
-
-1. **Cleaner Code**: Middleware chains become declarative configuration
-2. **Type Safety**: Full TypeScript support for configuration objects
-3. **Auto Documentation**: OpenAPI docs generated automatically
-4. **Consistency**: Same configuration style across all routes
-5. **Less Boilerplate**: No need to import and chain middleware manually
-
-## Full Example: Feature-Complete Custom Router
-
-Here's a comprehensive example showing multiple ArkosRouter features working together:
-
-```typescript
-// src/routers/blog.router.ts
-import { ArkosRouter } from "arkos";
-import { z } from "zod";
-import blogController from "../controllers/blog.controller";
-
-const blogRouter = ArkosRouter();
-
-// Validation schemas
-const CreatePostSchema = z.object({
-  title: z.string().min(3).max(200),
-  content: z.string().min(10),
-  excerpt: z.string().max(500).optional(),
-  tags: z.array(z.string()).max(10).optional(),
-  publishAt: z.string().datetime().optional(),
-});
-
-const UpdatePostSchema = CreatePostSchema.partial();
-
-const PostQuerySchema = z.object({
-  page: z.string().transform(Number).pipe(z.number().positive()).optional(),
-  limit: z.string().transform(Number).pipe(z.number().max(100)).optional(),
-  tag: z.string().optional(),
-  search: z.string().optional(),
-});
-
-// Public endpoint - list posts with pagination
-blogRouter.get(
-  {
-    route: "/api/blog/posts",
-    validation: {
-      query: PostQuerySchema,
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 60,
-    },
-    compression: {
-      level: 6,
-    },
-    queryParser: {
-      parseNumber: true,
-      parseBoolean: true,
-    },
-    experimental: {
-      openapi: {
-        summary: "List blog posts",
-        description: "Get a paginated list of published blog posts",
-        tags: ["Blog"],
-        responses: {
-          200: {
-            description: "List of blog posts",
-          },
-        },
-      },
-    },
-  },
-  blogController.listPosts
-);
-
-// Public endpoint - get single post
-blogRouter.get(
-  {
-    route: "/api/blog/posts/:id",
-    validation: {
-      params: z.object({
-        id: z.string(),
-      }),
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 100,
-    },
-    experimental: {
-      openapi: {
-        summary: "Get blog post",
-        description: "Get a single blog post by ID",
-        tags: ["Blog"],
-      },
-    },
-  },
-  blogController.getPost
-);
-
-// Protected endpoint - create post
-blogRouter.post(
-  {
-    route: "/api/blog/posts",
-    authentication: {
-      resource: "blog-post",
-      action: "Create",
-      rule: ["Editor", "Admin"],
-    },
-    validation: {
-      body: CreatePostSchema,
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 10,
-    },
-    experimental: {
-      openapi: {
-        summary: "Create blog post",
-        description: "Create a new blog post (requires authentication)",
-        tags: ["Blog - Admin"],
-        responses: {
-          201: {
-            description: "Post created successfully",
-          },
-          400: {
-            description: "Invalid request data",
-          },
-          401: {
-            description: "Unauthorized",
-          },
-          403: {
-            description: "Forbidden - insufficient permissions",
-          },
-        },
-      },
-    },
-  },
-  blogController.createPost
-);
-
-// Protected endpoint - update post
-blogRouter.patch(
-  {
-    route: "/api/blog/posts/:id",
-    authentication: {
-      resource: "blog-post",
-      action: "Update",
-      rule: ["Editor", "Admin"],
-    },
-    validation: {
-      params: z.object({
-        id: z.string(),
-      }),
-      body: UpdatePostSchema,
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 20,
-    },
-    experimental: {
-      openapi: {
-        summary: "Update blog post",
-        description: "Update an existing blog post",
-        tags: ["Blog - Admin"],
-      },
-    },
-  },
-  blogController.updatePost
-);
-
-// Protected endpoint - delete post
-blogRouter.delete(
-  {
-    route: "/api/blog/posts/:id",
-    authentication: {
-      resource: "blog-post",
-      action: "Delete",
-      rule: ["Admin"],
-    },
-    validation: {
-      params: z.object({
-        id: z.string(),
-      }),
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 5,
-    },
-    experimental: {
-      openapi: {
-        summary: "Delete blog post",
-        description: "Delete a blog post (Admin only)",
-        tags: ["Blog - Admin"],
-      },
-    },
-  },
-  blogController.deletePost
-);
-
-// Protected endpoint - upload featured image
-blogRouter.post(
-  {
-    route: "/api/blog/posts/:id/featured-image",
-    authentication: {
-      resource: "blog-post",
-      action: "Update",
-      rule: ["Editor", "Admin"],
-    },
-    validation: {
-      params: z.object({
-        id: z.string(),
-      }),
-    },
-    experimental: {
-      uploads: {
-        type: "single",
-        field: "image",
-        uploadDir: "blog-images",
-        maxSize: 1024 * 1024 * 5, // 5MB
-        allowedFileTypes: [".jpg", ".jpeg", ".png", ".webp"],
-        deleteOnError: true,
-        attachToBody: "url",
-      },
-      openapi: {
-        summary: "Upload featured image",
-        description: "Upload a featured image for a blog post",
-        tags: ["Blog - Admin"],
-      },
-    },
-  },
-  blogController.uploadFeaturedImage
-);
-
-export default blogRouter;
-```
-
-Then register in your app:
-
-```typescript
-// src/app.ts
-import arkos from "arkos";
-import blogRouter from "./routers/blog.router";
-
-arkos.init({
-  routers: {
-    additional: [blogRouter],
-  },
-  authentication: {
-    mode: "static-rbac", // or "dynamic-rbac"
-  },
-  validation: {
-    resolver: "zod",
-  },
-  // other configs
-});
-```
-
-## Full Example: Enhanced Prisma Model Router
-
-Here's how to leverage ArkosRouter's features in a Prisma model router:
-
-```typescript
-// src/modules/product/product.router.ts
-import { ArkosRouter } from "arkos";
 import { RouterConfig } from "arkos";
-import { z } from "zod";
-import productController from "./product.controller";
+import { prisma } from "../../utils/prisma";
 
 export const config: RouterConfig = {
-  // Configure auto-generated endpoints
-  findMany: {
-    authentication: false, // Public endpoint
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 100,
-    },
-    queryParser: {
-      parseNull: true,
-      parseBoolean: true,
-      parseNumber: true,
-    },
-    experimental: {
-      openapi: {
-        summary: "List products",
-        description: "Get a list of all products with optional filtering",
-        tags: ["Products"],
-      },
-    },
-  },
-
-  findOne: {
-    authentication: false,
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 200,
-    },
-    experimental: {
-      openapi: {
-        summary: "Get product",
-        description: "Get a single product by ID",
-        tags: ["Products"],
-      },
-    },
-  },
-
-  createOne: {
-    authentication: {
-      resource: "product",
-      action: "Create",
-      rule: ["Admin", "ProductManager"],
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 20,
-    },
-    experimental: {
-      openapi: {
-        summary: "Create product",
-        description: "Create a new product (requires authentication)",
-        tags: ["Products - Admin"],
-      },
-    },
-  },
-
-  updateOne: {
-    authentication: {
-      resource: "product",
-      action: "Update",
-      rule: ["Admin", "ProductManager"],
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 30,
-    },
-  },
-
-  deleteOne: {
-    authentication: {
-      resource: "product",
-      action: "Delete",
-      rule: ["Admin"],
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 10,
-    },
-  },
-
-  // Disable bulk operations
-  createMany: {
-    disabled: true,
-  },
-  updateMany: {
-    disabled: true,
-  },
-  deleteMany: {
-    disabled: true,
-  },
-
-  // Configure parent relationship
-  parent: {
-    model: "category",
-    foreignKeyField: "categoryId",
-    endpoints: ["findMany", "findOne"],
+  disable: {
+    findMany: true,
   },
 };
 
-// Create custom endpoints
-const router = ArkosRouter();
+const router = Router();
 
-// Custom search endpoint
-const SearchProductsSchema = z.object({
-  q: z.string().min(2),
-  category: z.string().optional(),
-  minPrice: z.number().positive().optional(),
-  maxPrice: z.number().positive().optional(),
-  inStock: z.boolean().optional(),
+router.get("/", async (req, res) => {
+  const publishedPosts = await prisma.post.findMany({
+    where: { published: true },
+  });
+
+  res.json(publishedPosts);
 });
-
-router.get(
-  {
-    route: "/search",
-    validation: {
-      query: SearchProductsSchema,
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 50,
-    },
-    experimental: {
-      openapi: {
-        summary: "Search products",
-        description: "Advanced product search with filters",
-        tags: ["Products"],
-      },
-    },
-  },
-  productController.searchProducts
-);
-
-// Custom bulk discount endpoint
-const BulkDiscountSchema = z.object({
-  productIds: z.array(z.string()).min(1).max(100),
-  discountPercent: z.number().min(0).max(100),
-  expiresAt: z.string().datetime().optional(),
-});
-
-router.post(
-  {
-    route: "/bulk-discount",
-    authentication: {
-      resource: "product",
-      action: "BulkDiscount",
-      rule: ["Admin", "ProductManager"],
-    },
-    validation: {
-      body: BulkDiscountSchema,
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 5,
-    },
-    experimental: {
-      openapi: {
-        summary: "Apply bulk discount",
-        description: "Apply discount to multiple products at once",
-        tags: ["Products - Admin"],
-      },
-    },
-  },
-  productController.applyBulkDiscount
-);
-
-// Custom image upload endpoint
-router.post(
-  {
-    route: "/:id/images",
-    authentication: {
-      resource: "product",
-      action: "Update",
-      rule: ["Admin", "ProductManager"],
-    },
-    validation: {
-      params: z.object({
-        id: z.string(),
-      }),
-    },
-    experimental: {
-      uploads: {
-        type: "array",
-        field: "images",
-        maxCount: 5,
-        uploadDir: "products",
-        maxSize: 1024 * 1024 * 3, // 3MB per image
-        allowedFileTypes: [".jpg", ".jpeg", ".png", ".webp"],
-        deleteOnError: true,
-        attachToBody: "url",
-      },
-      openapi: {
-        summary: "Upload product images",
-        description: "Upload multiple images for a product",
-        tags: ["Products - Admin"],
-      },
-    },
-  },
-  productController.uploadProductImages
-);
 
 export default router;
 ```
 
-## Comparing the Two Approaches
+</TabItem>
+</Tabs>
 
-| Feature                      | Custom Routers                      | Customizing Prisma Model Routers                             |
-| ---------------------------- | ----------------------------------- | ------------------------------------------------------------ |
-| **Purpose**                  | Create entirely new endpoints       | Extend or modify existing model endpoints                    |
-| **Path Base**                | You define the full path            | Based on the model name (e.g., `/api/products`)              |
-| **Registration**             | Added to `routers.additional` array | Auto-detected based on file location                         |
-| **File Location**            | Anywhere (typically `src/routers`)  | Must be in `src/modules/model-name/model-name.router.ts`     |
-| **Built-in Features**        | All ArkosRouter features available  | All ArkosRouter features available (same as custom routers)  |
-| **Auto-generated Endpoints** | None                                | Can configure, disable, or override auto-generated endpoints |
-| **Configuration Export**     | Not required                        | Must export `config` object and default router               |
-
-:::tip Key Insight
-As of v1.4.0-beta, **both approaches** now use ArkosRouter and have access to the same powerful features: validation, authentication, rate limiting, OpenAPI docs, file uploads, and more. The main difference is whether you're creating new endpoints from scratch or working with auto-generated model endpoints.
+:::warning Important
+When overriding endpoints, you must manually implement features like validation, authentication, and error handling. The example above shows how to do this using ArkosRouter's configuration options.
 :::
 
-## Best Practices
+## Comparison
 
-### 1. Choose the Right Approach
+| Feature                      | Custom Routers                                             | Customizing Prisma Model Routers                             |
+| ---------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| **Purpose**                  | Create entirely new endpoints                              | Extend or modify existing model endpoints                    |
+| **Path Base**                | You define the full path                                   | Based on the model name (e.g., `/api/products`)              |
+| **Registration**             | Added to `use` array (v1.4) or `routers.additional` (v1.3) | Auto-detected based on file location                         |
+| **File Location**            | Anywhere (typically `src/routers`)                         | Must be in `src/modules/{model-name}/{model-name}.router.ts` |
+| **Built-in Features**        | All ArkosRouter features available                         | All ArkosRouter features available                           |
+| **Auto-generated Endpoints** | None                                                       | Can configure, disable, or override                          |
+| **Configuration Export**     | Not required                                               | Must export `config` and default router                      |
 
-- **Use Custom Routers for**: Standalone features, complex business logic, cross-model operations
-- **Use Prisma Model Customization for**: Extending model APIs, configuring auto-generated endpoints, model-specific operations
+## Common Patterns
 
-### 2. Consistent Configuration
-
-Use ArkosRouter's declarative configuration style consistently:
+### Pattern 1: Adding a Share Endpoint
 
 ```typescript
-// ✅ Good - declarative configuration
+// src/modules/post/post.router.ts
 router.post(
   {
-    route: "/api/reports",
+    route: "/:id/share",
     authentication: {
-      resource: "report",
-      action: "Create",
-      rule: ["Admin"],
+      resource: "post",
+      action: "Share",
+      rule: ["User", "Admin"],
     },
     validation: {
-      body: CreateReportSchema,
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 10,
+      body: z.object({
+        recipients: z.array(z.string().email()),
+      }),
     },
   },
-  controller.createReport
-);
-
-// ❌ Avoid - mixing ArkosRouter with manual middleware chains
-router.post(
-  { route: "/api/reports" },
-  authService.authenticate,
-  authService.handleAccessControl("Create", "report"),
-  validator(CreateReportSchema),
-  controller.createReport
+  postController.sharePost
 );
 ```
 
-### 3. Favor Zod for Validation
-
-While both Zod and class-validator are supported, Zod is recommended for its:
-
-- Better type inference
-- Composability
-- Runtime transformation capabilities
-- Smaller bundle size
+### Pattern 2: Custom Search Endpoint
 
 ```typescript
-// ✅ Recommended - Zod
-const UserSchema = z.object({
-  email: z.string().email(),
-  age: z.number().int().positive().optional(),
-});
-
-// ✅ Also supported - class-validator
-class CreateUserDto {
-  @IsEmail()
-  email: string;
-
-  @IsOptional()
-  @IsInt()
-  @IsPositive()
-  age?: number;
-}
-```
-
-### 4. Organize Complex Validation
-
-For complex schemas, create dedicated schema files:
-
-```typescript
-// src/schemas/order.schemas.ts
-import { z } from "zod";
-
-export const OrderItemSchema = z.object({
-  productId: z.string(),
-  quantity: z.number().int().positive(),
-  customization: z.string().optional(),
-});
-
-export const CreateOrderSchema = z.object({
-  items: z.array(OrderItemSchema).min(1).max(50),
-  shippingAddress: z.object({
-    street: z.string(),
-    city: z.string(),
-    zipCode: z.string(),
-    country: z.string(),
-  }),
-  paymentMethod: z.enum(["card", "paypal", "bank_transfer"]),
-  notes: z.string().max(500).optional(),
-});
-
-export const UpdateOrderSchema = CreateOrderSchema.partial();
-```
-
-### 5. Secure Your Routes Properly
-
-Always add authentication and appropriate rate limiting for sensitive operations:
-
-```typescript
-// ✅ Good - protected admin endpoint
-router.delete(
+// src/modules/product/product.router.ts
+router.get(
   {
-    route: "/api/users/:id",
-    authentication: {
-      resource: "user",
-      action: "Delete",
-      rule: ["Admin"],
-    },
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 5,
-    },
-  },
-  userController.deleteUser
-);
-
-// ❌ Bad - unprotected sensitive operation
-router.delete(
-  {
-    route: "/api/users/:id",
-  },
-  userController.deleteUser
-);
-```
-
-### 6. Document Your APIs
-
-Use the experimental OpenAPI feature to generate comprehensive API documentation:
-
-```typescript
-router.post(
-  {
-    route: "/api/products",
+    route: "/search",
     validation: {
-      body: CreateProductSchema,
+      query: z.object({
+        q: z.string().min(2),
+        category: z.string().optional(),
+        minPrice: z.number().optional(),
+        maxPrice: z.number().optional(),
+      }),
     },
-    experimental: {
-      openapi: {
-        summary: "Create a new product",
-        description:
-          "Creates a new product in the catalog with the provided details",
-        tags: ["Products", "Admin"],
-        responses: {
-          201: {
-            description: "Product created successfully",
-          },
-          400: {
-            description: "Invalid input data",
-          },
-          401: {
-            description: "Authentication required",
-          },
-          403: {
-            description: "Insufficient permissions",
-          },
-        },
-      },
+    rateLimit: {
+      windowMs: 60000,
+      max: 60,
     },
   },
-  productController.createProduct
+  productController.search
 );
 ```
 
-### 7. Use Consistent Path Naming
-
-Follow RESTful conventions and maintain consistency:
+### Pattern 3: Admin-Only Bulk Operation
 
 ```typescript
-// ✅ Good - RESTful paths
-router.get({ route: "/api/products" }, ...);
-router.get({ route: "/api/products/:id" }, ...);
-router.post({ route: "/api/products" }, ...);
-router.patch({ route: "/api/products/:id" }, ...);
-router.delete({ route: "/api/products/:id" }, ...);
-
-// Custom actions as sub-resources
-router.post({ route: "/api/products/:id/publish" }, ...);
-router.post({ route: "/api/products/:id/archive" }, ...);
-
-// ❌ Avoid - inconsistent naming
-router.get({ route: "/api/getProducts" }, ...);
-router.post({ route: "/api/product-create" }, ...);
-router.patch({ route: "/api/updateProduct/:id" }, ...);
-```
-
-### 8. Configure Rate Limits Appropriately
-
-Different operations need different rate limits:
-
-```typescript
-export const config: RouterConfig = {
-  // Public read operations - generous limits
-  findMany: {
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 100,
-    },
-  },
-  findOne: {
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 200,
-    },
-  },
-
-  // Write operations - moderate limits
-  createOne: {
-    authentication: true,
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 20,
-    },
-  },
-  updateOne: {
-    authentication: true,
-    rateLimit: {
-      windowMs: 60 * 1000,
-      max: 30,
-    },
-  },
-
-  // Destructive operations - strict limits
-  deleteOne: {
+// src/routers/admin.router.ts
+router.post(
+  {
+    route: "/api/admin/products/bulk-update",
     authentication: {
       resource: "product",
-      action: "Delete",
+      action: "BulkUpdate",
       rule: ["Admin"],
     },
+    validation: {
+      body: z.object({
+        productIds: z.array(z.string()).min(1).max(100),
+        changes: z.object({
+          price: z.number().positive().optional(),
+          stock: z.number().int().optional(),
+        }),
+      }),
+    },
     rateLimit: {
-      windowMs: 60 * 1000,
+      windowMs: 60000,
       max: 5,
     },
   },
-};
-```
-
-### 9. Handle File Uploads Carefully
-
-Always configure proper validation and limits for file uploads:
-
-```typescript
-router.post(
-  {
-    route: "/api/upload/document",
-    authentication: true,
-    experimental: {
-      uploads: {
-        type: "single",
-        field: "document",
-        uploadDir: "documents",
-        maxSize: 1024 * 1024 * 10, // 10MB
-        allowedFileTypes: [".pdf", ".doc", ".docx"],
-        deleteOnError: true, // Clean up on failure
-        attachToBody: "pathname", // or "url" based on your needs
-      },
-    },
-  },
-  uploadController.handleDocument
+  adminController.bulkUpdateProducts
 );
 ```
 
-### 10. Migrate Incrementally
+## Middleware Order
 
-When upgrading existing projects:
+Understanding middleware execution order helps when debugging:
 
-1. Start with new custom routers using ArkosRouter
-2. Migrate heavily-used routes first to gain experience
-3. Update Prisma model router configs to use new syntax
-4. Keep legacy Express Router code until you're confident
-5. Test thoroughly before removing old code
+1. Built-in Arkos middlewares (body parser, CORS, etc.)
+2. Auto-generated Prisma model routers
+3. Custom routers from the `use` array (v1.4) or `routers.additional` (v1.3)
+4. Route-specific middlewares (defined in ArkosRouter config or Express chains)
 
-## Configuration Reference
-
-For complete details on all available configuration options, refer to the [ArkosRouter Configuration Reference](/docs/api/arkos-router-config).
-
-Quick reference for common options:
-
-- **`route`**: The endpoint path (required)
-- **`disabled`**: Temporarily disable the route
-- **`authentication`**: Configure authentication and RBAC
-- **`validation`**: Validate query, body, params, headers, cookies
-- **`rateLimit`**: Rate limiting configuration
-- **`compression`**: Response compression settings
-- **`queryParser`**: Query parameter parsing options
-- **`bodyParser`**: Custom body parser configuration
-- **`experimental.openapi`**: OpenAPI/Swagger documentation
-- **`experimental.uploads`**: File upload handling
+Custom routers cannot override built-in routes because they're registered later in the stack.
 
 ## Next Steps
 
-Now that you understand ArkosRouter, explore these related topics:
+Now that you understand custom routing, explore related topics:
 
-- **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Deep dive into validation with Zod and class-validator
-- **[Authentication System](/docs/core-concepts/authentication-system)** - Learn about Static and Dynamic RBAC
-- **[OpenAPI/Swagger Documentation](/docs/guide/openapi-swagger)** - Auto-generate API documentation
-- **[File Upload Guide](/docs/guide/file-uploads)** - Handle file uploads with ease
-- **[Built-in Middlewares](/docs/guide/built-in-middlewares)** - Discover available middleware
-- **[Error Handling](/docs/guide/error-handling)** - Proper error handling strategies
-- **[ArkosRouter API Reference](/docs/api/arkos-router-config)** - Complete configuration reference
+- **[ArkosRouter API Reference](/docs/api/arkos-router-config)** - Complete configuration options
+- **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Zod and class-validator
+- **[Authentication System](/docs/core-concepts/authentication-system)** - Static and Dynamic RBAC
+- **[File Upload Guide](/docs/guide/file-uploads)** - Handle file uploads
+- **[OpenAPI/Swagger Guide](/docs/guide/openapi-swagger)** - Auto-generate API docs
+- **[Built-in Middlewares](/docs/guide/built-in-middlewares)** - Available middleware options
 
 ## Getting Help
 
-If you encounter issues or have questions:
+If you encounter issues:
 
 - Check the [GitHub Issues](https://github.com/your-org/arkos/issues)
 - Join our [Discord Community](https://discord.gg/arkos)
 - Read the [FAQ](/docs/faq)
-
-Happy routing! 🚀
