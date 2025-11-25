@@ -262,7 +262,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
       `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`
     );
 
-  const validatorFn: (validator: any, data: any) => Promise<any> =
+  const validatorFn: (validator: any, data: any, options: any) => Promise<any> =
     validationConfig?.resolver == "zod" ? validateSchema : validateDto;
   const validatorsKey: ("body" | "query" | "params")[] = [
     "body",
@@ -341,7 +341,12 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
             { [key]: req[key] }
           );
 
-        if (validator) req[key] = await validatorFn(validator, req[key]);
+        if (validator)
+          req[key] = await validatorFn(
+            validator,
+            req[key],
+            arkosConfig.validation?.validationOptions
+          );
       }
 
       next();
