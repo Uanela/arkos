@@ -370,7 +370,8 @@ export async function importModuleComponents(
       : "dtos"
     : null;
 
-  const [_, validators] = await Promise.all([
+  const [validators] = await Promise.all([
+    validationSubdir && processSubdir(modelName, validationSubdir),
     ...Object.entries(fileStructure.core).map(async ([key, fileName]) => {
       if (
         ["createMany", "findMany", "findOne", "updateMany"].includes(key) ||
@@ -418,7 +419,6 @@ export async function importModuleComponents(
         killServerChildProcess();
       }
     }),
-    validationSubdir && processSubdir(modelName, validationSubdir),
   ]);
 
   prismaModelsModules[pascalCase(modelName)] = {
