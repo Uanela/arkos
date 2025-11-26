@@ -290,7 +290,7 @@ export class AuthService {
     else if (accessControl[action])
       authorizedRoles = Array.isArray(accessControl[action])
         ? accessControl[action]
-        : accessControl[action].roles;
+        : accessControl[action].roles || [];
 
     const userRoles = Array.isArray(user?.roles) ? user.roles : [user.role];
 
