@@ -148,7 +148,6 @@ describe("EmailService", () => {
             user: "env@test.com",
             pass: "envpass123",
           },
-          name: "Env Service",
         })
       );
     });
