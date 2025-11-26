@@ -397,7 +397,6 @@ describe("EmailService", () => {
       await emailService.send(testEmailOptions);
       await emailService.send(testEmailOptions);
 
-      // Should only create transporter once
       expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
     });
   });
@@ -412,19 +411,15 @@ describe("EmailService", () => {
         host: "smtp2.example.com",
       });
 
-      // Should create two different transporters
       expect(nodemailer.createTransport).toHaveBeenCalledTimes(2);
     });
   });
 
-  // New tests for the added functionality
   describe("updateConfig", () => {
     it("should update the custom configuration and reset transporter", async () => {
-      // First, use default config
       await emailService.send(testEmailOptions);
       expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
 
-      // Update config
       const newConfig: SMTPConnectionOptions = {
         host: "updated.smtp.com",
         port: 2525,
@@ -436,10 +431,8 @@ describe("EmailService", () => {
 
       emailService.updateConfig(newConfig);
 
-      // Send email with updated config
       await emailService.send(testEmailOptions);
 
-      // Should create a new transporter
       expect(nodemailer.createTransport).toHaveBeenCalledTimes(2);
       expect(nodemailer.createTransport).toHaveBeenLastCalledWith(
         expect.objectContaining({
@@ -467,7 +460,6 @@ describe("EmailService", () => {
 
       const staticEmailService = EmailService.create(staticConfig);
 
-      // Send email to trigger using the config
       await staticEmailService.send(testEmailOptions);
 
       expect(nodemailer.createTransport).toHaveBeenCalledWith(
@@ -481,7 +473,7 @@ describe("EmailService", () => {
         })
       );
 
-      // Should not have used Arkos config
+      expect(mockVerify).not.toHaveBeenCalled();
       expect(getArkosConfig).not.toHaveBeenCalled();
     });
 

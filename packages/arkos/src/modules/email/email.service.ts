@@ -135,7 +135,7 @@ export class EmailService {
   public async send(
     options: EmailOptions,
     connectionOptions?: SMTPConnectionOptions,
-    skipVerification: boolean = false
+    skipVerification: boolean = true
   ): Promise<{ success: boolean; messageId?: string } & Record<string, any>> {
     const config = this.getEmailConfig();
     const transporter = connectionOptions
