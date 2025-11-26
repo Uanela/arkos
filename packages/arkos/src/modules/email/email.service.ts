@@ -111,10 +111,13 @@ export class EmailService {
    * @returns A configured nodemailer transporter
    */
   private getTransporter(customConfig?: SMTPConnectionOptions): Transporter {
-    if (customConfig) return nodemailer.createTransport(customConfig);
+    if (customConfig) {
+      const { name, ...config } = customConfig;
+      return nodemailer.createTransport(config);
+    }
 
     if (!this.transporter) {
-      const config = this.getEmailConfig();
+      const { name, ...config } = this.getEmailConfig() || {};
       this.transporter = nodemailer.createTransport(config);
     }
     return this.transporter;
@@ -127,13 +130,13 @@ export class EmailService {
    * @param {EmailOptions} options - The options for the email to be sent.
    * @param {SMTPConnectionOptions} [connectionOptions] - Optional custom connection settings.
    * @param {boolean} [skipVerification=false] - Whether to skip connection verification.
-   * @returns {Promise<{ success: boolean; messageId?: string }>} Result with message ID on success.
+   * @returns {Promise<{ success: boolean; messageId?: string } & Record<string, any>>} Result with message ID on success.
    */
   public async send(
     options: EmailOptions,
     connectionOptions?: SMTPConnectionOptions,
-    skipVerification = false
-  ): Promise<{ success: boolean; messageId?: string }> {
+    skipVerification: boolean = false
+  ): Promise<{ success: boolean; messageId?: string } & Record<string, any>> {
     const config = this.getEmailConfig();
     const transporter = connectionOptions
       ? this.getTransporter(connectionOptions)
@@ -144,18 +147,16 @@ export class EmailService {
 
     if (connectionOptions || !skipVerification) {
       const isConnected = await this.verifyConnection(transporter);
-
       if (!isConnected) throw new Error("Failed to connect to email server");
     }
 
-    // Send the email
     const info = await transporter.sendMail({
       ...options,
       from: fromAddress,
       text: options?.text || convert(options.html),
     });
 
-    return { success: true, messageId: info.messageId };
+    return { success: true, ...info };
   }
 
   /**
