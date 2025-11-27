@@ -2,6 +2,9 @@
 sidebar_position: 6
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Accessing The Express App
 
 **Arkos** provides a streamlined API development experience while still giving you full access to the underlying Express.js application. This guide explains the various ways you can access and customize the Express app instance in your Arkos projects.
@@ -20,31 +23,29 @@ While **Arkos** provides a robust set of built-in features, there are scenarios 
 
 ### 1. Using the `configureApp` Hook
 
-The most straightforward method to access the Express app is through the `configureApp` hook in your Arkos configuration:
+The most straightforward method to access the Express app is through the `configureApp` hook in your Arkos initialization:
 
-```ts
+```typescript
 // src/app.ts
-
 import arkos from "arkos";
 import helmet from "helmet";
 
 arkos.init({
-    configureApp: async (app) => {
-        // Direct access to Express app before any Arkos middleware is applied
-        app.set("trust proxy", true);
-        app.use(helmet());
+  configureApp: async (app) => {
+    // Direct access to Express app before any Arkos middleware is applied
+    app.set("trust proxy", true);
+    app.use(helmet());
 
-        // Set Express-specific properties
-        app.locals.title = "My Arkos Application";
-        app.set("view engine", "ejs");
+    // Set Express-specific properties
+    app.locals.title = "My Arkos Application";
+    app.set("view engine", "ejs");
 
-        // Register early middleware
-        app.use((req, res, next) => {
-            // Custom middleware logic
-            next();
-        });
-    },
-    // Other Arkos configurations
+    // Register early middleware
+    app.use((req, res, next) => {
+      // Custom middleware logic
+      next();
+    });
+  },
 });
 ```
 
@@ -60,28 +61,52 @@ As mentioned in the warning above, it's not recommended to call `app.listen` ins
 
 You can also access the Express app through the Arkos instance after initialization:
 
-```ts
+```typescript
 // src/app.ts
 import arkos from "arkos";
 
 // Initialize Arkos
 const app = await arkos.init({
-    port: undefined, // so that Arkos won't create an HTTP server [recommended for custom server setup]
-    // Arkos configurations
+  // Arkos configurations (most configs now in arkos.config.ts)
 });
 
 // Access the Express app instance
-
-// Now you can use the Express app
 app.set("view engine", "pug");
 app.use("/special-route", specialMiddleware);
 
-// If port is undefined, you need to create your own HTTP server or call app.listen
-app.listen(process.env.HOST || 8000, () =>
-    console.info(`Server waiting on localhost:8000`)
-);
+// App is already listening if port is configured in arkos.config.ts
+```
 
-// See 'Creating Your Own HTTP Server' section
+:::info Configuration Split
+In v1.4.0+, most static configurations like `port` are defined in `arkos.config.ts`. The `arkos.init()` method is primarily for runtime setup.
+:::
+
+If you want to control server creation yourself:
+
+```typescript
+// arkos.config.ts
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  port: undefined, // Prevent Arkos from creating HTTP server
+  // Other static configurations
+};
+
+export default arkosConfig;
+```
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+
+const app = await arkos.init({
+  // Runtime configurations
+});
+
+// Now you control server creation
+app.listen(process.env.PORT || 8000, () => {
+  console.log(`Server waiting on localhost:${process.env.PORT || 8000}`);
+});
 ```
 
 This approach is useful when you need to perform configurations after Arkos has been fully initialized but want to control the server creation and listening yourself.
@@ -92,34 +117,71 @@ This approach is useful when you need to perform configurations after Arkos has 
 
 Arkos provides a `configureServer` hook that gives you access to the HTTP server before it starts listening:
 
-```ts
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
 // src/app.ts
 import arkos from "arkos";
 import { Server } from "socket.io";
 
 arkos.init({
-    configureServer: async (server) => {
-        // Access to the HTTP server before it starts listening
-        // You can attach WebSockets or perform other server configurations
+  configureServer: async (server) => {
+    // Access to the HTTP server before it starts listening
+    // You can attach WebSockets or perform other server configurations
 
-        // Example: Attach Socket.IO
-        const io = new Server(server);
+    // Example: Attach Socket.IO
+    const io = new Server(server);
 
-        io.on("connection", (socket) => {
-            console.log("Client connected");
+    io.on("connection", (socket) => {
+      console.log("Client connected");
 
-            socket.on("message", (data) => {
-                io.emit("broadcast", data);
-            });
+      socket.on("message", (data) => {
+        io.emit("broadcast", data);
+      });
 
-            socket.on("disconnect", () => {
-                console.log("Client disconnected");
-            });
-        });
-    },
-    // Other Arkos configurations
+      socket.on("disconnect", () => {
+        console.log("Client disconnected");
+      });
+    });
+  },
 });
 ```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import { Server } from "socket.io";
+
+arkos.init({
+  configureServer: async (server) => {
+    // Access to the HTTP server before it starts listening
+    // You can attach WebSockets or perform other server configurations
+
+    // Example: Attach Socket.IO
+    const io = new Server(server);
+
+    io.on("connection", (socket) => {
+      console.log("Client connected");
+
+      socket.on("message", (data) => {
+        io.emit("broadcast", data);
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Client disconnected");
+      });
+    });
+  },
+  // Other Arkos configurations
+});
+```
+
+</TabItem>
+</Tabs>
 
 :::warning
 The `configureServer` hook is only executed when a port is specified in the configuration. If `port` is undefined, the HTTP server is not created, and this hook will not be called.
@@ -129,48 +191,110 @@ The `configureServer` hook is only executed when a port is specified in the conf
 
 When you need full control over the HTTP server creation and configuration:
 
-```ts
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  port: undefined, // Prevent Arkos from creating HTTP server
+  // Other static configurations
+};
+
+export default arkosConfig;
+```
+
+```typescript
 // src/app.ts
 import arkos from "arkos";
 import { Server } from "socket.io";
 import http from "http";
 
 const startServer = async () => {
-    // Initialize Arkos without creating an HTTP server
-    const app = await arkos.init({
-        // Important: Set port to undefined so Arkos won't create an HTTP server
-        port: undefined,
-        // Other Arkos configurations
+  // Initialize Arkos without creating an HTTP server
+  const app = await arkos.init({
+    // Runtime configurations
+  });
+
+  // Create your own HTTP server with the Express app
+  const server = http.createServer(app);
+
+  // Configure the HTTP server or attach additional features
+  const io = new Server(server);
+
+  // Configure Socket.IO
+  io.on("connection", (socket) => {
+    console.log("Client connected");
+
+    socket.on("message", (data) => {
+      io.emit("broadcast", data);
     });
 
-    // Create your own HTTP server with the Express app
-    const server = http.createServer(app);
-
-    // Configure the HTTP server or attach additional features
-    const io = new Server(server);
-
-    // Configure Socket.IO
-    io.on("connection", (socket) => {
-        console.log("Client connected");
-
-        socket.on("message", (data) => {
-            io.emit("broadcast", data);
-        });
-
-        socket.on("disconnect", () => {
-            console.log("Client disconnected");
-        });
+    socket.on("disconnect", () => {
+      console.log("Client disconnected");
     });
+  });
 
-    // Start the server manually
-    const port = process.env.PORT || 8000;
-    server.listen(port, () => {
-        console.log(`Server with Socket.IO listening on port ${port}`);
-    });
+  // Start the server manually
+  const port = process.env.PORT || 8000;
+  server.listen(port, () => {
+    console.log(`Server with Socket.IO listening on port ${port}`);
+  });
 };
 
 startServer();
 ```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import { Server } from "socket.io";
+import http from "http";
+
+const startServer = async () => {
+  // Initialize Arkos without creating an HTTP server
+  const app = await arkos.init({
+    // Important: Set port to undefined so Arkos won't create an HTTP server
+    port: undefined,
+    // Other Arkos configurations
+  });
+
+  // Create your own HTTP server with the Express app
+  const server = http.createServer(app);
+
+  // Configure the HTTP server or attach additional features
+  const io = new Server(server);
+
+  // Configure Socket.IO
+  io.on("connection", (socket) => {
+    console.log("Client connected");
+
+    socket.on("message", (data) => {
+      io.emit("broadcast", data);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Client disconnected");
+    });
+  });
+
+  // Start the server manually
+  const port = process.env.PORT || 8000;
+  server.listen(port, () => {
+    console.log(`Server with Socket.IO listening on port ${port}`);
+  });
+};
+
+startServer();
+```
+
+</TabItem>
+</Tabs>
 
 ## Timing Considerations
 
@@ -199,7 +323,7 @@ Here's a diagram of the execution order:
                 │
                 ▼
 ┌───────────────┴───────────────────────┐
-│ Arkos additional middlewares applied  │
+│ Custom middlewares from use[] applied │
 └───────────────┬───────────────────────┘
                 │
                 ▼
@@ -239,40 +363,40 @@ If port is specified:                    If port is undefined:
 
 ### Setting Up View Engines
 
-```ts
+```typescript
 arkos.init({
-    configureApp: async (app) => {
-        app.set("views", "./views");
-        app.set("view engine", "ejs");
+  configureApp: async (app) => {
+    app.set("views", "./views");
+    app.set("view engine", "ejs");
 
-        // Register a template engine
-        app.engine("html", require("ejs").renderFile);
-    },
+    // Register a template engine
+    app.engine("html", require("ejs").renderFile);
+  },
 });
 ```
 
 ### Configuring Server-Sent Events (SSE)
 
-```ts
+```typescript
 arkos.init({
-    configureApp: async (app) => {
-        // Create an SSE endpoint
-        app.get("/events", (req, res) => {
-            res.setHeader("Content-Type", "text/event-stream");
-            res.setHeader("Cache-Control", "no-cache");
-            res.setHeader("Connection", "keep-alive");
+  configureApp: async (app) => {
+    // Create an SSE endpoint
+    app.get("/events", (req, res) => {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
 
-            // Send periodic updates
-            const intervalId = setInterval(() => {
-                res.write(`data: ${JSON.stringify({ time: new Date() })}\n\n`);
-            }, 1000);
+      // Send periodic updates
+      const intervalId = setInterval(() => {
+        res.write(`data: ${JSON.stringify({ time: new Date() })}\n\n`);
+      }, 1000);
 
-            // Clean up on connection close
-            req.on("close", () => {
-                clearInterval(intervalId);
-            });
-        });
-    },
+      // Clean up on connection close
+      req.on("close", () => {
+        clearInterval(intervalId);
+      });
+    });
+  },
 });
 ```
 
@@ -280,88 +404,44 @@ arkos.init({
 
 You can add WebSocket support using the `configureServer` hook when you let Arkos create the HTTP server:
 
-```ts
+```typescript
 // src/app.ts
 import arkos from "arkos";
 import { Server } from "socket.io";
 
 await arkos.init({
-    configureServer: async (server) => {
-        // Attach Socket.IO to the HTTP server
-        const io = new Server(server);
-
-        // Configure Socket.IO
-        io.on("connection", (socket) => {
-            console.log("Client connected");
-
-            socket.on("message", (data) => {
-                io.emit("broadcast", data);
-            });
-
-            socket.on("disconnect", () => {
-                console.log("Client disconnected");
-            });
-        });
-    },
-    // Other Arkos configurations
-});
-```
-
-Alternatively, if you need more control over the HTTP server creation:
-
-```ts
-// src/app.ts
-import arkos from "arkos";
-import { Server } from "socket.io";
-import http from "http";
-
-const startServer = async () => {
-    // Initialize Arkos without creating an HTTP server
-    const app = await arkos.init({
-        // Important: Set port to undefined so you can create your own server
-        port: undefined,
-        // Other Arkos configurations
-    });
-
-    // Create your own HTTP server with the Express app
-    const server = http.createServer(app);
-
+  configureServer: async (server) => {
     // Attach Socket.IO to the HTTP server
     const io = new Server(server);
 
     // Configure Socket.IO
     io.on("connection", (socket) => {
-        console.log("Client connected");
+      console.log("Client connected");
 
-        socket.on("message", (data) => {
-            io.emit("broadcast", data);
-        });
+      socket.on("message", (data) => {
+        io.emit("broadcast", data);
+      });
 
-        socket.on("disconnect", () => {
-            console.log("Client disconnected");
-        });
+      socket.on("disconnect", () => {
+        console.log("Client disconnected");
+      });
     });
-
-    // Start the server manually
-    const port = process.env.PORT || 8000;
-    server.listen(port, () => {
-        console.log(`Server with Socket.IO listening on port ${port}`);
-    });
-};
-
-startServer();
+  },
+});
 ```
+
+Alternatively, if you need more control over the HTTP server creation, see [Creating Your Own HTTP Server](#creating-your-own-http-server) section.
 
 ### Setting Express Trust Proxy
 
 If your application runs behind a proxy like Nginx or is deployed to some cloud platforms:
 
-```ts
+```typescript
 arkos.init({
-    configureApp: async (app) => {
-        // Enable trust proxy for accurate IP detection behind proxy
-        app.set("trust proxy", true);
-    },
+  configureApp: async (app) => {
+    // Enable trust proxy for accurate IP detection behind proxy
+    app.set("trust proxy", true);
+  },
 });
 ```
 
@@ -369,22 +449,22 @@ arkos.init({
 
 ```typescript
 arkos.init({
-    configureApp: async (app) => {
-        // Increase the maximum request body size
-        app.set("json limit", "50mb");
+  configureApp: async (app) => {
+    // Increase the maximum request body size
+    app.set("json limit", "50mb");
 
-        // Set custom response headers for all routes
-        app.use((req, res, next) => {
-            res.setHeader("X-Powered-By", "Arkos");
-            res.setHeader("X-Frame-Options", "DENY");
-            next();
-        });
+    // Set custom response headers for all routes
+    app.use((req, res, next) => {
+      res.setHeader("X-Powered-By", "Arkos");
+      res.setHeader("X-Frame-Options", "DENY");
+      next();
+    });
 
-        // Configure Express app properties
-        app.locals.appName = "My Arkos App";
-        app.locals.version = "1.0.0";
-        app.locals.adminEmail = "admin@example.com";
-    },
+    // Configure Express app properties
+    app.locals.appName = "My Arkos App";
+    app.locals.version = "1.0.0";
+    app.locals.adminEmail = "admin@example.com";
+  },
 });
 ```
 
@@ -394,7 +474,7 @@ arkos.init({
 
 2. **Server Configuration**: Use `configureServer` for adding features that need access to the HTTP server like WebSockets (only works when port is specified).
 
-3. **Custom Server Setup**: Set `port: undefined` when you need complete control over server creation and choose between directly calling `app.listen()` or creating your own HTTP server.
+3. **Custom Server Setup**: Set `port: undefined` (in `arkos.config.ts` for v1.4.0+ or in `arkos.init()` for v1.3.0) when you need complete control over server creation and choose between directly calling `app.listen()` or creating your own HTTP server.
 
 4. **Late Configuration**: Use post-initialization access for features that depend on Arkos's setup being complete.
 
@@ -408,28 +488,71 @@ arkos.init({
 
 You can combine direct Express app access with custom middleware configuration:
 
-```ts
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+import { ArkosConfig } from "arkos";
+import helmet from "helmet";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    // Middleware configuration
+    cors: {
+      allowedOrigins: ["https://example.com"],
+    },
+  },
+  // Other static configurations
+};
+
+export default arkosConfig;
+```
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import morgan from "morgan";
+
+arkos.init({
+  configureApp: async (app) => {
+    // Early middleware (runs first)
+    app.use(helmet());
+  },
+  // Custom middlewares added after Arkos built-ins
+  use: [morgan("combined")],
+});
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/app.ts
 import arkos from "arkos";
 import morgan from "morgan";
 import helmet from "helmet";
 
 arkos.init({
-    configureApp: async (app) => {
-        // Early middleware (runs first)
-        app.use(helmet());
+  configureApp: async (app) => {
+    // Early middleware (runs first)
+    app.use(helmet());
+  },
+  middlewares: {
+    // Middleware to be added after Arkos built-ins
+    additional: [morgan("combined")],
+    // Replace built-in middleware
+    replace: {
+      cors: customCorsMiddleware,
     },
-    middlewares: {
-        // Middleware to be added after Arkos built-ins
-        additional: [morgan("combined")],
-        // Replace built-in middleware
-        replace: {
-            cors: customCorsMiddleware,
-        },
-    },
+  },
 });
 ```
 
-See [Modifying Built-in Middlewares](/docs/advanced-guide/modifying-built-in-middlewares) for advanced guide.
+</TabItem>
+</Tabs>
+
+See [Middleware Configuration](/docs/api-reference/arkos-configuration#middleware-configuration) for more details on configuring middlewares.
 
 ## Conclusion
 

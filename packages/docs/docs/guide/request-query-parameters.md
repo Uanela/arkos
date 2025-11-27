@@ -32,12 +32,12 @@ Prisma equivalent:
 
 ```ts
 const products = await prisma.product.findMany({
-    where: {
-        price: {
-            gte: 50,
-            lt: 100,
-        },
+  where: {
+    price: {
+      gte: 50,
+      lt: 100,
     },
+  },
 });
 ```
 
@@ -75,8 +75,8 @@ Translates to:
 
 ```ts
 const products = await prisma.products.findMany({
-    take: 30,
-    skip: 90, // limit (default 30) * page - 1
+  take: 30,
+  skip: 90, // limit (default 30) * page - 1
 });
 ```
 
@@ -90,8 +90,8 @@ Translates to:
 
 ```ts
 const products = await prisma.products.findMany({
-    take: 100,
-    skip: 300,
+  take: 100,
+  skip: 300,
 });
 ```
 
@@ -109,7 +109,7 @@ Translates to:
 
 ```ts
 const products = await prisma.product.findMany({
-    take: 10,
+  take: 10,
 });
 ```
 
@@ -125,8 +125,8 @@ Translates to:
 
 ```ts
 const products = await prisma.product.findMany({
-    take: 50,
-    skip: 50, // (page - 1) * limit = (2 - 1) * 50
+  take: 50,
+  skip: 50, // (page - 1) * limit = (2 - 1) * 50
 });
 ```
 
@@ -152,8 +152,8 @@ This returns the 10 most expensive products:
 
 ```ts
 const products = await prisma.product.findMany({
-    orderBy: [{ price: "desc" }],
-    take: 10,
+  orderBy: [{ price: "desc" }],
+  take: 10,
 });
 ```
 
@@ -175,23 +175,23 @@ Translates to:
 
 ```ts
 const products = await prisma.product.findMany({
-    where: {
-        OR: [
-            { name: { contains: "laptop", mode: "insensitive" } },
-            { description: { contains: "laptop", mode: "insensitive" } },
-            // other string fields
-            { price: { gte: 500 } },
-        ],
-    },
-    orderBy: [{ rating: "desc" }, { price: "desc" }],
-    skip: 0,
-    take: 20,
-    select: {
-        id: true,
-        name: true,
-        price: true,
-        rating: true,
-    },
+  where: {
+    OR: [
+      { name: { contains: "laptop", mode: "insensitive" } },
+      { description: { contains: "laptop", mode: "insensitive" } },
+      // other string fields
+      { price: { gte: 500 } },
+    ],
+  },
+  orderBy: [{ rating: "desc" }, { price: "desc" }],
+  skip: 0,
+  take: 20,
+  select: {
+    id: true,
+    name: true,
+    price: true,
+    rating: true,
+  },
 });
 ```
 
@@ -209,7 +209,7 @@ Translates to:
 
 ```ts
 const products = await prisma.product.findMany({
-    orderBy: [{ price: "asc" }],
+  orderBy: [{ price: "asc" }],
 });
 ```
 
@@ -225,7 +225,7 @@ Translates to:
 
 ```ts
 const products = await prisma.product.findMany({
-    orderBy: [{ price: "desc" }],
+  orderBy: [{ price: "desc" }],
 });
 ```
 
@@ -241,7 +241,7 @@ This will first sort by price in descending order, then by name in ascending ord
 
 ```ts
 const products = await prisma.product.findMany({
-    orderBy: [{ price: "desc" }, { name: "asc" }],
+  orderBy: [{ price: "desc" }, { name: "asc" }],
 });
 ```
 
@@ -255,7 +255,7 @@ Translates to:
 
 ```ts
 const users = await prisma.user.findMany({
-    orderBy: [{ createdAt: "desc" }, { lastName: "asc" }, { firstName: "asc" }],
+  orderBy: [{ createdAt: "desc" }, { lastName: "asc" }, { firstName: "asc" }],
 });
 ```
 
@@ -279,10 +279,10 @@ Translates to:
 
 ```ts
 const products = await prisma.products.findMany({
-    select: {
-        name: true,
-        price: true,
-    },
+  select: {
+    name: true,
+    price: true,
+  },
 });
 ```
 
@@ -298,9 +298,9 @@ Will select all default fields + `reviews`. Translates to:
 
 ```ts
 const products = await prisma.products.findMany({
-    include: {
-        reviews: true,
-    },
+  include: {
+    reviews: true,
+  },
 });
 ```
 
@@ -316,10 +316,10 @@ Will select all the other fields but `name` and `price`. Translates to:
 
 ```ts
 const products = await prisma.products.findMany({
-    include: {
-        name: false,
-        price: false,
-    },
+  include: {
+    name: false,
+    price: false,
+  },
 });
 ```
 
@@ -337,24 +337,24 @@ Translates to:
 
 ```ts
 const posts = await prisma.post.findMany({
-    where: {
-        OR: [
-            {
-                author: {
-                    age: "30",
-                },
+  where: {
+    OR: [
+      {
+        author: {
+          age: "30",
+        },
+      },
+      {
+        comments: {
+          some: {
+            content: {
+              contains: "interesting",
             },
-            {
-                comments: {
-                    some: {
-                        content: {
-                            contains: "interesting",
-                        },
-                    },
-                },
-            },
-        ],
-    },
+          },
+        },
+      },
+    ],
+  },
 });
 ```
 
@@ -397,43 +397,43 @@ And it produces:
 
 ```ts
 const products = await prisma.product.findMany({
-    where: {
-        OR: [
-            {
-                name: {
-                    contains: "wireless",
-                    mode: "insensitive",
-                },
-            },
-            {
-                description: {
-                    // Let's say our Product model have description
-                    // field which is String search=wireless will
-                    // search the text in all string fields but
-                    // id fields.
-                    contains: "wireless",
-                    mode: "insensitive",
-                },
-            },
-            {
-                price: {
-                    gte: 50,
-                    lt: 200,
-                },
-            },
-        ],
-        orderBy: {
-            price: "desc",
+  where: {
+    OR: [
+      {
+        name: {
+          contains: "wireless",
+          mode: "insensitive",
         },
-        skip: 10,
-        take: 10,
-        select: {
-            id: true,
-            name: true,
-            price: true,
-            reviews: true,
+      },
+      {
+        description: {
+          // Let's say our Product model have description
+          // field which is String search=wireless will
+          // search the text in all string fields but
+          // id fields.
+          contains: "wireless",
+          mode: "insensitive",
         },
+      },
+      {
+        price: {
+          gte: 50,
+          lt: 200,
+        },
+      },
+    ],
+    orderBy: {
+      price: "desc",
     },
+    skip: 10,
+    take: 10,
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      reviews: true,
+    },
+  },
 });
 ```
 
@@ -449,10 +449,10 @@ Generates:
 
 ```ts
 const users = await prisma.user.findMany({
-    where: {
-        where: { age: 25 },
-        include: { posts: true },
-    },
+  where: {
+    where: { age: 25 },
+    include: { posts: true },
+  },
 });
 ```
 
@@ -468,12 +468,12 @@ By the way, if you would like to activate the request query paramenter `allowDan
 import arkos from "arkos";
 // your other codes
 arkos.init({
-    request: {
-        parameters: {
-            allowDangerousPrismaQueryOptions: true, // (default is false)
-        },
+  request: {
+    parameters: {
+      allowDangerousPrismaQueryOptions: true, // (default is false)
     },
-    // other configurations
+  },
+  // other configurations
 });
 ```
 

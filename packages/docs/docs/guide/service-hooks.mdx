@@ -1,11 +1,12 @@
 ---
 sidebar_position: 4
-title: Service Hooks (new)
+title: Service Hooks 
 ---
 
-import SmallTag from "../components/small-tag"
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-# Service Hooks <SmallTag>New</SmallTag>
+# Service Hooks 
 
 > Available from `v1.3.0-beta`
 
@@ -30,7 +31,7 @@ Understanding when to use each approach:
 | **Scope** | All service calls (API + programmatic) | Only HTTP endpoint calls |
 | **Access to** | Service context, user info | Full Express req/res objects |
 | **Best for** | Business logic, data validation, audit trails | Request processing, authentication, response formatting |
-| **File Location** | `[model].hooks.ts` | `[model].middlewares.ts` |
+| **File Location** | `[model].hooks.ts` | `[model].interceptors.ts (v1.4.0+)` or `[model].middlewares.ts (v1.3.0 and earlier)`  |
 
 ## Setting Up Service Hooks
 
@@ -45,7 +46,8 @@ my-arkos-project/
         └── [model-name]/
             ├── [model-name].hooks.ts      ← Service hooks
             ├── [model-name].service.ts    ← Custom service (optional)
-            └── [model-name].middlewares.ts ← HTTP interceptors
+            ├── [model-name].interceptors.ts ← HTTP interceptors (v1.4.0+ Recommend)
+            └── [model-name].middlewares.ts ← HTTP interceptors (v1.3.0 and earlier)
 ```
 
 :::warning Important
@@ -67,19 +69,55 @@ npx arkos g s -m post
 
 This generates:
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
 // src/modules/post/post.service.ts
-import prisma from "../../utils/prisma";
 import { BaseService } from "arkos/services";
 
-export type PostDelegate = typeof prisma.post
-
-class PostService extends BaseService<PostDelegate> {}
+class PostService extends BaseService<"post"> {
+  async getPostsByAuthor(authorId: string) {
+    return this.findMany(
+       { authorId },
+       { include: { author: true } }
+    );
+  }
+}
 
 const postService = new PostService("post");
 
 export default postService;
 ```
+
+:::tip Type Inference
+The `"post"` type enables automatic type inference after running `npx arkos prisma generate`. This command generates enhanced type definitions from your Prisma schema.
+:::
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/modules/post/post.service.ts
+import { BaseService } from "arkos/service";
+import { Prisma } from "@prisma/client";
+
+class PostService extends BaseService<Prisma.PostDelegate> {
+  async getPostsByAuthor(authorId: string) {
+    return this.findMany(
+       { authorId },
+       { include: { author: true } }
+    );
+  }
+}
+
+const postService = new PostService("post");
+
+export default postService;
+```
+
+</TabItem>
+</Tabs>
 
 ### Basic Hooks Example
 
@@ -90,13 +128,12 @@ import {
   AfterCreateOneHookArgs,
   OnCreateOneErrorHookArgs 
 } from "arkos/services";
-import prisma from "../../utils/prisma";
+import { Prisma } from "@prisma/client";
 import postService from "./post.service";
 
-export type PostDelegate = typeof prisma.post;
 
 export const beforeCreateOne = [
-  async ({ data, context }: BeforeCreateOneHookArgs<PostDelegate>) => {
+  async ({ data, context }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Auto-generate slug if not provided
     if (data.title && !data.slug) {
       data.slug = data.title
@@ -113,7 +150,7 @@ export const beforeCreateOne = [
 ];
 
 export const afterCreateOne = [
-  async ({ result, context }: AfterCreateOneHookArgs<PostDelegate>) => {
+  async ({ result, context }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Send notification to followers
     await notifyFollowers(result.authorId, {
       type: "new_post",
@@ -127,7 +164,7 @@ export const afterCreateOne = [
 ];
 
 export const onCreateOneError = [
-  async ({ error, data, context }: OnCreateOneErrorHookArgs<PostDelegate>) => {
+  async ({ error, data, context }: OnCreateOneErrorHookArgs<Prisma.PostDelegate>) => {
     // Clean up any uploaded files
     if (data.featuredImageUrl) 
         await cleanupUploadedFile(data.featuredImageUrl);
@@ -236,9 +273,10 @@ interface ServiceBaseContext {
 import { BeforeCreateOneHookArgs, AfterCreateOneHookArgs } from "arkos/services";
 import authService from "../auth/auth.service";
 import emailService from "../email/email.service";
+import { Prisma } from "@prisma/client";
 
 export const beforeCreateOne = [
-  async ({ data }: BeforeCreateOneHookArgs<UserDelegate>) => {
+  async ({ data }: BeforeCreateOneHookArgs<Prisma.UserDelegate>) => {
     // Hash password if not already hashed
     if (data.password && !authService.isPasswordHashed(data.password)) {
       data.password = await authService.hashPassword(data.password);
@@ -252,7 +290,7 @@ export const beforeCreateOne = [
 ];
 
 export const afterCreateOne = [
-  async ({ result }: AfterCreateOneHookArgs<UserDelegate>) => {
+  async ({ result }: AfterCreateOneHookArgs<Prisma.UserDelegate>) => {
     // Create default user profile
     await prisma.profile.create({
       data: {
@@ -276,7 +314,7 @@ export const afterCreateOne = [
 ```typescript
 // src/modules/post/post.hooks.ts
 export const beforeCreateOne = [
-  async ({ data, context }: BeforeCreateOneHookArgs<PostDelegate>) => {
+  async ({ data, context }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Auto-generate slug
     if (!data.slug && data.title) {
       data.slug = generateSlug(data.title);
@@ -296,14 +334,14 @@ export const beforeCreateOne = [
 
 export const afterCreateOne = [
   // Multiple functions for separation of concerns
-  async ({ result }: AfterCreateOneHookArgs<PostDelegate>) => {
+  async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Update search index
     if (result.status === 'PUBLISHED') {
       await searchService.indexPost(result);
     }
   },
 
-  async ({ result }: AfterCreateOneHookArgs<PostDelegate>) => {
+  async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Send notifications
     if (result.status === 'PUBLISHED') {
       await notificationService.notifySubscribers({
@@ -314,7 +352,7 @@ export const afterCreateOne = [
     }
   },
 
-  async ({ result }: AfterCreateOneHookArgs<PostDelegate>) => {
+  async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Update author statistics
     await prisma.author.update({
       where: { id: result.authorId },
@@ -377,7 +415,7 @@ Database Operation → Service afterCreateOne → Interceptor afterCreateOne →
 ```typescript
 // HTTP Interceptor (post.middlewares.ts)
 export const beforeCreateOne = [
-  async (req, res, next) => {
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
     // HTTP-specific processing
     req.body.featuredImageUrl = await processUploadedImage(req.file);
     next();
@@ -386,7 +424,7 @@ export const beforeCreateOne = [
 
 // Service Hook (post.hooks.ts)  
 export const beforeCreateOne = [
-  async ({ data, context }) => {
+  async ({ data, context }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Business logic that applies everywhere
     if (!data.slug) {
       data.slug = generateSlug(data.title);
@@ -407,6 +445,9 @@ npx arkos generate hooks --module post
 ```bash
 npx arkos g h -m post
 ```
+:::info
+Prior to `1.4.0-beta` instead of `--module` you must use `--model`.
+:::
 
 This creates a template with all available hooks commented out, ready to customize:
 
@@ -419,15 +460,14 @@ This creates a template with all available hooks commented out, ready to customi
 // AfterUpdateOneHookArgs,
 // // ... all other hook types
 // } from "arkos/services";
-
-export type PostDelegate = typeof prisma.post;
+// import { Prisma } from "@prisma/client"
 
 // export const beforeCreateOne = [
-//   async function beforeCreateOne({ context, data, queryOptions }: BeforeCreateOneHookArgs<PostDelegate>) {}
+//   async function beforeCreateOne({ context, data, queryOptions }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) {}
 // ];
 
 // export const afterCreateOne = [
-//   async function afterCreateOne({ context, result, data, queryOptions }: AfterCreateOneHookArgs<PostDelegate>) {}
+//   async function afterCreateOne({ context, result, data, queryOptions }: AfterCreateOneHookArgs<Prisma.PostDelegate>) {}
 // ];
 
 // ... all other hooks ready to uncomment

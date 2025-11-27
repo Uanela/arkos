@@ -1,11 +1,11 @@
 ---
 sidebar_position: 4
-title: Deployment (new)
+title: Deployment
 ---
 
 import SmallTag from "../components/small-tag"
 
-# Deployment <SmallTag>New</SmallTag>
+# Deployment 
 
 Deploying an Arkos.js RESTful API is as simple as deploying a standard Node.js application, we've made it as easy as it can be so that you do not have to deal with common steps in deploying a Node.js application such as an Arkos.js project.
 

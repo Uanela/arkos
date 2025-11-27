@@ -647,6 +647,14 @@ Bear in mind the `/api/uploads` is the default `baseRoute` and you can customize
 
 ### Basic Operations
 
+:::info FormData Field Names
+When uploading to traditional endpoints, use these field names:
+- `/api/uploads/images` → use field name `images`
+- `/api/uploads/videos` → use field name `videos`
+- `/api/uploads/documents` → use field name `documents`
+- `/api/uploads/files` → use field name `files`
+:::
+
 #### Uploading Files
 
 ```typescript
@@ -1076,3 +1084,106 @@ const imageUrl = await getFileUploadServices().imageUploadService.upload(
 );
 ```
 
+## Default Supported Upload Files
+
+### Image Files
+
+Default supported formats include: jpeg, jpg, png, gif, webp, svg, bmp, tiff, heif, heic, ico, jfif, raw, cr2, nef, orf, sr2, arw, dng, pef, raf, rw2, psd, ai, eps, xcf, jxr, wdp, hdp, jp2, j2k, jpf, jpx, jpm, mj2, avif
+
+**Default Restrictions:**
+- Maximum count: 30 files
+- Maximum size: 15 MB per file
+
+### Video Files
+
+Default supported formats include: mp4, avi, mov, mkv, flv, wmv, webm, mpg, mpeg, 3gp, m4v, ts, rm, rmvb, vob, ogv, dv, qt, asf, m2ts, mts, divx, f4v, swf, mxf, roq, nsv, mvb, svi, mpe, m2v, mp2, mpv, h264, h265, hevc
+
+**Default Restrictions:**
+- Maximum count: 10 files
+- Maximum size: 5 GB per file
+
+### Document Files
+
+Default supported formats include: pdf, doc, docx, xls, xlsx, ppt, pptx, odt, ods, odg, odp, txt, rtf, csv, epub, md, tex, pages, numbers, key, xml, json, yaml, yml, ini, cfg, conf, log, html, htm, xhtml, djvu, mobi, azw, azw3, fb2, lit, ps, wpd, wps, dot, dotx, xlt, xltx, pot, potx, oft, one, onetoc2, opf, oxps, hwp
+
+**Default Restrictions:**
+- Maximum count: 30 files
+- Maximum size: 50 MB per file
+
+### Other Files
+
+By default, all other file types are supported with the following restrictions:
+
+- Maximum count: 10 files
+- Maximum size: 5 GB per file
+
+## Customizing File Upload Restrictions
+
+You can override the default file upload settings through your Arkos configuration:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  fileUpload: {
+    restrictions: {
+      images: {
+        maxCount: 50,
+        maxSize: 1024 * 1024 * 20, // 20 MB
+        supportedFilesRegex: /jpeg|jpg|png/, // Only allow these image formats
+      },
+      videos: {
+        maxCount: 5,
+        maxSize: 1024 * 1024 * 1024 * 2, // 2 GB
+        supportedFilesRegex: /mp4|mov|webm/,
+      },
+      documents: {
+        maxCount: 20,
+        maxSize: 1024 * 1024 * 100, // 100 MB
+        supportedFilesRegex: /pdf|docx|xlsx/,
+      },
+      // Override other file type configurations as needed
+    },
+  },
+};
+
+export default arkosConfig;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+
+arkos.init({
+  fileUpload: {
+    restrictions: {
+      images: {
+        maxCount: 50,
+        maxSize: 1024 * 1024 * 20, // 20 MB
+        supportedFilesRegex: /jpeg|jpg|png/, // Only allow these image formats
+      },
+      videos: {
+        maxCount: 5,
+        maxSize: 1024 * 1024 * 1024 * 2, // 2 GB
+        supportedFilesRegex: /mp4|mov|webm/,
+      },
+      documents: {
+        maxCount: 20,
+        maxSize: 1024 * 1024 * 100, // 100 MB
+        supportedFilesRegex: /pdf|docx|xlsx/,
+      },
+      // Override other file type configurations as needed
+    },
+  },
+});
+```
+
+</TabItem>
+</Tabs>

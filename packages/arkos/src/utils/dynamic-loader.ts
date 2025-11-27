@@ -278,7 +278,7 @@ export function validateNamingConventions(
   if (key === "interceptorsOld") {
     if (!result.interceptors)
       sheu.warn(
-        `Found deprecated ${fileName} that will removed from v1.5.0-beta, consider switching to ${fileName.replace("middlewares", "interceptors")}`
+        `Found deprecated ${fileName} that will removed from v1.6.0-beta, consider switching to ${fileName.replace("middlewares", "interceptors")}`
       );
   }
 }
