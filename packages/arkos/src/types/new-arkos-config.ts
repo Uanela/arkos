@@ -134,7 +134,7 @@ export type ArkosConfig = {
      * 
      *@see This is are the options used on the `express-rate-limit` npm package used on epxress. read more about [https://www.npmjs.com/package/express-rate-limit](https://www.npmjs.com/package/express-rate-limit)
      */
-    requestRateLimitOptions?: Partial<RateLimitOptions>;
+    rateLimit?: Partial<RateLimitOptions>;
     /**
      * JWT (JSON Web Token) authentication configuration.
      *
@@ -224,7 +224,7 @@ export type ArkosConfig = {
     strict?: boolean;
   } & (
     | {
-        resolver?: "class-validator";
+        resolver: "class-validator";
         /**
          * ValidatorOptions to used while validating request data.
          *
@@ -238,7 +238,7 @@ export type ArkosConfig = {
         validationOptions?: ValidatorOptions;
       }
     | {
-        resolver?: "zod";
+        resolver: "zod";
         validationOptions?: Record<string, any>;
       }
   );
