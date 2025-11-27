@@ -716,6 +716,9 @@ router.post(
       windowMs: 60 * 1000,
       max: 10,
     },
+    queryParser: {
+      parseDoubleUnderscore: true,
+    },
     experimental: {
       uploads: {
         type: "single",
@@ -737,9 +740,6 @@ router.post(
             description: "Invalid input",
           },
         },
-      },
-      queryParser: {
-        parseDoubleUnderscore: true,
       },
     },
   },
