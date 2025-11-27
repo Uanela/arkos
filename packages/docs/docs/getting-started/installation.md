@@ -1,13 +1,13 @@
 ---
 sidebar_position: 1
-title: Installation (new)
+title: Installation 
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import SmallTag from "../components/small-tag"
 
-# Installation <SmallTag>New</SmallTag>
+# Installation 
 
 On this guide you will learn how to install and create an Arkos.js project.
 
@@ -80,7 +80,14 @@ or if you are using SQL and prefer to create a migration:
 npx prisma migrate --init
 ```
 
-After following these 3 steps described above, you will be 100% ready to start developing and scaling your RESTful API easily using Arkos.js by running the dev command:
+### 4. Generate Arkos And Prisma Client Types (TypeScript Only)
+> This is required from `v1.4.0-beta` helps improving ts exprience when using base service classes.
+
+```bash
+npx arkos prisma generate
+```
+
+After following these 3/4 steps described above, you will be 100% ready to start developing and scaling your RESTful API easily using Arkos.js by running the dev command:
 
 <Tabs>
 <TabItem value="pnpm" label="pnpm" default>
@@ -175,15 +182,37 @@ datasource db {
 
 Edit `src/app.js` (or `src/app.ts` for TypeScript):
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+import { ArkosConfig } from 'arkos';
+
+const arkosConfig: ArkosConfig = {
+    middlewares: {
+      cors: {
+        allowedOrigins: "*"
+      }
+    }
+}
+
+export default arkosConfig
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
 ```javascript
 import arkos from 'arkos';
 
 arkos.init({
   cors: {
-    allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+    allowedOrigins: "*"
   }
 });
 ```
+</TabItem>
+</Tabs>
 
 In the snippet above, we configured `CORS` so that we can run our application freely during development.
 
@@ -234,7 +263,14 @@ npx prisma db push
 # or use migrations: npx prisma migrate dev --name init
 ```
 
-### 10. Start Development Server
+### 10. Generate Arkos And Prisma Client Types (TypeScript Only)
+> This is required from `v1.4.0-beta` helps improving ts exprience when using base service classes.
+
+```bash
+npx arkos prisma generate
+```
+
+### 11. Start Development Server
 
 <Tabs>
 <TabItem value="pnpm" label="pnpm" default>

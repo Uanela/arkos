@@ -81,27 +81,27 @@ The `PrismaQueryOptions` type supports all standard Prisma query parameters:
 
 ```typescript
 type PrismaQueryOptions<T extends Record<string, any>> = {
-    // Global options applied to all operations
-    global?: Partial<Parameters<T["findMany"]>[0]>;
+  // Global options applied to all operations
+  global?: Partial<Parameters<T["findMany"]>[0]>;
 
-    // Grouped options (added in v1.2.0)
-    find?: Partial<Parameters<T["findMany"]>[0]>; // findMany + findOne
-    save?: Partial<Parameters<T["create"]>[0]>; // create + update operations
-    create?: Partial<Parameters<T["create"]>[0]>; // createOne + createMany
-    update?: Partial<Parameters<T["update"]>[0]>; // updateOne + updateMany
-    delete?: Partial<Parameters<T["delete"]>[0]>; // deleteOne + deleteMany
-    saveOne?: Partial<Parameters<T["create"]>[0]>; // createOne + updateOne
-    saveMany?: Partial<Parameters<T["createMany"]>[0]>; // createMany + updateMany
+  // Grouped options (added in v1.2.0)
+  find?: Partial<Parameters<T["findMany"]>[0]>; // findMany + findOne
+  save?: Partial<Parameters<T["create"]>[0]>; // create + update operations
+  create?: Partial<Parameters<T["create"]>[0]>; // createOne + createMany
+  update?: Partial<Parameters<T["update"]>[0]>; // updateOne + updateMany
+  delete?: Partial<Parameters<T["delete"]>[0]>; // deleteOne + deleteMany
+  saveOne?: Partial<Parameters<T["create"]>[0]>; // createOne + updateOne
+  saveMany?: Partial<Parameters<T["createMany"]>[0]>; // createMany + updateMany
 
-    // Individual operation options
-    findOne?: Partial<Parameters<T["findFirst"]>[0]>;
-    findMany?: Partial<Parameters<T["findMany"]>[0]>;
-    createOne?: Partial<Parameters<T["create"]>[0]>;
-    updateOne?: Partial<Parameters<T["update"]>[0]>;
-    deleteOne?: Partial<Parameters<T["delete"]>[0]>;
-    deleteMany?: Partial<Parameters<T["deleteMany"]>[0]>;
-    updateMany?: Partial<Parameters<T["updateMany"]>[0]>;
-    createMany?: Partial<Parameters<T["createMany"]>[0]>;
+  // Individual operation options
+  findOne?: Partial<Parameters<T["findFirst"]>[0]>;
+  findMany?: Partial<Parameters<T["findMany"]>[0]>;
+  createOne?: Partial<Parameters<T["create"]>[0]>;
+  updateOne?: Partial<Parameters<T["update"]>[0]>;
+  deleteOne?: Partial<Parameters<T["delete"]>[0]>;
+  deleteMany?: Partial<Parameters<T["deleteMany"]>[0]>;
+  updateMany?: Partial<Parameters<T["updateMany"]>[0]>;
+  createMany?: Partial<Parameters<T["createMany"]>[0]>;
 };
 ```
 
@@ -157,19 +157,19 @@ import { PrismaQueryOptions } from "arkos/prisma";
 import { prisma } from "../../utils/prisma";
 
 const userPrismaQueryOptions: PrismaQueryOptions<typeof prisma.user> = {
-    global: {
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            createdAt: true,
-            updatedAt: true,
-            // Explicitly exclude sensitive fields
-            password: false,
-            resetToken: false,
-            twoFactorSecret: false,
-        },
+  global: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      updatedAt: true,
+      // Explicitly exclude sensitive fields
+      password: false,
+      resetToken: false,
+      twoFactorSecret: false,
     },
+  },
 };
 
 export default userPrismaQueryOptions;
@@ -184,28 +184,28 @@ import { PrismaQueryOptions } from "arkos/prisma";
 import { prisma } from "../../utils/prisma";
 
 const postPrismaQueryOptions: PrismaQueryOptions<typeof prisma.post> = {
-    // Apply to all read operations (findOne and findMany)
-    find: {
-        where: {
-            published: true,
-        },
-        orderBy: {
-            createdAt: "desc",
-        },
+  // Apply to all read operations (findOne and findMany)
+  find: {
+    where: {
+      published: true,
     },
+    orderBy: {
+      createdAt: "desc",
+    },
+  },
 
-    // Apply to all save operations (create and update)
-    save: {
-        include: {
-            author: true,
-            tags: true,
-        },
+  // Apply to all save operations (create and update)
+  save: {
+    include: {
+      author: true,
+      tags: true,
     },
+  },
 
-    // Override for specific operation if needed
-    findMany: {
-        take: 10, // Default page size for lists only
-    },
+  // Override for specific operation if needed
+  findMany: {
+    take: 10, // Default page size for lists only
+  },
 };
 
 export default postPrismaQueryOptions;
@@ -220,78 +220,78 @@ import { PrismaQueryOptions } from "arkos/prisma";
 import { prisma } from "../../utils/prisma";
 
 const postPrismaQueryOptions: PrismaQueryOptions<typeof prisma.post> = {
-    // Global defaults for all operations
-    global: {
+  // Global defaults for all operations
+  global: {
+    where: {
+      published: true, // Default to only published posts
+    },
+    orderBy: {
+      createdAt: "desc", // Newest first
+    },
+  },
+
+  // List view shows less data
+  findMany: {
+    select: {
+      id: true,
+      title: true,
+      excerpt: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      createdAt: true,
+      tags: true,
+    },
+    take: 10, // Default page size
+  },
+
+  // Detailed view includes comments and full content
+  findOne: {
+    include: {
+      author: {
+        select: {
+          id: true,
+          name: true,
+          bio: true,
+        },
+      },
+      comments: {
         where: {
-            published: true, // Default to only published posts
+          approved: true,
         },
         orderBy: {
-            createdAt: "desc", // Newest first
+          createdAt: "asc",
         },
-    },
-
-    // List view shows less data
-    findMany: {
-        select: {
-            id: true,
-            title: true,
-            excerpt: true,
-            author: {
-                select: {
-                    id: true,
-                    name: true,
-                },
-            },
-            createdAt: true,
-            tags: true,
-        },
-        take: 10, // Default page size
-    },
-
-    // Detailed view includes comments and full content
-    findOne: {
         include: {
-            author: {
-                select: {
-                    id: true,
-                    name: true,
-                    bio: true,
-                },
+          author: {
+            select: {
+              id: true,
+              name: true,
             },
-            comments: {
-                where: {
-                    approved: true,
-                },
-                orderBy: {
-                    createdAt: "asc",
-                },
-                include: {
-                    author: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                },
-            },
-            tags: true,
+          },
         },
+      },
+      tags: true,
     },
+  },
 
-    // Creating/updating includes validation
-    createOne: {
-        include: {
-            author: true,
-            tags: true,
-        },
+  // Creating/updating includes validation
+  createOne: {
+    include: {
+      author: true,
+      tags: true,
     },
+  },
 
-    // Admin operations can see unpublished posts too
-    deleteOne: {
-        where: {
-            // No default filters, allowing deletion of unpublished posts
-        },
+  // Admin operations can see unpublished posts too
+  deleteOne: {
+    where: {
+      // No default filters, allowing deletion of unpublished posts
     },
+  },
 };
 
 export default postPrismaQueryOptions;
@@ -306,74 +306,74 @@ import { PrismaQueryOptions } from "arkos/prisma";
 import { prisma } from "../../utils/prisma";
 
 const userPrismaQueryOptions: PrismaQueryOptions<typeof prisma.user> = {
-    global: {
-        // Base configuration for all operations
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            createdAt: true,
-            updatedAt: true,
-            // Sensitive data excluded by default
-            password: false,
-            isActive: true,
-        },
+  global: {
+    // Base configuration for all operations
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+      updatedAt: true,
+      // Sensitive data excluded by default
+      password: false,
+      isActive: true,
     },
+  },
 
-    // For listing users, include their roles
-    findMany: {
-        include: {
-            roles: {
-                select: {
-                    role: {
-                        select: {
-                            id: true,
-                            name: true,
-                        },
-                    },
-                },
+  // For listing users, include their roles
+  findMany: {
+    include: {
+      roles: {
+        select: {
+          role: {
+            select: {
+              id: true,
+              name: true,
             },
+          },
         },
+      },
+    },
+    where: {
+      isActive: true,
+      deletedAt: null,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  },
+
+  // User profile view includes more details
+  findOne: {
+    include: {
+      roles: {
+        select: {
+          role: true,
+        },
+      },
+      posts: {
         where: {
-            isActive: true,
-            deletedAt: null,
+          published: true,
+        },
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
         },
         orderBy: {
-            name: "asc",
+          createdAt: "desc",
         },
+        take: 5,
+      },
     },
+  },
 
-    // User profile view includes more details
-    findOne: {
-        include: {
-            roles: {
-                select: {
-                    role: true,
-                },
-            },
-            posts: {
-                where: {
-                    published: true,
-                },
-                select: {
-                    id: true,
-                    title: true,
-                    createdAt: true,
-                },
-                orderBy: {
-                    createdAt: "desc",
-                },
-                take: 5,
-            },
-        },
+  // When creating users, auto-include created roles
+  createOne: {
+    include: {
+      roles: true,
     },
-
-    // When creating users, auto-include created roles
-    createOne: {
-        include: {
-            roles: true,
-        },
-    },
+  },
 };
 
 export default userPrismaQueryOptions;
@@ -404,7 +404,7 @@ This would override any conflicting `select`, `include`, or `where` parameters i
 ## Version History
 
 - **v1.2.0-beta**:
-    - Added grouped query options (`find`, `save`, `create`, `update`, `delete`, `saveOne`, `saveMany`)
-    - Simplified naming convention from `model.prisma-query-options.ts` to `model.query.ts`
-    - Added CLI command for generating query options files
-    - Changed `queryOptions` property to `global` for clarity
+  - Added grouped query options (`find`, `save`, `create`, `update`, `delete`, `saveOne`, `saveMany`)
+  - Simplified naming convention from `model.prisma-query-options.ts` to `model.query.ts`
+  - Added CLI command for generating query options files
+  - Changed `queryOptions` property to `global` for clarity

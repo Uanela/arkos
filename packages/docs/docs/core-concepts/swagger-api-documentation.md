@@ -1,6 +1,6 @@
 ---
 sidebar_position: 5
-title: Swagger API Documentation (new)
+title: Swagger API Documentation
 ---
 
 import SmallTag from "../components/small-tag"

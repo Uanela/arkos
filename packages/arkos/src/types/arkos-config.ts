@@ -18,7 +18,11 @@ export type ArkosInitConfig = {
    *
    * Read more about The Arkos Middleware Stack at [www.arkosjs.com/docs/the-middleware-stack](https://www.arkosjs.com/docs/the-middleware-stack) for in-depth details.
    */
-  use?: IArkosRouter[] | ArkosRequestHandler[] | ArkosErrorRequestHandler[];
+  use?:
+    | express.Router[]
+    | IArkosRouter[]
+    | ArkosRequestHandler[]
+    | ArkosErrorRequestHandler[];
   /**
    * Gives acess to the underlying express app so that you can add custom configurations beyong **Arkos** customization capabilities
    *
