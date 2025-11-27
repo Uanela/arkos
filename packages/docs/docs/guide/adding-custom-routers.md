@@ -1,11 +1,11 @@
 ---
 sidebar_position: 5
+title: Adding Custom Routers
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-
-<!-- import SmallTag from "../components/small-tag" -->
+import SmallTag from "../components/small-tag"
 
 # Adding Custom Routers
 
@@ -27,13 +27,12 @@ const analyticsRouter = ArkosRouter();
 
 analyticsRouter.get(
   {
-    route: "/api/analytics/dashboard",
+    path: "/api/analytics/dashboard",
     authentication: {
       action: "View",
       resource: "dashboard",
-      rule: ["Admin", "Coordinator"],
+      rule: { roles: ["Admin", "Coordinator"] },
     },
-    rateLimit: { windowMs: 60000, max: 100 },
   },
   analyticsController.getDashboard
 );
@@ -133,7 +132,7 @@ Custom routers let you define entirely new API endpoints separate from your Pris
 ### Creating a Custom Router
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 // src/routers/reports.router.ts
@@ -144,7 +143,7 @@ import reportsController from "../controllers/reports.controller";
 const reportsRouter = ArkosRouter();
 
 reportsRouter.get(
-  { route: "/api/reports/summary" },
+  { path: "/api/reports/summary" },
   reportsController.getSummary
 );
 
@@ -156,7 +155,7 @@ const GenerateReportSchema = z.object({
 
 reportsRouter.post(
   {
-    route: "/api/reports/generate",
+    path: "/api/reports/generate",
     authentication: {
       resource: "report",
       action: "Generate",
@@ -221,7 +220,7 @@ Custom routers are NOT automatically prefixed with `/api`. You must include the 
 ### Registering Custom Routers
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 Add your router to the `use` array in your Arkos initialization:
 
@@ -261,20 +260,20 @@ arkos.init({
 </TabItem>
 </Tabs>
 
-### Adding Features to Routes
+## Adding Features to Routes
 
 ArkosRouter supports declarative configuration for common needs:
 
-#### Authentication
+### Authentication
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 // Simple authentication
 router.get(
   {
-    route: "/api/admin/dashboard",
+    path: "/api/admin/dashboard",
     authentication: true,
   },
   controller.getDashboard
@@ -283,7 +282,7 @@ router.get(
 // With role-based access control
 router.post(
   {
-    route: "/api/admin/settings",
+    path: "/api/admin/settings",
     authentication: {
       resource: "settings",
       action: "Update",
@@ -323,10 +322,10 @@ router.post(
 
 Learn more: [Authentication System](/docs/core-concepts/authentication-system)
 
-#### Validation
+### Validation
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 import z from "zod";
@@ -339,7 +338,7 @@ const CreateUserSchema = z.object({
 
 router.post(
   {
-    route: "/api/users",
+    path: "/api/users",
     validation: {
       body: CreateUserSchema,
     },
@@ -367,15 +366,15 @@ router.post(
 
 Learn more: [Request Data Validation](/docs/core-concepts/request-data-validation)
 
-#### Rate Limiting
+### Rate Limiting
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 router.post(
   {
-    route: "/api/reports/generate",
+    path: "/api/reports/generate",
     rateLimit: {
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 5, // 5 requests per window
@@ -404,24 +403,18 @@ router.post("/api/reports/generate", reportLimiter, controller.generateReport);
 </TabItem>
 </Tabs>
 
-#### File Uploads
+### File Uploads
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 router.post(
   {
-    route: "/api/upload/avatar",
+    path: "/api/upload/avatar",
     authentication: true,
     experimental: {
-      uploads: {
-        type: "single",
-        field: "avatar",
-        uploadDir: "avatars",
-        maxSize: 1024 * 1024 * 5, // 5MB
-        allowedFileTypes: [".jpg", ".png"],
-      },
+      uploads: { type: "single", field: "avatar" },
     },
   },
   controller.uploadAvatar
@@ -455,12 +448,12 @@ Learn more: [File Upload Guide](/docs/guide/file-uploads)
 #### OpenAPI Documentation
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 router.post(
   {
-    route: "/api/reports/generate",
+    path: "/api/reports/generate",
     validation: {
       body: GenerateReportSchema,
     },
@@ -510,7 +503,7 @@ Prisma model routers are auto-generated from your schema, but you can extend the
 To add custom endpoints to an existing model's API:
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -527,15 +520,15 @@ export const config: RouterConfig = {
 // Create router for custom endpoints
 const router = ArkosRouter();
 
-// Add custom "share" endpoint → /api/posts/:id/share
 const SharePostSchema = z.object({
   recipients: z.array(z.string().email()),
   message: z.string().max(500).optional(),
 });
 
+// Add custom "share" endpoint → /api/posts/:id/share
 router.post(
   {
-    route: "/:id/share",
+    path: "/:id/share",
     authentication: {
       resource: "post",
       action: "Share",
@@ -552,7 +545,7 @@ router.post(
 // Add custom "featured" endpoint → /api/posts/featured
 router.get(
   {
-    route: "/featured",
+    path: "/featured",
     rateLimit: { windowMs: 60000, max: 50 },
   },
   postController.getFeaturedPosts
@@ -616,7 +609,7 @@ If these conventions aren't followed, Arkos won't recognize your customizations.
 ### Configuring Auto-Generated Endpoints
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 You can configure individual auto-generated endpoints with all ArkosRouter features:
 
@@ -662,7 +655,9 @@ export const config: RouterConfig = {
   },
 };
 
-export default ArkosRouter();
+const productRouter = ArkosRouter();
+
+export default productRouter;
 ```
 
 </TabItem>
@@ -676,7 +671,7 @@ Configuration of auto-generated endpoints is not available in v1.3. You must ove
 ### Disabling Auto-Generated Endpoints
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -740,71 +735,19 @@ When all endpoints are disabled, Arkos will not generate:
 - `PATCH /api/posts/many`
 - `DELETE /api/posts/many`
 
-### Configuring Nested Routes
-
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
-
-```typescript
-// src/modules/post/post.router.ts
-import { ArkosRouter } from "arkos";
-import { RouterConfig } from "arkos";
-
-export const config: RouterConfig = {
-  parent: {
-    model: "author",
-    foreignKeyField: "authorId",
-    endpoints: ["findMany", "findOne", "createOne"],
-  },
-
-  // Configure parent endpoints
-  findMany: {
-    authentication: true,
-    rateLimit: {
-      windowMs: 60000,
-      max: 50,
-    },
-  },
-};
-
-export default ArkosRouter();
-```
-
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
-
-```typescript
-// src/modules/post/post.router.ts
-import { Router } from "express";
-import { RouterConfig } from "arkos";
-
-export const config: RouterConfig = {
-  parent: {
-    model: "author",
-    foreignKeyField: "authorId",
-    endpoints: ["findMany", "findOne", "createOne"],
-  },
-};
-
-export default Router();
-```
-
-</TabItem>
-</Tabs>
-
 ### Overriding Auto-Generated Endpoints
 
 To completely replace an auto-generated endpoint:
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```typescript
 // src/modules/post/post.router.ts
-import { ArkosRouter } from "arkos";
-import { RouterConfig } from "arkos";
+import { ArkosRouter, RouterConfig } from "arkos";
 import z from "zod";
 import { prisma } from "../../utils/prisma";
+import postController from "./post.controller";
 
 export const config: RouterConfig = {
   findMany: {
@@ -823,35 +766,12 @@ const PostQuerySchema = z.object({
 // Override GET /api/posts
 router.get(
   {
-    route: "/",
+    path: "/",
     authentication: true,
-    validation: {
-      query: PostQuerySchema,
-    },
-    rateLimit: {
-      windowMs: 60000,
-      max: 100,
-    },
+    validation: { query: PostQuerySchema },
+    rateLimit: { windowMs: 60000, max: 100 },
   },
-  async (req, res) => {
-    const { published, authorId, tag } = req.query;
-
-    const posts = await prisma.post.findMany({
-      where: {
-        ...(published !== undefined && { published }),
-        ...(authorId && { authorId }),
-        ...(tag && { tags: { has: tag } }),
-      },
-      include: {
-        author: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    res.json(posts);
-  }
+  postController.myOwnMethod
 );
 
 export default router;
@@ -865,6 +785,7 @@ export default router;
 import { Router } from "express";
 import { RouterConfig } from "arkos";
 import { prisma } from "../../utils/prisma";
+import postController from "./post.controller";
 
 export const config: RouterConfig = {
   disable: {
@@ -874,13 +795,7 @@ export const config: RouterConfig = {
 
 const router = Router();
 
-router.get("/", async (req, res) => {
-  const publishedPosts = await prisma.post.findMany({
-    where: { published: true },
-  });
-
-  res.json(publishedPosts);
-});
+router.get("/", postController.myOwnMethod);
 
 export default router;
 ```
@@ -904,84 +819,6 @@ When overriding endpoints, you must manually implement features like validation,
 | **Auto-generated Endpoints** | None                                                       | Can configure, disable, or override                          |
 | **Configuration Export**     | Not required                                               | Must export `config` and default router                      |
 
-## Common Patterns
-
-### Pattern 1: Adding a Share Endpoint
-
-```typescript
-// src/modules/post/post.router.ts
-router.post(
-  {
-    route: "/:id/share",
-    authentication: {
-      resource: "post",
-      action: "Share",
-      rule: ["User", "Admin"],
-    },
-    validation: {
-      body: z.object({
-        recipients: z.array(z.string().email()),
-      }),
-    },
-  },
-  postController.sharePost
-);
-```
-
-### Pattern 2: Custom Search Endpoint
-
-```typescript
-// src/modules/product/product.router.ts
-router.get(
-  {
-    route: "/search",
-    validation: {
-      query: z.object({
-        q: z.string().min(2),
-        category: z.string().optional(),
-        minPrice: z.number().optional(),
-        maxPrice: z.number().optional(),
-      }),
-    },
-    rateLimit: {
-      windowMs: 60000,
-      max: 60,
-    },
-  },
-  productController.search
-);
-```
-
-### Pattern 3: Admin-Only Bulk Operation
-
-```typescript
-// src/routers/admin.router.ts
-router.post(
-  {
-    route: "/api/admin/products/bulk-update",
-    authentication: {
-      resource: "product",
-      action: "BulkUpdate",
-      rule: ["Admin"],
-    },
-    validation: {
-      body: z.object({
-        productIds: z.array(z.string()).min(1).max(100),
-        changes: z.object({
-          price: z.number().positive().optional(),
-          stock: z.number().int().optional(),
-        }),
-      }),
-    },
-    rateLimit: {
-      windowMs: 60000,
-      max: 5,
-    },
-  },
-  adminController.bulkUpdateProducts
-);
-```
-
 ## Middleware Order
 
 Understanding middleware execution order helps when debugging:
@@ -993,21 +830,12 @@ Understanding middleware execution order helps when debugging:
 
 Custom routers cannot override built-in routes because they're registered later in the stack.
 
-## Next Steps
+## Related Guides
 
 Now that you understand custom routing, explore related topics:
 
 - **[ArkosRouter API Reference](/docs/api/arkos-router-config)** - Complete configuration options
 - **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Zod and class-validator
 - **[Authentication System](/docs/core-concepts/authentication-system)** - Static and Dynamic RBAC
-- **[File Upload Guide](/docs/guide/file-uploads)** - Handle file uploads
-- **[OpenAPI/Swagger Guide](/docs/guide/openapi-swagger)** - Auto-generate API docs
-- **[Built-in Middlewares](/docs/guide/built-in-middlewares)** - Available middleware options
-
-## Getting Help
-
-If you encounter issues:
-
-- Check the [GitHub Issues](https://github.com/your-org/arkos/issues)
-- Join our [Discord Community](https://discord.gg/arkos)
-- Read the [FAQ](/docs/faq)
+- **[File Upload Guide](/docs/core-concepts/file-uploads)** - Handle file uploads
+- **[OpenAPI/Swagger Guide](/docs/core-concepts/swagger-api-documentation)** - Auto-generate API docs

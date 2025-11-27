@@ -32,7 +32,7 @@ type MethodHandler = (
  *
  * router.get(
  *   {
- *     route: "/users/:id",
+ *     path: "/users/:id",
  *     openapi: {
  *       summary: "Get user by ID",
  *       tags: ["Users"]
@@ -91,7 +91,7 @@ export interface ArkosRouteConfig {
    *
    * @example "/api/users/:id"
    */
-  route: string;
+  path: string;
   /**
    * Authentication and authorization configuration.
    *
