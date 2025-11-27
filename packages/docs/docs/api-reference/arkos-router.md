@@ -337,6 +337,124 @@ router.post(
 );
 ```
 
+### Nested Fields Upload
+
+Arkos Router also supports nested field names using bracket notation, making it easy to handle complex form structures. When using nested fields with `attachToBody` enabled (default), uploaded files are automatically organized in the correct nested structure within `req.body`.
+
+```typescript
+router.post(
+  {
+    path: "/api/users",
+    authentication: true,
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "profile[photo]", // Nested field notation
+        uploadDir: "users-profile",
+      },
+    },
+  },
+  handler
+);
+```
+
+**Result in `req.body`:**
+
+```typescript
+// console.log(req.body)
+{
+  name: "Luis Juliano",
+  email: "luis@becas.co.mz",
+  profile: {
+    photo: "/images/my-profile-photo-34123843219438.jpg" // Nested correctly
+  },
+  birthday: "1999-08-03"
+}
+```
+
+**Multiple Nested Files:**
+
+```typescript
+router.post(
+  {
+    path: "/api/products",
+    authentication: true,
+    experimental: {
+      uploads: {
+        type: "fields",
+        fields: [
+          { name: "product[thumbnail]", maxCount: 1 },
+          { name: "product[gallery]", maxCount: 5 },
+          { name: "documents[manual]", maxCount: 1 },
+          { name: "documents[warranty]", maxCount: 1 },
+        ],
+        uploadDir: "products",
+      },
+    },
+  },
+  handler
+);
+```
+
+**Result in `req.body`:**
+
+```typescript
+{
+  name: "Laptop Pro",
+  price: 1299.99,
+  product: {
+    thumbnail: "/images/laptop-thumb.jpg",
+    gallery: [
+      "/images/laptop-1.jpg",
+      "/images/laptop-2.jpg",
+      "/images/laptop-3.jpg"
+    ]
+  },
+  documents: {
+    manual: "/documents/laptop-manual.pdf",
+    warranty: "/documents/warranty-card.pdf"
+  }
+}
+```
+
+**Deep Nesting:**
+
+```typescript
+router.post(
+  {
+    path: "/api/company/profile",
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "company[details][logo]", // Deep nesting
+        uploadDir: "company-logos",
+      },
+    },
+  },
+  handler
+);
+```
+
+**Result in `req.body`:**
+
+```typescript
+{
+  company: {
+    name: "Tech Corp",
+    details: {
+      logo: "/images/techcorp-logo.png" // Deeply nested
+    }
+  }
+}
+```
+
+**Important Notes:**
+
+- Bracket notation (`field[nested]`) is automatically parsed into nested objects even for non file upload fields
+- Works with all upload types: `single`, `array`, and `fields`
+- Only applies when `attachToBody` is not `false` (it's `"pathname"` by default)
+- The nested structure is created even if other fields in the path don't exist in the request
+
 **Upload Configuration Properties:**
 
 | Property           | Type                                     | Description                            | Default                    |
@@ -636,21 +754,160 @@ router.get(
 
 For more examples and advanced filtering options, see the [Request Query Parameters Guide](/docs/guide/request-query-parameters).
 
+## Body Parser
+
+Customize how the request body is parsed for specific routes:
+
+```typescript
+router.post(
+  {
+    path: "/api/webhooks/stripe",
+    bodyParser: {
+      parser: "raw",
+      options: { type: "application/json" }, // Parse as raw buffer but only for application/json
+    },
+  },
+  stripeWebhookHandler
+);
+
+router.post(
+  {
+    path: "/api/data/upload",
+    bodyParser: {
+      parser: "text",
+      options: { type: "text/plain", limit: "10mb" },
+    },
+  },
+  textDataHandler
+);
+
+router.post(
+  {
+    path: "/api/form",
+    bodyParser: {
+      parser: "urlencoded",
+      options: { extended: true },
+    },
+  },
+  formHandler
+);
+
+router.post(
+  {
+    path: "/api/disable-parsing",
+    bodyParser: false, // Disable body parsing entirely
+  },
+  customParsingHandler
+);
+```
+
+**Body Parser Configuration:**
+
+```typescript
+bodyParser: {
+  parser: "json" | "urlencoded" | "raw" | "text",
+  options?: { /* parser-specific options */ }
+}
+// OR
+bodyParser: false // Disable parsing
+```
+
+**Parser Types:**
+
+| Parser         | Description                                                       | Common Options                        |
+| -------------- | ----------------------------------------------------------------- | ------------------------------------- |
+| `"json"`       | Parse as JSON (default globally)                                  | `limit`, `strict`, `type`             |
+| `"urlencoded"` | Parse as URL-encoded form data                                    | `limit`, `extended`, `parameterLimit` |
+| `"raw"`        | Parse as raw Buffer (for webhooks needing signature verification) | `limit`, `type`                       |
+| `"text"`       | Parse as plain text                                               | `limit`, `type`, `defaultCharset`     |
+| `false`        | Disable body parsing for this route                               | -                                     |
+
+**Note**: By default, JSON parsing is enabled globally. Use this option to override the parser for specific routes, such as webhook endpoints that need raw request bodies for signature verification.
+
 ## Compression
 
-Enable response compression for specific routes:
+Control response compression for specific routes, this is the same as the npm package compression you can check it at [Compression Github Repo](https://github.com/expressjs/compression).
 
 ```typescript
 router.get(
   {
     path: "/api/reports/large-dataset",
-    compression: true, // Uses the compression npm package
+    compression: true, // Use default compression settings
   },
   handler
 );
+
+router.get(
+  {
+    path: "/api/reports/optimized",
+    compression: {
+      level: 6, // Compression level (0-9)
+      threshold: "1kb", // Only compress responses larger than 1kb
+    },
+  },
+  handler
+);
+
+router.get(
+  {
+    path: "/api/stream/video",
+    compression: false, // Disable compression for this route
+  },
+  videoStreamHandler
+);
 ```
 
-This uses the standard `compression` npm package to compress response bodies, reducing bandwidth usage for large responses.
+### Compression Configuration:
+
+```typescript
+compression: true | false | {
+  level?: number;        // 0-9, default: -1 (default compression)
+  threshold?: number | string;  // Minimum size to compress, default: "1kb"
+  filter?: (req, res) => boolean;  // Custom filter function
+  memLevel?: number;     // Memory level (1-9), default: 8
+  strategy?: number;     // Compression strategy
+  chunkSize?: number;    // Chunk size for compression
+}
+```
+
+**Compression Options:**
+
+| Option      | Type               | Description                                                | Default                    |
+| ----------- | ------------------ | ---------------------------------------------------------- | -------------------------- |
+| `level`     | `number`           | Compression level (0=none, 9=max)                          | `-1` (default)             |
+| `threshold` | `number \| string` | Minimum response size to compress                          | `"1kb"`                    |
+| `filter`    | `function`         | Custom function to decide if response should be compressed | Uses `compressible` module |
+| `memLevel`  | `number`           | Memory allocated for compression (1-9)                     | `8`                        |
+| `strategy`  | `number`           | Compression strategy (zlib constants)                      | `Z_DEFAULT_STRATEGY`       |
+| `chunkSize` | `number`           | Chunk size in bytes                                        | `16384`                    |
+
+**Common Use Cases:**
+
+```typescript
+// High compression for large static reports
+compression: {
+  level: 9, // Maximum compression
+  threshold: "10kb"
+}
+
+// Fast compression for real-time data
+compression: {
+  level: 1, // Fastest compression
+  threshold: "5kb"
+}
+
+// Custom filter to exclude certain content types
+compression: {
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}
+```
+
+**Note**: Compression is enabled globally by default in Arkos. Use `compression: false` to disable it for specific routes where it's not beneficial (like streaming endpoints or pre-compressed content), or customize compression settings per route.
 
 ## Using Standard Express Middleware
 

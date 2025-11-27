@@ -11,21 +11,70 @@ Arkos provides a comprehensive JWT-based authentication system with Role-Based A
 
 ## JWT Configuration & Environment Setup
 
-First, activate authentication in your Arkos application:
+First, configure authentication in your Arkos application:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    mode: "static", // Start with static, upgrade to dynamic later if needed
+    login: {
+      sendAccessTokenThrough: "both", // Options: "cookie-only", "response-only", "both"
+      allowedUsernames: ["username"], // Or ["email"], ["username", "email"], etc.
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: process.env.JWT_EXPIRES_IN || "30d",
+      cookie: {
+        secure: process.env.JWT_COOKIE_SECURE === "true",
+        httpOnly: process.env.JWT_COOKIE_HTTP_ONLY !== "false",
+        sameSite:
+          (process.env.JWT_COOKIE_SAME_SITE as "lax" | "strict" | "none") ||
+          undefined,
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
 import arkos from "arkos";
 
 arkos.init({
-    authentication: {
-        mode: "static", // Start with static, upgrade to dynamic later if needed
-        login: {
-            sendAccessTokenThrough: "both", // Options: "cookie-only", "response-only", "both"
-        },
+  authentication: {
+    mode: "static",
+    login: {
+      sendAccessTokenThrough: "both",
+      allowedUsernames: ["username"],
     },
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: process.env.JWT_EXPIRES_IN || "30d",
+      cookie: {
+        secure: process.env.JWT_COOKIE_SECURE === "true",
+        httpOnly: process.env.JWT_COOKIE_HTTP_ONLY !== "false",
+        sameSite:
+          (process.env.JWT_COOKIE_SAME_SITE as "lax" | "strict" | "none") ||
+          undefined,
+      },
+    },
+  },
 });
 ```
+
+</TabItem>
+</Tabs>
 
 ### JWT Configuration Options
 
@@ -41,32 +90,6 @@ JWT_COOKIE_HTTP_ONLY=true
 JWT_COOKIE_SAME_SITE=none
 ```
 
-**Direct Configuration:**
-
-```typescript
-arkos.init({
-    authentication: {
-        mode: "static",
-        login: {
-            sendAccessTokenThrough: "both",
-        },
-        jwt: {
-            secret: process.env.JWT_SECRET,
-            expiresIn: process.env.JWT_EXPIRES_IN || "30d",
-            cookie: {
-                secure: process.env.JWT_COOKIE_SECURE === "true",
-                httpOnly: process.env.JWT_COOKIE_HTTP_ONLY !== "false",
-                sameSite:
-                    (process.env.JWT_COOKIE_SAME_SITE as
-                        | "lax"
-                        | "strict"
-                        | "none") || undefined,
-            },
-        },
-    },
-});
-```
-
 ### JWT Configuration Reference
 
 | Option            | Description                                                     | Env Variable           | Default                      |
@@ -78,7 +101,7 @@ arkos.init({
 | `cookie.sameSite` | SameSite cookie attribute                                       | `JWT_COOKIE_SAME_SITE` | "lax" in dev, "none" in prod |
 
 :::warning Production Security
-Always set a `JWT_SECRET` (strong for better security) in production (Otherwise Arkos will throw an error on login attempts when no JWT Secret is set under production). Never commit secrets to version control.
+Always set a strong `JWT_SECRET` in production. Arkos will throw an error on login attempts when no JWT Secret is set in production. Never commit secrets to version control.
 :::
 
 ## User Model Setup - Static RBAC Foundation
@@ -108,7 +131,7 @@ model User {
   // Role assignment (choose one approach)
   role                  UserRole  @default(User)      // Single role
   // OR
-  // roles                 UserRole[]                     // Multiple roles
+  // roles                 UserRole[]                  // Multiple roles
 
   // example of custom fields
   email                 String?   @unique
@@ -143,34 +166,56 @@ model User {
 
 By default, users login with `username`. You can customize this:
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-arkos.init({
-    authentication: {
-        mode: "static",
-        login: {
-            allowedUsernames: ["email"], // Use email field for login
-            // allowedUsernames: ["username", "email"], // Allow both
-        },
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    mode: "static",
+    login: {
+      allowedUsernames: ["email"], // Use email field for login
+      // allowedUsernames: ["username", "email"], // Allow both
     },
+  },
+};
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/app.ts
+arkos.init({
+  authentication: {
+    mode: "static",
+    login: {
+      allowedUsernames: ["email"],
+    },
+  },
 });
 ```
+
+</TabItem>
+</Tabs>
 
 :::warning Required Setup
 Create at least one user with `isSuperUser: true` before activating authentication. By default, Arkos requires authentication for all endpoints and only allows super users until you configure access controls.
 :::
 
-### Login With Different Fileds
+### Login With Different Fields
 
-After customizing your `allowedUsernames` Arkos will take the first on the array and consider as the default when users try to make login through api call at `/api/auth/login` in order to change this behavior let's say you have:
+After customizing your `allowedUsernames`, Arkos will use the first element in the array as the default when users login via `/api/auth/login`. To change this behavior, consider this example:
 
 ```ts
 {
-    allowedUsernames: [
-        "email",
-        "username",
-        "profile.nickname",
-        "phones.some.number",
-    ];
+  allowedUsernames: [
+    "email",
+    "username",
+    "profile.nickname",
+    "phones.some.number",
+  ];
 }
 ```
 
@@ -185,7 +230,7 @@ POST /api/auth/login
 }
 ```
 
-In this situation it will just work because `email` is the first element on the array of `allowedUsernames` if it wasn't or if you would like to Explicitly describe which username field to use, the request would look like:
+This works because `email` is the first element in `allowedUsernames`. To explicitly specify the username field:
 
 ```curl
 POST /api/auth/login?usernameField=email
@@ -207,17 +252,17 @@ POST /api/auth/login?usernameField=username
 }
 ```
 
-When you want to use a non default (not the first element under `allowedUsernames`) you must explicitly pass it as a search param `usernameField=username` as the example above, this way Arkos will know exactly what field it must use in order to execute the login request.
+When using a non-default field (not the first element in `allowedUsernames`), you must explicitly pass it as a query parameter `usernameField=username`.
 
 #### Login With Relation Fields (Nested Fields)
 
-Arkos supports logging in with nested fields using dot notation, which allows you to authenticate users based on fields within related models. For example, with the configuration:
+Arkos supports logging in with nested fields using dot notation:
 
 ```curl
 POST /api/auth/login?usernameField=profile.nickname
 
 {
-    "nickname": "cacilda_cool"
+    "nickname": "cacilda_cool",
     "password": "SomeCoolStrongPass123"
 }
 ```
@@ -228,28 +273,28 @@ POST /api/auth/login?usernameField=profile.nickname
 POST /api/auth/login?usernameField=phones.some.number
 
 {
-    "number": "+5511999999999"
+    "number": "+5511999999999",
     "password": "SomeCoolStrongPass123"
 }
 ```
 
-#### How Logging In With Relation Fields Works?
+#### How Logging In With Relation Fields Works
 
-The dot notation (`phones.some.number`) is converted into a Prisma `where` clause that Arkos uses to search for the user. For the example above, Arkos would construct a query similar to:
+The dot notation (`phones.some.number`) is converted into a Prisma `where` clause:
 
 ```ts
 prisma.user.findUnique({
-    where: {
-        phones: {
-            some: {
-                number: "+5511999999999",
-            },
-        },
+  where: {
+    phones: {
+      some: {
+        number: "+5511999999999",
+      },
     },
+  },
 });
 ```
 
-This allows you to authenticate users based on fields within related models, providing flexible login options.
+This allows authentication based on fields within related models, providing flexible login options.
 
 ### Important Considerations When Logging In With Different Fields
 
@@ -257,11 +302,9 @@ This allows you to authenticate users based on fields within related models, pro
 
 2. **Explicit Field Specification**: When using any field that is not the first in your `allowedUsernames` array, you must explicitly specify it using the `usernameField` query parameter.
 
-3. **Data Structure**: The request body only requires the actual field value, not the nested structure. For `profile.nickname`, you simply provide `{"nickname": "value"}`, not `{profile: {nickname: "value"}}`. Similarly, for `phones.some.number`, you provide `{"number": "+5511999999999"}`. If you try to use the nested structure (like `{profile: {nickname: "value"}}`), it will NOT work. Arkos automatically maps the field name to the appropriate nested query internally.
+3. **Data Structure**: The request body only requires the actual field value, not the nested structure. For `profile.nickname`, you simply provide `{"nickname": "value"}`, not `{profile: {nickname: "value"}}`. Similarly, for `phones.some.number`, you provide `{"number": "+5511999999999"}`. Arkos automatically maps the field name to the appropriate nested query internally.
 
-This approach provides maximum flexibility while maintaining security and proper data validation through Prisma's type-safe query system.
-
-## Handling Permission In Static Authentication
+## Handling Permissions
 
 ### Auth Config Files - Static RBAC
 
@@ -287,36 +330,36 @@ This creates `src/modules/post/post.auth.ts`:
 import { AuthConfigs } from "arkos/auth";
 
 export const postAuthConfigs: AuthConfigs = {
-    authenticationControl: {
-        View: false, // Public access - no authentication required
-        Create: true, // Authentication required
-        Update: true, // Authentication required (default)
-        Delete: true, // Authentication required (default)
+  authenticationControl: {
+    View: false, // Public access - no authentication required
+    Create: true, // Authentication required
+    Update: true, // Authentication required (default)
+    Delete: true, // Authentication required (default)
 
-        // Custom actions
-        Export: true,
-        BulkApprove: true,
+    // Custom actions
+    Export: true,
+    BulkApprove: true,
+  },
+
+  accessControl: {
+    // Simple format (description auto-generated)
+    Create: ["Editor", "Admin"],
+    Update: ["Editor", "Admin"],
+    Delete: ["Admin"],
+
+    // Detailed format with custom descriptions
+    Export: {
+      roles: ["Admin", "Analyst"],
+      name: "Export Posts",
+      description: "Allows exporting posts to various formats",
     },
 
-    accessControl: {
-        // Simple format (description auto-generated)
-        Create: ["Editor", "Admin"],
-        Update: ["Editor", "Admin"],
-        Delete: ["Admin"],
-
-        // Detailed format with custom descriptions
-        Export: {
-            roles: ["Admin", "Analyst"],
-            name: "Export Posts",
-            description: "Allows exporting posts to various formats",
-        },
-
-        BulkApprove: {
-            roles: ["Admin", "Moderator"],
-            name: "Bulk Approve Posts",
-            description: "Allows approving multiple posts at once",
-        },
+    BulkApprove: {
+      roles: ["Admin", "Moderator"],
+      name: "Bulk Approve Posts",
+      description: "Allows approving multiple posts at once",
     },
+  },
 };
 ```
 
@@ -332,9 +375,303 @@ export const postAuthConfigs: AuthConfigs = {
 - Simple format: `["Role1", "Role2"]` (description auto-generated)
 - Detailed format: `{ roles: [...], name: "...", description: "..." }`
 
+## Adding Authentication in Custom Routers
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+ArkosRouter provides declarative authentication configuration. You can add authentication inline or reference auth configs for consistency.
+
+### Simple Authentication (Inline)
+
+```typescript
+// src/routers/reports.router.ts
+import { ArkosRouter } from "arkos";
+import reportsController from "../controllers/reports.controller";
+
+const router = ArkosRouter();
+
+// Basic authentication - just requires user to be logged in
+router.get(
+  {
+    path: "/api/reports/dashboard",
+    authentication: true,
+  },
+  reportsController.getDashboard
+);
+
+// With role-based access control (inline)
+router.post(
+  {
+    path: "/api/reports/generate",
+    authentication: {
+      resource: "report",
+      action: "Generate",
+      rule: { roles: ["Admin", "Manager"] }, // Inline roles
+    },
+  },
+  reportsController.generateReport
+);
+
+export default router;
+```
+
+### Recommended: Reference Auth Configs
+
+For consistency with fine-grained access control, reference your auth configs:
+
+```typescript
+// src/modules/report/report.auth.ts
+import { AuthConfigs } from "arkos/auth";
+
+export const reportAuthConfigs: AuthConfigs = {
+  authenticationControl: {
+    Generate: true,
+    Export: true,
+    View: false,
+  },
+  accessControl: {
+    Generate: {
+      roles: ["Admin", "Manager"],
+      name: "Generate Reports",
+      description: "Create new reports with custom parameters",
+    },
+    Export: {
+      roles: ["Admin", "Analyst"],
+      name: "Export Reports",
+      description: "Export reports in various formats",
+    },
+  },
+};
+
+export default reportAuthConfigs;
+```
+
+```typescript
+// src/routers/reports.router.ts
+import { ArkosRouter } from "arkos";
+import { reportAuthConfigs } from "../modules/report/report.auth";
+import reportsController from "../controllers/reports.controller";
+
+const router = ArkosRouter();
+
+// Reference auth config for consistency
+router.post(
+  {
+    path: "/api/reports/generate",
+    authentication: {
+      resource: "report",
+      action: "Generate",
+      rule: reportAuthConfigs.accessControl.Generate, // Reference auth config
+    },
+  },
+  reportsController.generateReport
+);
+
+router.post(
+  {
+    path: "/api/reports/export",
+    authentication: {
+      resource: "report",
+      action: "Export",
+      rule: reportAuthConfigs.accessControl.Export,
+    },
+  },
+  reportsController.exportReport
+);
+
+export default router;
+```
+
+:::tip Why Reference Auth Configs?
+Referencing auth configs instead of inline rules provides:
+
+- Consistency with [Fine-Grained Access Control](/docs/advanced-guide/fine-grained-access-control)
+- Single source of truth for permissions
+- Easier maintenance and updates
+  :::
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/routers/reports.router.ts
+import { Router } from "express";
+import { authService } from "arkos/services";
+import reportsController from "../controllers/reports.controller";
+
+const router = Router();
+
+const authConfigs = {
+  accessControl: {
+    Generate: ["Admin", "Manager"],
+  },
+};
+
+router.get(
+  "/api/reports/dashboard",
+  authService.authenticate,
+  reportsController.getDashboard
+);
+
+router.post(
+  "/api/reports/generate",
+  authService.authenticate,
+  authService.handleAccessControl(
+    "Generate",
+    "report",
+    authConfigs.accessControl
+  ),
+  reportsController.generateReport
+);
+
+export default router;
+```
+
+</TabItem>
+</Tabs>
+
+## Customizing Authentication for Auto-Generated Endpoints
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+Control authentication for auto-generated endpoints using `RouterConfig` - this is the new recommended approach:
+
+```typescript
+// src/modules/post/post.router.ts
+import { ArkosRouter, RouterConfig } from "arkos";
+import postAuthConfigs from "./post.auth";
+
+export const config: RouterConfig = {
+  // Make findMany public (no authentication required)
+  findMany: {
+    authentication: false,
+  },
+
+  // Require authentication for createOne
+  createOne: {
+    authentication: {
+      resource: "post",
+      action: "Create",
+      rule: postAuthConfigs.accessControl.Create, // Reference auth config
+    },
+  },
+
+  // Require authentication for updateOne
+  updateOne: {
+    authentication: {
+      resource: "post",
+      action: "Update",
+      rule: postAuthConfigs.accessControl.Update,
+    },
+  },
+
+  // Strict admin-only for deleteOne
+  deleteOne: {
+    authentication: {
+      resource: "post",
+      action: "Delete",
+      rule: postAuthConfigs.accessControl.Delete,
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+:::tip Recommended Approach
+Using `RouterConfig` for authentication control is preferred over defining `authenticationControl` in `.auth.ts` files. It provides:
+
+- Explicit, visible configuration in one place
+- Easier to override default behaviors
+- Consistent with other RouterConfig features
+  :::
+
+**Auth config files remain important** for:
+
+- Defining `accessControl` rules (single source of truth)
+- Documentation via `/api/auth-actions` endpoint
+- Fine-grained access control references
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+Authentication control was handled entirely through `.auth.ts` files:
+
+```typescript
+// src/modules/post/post.auth.ts
+export const postAuthConfigs: AuthConfigs = {
+  authenticationControl: {
+    View: false, // Public
+    Create: true,
+    Update: true,
+    Delete: true,
+  },
+  accessControl: {
+    Create: ["Editor", "Admin"],
+    Update: ["Editor", "Admin"],
+    Delete: ["Admin"],
+  },
+};
+```
+
+</TabItem>
+</Tabs>
+
 ### Using Custom Actions in Routes
 
-Custom actions defined in auth configs must be implemented in custom routes:
+Custom actions defined in auth configs can be used in custom routes:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// src/modules/post/post.router.ts
+import { ArkosRouter } from "arkos";
+import { RouterConfig } from "arkos";
+import postAuthConfigs from "./post.auth";
+import postController from "./post.controller";
+
+export const config: RouterConfig = {
+  // Configure built-in endpoints...
+};
+
+const router = ArkosRouter();
+
+// Custom export endpoint
+router.get(
+  {
+    path: "/export",
+    authentication: {
+      resource: "post",
+      action: "Export",
+      rule: postAuthConfigs.accessControl.Export,
+    },
+  },
+  postController.exportPosts
+);
+
+// Custom bulk approve endpoint
+router.post(
+  {
+    path: "/bulk-approve",
+    authentication: {
+      resource: "post",
+      action: "BulkApprove",
+      rule: postAuthConfigs.accessControl.BulkApprove,
+    },
+  },
+  postController.bulkApprove
+);
+
+export default router;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -342,19 +679,23 @@ import { Router } from "express";
 import { authService } from "arkos/services";
 import { catchAsync } from "arkos/error-handler";
 import postAuthConfigs from "./post.auth";
+import postController from "./post.controller";
 
 const router = Router();
 const { accessControl } = postAuthConfigs;
 
 router.get(
-    "/export", // will translate to /api/posts/export
-    authService.authenticate,
-    authService.handleAccessControl("Export", "post", accessControl.Export),
-    catchAsync(exportPostsController)
+  "/export",
+  authService.authenticate,
+  authService.handleAccessControl("Export", "post", accessControl.Export),
+  catchAsync(postController.exportPosts)
 );
 
 export default router;
 ```
+
+</TabItem>
+</Tabs>
 
 ## Authentication System Flow
 
@@ -422,17 +763,17 @@ Request Processing (if authorized)
 
 ```javascript
 const response = await fetch("/api/auth/signup", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-        username: "john_doe",
-        password: "SecurePassword123!",
-        email: "john@example.com",
-        firstName: "John",
-        lastName: "Doe",
-    }),
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    username: "john_doe",
+    password: "SecurePassword123!",
+    email: "john@example.com",
+    firstName: "John",
+    lastName: "Doe",
+  }),
 });
 
 const result = await response.json();
@@ -442,21 +783,21 @@ const result = await response.json();
 
 ```javascript
 const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-    },
-    credentials: "include", // Important for cookie-based auth
-    body: JSON.stringify({
-        username: "john_doe", // or email if configured
-        password: "SecurePassword123!",
-    }),
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  credentials: "include", // Important for cookie-based auth
+  body: JSON.stringify({
+    username: "john_doe", // or email if configured
+    password: "SecurePassword123!",
+  }),
 });
 
 const result = await response.json();
 ```
 
-Depending on your setup under `sendAccessTokenThrough` property it will whether setup the token as cookie, attach into the json response or do both (default behavior).
+Depending on your `sendAccessTokenThrough` configuration, the token will be set as a cookie, attached to the JSON response, or both (default behavior).
 
 ### Accessing Protected Endpoints
 
@@ -464,11 +805,11 @@ Depending on your setup under `sendAccessTokenThrough` property it will whether 
 
 ```javascript
 const response = await fetch("/api/posts", {
-    method: "GET",
-    headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-    },
+  method: "GET",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  },
 });
 ```
 
@@ -476,11 +817,11 @@ const response = await fetch("/api/posts", {
 
 ```javascript
 const response = await fetch("/api/posts", {
-    method: "GET",
-    credentials: "include", // Automatically includes cookies
-    headers: {
-        "Content-Type": "application/json",
-    },
+  method: "GET",
+  credentials: "include", // Automatically includes cookies
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 ```
 
@@ -489,27 +830,27 @@ const response = await fetch("/api/posts", {
 ```javascript
 // Get current user profile
 const profile = await fetch("/api/users/me", {
-    credentials: "include",
+  credentials: "include",
 }).then((r) => r.json());
 
 // Update user profile
 const updated = await fetch("/api/users/me", {
-    method: "PATCH",
-    credentials: "include",
-    body: JSON.stringify({
-        firstName: "John Updated",
-        email: "newemail@example.com",
-    }),
+  method: "PATCH",
+  credentials: "include",
+  body: JSON.stringify({
+    firstName: "John Updated",
+    email: "newemail@example.com",
+  }),
 }).then((res) => res.json());
 
 // Change password
 const passwordUpdate = await fetch("/api/auth/update-password", {
-    method: "POST",
-    credentials: "include",
-    body: JSON.stringify({
-        currentPassword: "oldPassword",
-        newPassword: "newSecurePassword123!",
-    }),
+  method: "POST",
+  credentials: "include",
+  body: JSON.stringify({
+    currentPassword: "oldPassword",
+    newPassword: "newSecurePassword123!",
+  }),
 }).then((r) => r.json());
 ```
 
@@ -517,11 +858,120 @@ const passwordUpdate = await fetch("/api/auth/update-password", {
 
 ```javascript
 const response = await fetch("/api/auth/logout", {
-    method: "DELETE",
-    credentials: "include",
+  method: "DELETE",
+  credentials: "include",
 });
 // Clears authentication cookies and invalidates session
 ```
+
+## Frontend Integration
+
+### Auth Actions Discovery
+
+The `/api/auth-actions` endpoint helps frontend developers discover available permissions:
+
+```javascript
+const authActions = await fetch("/api/auth-actions", {
+  credentials: "include",
+}).then((res) => res.json());
+
+// Returns array of available actions:
+// [
+//   {
+//     roles: ["Admin", "Editor"],    // Only in Static mode
+//     action: "Create",
+//     resource: "post",
+//     name: "Create Posts",
+//     description: "Allows creating new blog posts"
+//   },
+//   // ... more actions
+// ]
+```
+
+**Data Source:**
+
+- **Static Mode**: Data comes from auth config files (including `roles`)
+- **Dynamic Mode**: Data comes from database records (no `roles` field)
+
+### Exporting Auth Actions for Frontend
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+" default>
+
+You can export auth actions to a file for static typing and easier frontend integration:
+
+```bash
+# Export auth actions (merges with existing file by default)
+npx arkos export auth-action
+
+# Overwrite existing file instead of merging
+npx arkos export auth-action --overwrite
+
+# Export to custom path
+npx arkos export auth-action --path src/constants
+```
+
+This generates `auth-actions.ts` (or `.js`) with all your application's permissions:
+
+```typescript
+// src/modules/auth/utils/auth-actions.ts (default location)
+const authActions = [
+  {
+    resource: "post",
+    action: "Create",
+    roles: ["Editor", "Admin"],
+    name: "Create Posts",
+    description: "Allows creating new blog posts",
+  },
+  {
+    resource: "post",
+    action: "Update",
+    roles: ["Editor", "Admin"],
+    name: "Update Posts",
+    description: "Allows updating existing blog posts",
+  },
+  // ... all your auth actions
+];
+
+export default authActions;
+```
+
+**Merge Behavior:**
+
+By default, `export auth-action` **merges** new actions with existing ones, preserving any customizations you've made (like translations or custom descriptions). Use `--overwrite` to completely replace the file.
+
+**Use Cases:**
+
+- **Static Auth**: Map permissions to UI elements, hide/show features based on roles
+- **Dynamic Auth**: Add i18n translations to action names/descriptions
+- **TypeScript**: Generate types for compile-time permission checks
+- **Documentation**: Reference available permissions in your frontend code
+
+```typescript
+// Example frontend usage
+import authActions from './auth-actions';
+
+function canUserPerformAction(userRole: string, resource: string, action: string) {
+  const permission = authActions.find(
+    a => a.resource === resource && a.action === action
+  );
+
+  return permission?.roles.includes(userRole);
+}
+
+// In a React component
+if (canUserPerformAction(user.role, 'post', 'Delete')) {
+  return <DeleteButton />;
+}
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+The `export auth-action` command is not available in v1.3. You must manually fetch from `/api/auth-actions` or copy permissions from your auth config files.
+
+</TabItem>
+</Tabs>
 
 ## Upgrading To Dynamic RBAC
 
@@ -601,15 +1051,34 @@ model UserRole {
 
 ### Update Application Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    mode: "dynamic", // Change from "static" to "dynamic"
+    // Keep all other JWT settings the same
+  },
+};
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
 ```typescript
 // src/app.ts
 arkos.init({
-    authentication: {
-        mode: "dynamic", // Change from "static" to "dynamic"
-        // Keep all other JWT settings the same
-    },
+  authentication: {
+    mode: "dynamic",
+    // Keep all other settings
+  },
 });
 ```
+
+</TabItem>
+</Tabs>
 
 ### Auth Config Files in Dynamic Mode
 
@@ -618,26 +1087,26 @@ Auth config files serve a different purpose in Dynamic mode:
 ```typescript
 // src/modules/post/post.auth.ts
 export const postAuthConfigs: AuthConfigs = {
-    authenticationControl: {
-        View: false, // Still controls authentication requirements
-        Create: true,
-        Export: true,
+  authenticationControl: {
+    View: false, // Still controls authentication requirements
+    Create: true,
+    Export: true,
+  },
+
+  accessControl: {
+    // In Dynamic mode: used ONLY for documentation
+    // roles field is ignored - actual control comes from database
+    Create: {
+      // roles: ["Admin"], // This field is ignored in Dynamic mode
+      name: "Create Posts",
+      description: "Allows creating new blog posts",
     },
 
-    accessControl: {
-        // In Dynamic mode: used ONLY for documentation
-        // roles field is ignored - actual control comes from database
-        Create: {
-            // roles: ["Admin"], // This field is ignored in Dynamic mode
-            name: "Create Posts",
-            description: "Allows creating new blog posts",
-        },
-
-        Export: {
-            name: "Export Posts",
-            description: "Allows exporting posts in various formats",
-        },
+    Export: {
+      name: "Export Posts",
+      description: "Allows exporting posts in various formats",
     },
+  },
 };
 ```
 
@@ -655,30 +1124,30 @@ In Dynamic mode, you manage permissions through database records:
 ```typescript
 // Example: Creating roles and permissions programmatically
 const adminRole = await prisma.authRole.create({
-    data: { name: "Admin" },
+  data: { name: "Admin" },
 });
 
 const editorRole = await prisma.authRole.create({
-    data: { name: "Editor" },
+  data: { name: "Editor" },
 });
 
 // Grant permissions to roles
 await prisma.authPermission.createMany({
-    data: [
-        { resource: "post", action: "Create", roleId: editorRole.id },
-        { resource: "post", action: "Update", roleId: editorRole.id },
-        { resource: "post", action: "View", roleId: editorRole.id },
-        { resource: "post", action: "Delete", roleId: adminRole.id },
-        { resource: "post", action: "Export", roleId: adminRole.id },
-    ],
+  data: [
+    { resource: "post", action: "Create", roleId: editorRole.id },
+    { resource: "post", action: "Update", roleId: editorRole.id },
+    { resource: "post", action: "View", roleId: editorRole.id },
+    { resource: "post", action: "Delete", roleId: adminRole.id },
+    { resource: "post", action: "Export", roleId: adminRole.id },
+  ],
 });
 
 // Assign roles to users
 await prisma.userRole.create({
-    data: {
-        userId: user.id,
-        roleId: adminRole.id,
-    },
+  data: {
+    userId: user.id,
+    roleId: adminRole.id,
+  },
 });
 ```
 
@@ -726,37 +1195,8 @@ On next versions there is a plan on adding a migration script into the `cli` in 
 
 Beyond endpoint-level protection, use `authService.permission` for granular access control within your application logic. This works in both Static and Dynamic modes, you can read more at [**Fine-Grained Access Control Guide**](/docs/advanced-guide/fine-grained-access-control).
 
-## Auth Actions Discovery
-
-The `/api/auth-actions` endpoint helps frontend developers discover available permissions:
-
-```javascript
-const authActions = await fetch("/api/auth-actions", {
-    credentials: "include",
-}).then((res) => res.json());
-
-// Returns array of available actions:
-// [
-//   {
-//     roles: ["Admin", "Editor"],    // Only in Static mode
-//     action: "Create",
-//     resource: "post",
-//     name: "Create Posts",
-//     description: "Allows creating new blog posts"
-//   },
-//   // ... more actions
-// ]
-```
-
-**Data Source:**
-
-- **Static Mode**: Data comes from auth config files (including `roles`)
-- **Dynamic Mode**: Data comes from database records (no `roles` field)
-
-This endpoint is particularly useful for building permission management UIs and helping frontend developers understand what actions are available in your application.
-
 ## Next Steps
 
-- Learn about [Authentication Interceptor Middlewares](/docs/guide/auth-interceptor-middlewares) for customizing authentication behavior
-- Explore [Authentication Data Validation](/docs/guide/auth-data-validation) for request validation
+- Learn about [Authentication Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares#authentication-interceptor-middlewares) for customizing authentication behavior
+- Explore [Authentication Data Validation](/docs/core-concepts/request-data-validation#authentication-endpoint-validation) for request validation
 - Check out [Fine-Grained Access Control](/docs/advanced-guide/fine-grained-access-control) for advanced permissions
