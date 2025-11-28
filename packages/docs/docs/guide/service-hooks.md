@@ -1,12 +1,12 @@
 ---
 sidebar_position: 4
-title: Service Hooks 
+title: Service Hooks
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Service Hooks 
+# Service Hooks
 
 > Available from `v1.3.0-beta`
 
@@ -25,13 +25,13 @@ This ensures your business logic runs consistently across your entire applicatio
 
 Understanding when to use each approach:
 
-| Feature | Service Hooks | Interceptor Middlewares |
-|---------|---------------|-------------------------|
-| **Execution Level** | Service layer (BaseService methods) | HTTP request layer (Express routes) |
-| **Scope** | All service calls (API + programmatic) | Only HTTP endpoint calls |
-| **Access to** | Service context, user info | Full Express req/res objects |
-| **Best for** | Business logic, data validation, audit trails | Request processing, authentication, response formatting |
-| **File Location** | `[model].hooks.ts` | `[model].interceptors.ts (v1.4.0+)` or `[model].middlewares.ts (v1.3.0 and earlier)`  |
+| Feature             | Service Hooks                                 | Interceptor Middlewares                                                              |
+| ------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Execution Level** | Service layer (BaseService methods)           | HTTP request layer (Express routes)                                                  |
+| **Scope**           | All service calls (API + programmatic)        | Only HTTP endpoint calls                                                             |
+| **Access to**       | Service context, user info                    | Full Express req/res objects                                                         |
+| **Best for**        | Business logic, data validation, audit trails | Request processing, authentication, response formatting                              |
+| **File Location**   | `[model].hooks.ts`                            | `[model].interceptors.ts (v1.4.0+)` or `[model].middlewares.ts (v1.3.0 and earlier)` |
 
 ## Setting Up Service Hooks
 
@@ -63,6 +63,7 @@ npx arkos generate service --module post
 ```
 
 **Shorthand:**
+
 ```bash
 npx arkos g s -m post
 ```
@@ -78,10 +79,7 @@ import { BaseService } from "arkos/services";
 
 class PostService extends BaseService<"post"> {
   async getPostsByAuthor(authorId: string) {
-    return this.findMany(
-       { authorId },
-       { include: { author: true } }
-    );
+    return this.findMany({ authorId }, { include: { author: true } });
   }
 }
 
@@ -104,10 +102,7 @@ import { Prisma } from "@prisma/client";
 
 class PostService extends BaseService<Prisma.PostDelegate> {
   async getPostsByAuthor(authorId: string) {
-    return this.findMany(
-       { authorId },
-       { include: { author: true } }
-    );
+    return this.findMany({ authorId }, { include: { author: true } });
   }
 }
 
@@ -123,14 +118,13 @@ export default postService;
 
 ```typescript
 // src/modules/post/post.hooks.ts
-import { 
-  BeforeCreateOneHookArgs, 
+import {
+  BeforeCreateOneHookArgs,
   AfterCreateOneHookArgs,
-  OnCreateOneErrorHookArgs 
+  OnCreateOneErrorHookArgs,
 } from "arkos/services";
 import { Prisma } from "@prisma/client";
 import postService from "./post.service";
-
 
 export const beforeCreateOne = [
   async ({ data, context }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
@@ -143,10 +137,8 @@ export const beforeCreateOne = [
     }
 
     // Add current user as author if available
-    if (context?.user?.id) 
-        data.authorId = context.user.id;
-
-  }
+    if (context?.user?.id) data.authorId = context.user.id;
+  },
 ];
 
 export const afterCreateOne = [
@@ -160,16 +152,18 @@ export const afterCreateOne = [
 
     // Update search index
     await searchService.indexPost(result);
-  }
+  },
 ];
 
 export const onCreateOneError = [
-  async ({ error, data, context }: OnCreateOneErrorHookArgs<Prisma.PostDelegate>) => {
+  async ({
+    error,
+    data,
+    context,
+  }: OnCreateOneErrorHookArgs<Prisma.PostDelegate>) => {
     // Clean up any uploaded files
-    if (data.featuredImageUrl) 
-        await cleanupUploadedFile(data.featuredImageUrl);
-
-  }
+    if (data.featuredImageUrl) await cleanupUploadedFile(data.featuredImageUrl);
+  },
 ];
 ```
 
@@ -178,48 +172,105 @@ export const onCreateOneError = [
 Service Hooks are available for all CRUD operations provided by the [BaseService class](/docs/api-reference/the-base-service-class):
 
 ### Before Hooks
+
 Execute before the main operation:
 
 ```typescript
-export const beforeCreateOne = [/* functions */];
-export const beforeCreateMany = [/* functions */];
-export const beforeFindMany = [/* functions */];
-export const beforeFindOne = [/* functions */];
-export const beforeUpdateOne = [/* functions */];
-export const beforeUpdateMany = [/* functions */];
-export const beforeDeleteOne = [/* functions */];
-export const beforeDeleteMany = [/* functions */];
-export const beforeCount = [/* functions */];
+export const beforeCreateOne = [
+  /* functions */
+];
+export const beforeCreateMany = [
+  /* functions */
+];
+export const beforeFindMany = [
+  /* functions */
+];
+export const beforeFindOne = [
+  /* functions */
+];
+export const beforeUpdateOne = [
+  /* functions */
+];
+export const beforeUpdateMany = [
+  /* functions */
+];
+export const beforeDeleteOne = [
+  /* functions */
+];
+export const beforeDeleteMany = [
+  /* functions */
+];
+export const beforeCount = [
+  /* functions */
+];
 ```
 
 ### After Hooks
+
 Execute after successful operations:
 
 ```typescript
-export const afterCreateOne = [/* functions */];
-export const afterCreateMany = [/* functions */];
-export const afterFindMany = [/* functions */];
-export const afterFindOne = [/* functions */];
-export const afterUpdateOne = [/* functions */];
-export const afterUpdateMany = [/* functions */];
-export const afterDeleteOne = [/* functions */];
-export const afterDeleteMany = [/* functions */];
-export const afterCount = [/* functions */];
+export const afterCreateOne = [
+  /* functions */
+];
+export const afterCreateMany = [
+  /* functions */
+];
+export const afterFindMany = [
+  /* functions */
+];
+export const afterFindOne = [
+  /* functions */
+];
+export const afterUpdateOne = [
+  /* functions */
+];
+export const afterUpdateMany = [
+  /* functions */
+];
+export const afterDeleteOne = [
+  /* functions */
+];
+export const afterDeleteMany = [
+  /* functions */
+];
+export const afterCount = [
+  /* functions */
+];
 ```
 
 ### Error Hooks
+
 Execute when operations fail:
 
 ```typescript
-export const onCreateOneError = [/* functions */];
-export const onCreateManyError = [/* functions */];
-export const onFindManyError = [/* functions */];
-export const onFindOneError = [/* functions */];
-export const onUpdateOneError = [/* functions */];
-export const onUpdateManyError = [/* functions */];
-export const onDeleteOneError = [/* functions */];
-export const onDeleteManyError = [/* functions */];
-export const onCountError = [/* functions */];
+export const onCreateOneError = [
+  /* functions */
+];
+export const onCreateManyError = [
+  /* functions */
+];
+export const onFindManyError = [
+  /* functions */
+];
+export const onFindOneError = [
+  /* functions */
+];
+export const onUpdateOneError = [
+  /* functions */
+];
+export const onUpdateManyError = [
+  /* functions */
+];
+export const onDeleteOneError = [
+  /* functions */
+];
+export const onDeleteManyError = [
+  /* functions */
+];
+export const onCountError = [
+  /* functions */
+];
 ```
 
 ## Hook Arguments and Context
@@ -231,25 +282,25 @@ Each hook receives typed arguments containing relevant data:
 ```typescript
 // Before hooks get data being processed
 interface BeforeCreateOneHookArgs<T> {
-  data: CreateOneData<T>;           
-  queryOptions?: CreateOneOptions<T>; 
-  context?: ServiceBaseContext;      
+  data: CreateOneData<T>;
+  queryOptions?: CreateOneOptions<T>;
+  context?: ServiceBaseContext;
 }
 
 // After hooks get the result + original data
 interface AfterCreateOneHookArgs<T> {
-  result: CreateOneResult<T>;        
-  data: CreateOneData<T>;           
-  queryOptions?: CreateOneOptions<T>; 
-  context?: ServiceBaseContext;      
+  result: CreateOneResult<T>;
+  data: CreateOneData<T>;
+  queryOptions?: CreateOneOptions<T>;
+  context?: ServiceBaseContext;
 }
 
 // Error hooks get the error + original data
 interface OnCreateOneErrorHookArgs<T> {
-  error: any;                       
-  data: CreateOneData<T>;           
-  queryOptions?: CreateOneOptions<T>; 
-  context?: ServiceBaseContext;      
+  error: any;
+  data: CreateOneData<T>;
+  queryOptions?: CreateOneOptions<T>;
+  context?: ServiceBaseContext;
 }
 ```
 
@@ -257,10 +308,10 @@ The `ServiceBaseContext` provides request information when available:
 
 ```typescript
 interface ServiceBaseContext {
-  user?: User;              // Authenticated user
-  accessToken?: string;     // Access token from request
-  skip?: ("before" | "after" | "error")[];  // Skip specific hook types
-  throwOnError?: boolean;   // Whether to re-throw errors (default: true)
+  user?: User; // Authenticated user
+  accessToken?: string; // Access token from request
+  skip?: ("before" | "after" | "error")[]; // Skip specific hook types
+  throwOnError?: boolean; // Whether to re-throw errors (default: true)
 }
 ```
 
@@ -270,7 +321,10 @@ interface ServiceBaseContext {
 
 ```typescript
 // src/modules/user/user.hooks.ts
-import { BeforeCreateOneHookArgs, AfterCreateOneHookArgs } from "arkos/services";
+import {
+  BeforeCreateOneHookArgs,
+  AfterCreateOneHookArgs,
+} from "arkos/services";
 import authService from "../auth/auth.service";
 import emailService from "../email/email.service";
 import { Prisma } from "@prisma/client";
@@ -284,9 +338,9 @@ export const beforeCreateOne = [
 
     // Generate username if not provided
     if (!data.username && data.email) {
-      data.username = data.email.split('@')[0];
+      data.username = data.email.split("@")[0];
     }
-  }
+  },
 ];
 
 export const afterCreateOne = [
@@ -305,7 +359,7 @@ export const afterCreateOne = [
       to: result.email,
       username: result.username,
     });
-  }
+  },
 ];
 ```
 
@@ -321,7 +375,7 @@ export const beforeCreateOne = [
     }
 
     // Set publication date
-    if (data.status === 'PUBLISHED' && !data.publishedAt) {
+    if (data.status === "PUBLISHED" && !data.publishedAt) {
       data.publishedAt = new Date();
     }
 
@@ -329,21 +383,21 @@ export const beforeCreateOne = [
     if (context?.user?.id) {
       data.authorId = context.user.id;
     }
-  }
+  },
 ];
 
 export const afterCreateOne = [
   // Multiple functions for separation of concerns
   async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Update search index
-    if (result.status === 'PUBLISHED') {
+    if (result.status === "PUBLISHED") {
       await searchService.indexPost(result);
     }
   },
 
   async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Send notifications
-    if (result.status === 'PUBLISHED') {
+    if (result.status === "PUBLISHED") {
       await notificationService.notifySubscribers({
         authorId: result.authorId,
         postId: result.id,
@@ -361,7 +415,7 @@ export const afterCreateOne = [
         lastPostAt: new Date(),
       },
     });
-  }
+  },
 ];
 ```
 
@@ -373,22 +427,26 @@ Service Hooks ensure consistency when calling services directly:
 import postService from "../modules/post/post.service";
 
 // All hooks will execute
-const newPost = await postService.createOne({
-  title: "My New Post",
-  content: "Post content here...",
-}, {
-  include: { author: true }
-}, {
-  user: currentUser,  // Context for hooks
-});
+const newPost = await postService.createOne(
+  {
+    title: "My New Post",
+    content: "Post content here...",
+  },
+  {
+    include: { author: true },
+  },
+  {
+    user: currentUser, // Context for hooks
+  }
+);
 
 // Skip specific hooks if needed
 const userData = await userService.findOne(
   { email: "user@example.com" },
   { include: { profile: true } },
-  { 
-    skip: ["after"],  // Skip after hooks
-    user: currentUser 
+  {
+    skip: ["after"], // Skip after hooks
+    user: currentUser,
   }
 );
 
@@ -396,9 +454,9 @@ const userData = await userService.findOne(
 const result = await postService.createOne(
   invalidData,
   {},
-  { 
-    throwOnError: false,  // Don't throw, return undefined on error
-    user: currentUser 
+  {
+    throwOnError: false, // Don't throw, return undefined on error
+    user: currentUser,
   }
 );
 ```
@@ -408,7 +466,7 @@ const result = await postService.createOne(
 Service Hooks and Interceptor Middlewares work together seamlessly:
 
 ```
-HTTP Request → Interceptor beforeCreateOne → Service beforeCreateOne → 
+HTTP Request → Interceptor beforeCreateOne → Service beforeCreateOne →
 Database Operation → Service afterCreateOne → Interceptor afterCreateOne → HTTP Response
 ```
 
@@ -419,17 +477,17 @@ export const beforeCreateOne = [
     // HTTP-specific processing
     req.body.featuredImageUrl = await processUploadedImage(req.file);
     next();
-  }
+  },
 ];
 
-// Service Hook (post.hooks.ts)  
+// Service Hook (post.hooks.ts)
 export const beforeCreateOne = [
   async ({ data, context }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
     // Business logic that applies everywhere
     if (!data.slug) {
       data.slug = generateSlug(data.title);
     }
-  }
+  },
 ];
 ```
 
@@ -442,9 +500,11 @@ npx arkos generate hooks --module post
 ```
 
 **Shorthand:**
+
 ```bash
 npx arkos g h -m post
 ```
+
 :::info
 Prior to `1.4.0-beta` instead of `--module` you must use `--model`.
 :::
@@ -453,10 +513,10 @@ This creates a template with all available hooks commented out, ready to customi
 
 ```typescript
 // src/modules/post/post.hooks.ts
-// import { 
-// BeforeFindOneHookArgs, 
-// AfterFindOneHookArgs, 
-// BeforeUpdateOneHookArgs, 
+// import {
+// BeforeFindOneHookArgs,
+// AfterFindOneHookArgs,
+// BeforeUpdateOneHookArgs,
 // AfterUpdateOneHookArgs,
 // // ... all other hook types
 // } from "arkos/services";

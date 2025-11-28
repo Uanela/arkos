@@ -18,11 +18,13 @@ Arkos validates three distinct parts of incoming HTTP requests, each serving a d
 ### 1. **Request Body (`req.body`)** - Data Being Created or Modified
 
 The request body contains the payload data sent by the client, typically in POST, PATCH, or PUT requests. This is where you validate:
+
 - Data being created (user registration, creating a product)
 - Data being updated (profile changes, product modifications)
 - Form submissions and complex data structures
 
 **Example: Creating a product**
+
 ```typescript
 // POST /api/products
 // Request body:
@@ -34,6 +36,7 @@ The request body contains the payload data sent by the client, typically in POST
 ```
 
 **Why validate req.body:**
+
 - Prevent invalid data from entering your database
 - Enforce business rules (e.g., price must be positive)
 - Ensure required fields are present
@@ -42,17 +45,20 @@ The request body contains the payload data sent by the client, typically in POST
 ### 2. **Query Parameters (`req.query`)** - Filtering and Configuration
 
 Query parameters appear in the URL after the `?` symbol and control how data is retrieved or processed. This is where you validate:
+
 - Filtering criteria (category, price ranges)
 - Pagination settings (page, limit)
 - Sorting preferences (sort by price, date)
 - Feature flags (includeReviews, notify)
 
 **Example: Filtering products**
+
 ```
 GET /api/products?category=electronics&minPrice=50&maxPrice=200&page=2
 ```
 
 **Why validate req.query:**
+
 - Ensure data integrity and security by validating incoming query parameters
 - Prevent SQL injection or Prisma query manipulation
 - Type coercion (convert string "50" to number 50)
@@ -61,6 +67,7 @@ GET /api/products?category=electronics&minPrice=50&maxPrice=200&page=2
 
 :::warning Critical: Query Parameter Security
 Query parameters directly influence database queries. Without validation:
+
 - User could request `limit=999999` causing performance issues
 - Invalid category IDs could cause database errors
 - Malformed date ranges could crash your application
@@ -72,16 +79,19 @@ Query parameters directly influence database queries. Without validation:
 ### 3. **Path Parameters (`req.params`)** - Resource Identifiers
 
 Path parameters are part of the URL path itself and identify specific resources. This is where you validate:
+
 - Resource IDs (user IDs, product IDs)
 - Route segments (slugs, categories)
 - Versioning identifiers
 
 **Example: Getting a specific product**
+
 ```
 GET /api/products/550e8400-e29b-41d4-a716-446655440000
 ```
 
 **Why validate req.params:**
+
 - Validate UUID/ID format before database queries
 - Prevent invalid IDs from causing database errors
 - Ensure type safety (convert string IDs to proper formats)
@@ -112,14 +122,15 @@ const handler = async (
   res: ArkosResponse
 ) => {
   // All validated and type-safe!
-  const { category, minPrice } = req.query;     // ✓ Type-safe query params
-  const { name, price } = req.body;             // ✓ Type-safe body data
-  const { id } = req.params;                    // ✓ Type-safe path params
+  const { category, minPrice } = req.query; // ✓ Type-safe query params
+  const { name, price } = req.body; // ✓ Type-safe body data
+  const { id } = req.params; // ✓ Type-safe path params
 };
 ```
+
 :::
 
-## How Validation Works 
+## How Validation Works
 
 Arkos automatically validates request data based on your chosen validation approach:
 
@@ -130,6 +141,7 @@ Arkos automatically validates request data based on your chosen validation appro
 5. **Failure**: Returns structured error response with validation details
 
 The validation system works seamlessly with:
+
 - Auto-generated CRUD endpoints (`/api/posts`, `/api/users`, etc)
 - Authentication endpoints (`/api/auth/login`, `/api/auth/signup`, etc)
 - Custom routes you define
@@ -153,9 +165,9 @@ const arkosConfig: ArkosConfig = {
       // Additional class-validator options
     },
   },
-}
+};
 
-export default arkosConfig
+export default arkosConfig;
 ```
 
 </TabItem>
@@ -181,10 +193,10 @@ arkos.init({
 
 **Configuration Options:**
 
-| Option | Description | 
-|--------|-------------|
-| `resolver` | Validation library: `"zod"` or `"class-validator"`|
-| `validationOptions` | Options passed to your chosen validator | 
+| Option              | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| `resolver`          | Validation library: `"zod"` or `"class-validator"` |
+| `validationOptions` | Options passed to your chosen validator            |
 
 :::warning Important
 Validation is **disabled by default**. You must explicitly enable it in your configuration.
@@ -227,11 +239,11 @@ const myHandler = async (
   // ✓ Validated and type-safe access to req.body
   const { name, price, description } = req.body;
   // TypeScript knows: name is string, price is number, description is string | undefined
-  
-  // ✓ Validated and type-safe access to req.params  
+
+  // ✓ Validated and type-safe access to req.params
   const { id } = req.params;
   // TypeScript knows: id is string (validated as UUID)
-  
+
   // ✓ Validated and type-safe access to req.query
   const { includeReviews, minPrice, maxPrice } = req.query;
   // TypeScript knows: includeReviews is boolean, minPrice/maxPrice are numbers
@@ -240,25 +252,27 @@ const myHandler = async (
   // All data is already validated according to your schemas
   // Safe to use directly in database queries
   const product = await prisma.product.create({
-    data: { name, price, description }
+    data: { name, price, description },
   });
-  
+
   res.json(product);
 };
 ```
 
 **Type Signature:**
+
 ```typescript
 ArkosRequest<Query = any, Body = any, Params = any>
 ```
 
 :::tip Type Safety Benefits
 Using `ArkosRequest<Query, Body, Params>` generics provides:
+
 - **Autocomplete**: IDE suggestions for all validated properties
 - **Type checking**: Compile-time errors for invalid property access
 - **Documentation**: Self-documenting code through types
 - **Refactoring safety**: Changes to schemas automatically update types
-:::
+  :::
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -273,9 +287,9 @@ const myHandler = async (
   next: ArkosNextFunction
 ) => {
   // Validated data in standard Express properties
-  const { name, price } = req.body;         // Body data
-  const { id } = req.params;                // URL parameters
-  const { minPrice } = req.query;           // Query parameters
+  const { name, price } = req.body; // Body data
+  const { id } = req.params; // URL parameters
+  const { minPrice } = req.query; // Query parameters
 
   // Data is validated but no TypeScript type inference
   res.json({ name, price, id });
@@ -304,10 +318,12 @@ src/modules/[model-name]/
 ```
 
 **Examples:**
+
 - `User` model → `create-user.schema.ts`, `update-user.schema.ts`
 - `BlogPost` model → `create-blog-post.schema.ts`, `update-blog-post.schema.ts`
 
 ### File Structure Convention For Authentication
+
 ```
 src/modules/auth/
 ├── schemas/                           # Zod approach
@@ -323,10 +339,11 @@ src/modules/auth/
 ```
 
 :::warning Convention Requirements
+
 - Model names must be in **kebab-case** for file names
 - Must use exact naming pattern: `create-[model].schema.ts` / `update-[model].schema.ts`
 - Choose either schemas **or** DTOs - cannot use both together
-:::
+  :::
 
 ### Standard CRUD Body Validation
 
@@ -415,6 +432,7 @@ export default class UpdateProductDto {
 </Tabs>
 
 These files are automatically applied to validate `req.body` on:
+
 - `POST /api/products` (createOne) → uses `create-product` schema/DTO
 - `PATCH /api/products/:id` (updateOne) → uses `update-product` schema/DTO
 - `POST /api/products/many` (createMany) → uses `create-product` schema/DTO
@@ -523,7 +541,15 @@ export const config: RouterConfig = {
 // src/modules/product/product.router.ts
 import { ArkosRouter } from "arkos";
 import { RouterConfig } from "arkos";
-import { IsString, IsNumber, IsOptional, IsBoolean, IsUUID, Min, Max } from "class-validator";
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  IsUUID,
+  Min,
+  Max,
+} from "class-validator";
 import { Type } from "class-transformer";
 
 class ProductQueryDto {
@@ -541,7 +567,7 @@ class ProductQueryDto {
   @IsBoolean()
   @IsOptional()
   inStock?: boolean;
-  
+
   @Type(() => Number)
   @IsNumber()
   @Min(1)
@@ -576,6 +602,7 @@ export default router;
 
 :::warning Type Coercion is Essential
 Query parameters and path parameters arrive as **strings** from the URL. Always use:
+
 - **Zod**: `z.coerce.number()`, `z.coerce.boolean()`
 - **Class-Validator**: `@Type(() => Number)`, `@Type(() => Boolean)`
 
@@ -588,6 +615,7 @@ Without coercion, `minPrice=50` remains the string `"50"` instead of number `50`
 **Query and params validation for auto-generated endpoints was not supported in v1.3**. Only request body validation was possible through file-based DTOs/schemas.
 
 To validate query parameters or path parameters, you had to:
+
 1. Override the entire endpoint
 2. Manually add validation middleware
 3. Re-implement the controller logic
@@ -596,7 +624,6 @@ To validate query parameters or path parameters, you had to:
 // src/modules/product/product.router.ts
 import { Router } from "express";
 import { RouterConfig } from "arkos";
-import { handleRequestQueryValidationAndTransformation } from "arkos/middlewares";
 import { ProductQuerySchema } from "./schemas/product-query.schema";
 
 export const config: RouterConfig = {
@@ -608,17 +635,13 @@ export const config: RouterConfig = {
 const router = Router();
 
 // Manual override required for query validation
-router.get(
-  "/",
-  handleRequestQueryValidationAndTransformation(ProductQuerySchema),
-  async (req, res) => {
-    // Re-implement findMany logic manually
-    const products = await prisma.product.findMany({
-      where: req.query,
-    });
-    res.json(products);
-  }
-);
+router.get("/", async (req, res) => {
+  // Re-implement findMany logic manually
+  const products = await prisma.product.findMany({
+    where: req.query,
+  });
+  res.json(products);
+});
 
 export default router;
 ```
@@ -728,7 +751,14 @@ export default SignupSchema;
 
 ```typescript
 // src/modules/auth/dtos/signup.dto.ts
-import { IsString, IsEmail, MinLength, Matches, IsOptional, IsNotEmpty } from "class-validator";
+import {
+  IsString,
+  IsEmail,
+  MinLength,
+  Matches,
+  IsOptional,
+  IsNotEmpty,
+} from "class-validator";
 
 export default class SignupDto {
   @IsString()
@@ -951,7 +981,7 @@ router.post(
       rule: ["Admin", "Manager"],
     },
     validation: {
-      body: GenerateReportSchema,  // Validates req.body
+      body: GenerateReportSchema, // Validates req.body
     },
   },
   reportsController.generateReport
@@ -1153,14 +1183,14 @@ const getSummary = async (
 ) => {
   // All query params are validated and type-coerced!
   const { year, quarter, department } = req.query;
-  
+
   // TypeScript knows: year is number, not string
   // Safe to use directly in calculations
   const dateRange = {
     start: new Date(year, quarter ? (quarter - 1) * 3 : 0, 1),
     end: new Date(year, quarter ? quarter * 3 : 12, 0),
   };
-  
+
   const reports = await prisma.report.findMany({
     where: {
       createdAt: {
@@ -1170,7 +1200,7 @@ const getSummary = async (
       department: department,
     },
   });
-  
+
   res.json(reports);
 };
 ```
@@ -1195,10 +1225,7 @@ router.post(
 );
 
 // Query validation required manual implementation
-router.get(
-  "/api/reports/summary",
-  reportsController.getSummary
-);
+router.get("/api/reports/summary", reportsController.getSummary);
 
 // Params validation required manual implementation
 router.get(
@@ -1215,6 +1242,7 @@ export default router;
 
 :::tip Why Validate All Three Parts?
 Each part serves a different purpose and requires validation:
+
 - **`req.body`**: Prevents malformed data from entering your database
 - **`req.query`**: Protects against query manipulation and ensures type safety
 - **`req.params`**: Validates resource identifiers before database lookups
@@ -1243,6 +1271,7 @@ const validatedData = await validateSchema(CreateUserSchema, requestData);
 Validation failures return structured error responses with details about which part of the request failed:
 
 **Request body validation error:**
+
 ```json
 {
   "status": "error",
@@ -1266,6 +1295,7 @@ Validation failures return structured error responses with details about which p
 ```
 
 **Query parameter validation error:**
+
 ```json
 {
   "status": "error",
@@ -1289,6 +1319,7 @@ Validation failures return structured error responses with details about which p
 ```
 
 **Path parameter validation error:**
+
 ```json
 {
   "status": "error",
@@ -1331,14 +1362,14 @@ export const beforeCreateOne = [
     }
 
     // Validate query parameters for special operations
-    if (req.query.sendWelcomeEmail === 'true') {
+    if (req.query.sendWelcomeEmail === "true") {
       if (!req.body.email) {
         throw new AppError("Email required when sendWelcomeEmail is true", 400);
       }
     }
 
     next();
-  }
+  },
 ];
 ```
 
@@ -1351,6 +1382,7 @@ The `.interceptors.ts` extension is the recommended convention from `v1.4.0-beta
 Your Schemas and DTOs automatically generate JSON Schema for API documentation. The validation rules for `req.body`, `req.query`, and `req.params` become part of your OpenAPI specification when using Arkos's built-in Swagger integration.
 
 **Example generated OpenAPI specification:**
+
 ```yaml
 /api/products:
   get:
@@ -1387,7 +1419,7 @@ Learn more about API documentation at [**Swagger API Documentation**](/docs/core
 ## Validation Flow Summary
 
 ```
-Request → Authentication Check → Validation Middleware → 
+Request → Authentication Check → Validation Middleware →
   ├─ req.body validation
   ├─ req.query validation
   └─ req.params validation
@@ -1395,12 +1427,14 @@ Request → Authentication Check → Validation Middleware →
 ```
 
 **For authenticated endpoints:**
+
 1. JWT token verification
 2. Request data validation (`req.body`, `req.query`, `req.params`)
 3. Type coercion (strings → numbers, booleans, etc.)
 4. Business logic execution
 
 **For public endpoints:**
+
 1. Request data validation (`req.body`, `req.query`, `req.params`)
 2. Type coercion
 3. Business logic execution
@@ -1427,11 +1461,11 @@ export const config: RouterConfig = {
   findOne: {
     validation: {
       params: z.object({
-        id: z.string().uuid(),  // Validates req.params.id
+        id: z.string().uuid(), // Validates req.params.id
       }),
       query: z.object({
-        limit: z.coerce.number().max(100),  // Validates req.query.limit
-        minPrice: z.coerce.number(),        // Validates req.query.minPrice
+        limit: z.coerce.number().max(100), // Validates req.query.limit
+        minPrice: z.coerce.number(), // Validates req.query.minPrice
       }),
     },
   },
@@ -1478,14 +1512,14 @@ router.patch(
     path: "/api/users/:id",
     validation: {
       params: z.object({
-        id: z.string().uuid("Invalid user ID"),  // req.params
+        id: z.string().uuid("Invalid user ID"), // req.params
       }),
       body: z.object({
-        name: z.string().min(1).optional(),      // req.body
+        name: z.string().min(1).optional(), // req.body
         email: z.string().email().optional(),
       }),
       query: z.object({
-        sendNotification: z.coerce.boolean().optional(),  // req.query
+        sendNotification: z.coerce.boolean().optional(), // req.query
       }),
     },
   },
@@ -1500,14 +1534,15 @@ router.patch(
 export const config: RouterConfig = {
   generateReport: {
     validation: {
-      body: z.object({
-        type: z.enum(["sales", "inventory", "customers"]),
-        startDate: z.string().datetime(),
-        endDate: z.string().datetime(),
-      }).refine(
-        (data) => new Date(data.startDate) < new Date(data.endDate),
-        { message: "Start date must be before end date" }
-      ),
+      body: z
+        .object({
+          type: z.enum(["sales", "inventory", "customers"]),
+          startDate: z.string().datetime(),
+          endDate: z.string().datetime(),
+        })
+        .refine((data) => new Date(data.startDate) < new Date(data.endDate), {
+          message: "Start date must be before end date",
+        }),
       query: z.object({
         format: z.enum(["pdf", "excel", "csv"]).default("pdf"),
         includeCharts: z.coerce.boolean().default(true),
@@ -1528,8 +1563,8 @@ export const config: RouterConfig = {
 ```typescript
 // Good: Reasonable limits
 const ProductQuerySchema = z.object({
-  tags: z.array(z.string()).max(10),           // Max 10 tags
-  name: z.string().max(100),                    // Max 100 characters
+  tags: z.array(z.string()).max(10), // Max 10 tags
+  name: z.string().max(100), // Max 100 characters
   description: z.string().max(1000).optional(), // Max 1000 characters
 });
 ```
