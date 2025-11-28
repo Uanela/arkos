@@ -1211,20 +1211,14 @@ describe("Express Middleware Functions", () => {
 
       it("should throw error when invalid Zod schema is passed for body", () => {
         const validators: any = {
-          body: { invalid: "schema" }, // Not a Zod schema
+          body: { _def: {} }, // Not a Zod schema
         };
 
-        // Mock isZodSchema to return false
-        const isZodSchema = jest.fn(() => false);
-        jest.mock("../../../utils/dynamic-loader", () => isZodSchema);
-
-        try {
-          expect(() =>
-            validateRequestInputs({ validation: validators } as any)
-          ).toThrow(
-            "Please provide a valid zod schema in order to use in { validation: { body: Schema } }"
-          );
-        } catch {}
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "Your validation resolver is set to zod, please provide a valid zod schema in order to use in { validation: { body: Schema } } under route undefined"
+        );
       });
 
       it("should throw error when invalid Zod schema is passed for query", () => {
