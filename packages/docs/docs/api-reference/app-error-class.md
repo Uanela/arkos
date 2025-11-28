@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 ---
 
 # App Error Class
@@ -37,7 +37,7 @@ import { AppError } from "arkos/error-handler";
 
 // In a route handler or service
 if (!userId) {
-  throw new AppError("User ID is required", 400);
+    throw new AppError("User ID is required", 400);
 }
 ```
 
@@ -48,10 +48,10 @@ import { AppError } from "arkos/error-handler";
 
 // Providing additional context
 throw new AppError(
-  "User not found",
-  404,
-  { userId: requestedId, requestTime: new Date() },
-  "USER_NOT_FOUND"
+    "User not found",
+    404,
+    { userId: requestedId, requestTime: new Date() },
+    "USER_NOT_FOUND"
 );
 ```
 
@@ -67,23 +67,23 @@ import { AppError, catchAsync } from "arkos/error-handler";
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const getUserById = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const user = await userService.findById(req.params.id);
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const user = await userService.findById(req.params.id);
 
-    if (!user) {
-      throw new AppError(
-        "User not found",
-        404,
-        { userId: req.params.id },
-        "USER_NOT_FOUND"
-      );
+        if (!user) {
+            throw new AppError(
+                "User not found",
+                404,
+                { userId: req.params.id },
+                "USER_NOT_FOUND"
+            );
+        }
+
+        res.status(200).json({
+            status: "success",
+            data: { user },
+        });
     }
-
-    res.status(200).json({
-      status: "success",
-      data: { user },
-    });
-  }
 );
 ```
 

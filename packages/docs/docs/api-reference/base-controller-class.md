@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 3
 ---
 
 # Base Controller Class
@@ -23,10 +23,10 @@ constructor(modelName: string)
 ```
 
 - **Parameters**:
-  - `modelName`: The name of the model for which this controller will handle operations.
+    - `modelName`: The name of the model for which this controller will handle operations.
 - **Behavior**:
-  - Initializes a new `BaseService` instance for the specified model, [read more here](/docs/api-reference/the-base-service-class).
-  - Loads any model-specific interceptor middlewares from the model modules, [see more here](/docs/core-concepts/interceptor-middlewares).
+    - Initializes a new `BaseService` instance for the specified model, [read more here](/docs/api-reference/the-base-service-class).
+    - Loads any model-specific interceptor middlewares from the model modules, [see more here](/docs/core-concepts/interceptor-middlewares).
 
 ### Methods
 
@@ -36,11 +36,11 @@ Creates a single resource instance.
 
 - **HTTP Method**: `POST`
 - **Response**:
-  - Status Code: `201 Created`
-  - Body: `{ data: <created resource> }`
+    - Status Code: `201 Created`
+    - Body: `{ data: <created resource> }`
 - **Interceptor Middleware Support**:
-  - Can use `beforeCreateOne` middleware for pre-processing.
-  - Can use `afterCreateOne` middleware for post-processing.
+    - Can use `beforeCreateOne` middleware for pre-processing.
+    - Can use `afterCreateOne` middleware for post-processing.
 
 #### **createMany**
 
@@ -48,11 +48,11 @@ Creates multiple resource instances in a single operation.
 
 - **HTTP Method**: `POST`
 - **Response**:
-  - Status Code: `201 Created`
-  - Body: `{ total: <total count>, results: <count of created resources>, data: <array of created resources> }`
+    - Status Code: `201 Created`
+    - Body: `{ total: <total count>, results: <count of created resources>, data: <array of created resources> }`
 - **Interceptor Middleware Support**:
-  - Can use `beforeCreateMany` middleware for pre-processing.
-  - Can use `afterCreateMany` middleware for post-processing.
+    - Can use `beforeCreateMany` middleware for pre-processing.
+    - Can use `afterCreateMany` middleware for post-processing.
 
 #### **findMany**
 
@@ -60,13 +60,13 @@ Retrieves multiple resources with filtering, sorting, pagination, and field sele
 
 - **HTTP Method**: `GET`
 - **Query Parameters**:
-  - Supports filtering, sorting, field limiting, and pagination via `APIFeatures`.
+    - Supports filtering, sorting, field limiting, and pagination via `APIFeatures`.
 - **Response**:
-  - Status Code: `200 OK`
-  - Body: `{ total: <total count>, results: <count of returned resources>, data: <array of resources> }`
+    - Status Code: `200 OK`
+    - Body: `{ total: <total count>, results: <count of returned resources>, data: <array of resources> }`
 - **Interceptor Middleware Support**:
-  - Can use `beforeFindMany` middleware for pre-processing.
-  - Can use `afterFindMany` middleware for post-processing.
+    - Can use `beforeFindMany` middleware for pre-processing.
+    - Can use `afterFindMany` middleware for post-processing.
 
 #### **findOne**
 
@@ -74,15 +74,15 @@ Retrieves a single resource by its identifier.
 
 - **HTTP Method**: `GET`
 - **URL Parameters**:
-  - `id`: The ID of the resource to retrieve.
+    - `id`: The ID of the resource to retrieve.
 - **Query Parameters**:
-  - `prismaQueryOptions`: Optional Prisma query options as a string.
+    - `prismaQueryOptions`: Optional Prisma query options as a string.
 - **Response**:
-  - Status Code: `200 OK`
-  - Body: `{ data: <retrieved resource> }`
+    - Status Code: `200 OK`
+    - Body: `{ data: <retrieved resource> }`
 - **Interceptor Middleware Support**:
-  - Can use `beforeFindOne` middleware for pre-processing.
-  - Can use `afterFindOne` middleware for post-processing.
+    - Can use `beforeFindOne` middleware for pre-processing.
+    - Can use `afterFindOne` middleware for post-processing.
 
 #### **updateOne**
 
@@ -90,15 +90,15 @@ Updates a single resource by its identifier.
 
 - **HTTP Method**: `PUT` or `PATCH`
 - **URL Parameters**:
-  - `id`: The ID of the resource to update.
+    - `id`: The ID of the resource to update.
 - **Query Parameters**:
-  - `prismaQueryOptions`: Optional Prisma query options as a string.
+    - `prismaQueryOptions`: Optional Prisma query options as a string.
 - **Response**:
-  - Status Code: `200 OK`
-  - Body: `{ data: <updated resource> }`
+    - Status Code: `200 OK`
+    - Body: `{ data: <updated resource> }`
 - **Interceptor Middleware Support**:
-  - Can use `beforeUpdateOne` middleware for pre-processing.
-  - Can use `afterUpdateOne` middleware for post-processing.
+    - Can use `beforeUpdateOne` middleware for pre-processing.
+    - Can use `afterUpdateOne` middleware for post-processing.
 
 #### **updateMany**
 
@@ -106,14 +106,14 @@ Updates multiple resources that match the given criteria.
 
 - **HTTP Method**: `PUT` or `PATCH`
 - **Query Parameters**:
-  - Requires at least one filter criterion.
-  - Supports filtering and sorting via `APIFeatures`.
+    - Requires at least one filter criterion.
+    - Supports filtering and sorting via `APIFeatures`.
 - **Response**:
-  - Status Code: `200 OK`
-  - Body: `{ total: <total count>, results: <count of updated resources>, data: <array of updated resources> }`
+    - Status Code: `200 OK`
+    - Body: `{ total: <total count>, results: <count of updated resources>, data: <array of updated resources> }`
 - **Interceptor Middleware Support**:
-  - Can use `beforeUpdateMany` middleware for pre-processing.
-  - Can use `afterUpdateMany` middleware for post-processing.
+    - Can use `beforeUpdateMany` middleware for pre-processing.
+    - Can use `afterUpdateMany` middleware for post-processing.
 - **Error Handling**: Returns `400 Bad Request` if no filter criteria are provided.
 
 #### **deleteOne**
@@ -122,12 +122,12 @@ Deletes a single resource by its identifier.
 
 - **HTTP Method**: `DELETE`
 - **URL Parameters**:
-  - `id`: The ID of the resource to delete.
+    - `id`: The ID of the resource to delete.
 - **Response**:
-  - Status Code: `204 No Content`
+    - Status Code: `204 No Content`
 - **Interceptor Middleware Support**:
-  - Can use `beforeDeleteOne` middleware for pre-processing.
-  - Can use `afterDeleteOne` middleware for post-processing.
+    - Can use `beforeDeleteOne` middleware for pre-processing.
+    - Can use `afterDeleteOne` middleware for post-processing.
 
 #### **deleteMany**
 
@@ -135,14 +135,14 @@ Deletes multiple resources that match the given criteria.
 
 - **HTTP Method**: `DELETE`
 - **Query Parameters**:
-  - Requires at least one filter criterion.
-  - Supports filtering and sorting via `APIFeatures`.
+    - Requires at least one filter criterion.
+    - Supports filtering and sorting via `APIFeatures`.
 - **Response**:
-  - Status Code: `200 OK`
-  - Body: `{ total: <total count>, results: <count of deleted resources>, data: <array of deleted resources> }`
+    - Status Code: `200 OK`
+    - Body: `{ total: <total count>, results: <count of deleted resources>, data: <array of deleted resources> }`
 - **Interceptor Middleware Support**:
-  - Can use `beforeDeleteMany` middleware for pre-processing.
-  - Can use `afterDeleteMany` middleware for post-processing.
+    - Can use `beforeDeleteMany` middleware for pre-processing.
+    - Can use `afterDeleteMany` middleware for post-processing.
 - **Error Handling**: Returns `400 Bad Request` if no filter criteria are provided.
 
 ## Default Endpoints When Auto Generated
@@ -187,35 +187,35 @@ Returns a list of all available resource endpoints based on the application's mo
 ```ts
 // src/modules/user/user.controller.ts
 import {
-  ArkosRequest,
-  ArkosResponse,
-  ArkosNextFunction,
-  BaseController,
+    ArkosRequest,
+    ArkosResponse,
+    ArkosNextFunction,
+    BaseController,
 } from "arkos";
 
 class UserController extends BaseController {
-  constructor() {
-    super("user"); // model-name in kebab-case
-    // Add any user-specific controller methods or override base methods here
+    constructor() {
+        super("user"); // model-name in kebab-case
+        // Add any user-specific controller methods or override base methods here
 
-    // ✅ Will override the default createOne handler method
-    createOne: catchAsync(
-      async (
-        req: ArkosRequest,
-        res: ArkosResponse,
-        next: ArkosNextFunction
-      ) => {
-        // this.service is made available on `BaseController`
-        const data = await this.service.createOne(req.body, {
-          include: {
-            password: false,
-          },
-        });
+        // ✅ Will override the default createOne handler method
+        createOne: catchAsync(
+            async (
+                req: ArkosRequest,
+                res: ArkosResponse,
+                next: ArkosNextFunction
+            ) => {
+                // this.service is made available on `BaseController`
+                const data = await this.service.createOne(req.body, {
+                    include: {
+                        password: false,
+                    },
+                });
 
-        res.status(201).json({ data });
-      }
-    );
-  }
+                res.status(201).json({ data });
+            }
+        );
+    }
 }
 
 const userController = new UserController();
