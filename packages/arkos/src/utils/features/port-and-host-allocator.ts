@@ -1,11 +1,34 @@
 import { ArkosConfig } from "../../exports";
 import * as net from "net";
 import sheu from "../sheu";
+import os from "os";
 
 class PortAndHostAllocator {
-  private host: string | undefined;
-  private port: string | undefined;
+  host: string | undefined;
+  private networkHost: string | undefined;
+  port: string | undefined;
   private prevWarnings = new Set<string>();
+
+  getFirstNonLocalIp() {
+    const networkInterfaces = os.networkInterfaces();
+    let localIpAddress;
+    if (this.networkHost) return this.networkHost;
+
+    for (const interfaceName in networkInterfaces) {
+      const netInterface = networkInterfaces[interfaceName];
+      if (!netInterface) break;
+      for (const alias of netInterface) {
+        if (alias.family === "IPv4" && !alias.internal) {
+          localIpAddress = alias.address;
+          break;
+        }
+      }
+      if (localIpAddress) break;
+    }
+
+    this.networkHost = localIpAddress;
+    return localIpAddress;
+  }
 
   /**
    * Helps in correcting getting the right host and port to be used according to cli params, arkos config, env and default host and port.
@@ -19,8 +42,13 @@ class PortAndHostAllocator {
     env: Record<string, any>,
     config?: ArkosConfig
   ): { port: string; host: string } {
-    const host = env?.CLI_HOST || config?.host || env?.HOST || "localhost";
+    const host =
+      env?.CLI_HOST ||
+      config?.host ||
+      env?.HOST ||
+      (env.ARKOS_BUILD !== "true" ? "0.0.0.0" : "127.0.0.1");
     const port = env?.CLI_PORT || config?.port || env?.PORT || "8000";
+
     return { host: String(host), port: String(port) };
   }
 
@@ -61,10 +89,7 @@ class PortAndHostAllocator {
       const msg = `Port ${currentPort} is in use, trying port ${currentPort + 1} instead...`;
       this.prevWarnings.add(msg);
 
-      if (config?.logWarning) {
-        // console.info("");
-        sheu.warn(`${msg}`);
-      }
+      if (config?.logWarning) sheu.warn(`${msg}`);
 
       currentPort++;
     }
@@ -79,7 +104,7 @@ class PortAndHostAllocator {
    */
   private async isPortAvailable(host: string, port: number): Promise<boolean> {
     return new Promise((resolve) => {
-      const actualHost = !["localhost", "127.0.0.1"].includes(host)
+      const actualHost = !["localhost", "127.0.0.1", "0.0.0.0"].includes(host)
         ? host
         : "localhost";
       const socket = net.createConnection({
@@ -99,7 +124,7 @@ class PortAndHostAllocator {
 
       socket.on("timeout", () => {
         socket.destroy();
-        resolve(true); // Port is available
+        resolve(true);
       });
     });
   }

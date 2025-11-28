@@ -57,7 +57,7 @@ class TemplateCompiler {
     ];
 
     const authModuleComponents = [
-      "auth.middlewares.ts.hbs",
+      "auth.interceptors.ts.hbs",
       "auth.query.ts.hbs",
     ];
 
@@ -74,13 +74,12 @@ class TemplateCompiler {
     ];
 
     const userModuleComponents = [
-      "user.middlewares.ts.hbs",
+      "user.interceptors.ts.hbs",
       "user.query.ts.hbs",
       "user.service.ts.hbs",
       "user.auth.ts.hbs",
     ];
 
-    // Ignoring auth relation files when auth is set to define later
     if (config.authentication?.type === "define later")
       files.push(
         ...authSharedPrismaFiles,
@@ -95,7 +94,6 @@ class TemplateCompiler {
         ...authRoleModuleComponents
       );
 
-    // Ignoring files that are not required on static authentication
     if (config.authentication?.type === "static")
       files.push(
         ...dynamicAuthPrismaFiles,
@@ -105,7 +103,6 @@ class TemplateCompiler {
         ...authRoleModuleComponents
       );
 
-    // Ignore zod related files when validation is class-validator
     if (config.validation?.type !== "zod")
       files.push(
         ...sharedAuthZodSchemaFiles,

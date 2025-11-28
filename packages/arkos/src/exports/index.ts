@@ -1,13 +1,16 @@
 import { RouterConfig } from "../types/router-config";
 import { BaseController } from "./../modules/base/base.controller";
 import { initApp, getArkosConfig } from "../server";
+import ArkosRouter from "../utils/arkos-router";
+import { ArkosRouteConfig } from "../utils/arkos-router/types";
 import {
   ArkosRequest,
   ArkosResponse,
   ArkosNextFunction,
   ArkosRequestHandler,
 } from "../types";
-import { ArkosConfig } from "../types/arkos-config";
+import { ArkosConfig } from "../types/new-arkos-config";
+import { ArkosInitConfig } from "../types/arkos-config";
 
 /**
  * Initializes the Arkos application.
@@ -26,8 +29,35 @@ export {
   ArkosRequestHandler,
   BaseController,
   ArkosConfig,
+  ArkosInitConfig,
   RouterConfig,
   getArkosConfig,
+  /**
+   * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
+   *
+   * The ArkosRouter extends the standard Express Router with the ability to
+   * automatically capture OpenAPI metadata from route configurations.
+   *
+   * @example
+   * const router = ArkosRouter();
+   *
+   * router.get(
+   *   {
+   *     route: "/users/:id",
+   *     openapi: {
+   *       summary: "Get user by ID",
+   *       tags: ["Users"]
+   *     }
+   *   },
+   *   (req, res) => { ... }
+   * );
+   *
+   * @returns {IArkosRouter} A proxied Express Router instance with enhanced OpenAPI capabilities
+   *
+   * @see {@link ArkosRouteConfig} for configuration options
+   */
+  ArkosRouter,
+  ArkosRouteConfig,
 };
 
 /**

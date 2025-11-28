@@ -32,21 +32,25 @@ export function generateRouterTemplate(options: TemplateOptions): string {
 
   const controllerHandlerLine = `${modelName.camel}Controller.someHandler`;
 
-  return `import { Router } from 'express'
-import { authService } from 'arkos/services'
-import { catchAsync } from 'arkos/error-handler'
+  return `import { ArkosRouter } from 'arkos'
 ${controllerImportLine}
 ${routerConfigTsTypeImport}
 
 export const config${routerConfigTsType} = { }
 
-const ${modelName.camel}Router = Router()
+const ${modelName.camel}Router = ArkosRouter()
 
 ${modelName.camel}Router.get(
-  '/custom-endpoint',
-  authService.authenticate,
-  authService.handleAccessControl('CustomAction', '${modelName.kebab}'),
-  catchAsync(${controllerHandlerLine})
+  {
+    route: "/custom-endpoint",
+    authentication: { action: "CustomAction", resource: "${modelName.kebab}" },
+    validation: {},
+    experimental: {
+      openapi: {},
+      // uploads: {}
+    }
+  },
+  ${controllerHandlerLine}
 )
 
 export default ${modelName.camel}Router

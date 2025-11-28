@@ -3,7 +3,7 @@ import zodToJsonSchema from "zod-to-json-schema";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 
-export default async function generateZodJsonSchemas() {
+export default function generateZodJsonSchemas() {
   const requiredAppModules = [
     ...prismaSchemaParser.getModelsAsArrayOfStrings(),
     "auth",

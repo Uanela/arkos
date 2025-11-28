@@ -1,12 +1,10 @@
-import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import { getSwaggerRouter } from "../../../../src/modules/swagger/swagger.router";
 import * as swaggerRouterHelpers from "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers";
 import missingJsonSchemaGenerator from "../../../../src/modules/swagger/utils/helpers/missing-json-schemas-generator";
 import getSwaggerDefaultConfig from "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs";
-import { object } from "zod";
+import express from "express";
 
-// Mock all dependencies
 jest.mock("fs", () => ({
   __esModule: true,
   default: {
@@ -21,7 +19,17 @@ jest.mock("fs", () => ({
     mkdir: jest.fn(),
   },
 }));
-jest.mock("express");
+jest.mock("express", () => ({
+  __esModule: true,
+  Router: jest.fn(() => ({
+    use: jest.fn(),
+    delete: jest.fn(),
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+  })),
+  default: jest.fn(),
+}));
 jest.mock("swagger-jsdoc");
 
 const mockApiReference = jest.fn();
@@ -59,13 +67,11 @@ describe("getSwaggerRouter", () => {
     },
   };
 
-  const mockRouter = {
-    use: jest.fn(),
-    delete: jest.fn(),
-    get: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-  } as unknown as Router;
+  const mockApp = {
+    _router: {
+      stack: [],
+    },
+  } as any as express.Express;
 
   const mockJsonSchemas = { components: { schemas: {} } };
   const mockPaths = { "/test": { get: {} } };
@@ -75,34 +81,31 @@ describe("getSwaggerRouter", () => {
     jest.clearAllMocks();
 
     // Setup default mock implementations
-    (Router as jest.Mock).mockReturnValue(mockRouter);
     (swaggerJsdoc as jest.Mock).mockReturnValue(mockSwaggerSpec);
     (mockApiReference as jest.Mock).mockReturnValue(jest.fn());
 
     (
       swaggerRouterHelpers.getOpenAPIJsonSchemasByConfigMode as jest.Mock
-    ).mockResolvedValue(mockJsonSchemas);
+    ).mockReturnValue(mockJsonSchemas);
 
-    (
-      swaggerRouterHelpers.generatePathsForModels as jest.Mock
-    ).mockResolvedValue(mockPaths);
+    (swaggerRouterHelpers.generatePathsForModels as jest.Mock).mockReturnValue(
+      mockPaths
+    );
 
     (
       missingJsonSchemaGenerator.generateMissingJsonSchemas as jest.Mock
-    ).mockResolvedValue({});
+    ).mockReturnValue({});
 
-    (getSwaggerDefaultConfig as jest.Mock).mockResolvedValue(
-      mockConfig.swagger
-    );
+    (getSwaggerDefaultConfig as jest.Mock).mockReturnValue(mockConfig.swagger);
   });
 
   it("should return a router instance", async () => {
-    const router = await getSwaggerRouter(mockConfig);
+    const router = await getSwaggerRouter(mockConfig, mockApp);
     expect(router).toHaveProperty("use");
   });
 
   it("should generate JSON schemas and paths", async () => {
-    await getSwaggerRouter(mockConfig);
+    await getSwaggerRouter(mockConfig, mockApp);
 
     expect(
       swaggerRouterHelpers.getOpenAPIJsonSchemasByConfigMode
@@ -114,7 +117,7 @@ describe("getSwaggerRouter", () => {
   });
 
   it("should generate missing JSON schemas", async () => {
-    await getSwaggerRouter(mockConfig);
+    await getSwaggerRouter(mockConfig, mockApp);
 
     expect(
       missingJsonSchemaGenerator.generateMissingJsonSchemas
@@ -122,7 +125,7 @@ describe("getSwaggerRouter", () => {
   });
 
   it("should merge default and user configs", async () => {
-    await getSwaggerRouter(mockConfig);
+    await getSwaggerRouter(mockConfig, mockApp);
 
     expect(getSwaggerDefaultConfig).toHaveBeenCalledWith(
       mockPaths,
@@ -134,7 +137,7 @@ describe("getSwaggerRouter", () => {
   });
 
   it("should generate OpenAPI specification", async () => {
-    await getSwaggerRouter(mockConfig);
+    await getSwaggerRouter(mockConfig, mockApp);
 
     expect(swaggerJsdoc).toHaveBeenCalledWith({
       definition: mockConfig.swagger.options?.definition,
@@ -143,7 +146,7 @@ describe("getSwaggerRouter", () => {
   });
 
   it("should setup Scalar API reference", async () => {
-    await getSwaggerRouter(mockConfig);
+    await getSwaggerRouter(mockConfig, mockApp);
 
     expect(mockApiReference).toHaveBeenCalledWith({
       content: mockSwaggerSpec,
@@ -153,7 +156,7 @@ describe("getSwaggerRouter", () => {
 
   it("should handle missing swagger config", async () => {
     const config = { ...mockConfig, swagger: undefined };
-    const router = await getSwaggerRouter(config);
+    const router = await getSwaggerRouter(config, mockApp);
     expect(router).toHaveProperty("use");
     // expect(swaggerJsdoc).not.toHaveBeenCalled();
   });
@@ -166,7 +169,9 @@ describe("getSwaggerRouter", () => {
     const originalFunction = global.Function;
     (global as any).Function = jest.fn().mockImplementation(() => mockImport);
 
-    await expect(getSwaggerRouter(mockConfig)).resolves.toHaveProperty("use");
+    await expect(getSwaggerRouter(mockConfig, mockApp)).resolves.toHaveProperty(
+      "use"
+    );
 
     (global as any).Function = originalFunction;
     console.error = originalError;

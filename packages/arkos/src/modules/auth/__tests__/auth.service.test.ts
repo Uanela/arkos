@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import authService from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { getArkosConfig } from "../../../server";
+import { isAuthenticationEnabled } from "../../../utils/helpers/arkos-config.helpers";
 import AppError from "../../error-handler/utils/app-error";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
 
@@ -11,9 +12,9 @@ jest.mock("jsonwebtoken");
 jest.mock("bcryptjs");
 jest.mock("process");
 jest.mock("../../../utils/helpers/prisma.helpers");
+jest.mock("../../../utils/helpers/arkos-config.helpers");
 jest.mock("../../../server");
 jest.mock("../../error-handler/utils/app-error");
-
 jest.mock("../../../utils/dynamic-loader", () => ({
   getModels: jest.fn().mockReturnValue([]),
   getModelFields: jest.fn().mockReturnValue([]),
@@ -846,8 +847,8 @@ describe("AuthService", () => {
       (authService.getAuthenticatedUser as any) = jest
         .fn()
         .mockResolvedValue(mockUser);
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
 
-      // Execute
       await authService.authenticate(mockReq, mockRes, mockNext);
 
       // Verify

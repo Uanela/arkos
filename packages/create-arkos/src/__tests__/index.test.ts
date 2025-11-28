@@ -203,7 +203,7 @@ describe("CLI Main Function", () => {
     });
 
     // Verify prisma generate
-    expect(mockedExecSync).toHaveBeenCalledWith("npx prisma generate", {
+    expect(mockedExecSync).toHaveBeenCalledWith("npx arkos prisma generate", {
       stdio: "inherit",
     });
   }, 10000); // Increase timeout to 10 seconds

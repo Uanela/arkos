@@ -21,24 +21,16 @@ export function resolvePrismaQueryOptions<T extends Record<string, any>>(
   const options = prismaQueryOptions as any;
   const actionOptions = options[action] || {};
 
-  // Start with deprecated queryOptions (for backward compatibility)
   let mergedOptions = options.queryOptions || {};
 
-  // Apply global options (replaces queryOptions)
-  if (options.global) {
-    mergedOptions = deepmerge(mergedOptions, options.global);
-  }
+  if (options.global) mergedOptions = deepmerge(mergedOptions, options.global);
 
-  // Apply general operation options based on action type
   const generalOptions = getGeneralOptionsForAction(options, action);
   if (generalOptions) {
     mergedOptions = deepmerge(mergedOptions, generalOptions);
   }
 
-  // Finally apply specific action options (highest priority)
-  if (actionOptions) {
-    mergedOptions = deepmerge(mergedOptions, actionOptions);
-  }
+  if (actionOptions) mergedOptions = deepmerge(mergedOptions, actionOptions);
 
   return mergedOptions;
 }
@@ -50,27 +42,22 @@ export function resolvePrismaQueryOptions<T extends Record<string, any>>(
  * @param {ControllerActions} action - The controller action
  * @returns {Record<string, any> | null} The general options for the action type
  */
-function getGeneralOptionsForAction(
+export function getGeneralOptionsForAction(
   options: any,
   action: ControllerActions
-): Record<string, any> | null {
-  // Map actions to their general option categories
+): Record<string, any> {
   const actionMappings: Record<string, string[]> = {
-    // Find operations
     findMany: ["find"],
     findOne: ["find"],
 
-    // Create operations
     create: ["create", "save"],
     createOne: ["create", "save", "saveOne"],
     createMany: ["create", "save", "saveMany"],
 
-    // Update operations
     update: ["update", "save"],
     updateOne: ["update", "save", "saveOne"],
     updateMany: ["update", "save", "saveMany"],
 
-    // Delete operations
     delete: ["delete"],
     deleteOne: ["delete"],
     deleteMany: ["delete"],
@@ -79,12 +66,11 @@ function getGeneralOptionsForAction(
   const generalKeys = actionMappings[action] || [];
   let generalOptions = {};
 
-  // Merge all applicable general options in order of precedence
   for (const key of generalKeys) {
     if (options[key]) {
       generalOptions = deepmerge(generalOptions, options[key]);
     }
   }
 
-  return Object.keys(generalOptions).length > 0 ? generalOptions : null;
+  return generalOptions;
 }

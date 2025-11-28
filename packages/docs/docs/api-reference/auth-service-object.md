@@ -2,7 +2,7 @@
 sidebar_position: 7
 ---
 
-# The Auth Service Object
+# Auth Service Object
 
 The `authService` object provides comprehensive authentication functionality for your Arkos application. While Arkos handles authentication automatically behind the scenes, you may need direct access to the authentication methods in your business logic.
 

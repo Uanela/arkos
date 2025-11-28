@@ -94,7 +94,7 @@ describe("Dev Command", () => {
     (
       portAndHostAllocator.getHostAndAvailablePort as jest.Mock
     ).mockResolvedValue({
-      host: "localhost",
+      host: "0.0.0.0",
       port: 3000,
     });
     (fs.existsSync as jest.Mock).mockReturnValue(true);
@@ -235,6 +235,10 @@ describe("Dev Command", () => {
     });
 
     it("should display config information when available", async () => {
+      (portAndHostAllocator.getFirstNonLocalIp as jest.Mock).mockReturnValue(
+        "192.168.1.180"
+      );
+
       await devCommand();
 
       await Promise.resolve();
@@ -245,7 +249,9 @@ describe("Dev Command", () => {
       expect(mockConsoleInfo).toHaveBeenCalledWith(
         expect.stringContaining("http://localhost:3000")
       );
-
+      expect(mockConsoleInfo).toHaveBeenCalledWith(
+        expect.stringContaining("http://192.168.1.180:3000")
+      );
       expect(mockConsoleInfo).toHaveBeenCalledWith(
         expect.stringContaining(`.env, .env.local`)
       );

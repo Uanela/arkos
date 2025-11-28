@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authService } from "arkos/services";
 import { catchAsync } from "arkos/error-handler";
 import fileUploadController from "./file-upload.controller";
-import { RouterConfig } from "arkos";
+import { ArkosRouter, RouterConfig } from "arkos";
 
 export const config: RouterConfig<"file-upload"> = {
   disable: {
@@ -11,10 +11,10 @@ export const config: RouterConfig<"file-upload"> = {
   },
 };
 
-const fileUploadRouter = Router();
+const fileUploadRouter = ArkosRouter();
 
 fileUploadRouter.get(
-  "/custom-endpoint",
+  { route: "u", openapi: {} },
   authService.authenticate,
   authService.handleAccessControl("CustomAction", "file-upload"),
   catchAsync(fileUploadController.findMany)

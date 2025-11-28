@@ -10,7 +10,7 @@ import { ArkosConfig, RouterConfig } from "../../../../../../exports";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
 
-export async function generatePrismaModelMainRoutesPaths(
+export function generatePrismaModelMainRoutesPaths(
   model: string,
   paths: OpenAPIV3.PathsObject = {},
   arkosConfig: ArkosConfig
@@ -27,9 +27,9 @@ export async function generatePrismaModelMainRoutesPaths(
 
   if (routerConfig?.disable === true) return paths;
 
-  const getSchemaMode = async (
+  const getSchemaMode = (
     action: string
-  ): Promise<"prisma" | "zod" | "class-validator"> => {
+  ): "prisma" | "zod" | "class-validator" => {
     const swaggerMode = arkosConfig.swagger?.mode;
     const isStrict = arkosConfig.swagger?.strict;
 
@@ -37,7 +37,7 @@ export async function generatePrismaModelMainRoutesPaths(
 
     const actionKey = action as any;
 
-    const localFileExists = await localValidatorFileExists(
+    const localFileExists = localValidatorFileExists(
       actionKey,
       model,
       arkosConfig
@@ -51,7 +51,7 @@ export async function generatePrismaModelMainRoutesPaths(
   // Create One
   if (!isEndpointDisabled(routerConfig, "createOne")) {
     if (!paths[`/api/${routeName}`]) paths[`/api/${routeName}`] = {};
-    const createMode = await getSchemaMode("create");
+    const createMode = getSchemaMode("create");
     paths[`/api/${routeName}`]!.post = {
       tags: [humanReadableNamePlural],
       summary: `Create a new ${humanReadableName}`,
@@ -96,7 +96,7 @@ export async function generatePrismaModelMainRoutesPaths(
   // Find Many
   if (!isEndpointDisabled(routerConfig, "findMany")) {
     if (!paths[`/api/${routeName}`]) paths[`/api/${routeName}`] = {};
-    const findManyMode = await getSchemaMode("findMany");
+    const findManyMode = getSchemaMode("findMany");
     paths[`/api/${routeName}`]!.get = {
       tags: [humanReadableNamePlural],
       summary: `Get ${humanReadableNamePlural}`,
@@ -191,7 +191,7 @@ export async function generatePrismaModelMainRoutesPaths(
 
   // Create Many
   if (!isEndpointDisabled(routerConfig, "createMany")) {
-    const createManyMode = await getSchemaMode("createMany");
+    const createManyMode = getSchemaMode("createMany");
     paths[`/api/${routeName}/many`] = {
       post: {
         tags: [humanReadableNamePlural],
@@ -250,7 +250,7 @@ export async function generatePrismaModelMainRoutesPaths(
   // Update Many
   if (!isEndpointDisabled(routerConfig, "updateMany")) {
     if (!paths[`/api/${routeName}/many`]) paths[`/api/${routeName}/many`] = {};
-    const updateManyMode = await getSchemaMode("updateMany");
+    const updateManyMode = getSchemaMode("updateMany");
     paths[`/api/${routeName}/many`]!.patch = {
       tags: [humanReadableNamePlural],
       summary: `Update multiple ${humanReadableNamePlural}`,
@@ -364,7 +364,7 @@ export async function generatePrismaModelMainRoutesPaths(
 
   // Find One
   if (!isEndpointDisabled(routerConfig, "findOne")) {
-    const findOneMode = await getSchemaMode("findOne");
+    const findOneMode = getSchemaMode("findOne");
     paths[`/api/${routeName}/{id}`] = {
       get: {
         tags: [humanReadableNamePlural],
@@ -411,7 +411,7 @@ export async function generatePrismaModelMainRoutesPaths(
   // Update One
   if (!isEndpointDisabled(routerConfig, "updateOne")) {
     if (!paths[`/api/${routeName}/{id}`]) paths[`/api/${routeName}/{id}`] = {};
-    const updateMode = await getSchemaMode("update");
+    const updateMode = getSchemaMode("update");
     paths[`/api/${routeName}/{id}`]!.patch = {
       tags: [humanReadableNamePlural],
       summary: `Update ${humanReadableName} by ID`,

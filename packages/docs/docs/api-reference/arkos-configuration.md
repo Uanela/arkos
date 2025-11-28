@@ -2,56 +2,165 @@
 sidebar_position: 12
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Arkos Configuration
 
-Arkos.js provides a comprehensive configuration system that allows you to customize every aspect of your application. This reference covers all available configuration options for the `arkos.init()` method.
+Arkos provides a comprehensive configuration system that allows you to customize every aspect of your application. This reference covers all available configuration options for both `arkos.init()` and `arkos.config.ts`.
 
-## Configuration Object Structure
+The dedicated configuration file was introduced on `v1.4.0-beta` it was made for the clearly separate concerns between what is really application configuration and what is initialization configuration. And this also makes possible for different tools such as the [**Built-in CLI**](/docs/cli/built-in-cli) to make usage of the confiugration when generating different components in your project.
+
+### Key Changes From `v1.4.0-beta`
+
+- **Split Configuration**: Configuration is now split between `arkos.init()` (app initialization) and `arkos.config.ts` (static configuration)
+- **Simplified Middleware Configuration**: Individual middleware options replace complex `middlewares` object
+- **Unified Router Registration**: All custom routers use the `use` array
+- **Enhanced ArkosRouter**: New declarative configuration for routes
+
+### File Structure Changes
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+**Two-file setup:**
+
+```typescript
+// src/app.ts - App initialization
+import arkos from "arkos";
+import customRouter from "./routers/custom.router";
+
+arkos.init({
+  use: [customRouter],
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
+  },
+});
+```
+
+```typescript
+// arkos.config.ts - Static configuration
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  port: 3000,
+  authentication: {
+    enabled: true,
+    mode: "static",
+  },
+  validation: {
+    resolver: "zod",
+  },
+};
+
+export default arkosConfig;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+**Single-file setup:**
+
+```typescript
+// src/app.ts - Everything in one file
+import arkos from "arkos";
+import customRouter from "./routers/custom.router";
+
+arkos.init({
+  port: 3000,
+  authentication: {
+    mode: "static",
+  },
+  validation: {
+    resolver: "zod",
+  },
+  routers: {
+    additional: [customRouter],
+  },
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+## Configuration Structure
+
+### ArkosInitConfig (arkos.init())
+
+Used for app initialization and runtime configuration:
+
+```typescript
+interface ArkosInitConfig {
+  use?: (
+    | IArkosRouter
+    | express.Router
+    | ArkosRequestHandler
+    | ArkosErrorRequestHandler
+  )[];
+  configureApp?: (app: express.Express) => Promise<any> | any;
+  configureServer?: (server: http.Server) => Promise<any> | any;
+}
+```
+
+### ArkosConfig (arkos.config.ts)
+
+Used for static application configuration:
 
 ```typescript
 interface ArkosConfig {
-    // Basic application settings
-    welcomeMessage?: string;
-    port?: number;
-    host?: string;
+  // Basic settings
+  welcomeMessage?: string;
+  port?: number;
+  host?: string;
 
-    // Authentication configuration
-    authentication?: AuthenticationConfig;
-
-    // Validation configuration
-    validation?: ValidationConfig;
-
-    // File upload configuration
-    fileUpload?: FileUploadConfig;
-
-    // Security configuration
-    globalRequestRateLimitOptions?: Partial<RateLimitOptions>;
-    cors?: CorsConfig;
-
-    // Middleware configuration
-    middlewares?: MiddlewareConfig;
-
-    // Router configuration
-    routers?: RouterConfig;
-
-    // Advanced configuration
-    configureApp?: (app: express.Express) => any;
-    configureServer?: (server: http.Server) => any;
-
-    // Email configuration
-    email?: EmailConfig;
-
-    // Swagger/OpenAPI configuration
-    swagger?: SwaggerConfig;
-
-    // Request configuration
-    request?: RequestConfig;
+  // Feature configurations
+  authentication?: AuthenticationConfig;
+  validation?: ValidationConfig;
+  fileUpload?: FileUploadConfig;
+  middlewares?: MiddlewareConfig;
+  routers?: RouterConfig;
+  email?: EmailConfig;
+  swagger?: SwaggerConfig;
+  request?: RequestConfig;
+  debugging?: DebuggingConfig;
 }
 ```
 
 ## Configuration Properties
 
 ### Basic Application Settings
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  welcomeMessage: "Welcome to Our API",
+  port: 3000,
+  host: "0.0.0.0",
+};
+
+export default arkosConfig;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  welcomeMessage: "Welcome to Our API",
+  port: 3000,
+  host: "0.0.0.0",
+});
+```
+
+</TabItem>
+</Tabs>
 
 #### `welcomeMessage`
 
@@ -62,7 +171,7 @@ interface ArkosConfig {
 #### `port`
 
 - **Type**: `number`
-- **Default**: `8000` or `process.env.PORT`
+- **Default**: `8000` or `process.env.PORT` or `-p` argument
 - **Description**: Port where the application will run
 
 #### `host`
@@ -73,29 +182,63 @@ interface ArkosConfig {
 
 ### Authentication Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-interface AuthenticationConfig {
-    mode: "static" | "dynamic";
-    login?: {
-        allowedUsernames?: string[];
-        sendAccessTokenThrough?: "cookie-only" | "response-only" | "both";
-    };
-    passwordValidation?: {
-        regex: RegExp;
-        message?: string;
-    };
-    requestRateLimitOptions?: Partial<RateLimitOptions>;
-    jwt?: {
-        secret?: string;
-        expiresIn?: MsDuration | number;
-        cookie?: {
-            secure?: boolean;
-            httpOnly?: boolean;
-            sameSite?: "lax" | "strict" | "none";
-        };
-    };
-}
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    enabled: true,
+    mode: "static",
+    login: {
+      allowedUsernames: ["email", "username"],
+      sendAccessTokenThrough: "both",
+    },
+    rateLimit: {
+      windowMs: 5000,
+      limit: 10,
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "7d",
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: "lax",
+      },
+    },
+  },
+};
+
+export default arkosConfig;
 ```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  authentication: {
+    mode: "static",
+    login: {
+      allowedUsernames: ["email", "username"],
+      sendAccessTokenThrough: "both",
+    },
+    // ... other auth config
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+#### `authentication.enabled`
+
+- **Type**: `boolean`
+- **Default**: `true`
+- **Description**: Completely disable authentication system and remove auth routes when `false`
 
 #### `authentication.mode`
 
@@ -115,26 +258,10 @@ interface AuthenticationConfig {
 - **Default**: `"both"`
 - **Description**: How to return access tokens after login
 
-#### `authentication.passwordValidation`
-
-- **Type**: `{ regex: RegExp; message?: string }`
-- **Default**: `{ regex: /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/ }`
-- **Description**: Password strength requirements
-
-#### `authentication.requestRateLimitOptions`
+#### `authentication.rateLimit`
 
 - **Type**: `Partial<RateLimitOptions>`
-- **Default**:
-
-```typescript
-{
-  windowMs: 5000,
-  limit: 10,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-}
-```
-
+- **Default**: `{ windowMs: 5000, limit: 10 }`
 - **Description**: Rate limiting for authentication endpoints
 
 #### `authentication.jwt`
@@ -144,23 +271,53 @@ interface AuthenticationConfig {
 
 ### Validation Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-type ValidationConfig =
-    | {
-          resolver?: "class-validator";
-          validationOptions?: ValidatorOptions;
-      }
-    | {
-          resolver?: "zod";
-          validationOptions?: Record<string, any>;
-      };
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  validation: {
+    resolver: "zod",
+    strict: false,
+    validationOptions: {
+      // Zod or class-validator options
+    },
+  },
+};
+
+export default arkosConfig;
 ```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  validation: {
+    resolver: "zod",
+    validationOptions: {
+      // Zod or class-validator options
+    },
+  },
+});
+```
+
+</TabItem>
+</Tabs>
 
 #### `validation.resolver`
 
 - **Type**: `"class-validator" | "zod"`
-- **Default**: `"class-validator"`
+- **Required**: Yes
 - **Description**: Validation library to use
+
+#### `validation.strict`
+
+- **Type**: `boolean`
+- **Default**: `false`
+- **Description**: Require validation configuration for all ArkosRouter endpoints
 
 #### `validation.validationOptions`
 
@@ -169,35 +326,52 @@ type ValidationConfig =
 
 ### File Upload Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-interface FileUploadConfig {
-    baseUploadDir?: string;
-    baseRoute?: string;
-    expressStaticOptions?: Parameters<typeof express.static>[1];
-    restrictions?: {
-        images?: {
-            maxCount?: number;
-            maxSize?: number;
-            supportedFilesRegex?: RegExp;
-        };
-        videos?: {
-            maxCount?: number;
-            maxSize?: number;
-            supportedFilesRegex?: RegExp;
-        };
-        documents?: {
-            maxCount?: number;
-            maxSize?: number;
-            supportedFilesRegex?: RegExp;
-        };
-        files?: {
-            maxCount?: number;
-            maxSize?: number;
-            supportedFilesRegex?: RegExp;
-        };
-    };
-}
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    expressStatic: {
+      maxAge: "1y",
+      etag: true,
+    },
+    restrictions: {
+      images: {
+        maxCount: 10,
+        maxSize: 5 * 1024 * 1024, // 5MB
+        supportedFilesRegex: /\.(jpg|jpeg|png|gif|webp)$/,
+      },
+    },
+  },
+};
+
+export default arkosConfig;
 ```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    expressStaticOptions: {
+      maxAge: "1y",
+      etag: true,
+    },
+    // ... restrictions
+  },
+});
+```
+
+</TabItem>
+</Tabs>
 
 #### `fileUpload.baseUploadDir`
 
@@ -211,23 +385,9 @@ interface FileUploadConfig {
 - **Default**: `"/api/uploads"`
 - **Description**: Base route for file access
 
-#### `fileUpload.expressStaticOptions`
+#### `fileUpload.expressStatic`
 
 - **Type**: `Parameters<typeof express.static>[1]`
-- **Default**:
-
-```typescript
-{
-  maxAge: "1y",
-  etag: true,
-  lastModified: true,
-  dotfiles: "ignore",
-  fallthrough: true,
-  index: false,
-  cacheControl: true,
-}
-```
-
 - **Description**: Options for express.static middleware
 
 #### `fileUpload.restrictions`
@@ -235,142 +395,235 @@ interface FileUploadConfig {
 - **Type**: Object containing file type restrictions
 - **Description**: Upload restrictions for different file types
 
-### Security Configuration
-
-#### `globalRequestRateLimitOptions`
-
-- **Type**: `Partial<RateLimitOptions>`
-- **Default**:
-
-```typescript
-{
-  windowMs: 60 * 1000,
-  limit: 1000,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-}
-```
-
-- **Description**: Global rate limiting settings
-
-```typescript
-interface CorsConfig {
-    allowedOrigins?: string | string[] | "*";
-    options?: cors.CorsOptions;
-    customHandler?: cors.CorsOptionsDelegate;
-}
-```
-
-#### `cors.allowedOrigins`
-
-- **Type**: `string | string[] | "*"`
-- **Default**: `"*"` in development, domain-specific in production
-- **Description**: Allowed origins for CORS
-
-#### `cors.options`
-
-- **Type**: `cors.CorsOptions`
-- **Description**: Additional CORS options
-
-#### `cors.customHandler`
-
-- **Type**: `cors.CorsOptionsDelegate`
-- **Description**: Custom CORS handler function
-
 ### Middleware Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-interface MiddlewareConfig {
-    additional?: express.RequestHandler[];
-    disable?: (
-        | "compression"
-        | "global-rate-limit"
-        | "auth-rate-limit"
-        | "cors"
-        | "express-json"
-        | "cookie-parser"
-        | "query-parser"
-        | "request-logger"
-        | "global-error-handler"
-    )[];
-    replace?: {
-        compression?: express.RequestHandler;
-        globalRateLimit?: express.RequestHandler;
-        authRateLimit?: express.RequestHandler;
-        cors?: express.RequestHandler;
-        expressJson?: express.RequestHandler;
-        cookieParser?: express.RequestHandler;
-        queryParser?: express.RequestHandler;
-        requestLogger?: express.RequestHandler;
-        globalErrorHandler?: express.ErrorRequestHandler;
-    };
-}
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    compression: {
+      level: 6,
+    },
+    rateLimit: {
+      windowMs: 60000,
+      limit: 1000,
+    },
+    cors: {
+      allowedOrigins: ["https://example.com"],
+      options: {
+        credentials: true,
+      },
+    },
+    expressJson: {
+      limit: "10mb",
+    },
+    cookieParser: ["secret"],
+    queryParser: {
+      parseNull: true,
+      parseBoolean: true,
+      parseDoubleUnderscore: true,
+    },
+    requestLogger: myCustomLogger,
+    errorHandler: myCustomErrorHandler,
+  },
+};
+
+export default arkosConfig;
 ```
 
-#### `middlewares.additional`
+**Disabling Middlewares:**
 
-- **Type**: `express.RequestHandler[]`
-- **Description**: Additional custom middlewares to add
+```typescript
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    compression: false, // Disable compression
+    rateLimit: false, // Disable rate limiting
+    requestLogger: false, // Disable request logger
+  },
+};
 
-#### `middlewares.disable`
+export default arkosConfig;
+```
 
-- **Type**: Array of middleware names
-- **Description**: Built-in middlewares to disable
+**Replacing Middlewares:**
 
-#### `middlewares.replace`
+```typescript
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    cors: myCustomCorsHandler, // Replace with custom handler
+    errorHandler: myErrorHandler, // Replace with custom handler
+  },
+};
 
-- **Type**: Object containing replacement middlewares
-- **Description**: Replace built-in middlewares with custom implementations
+export default arkosConfig;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  globalRequestRateLimitOptions: {
+    windowMs: 60000,
+    limit: 1000,
+  },
+  jsonBodyParserOptions: {
+    limit: "10mb",
+  },
+  cookieParserParameters: ["secret"],
+  compressionOptions: {
+    level: 6,
+  },
+  queryParserOptions: {
+    parseNull: true,
+    parseBoolean: true,
+  },
+  cors: {
+    allowedOrigins: ["https://example.com"],
+    options: {
+      credentials: true,
+    },
+  },
+  middlewares: {
+    additional: [myCustomMiddleware],
+    disable: ["compression", "request-logger"],
+    replace: {
+      cors: myCustomCorsHandler,
+      globalErrorHandler: myCustomErrorHandler,
+    },
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+#### Middleware Options
+
+- **compression**: `false | CompressionOptions | ArkosRequestHandler`
+- **rateLimit**: `false | Partial<RateLimitOptions> | ArkosRequestHandler`
+- **cors**: `false | CorsConfig | ArkosRequestHandler`
+- **expressJson**: `false | express.JsonOptions | ArkosRequestHandler`
+- **cookieParser**: `false | Parameters<typeof cookieParser> | ArkosRequestHandler`
+- **queryParser**: `false | QueryParserOptions | ArkosRequestHandler`
+- **requestLogger**: `false | ArkosRequestHandler`
+- **errorHandler**: `false | express.ErrorRequestHandler`
 
 ### Router Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-interface RouterConfig {
-    strict?: boolean | "no-bulk";
-    additional?: express.Router[];
-    disable?: (
-        | "auth-router"
-        | "prisma-models-router"
-        | "file-upload"
-        | "welcome-endpoint"
-    )[];
-    replace?: {
-        authRouter?: (
-            config: ArkosConfig
-        ) => express.Router | Promise<express.Router>;
-        prismaModelsRouter?: (
-            config: ArkosConfig
-        ) => express.Router | Promise<express.Router>;
-        fileUpload?: (
-            config: ArkosConfig
-        ) => express.Router | Promise<express.Router>;
-        welcomeEndpoint?: express.RequestHandler;
-    };
-}
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  routers: {
+    strict: "no-bulk",
+    welcomeRoute: (req, res) => {
+      res.json({ message: "Custom welcome message" });
+    },
+  },
+};
+
+export default arkosConfig;
 ```
+
+```typescript
+// src/app.ts - Register custom routers
+import arkos from "arkos";
+import customRouter from "./routers/custom.router";
+import expressRouter from "./routers/express.router";
+
+arkos.init({
+  use: [customRouter, expressRouter], // ArkosRouter or Express Router
+});
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  routers: {
+    strict: "no-bulk",
+    additional: [customRouter],
+    disable: ["welcome-endpoint"],
+    replace: {
+      welcomeEndpoint: (req, res) => {
+        res.json({ message: "Custom welcome" });
+      },
+    },
+  },
+});
+```
+
+</TabItem>
+</Tabs>
 
 #### `routers.strict`
 
 - **Type**: `boolean | "no-bulk"`
 - **Default**: `false`
-- **Description**: Strict mode for routing security
+- **Description**: Strict mode for routing security (Disables all auto generated endpoints)
 
-#### `routers.additional`
+#### `routers.welcomeRoute`
 
-- **Type**: `express.Router[]`
-- **Description**: Additional custom routers to add
-
-#### `routers.disable`
-
-- **Type**: Array of router names
-- **Description**: Built-in routers to disable
-
-#### `routers.replace`
-
-- **Type**: Object containing replacement routers
-- **Description**: Replace built-in routers with custom implementations
+- **Type**: `false | ArkosRequestHandler`
+- **Description**: Custom welcome endpoint handler or `false` to disable
 
 ### Advanced Configuration
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import customRouter from "./routers/custom.router";
+
+arkos.init({
+  use: [customRouter],
+  configureApp: async (app) => {
+    app.set("trust proxy", 1);
+    // Custom app configuration
+  },
+  configureServer: (server) => {
+    server.timeout = 30000;
+    // Custom server configuration
+  },
+});
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  routers: {
+    additional: [customRouter],
+  },
+  configureApp: async (app) => {
+    app.set("trust proxy", 1);
+  },
+  configureServer: (server) => {
+    server.timeout = 30000;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+#### `use`
+
+- **Type**: `(IArkosRouter | express.Router | ArkosRequestHandler | ArkosErrorRequestHandler)[]`
+- **Description**: Custom routers and middlewares to add to the application
 
 #### `configureApp`
 
@@ -384,18 +637,48 @@ interface RouterConfig {
 
 ### Email Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-interface EmailConfig {
-    host: string;
-    port?: number;
-    secure?: boolean;
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  email: {
+    name: "My App",
+    host: "smtp.example.com",
+    port: 587,
+    secure: false,
     auth: {
-        user: string;
-        pass: string;
-    };
-    name?: string;
-}
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  },
+};
+
+export default arkosConfig;
 ```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  email: {
+    name: "My App",
+    host: "smtp.example.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  },
+});
+```
+
+</TabItem>
+</Tabs>
 
 #### `email.host`
 
@@ -434,53 +717,55 @@ interface EmailConfig {
 
 ### Swagger Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-interface SwaggerConfig {
-    enableAfterBuild?: boolean;
-    endpoint?: string;
-    mode: "prisma" | "class-validator" | "zod";
-    strict?: boolean;
-    options?: {
-        definition?: {
-            openapi?: string;
-            info?: {
-                title?: string;
-                version?: string;
-                description?: string;
-            };
-            servers?: {
-                url: string;
-                description?: string;
-            }[];
-            paths?: OpenAPIV3.PathsObject;
-            termsOfService?: string;
-            contact?: {
-                name?: string;
-                url?: string;
-                email?: string;
-            };
-            license?: {
-                name: string;
-                url?: string;
-            };
-            tags?: {
-                name: string;
-                description?: string;
-            }[];
-            components?: {
-                securitySchemes?: Record<string, any>;
-                schemas?: Record<string, any>;
-            };
-            security?: Array<Record<string, string[]>>;
-        };
-        apis?: string[];
-        deepLinking?: boolean;
-        tryItOutEnabled?: boolean;
-        persistAuthorization?: boolean;
-    };
-    scalarApiReferenceConfiguration?: Partial<ApiReferenceConfiguration>;
-}
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  swagger: {
+    enableAfterBuild: true,
+    endpoint: "/api/docs",
+    mode: "zod",
+    strict: false,
+    options: {
+      definition: {
+        info: {
+          title: "My API",
+          version: "1.0.0",
+          description: "API documentation",
+        },
+        servers: [{ url: "http://localhost:3000" }],
+      },
+      deepLinking: true,
+      tryItOutEnabled: true,
+    },
+    scalarApiReferenceConfiguration: {
+      theme: "bluePlanet",
+    },
+  },
+};
+
+export default arkosConfig;
 ```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  swagger: {
+    enableAfterBuild: true,
+    endpoint: "/api/docs",
+    mode: "zod",
+    // ... other options
+  },
+});
+```
+
+</TabItem>
+</Tabs>
 
 #### `swagger.enableAfterBuild`
 
@@ -508,19 +793,69 @@ interface SwaggerConfig {
 
 ### Request Configuration
 
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
 ```typescript
-interface RequestConfig {
-    parameters?: {
-        allowDangerousPrismaQueryOptions?: boolean;
-    };
-}
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  request: {
+    parameters: {
+      allowDangerousPrismaQueryOptions: false,
+    },
+  },
+};
+
+export default arkosConfig;
 ```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+arkos.init({
+  request: {
+    parameters: {
+      allowDangerousPrismaQueryOptions: false,
+    },
+  },
+});
+```
+
+</TabItem>
+</Tabs>
 
 #### `request.parameters.allowDangerousPrismaQueryOptions`
 
 - **Type**: `boolean`
 - **Default**: `false`
 - **Description**: Allow passing Prisma query options in request parameters
+
+### Debugging Configuration
+
+> Available from `v1.4.0-beta`
+
+```typescript
+// arkos.config.ts
+const arkosConfig: ArkosConfig = {
+  debugging: {
+    requests: {
+      level: 1,
+      filter: ["Query", "Body"],
+    },
+    dynamicLoader: {
+      level: 2,
+      filters: {
+        modules: ["user", "product"],
+        components: ["router", "service"],
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
 
 ## Environment Variables
 
@@ -544,40 +879,169 @@ Arkos.js supports the following environment variables:
 | `EMAIL_PASSWORD`       | SMTP authentication password                                       | -                                              | No                                |
 | `EMAIL_NAME`           | Display name for sent emails                                       | -                                              | No                                |
 
+## Complete Example
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  port: 3000,
+  host: "0.0.0.0",
+  welcomeMessage: "Welcome to Our API",
+
+  authentication: {
+    enabled: true,
+    mode: "static",
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "7d",
+    },
+  },
+
+  validation: {
+    resolver: "zod",
+    strict: false,
+  },
+
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    restrictions: {
+      images: {
+        maxCount: 5,
+        maxSize: 5 * 1024 * 1024,
+      },
+    },
+  },
+
+  middlewares: {
+    cors: {
+      allowedOrigins: ["https://myapp.com"],
+    },
+    rateLimit: {
+      windowMs: 60000,
+      limit: 500,
+    },
+  },
+
+  routers: {
+    strict: "no-bulk",
+  },
+
+  email: {
+    host: process.env.EMAIL_HOST,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  },
+
+  swagger: {
+    mode: "zod",
+    enableAfterBuild: false,
+  },
+};
+
+export default arkosConfig;
+```
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
+
+arkos.init({
+  use: [analyticsRouter],
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
+  },
+});
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
+
+arkos.init({
+  port: 3000,
+  host: "0.0.0.0",
+  welcomeMessage: "Welcome to Our API",
+
+  authentication: {
+    mode: "static",
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "7d",
+    },
+  },
+
+  validation: {
+    resolver: "zod",
+  },
+
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    restrictions: {
+      images: {
+        maxCount: 5,
+        maxSize: 5 * 1024 * 1024,
+      },
+    },
+  },
+
+  globalRequestRateLimitOptions: {
+    windowMs: 60000,
+    limit: 500,
+  },
+
+  cors: {
+    allowedOrigins: ["https://myapp.com"],
+  },
+
+  routers: {
+    strict: "no-bulk",
+    additional: [analyticsRouter],
+  },
+
+  email: {
+    host: process.env.EMAIL_HOST,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  },
+
+  swagger: {
+    mode: "zod",
+    enableAfterBuild: false,
+  },
+
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
 ## Configuration Precedence
 
 Configuration values are loaded in this order (highest priority first):
 
-1. Values passed directly to `arkos.init()`
+1. Values passed directly to `arkos.init()` (v1.4) or in `arkos.config.ts` (v1.4)
 2. Environment variables
 3. Default values provided by Arkos.js
 
-## Example Configuration
+## Related Guides
 
-```typescript
-import arkos from "arkos";
-
-arkos.init({
-    port: 3000,
-    host: "0.0.0.0",
-    authentication: {
-        mode: "static",
-        jwt: {
-            secret: process.env.JWT_SECRET,
-            expiresIn: "7d",
-        },
-    },
-    validation: {
-        resolver: "zod",
-    },
-    cors: {
-        allowedOrigins: ["https://example.com", "https://api.example.com"],
-    },
-    routers: {
-        strict: true,
-    },
-    configureApp: (app) => {
-        app.set("trust proxy", 1);
-    },
-});
-```
+- Learn about [Arkos Router API Reference](/docs/api-reference/arkos-router)
+- Explore the [Authentication System Guide](/docs/core-concepts/authentication-system)
+- Read about [Request Data Validation](/docs/core-concepts/request-data-validation)

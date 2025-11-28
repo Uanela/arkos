@@ -1,9 +1,10 @@
-import { getArkosConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import {
   AccessControlConfig,
   DetailedAccessControlRule,
 } from "../../../../types/auth";
+import { getArkosConfig } from "../../../../utils/helpers/arkos-config.helpers";
+import deepmerge from "../../../../utils/helpers/deepmerge.helper";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
 
 interface AuthAction {
@@ -37,14 +38,23 @@ class AuthActionService {
   ];
 
   add(action: string, resource: string, accessControl?: AccessControlConfig) {
-    if (!this.getOne(action, resource)) {
-      const transformedAction = this.transformAccessControlToValidAuthAction(
-        action,
-        resource,
-        accessControl
-      );
-      this.authActions.push(transformedAction);
-    }
+    const transformedAction = this.transformAccessControlToValidAuthAction(
+      action,
+      resource,
+      accessControl
+    );
+    const existingAuthAction = this.getOne(action, resource);
+    if (existingAuthAction) this.remove(action, resource);
+    this.authActions.push(
+      deepmerge(existingAuthAction || {}, transformedAction)
+    );
+  }
+
+  remove(action: string, resource: string) {
+    this.authActions = this.authActions.filter(
+      (authAction) =>
+        authAction.action !== action && authAction.resource !== resource
+    );
   }
 
   getAll(): AuthAction[] {
@@ -86,17 +96,10 @@ class AuthActionService {
 
     if (config?.authentication?.mode === "dynamic") delete baseAuthAction.roles;
 
-    // If accessControl is not provided, return the base action
-    if (!accessControl) {
-      return baseAuthAction;
-    }
+    if (!accessControl) return baseAuthAction;
 
-    // If accessControl is an array of roles, just return the base action
-    if (Array.isArray(accessControl)) {
-      return baseAuthAction;
-    }
+    if (Array.isArray(accessControl)) return baseAuthAction;
 
-    // If accessControl is an object with specific rules
     const actionRule = accessControl[action];
 
     if (actionRule) {

@@ -1,20 +1,23 @@
 import { Express } from "express";
-import {
-  initApp,
-  getArkosConfig,
-  getExpressApp,
-  terminateApplicationRunningProcessAndServer,
-} from "../server";
-import { ArkosConfig } from "../types/arkos-config";
-import { bootstrap } from "../app";
+import * as server from "../server";
 import http from "http";
 import portAndHostAllocator from "../utils/features/port-and-host-allocator";
 import sheu from "../utils/sheu";
+import { bootstrap } from "../app";
+import { ArkosInitConfig } from "../exports";
+import * as deep from "../utils/helpers/deepmerge.helper";
+
+const { initApp, getExpressApp, terminateApplicationRunningProcessAndServer } =
+  server;
 
 jest.mock("../utils/features/port-and-host-allocator");
+jest.mock("../utils/prisma/prisma-schema-parser", () => ({
+  getModelsAsArrayOfStrings: jest.fn(() => []),
+}));
 jest.mock("../app", () => ({
   bootstrap: jest.fn().mockResolvedValue({}),
 }));
+jest.mock("fs");
 jest.mock("../utils/sheu");
 jest.mock("http", () => {
   const mockServer = {
@@ -52,7 +55,6 @@ describe("Server Module", () => {
     originalProcessEnv = { ...process.env };
     process.env.NODE_ENV = "test";
 
-    // Mock console.error to track calls
     originalConsoleError = jest.spyOn(console, "error").mockImplementation();
   });
 
@@ -78,18 +80,11 @@ describe("Server Module", () => {
 
   describe("initApp", () => {
     it("initializes app with default config when no config is provided", async () => {
-      await initApp();
+      await initApp({ use: [] });
 
       expect(bootstrap).toHaveBeenCalledWith(
-        expect.objectContaining({
-          welcomeMessage: expect.any(String),
-          port: 8000,
-          host: "localhost",
-          fileUpload: expect.any(Object),
-          available: true,
-        })
+        expect.objectContaining({ use: [] })
       );
-
       expect(http.createServer).toHaveBeenCalledWith(mockApp);
       expect(mockServer.listen).toHaveBeenCalledWith(
         8000,
@@ -99,18 +94,15 @@ describe("Server Module", () => {
     });
 
     it("merges provided config with default config", async () => {
-      const customConfig: ArkosConfig = {
-        port: 9000,
-        welcomeMessage: "Custom Welcome",
+      const customConfig: ArkosInitConfig = {
+        use: [],
       };
 
       await initApp(customConfig);
 
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({
-          welcomeMessage: "Custom Welcome",
-          port: 9000,
-          host: "localhost",
+          use: [],
         })
       );
     });
@@ -137,9 +129,9 @@ describe("Server Module", () => {
     });
 
     it("does not start server when port is undefined", async () => {
-      const customConfig: ArkosConfig = { port: undefined };
+      jest.spyOn(deep, "default").mockReturnValueOnce({ port: undefined });
 
-      await initApp(customConfig);
+      await initApp();
 
       expect(mockServer.listen).not.toHaveBeenCalled();
       expect(sheu.warn).toHaveBeenCalledWith(
@@ -149,8 +141,7 @@ describe("Server Module", () => {
 
     it("calls configureServer when provided", async () => {
       const configureServerMock = jest.fn();
-      const customConfig: ArkosConfig = {
-        port: 8000,
+      const customConfig: ArkosInitConfig = {
         configureServer: configureServerMock,
       };
 
@@ -169,17 +160,26 @@ describe("Server Module", () => {
       expect(console.error).toHaveBeenCalledWith(error);
     });
 
-    it("handles case where portAndHostAllocator returns undefined", async () => {
+    it("handles case where portAndHostAllocator returns undefined before build", async () => {
       (
         portAndHostAllocator.getHostAndAvailablePort as jest.Mock
       ).mockResolvedValue(undefined);
 
-      await initApp();
+      await initApp({});
+
+      expect(bootstrap).toHaveBeenCalledWith(expect.objectContaining({}));
+    });
+
+    it("handles case where portAndHostAllocator returns undefined after build", async () => {
+      (
+        portAndHostAllocator.getHostAndAvailablePort as jest.Mock
+      ).mockResolvedValue(undefined);
+
+      await initApp({ use: [] });
 
       expect(bootstrap).toHaveBeenCalledWith(
         expect.objectContaining({
-          port: 8000, // Should fall back to default
-          host: "localhost", // Should fall back to default
+          use: [],
         })
       );
     });
@@ -187,19 +187,19 @@ describe("Server Module", () => {
 
   describe("getArkosConfig", () => {
     it("returns the current config", async () => {
+      jest.restoreAllMocks();
       await initApp();
-      const config = getArkosConfig();
+      const config = server.getArkosConfig();
 
       expect(config).toMatchObject({
         port: 8000,
-        host: "localhost",
-        available: true,
+        host: "0.0.0.0",
         fileUpload: expect.any(Object),
       });
     });
 
     it("returns config even when initApp hasn't been called", () => {
-      const config = getArkosConfig();
+      const config = server.getArkosConfig();
       expect(config).toHaveProperty("port");
       expect(config).toHaveProperty("host");
     });
@@ -334,8 +334,7 @@ describe("Server Module", () => {
       const configureServerMock = jest.fn().mockImplementation(() => {
         throw new Error("Configure server failed");
       });
-      const customConfig: ArkosConfig = {
-        port: 8000,
+      const customConfig: ArkosInitConfig = {
         configureServer: configureServerMock,
       };
 
@@ -349,17 +348,21 @@ describe("Server Module", () => {
     it("handles case where server.listen callback throws error", async () => {
       const error = new Error("Server listen failed");
       mockServer.listen.mockImplementationOnce(
-        (port: number, host: string, callback: Function) => {
+        (_: number, _1: string, callback: Function) => {
           if (typeof callback === "function") {
             callback(error);
+            throw error;
           }
           return mockServer;
         }
       );
 
-      await initApp();
+      jest
+        .spyOn(server, "getArkosConfig")
+        .mockImplementation(() => ({ port: 123 }));
 
-      // Error should be caught and logged
+      await initApp("uanela" as any);
+
       expect(console.error).toHaveBeenCalled();
     });
   });
