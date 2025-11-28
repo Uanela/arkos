@@ -55,7 +55,7 @@ type BaseRouterConfig = PrismaBaseRouterConfig & {
         [K in RouterEndpoint]?: boolean;
       };
 } & {
-  [K in RouterEndpoint]?: Omit<ArkosRouteConfig, "route">;
+  [K in RouterEndpoint]?: Omit<ArkosRouteConfig, "path">;
 };
 
 type AuthRouterConfig = {
@@ -78,7 +78,7 @@ type AuthRouterConfig = {
         [K in AuthRouterEndpoint]?: boolean;
       };
 } & {
-  [K in AuthRouterEndpoint]?: Omit<ArkosRouteConfig, "route">;
+  [K in AuthRouterEndpoint]?: Omit<ArkosRouteConfig, "path">;
 };
 
 type FileUploadRouterConfig = {
@@ -101,7 +101,7 @@ type FileUploadRouterConfig = {
         [K in FileUploadRouterEndpoint]?: boolean;
       };
 } & {
-  [K in FileUploadRouterEndpoint]?: Omit<ArkosRouteConfig, "route" | "uploads">;
+  [K in FileUploadRouterEndpoint]?: Omit<ArkosRouteConfig, "path" | "uploads">;
 };
 
 export type RouterConfig<T extends string = string> = T extends "auth"

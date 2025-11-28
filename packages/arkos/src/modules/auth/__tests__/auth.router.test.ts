@@ -129,7 +129,7 @@ describe("Auth Router", () => {
       validation: { resolver: "zod" },
       authentication: {
         mode: "static",
-        requestRateLimitOptions: {
+        rateLimit: {
           windowMs: 10000,
           limit: 5,
         },
@@ -195,7 +195,7 @@ describe("Auth Router", () => {
         legacyHeaders: false,
         handler: expect.any(Function),
       },
-      mockArkosConfig.authentication.requestRateLimitOptions
+      mockArkosConfig.authentication.rateLimit
     );
     expect(rateLimit).toHaveBeenCalled();
     expect(mockRouter.use).toHaveBeenCalled();

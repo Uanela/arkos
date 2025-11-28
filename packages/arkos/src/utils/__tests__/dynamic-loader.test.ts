@@ -266,7 +266,7 @@ describe("Dynamic Prisma Model Loader", () => {
       );
 
       expect(sheu.warn).toHaveBeenCalledWith(
-        "Found deprecated user.middlewares.js that will removed from v1.5.0-beta, consider switching to user.interceptors.js"
+        "Found deprecated user.middlewares.js that will removed from v1.6.0-beta, consider switching to user.interceptors.js"
       );
     });
   });
