@@ -10,8 +10,8 @@ describe("extractArkosRoutes", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     RouteConfigRegistry.get = jest.fn((handler) => {
-      if (handler === handler1) return { route: "/a", method: "GET" };
-      if (handler === handler2) return { route: "/b", method: "POST" };
+      if (handler === handler1) return { path: "/a", method: "GET" };
+      if (handler === handler2) return { path: "/b", method: "POST" };
       return undefined;
     });
   });
@@ -41,15 +41,15 @@ describe("extractArkosRoutes", () => {
     const result = extractArkosRoutes(app);
 
     expect(result).toEqual([
-      { path: "/a", method: "GET", config: { route: "/a", method: "GET" } },
-      { path: "/b", method: "POST", config: { route: "/b", method: "POST" } },
+      { path: "/a", method: "GET", config: { path: "/a", method: "GET" } },
+      { path: "/b", method: "POST", config: { path: "/b", method: "POST" } },
     ]);
   });
 
   it("should handle nested routers", () => {
     const handler3 = jest.fn();
     RouteConfigRegistry.get = jest.fn((handler) => {
-      if (handler === handler3) return { route: "/c", method: "GET" };
+      if (handler === handler3) return { path: "/c", method: "GET" };
       return undefined;
     });
 
@@ -81,7 +81,7 @@ describe("extractArkosRoutes", () => {
       {
         path: "/base/nested/c",
         method: "GET",
-        config: { route: "/c", method: "GET" },
+        config: { path: "/c", method: "GET" },
       },
     ]);
   });

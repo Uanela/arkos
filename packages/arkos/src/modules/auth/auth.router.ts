@@ -135,7 +135,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
               });
             },
           },
-          arkosConfigs?.authentication?.requestRateLimitOptions || {}
+          arkosConfigs?.authentication?.rateLimit || {}
         )
       )
     );

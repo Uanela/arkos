@@ -23,7 +23,7 @@ import uploadManager from "./utils/helpers/upload-manager";
  *
  * router.get(
  *   {
- *     route: "/users/:id",
+ *     path: "/users/:id",
  *     openapi: {
  *       summary: "Get user by ID",
  *       tags: ["Users"]
@@ -66,7 +66,7 @@ export default function ArkosRouter(): IArkosRouter {
         ) {
           if (config.disabled) return;
 
-          const route = config.route;
+          const route = config.path;
 
           if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
