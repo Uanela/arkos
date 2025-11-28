@@ -42,7 +42,7 @@ const ${modelName.camel}Router = ArkosRouter()
 
 ${modelName.camel}Router.get(
   {
-    route: "/custom-endpoint",
+    path: "/custom-endpoint",
     authentication: { action: "CustomAction", resource: "${modelName.kebab}" },
     validation: {},
     experimental: {
