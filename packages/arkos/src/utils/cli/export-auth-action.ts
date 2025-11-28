@@ -42,12 +42,11 @@ export default async function exportAuthActionCommand(options: {
 
       const env = getEnv();
 
-      if (fileExt === "ts")
-        child = spawn("npx", ["tsx-strict", "--no-type-check", entryPoint], {
-          stdio: "inherit",
-          env,
-          shell: true,
-        });
+      child = spawn("npx", ["tsx-strict", "--no-type-check", entryPoint], {
+        stdio: "inherit",
+        env,
+        shell: true,
+      });
 
       if (child)
         child.on("error", (error) => {
