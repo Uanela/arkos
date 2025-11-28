@@ -2,7 +2,7 @@
 sidebar_position: 6
 ---
 
-# The `BaseController` Class
+# Base Controller Class
 
 The `BaseController` class provides standardized RESTful API endpoints for any given prisma model in your application. It follows a standard controller pattern that handles common CRUD operations through a consistent interface, reducing code duplication across the application.
 

@@ -2,7 +2,7 @@
 sidebar_position: 5
 ---
 
-# Handling Relation Fields in Prisma Body Requests
+# Handling Prisma Relation Fields
 
 One of the most powerful features of **Arkos** is its ability to automatically transform JSON data with nested relations into the appropriate Prisma operations. This eliminates the need to manually structure complex nested creates, updates, and connections.
 

@@ -2,7 +2,7 @@
 sidebar_position: 8
 ---
 
-# The `EmailService` Class
+# Email Service Class
 
 This guide provides a detailed API reference for the `EmailService` class inside **Arkos**, which handles all email functionality in the system. Notice that this is a class used by **Arkos** under the hood and unless you really need to create your own instance and know what you doing you can create your own instance.
 
