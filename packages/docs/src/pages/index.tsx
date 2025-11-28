@@ -24,10 +24,10 @@ export default function Home() {
         >
           <div className="container mx-auto relative max-w-6xl">
             <div className="absolute top-[25%] left-[70%] md:size-[700px] size-[200px] bg-sky-500 rounded-full opacity-20 blur-3xl z-[1]"></div>
-            <h2 className="md:text-3xl text-xl font-bold  text-center">
+            <h2 className="md:text-3xl text-xl font-bold  text-center px-4">
               Build Fast And With Confidence From Day One
             </h2>
-            <p className="text-gray-400 md:text-base text-sm text-justify font-normal sm:text-center max-w-2xl mx-auto mb-8 md:mt-4 mt-3">
+            <p className="text-gray-400 md:text-base text-sm  font-normal sm:text-center max-w-2xl mx-auto mb-8 md:mt-4 mt-3 text-center">
               With our modern architecture and seamless integrations, we created
               a RESTful framework that lets you ship features that scale as fast
               as your application grows without worrying about standard
@@ -63,7 +63,7 @@ export default function Home() {
           </div>
         </section>
 
-        <h2 className="md:text-2xl uppercase text-center text-2xl font-bold z-10 mx-auto mb-8">
+        <h2 className="md:text-2xl uppercase text-center text-lg font-bold z-10 mx-auto md:mb-8 px-4">
           Already Trusted By{" "}
           <span className="text-emerald-400">Great Developers</span> Building
           Daily
