@@ -5,7 +5,7 @@ import { OpenAPIV3 } from "openapi-types";
 
 export default class RouteConfigValidator {
   static isArkosRouteConfig(arg: any): arg is ArkosRouteConfig {
-    return typeof arg === "object" && arg !== null && "route" in arg;
+    return typeof arg === "object" && arg !== null && "path" in arg;
   }
 
   static validate(config: ArkosRouteConfig) {

@@ -11,6 +11,7 @@ import {
 } from "../../types/router-config";
 import { isEndpointDisabled } from "../../modules/base/utils/helpers/base.router.helpers";
 import deepmerge from "./deepmerge.helper";
+import { ArkosRouteConfig } from "../arkos-router/types";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
   if (middleware && typeof middleware !== "function")
@@ -110,8 +111,8 @@ export function createRouteConfig(
   authConfigs: any,
   validationSchema?: any
 ) {
-  let config: any = {
-    route: `/${routeName}${path}`,
+  let config: ArkosRouteConfig = {
+    path: `/${routeName}${path}`,
     disabled: isEndpointDisabled(routerConfig, endpoint),
     authentication:
       typeof authConfigs === "boolean"

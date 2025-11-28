@@ -147,7 +147,7 @@ describe("Auth Router", () => {
     // GET /users/me - protected route
     expect(mockRouter.get).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -161,7 +161,7 @@ describe("Auth Router", () => {
     // POST /auth/login - public route
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/login",
+        path: "/auth/login",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -175,7 +175,7 @@ describe("Auth Router", () => {
     // POST /auth/signup - public route
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/signup",
+        path: "/auth/signup",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -259,7 +259,7 @@ describe("Auth Router", () => {
     // GET /users/me with custom interceptors
     expect(mockRouter.get).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -275,7 +275,7 @@ describe("Auth Router", () => {
     // POST /auth/login with custom interceptors
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/login",
+        path: "/auth/login",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -291,7 +291,7 @@ describe("Auth Router", () => {
     // POST /auth/signup with custom interceptors
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/signup",
+        path: "/auth/signup",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -337,7 +337,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.patch).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: { body: mockDtos.updateMe },
@@ -350,7 +350,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/login",
+        path: "/auth/login",
         disabled: false,
         authentication: false,
         validation: { body: mockDtos.login },
@@ -380,7 +380,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.patch).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: { body: mockSchemas.updateMe },
@@ -393,7 +393,7 @@ describe("Auth Router", () => {
 
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/login",
+        path: "/auth/login",
         disabled: false,
         authentication: false,
         validation: { body: mockSchemas.login },
@@ -416,7 +416,7 @@ describe("Auth Router", () => {
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -430,7 +430,7 @@ describe("Auth Router", () => {
     // PATCH /users/me
     expect(mockRouter.patch).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -444,7 +444,7 @@ describe("Auth Router", () => {
     // DELETE /users/me
     expect(mockRouter.delete).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -458,7 +458,7 @@ describe("Auth Router", () => {
     // POST /auth/login
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/login",
+        path: "/auth/login",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -472,7 +472,7 @@ describe("Auth Router", () => {
     // DELETE /auth/logout
     expect(mockRouter.delete).toHaveBeenCalledWith(
       {
-        route: "/auth/logout",
+        path: "/auth/logout",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -485,7 +485,7 @@ describe("Auth Router", () => {
     // POST /auth/signup
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/signup",
+        path: "/auth/signup",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -499,7 +499,7 @@ describe("Auth Router", () => {
     // POST /auth/update-password
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/update-password",
+        path: "/auth/update-password",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -529,7 +529,7 @@ describe("Auth Router", () => {
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -544,7 +544,7 @@ describe("Auth Router", () => {
     // PATCH /users/me
     expect(mockRouter.patch).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -559,7 +559,7 @@ describe("Auth Router", () => {
     // DELETE /users/me
     expect(mockRouter.delete).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -574,7 +574,7 @@ describe("Auth Router", () => {
     // POST /auth/login
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/login",
+        path: "/auth/login",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -589,7 +589,7 @@ describe("Auth Router", () => {
     // DELETE /auth/logout
     expect(mockRouter.delete).toHaveBeenCalledWith(
       {
-        route: "/auth/logout",
+        path: "/auth/logout",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -603,7 +603,7 @@ describe("Auth Router", () => {
     // POST /auth/signup
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/signup",
+        path: "/auth/signup",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -618,7 +618,7 @@ describe("Auth Router", () => {
     // POST /auth/update-password
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/update-password",
+        path: "/auth/update-password",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -649,7 +649,7 @@ describe("Auth Router", () => {
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -664,7 +664,7 @@ describe("Auth Router", () => {
     // PATCH /users/me
     expect(mockRouter.patch).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -679,7 +679,7 @@ describe("Auth Router", () => {
     // DELETE /users/me
     expect(mockRouter.delete).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -694,7 +694,7 @@ describe("Auth Router", () => {
     // POST /auth/login
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/login",
+        path: "/auth/login",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -709,7 +709,7 @@ describe("Auth Router", () => {
     // DELETE /auth/logout
     expect(mockRouter.delete).toHaveBeenCalledWith(
       {
-        route: "/auth/logout",
+        path: "/auth/logout",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -723,7 +723,7 @@ describe("Auth Router", () => {
     // POST /auth/signup
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/signup",
+        path: "/auth/signup",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -738,7 +738,7 @@ describe("Auth Router", () => {
     // POST /auth/update-password
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/update-password",
+        path: "/auth/update-password",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -789,7 +789,7 @@ describe("Auth Router", () => {
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -806,7 +806,7 @@ describe("Auth Router", () => {
     // PATCH /users/me
     expect(mockRouter.patch).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -823,7 +823,7 @@ describe("Auth Router", () => {
     // DELETE /users/me
     expect(mockRouter.delete).toHaveBeenCalledWith(
       {
-        route: "/users/me",
+        path: "/users/me",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -840,7 +840,7 @@ describe("Auth Router", () => {
     // POST /auth/login
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/login",
+        path: "/auth/login",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -857,7 +857,7 @@ describe("Auth Router", () => {
     // DELETE /auth/logout
     expect(mockRouter.delete).toHaveBeenCalledWith(
       {
-        route: "/auth/logout",
+        path: "/auth/logout",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -873,7 +873,7 @@ describe("Auth Router", () => {
     // POST /auth/signup
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/signup",
+        path: "/auth/signup",
         disabled: false,
         authentication: false,
         validation: undefined,
@@ -890,7 +890,7 @@ describe("Auth Router", () => {
     // POST /auth/update-password
     expect(mockRouter.post).toHaveBeenCalledWith(
       {
-        route: "/auth/update-password",
+        path: "/auth/update-password",
         disabled: false,
         authentication: true,
         validation: undefined,
@@ -923,7 +923,7 @@ describe("Auth Router", () => {
     // GET /auth-actions
     expect(mockRouter.get).toHaveBeenCalledWith(
       {
-        route: "/auth-actions",
+        path: "/auth-actions",
         disabled: false,
         authentication: {
           resource: "auth",
@@ -940,7 +940,7 @@ describe("Auth Router", () => {
     // GET /auth-actions/:resourceName
     expect(mockRouter.get).toHaveBeenCalledWith(
       {
-        route: "/auth-actions/:resourceName",
+        path: "/auth-actions/:resourceName",
         disabled: false,
         authentication: {
           resource: "auth",

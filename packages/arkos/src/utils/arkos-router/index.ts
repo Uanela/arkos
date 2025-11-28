@@ -68,9 +68,14 @@ export default function ArkosRouter(): IArkosRouter {
 
           const route = config.path;
 
+          if (!route)
+            throw Error(
+              "Please pass valid value for path field to use in your route"
+            );
+
           if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
-              `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig but recevied ${config}`
+              `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
 
           const method = prop as string;

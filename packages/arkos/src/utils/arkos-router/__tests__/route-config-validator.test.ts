@@ -19,7 +19,7 @@ describe("RouteConfigValidator", () => {
   it("should not throw when validation matches swagger mode for zod", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
     const config = {
-      route: "/test",
+      path: "/test",
       validation: { query: z.object({ name: z.string() }) },
     };
     expect(() => RouteConfigValidator.validate(config as any)).not.toThrow();
@@ -30,7 +30,7 @@ describe("RouteConfigValidator", () => {
       swagger: { mode: "class-validator" },
     });
     const config = {
-      route: "/test",
+      path: "/test",
       validation: { query: mockClass },
     };
     expect(() => RouteConfigValidator.validate(config as any)).not.toThrow();
@@ -41,7 +41,7 @@ describe("RouteConfigValidator", () => {
       swagger: { mode: "class-validator" },
     });
     const config = {
-      route: "/test",
+      path: "/test",
       validation: { query: z.object({}) },
     };
     expect(() => RouteConfigValidator.validate(config as any)).toThrow(
@@ -52,7 +52,7 @@ describe("RouteConfigValidator", () => {
   it("should throw when class used but swagger mode is not class-validator", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
     const config = {
-      route: "/test",
+      path: "/test",
       validation: { body: mockClass },
     };
     expect(() => RouteConfigValidator.validate(config as any)).toThrow(
@@ -63,7 +63,7 @@ describe("RouteConfigValidator", () => {
   it("should throw on duplicate query definitions", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
     const config = {
-      route: "/test",
+      path: "/test",
       validation: { query: z.object({}) },
       experimental: {
         openapi: { parameters: [{ in: "query" }] },
@@ -77,7 +77,7 @@ describe("RouteConfigValidator", () => {
   it("should throw on duplicate path parameter definitions", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
     const config = {
-      route: "/test",
+      path: "/test",
       validation: { params: z.object({}) },
       experimental: {
         openapi: { parameters: [{ in: "params" }] },
@@ -91,7 +91,7 @@ describe("RouteConfigValidator", () => {
   it("should throw on duplicate request body definitions", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
     const config = {
-      route: "/test",
+      path: "/test",
       validation: { body: z.object({}) },
       experimental: {
         openapi: { requestBody: {} },
@@ -104,7 +104,7 @@ describe("RouteConfigValidator", () => {
 
   describe("isArkosRouteConfig", () => {
     it("should return true for valid ArkosRouteConfig object", () => {
-      const obj = { route: "/test" };
+      const obj = { path: "/test" };
       expect(RouteConfigValidator.isArkosRouteConfig(obj)).toBe(true);
     });
 
@@ -115,8 +115,8 @@ describe("RouteConfigValidator", () => {
       expect(RouteConfigValidator.isArkosRouteConfig("string")).toBe(false);
     });
 
-    it("should return false for object without route property", () => {
-      const obj = { path: "/test" };
+    it("should return false for object without path property", () => {
+      const obj = { route: "/test" };
       expect(RouteConfigValidator.isArkosRouteConfig(obj)).toBe(false);
     });
   });
