@@ -15,7 +15,7 @@ RouteConfigRegistry.register = jest.fn();
 RouteConfigRegistry.get = jest.fn();
 
 describe("ArkosRouter", () => {
-  const config = { route: "/test" };
+  const config = { path: "/test" };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -23,7 +23,7 @@ describe("ArkosRouter", () => {
     RouteConfigRegistry.get = jest.fn();
   });
 
-  it("should call original method when first argument is not ArkosRouteConfig", () => {
+  it("should throw an error when path is passed", () => {
     const router = Router();
     const proxied = ArkosRouter() as any;
 
@@ -32,7 +32,7 @@ describe("ArkosRouter", () => {
       proxied.get("/normal", jest.fn());
     } catch (err: any) {
       expect(err.message).toBe(
-        "First argument of ArkosRouter().get() must be a valid ArkosRouteConfig but recevied /normal"
+        "Please pass valid value for path field to use in your route"
       );
     }
   });
@@ -78,7 +78,7 @@ describe("ArkosRouter", () => {
     });
     try {
       const proxied = ArkosRouter() as any;
-      proxied.get({ route: "/api/cacilda" });
+      proxied.get({ path: "/api/cacilda" });
     } catch (err: any) {
       expect(err.message).toBe(
         "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
@@ -90,7 +90,7 @@ describe("ArkosRouter", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({});
     try {
       const proxied = ArkosRouter() as any;
-      proxied.get({ route: "/api/cacilda", validation: {} });
+      proxied.get({ path: "/api/cacilda", validation: {} });
     } catch (err: any) {
       expect(err.message).toBe(
         "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
@@ -102,7 +102,7 @@ describe("ArkosRouter", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({});
     try {
       const proxied = ArkosRouter() as any;
-      proxied.get({ route: "/api/cacilda", authentication: {} });
+      proxied.get({ path: "/api/cacilda", authentication: {} });
     } catch (err: any) {
       expect(err.message).toBe(
         "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"

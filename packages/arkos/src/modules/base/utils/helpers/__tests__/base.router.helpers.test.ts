@@ -128,7 +128,7 @@ describe("setupRouters", () => {
 
     expect(router.post).toHaveBeenCalledWith(
       {
-        route: "/users",
+        path: "/users",
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: false,
         validation: { body: CreateUserSchema },
@@ -140,7 +140,7 @@ describe("setupRouters", () => {
     );
     expect(router.get).toHaveBeenCalledWith(
       {
-        route: "/users",
+        path: "/users",
         authentication: { action: "View", resource: "user", rule: undefined },
         disabled: false,
         validation: undefined,
@@ -152,7 +152,7 @@ describe("setupRouters", () => {
     );
     expect(router.post).toHaveBeenCalledWith(
       {
-        route: "/users/many",
+        path: "/users/many",
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: false,
         validation: undefined,
@@ -164,7 +164,7 @@ describe("setupRouters", () => {
     );
     expect(router.patch).toHaveBeenCalledWith(
       {
-        route: "/users/many",
+        path: "/users/many",
         authentication: { action: "Update", resource: "user", rule: undefined },
         disabled: false,
         validation: undefined,
@@ -177,7 +177,7 @@ describe("setupRouters", () => {
 
     expect(router.delete).toHaveBeenCalledWith(
       {
-        route: "/users/many",
+        path: "/users/many",
         authentication: { action: "Delete", resource: "user", rule: undefined },
         disabled: false,
         validation: undefined,
@@ -190,7 +190,7 @@ describe("setupRouters", () => {
 
     expect(router.get).toHaveBeenCalledWith(
       {
-        route: "/users/:id",
+        path: "/users/:id",
         authentication: { action: "View", resource: "user", rule: undefined },
         disabled: false,
         validation: undefined,
@@ -203,7 +203,7 @@ describe("setupRouters", () => {
 
     expect(router.patch).toHaveBeenCalledWith(
       {
-        route: "/users/:id",
+        path: "/users/:id",
         authentication: { action: "Update", resource: "user", rule: undefined },
         disabled: false,
         validation: { body: UpdateUserSchema },
@@ -216,7 +216,7 @@ describe("setupRouters", () => {
 
     expect(router.delete).toHaveBeenCalledWith(
       {
-        route: "/users/:id",
+        path: "/users/:id",
         authentication: { action: "Delete", resource: "user", rule: undefined },
         disabled: false,
         validation: undefined,
@@ -256,7 +256,7 @@ describe("setupRouters", () => {
       {
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: false,
-        route: "/users/many",
+        path: "/users/many",
         validation: undefined,
         experimental: { openapi: false },
       },
@@ -268,7 +268,7 @@ describe("setupRouters", () => {
       {
         authentication: { action: "View", resource: "user", rule: undefined },
         disabled: false,
-        route: "/users/:id",
+        path: "/users/:id",
         validation: undefined,
         experimental: { openapi: false },
       },
@@ -315,7 +315,7 @@ describe("setupRouters", () => {
           rule: ["TheBeast"],
         },
         disabled: false,
-        route: "/users/many",
+        path: "/users/many",
         validation: undefined,
         experimental: { openapi: false },
       },
@@ -331,7 +331,7 @@ describe("setupRouters", () => {
           rule: { roles: ["TheBeast"] },
         },
         disabled: false,
-        route: "/users/:id",
+        path: "/users/:id",
         validation: undefined,
         experimental: { openapi: false },
       },
@@ -364,7 +364,7 @@ describe("setupRouters", () => {
       {
         authentication: { action: "View", resource: "user", rule: undefined },
         disabled: true,
-        route: "/users",
+        path: "/users",
         validation: undefined,
         experimental: { openapi: false },
       },
@@ -376,7 +376,7 @@ describe("setupRouters", () => {
       {
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: true,
-        route: "/users",
+        path: "/users",
         validation: undefined,
         experimental: { openapi: false },
       },
@@ -388,7 +388,7 @@ describe("setupRouters", () => {
       {
         authentication: { action: "Update", resource: "user", rule: undefined },
         disabled: true,
-        route: "/users/:id",
+        path: "/users/:id",
         validation: undefined,
         experimental: { openapi: false },
       },
@@ -400,7 +400,7 @@ describe("setupRouters", () => {
       {
         authentication: { action: "Delete", resource: "user", rule: undefined },
         disabled: true,
-        route: "/users/:id",
+        path: "/users/:id",
         validation: undefined,
         experimental: { openapi: false },
       },
@@ -430,7 +430,7 @@ describe("setupRouters", () => {
 
     expect(router.get).toHaveBeenCalledWith(
       {
-        route: "/users",
+        path: "/users",
         authentication: {
           action: "View",
           resource: "user",
@@ -470,7 +470,7 @@ describe("setupRouters", () => {
     // Verify custom middleware is used - should spread the array
     expect(router.get).toHaveBeenCalledWith(
       {
-        route: "/users",
+        path: "/users",
         authentication: {
           action: "View",
           resource: "user",
@@ -589,7 +589,7 @@ describe("setupRouters", () => {
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
     expect(router.post).toHaveBeenCalledWith(
       {
-        route: "/users/many",
+        path: "/users/many",
         authentication: {
           action: "Create",
           resource: "user",
@@ -781,7 +781,7 @@ describe("setupRouters", () => {
 
       expect(router.post).toHaveBeenCalledWith(
         {
-          route: "/users/many",
+          path: "/users/many",
           authentication: {
             action: "Create",
             resource: "user",
@@ -836,7 +836,7 @@ describe("setupRouters", () => {
       // Verify that DTOs are used (this tests line 333)
       expect(router.post).toHaveBeenCalledWith(
         {
-          route: "/users/many",
+          path: "/users/many",
           authentication: {
             action: "Create",
             resource: "user",
@@ -889,7 +889,7 @@ describe("setupRouters", () => {
       // Verify that schemas are used (this tests line 340)
       expect(router.post).toHaveBeenCalledWith(
         {
-          route: "/users/many",
+          path: "/users/many",
           authentication: {
             action: "Create",
             resource: "user",
@@ -932,7 +932,7 @@ describe("setupRouters", () => {
       // Should still register routes but without specific validation (tests line 342)
       expect(router.post).toHaveBeenCalledWith(
         {
-          route: "/users",
+          path: "/users",
           authentication: {
             action: "Create",
             resource: "user",
@@ -973,7 +973,7 @@ describe("setupRouters", () => {
       // Should still register routes but without specific validation (tests line 342)
       expect(router.post).toHaveBeenCalledWith(
         {
-          route: "/users",
+          path: "/users",
           authentication: {
             action: "Create",
             resource: "user",
@@ -1021,7 +1021,7 @@ describe("setupRouters", () => {
 
       expect(router.post).toHaveBeenCalledWith(
         {
-          route: "/users",
+          path: "/users",
           authentication: {
             action: "Create",
             resource: "user",
