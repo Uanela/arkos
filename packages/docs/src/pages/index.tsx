@@ -5,13 +5,14 @@ import ArkosFeatureCard from "./components/arkos-feature-card";
 import { arkosFeatures } from "../utils/arkos-features";
 import HeroSection from "./components/hero-section";
 import CompaniesLogos from "./components/companies-logos";
-import { Power, TestTubeIcon } from "lucide-react";
 import PoweredBySection from "./components/powered-by-section";
 import TestimonialCard from "./components/testimonial-card";
+import AnnoucementBanner from "../components/annoucement-banner";
 
 export default function Home() {
   return (
     <div className="tailwind overflow-hidden max-w-[100vw]">
+      <AnnoucementBanner />
       <Layout description="Node.js backend framework for simplifying API development with automatic route generation, authentication, and minimal configuration.">
         <HeroSection />
         <CompaniesLogos />
