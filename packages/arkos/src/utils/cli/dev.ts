@@ -1,12 +1,12 @@
 import { spawn, ChildProcess } from "child_process";
 import chokidar from "chokidar";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
-import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import fs from "fs";
 import path from "path";
 import sheu from "../sheu";
 import portAndHostAllocator from "../features/port-and-host-allocator";
+import watermarkStamper from "./utils/watermark-stamper";
 
 interface DevOptions {
   port?: string;
@@ -32,7 +32,6 @@ export async function devCommand(options: DevOptions = {}) {
     let restartingFiles = new Set<string>();
 
     const fileExt = getUserFileExtension();
-
     const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
 
     if (!fs.existsSync(entryPoint)) {
@@ -46,6 +45,7 @@ export async function devCommand(options: DevOptions = {}) {
         ...process.env,
         ...(port && { CLI_PORT: port }),
         ...(host && { CLI_HOST: host }),
+        CLI: "false",
       }) as { [x: string]: string };
 
     const startServer = () => {
@@ -143,15 +143,10 @@ export async function devCommand(options: DevOptions = {}) {
       { logWarning: true }
     );
 
-    console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-    console.info(
-      `  - Local:        http://${hostAndPort?.host}:${hostAndPort?.port}`
-    );
-    console.info(
-      `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-        .replaceAll(`\\`, "")
-        .replaceAll("/", "")}\n`
-    );
+    watermarkStamper.stamp({
+      ...hostAndPort,
+      envFiles,
+    });
 
     const cleanup = () => {
       if (restartTimeout) clearTimeout(restartTimeout);
@@ -169,11 +164,9 @@ export async function devCommand(options: DevOptions = {}) {
       process.exit(0);
     };
 
-    // Handle process exit
     process.on("SIGINT", cleanup);
     process.on("SIGTERM", cleanup);
 
-    // Handle uncaught exceptions
     process.on("uncaughtException", (error) => {
       console.error("Uncaught Exception:", error);
       cleanup();

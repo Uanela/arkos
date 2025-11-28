@@ -199,7 +199,12 @@ describe("FileUploadController", () => {
       await fileUploadController.uploadFile(mockReq, mockRes, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(
-        new AppError("No file uploaded", 400)
+        new AppError(
+          "No file or files were attached on field files on the request body as form data.",
+          400,
+          {},
+          "NoFileOrFilesAttached"
+        )
       );
     });
 
@@ -529,89 +534,6 @@ describe("FileUploadController", () => {
       expect(mockNext).toHaveBeenCalledWith();
     });
   });
-
-  // describe("streamFile", () => {
-  //   beforeEach(() => {
-  //     (fs.promises.stat as jest.MockedFunction<any>).mockResolvedValue({ size: 1000 });
-  //     (fs.createReadStream as jest.MockedFunction<any>).mockReturnValue({
-  //       pipe: jest.fn(),
-  //     });
-  //   });
-
-  //   it("should stream file without range header", async () => {
-  //     mockReq.params = { fileType: "files", fileName: "test.txt" };
-  //     mockReq.headers = {};
-
-  //     await fileUploadController.streamFile(mockReq, mockRes, mockNext);
-
-  //     expect(mockRes.writeHead).toHaveBeenCalledWith(200, {
-  //       "Content-Length": 1000,
-  //       "Content-Type": "application/octet-stream",
-  //       "Content-Disposition": 'inline; filename="test.txt"',
-  //     });
-  //     expect(fs.createReadStream).toHaveBeenCalledWith(
-  //       path.join(".", "uploads", "files", "test.txt")
-  //     );
-  //   });
-
-  //   it("should handle range requests", async () => {
-  //     mockReq.params = { fileType: "files", fileName: "test.txt" };
-  //     mockReq.headers = { range: "bytes=0-499" };
-
-  //     await fileUploadController.streamFile(mockReq, mockRes, mockNext);
-
-  //     expect(mockRes.writeHead).toHaveBeenCalledWith(206, {
-  //       "Content-Range": "bytes 0-499/1000",
-  //       "Accept-Ranges": "bytes",
-  //       "Content-Length": 500,
-  //       "Content-Type": "application/octet-stream",
-  //       "Content-Disposition": 'inline; filename="test.txt"',
-  //     });
-  //     expect(fs.createReadStream).toHaveBeenCalledWith(
-  //       path.join(".", "uploads", "files", "test.txt"),
-  //       { start: 0, end: 499 }
-  //     );
-  //   });
-
-  //   it("should handle invalid range requests", async () => {
-  //     mockReq.params = { fileType: "files", fileName: "test.txt" };
-  //     mockReq.headers = { range: "bytes=1500-2000" };
-
-  //     await fileUploadController.streamFile(mockReq, mockRes, mockNext);
-
-  //     expect(mockRes.status).toHaveBeenCalledWith(416);
-  //     expect(mockRes.json).toHaveBeenCalledWith({
-  //       error: "Range Not Satisfiable",
-  //     });
-  //   });
-
-  //   it("should handle file not found", async () => {
-  //     mockReq.params = { fileType: "files", fileName: "nonexistent.txt" };
-
-  //     (fs.promises.access as jest.MockedFunction<any>).mockRejectedValue(
-  //       new Error("File not found")
-  //     );
-
-  //     await expect(
-  //       fileUploadController.streamFile(mockReq, mockRes, mockNext)
-  //     ).rejects.toThrow(new AppError("File not found", 404));
-  //   });
-
-  //   it("should handle range with no end value", async () => {
-  //     mockReq.params = { fileType: "files", fileName: "test.txt" };
-  //     mockReq.headers = { range: "bytes=500-" };
-
-  //     await fileUploadController.streamFile(mockReq, mockRes, mockNext);
-
-  //     expect(mockRes.writeHead).toHaveBeenCalledWith(206, {
-  //       "Content-Range": "bytes 500-999/1000",
-  //       "Accept-Ranges": "bytes",
-  //       "Content-Length": 500,
-  //       "Content-Type": "application/octet-stream",
-  //       "Content-Disposition": 'inline; filename="test.txt"',
-  //     });
-  //   });
-  // });
 
   describe("File type specific tests", () => {
     it("should handle different file types correctly", async () => {

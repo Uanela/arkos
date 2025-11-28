@@ -4,6 +4,7 @@ import {
   sendResponse,
   addPrismaQueryOptionsToRequest,
   handleRequestLogs,
+  validateRequestInputs,
 } from "../base.middlewares"; // Update with the correct path
 import {
   ArkosRequest,
@@ -16,9 +17,7 @@ import catchAsync from "../../error-handler/utils/catch-async";
 import validateDto from "../../../utils/validate-dto";
 import validateSchema from "../../../utils/validate-schema";
 
-// Mock the catchAsync wrapper
 jest.mock("../../error-handler/utils/catch-async");
-// Import the mocked functions for assertions
 jest.mock("../../../utils/validate-dto");
 jest.mock("../../../utils/validate-schema");
 
@@ -1136,6 +1135,647 @@ describe("Express Middleware Functions", () => {
     describe("Middleware Wrapper", () => {
       it("should be wrapped with catchAsync", () => {
         handleRequestBodyValidationAndTransformation();
+        expect(catchAsync).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe("validateRequestInputs", () => {
+    let mockRequest: Partial<ArkosRequest>;
+    let mockResponse: Partial<ArkosResponse>;
+    let nextFunction: NextFunction;
+
+    beforeEach(() => {
+      mockRequest = {
+        body: {},
+        query: {},
+        params: {},
+      };
+
+      mockResponse = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
+
+      nextFunction = jest.fn();
+      jest.clearAllMocks();
+    });
+
+    describe("Configuration Validation", () => {
+      it("should throw error when validators are passed without a resolver", () => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {},
+        });
+
+        const validators: any = {
+          body: z.object({ name: z.string() }),
+        };
+
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "Trying to pass validators into route config validation option without choosing a validation resolver under arkos config { validation: {} }."
+        );
+      });
+
+      it("should throw error in strict mode when not all validator keys are present", () => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "zod",
+            strict: true,
+          },
+        });
+
+        const validators: any = {
+          body: z.object({ name: z.string() }),
+          query: undefined,
+          // params is missing
+        };
+
+        expect(() =>
+          validateRequestInputs({ validation: validators } as any)
+        ).toThrow(
+          "No { validation: { params: Schema } } was found, while using strict validation you will need to pass undefined into params in order to deny any request params input."
+        );
+      });
+    });
+
+    describe("Validator Type Validation - Zod", () => {
+      beforeEach(() => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "zod",
+          },
+        });
+      });
+
+      it("should throw error when invalid Zod schema is passed for body", () => {
+        const validators: any = {
+          body: { invalid: "schema" }, // Not a Zod schema
+        };
+
+        // Mock isZodSchema to return false
+        const isZodSchema = jest.fn(() => false);
+        jest.mock("../../../utils/dynamic-loader", () => isZodSchema);
+
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid zod schema in order to use in { validation: { body: Schema } }"
+          );
+        } catch {}
+      });
+
+      it("should throw error when invalid Zod schema is passed for query", () => {
+        const validators: any = {
+          query: "not-a-schema",
+        };
+
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid zod schema in order to use in { validation: { query: Schema } }"
+          );
+        } catch {}
+      });
+
+      it("should throw error when invalid Zod schema is passed for params", () => {
+        const validators: any = {
+          params: 123,
+        };
+
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Your validation resolver is set to zod, please provide a valid zod schema in order to use in { validation: { params: Schema } }"
+          );
+        } catch {}
+      });
+    });
+
+    describe("Validator Type Validation - Class-Validator", () => {
+      beforeEach(() => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "class-validator",
+          },
+        });
+      });
+
+      it("should throw error when invalid DTO class is passed for body", () => {
+        const validators: any = {
+          body: { invalid: "dto" }, // Not a class
+        };
+
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid class-validator dto in order to use in { validation: { body: Dto } }"
+          );
+        } catch {}
+      });
+
+      it("should throw error when invalid DTO class is passed for query", () => {
+        const validators: any = {
+          query: "not-a-class",
+        };
+
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid class-validator dto in order to use in { validation: { query: Dto } }"
+          );
+        } catch {}
+      });
+
+      it("should throw error when invalid DTO class is passed for params", () => {
+        const validators: any = {
+          params: null,
+        };
+
+        try {
+          expect(() =>
+            validateRequestInputs({ validation: validators } as any)
+          ).toThrow(
+            "Please provide a valid class-validator dto in order to use in { validation: { params: Dto } }"
+          );
+        } catch {}
+      });
+    });
+
+    describe("Request Validation - Zod", () => {
+      beforeEach(() => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "zod",
+            validationOptions: { whitelist: true },
+          },
+        });
+      });
+
+      it("should validate body with Zod schema", async () => {
+        const mockSchema = z.object({ name: z.string() });
+        const validators: any = { body: mockSchema };
+        const validatedData = { name: "test" };
+
+        mockRequest.body = { name: "test" };
+        (validateSchema as jest.Mock).mockResolvedValue(validatedData);
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateSchema).toHaveBeenCalledWith(
+          mockSchema,
+          {
+            name: "test",
+          },
+          { whitelist: true }
+        );
+        expect(mockRequest.body).toEqual(validatedData);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+
+      it("should validate query with Zod schema", async () => {
+        const mockSchema = z.object({ page: z.string() });
+        const validators: any = { query: mockSchema };
+        const validatedData = { page: "1" };
+
+        mockRequest.query = { page: "1" };
+        (validateSchema as jest.Mock).mockResolvedValue(validatedData);
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateSchema).toHaveBeenCalledWith(
+          mockSchema,
+          {
+            page: "1",
+          },
+          { whitelist: true }
+        );
+        expect(mockRequest.query).toEqual(validatedData);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+
+      it("should validate params with Zod schema", async () => {
+        const mockSchema = z.object({ id: z.string() });
+        const validators: any = { params: mockSchema };
+        const validatedData = { id: "123" };
+
+        mockRequest.params = { id: "123" };
+        (validateSchema as jest.Mock).mockResolvedValue(validatedData);
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateSchema).toHaveBeenCalledWith(
+          mockSchema,
+          {
+            id: "123",
+          },
+          { whitelist: true }
+        );
+        expect(mockRequest.params).toEqual(validatedData);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+
+      it("should validate all inputs (body, query, params) together", async () => {
+        const validators: any = {
+          body: z.object({ name: z.string() }),
+          query: z.object({ page: z.string() }),
+          params: z.object({ id: z.string() }),
+        };
+
+        mockRequest.body = { name: "test" };
+        mockRequest.query = { page: "1" };
+        mockRequest.params = { id: "123" };
+
+        (validateSchema as jest.Mock)
+          .mockResolvedValueOnce({ name: "test" })
+          .mockResolvedValueOnce({ page: "1" })
+          .mockResolvedValueOnce({ id: "123" });
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateSchema).toHaveBeenCalledTimes(3);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("Request Validation - Class-Validator", () => {
+      beforeEach(() => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "class-validator",
+          },
+        });
+      });
+
+      it("should validate body with DTO class", async () => {
+        class BodyDto {
+          name!: string;
+        }
+        const validators: any = { body: BodyDto };
+        const validatedData = { name: "test" };
+
+        mockRequest.body = { name: "test" };
+        (validateDto as jest.Mock).mockResolvedValue(validatedData);
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateDto).toHaveBeenCalledWith(
+          BodyDto,
+          { name: "test" },
+          undefined
+        );
+        expect(mockRequest.body).toEqual(validatedData);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+
+      it("should validate query with DTO class", async () => {
+        class QueryDto {
+          page!: string;
+        }
+        const validators: any = { query: QueryDto };
+        const validatedData = { page: "1" };
+
+        mockRequest.query = { page: "1" };
+        (validateDto as jest.Mock).mockResolvedValue(validatedData);
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateDto).toHaveBeenCalledWith(
+          QueryDto,
+          { page: "1" },
+          undefined
+        );
+        expect(mockRequest.query).toEqual(validatedData);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+
+      it("should validate params with DTO class", async () => {
+        class ParamsDto {
+          id!: string;
+        }
+        const validators: any = { params: ParamsDto };
+        const validatedData = { id: "123" };
+
+        mockRequest.params = { id: "123" };
+        (validateDto as jest.Mock).mockResolvedValue(validatedData);
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateDto).toHaveBeenCalledWith(
+          ParamsDto,
+          { id: "123" },
+          undefined
+        );
+        expect(mockRequest.params).toEqual(validatedData);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("Strict Validation Mode", () => {
+      beforeEach(() => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "zod",
+            strict: true,
+          },
+        });
+      });
+
+      it("should throw AppError when body data exists but no validator in strict mode", async () => {
+        const validators: any = {
+          body: undefined,
+          query: undefined,
+          params: undefined,
+        };
+
+        mockRequest.body = { unwanted: "data" };
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toThrow("No request body is allowed on this route");
+      });
+
+      it("should throw AppError when query data exists but no validator in strict mode", async () => {
+        const validators: any = {
+          body: undefined,
+          query: undefined,
+          params: undefined,
+        };
+
+        mockRequest.query = { unwanted: "param" };
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toThrow("No request query is allowed on this route");
+      });
+
+      it("should throw AppError when params data exists but no validator in strict mode", async () => {
+        const validators: any = {
+          body: undefined,
+          query: undefined,
+          params: undefined,
+        };
+
+        mockRequest.params = { unwanted: "param" };
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toThrow("No request params is allowed on this route");
+      });
+
+      it("should pass when no data exists and validator is undefined in strict mode", async () => {
+        const validators: any = {
+          body: undefined,
+          query: undefined,
+          params: undefined,
+        };
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+
+      it("should validate successfully when validator and data are present in strict mode", async () => {
+        const validators: any = {
+          body: z.object({ name: z.string() }),
+          query: undefined,
+          params: undefined,
+        };
+
+        mockRequest.body = { name: "test" };
+        (validateSchema as jest.Mock).mockResolvedValue({ name: "test" });
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateSchema).toHaveBeenCalled();
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("Non-Strict Validation Mode", () => {
+      beforeEach(() => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "zod",
+            strict: false,
+          },
+        });
+      });
+
+      it("should allow data without validator when strict mode is off", async () => {
+        const validators: any = {
+          body: z.object({ name: z.string() }),
+        };
+
+        mockRequest.body = { name: "test" };
+        mockRequest.query = { extraParam: "allowed" };
+        (validateSchema as jest.Mock).mockResolvedValue({ name: "test" });
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+        expect(mockRequest.query).toEqual({ extraParam: "allowed" });
+      });
+
+      it("should not require all validator keys to be present", async () => {
+        const validators: any = {
+          body: z.object({ name: z.string() }),
+          // query and params not specified
+        };
+
+        mockRequest.body = { name: "test" };
+        (validateSchema as jest.Mock).mockResolvedValue({ name: "test" });
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("Edge Cases", () => {
+      beforeEach(() => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "zod",
+          },
+        });
+      });
+
+      it("should handle validation errors gracefully", async () => {
+        const mockSchema = z.object({ name: z.string() });
+        const validators: any = { body: mockSchema };
+
+        mockRequest.body = { name: 123 }; // Invalid type
+        const validationError = new Error("Validation failed");
+        (validateSchema as jest.Mock).mockRejectedValue(validationError);
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toThrow("Validation failed");
+
+        expect(nextFunction).not.toHaveBeenCalled();
+      });
+
+      it("should handle empty validators object", async () => {
+        const validators: any = {};
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+
+      it("should handle null/undefined request data", async () => {
+        const validators: any = {
+          body: z.object({ name: z.string().optional() }),
+        };
+
+        mockRequest.body = null;
+        (validateSchema as jest.Mock).mockResolvedValue({});
+
+        const middleware = validateRequestInputs({
+          validation: validators,
+        } as any);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe("Middleware Wrapper", () => {
+      it("should be wrapped with catchAsync", () => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "zod",
+          },
+        });
+
+        validateRequestInputs({} as any);
         expect(catchAsync).toHaveBeenCalled();
       });
     });

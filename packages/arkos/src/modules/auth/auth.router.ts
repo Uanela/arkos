@@ -1,31 +1,34 @@
 import { Router } from "express";
 import { authControllerFactory } from "./auth.controller";
-import authService from "./auth.service";
 import rateLimit from "express-rate-limit";
 import { getModuleComponents } from "../../utils/dynamic-loader";
 import {
   addPrismaQueryOptionsToRequest,
-  handleRequestBodyValidationAndTransformation,
   sendResponse,
 } from "../base/base.middlewares";
-import { ArkosConfig } from "../../types/arkos-config";
+import { ArkosConfig } from "../../types/new-arkos-config";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthPrismaQueryOptions } from "../../types";
-import { processMiddleware } from "../../utils/helpers/routers.helpers";
+import {
+  processMiddleware,
+  createRouteConfig,
+} from "../../utils/helpers/routers.helpers";
 import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
+import ArkosRouter from "../../utils/arkos-router";
 
-const router: Router = Router();
+const router = ArkosRouter();
 
-export async function getAuthRouter(arkosConfigs: ArkosConfig) {
+export function getAuthRouter(arkosConfigs: ArkosConfig) {
   const {
     interceptors,
     dtos,
     schemas,
     prismaQueryOptions,
     router: customRouterModule,
+    authConfigs,
   } = getModuleComponents("auth") || {};
 
   const routerConfig = customRouterModule?.config || {};
@@ -36,11 +39,11 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
       router.use(`/auth`, customRouter);
     else
       throw Error(
-        `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express Router.`
+        `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express or arkos Router.`
       );
   }
 
-  const authController = await authControllerFactory(interceptors);
+  const authController = authControllerFactory(interceptors);
 
   if (routerConfig?.disable === true) return router;
 
@@ -48,18 +51,16 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     key: "updateMe" | "updatePassword" | "login" | "signup"
   ) => {
     const validationConfigs = arkosConfigs?.validation;
-    if (validationConfigs?.resolver === "class-validator") {
-      return dtos?.[key];
-    } else if (validationConfigs?.resolver === "zod") {
-      return schemas?.[key];
-    }
+    if (validationConfigs?.resolver === "class-validator") return dtos?.[key];
+    else if (validationConfigs?.resolver === "zod") return schemas?.[key];
+
     return undefined;
   };
 
+  // GET /users/me - Get current user
   if (!isEndpointDisabled(routerConfig, "getMe")) {
     router.get(
-      "/users/me",
-      authService.authenticate,
+      createRouteConfig("getMe", "users", "/me", routerConfig, "auth", true),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "getMe"
@@ -72,11 +73,16 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
+  // PATCH /users/me - Update current user
   if (!isEndpointDisabled(routerConfig, "updateMe")) {
     router.patch(
-      "/users/me",
-      authService.authenticate,
-      handleRequestBodyValidationAndTransformation(
+      createRouteConfig(
+        "updateMe",
+        "users",
+        "/me",
+        routerConfig,
+        "auth",
+        true,
         getValidationSchemaOrDto("updateMe")
       ),
       addPrismaQueryOptionsToRequest<any>(
@@ -91,10 +97,10 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
+  // DELETE /users/me - Delete current user
   if (!isEndpointDisabled(routerConfig, "deleteMe")) {
     router.delete(
-      "/users/me",
-      authService.authenticate,
+      createRouteConfig("deleteMe", "users", "/me", routerConfig, "auth", true),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "deleteMe"
@@ -107,6 +113,7 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
+  // Apply rate limiting to auth routes
   if (
     !isEndpointDisabled(routerConfig, "login") ||
     !isEndpointDisabled(routerConfig, "logout") ||
@@ -128,16 +135,22 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
               });
             },
           },
-          arkosConfigs?.authentication?.requestRateLimitOptions || {}
+          arkosConfigs?.authentication?.rateLimit || {}
         )
       )
     );
   }
 
+  // POST /auth/login - Login
   if (!isEndpointDisabled(routerConfig, "login")) {
     router.post(
-      "/auth/login",
-      handleRequestBodyValidationAndTransformation(
+      createRouteConfig(
+        "login",
+        "auth",
+        "/login",
+        routerConfig,
+        "auth",
+        false,
         getValidationSchemaOrDto("login")
       ),
       addPrismaQueryOptionsToRequest<any>(
@@ -152,10 +165,17 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
+  // DELETE /auth/logout - Logout
   if (!isEndpointDisabled(routerConfig, "logout")) {
     router.delete(
-      "/auth/logout",
-      authService.authenticate,
+      createRouteConfig(
+        "logout",
+        "auth",
+        "/logout",
+        routerConfig,
+        "auth",
+        true
+      ),
       ...processMiddleware(interceptors?.beforeLogout),
       authController.logout,
       ...processMiddleware(interceptors?.afterLogout),
@@ -164,10 +184,16 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
+  // POST /auth/signup - Signup
   if (!isEndpointDisabled(routerConfig, "signup")) {
     router.post(
-      "/auth/signup",
-      handleRequestBodyValidationAndTransformation(
+      createRouteConfig(
+        "signup",
+        "auth",
+        "/signup",
+        routerConfig,
+        "auth",
+        false,
         getValidationSchemaOrDto("signup")
       ),
       addPrismaQueryOptionsToRequest<any>(
@@ -182,11 +208,16 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
+  // POST /auth/update-password - Update password
   if (!isEndpointDisabled(routerConfig, "updatePassword")) {
     router.post(
-      "/auth/update-password",
-      authService.authenticate,
-      handleRequestBodyValidationAndTransformation(
+      createRouteConfig(
+        "updatePassword",
+        "auth",
+        "/update-password",
+        routerConfig,
+        "auth",
+        true,
         getValidationSchemaOrDto("updatePassword")
       ),
       addPrismaQueryOptionsToRequest<any>(
@@ -203,11 +234,17 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
     );
   }
 
-  if (!isEndpointDisabled(routerConfig, "findManyAuthAction"))
+  // GET /auth-actions - Find many auth actions
+  if (!isEndpointDisabled(routerConfig, "findManyAuthAction")) {
     router.get(
-      "/auth-actions",
-      authService.authenticate,
-      authService.handleAccessControl("View", "auth-action"),
+      createRouteConfig(
+        "findManyAuthAction",
+        "auth-actions",
+        "",
+        routerConfig,
+        "auth",
+        authConfigs
+      ),
       ...processMiddleware(interceptors?.beforeFindManyAuthAction),
       authController.findManyAuthAction,
       ...processMiddleware(interceptors?.afterFindManyAuthAction),
@@ -216,12 +253,19 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         type: "error",
       })
     );
+  }
 
-  if (!isEndpointDisabled(routerConfig, "findOneAuthAction"))
+  // GET /auth-actions/:resourceName - Find one auth action
+  if (!isEndpointDisabled(routerConfig, "findOneAuthAction")) {
     router.get(
-      "/auth-actions/:resourceName",
-      authService.authenticate,
-      authService.handleAccessControl("View", "auth-action"),
+      createRouteConfig(
+        "findOneAuthAction",
+        "auth-actions",
+        "/:resourceName",
+        routerConfig,
+        "auth",
+        authConfigs
+      ),
       ...processMiddleware(interceptors?.beforeFindOneAuthAction),
       authController.findOneAuthAction,
       ...processMiddleware(interceptors?.afterFindOneAuthAction),
@@ -230,7 +274,8 @@ export async function getAuthRouter(arkosConfigs: ArkosConfig) {
         type: "error",
       })
     );
+  }
 
-  debuggerService.logModuleFinalRouter("auth", router);
+  debuggerService.logModuleFinalRouter("auth", router as any);
   return router;
 }

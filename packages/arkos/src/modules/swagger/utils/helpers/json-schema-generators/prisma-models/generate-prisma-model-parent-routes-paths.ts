@@ -9,7 +9,7 @@ import {
 import { ArkosConfig, RouterConfig } from "../../../../../../exports";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
 
-export default async function generatePrismaModelParentRoutesPaths(
+export default function generatePrismaModelParentRoutesPaths(
   model: string,
   paths: OpenAPIV3.PathsObject,
   arkosConfig: ArkosConfig
@@ -42,9 +42,9 @@ export default async function generatePrismaModelParentRoutesPaths(
     return false;
   };
 
-  const getSchemaMode = async (
+  const getSchemaMode = (
     action: string
-  ): Promise<"prisma" | "zod" | "class-validator"> => {
+  ): "prisma" | "zod" | "class-validator" => {
     const swaggerMode = arkosConfig.swagger?.mode;
     const isStrict = arkosConfig.swagger?.strict;
 
@@ -53,7 +53,7 @@ export default async function generatePrismaModelParentRoutesPaths(
     }
 
     const actionKey = action as any;
-    const localFileExists = await localValidatorFileExists(
+    const localFileExists = localValidatorFileExists(
       actionKey,
       model,
       arkosConfig
@@ -66,7 +66,7 @@ export default async function generatePrismaModelParentRoutesPaths(
 
   // Create One (Parent)
   if (isParentEndpointAllowed("createOne")) {
-    const createMode = await getSchemaMode("create");
+    const createMode = getSchemaMode("create");
     paths[`/api/${parentRouteName}/{id}/${routeName}`] = {
       post: {
         tags: [humanReadableNamePlural],
@@ -128,7 +128,7 @@ export default async function generatePrismaModelParentRoutesPaths(
   if (isParentEndpointAllowed("findMany")) {
     if (!paths[`/api/${parentRouteName}/{id}/${routeName}`])
       paths[`/api/${parentRouteName}/{id}/${routeName}`] = {};
-    const findManyMode = await getSchemaMode("findMany");
+    const findManyMode = getSchemaMode("findMany");
     paths[`/api/${parentRouteName}/{id}/${routeName}`]!.get = {
       tags: [humanReadableNamePlural],
       summary: `Get ${humanReadableNamePlural} for ${parentHumanName}`,
@@ -235,7 +235,7 @@ export default async function generatePrismaModelParentRoutesPaths(
 
   // Create Many (Parent)
   if (isParentEndpointAllowed("createMany")) {
-    const createManyMode = await getSchemaMode("createMany");
+    const createManyMode = getSchemaMode("createMany");
     paths[`/api/${parentRouteName}/{id}/${routeName}/many`] = {
       post: {
         tags: [humanReadableNamePlural],
@@ -309,7 +309,7 @@ export default async function generatePrismaModelParentRoutesPaths(
   if (isParentEndpointAllowed("updateMany")) {
     if (!paths[`/api/${parentRouteName}/{id}/${routeName}/many`])
       paths[`/api/${parentRouteName}/{id}/${routeName}/many`] = {};
-    const updateManyMode = await getSchemaMode("updateMany");
+    const updateManyMode = getSchemaMode("updateMany");
     paths[`/api/${parentRouteName}/{id}/${routeName}/many`]!.patch = {
       tags: [humanReadableNamePlural],
       summary: `Update multiple ${humanReadableNamePlural} for ${parentHumanName}`,
@@ -446,7 +446,7 @@ export default async function generatePrismaModelParentRoutesPaths(
 
   // Find One (Parent)
   if (isParentEndpointAllowed("findOne")) {
-    const findOneMode = await getSchemaMode("findOne");
+    const findOneMode = getSchemaMode("findOne");
     paths[`/api/${parentRouteName}/{id}/${routeName}/{childId}`] = {
       get: {
         tags: [humanReadableNamePlural],
@@ -503,7 +503,7 @@ export default async function generatePrismaModelParentRoutesPaths(
   if (isParentEndpointAllowed("updateOne")) {
     if (!paths[`/api/${parentRouteName}/{id}/${routeName}/{childId}`])
       paths[`/api/${parentRouteName}/{id}/${routeName}/{childId}`] = {};
-    const updateMode = await getSchemaMode("update");
+    const updateMode = getSchemaMode("update");
     paths[`/api/${parentRouteName}/{id}/${routeName}/{childId}`]!.patch = {
       tags: [humanReadableNamePlural],
       summary: `Update ${humanReadableName} by ID for ${parentHumanName}`,

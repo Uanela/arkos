@@ -13,283 +13,110 @@ export function generateMiddlewaresTemplate(options: TemplateOptions): string {
   const isFileUpload =
     modelName.camel === "fileUpload" || modelName.camel === "file-upload";
 
-  const requestType = isTypeScript ? "ArkosRequest" : "req";
-  const responseType = isTypeScript ? "ArkosResponse" : "res";
-  const nextType = isTypeScript ? "ArkosNextFunction" : "next";
-
-  const baseImports = isTypeScript
-    ? `import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";`
-    : ``;
-
-  const functionParams = isTypeScript
-    ? `req: ${requestType}, res: ${responseType}, next: ${nextType}`
-    : `req, res, next`;
-
-  const errorFunctionParams = isTypeScript
-    ? `err: any, req: ${requestType}, res: ${responseType}, next: ${nextType}`
-    : `err, req, res, next`;
-
   if (isAuth) {
-    return `${baseImports}
+    return `export const beforeGetMe = []
 
-// export const beforeGetMe = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterGetMe = []
 
-// export const afterGetMe = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onGetMeError = []
 
-// export const onGetMeError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeLogin = []
 
-// export const beforeLogin = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterLogin = []
 
-// export const afterLogin = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onLoginError = []
 
-// export const onLoginError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeLogout = []
 
-// export const beforeLogout = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterLogout = []
 
-// export const afterLogout = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onLogoutError = []
 
-// export const onLogoutError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeSignup = []
 
-// export const beforeSignup = 
-//   [async (${functionParams}) => {
-//   }]
+export const afterSignup = []
 
-// export const afterSignup = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onSignupError = []
 
-// export const onSignupError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeUpdatePassword = []
 
-// export const beforeUpdatePassword = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterUpdatePassword = []
 
-// export const afterUpdatePassword = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
-
-// export const onUpdatePasswordError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const onUpdatePasswordError = []
 `;
   }
 
   if (isFileUpload) {
-    return `${baseImports}
+    return `export const beforeFindF]ile = []
 
+export const onFindFileError = []
 
-// export const beforeFindF]ile = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const beforeUploadFile = []
 
-// export const onFindFileError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const afterUploadFile = []
 
-// export const beforeUploadFile = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onUploadFileError = []
 
-// export const afterUploadFile = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const beforeUpdateFile = []
 
-// export const onUploadFileError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const afterUpdateFile = []
 
-// export const beforeUpdateFile = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onUpdateFileError = []
 
-// export const afterUpdateFile = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const beforeDeleteFile = []
 
-// export const onUpdateFileError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const afterDeleteFile = []
 
-// export const beforeDeleteFile = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
-
-// export const afterDeleteFile = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
-
-// export const onDeleteFileError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const onDeleteFileError = []
 `;
   }
 
-  // Regular model interceptors
-  return `${baseImports}
+  return `export const beforeCreateOne = []
 
-// export const beforeCreateOne = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterCreateOne = []
 
-// export const afterCreateOne = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onCreateOneError = []
 
-// export const onCreateOneError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeFindOne = []
 
-// export const beforeFindOne = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterFindOne = []
 
-// export const afterFindOne = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onFindOneError = []
 
-// export const onFindOneError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeFindMany = []
 
-// export const beforeFindMany = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterFindMany = []
 
-// export const afterFindMany = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onFindManyError = []
 
-// export const onFindManyError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeUpdateOne = []
 
-// export const beforeUpdateOne = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterUpdateOne = []
 
-// export const afterUpdateOne = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onUpdateOneError = []
 
-// export const onUpdateOneError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeDeleteOne = []
 
-// export const beforeDeleteOne = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterDeleteOne = []
 
-// export const afterDeleteOne = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onDeleteOneError = []
 
-// export const onDeleteOneError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeCreateMany = []
 
-// export const beforeCreateMany = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterCreateMany = []
 
-// export const afterCreateMany = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onCreateManyError = []
 
-// export const onCreateManyError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeUpdateMany = []
 
-// export const beforeUpdateMany = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterUpdateMany = []
 
-// export const afterUpdateMany = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const onUpdateManyError = []
 
-// export const onUpdateManyError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const beforeDeleteMany = []
 
-// export const beforeDeleteMany = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
+export const afterDeleteMany = []
 
-// export const afterDeleteMany = 
-//   [async (${functionParams}) => {
-//     next();
-//   }]
-
-// export const onDeleteManyError =
-//   [async (${errorFunctionParams}) => {
-//     next(err);
-//   }]
+export const onDeleteManyError = []
 `;
 }

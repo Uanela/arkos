@@ -16,6 +16,7 @@
       console.error("Error checking package.json:", err);
     }
 
+    process.env.CLI = "true";
     if (useEsm) await import("./dist/esm/utils/cli/index.js");
     else await import("./dist/cjs/utils/cli/index.js");
   } catch (err) {

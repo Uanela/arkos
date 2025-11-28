@@ -25,7 +25,6 @@ describe("PortAndHostAllocator", () => {
 
     (net.createConnection as jest.Mock).mockImplementation(() => mockSocket);
 
-    // Reset singleton state
     (portAndHostAllocator as any).host = undefined;
     (portAndHostAllocator as any).port = undefined;
     (portAndHostAllocator as any).prevWarnings = new Set();
@@ -106,7 +105,7 @@ describe("PortAndHostAllocator", () => {
       );
 
       expect(result).toEqual({
-        host: "localhost",
+        host: "0.0.0.0",
         port: "8000",
       });
     });
@@ -270,7 +269,6 @@ describe("PortAndHostAllocator", () => {
     it("should find the first available port", async () => {
       const env = { PORT: "3000" };
 
-      // Mock port as available (error event triggered)
       mockSocket.on.mockImplementation((event: string, callback: Function) => {
         if (event === "error") {
           setTimeout(() => callback(new Error("Connection refused")), 0);
@@ -280,7 +278,7 @@ describe("PortAndHostAllocator", () => {
       const result = await portAndHostAllocator.getHostAndAvailablePort(env);
 
       expect(result).toEqual({
-        host: "localhost",
+        host: "0.0.0.0",
         port: "3000",
       });
       expect(net.createConnection).toHaveBeenCalledWith({
@@ -309,7 +307,7 @@ describe("PortAndHostAllocator", () => {
       });
 
       expect(result).toEqual({
-        host: "localhost",
+        host: "0.0.0.0",
         port: "4002",
       });
       expect(sheu.warn).toHaveBeenCalledWith(
@@ -345,7 +343,7 @@ describe("PortAndHostAllocator", () => {
         port: "5000",
       });
       expect(net.createConnection).toHaveBeenCalledWith({
-        host: "0.0.0.0",
+        host: "localhost",
         port: 5000,
         timeout: 100,
       });
@@ -364,7 +362,7 @@ describe("PortAndHostAllocator", () => {
       const result = await portAndHostAllocator.getHostAndAvailablePort(env);
 
       expect(result).toEqual({
-        host: "localhost",
+        host: "0.0.0.0",
         port: "8080",
       });
       expect(net.createConnection).toHaveBeenCalledWith({
@@ -375,24 +373,20 @@ describe("PortAndHostAllocator", () => {
     });
 
     it("should cache the found port and host for subsequent calls", async () => {
-      const env = { PORT: "6000", HOST: "127.0.0.1" };
+      const env = { PORT: "6000", HOST: "127.0.0.1", ARKOS_BUILD: "true" };
 
-      // Mock port as available
       mockSocket.on.mockImplementation((event: string, callback: Function) => {
         if (event === "error") {
           setTimeout(() => callback(new Error("Connection refused")), 0);
         }
       });
 
-      // First call
       const result1 = await portAndHostAllocator.getHostAndAvailablePort(env);
       expect(result1).toEqual({ host: "127.0.0.1", port: "6000" });
 
-      // Second call should return cached values
       const result2 = await portAndHostAllocator.getHostAndAvailablePort(env);
       expect(result2).toEqual({ host: "127.0.0.1", port: "6000" });
 
-      // net.createConnection should only be called once (for the first call)
       expect(net.createConnection).toHaveBeenCalledTimes(1);
     });
   });
@@ -409,11 +403,11 @@ describe("PortAndHostAllocator", () => {
       });
 
       const result1 = await portAndHostAllocator.getHostAndAvailablePort(env);
-      expect(result1).toEqual({ host: "localhost", port: "7000" });
+      expect(result1).toEqual({ host: "0.0.0.0", port: "7000" });
 
       // Second call should use cached values
       const result2 = await portAndHostAllocator.getHostAndAvailablePort({});
-      expect(result2).toEqual({ host: "localhost", port: "7000" });
+      expect(result2).toEqual({ host: "0.0.0.0", port: "7000" });
     });
   });
 
@@ -434,12 +428,12 @@ describe("PortAndHostAllocator", () => {
       );
 
       expect(result).toEqual({
-        host: "localhost",
+        host: "0.0.0.0",
         port: "8000",
       });
     });
 
-    it("should handle empty environment object", async () => {
+    it("should handle empty environment object before build", async () => {
       // Mock port as available
       mockSocket.on.mockImplementation((event: string, callback: Function) => {
         if (event === "error") {
@@ -450,7 +444,25 @@ describe("PortAndHostAllocator", () => {
       const result = await portAndHostAllocator.getHostAndAvailablePort({});
 
       expect(result).toEqual({
-        host: "localhost",
+        host: "0.0.0.0",
+        port: "8000",
+      });
+    });
+
+    it("should handle empty environment object after build", async () => {
+      // Mock port as available
+      mockSocket.on.mockImplementation((event: string, callback: Function) => {
+        if (event === "error") {
+          setTimeout(() => callback(new Error("Connection refused")), 0);
+        }
+      });
+
+      const result = await portAndHostAllocator.getHostAndAvailablePort({
+        ARKOS_BUILD: "true",
+      });
+
+      expect(result).toEqual({
+        host: "127.0.0.1",
         port: "8000",
       });
     });

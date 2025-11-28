@@ -1,10 +1,11 @@
-import { getArkosConfig } from "../../../../../server";
+import { getArkosConfig } from "../../../../../utils/helpers/arkos-config.helpers";
 import authActionService from "../auth-action.service";
 
 jest.mock("fs");
-jest.mock("../../../../../server", () => ({
+jest.mock("../../../../../utils/helpers/arkos-config.helpers", () => ({
   getArkosConfig: jest.fn(() => ({ authentication: { mode: "dynamic" } })),
 }));
+jest.mock("../../../../../utils/prisma/prisma-schema-parser");
 
 describe("AuthActionService", () => {
   beforeEach(() => {

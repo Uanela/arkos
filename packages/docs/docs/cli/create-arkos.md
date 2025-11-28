@@ -1,5 +1,6 @@
 ---
 sidebar_position: 13
+title: Create Arkos CLI
 ---
 
 import Tabs from '@theme/Tabs';

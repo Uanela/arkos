@@ -27,6 +27,7 @@ import {
   loginRequiredError,
 } from "./utils/auth-error-objects";
 import authActionService from "./utils/services/auth-action.service";
+import { isAuthenticationEnabled } from "../../utils/helpers/arkos-config.helpers";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -465,13 +466,8 @@ export class AuthService {
    */
   authenticate = catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      const arkosConfig = getArkosConfig();
-      if (!arkosConfig?.authentication) {
-        next();
-        return;
-      }
-
-      req.user = (await this.getAuthenticatedUser(req)) as User;
+      if (isAuthenticationEnabled())
+        req.user = (await this.getAuthenticatedUser(req)) as User;
       next();
     }
   );

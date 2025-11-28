@@ -167,7 +167,7 @@ describe("buildCommand", () => {
 
       buildCommand({ module: "invalid" });
 
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(sheu.warn).toHaveBeenCalledWith(
         expect.stringContaining('Unrecognized module type "invalid"')
       );
 
@@ -285,7 +285,7 @@ describe("buildCommand", () => {
     it("should handle temp config cleanup errors gracefully", () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-      (fs.unlinkSync as jest.Mock).mockImplementation((val) => {
+      (fs.unlinkSync as jest.Mock).mockImplementation(() => {
         throw new Error("Failed to delete temp config");
       });
 
@@ -326,7 +326,7 @@ describe("buildCommand", () => {
     });
 
     it("should correctly build a JavaScript project with ESM format", () => {
-      (execSync as jest.Mock).mockImplementation((...args) => {
+      (execSync as jest.Mock).mockImplementation(() => {
         return "";
       });
 

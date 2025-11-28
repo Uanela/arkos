@@ -97,7 +97,14 @@ export class FileUploadController {
             data = await processFile(req, req.file.path);
           }
         } else {
-          return next(new AppError("No file uploaded", 400));
+          return next(
+            new AppError(
+              `No file or files were attached on field ${fileType} on the request body as form data.`,
+              400,
+              {},
+              "NoFileOrFilesAttached"
+            )
+          );
         }
 
         const jsonContent = {
@@ -167,7 +174,6 @@ export class FileUploadController {
         const { fileUpload } = getArkosConfig();
         const baseUploadRoute = fileUpload?.baseRoute || "/api/uploads";
 
-        // This checks if the URL follows the expected format: /api/files/{fileType}/{fileName}
         const urlPattern = new RegExp(
           `${baseUploadRoute}/${fileType}/${fileName}`
         );
@@ -180,10 +186,8 @@ export class FileUploadController {
             req.originalUrl
           }`;
 
-          // URL matches expected pattern, use deleteFileByUrl
           await uploader.deleteFileByUrl(fullUrl);
         } else {
-          // URL doesn't match expected pattern, use deleteFileByName
           await uploader.deleteFileByName(fileName, fileType);
         }
 
@@ -194,11 +198,8 @@ export class FileUploadController {
 
         res.status(204).json();
       } catch (error) {
-        // Handle different types of errors
-        if (error instanceof AppError) {
-          return next(error);
-        }
-        // File doesn't exist or other error
+        if (error instanceof AppError) return next(error);
+
         return next(new AppError("File not found", 404));
       }
     }
@@ -229,16 +230,13 @@ export class FileUploadController {
       const { fileUpload } = getArkosConfig();
       const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
 
-      // Ensure upload directory exists
       const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
       try {
         await fs.promises.access(uploadPath);
       } catch (err) {
-        // Create directory if it doesn't exist
         await fs.promises.mkdir(uploadPath, { recursive: true });
       }
 
-      // Select the appropriate uploader service based on file type
       let uploader: FileUploadService;
       switch (fileType) {
         case "images":
@@ -257,24 +255,19 @@ export class FileUploadController {
           return next(new AppError("Invalid file type", 400));
       }
 
-      // Handle the file upload
       uploader.handleMultipleUpload()(req, res, async (err) => {
         if (err) return next(err);
 
-        // Check if new file was uploaded
         if (
           !req.file &&
           (!req.files || !Array.isArray(req.files) || req.files.length === 0)
-        ) {
+        )
           return next(new AppError("No new file uploaded", 400));
-        }
 
-        // Only attempt to delete old file if fileName is specified
         if (fileName && fileName.trim() !== "") {
           try {
             const baseUploadRoute = fileUpload?.baseRoute || "/api/uploads";
 
-            // Check if the URL follows the expected format
             const urlPattern = new RegExp(
               `${baseUploadRoute}/${fileType}/${fileName}`
             );
@@ -282,41 +275,33 @@ export class FileUploadController {
             const isExpectedUrlPattern = urlPattern.test(req.originalUrl);
 
             if (isExpectedUrlPattern) {
-              // URL matches expected pattern, use deleteFileByUrl
               const oldFileUrl = `${req.protocol}://${req.get("host")}${
                 req.originalUrl
               }`;
               await uploader.deleteFileByUrl(oldFileUrl);
             } else {
-              // URL doesn't match expected pattern, use deleteFileByName
               await uploader.deleteFileByName(fileName, fileType);
             }
           } catch (error) {
-            // Log the error but continue with upload - old file might not exist
             console.warn(`Could not delete old file: ${fileName}`, error);
           }
         }
 
-        // Process the new uploaded file(s)
         let data;
         if (req.files && Array.isArray(req.files) && req.files.length > 0) {
           if (fileType === "images") {
-            // Process multiple image files with image transformations
             data = await Promise.all(
               req.files.map((file) =>
                 processImage(req, next, file.path, options)
               )
             );
           } else {
-            // Just store other file types without processing
             data = await Promise.all(
               req.files.map((file) => processFile(req, file.path))
             );
           }
-          // Filter out any null values from failed processing
           data = data.filter((url) => url !== null);
         } else if (req.file) {
-          // Process a single file
           if (fileType === "images") {
             data = await processImage(req, next, req.file.path, options);
           } else {
