@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# The `AppError` Class
+# App Error Class
 
 `AppError` is a specialized error class in the `Arkos` designed to standardize error handling across your application. It extends JavaScript's native `Error` class and adds properties that make it suitable for API and web application error management.
 

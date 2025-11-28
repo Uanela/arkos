@@ -6,6 +6,44 @@ sidebar_position: 2
 
 Arkos provides a sophisticated mechanism to transform URL query parameters into full-featured Prisma queries. Here's a detailed breakdown of how query parameters are translated:
 
+## Query Parameter Validation
+
+Before diving into query transformations, it's important to validate incoming query parameters to ensure data integrity and security. Arkos provides built-in validation support for query parameters:
+
+```typescript
+// src/modules/product/product.router.ts
+import { ArkosRouter, RouterConfig } from "arkos";
+import z from "zod";
+
+export const config: RouterConfig = {
+  findMany: {
+    validation: {
+      query: z.object({
+        category: z.string().optional(),
+        minPrice: z.coerce.number().min(0).optional(),
+        maxPrice: z.coerce.number().min(0).optional(),
+        inStock: z.coerce.boolean().optional(),
+      }),
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+For comprehensive validation details, see the [**Validating Query And Path Parameters Guide**](/docs/core-concepts/request-data-validation#validating-query-parameters-and-path-parameters).
+
+## Query Syntax Options
+
+Arkos supports **two query parameter syntaxes** that you can use interchangeably or mix together:
+
+1. **Bracket notation** (standard): `price[gte]=50&price[lt]=100`
+2. **Django-style** (double underscore): `price__gte=50&price__lt=100`
+
+Both produce identical Prisma queries. Choose the style that feels most natural for your application or use them together in the same request.
+
 ### 1. Basic Filtering Transformation
 
 ```curl
@@ -15,7 +53,7 @@ GET /api/users?age=25&status=active
 Translates to Prisma query:
 
 ```ts
-const users = await prisma.user.findMay({
+const users = await prisma.user.findMany({
   where: {
     OR: [{ age: 25 }, { status: "active" }];
   }
@@ -24,11 +62,19 @@ const users = await prisma.user.findMay({
 
 ### 2. Comparison Operators Mapping
 
+**Bracket notation:**
+
 ```
 GET /api/products?price[gte]=50&price[lt]=100
 ```
 
-Prisma equivalent:
+**Django-style (alternative):**
+
+```
+GET /api/products?price__gte=50&price__lt=100
+```
+
+Both translate to:
 
 ```ts
 const products = await prisma.product.findMany({
@@ -49,7 +95,7 @@ The search functionality dynamically builds searchable fields:
 GET /api/users?search=john
 ```
 
-Generates a Prisma query that searches across all string fields but the ones that ends in id, ids, ID, IDs because they are not searchable as simple strings:
+Generates a Prisma query that searches across all string fields except those ending in `id`, `ids`, `ID`, or `IDs` (which are not searchable as simple strings):
 
 ```ts
 const users = await prisma.user.findMany({
@@ -65,7 +111,7 @@ const users = await prisma.user.findMany({
 
 ### 4. Pagination
 
-This allows you to seamlessly query you endpoints with pagination
+Seamlessly query your endpoints with pagination:
 
 ```
 GET /api/products?page=4
@@ -76,11 +122,11 @@ Translates to:
 ```ts
 const products = await prisma.products.findMany({
   take: 30,
-  skip: 90, // limit (default 30) * page - 1
+  skip: 90, // limit (default 30) * (page - 1)
 });
 ```
 
-If you want to take more records or even less recors do:
+To take more or fewer records per page:
 
 ```
 GET /api/products?page=4&limit=100
@@ -91,7 +137,7 @@ Translates to:
 ```ts
 const products = await prisma.products.findMany({
   take: 100,
-  skip: 300,
+  skip: 300, // (page - 1) * limit
 });
 ```
 
@@ -130,6 +176,16 @@ const products = await prisma.product.findMany({
 });
 ```
 
+:::tip Security Tips
+Query parameters directly influence your database queries. **Without validation**, users can:
+- Manipulate database queries in dangerous ways
+- Cause performance issues with unlimited pagination (`limit=999999`)
+- Inject invalid data types causing errors (`minPrice=abc`)
+- Bypass business rules and access unauthorized data
+
+**Always validate query parameters that affect database operations!**
+:::
+
 #### Limit Range
 
 You can use any positive integer for the limit. Common examples:
@@ -154,44 +210,6 @@ This returns the 10 most expensive products:
 const products = await prisma.product.findMany({
   orderBy: [{ price: "desc" }],
   take: 10,
-});
-```
-
-#### Full Example with All Features
-
-```
-GET /api/products?search=laptop&price[gte]=500&sort=-rating,-price&page=1&limit=20&fields=id,name,price,rating
-```
-
-This complex query will:
-
-- Search for 'laptop' in string fields
-- Filter products with price >= 500
-- Sort by rating (descending), then price (descending)
-- Get the first page with 20 items
-- Return only id, name, price, and rating fields
-
-Translates to:
-
-```ts
-const products = await prisma.product.findMany({
-  where: {
-    OR: [
-      { name: { contains: "laptop", mode: "insensitive" } },
-      { description: { contains: "laptop", mode: "insensitive" } },
-      // other string fields
-      { price: { gte: 500 } },
-    ],
-  },
-  orderBy: [{ rating: "desc" }, { price: "desc" }],
-  skip: 0,
-  take: 20,
-  select: {
-    id: true,
-    name: true,
-    price: true,
-    rating: true,
-  },
 });
 ```
 
@@ -265,11 +283,11 @@ This will:
 2. Then by last name alphabetically
 3. Finally by first name alphabetically
 
-### 5. Selecting, Adding And Removing Fields
+### 7. Selecting, Adding And Removing Fields
 
-#### 5.1. Selecting
+#### 7.1. Selecting
 
-This allows you to whether take just some fields of the desired record, let's say a product model with `id`, `name`, `description`, `price`, `color`, `weight`, and instead of taking all the fields when querying, you can only take for example `name` and `price` depending of your needs
+Select only specific fields instead of returning all fields. For example, for a product model with `id`, `name`, `description`, `price`, `color`, `weight`, you can request only `name` and `price`:
 
 ```
 GET /api/products?fields=name,price
@@ -286,9 +304,9 @@ const products = await prisma.products.findMany({
 });
 ```
 
-#### 5.2. Adding
+#### 7.2. Adding
 
-To add fields that are not default selected to the end result, we must simple prefix the desired field with plus symbol `+`:
+To add fields that are not selected by default (like relations), prefix the field with a plus symbol `+`:
 
 ```
 GET /api/products?fields=+reviews
@@ -304,19 +322,20 @@ const products = await prisma.products.findMany({
 });
 ```
 
-#### 5.3. Removing
+#### 7.3. Removing
 
-To remove some fields from the end result, let's instead of naming all the fields you want you can just takeout the one you don't want:
+To remove some fields from the result, prefix them with a minus symbol `-`:
 
 ```
 GET /api/products?fields=-name,-price
 ```
 
-Will select all the other fields but `name` and `price`. Translates to:
+Will select all fields except `name` and `price`. Translates to:
 
 ```ts
 const products = await prisma.products.findMany({
-  include: {
+  select: {
+    // All fields except name and price set to true
     name: false,
     price: false,
   },
@@ -325,15 +344,21 @@ const products = await prisma.products.findMany({
 
 ## Complex Querying Capabilities
 
-### 6. Nested and Relational Filtering
+### 8. Nested and Relational Filtering
+
+**Bracket notation:**
 
 ```
-
 GET /api/posts?author[age]=30&comments[some][content][contains]=interesting
-
 ```
 
-Translates to:
+**Django-style (alternative):**
+
+```
+GET /api/posts?author__age=30&comments__some__content__contains=interesting
+```
+
+Both translate to:
 
 ```ts
 const posts = await prisma.post.findMany({
@@ -341,7 +366,7 @@ const posts = await prisma.post.findMany({
     OR: [
       {
         author: {
-          age: "30",
+          age: 30,
         },
       },
       {
@@ -358,7 +383,7 @@ const posts = await prisma.post.findMany({
 });
 ```
 
-### 7. Logical Operator Control
+### 9. Logical Operator Control
 
 The `filterMode` parameter allows switching between `OR` and `AND` logic:
 
@@ -378,22 +403,27 @@ const users = await prisma.user.findMany({
 
 ## Advanced Query Composition
 
-### 8. Combining Multiple Query Features
+### 10. Combining Multiple Query Features
+
+**Bracket notation:**
 
 ```
 GET /api/products?search=wireless&price[gte]=50&price[lt]=200&sort=-price&page=2&limit=10&fields=id,name,price,+reviews
 ```
 
-This complex query would:
+**Django-style (alternative):**
 
-- Search for 'wireless' across string fields
-- Filter products between 50 and 200
-- Sort by price in descending order
-- Paginate to the second page
-- Limit to 10 results
-- Return only specific fields: id, name and price. Noticed `+reviews` is because it is not default selected so we're adding it.
+```
+GET /api/products?search=wireless&price__gte=50&price__lt=200&sort=-price&page=2&limit=10&fields=id,name,price,+reviews
+```
 
-And it produces:
+**Mixed syntax (both work together):**
+
+```
+GET /api/products?search=wireless&price[gte]=50&price__lt=200&sort=-price&page=2&limit=10&fields=id,name,price,+reviews
+```
+
+All produce:
 
 ```ts
 const products = await prisma.product.findMany({
@@ -407,10 +437,8 @@ const products = await prisma.product.findMany({
       },
       {
         description: {
-          // Let's say our Product model have description
-          // field which is String search=wireless will
-          // search the text in all string fields but
-          // id fields.
+          // Assuming Product model has description field
+          // search=wireless will search in all string fields except id fields
           contains: "wireless",
           mode: "insensitive",
         },
@@ -422,22 +450,22 @@ const products = await prisma.product.findMany({
         },
       },
     ],
-    orderBy: {
-      price: "desc",
-    },
-    skip: 10,
-    take: 10,
-    select: {
-      id: true,
-      name: true,
-      price: true,
-      reviews: true,
-    },
+  },
+  orderBy: {
+    price: "desc",
+  },
+  skip: 10,
+  take: 10,
+  select: {
+    id: true,
+    name: true,
+    price: true,
+    reviews: true,
   },
 });
 ```
 
-### 9. Custom Prisma Query Extension
+### 11. Custom Prisma Query Extension
 
 You can extend queries with raw Prisma options:
 
@@ -449,59 +477,81 @@ Generates:
 
 ```ts
 const users = await prisma.user.findMany({
-  where: {
-    where: { age: 25 },
-    include: { posts: true },
-  },
+  where: { age: 25 },
+  include: { posts: true },
 });
 ```
 
-:::danger
-This is `disabled` by default for securites reasons because it allows end users not make raw prisma query which can be dangeours to your application, you is it if you really now what you are doing. `We Recommend Not To Enabled This Option`.
+:::danger Security Warning
+This is **disabled by default** for security reasons because it allows end users to make raw Prisma queries which can be dangerous to your application. **We strongly recommend NOT enabling this option**.
 :::
 
-A better way to use this is trough `prisma-query-options` files that will only use this parameter on your code level for you to customize the default behavior of your prisma queries that are handled automatically by **Arkos**, you can [read more about](/docs/guide/custom-prisma-query-options).
+A better way to use this is through `prisma-query-options` files that will only use this parameter on your code level for you to customize the default behavior of your Prisma queries that are handled automatically by **Arkos**. You can [read more about this](/docs/guide/custom-prisma-query-options).
 
-By the way, if you would like to activate the request query paramenter `allowDangerousPrismaQueryOptions` do the following under your `src/app.ts`:
+If you would like to activate the request query parameter `allowDangerousPrismaQueryOptions`, configure it in `arkos.config.ts`:
 
 ```ts
-import arkos from "arkos";
-// your other codes
-arkos.init({
+// arkos.config.ts
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
   request: {
     parameters: {
-      allowDangerousPrismaQueryOptions: true, // (default is false)
+      allowDangerousPrismaQueryOptions: true, // Default is false
     },
   },
-  // other configurations
-});
+};
+
+export default arkosConfig;
 ```
 
-### 10. Querying Like Django
+## Django-Style Query Syntax (Double Underscore)
 
-As **Arkos** to easy developers lifes, there is a easier way to write the all this query parameters we've seen so far, this was inspired from the `Django Framework`:
+As an alternative to bracket notation, **Arkos** supports Django-inspired query syntax using double underscores `__`. This makes querying more intuitive and consistent.
 
-So instead of writing the query params as we did before in all previous examples we can write it differently, example translating the [8. Combining Multiple Query Features](/docs/guide/request-query-parameters#8-combining-multiple-query-features) to this other style:
+### How It Works
 
-Instead of this:
+When you use `__` in query parameters, Arkos translates them into nested Prisma query structures.
 
-```
-GET /api/products?search=wireless&price[gte]=50&price[lt]=200&sort=-price&page=2&limit=10&fields=id,name,price,+reviews
-```
-
-You can write like this:
+**Example:**
 
 ```
-GET api/products?search=wireless&price__gte=50&price__lt=200&sort=-price&page=2&limit=10&fields=id,name,price,+reviews
-
+GET /api/products?price__gte=50&price__lt=200
 ```
 
-And it will produce the same query as in [8. Combining Multiple Query Features](/docs/guide/request-query-parameters#8-combining-multiple-query-features).
+Arkos reads these parameters and converts them into:
 
-How this actually works? [see here](/docs/api-reference/guide/request-query-parameters-like-django).
+```ts
+{
+  price: {
+    gte: 50,
+    lt: 200
+  }
+}
+```
 
-:::info
-You can use both approaches at the same time, it will work seamlessly.
+### Why Use Django-Style?
+
+- **Cleaner Queries**: Easier to write complex conditions in URLs without manually managing deeply nested objects
+- **Flexible Conditions**: Chain multiple conditions like `price__gte`, `price__lt`, or `name__contains`
+- **Interchangeable**: Mix with bracket notation in the same request
+
+### Comparison Examples
+
+| Operation             | Bracket Notation        | Django-Style            |
+| --------------------- | ----------------------- | ----------------------- |
+| Greater than or equal | `price[gte]=50`         | `price__gte=50`         |
+| Less than             | `price[lt]=100`         | `price__lt=100`         |
+| Contains text         | `name[contains]=laptop` | `name__contains=laptop` |
+| Nested relation       | `author[age][gte]=25`   | `author__age__gte=25`   |
+
+:::info Mix and Match
+You can use both syntaxes in the same request. Arkos processes them identically:
+
+```
+GET /api/products?price[gte]=50&category__in=electronics,computers
+```
+
 :::
 
 ## Security and Performance Considerations
@@ -509,21 +559,24 @@ You can use both approaches at the same time, it will work seamlessly.
 - All query parameters are securely parsed
 - Unexpected parameters are safely filtered
 - The system prevents potential injection attacks
-- Supports complex querying with minimal to no performance overhead
+- Supports complex querying with minimal performance overhead
 
 ## Supported Query Parameters
 
 - `search`: Full-text search across string fields
-- everything goes in `where prisma query`
+- All Prisma filter operators go in `where` clause
 - `sort`: Multi-field sorting
 - `page`, `limit`: Pagination
-- `fields`: Fields selecting, adding and removing
-- `filterMode`: Logical operator control
-- `prismaQueryOptions`: Raw Prisma query extension
+- `fields`: Field selecting, adding, and removing
+- `filterMode`: Logical operator control (`OR` or `AND`)
+- `prismaQueryOptions`: Raw Prisma query extension (disabled by default)
 
 ## Best Practices
 
-1. Always use filtering for precise data retrieval
-2. Leverage search for flexible content finding
-3. Use pagination to manage large datasets
-4. Select only required fields to optimize performance
+1. **Always validate query parameters** using the validation configuration
+2. Use filtering for precise data retrieval
+3. Leverage search for flexible content finding
+4. Use pagination to manage large datasets
+5. Select only required fields to optimize performance
+6. Choose between bracket notation or Django-style based on your preference
+7. Avoid enabling `allowDangerousPrismaQueryOptions` in production

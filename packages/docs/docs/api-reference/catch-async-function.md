@@ -2,9 +2,9 @@
 sidebar_position: 4
 ---
 
-# The `catchAsync` Function
+# Catch Async Function
 
-`catchAsync` is a utility function in the **Arkos** that wraps asynchronous request handlers and middleware to automatically catch errors and forward them to Express's error handling mechanism. This eliminates the need for repetitive try-catch blocks in every route handler, creating cleaner code and ensuring consistent error handling.
+The `catchAsync` function is a utility function in the **Arkos** that wraps asynchronous request handlers and middleware to automatically catch errors and forward them to Express's error handling mechanism. This eliminates the need for repetitive try-catch blocks in every route handler, creating cleaner code and ensuring consistent error handling.
 
 :::tip
 You can use the function even to catch non async errors by simply letting the function throw it.
@@ -82,10 +82,14 @@ import { prisma } from "../../utils/prisma";
 
 export const getUserById = catchAsync(
   async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const user = await prisma.user.findOne({ where: { id: req.params.id } });
+    const user = await prisma.user.findOne({
+      where: { id: req.params.id },
+    });
 
     if (!user) {
-      throw new AppError("User not found", 404, { userId: req.params.id });
+      throw new AppError("User not found", 404, {
+        userId: req.params.id,
+      });
     }
 
     res.status(200).json({
@@ -171,7 +175,9 @@ export const updateUser = catchAsync(
 
     // Resource check
     if (!updatedUser) {
-      throw new AppError("User not found", 404, { userId: req.params.id });
+      throw new AppError("User not found", 404, {
+        userId: req.params.id,
+      });
     }
 
     // Response

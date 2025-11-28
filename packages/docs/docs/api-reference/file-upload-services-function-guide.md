@@ -2,7 +2,7 @@
 sidebar_position: 9
 ---
 
-# File Upload Services Guide
+# File Upload Services Function
 
 The `getFileUploadServices` function provides a centralized way to handle file uploads in your **Arkos** application. It creates and returns specialized file uploader services for different file types (images, videos, documents, and general files), each preconfigured with appropriate size limits, file type validation, and processing capabilities.
 
@@ -447,17 +447,14 @@ export const updateProfilePicture = catchAsync(
 ### Common Issues
 
 1. **"No file uploaded" error**
-
    - Ensure the form has `enctype="multipart/form-data"`
    - Check that the field name matches what your server expects
 
 2. **"Invalid file type" error**
-
    - The file type isn't in the allowed types list
    - Verify the file extension and MIME type
 
 3. **"File too large" error**
-
    - The file exceeds the configured size limit
    - Adjust the size limits in your configuration
 
