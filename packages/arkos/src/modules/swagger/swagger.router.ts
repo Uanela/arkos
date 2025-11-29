@@ -11,7 +11,7 @@ import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/ge
 import { generateOpenAPIFromApp } from "../../utils/arkos-router";
 import express from "express";
 import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-schema-paths";
-import { ArkosConfig } from "../../exports";
+import { ArkosConfig, ArkosRequest, ArkosResponse } from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 
 const swaggerRouter = Router();
@@ -62,12 +62,18 @@ export async function getSwaggerRouter(
     "@scalar/express-api-reference"
   );
 
+  const endpoint = swaggerConfigs!.endpoint!;
   swaggerRouter.use(
-    swaggerConfigs!.endpoint!,
+    endpoint,
     scalar.apiReference({
       content: swaggerSpecification,
       ...swaggerConfigs?.scalarApiReferenceConfiguration,
     })
+  );
+
+  swaggerRouter.get(
+    `${endpoint}/openapi.json`,
+    (_: ArkosRequest, res: ArkosResponse) => res.json(swaggerSpecification)
   );
 
   return swaggerRouter;
