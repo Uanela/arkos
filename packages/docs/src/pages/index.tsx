@@ -109,6 +109,21 @@ export default function Home() {
             part of my daily toolkit.
           </TestimonialCard>
           <TestimonialCard
+            name="Braimo Selimane"
+            role="Software Developer"
+            projectName={
+              <a href="https://www.cornelder.co.mz" target="_blank">
+                Corneleder de Moçambique
+              </a>
+            }
+            avatar={"https://github.com/thuggerhacks.png"}
+          >
+            Arkos provides a clear structure and intuitive tools that remove
+            backend complexity. My workflow is now faster and more organized,
+            allowing me to stay focused on building features. A truly satisfying
+            experience.
+          </TestimonialCard>
+          <TestimonialCard
             name="Uanela Como"
             role="Full Stack Developer"
             projectName={
