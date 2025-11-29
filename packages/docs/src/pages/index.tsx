@@ -68,7 +68,7 @@ export default function Home() {
           <span className="text-emerald-400">Great Developers</span> Building
           Daily
         </h2>
-        <section className="mx-auto grid lg:grid-cols-3 md:grid-cols-2 items-center justify-center  bg-gray-90 flex-col p-4 max-w-7xl relative md:gap-6 gap-4">
+        <section className="mx-auto grid lg:grid-cols-3 md:grid-cols-2 items-center justify-center  bg-gray-90 flex-col p-4 max-w-7xl relative md:gap-6 gap-4 ">
           <TestimonialCard
             name="Gelson Matavela"
             role="Founder"
@@ -80,18 +80,48 @@ export default function Home() {
             saved a lot of time and could focus on business logic.{" "}
           </TestimonialCard>
           <TestimonialCard
+            name="Arnaldo Tomo"
+            role="Tech Lead"
+            projectName={
+              <a href="https://www.dintell.co.mz" target="_blank">
+                Dintell
+              </a>
+            }
+            avatar={"https://github.com/arnaldo-tomo.png"}
+          >
+            Arkos keeps my code clean and scalable, which is fundamental for the
+            systems I build. For any developer who values productivity and best
+            practices, Arkos.js deserves your attention.
+          </TestimonialCard>
+          <TestimonialCard
+            name="Joél Fombe"
+            role="Frontend Developer"
+            projectName={
+              <a href="https://www.mesquitagroup.co.mz" target="_blank">
+                Mesquita Group
+              </a>
+            }
+            avatar={"https://github.com/joelfombe.png"}
+          >
+            Arkos has transformed my development workflow. It's simple,
+            lightweight, and incredibly efficient. I can set up routes,
+            permissions, and schemas in a flash. It has become an indispensable
+            part of my daily toolkit.
+          </TestimonialCard>
+          <TestimonialCard
             name="Uanela Como"
             role="Full Stack Developer"
             projectName={
-              <a href="https://www.mesquitagroup.com" target="_blank">
+              <a href="https://www.mesquitagroup.co.mz" target="_blank">
                 Mesquita Group
               </a>
             }
             avatar={"/img/uanela-como-profile.webp"}
           >
             Every line of boilerplate code is a missed opportunity for
-            innovation. Arkos exists to give developers back their time so they
-            can build what truly matters.
+            innovation. Arkos.js exists to give developers back their time so
+            they can build what truly matters focusing on the core business
+            logic.
           </TestimonialCard>
         </section>
 

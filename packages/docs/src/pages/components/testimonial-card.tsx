@@ -14,8 +14,8 @@ export default function TestimonialCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-gradient-to-br from-slate-900 to-slate-900 rounded-2xl p-6 border border-sky-500 hover:border-slate-600 transition-all duration-300 max-w-md">
-      <p className="text-slate-200 text-base leading-relaxed mb-6">
+    <div className="bg-gradient-to-br from-slate-900 to-slate-900 rounded-2xl p-6 border border-sky-500 hover:border-slate-600 transition-all duration-300 max-w-md h-full flex flex-col justify-between">
+      <p className="text-slate-200 text-base leading-relaxed mb-6 text-left">
         {children}
       </p>
 
