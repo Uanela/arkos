@@ -111,7 +111,7 @@ export function isClass(value: any): boolean {
 }
 
 export function isZodSchema(value: any): value is ZodTypeAny {
-  return value instanceof z.ZodType;
+  return value?._def?.typeName?.startsWith("Zod");
 }
 
 export async function processSubdir(
