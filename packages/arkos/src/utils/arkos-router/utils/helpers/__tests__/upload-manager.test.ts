@@ -258,12 +258,15 @@ describe("UploadManager", () => {
         attachToBody: "pathname" as const,
       };
       mockReq.file = { path: "C:\\uploads\\file.jpg" };
+      mockGenerateRelativePath.mockReturnValue("/uploads/C:/file.jpg");
 
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.file.pathname).toBeDefined();
-      expect(mockReq.file.url).toBeDefined();
+      expect(mockReq.file.pathname).toBe("C:/file.jpg");
+      expect(mockReq.file.url).toBe(
+        "http://localhost:3000/api/uploads/C:/file.jpg"
+      );
       expect(mockReq.body).toBeDefined();
       expect(mockNext).toHaveBeenCalled();
     });
