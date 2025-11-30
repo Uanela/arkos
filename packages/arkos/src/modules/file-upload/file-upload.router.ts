@@ -53,6 +53,11 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
   if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
 
   if (!isEndpointDisabled(routerConfig, "findFile")) {
+    const baseUploadDirFullPath = path.resolve(
+      path
+        .join(process.cwd(), fileUpload?.baseUploadDir || "uploads")
+        .replaceAll("//", "/")
+    );
     router.get(
       `${basePathname}*`,
       authService.handleAuthenticationControl(
@@ -67,7 +72,7 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
       ...processMiddleware(interceptors?.beforeFindFile),
       adjustRequestUrl,
       express.static(
-        path.resolve(process.cwd(), fileUpload?.baseUploadDir || "uploads"),
+        baseUploadDirFullPath,
         deepmerge(
           {
             maxAge: "1y",
