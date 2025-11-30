@@ -7,6 +7,7 @@ import express from "express";
 import compression from "compression";
 import { queryParser } from "../../../helpers/query-parser.helpers";
 import uploadManager from "./upload-manager";
+import multer from "multer";
 
 export function extractArkosRoutes(
   app: any,
@@ -95,13 +96,19 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
   if (config.compression) middlewares.push(compression(config.compression));
   if (config.queryParser) middlewares.push(queryParser(config.queryParser));
 
-  if (
-    typeof config?.bodyParser === "object" &&
-    ["json", "urlencoded", "raw", "text"].includes(config?.bodyParser?.parser)
-  )
-    middlewares.push(
-      express[config.bodyParser.parser](config.bodyParser.options)
-    );
+  if (config?.bodyParser) {
+    const parsers = Array.isArray(config.bodyParser)
+      ? config.bodyParser
+      : [config.bodyParser];
+
+    parsers.forEach((parser) => {
+      if (typeof parser === "object" && parser.parser)
+        if (parser.parser !== "multipart")
+          middlewares.push(express[parser.parser](parser.options));
+        else if (parser.parser === "multipart")
+          middlewares.push(multer({ limits: parser.options }).none());
+    });
+  }
 
   if (config.experimental?.uploads) {
     middlewares.push(uploadManager.handleUpload(config.experimental.uploads));
