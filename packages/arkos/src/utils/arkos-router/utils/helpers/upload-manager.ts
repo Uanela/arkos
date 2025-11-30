@@ -199,13 +199,15 @@ class UploadManager {
         (file as any).url = url;
         (file as any).pathname = normalizePath(file.path);
 
-        if (config.attachToBody === false) return;
+        if (config.attachToBody === false) return undefined;
         if (config.attachToBody === "pathname" || !config.attachToBody)
-          return baseRoute === "/"
-            ? ""
-            : baseRoute.startsWith("/")
-              ? baseRoute
-              : `/${baseRoute}` + normalizePath(file.path);
+          return (
+            (baseRoute === "/"
+              ? ""
+              : baseRoute.startsWith("/")
+                ? baseRoute
+                : `/${baseRoute}`) + normalizePath(file.path)
+          );
         if (config.attachToBody === "url") return url;
         if (config.attachToBody === "file") return file;
 
