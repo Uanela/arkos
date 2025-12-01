@@ -80,6 +80,23 @@ export default function Home() {
             saved a lot of time and could focus on business logic.{" "}
           </TestimonialCard>
           <TestimonialCard
+            name="Keven Gonçalves"
+            role="Software Developer"
+            projectName={
+              <a href="https://www.cornelder.co.mz" target="_blank">
+                Corneleder
+              </a>
+            }
+            avatar={
+              "https://media.licdn.com/dms/image/v2/D4D03AQFkoxRVxZa2Rg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1702849883698?e=1766016000&v=beta&t=JYCX2xh3bNBoCrsvy-_fJz7DltD_YJduJMnnIKrfUZs"
+            }
+          >
+            Arkos.js is a game-changer! It drastically simplifies API
+            development, letting you build backend routes quickly and
+            efficiently. Less time on boilerplate, more time on business logic.
+            An incredible tool for productivity and scalability.
+          </TestimonialCard>
+          <TestimonialCard
             name="Arnaldo Tomo"
             role="Tech Lead"
             projectName={
@@ -101,7 +118,9 @@ export default function Home() {
                 Mesquita Group
               </a>
             }
-            avatar={"https://github.com/joelfombe.png"}
+            avatar={
+              "https://media.licdn.com/dms/image/v2/D4D03AQEpcfSwGxCp3A/profile-displayphoto-shrink_800_800/B4DZTbIoyjG4Ac-/0/1738843263511?e=1766016000&v=beta&t=bgfLVMudsASeHnfBlaGyEH94TLZx73IZKN-5Sge5YFo"
+            }
           >
             Arkos has transformed my development workflow. It's simple,
             lightweight, and incredibly efficient. I can set up routes,
@@ -109,11 +128,28 @@ export default function Home() {
             part of my daily toolkit.
           </TestimonialCard>
           <TestimonialCard
+            name="Baptista Joaquim"
+            role="Tech Lead"
+            projectName={
+              <a href="https://www.mesquitagroup.co.mz" target="_blank">
+                Mesquita Group
+              </a>
+            }
+            avatar={
+              "https://media.licdn.com/dms/image/v2/D4D03AQELei2qn4pbbQ/profile-displayphoto-shrink_800_800/B4DZZfTJ71GgAg-/0/1745355581433?e=1766016000&v=beta&t=omsLpc0PBNltURoTqww1TcZRPYaEBKIe59Q9QVbUhKg"
+            }
+          >
+            From a Prisma models to auto generating CRUDs and routes. It
+            integrates validations and auth, organizing everything into
+            services. The result is a faster, simpler workflow with far less
+            effort—a tool that truly accelerates development.
+          </TestimonialCard>
+          <TestimonialCard
             name="Braimo Selimane"
             role="Software Developer"
             projectName={
               <a href="https://www.cornelder.co.mz" target="_blank">
-                Corneleder de Moçambique
+                Corneleder
               </a>
             }
             avatar={"https://github.com/thuggerhacks.png"}
@@ -123,21 +159,21 @@ export default function Home() {
             allowing me to stay focused on building features. A truly satisfying
             experience.
           </TestimonialCard>
-          <TestimonialCard
-            name="Uanela Como"
-            role="Full Stack Developer"
-            projectName={
-              <a href="https://www.mesquitagroup.co.mz" target="_blank">
-                Mesquita Group
-              </a>
-            }
-            avatar={"/img/uanela-como-profile.webp"}
-          >
-            Every line of boilerplate code is a missed opportunity for
-            innovation. Arkos.js exists to give developers back their time so
-            they can build what truly matters focusing on the core business
-            logic.
-          </TestimonialCard>
+          {/* <TestimonialCard */}
+          {/*   name="Uanela Como" */}
+          {/*   role="Founder" */}
+          {/*   projectName={ */}
+          {/*     <a href="https://www.superm7.com" target="_blank"> */}
+          {/*       SuperM7.com */}
+          {/*     </a> */}
+          {/*   } */}
+          {/*   avatar={"/img/uanela-como-profile.webp"} */}
+          {/* > */}
+          {/*   Every line of boilerplate code is a missed opportunity for */}
+          {/*   innovation. Arkos.js exists to give developers back their time so */}
+          {/*   they can build what truly matters focusing on the core business */}
+          {/*   logic. */}
+          {/* </TestimonialCard> */}
         </section>
 
         <PoweredBySection />

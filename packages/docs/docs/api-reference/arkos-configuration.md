@@ -31,10 +31,10 @@ import arkos from "arkos";
 import customRouter from "./routers/custom.router";
 
 arkos.init({
-    use: [customRouter],
-    configureApp: (app) => {
-        app.set("trust proxy", 1);
-    },
+  use: [customRouter],
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
+  },
 });
 ```
 
@@ -43,14 +43,14 @@ arkos.init({
 import { ArkosConfig } from "arkos";
 
 const arkosConfig: ArkosConfig = {
-    port: 3000,
-    authentication: {
-        enabled: true,
-        mode: "static",
-    },
-    validation: {
-        resolver: "zod",
-    },
+  port: 3000,
+  authentication: {
+    enabled: true,
+    mode: "static",
+  },
+  validation: {
+    resolver: "zod",
+  },
 };
 
 export default arkosConfig;
@@ -67,19 +67,19 @@ import arkos from "arkos";
 import customRouter from "./routers/custom.router";
 
 arkos.init({
-    port: 3000,
-    authentication: {
-        mode: "static",
-    },
-    validation: {
-        resolver: "zod",
-    },
-    routers: {
-        additional: [customRouter],
-    },
-    configureApp: (app) => {
-        app.set("trust proxy", 1);
-    },
+  port: 3000,
+  authentication: {
+    mode: "static",
+  },
+  validation: {
+    resolver: "zod",
+  },
+  routers: {
+    additional: [customRouter],
+  },
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
+  },
 });
 ```
 
@@ -94,14 +94,14 @@ Used for app initialization and runtime configuration:
 
 ```typescript
 interface ArkosInitConfig {
-    use?: (
-        | IArkosRouter
-        | express.Router
-        | ArkosRequestHandler
-        | ArkosErrorRequestHandler
-    )[];
-    configureApp?: (app: express.Express) => Promise<any> | any;
-    configureServer?: (server: http.Server) => Promise<any> | any;
+  use?: (
+    | IArkosRouter
+    | express.Router
+    | ArkosRequestHandler
+    | ArkosErrorRequestHandler
+  )[];
+  configureApp?: (app: express.Express) => Promise<any> | any;
+  configureServer?: (server: http.Server) => Promise<any> | any;
 }
 ```
 
@@ -111,21 +111,21 @@ Used for static application configuration:
 
 ```typescript
 interface ArkosConfig {
-    // Basic settings
-    welcomeMessage?: string;
-    port?: number;
-    host?: string;
+  // Basic settings
+  welcomeMessage?: string;
+  port?: number;
+  host?: string;
 
-    // Feature configurations
-    authentication?: AuthenticationConfig;
-    validation?: ValidationConfig;
-    fileUpload?: FileUploadConfig;
-    middlewares?: MiddlewareConfig;
-    routers?: RouterConfig;
-    email?: EmailConfig;
-    swagger?: SwaggerConfig;
-    request?: RequestConfig;
-    debugging?: DebuggingConfig;
+  // Feature configurations
+  authentication?: AuthenticationConfig;
+  validation?: ValidationConfig;
+  fileUpload?: FileUploadConfig;
+  middlewares?: MiddlewareConfig;
+  routers?: RouterConfig;
+  email?: EmailConfig;
+  swagger?: SwaggerConfig;
+  request?: RequestConfig;
+  debugging?: DebuggingConfig;
 }
 ```
 
@@ -139,9 +139,9 @@ interface ArkosConfig {
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    welcomeMessage: "Welcome to Our API",
-    port: 3000,
-    host: "0.0.0.0",
+  welcomeMessage: "Welcome to Our API",
+  port: 3000,
+  host: "0.0.0.0",
 };
 
 export default arkosConfig;
@@ -153,9 +153,9 @@ export default arkosConfig;
 ```typescript
 // src/app.ts
 arkos.init({
-    welcomeMessage: "Welcome to Our API",
-    port: 3000,
-    host: "0.0.0.0",
+  welcomeMessage: "Welcome to Our API",
+  port: 3000,
+  host: "0.0.0.0",
 });
 ```
 
@@ -188,27 +188,27 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    authentication: {
-        enabled: true,
-        mode: "static",
-        login: {
-            allowedUsernames: ["email", "username"],
-            sendAccessTokenThrough: "both",
-        },
-        rateLimit: {
-            windowMs: 5000,
-            limit: 10,
-        },
-        jwt: {
-            secret: process.env.JWT_SECRET,
-            expiresIn: "7d",
-            cookie: {
-                secure: process.env.NODE_ENV === "production",
-                httpOnly: true,
-                sameSite: "lax",
-            },
-        },
+  authentication: {
+    enabled: true,
+    mode: "static",
+    login: {
+      allowedUsernames: ["email", "username"],
+      sendAccessTokenThrough: "both",
     },
+    rateLimit: {
+      windowMs: 5000,
+      limit: 10,
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "7d",
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        sameSite: "lax",
+      },
+    },
+  },
 };
 
 export default arkosConfig;
@@ -220,14 +220,14 @@ export default arkosConfig;
 ```typescript
 // src/app.ts
 arkos.init({
-    authentication: {
-        mode: "static",
-        login: {
-            allowedUsernames: ["email", "username"],
-            sendAccessTokenThrough: "both",
-        },
-        // ... other auth config
+  authentication: {
+    mode: "static",
+    login: {
+      allowedUsernames: ["email", "username"],
+      sendAccessTokenThrough: "both",
     },
+    // ... other auth config
+  },
 });
 ```
 
@@ -277,13 +277,13 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    validation: {
-        resolver: "zod",
-        strict: false,
-        validationOptions: {
-            // Zod or class-validator options
-        },
+  validation: {
+    resolver: "zod",
+    strict: false,
+    validationOptions: {
+      // Zod or class-validator options
     },
+  },
 };
 
 export default arkosConfig;
@@ -295,12 +295,12 @@ export default arkosConfig;
 ```typescript
 // src/app.ts
 arkos.init({
-    validation: {
-        resolver: "zod",
-        validationOptions: {
-            // Zod or class-validator options
-        },
+  validation: {
+    resolver: "zod",
+    validationOptions: {
+      // Zod or class-validator options
     },
+  },
 });
 ```
 
@@ -332,21 +332,21 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    fileUpload: {
-        baseUploadDir: "/uploads",
-        baseRoute: "/api/uploads",
-        expressStatic: {
-            maxAge: "1y",
-            etag: true,
-        },
-        restrictions: {
-            images: {
-                maxCount: 10,
-                maxSize: 5 * 1024 * 1024, // 5MB
-                supportedFilesRegex: /\.(jpg|jpeg|png|gif|webp)$/,
-            },
-        },
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    expressStatic: {
+      maxAge: "1y",
+      etag: true,
     },
+    restrictions: {
+      images: {
+        maxCount: 10,
+        maxSize: 5 * 1024 * 1024, // 5MB
+        supportedFilesRegex: /\.(jpg|jpeg|png|gif|webp)$/,
+      },
+    },
+  },
 };
 
 export default arkosConfig;
@@ -358,15 +358,15 @@ export default arkosConfig;
 ```typescript
 // src/app.ts
 arkos.init({
-    fileUpload: {
-        baseUploadDir: "/uploads",
-        baseRoute: "/api/uploads",
-        expressStaticOptions: {
-            maxAge: "1y",
-            etag: true,
-        },
-        // ... restrictions
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    expressStaticOptions: {
+      maxAge: "1y",
+      etag: true,
     },
+    // ... restrictions
+  },
 });
 ```
 
@@ -403,32 +403,32 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    middlewares: {
-        compression: {
-            level: 6,
-        },
-        rateLimit: {
-            windowMs: 60000,
-            limit: 1000,
-        },
-        cors: {
-            allowedOrigins: ["https://example.com"],
-            options: {
-                credentials: true,
-            },
-        },
-        expressJson: {
-            limit: "10mb",
-        },
-        cookieParser: ["secret"],
-        queryParser: {
-            parseNull: true,
-            parseBoolean: true,
-            parseDoubleUnderscore: true,
-        },
-        requestLogger: myCustomLogger,
-        errorHandler: myCustomErrorHandler,
+  middlewares: {
+    compression: {
+      level: 6,
     },
+    rateLimit: {
+      windowMs: 60000,
+      limit: 1000,
+    },
+    cors: {
+      allowedOrigins: ["https://example.com"],
+      options: {
+        credentials: true,
+      },
+    },
+    expressJson: {
+      limit: "10mb",
+    },
+    cookieParser: ["secret"],
+    queryParser: {
+      parseNull: true,
+      parseBoolean: true,
+      parseDoubleUnderscore: true,
+    },
+    requestLogger: myCustomLogger,
+    errorHandler: myCustomErrorHandler,
+  },
 };
 
 export default arkosConfig;
@@ -438,11 +438,11 @@ export default arkosConfig;
 
 ```typescript
 const arkosConfig: ArkosConfig = {
-    middlewares: {
-        compression: false, // Disable compression
-        rateLimit: false, // Disable rate limiting
-        requestLogger: false, // Disable request logger
-    },
+  middlewares: {
+    compression: false, // Disable compression
+    rateLimit: false, // Disable rate limiting
+    requestLogger: false, // Disable request logger
+  },
 };
 
 export default arkosConfig;
@@ -452,10 +452,10 @@ export default arkosConfig;
 
 ```typescript
 const arkosConfig: ArkosConfig = {
-    middlewares: {
-        cors: myCustomCorsHandler, // Replace with custom handler
-        errorHandler: myErrorHandler, // Replace with custom handler
-    },
+  middlewares: {
+    cors: myCustomCorsHandler, // Replace with custom handler
+    errorHandler: myErrorHandler, // Replace with custom handler
+  },
 };
 
 export default arkosConfig;
@@ -467,35 +467,35 @@ export default arkosConfig;
 ```typescript
 // src/app.ts
 arkos.init({
-    globalRequestRateLimitOptions: {
-        windowMs: 60000,
-        limit: 1000,
+  globalRequestRateLimitOptions: {
+    windowMs: 60000,
+    limit: 1000,
+  },
+  jsonBodyParserOptions: {
+    limit: "10mb",
+  },
+  cookieParserParameters: ["secret"],
+  compressionOptions: {
+    level: 6,
+  },
+  queryParserOptions: {
+    parseNull: true,
+    parseBoolean: true,
+  },
+  cors: {
+    allowedOrigins: ["https://example.com"],
+    options: {
+      credentials: true,
     },
-    jsonBodyParserOptions: {
-        limit: "10mb",
+  },
+  middlewares: {
+    additional: [myCustomMiddleware],
+    disable: ["compression", "request-logger"],
+    replace: {
+      cors: myCustomCorsHandler,
+      globalErrorHandler: myCustomErrorHandler,
     },
-    cookieParserParameters: ["secret"],
-    compressionOptions: {
-        level: 6,
-    },
-    queryParserOptions: {
-        parseNull: true,
-        parseBoolean: true,
-    },
-    cors: {
-        allowedOrigins: ["https://example.com"],
-        options: {
-            credentials: true,
-        },
-    },
-    middlewares: {
-        additional: [myCustomMiddleware],
-        disable: ["compression", "request-logger"],
-        replace: {
-            cors: myCustomCorsHandler,
-            globalErrorHandler: myCustomErrorHandler,
-        },
-    },
+  },
 });
 ```
 
@@ -521,12 +521,12 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    routers: {
-        strict: "no-bulk",
-        welcomeRoute: (req, res) => {
-            res.json({ message: "Custom welcome message" });
-        },
+  routers: {
+    strict: "no-bulk",
+    welcomeRoute: (req, res) => {
+      res.json({ message: "Custom welcome message" });
     },
+  },
 };
 
 export default arkosConfig;
@@ -539,7 +539,7 @@ import customRouter from "./routers/custom.router";
 import expressRouter from "./routers/express.router";
 
 arkos.init({
-    use: [customRouter, expressRouter], // ArkosRouter or Express Router
+  use: [customRouter, expressRouter], // ArkosRouter or Express Router
 });
 ```
 
@@ -549,16 +549,16 @@ arkos.init({
 ```typescript
 // src/app.ts
 arkos.init({
-    routers: {
-        strict: "no-bulk",
-        additional: [customRouter],
-        disable: ["welcome-endpoint"],
-        replace: {
-            welcomeEndpoint: (req, res) => {
-                res.json({ message: "Custom welcome" });
-            },
-        },
+  routers: {
+    strict: "no-bulk",
+    additional: [customRouter],
+    disable: ["welcome-endpoint"],
+    replace: {
+      welcomeEndpoint: (req, res) => {
+        res.json({ message: "Custom welcome" });
+      },
     },
+  },
 });
 ```
 
@@ -587,15 +587,15 @@ import arkos from "arkos";
 import customRouter from "./routers/custom.router";
 
 arkos.init({
-    use: [customRouter],
-    configureApp: async (app) => {
-        app.set("trust proxy", 1);
-        // Custom app configuration
-    },
-    configureServer: (server) => {
-        server.timeout = 30000;
-        // Custom server configuration
-    },
+  use: [customRouter],
+  configureApp: async (app) => {
+    app.set("trust proxy", 1);
+    // Custom app configuration
+  },
+  configureServer: (server) => {
+    server.timeout = 30000;
+    // Custom server configuration
+  },
 });
 ```
 
@@ -605,15 +605,15 @@ arkos.init({
 ```typescript
 // src/app.ts
 arkos.init({
-    routers: {
-        additional: [customRouter],
-    },
-    configureApp: async (app) => {
-        app.set("trust proxy", 1);
-    },
-    configureServer: (server) => {
-        server.timeout = 30000;
-    },
+  routers: {
+    additional: [customRouter],
+  },
+  configureApp: async (app) => {
+    app.set("trust proxy", 1);
+  },
+  configureServer: (server) => {
+    server.timeout = 30000;
+  },
 });
 ```
 
@@ -643,16 +643,16 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    email: {
-        name: "My App",
-        host: "smtp.example.com",
-        port: 587,
-        secure: false,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD,
-        },
+  email: {
+    name: "My App",
+    host: "smtp.example.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
     },
+  },
 };
 
 export default arkosConfig;
@@ -664,16 +664,16 @@ export default arkosConfig;
 ```typescript
 // src/app.ts
 arkos.init({
-    email: {
-        name: "My App",
-        host: "smtp.example.com",
-        port: 587,
-        secure: false,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD,
-        },
+  email: {
+    name: "My App",
+    host: "smtp.example.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
     },
+  },
 });
 ```
 
@@ -723,27 +723,27 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    swagger: {
-        enableAfterBuild: true,
-        endpoint: "/api/docs",
-        mode: "zod",
-        strict: false,
-        options: {
-            definition: {
-                info: {
-                    title: "My API",
-                    version: "1.0.0",
-                    description: "API documentation",
-                },
-                servers: [{ url: "http://localhost:3000" }],
-            },
-            deepLinking: true,
-            tryItOutEnabled: true,
+  swagger: {
+    enableAfterBuild: true,
+    endpoint: "/api/docs",
+    mode: "zod",
+    strict: false,
+    options: {
+      definition: {
+        info: {
+          title: "My API",
+          version: "1.0.0",
+          description: "API documentation",
         },
-        scalarApiReferenceConfiguration: {
-            theme: "bluePlanet",
-        },
+        servers: [{ url: "http://localhost:3000" }],
+      },
+      deepLinking: true,
+      tryItOutEnabled: true,
     },
+    scalarApiReferenceConfiguration: {
+      theme: "bluePlanet",
+    },
+  },
 };
 
 export default arkosConfig;
@@ -755,12 +755,12 @@ export default arkosConfig;
 ```typescript
 // src/app.ts
 arkos.init({
-    swagger: {
-        enableAfterBuild: true,
-        endpoint: "/api/docs",
-        mode: "zod",
-        // ... other options
-    },
+  swagger: {
+    enableAfterBuild: true,
+    endpoint: "/api/docs",
+    mode: "zod",
+    // ... other options
+  },
 });
 ```
 
@@ -799,11 +799,11 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    request: {
-        parameters: {
-            allowDangerousPrismaQueryOptions: false,
-        },
+  request: {
+    parameters: {
+      allowDangerousPrismaQueryOptions: false,
     },
+  },
 };
 
 export default arkosConfig;
@@ -815,11 +815,11 @@ export default arkosConfig;
 ```typescript
 // src/app.ts
 arkos.init({
-    request: {
-        parameters: {
-            allowDangerousPrismaQueryOptions: false,
-        },
+  request: {
+    parameters: {
+      allowDangerousPrismaQueryOptions: false,
     },
+  },
 });
 ```
 
@@ -839,19 +839,19 @@ arkos.init({
 ```typescript
 // arkos.config.ts
 const arkosConfig: ArkosConfig = {
-    debugging: {
-        requests: {
-            level: 1,
-            filter: ["Query", "Body"],
-        },
-        dynamicLoader: {
-            level: 2,
-            filters: {
-                modules: ["user", "product"],
-                components: ["router", "service"],
-            },
-        },
+  debugging: {
+    requests: {
+      level: 1,
+      filter: ["Query", "Body"],
     },
+    dynamicLoader: {
+      level: 2,
+      filters: {
+        modules: ["user", "product"],
+        components: ["router", "service"],
+      },
+    },
+  },
 };
 
 export default arkosConfig;
@@ -889,60 +889,60 @@ Arkos.js supports the following environment variables:
 import { ArkosConfig } from "arkos";
 
 const arkosConfig: ArkosConfig = {
-    port: 3000,
-    host: "0.0.0.0",
-    welcomeMessage: "Welcome to Our API",
+  port: 3000,
+  host: "0.0.0.0",
+  welcomeMessage: "Welcome to Our API",
 
-    authentication: {
-        enabled: true,
-        mode: "static",
-        jwt: {
-            secret: process.env.JWT_SECRET,
-            expiresIn: "7d",
-        },
+  authentication: {
+    enabled: true,
+    mode: "static",
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "7d",
     },
+  },
 
-    validation: {
-        resolver: "zod",
-        strict: false,
-    },
+  validation: {
+    resolver: "zod",
+    strict: false,
+  },
 
-    fileUpload: {
-        baseUploadDir: "/uploads",
-        restrictions: {
-            images: {
-                maxCount: 5,
-                maxSize: 5 * 1024 * 1024,
-            },
-        },
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    restrictions: {
+      images: {
+        maxCount: 5,
+        maxSize: 5 * 1024 * 1024,
+      },
     },
+  },
 
-    middlewares: {
-        cors: {
-            allowedOrigins: ["https://myapp.com"],
-        },
-        rateLimit: {
-            windowMs: 60000,
-            limit: 500,
-        },
+  middlewares: {
+    cors: {
+      allowedOrigins: ["https://myapp.com"],
     },
+    rateLimit: {
+      windowMs: 60000,
+      limit: 500,
+    },
+  },
 
-    routers: {
-        strict: "no-bulk",
-    },
+  routers: {
+    strict: "no-bulk",
+  },
 
-    email: {
-        host: process.env.EMAIL_HOST,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD,
-        },
+  email: {
+    host: process.env.EMAIL_HOST,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
     },
+  },
 
-    swagger: {
-        mode: "zod",
-        enableAfterBuild: false,
-    },
+  swagger: {
+    mode: "zod",
+    enableAfterBuild: false,
+  },
 };
 
 export default arkosConfig;
@@ -954,10 +954,10 @@ import arkos from "arkos";
 import analyticsRouter from "./routers/analytics.router";
 
 arkos.init({
-    use: [analyticsRouter],
-    configureApp: (app) => {
-        app.set("trust proxy", 1);
-    },
+  use: [analyticsRouter],
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
+  },
 });
 ```
 
@@ -970,62 +970,62 @@ import arkos from "arkos";
 import analyticsRouter from "./routers/analytics.router";
 
 arkos.init({
-    port: 3000,
-    host: "0.0.0.0",
-    welcomeMessage: "Welcome to Our API",
+  port: 3000,
+  host: "0.0.0.0",
+  welcomeMessage: "Welcome to Our API",
 
-    authentication: {
-        mode: "static",
-        jwt: {
-            secret: process.env.JWT_SECRET,
-            expiresIn: "7d",
-        },
+  authentication: {
+    mode: "static",
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "7d",
     },
+  },
 
-    validation: {
-        resolver: "zod",
-    },
+  validation: {
+    resolver: "zod",
+  },
 
-    fileUpload: {
-        baseUploadDir: "/uploads",
-        restrictions: {
-            images: {
-                maxCount: 5,
-                maxSize: 5 * 1024 * 1024,
-            },
-        },
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    restrictions: {
+      images: {
+        maxCount: 5,
+        maxSize: 5 * 1024 * 1024,
+      },
     },
+  },
 
-    globalRequestRateLimitOptions: {
-        windowMs: 60000,
-        limit: 500,
-    },
+  globalRequestRateLimitOptions: {
+    windowMs: 60000,
+    limit: 500,
+  },
 
-    cors: {
-        allowedOrigins: ["https://myapp.com"],
-    },
+  cors: {
+    allowedOrigins: ["https://myapp.com"],
+  },
 
-    routers: {
-        strict: "no-bulk",
-        additional: [analyticsRouter],
-    },
+  routers: {
+    strict: "no-bulk",
+    additional: [analyticsRouter],
+  },
 
-    email: {
-        host: process.env.EMAIL_HOST,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD,
-        },
+  email: {
+    host: process.env.EMAIL_HOST,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
     },
+  },
 
-    swagger: {
-        mode: "zod",
-        enableAfterBuild: false,
-    },
+  swagger: {
+    mode: "zod",
+    enableAfterBuild: false,
+  },
 
-    configureApp: (app) => {
-        app.set("trust proxy", 1);
-    },
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
+  },
 });
 ```
 

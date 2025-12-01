@@ -41,11 +41,11 @@ describe("Package.json template rendering", () => {
     expect(packageJson.devDependencies["@types/node"]).toBe("^24.0.12");
     expect(packageJson.devDependencies["@types/express"]).toBe("^5.0.0");
     expect(packageJson.devDependencies["@types/swagger-jsdoc"]).toBe("^6.0.4");
-    expect(packageJson.devDependencies["tsx-strict"]).toBe("^0.1.4");
+    expect(packageJson.devDependencies["tsx-strict"]).toBe("^0.2.0");
     expect(packageJson.devDependencies.prisma).toBe("^6.11.1");
 
     // Check dependencies
-    expect(packageJson.dependencies.arkos).toBe("^1.4.0-canary.6");
+    expect(packageJson.dependencies.arkos).toBe("^1.4.0-canary.77");
     expect(packageJson.dependencies.express).toBe("^4.21.2");
     expect(packageJson.dependencies["@prisma/client"]).toBe("^6.4.1");
     expect(packageJson.dependencies["swagger-jsdoc"]).toBe("^6.2.8");
@@ -81,7 +81,7 @@ describe("Package.json template rendering", () => {
     expect(packageJson.devDependencies["@types/swagger-jsdoc"]).toBeUndefined();
 
     // Should have other devDependencies
-    expect(packageJson.devDependencies["tsx-strict"]).toBe("^0.1.4");
+    expect(packageJson.devDependencies["tsx-strict"]).toBe("^0.2.0");
     expect(packageJson.devDependencies.prisma).toBe("^6.11.1");
 
     // Check zod dependencies
@@ -108,7 +108,7 @@ describe("Package.json template rendering", () => {
     const packageJson = JSON.parse(result);
 
     // Should have basic dependencies without validation libraries
-    expect(packageJson.dependencies.arkos).toBe("^1.4.0-canary.27");
+    expect(packageJson.dependencies.arkos).toBe("^1.4.0-canary.77");
     expect(packageJson.dependencies.express).toBe("^4.21.2");
     expect(packageJson.dependencies["@prisma/client"]).toBe("^6.4.1");
     expect(packageJson.dependencies["swagger-jsdoc"]).toBe("^6.2.8");

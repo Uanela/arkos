@@ -762,10 +762,12 @@ Customize how the request body is parsed for specific routes:
 router.post(
   {
     path: "/api/webhooks/stripe",
-    bodyParser: {
-      parser: "raw",
-      options: { type: "application/json" }, // Parse as raw buffer but only for application/json
-    },
+    bodyParser: [
+      {
+        parser: "raw",
+        options: { type: "application/json" }, // Parse as raw buffer but only for application/json
+      },
+    ],
   },
   stripeWebhookHandler
 );
@@ -773,10 +775,24 @@ router.post(
 router.post(
   {
     path: "/api/data/upload",
-    bodyParser: {
-      parser: "text",
-      options: { type: "text/plain", limit: "10mb" },
-    },
+    bodyParser: [
+      {
+        parser: "text",
+        options: { type: "text/plain", limit: "10mb" },
+      },
+    ],
+  },
+  textDataHandler
+);
+
+router.post(
+  {
+    path: "/api/users",
+    bodyParser: [
+      {
+        parser: "multipart", // Will pass only fields on multipart/form-data
+      },
+    ],
   },
   textDataHandler
 );
@@ -784,10 +800,12 @@ router.post(
 router.post(
   {
     path: "/api/form",
-    bodyParser: {
-      parser: "urlencoded",
-      options: { extended: true },
-    },
+    bodyParser: [
+      {
+        parser: "urlencoded",
+        options: { extended: true },
+      },
+    ],
   },
   formHandler
 );
@@ -805,9 +823,9 @@ router.post(
 
 ```typescript
 bodyParser: {
-  parser: "json" | "urlencoded" | "raw" | "text",
+  parser: "json" | "urlencoded" | "raw" | "text" | "multipart",
   options?: { /* parser-specific options */ }
-}
+}[]
 // OR
 bodyParser: false // Disable parsing
 ```
