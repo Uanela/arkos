@@ -111,6 +111,26 @@ export default function Home() {
             practices, Arkos.js deserves your attention.
           </TestimonialCard>
           <TestimonialCard
+            name="Augusto Domingos"
+            role="Tech Lead"
+            projectName={
+              <a
+                href="https://www.linkedin.com/company/dsai-for-moz"
+                target="_blank"
+              >
+                DSAI For Moz
+              </a>
+            }
+            avatar={
+              "https://media.licdn.com/dms/image/v2/D4D03AQG5__NOnlZ7jQ/profile-displayphoto-crop_800_800/B4DZqkXy1hIkAI-/0/1763694296337?e=1766016000&v=beta&t=tmY8QctNJWhI8O-HIXw-9o3KCMbUI_fpSXlIrd-8_0Q"
+            }
+          >
+            It removes boilerplate and provides a clean structure to build
+            products. Built-in auth is powerful and ready. Automatic CRUD and
+            docs save time, while interceptors allow flexible business logic.
+            ArkosJS is worth adopting.
+          </TestimonialCard>
+          <TestimonialCard
             name="Joél Fombe"
             role="Frontend Developer"
             projectName={
@@ -159,21 +179,21 @@ export default function Home() {
             allowing me to stay focused on building features. A truly satisfying
             experience.
           </TestimonialCard>
-          {/* <TestimonialCard */}
-          {/*   name="Uanela Como" */}
-          {/*   role="Founder" */}
-          {/*   projectName={ */}
-          {/*     <a href="https://www.superm7.com" target="_blank"> */}
-          {/*       SuperM7.com */}
-          {/*     </a> */}
-          {/*   } */}
-          {/*   avatar={"/img/uanela-como-profile.webp"} */}
-          {/* > */}
-          {/*   Every line of boilerplate code is a missed opportunity for */}
-          {/*   innovation. Arkos.js exists to give developers back their time so */}
-          {/*   they can build what truly matters focusing on the core business */}
-          {/*   logic. */}
-          {/* </TestimonialCard> */}
+          <TestimonialCard
+            name="Uanela Como"
+            role="Founder"
+            projectName={
+              <a href="https://www.superm7.com" target="_blank">
+                SuperM7.com
+              </a>
+            }
+            avatar={"/img/uanela-como-profile.webp"}
+          >
+            Every line of boilerplate code is a missed opportunity for
+            innovation. Arkos.js exists to give developers back their time so
+            they can build what truly matters focusing on the core business
+            logic.
+          </TestimonialCard>
         </section>
 
         <PoweredBySection />

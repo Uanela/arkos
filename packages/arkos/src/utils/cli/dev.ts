@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from "child_process";
+import { spawn, ChildProcess, execSync } from "child_process";
 import chokidar from "chokidar";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
@@ -37,6 +37,35 @@ export async function devCommand(options: DevOptions = {}) {
     if (!fs.existsSync(entryPoint)) {
       console.error(`Could not find application entry point at ${entryPoint}`);
       process.exit(1);
+    }
+
+    const baseServiceTypesPath = path.resolve(
+      process.cwd(),
+      `node_modules/@arkosjs/types/base.service.d.ts`
+    );
+    if (fileExt === "ts" && !fs.existsSync(baseServiceTypesPath)) {
+      const answer = await new Promise<boolean>((resolve) => {
+        sheu.warn(
+          'Missing base services types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client'
+        );
+        process.stdout.write(
+          `\n${sheu.green("?", { bold: true })} Would you like to run "npx arkos prisma generate"? (Y/n): `
+        );
+        process.stdin.once("data", (data) => {
+          const result = data.toString().trim().toLowerCase();
+          process.stdin.pause();
+          resolve(result === "y" || result.length === 0);
+        });
+      });
+
+      if (answer) {
+        console.info("\nSyncing base service with @prisma/client...");
+        console.log("");
+        execSync(`npx arkos prisma generate`);
+      } else
+        throw Error(
+          'Missing BaseService types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client, see more at https://www.arkosjs.com/docs/cli/built-in-cli#typescript-types-generation.'
+        );
     }
 
     const getEnv = () =>
@@ -172,7 +201,8 @@ export async function devCommand(options: DevOptions = {}) {
       cleanup();
     });
   } catch (error) {
-    console.error("Development server failed to start:", error);
+    sheu.error("Development server failed to start:");
+    console.error(error);
 
     if (child) {
       (child as ChildProcess)?.kill?.();

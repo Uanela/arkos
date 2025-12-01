@@ -241,7 +241,7 @@ class ProjectConfigInquirer {
           type: "list",
           name: "authenticationType",
           message: "Choose authentication type:",
-          choices: ["static", "dynamic", "define later"],
+          choices: ["static", "dynamic"],
         },
       ]);
 
