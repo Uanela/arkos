@@ -23,6 +23,7 @@ import {
   generateRelativePath,
 } from "../../../../modules/file-upload/utils/helpers/file-upload.helpers";
 import deepmerge from "../../../helpers/deepmerge.helper";
+import { catchAsync } from "../../../../exports/error-handler";
 
 function determineUploadDir(file: Express.Multer.File) {
   if (file.mimetype.includes?.("image")) return "/images";
@@ -91,31 +92,33 @@ class UploadManager {
   }
 
   handleUpload(config: UploadConfig, oldFilePath?: string) {
-    return (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const middleware = this.getMiddleware(config);
-      req.headers["x-upload-dir"] = config.uploadDir;
-      middleware(req, res, async (err) => {
-        if (err) return next(err);
+    return catchAsync(
+      (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const middleware = this.getMiddleware(config);
+        req.headers["x-upload-dir"] = config.uploadDir;
+        middleware(req, res, async (err) => {
+          if (err) return next(err);
 
-        if (oldFilePath) {
-          const { fileUpload: configs } = getArkosConfig();
+          if (oldFilePath) {
+            const { fileUpload: configs } = getArkosConfig();
 
-          const filePath = path.resolve(
-            process.cwd(),
-            removeBothSlashes(configs?.baseUploadDir!),
-            removeBothSlashes(oldFilePath)
-          );
-          try {
-            const stats = await promisify(fs.stat)(filePath);
-            if (stats) await promisify(fs.unlink)(filePath);
-          } catch (err) {
-            sheu.warn(err);
+            const filePath = path.resolve(
+              process.cwd(),
+              removeBothSlashes(configs?.baseUploadDir!),
+              removeBothSlashes(oldFilePath)
+            );
+            try {
+              const stats = await promisify(fs.stat)(filePath);
+              if (stats) await promisify(fs.unlink)(filePath);
+            } catch (err) {
+              sheu.warn(err);
+            }
           }
-        }
 
-        next();
-      });
-    };
+          next();
+        });
+      }
+    );
   }
 
   handleFileCleanup(config: UploadConfig) {
@@ -166,123 +169,125 @@ class UploadManager {
   }
 
   handlePostUpload(config: UploadConfig) {
-    return (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      const { baseURL, baseRoute } = extractRequestInfo(req);
-      const arkosConfig = getArkosConfig();
+    return catchAsync(
+      (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+        const { baseURL, baseRoute } = extractRequestInfo(req);
+        const arkosConfig = getArkosConfig();
 
-      const normalizePath = (filePath: string): string => {
-        let fullBaseUploadDir = path.resolve(
-          path.join(process.cwd(), arkosConfig.fileUpload?.baseUploadDir!)
-        );
-        fullBaseUploadDir = fullBaseUploadDir.replace(process.cwd(), "");
-
-        return filePath
-          .replace(/\\/g, "/")
-          .replaceAll(process.cwd(), "")
-          .replace(`/${fullBaseUploadDir}`, "")
-          .replace(fullBaseUploadDir, "");
-      };
-
-      const buildFileURL = (file: Express.Multer.File): string => {
-        const relativePath = generateRelativePath(
-          file.path,
-          req.headers["x-upload-dir"] as string
-        );
-        return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${
-          relativePath.startsWith("/") ? relativePath : `/${relativePath}`
-        }`;
-      };
-
-      const getAttachValue = (file: Express.Multer.File): any => {
-        const url = buildFileURL(file);
-
-        (file as any).url = url;
-        (file as any).pathname = normalizePath(file.path);
-
-        if (config.attachToBody === false) return undefined;
-        if (config.attachToBody === "pathname" || !config.attachToBody)
-          return (
-            (baseRoute === "/"
-              ? ""
-              : baseRoute.startsWith("/")
-                ? baseRoute
-                : `/${baseRoute}`) + normalizePath(file.path)
+        const normalizePath = (filePath: string): string => {
+          let fullBaseUploadDir = path.resolve(
+            path.join(process.cwd(), arkosConfig.fileUpload?.baseUploadDir!)
           );
-        if (config.attachToBody === "url") return url;
-        if (config.attachToBody === "file") return file;
+          fullBaseUploadDir = fullBaseUploadDir.replace(process.cwd(), "");
 
-        return undefined;
-      };
+          return filePath
+            .replace(/\\/g, "/")
+            .replaceAll(process.cwd(), "")
+            .replace(`/${fullBaseUploadDir}`, "")
+            .replace(fullBaseUploadDir, "");
+        };
 
-      const setNestedValue = (obj: any, path: string, value: any) => {
-        const keys = path.match(/[^\[\]]+/g) || [];
+        const buildFileURL = (file: Express.Multer.File): string => {
+          const relativePath = generateRelativePath(
+            file.path,
+            req.headers["x-upload-dir"] as string
+          );
+          return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${
+            relativePath.startsWith("/") ? relativePath : `/${relativePath}`
+          }`;
+        };
 
-        let current = obj;
-        for (let i = 0; i < keys.length - 1; i++) {
-          const key = keys[i];
-          if (!current[key]) {
-            const nextKey = keys[i + 1];
-            current[key] = /^\d+$/.test(nextKey) ? [] : {};
+        const getAttachValue = (file: Express.Multer.File): any => {
+          const url = buildFileURL(file);
+
+          (file as any).url = url;
+          (file as any).pathname = normalizePath(file.path);
+
+          if (config.attachToBody === false) return undefined;
+          if (config.attachToBody === "pathname" || !config.attachToBody)
+            return (
+              (baseRoute === "/"
+                ? ""
+                : baseRoute.startsWith("/")
+                  ? baseRoute
+                  : `/${baseRoute}`) + normalizePath(file.path)
+            );
+          if (config.attachToBody === "url") return url;
+          if (config.attachToBody === "file") return file;
+
+          return undefined;
+        };
+
+        const setNestedValue = (obj: any, path: string, value: any) => {
+          const keys = path.match(/[^\[\]]+/g) || [];
+
+          let current = obj;
+          for (let i = 0; i < keys.length - 1; i++) {
+            const key = keys[i];
+            if (!current[key]) {
+              const nextKey = keys[i + 1];
+              current[key] = /^\d+$/.test(nextKey) ? [] : {};
+            }
+            current = current[key];
           }
-          current = current[key];
-        }
 
-        const lastKey = keys[keys.length - 1];
-        current[lastKey] = value;
-      };
+          const lastKey = keys[keys.length - 1];
+          current[lastKey] = value;
+        };
 
-      try {
-        if (config.type === "single" && req.file) {
-          const value = getAttachValue(req.file);
+        try {
+          if (config.type === "single" && req.file) {
+            const value = getAttachValue(req.file);
 
-          if (value !== undefined && config.field) {
-            const bodyUpdate: any = {};
-            setNestedValue(bodyUpdate, config.field, value);
-            req.body = deepmerge(req.body || {}, bodyUpdate);
-          }
-        } else if (config.type === "array" && Array.isArray(req.files)) {
-          const values = req.files
-            .map((file) => getAttachValue(file))
-            .filter((v) => v !== undefined);
-
-          if (values.length > 0 && config.field) {
-            const bodyUpdate: any = {};
-            setNestedValue(bodyUpdate, config.field, values);
-            req.body = deepmerge(req.body || {}, bodyUpdate);
-          }
-        } else if (
-          config.type === "fields" &&
-          req.files &&
-          !Array.isArray(req.files)
-        ) {
-          const bodyUpdate: any = {};
-
-          for (const fieldName in req.files) {
-            const files = req.files[fieldName];
-            const values = files
+            if (value !== undefined && config.field) {
+              const bodyUpdate: any = {};
+              setNestedValue(bodyUpdate, config.field, value);
+              req.body = deepmerge(req.body || {}, bodyUpdate);
+            }
+          } else if (config.type === "array" && Array.isArray(req.files)) {
+            const values = req.files
               .map((file) => getAttachValue(file))
               .filter((v) => v !== undefined);
 
-            if (values.length > 0) {
-              const valueToAttach = values.length === 1 ? values[0] : values;
-              setNestedValue(bodyUpdate, fieldName, valueToAttach);
+            if (values.length > 0 && config.field) {
+              const bodyUpdate: any = {};
+              setNestedValue(bodyUpdate, config.field, values);
+              req.body = deepmerge(req.body || {}, bodyUpdate);
+            }
+          } else if (
+            config.type === "fields" &&
+            req.files &&
+            !Array.isArray(req.files)
+          ) {
+            const bodyUpdate: any = {};
+
+            for (const fieldName in req.files) {
+              const files = req.files[fieldName];
+              const values = files
+                .map((file) => getAttachValue(file))
+                .filter((v) => v !== undefined);
+
+              if (values.length > 0) {
+                const valueToAttach = values.length === 1 ? values[0] : values;
+                setNestedValue(bodyUpdate, fieldName, valueToAttach);
+              }
+            }
+
+            if (Object.keys(bodyUpdate).length > 0) {
+              req.body = deepmerge(req.body || {}, bodyUpdate);
             }
           }
-
-          if (Object.keys(bodyUpdate).length > 0) {
-            req.body = deepmerge(req.body || {}, bodyUpdate);
-          }
+        } catch (err: any) {
+          throw new AppError(
+            `File uploads post processing failed ${err.message}`,
+            500,
+            "FileUploadPostProcessError"
+          );
         }
-      } catch (err: any) {
-        throw new AppError(
-          `File uploads post processing failed ${err.message}`,
-          500,
-          "FileUploadPostProcessError"
-        );
-      }
 
-      next();
-    };
+        next();
+      }
+    );
   }
 
   /**

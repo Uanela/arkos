@@ -313,6 +313,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
       if (
         key in validators &&
         validators?.[key] !== undefined &&
+        validators?.[key] !== false &&
         !isValidValidator(validators[key])
       )
         throw Error(

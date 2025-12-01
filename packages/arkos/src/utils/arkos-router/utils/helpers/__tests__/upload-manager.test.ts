@@ -421,13 +421,15 @@ describe("UploadManager", () => {
       };
       mockReq.file = { path: "/uploads/file.jpg" };
 
+      const mockError = new Error("Processing error");
       mockGenerateRelativePath.mockImplementation(() => {
-        throw new Error("Processing error");
+        throw mockError;
       });
 
       const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
 
-      expect(() => middleware(mockReq, mockRes, mockNext)).toThrow();
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
