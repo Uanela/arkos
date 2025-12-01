@@ -66,9 +66,9 @@ export default function ArkosRouter(): IArkosRouter {
         ) {
           if (config.disabled) return;
 
-          const route = config.path;
+          const path = config.path;
 
-          if (!route)
+          if (!path)
             throw Error(
               "Please pass valid value for path field to use in your route"
             );
@@ -103,6 +103,7 @@ export default function ArkosRouter(): IArkosRouter {
           const validationConfig = arkosConfig.validation;
           const authenticationConfig = arkosConfig.authentication;
           const strictValidation = validationConfig?.strict;
+          const route = `${method.toUpperCase()} ${path}`;
 
           if (
             strictValidation &&
@@ -117,12 +118,12 @@ export default function ArkosRouter(): IArkosRouter {
 
           if (!validationConfig?.resolver && config.validation)
             throw Error(
-              "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
+              `Trying to pass validators into route ${route} config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })`
             );
 
           if (config.authentication && !authenticationConfig?.mode)
             throw Error(
-              "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
+              `Trying to authenticate route ${route} without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })`
             );
 
           handlers = [...getMiddlewareStack(config), ...handlers];
@@ -138,7 +139,7 @@ export default function ArkosRouter(): IArkosRouter {
               )
             );
 
-          return originalMethod.call(target, route, ...handlers);
+          return originalMethod.call(target, path, ...handlers);
         };
       }
       // }

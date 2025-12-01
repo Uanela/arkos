@@ -124,7 +124,10 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    setupRouters(router, { validation: { resolver: "zod" } });
+    setupRouters(router, {
+      validation: { resolver: "zod" },
+      authentication: { mode: "static" },
+    });
 
     expect(router.post).toHaveBeenCalledWith(
       {
@@ -247,7 +250,7 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    setupRouters(router, {});
+    setupRouters(router, { authentication: { mode: "static" } });
 
     expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -302,7 +305,7 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    setupRouters(router, {});
+    setupRouters(router, { authentication: { mode: "static" } });
 
     expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -358,7 +361,7 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    setupRouters(router, {});
+    setupRouters(router, { authentication: { mode: "static" } });
 
     expect(router.get).toHaveBeenCalledWith(
       {
@@ -431,11 +434,6 @@ describe("setupRouters", () => {
     expect(router.get).toHaveBeenCalledWith(
       {
         path: "/users",
-        authentication: {
-          action: "View",
-          resource: "user",
-          rule: undefined,
-        },
         disabled: false,
         validation: undefined,
         experimental: { openapi: false },
@@ -465,7 +463,7 @@ describe("setupRouters", () => {
     );
 
     // Call the function
-    setupRouters(router, {});
+    setupRouters(router, { authentication: { mode: "static" } });
 
     // Verify custom middleware is used - should spread the array
     expect(router.get).toHaveBeenCalledWith(
@@ -506,7 +504,7 @@ describe("setupRouters", () => {
   //   );
 
   //   try {
-  //     setupRouters(router, {});
+  //     setupRouters(router, { authentication: { mode: "static" } });
   //   } catch (err: any) {
   //     expect(err.message).toBe(
   //       expect.stringContaining("Invalid interceptor of type string")
@@ -529,9 +527,9 @@ describe("setupRouters", () => {
   //   );
 
   //   try {
-  //     // expect(() => setupRouters(router, {})).toThrow();
+  //     // expect(() => setupRouters(router, { authentication: { mode: "static" } })).toThrow();
   //   } catch {
-  //     expect(() => setupRouters(router, {})).toThrow();
+  //     expect(() => setupRouters(router, { authentication: { mode: "static" } })).toThrow();
   //   }
 
   // });
@@ -549,7 +547,7 @@ describe("setupRouters", () => {
   //   );
 
   //   try {
-  //     expect(() => setupRouters(router, {})).toThrow();
+  //     expect(() => setupRouters(router, { authentication: { mode: "static" } })).toThrow();
   //   } catch {}
 
   //   jest.clearAllMocks();
@@ -590,11 +588,6 @@ describe("setupRouters", () => {
     expect(router.post).toHaveBeenCalledWith(
       {
         path: "/users/many",
-        authentication: {
-          action: "Create",
-          resource: "user",
-          rule: undefined,
-        },
         disabled: false,
         validation: undefined,
         experimental: { openapi: false },
@@ -634,7 +627,9 @@ describe("setupRouters", () => {
       .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
       .mockReturnValue(["User", "Post"]);
 
-    const setupPromises = setupRouters(router, {});
+    const setupPromises = setupRouters(router, {
+      authentication: { mode: "static" },
+    });
     await Promise.all(await setupPromises);
 
     // Verify routes for both models were registered
@@ -672,7 +667,9 @@ describe("setupRouters", () => {
       .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
       .mockReturnValue(["Post"]);
 
-    const setupPromises = setupRouters(router, {});
+    const setupPromises = setupRouters(router, {
+      authentication: { mode: "static" },
+    });
     await Promise.all(await setupPromises);
 
     // Verify routes for both models were registered
@@ -714,7 +711,9 @@ describe("setupRouters", () => {
       .mockReturnValue(["Post"]);
 
     try {
-      const setupPromises = setupRouters(router, {});
+      const setupPromises = setupRouters(router, {
+        authentication: { mode: "static" },
+      });
       await Promise.all(await setupPromises);
 
       expect(setupRouters).toThrow(
@@ -782,11 +781,6 @@ describe("setupRouters", () => {
       expect(router.post).toHaveBeenCalledWith(
         {
           path: "/users/many",
-          authentication: {
-            action: "Create",
-            resource: "user",
-            rule: undefined,
-          },
           disabled: false,
           validation: undefined,
           experimental: { openapi: false },
@@ -826,6 +820,7 @@ describe("setupRouters", () => {
 
       // Mock arkosConfigs with class-validator resolver
       const arkosConfigs = {
+        authentication: { mode: "static" },
         validation: {
           resolver: "class-validator",
         },
@@ -879,6 +874,7 @@ describe("setupRouters", () => {
 
       // Mock arkosConfigs with zod resolver
       const arkosConfigs = {
+        authentication: { mode: "static" },
         validation: {
           resolver: "zod",
         },
@@ -924,9 +920,9 @@ describe("setupRouters", () => {
       );
 
       // Mock arkosConfigs without validation config
-      const arkosConfigs = {};
+      const arkosConfigs = { authentication: { mode: "static" } };
 
-      const setupPromises = setupRouters(router, arkosConfigs);
+      const setupPromises = setupRouters(router, arkosConfigs as any);
       await Promise.all(await setupPromises);
 
       // Should still register routes but without specific validation (tests line 342)
@@ -968,17 +964,12 @@ describe("setupRouters", () => {
 
       const arkosConfigs = {};
 
-      setupRouters(router, arkosConfigs);
+      setupRouters(router, arkosConfigs as any);
 
       // Should still register routes but without specific validation (tests line 342)
       expect(router.post).toHaveBeenCalledWith(
         {
           path: "/users",
-          authentication: {
-            action: "Create",
-            resource: "user",
-            rule: undefined,
-          },
           disabled: false,
           validation: undefined,
           experimental: { openapi: false },
@@ -1008,6 +999,7 @@ describe("setupRouters", () => {
       );
 
       const arkosConfigs = {
+        authentication: { mode: "static" },
         validation: {
           resolver: "unknown-resolver",
         },
@@ -1059,7 +1051,9 @@ describe("setupRouters", () => {
         mockModuleComponents
       );
 
-      const setupPromises = setupRouters(router, {});
+      const setupPromises = setupRouters(router, {
+        authentication: { mode: "static" },
+      });
       await Promise.all(await setupPromises);
 
       expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -1087,7 +1081,9 @@ describe("setupRouters", () => {
         mockModuleComponents
       );
 
-      const setupPromises = setupRouters(router, {});
+      const setupPromises = setupRouters(router, {
+        authentication: { mode: "static" },
+      });
       await Promise.all(await setupPromises);
 
       // Should not register GET /users because custom implementation exists
@@ -1116,7 +1112,7 @@ describe("setupRouters", () => {
         mockModuleComponents
       );
 
-      setupRouters(router, {});
+      setupRouters(router, { authentication: { mode: "static" } });
 
       expect(router.patch).not.toHaveBeenCalledWith(
         "/users",
@@ -1146,7 +1142,7 @@ describe("setupRouters", () => {
         mockModuleComponents
       );
 
-      setupRouters(router, {});
+      setupRouters(router, { authentication: { mode: "static" } });
 
       expect(router.delete).not.toHaveBeenCalledWith(
         "/users",

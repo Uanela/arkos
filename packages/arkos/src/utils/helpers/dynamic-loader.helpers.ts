@@ -1,6 +1,5 @@
 import { ArkosConfig, RouterConfig } from "../../exports";
 import fs from "fs";
-import deepmerge from "./deepmerge.helper";
 
 /**
  * Applies strict routing rules to module configuration
@@ -11,7 +10,7 @@ export function applyStrictRoutingRules<T extends string>(
   moduleConfig?: RouterConfig<T>
 ): RouterConfig<T> {
   const strictMode = arkosConfig?.routers?.strict || false;
-  let config: any = moduleConfig || ({} as RouterConfig<T>);
+  let config: any = moduleConfig ? { ...moduleConfig } : {};
   appModule = appModule.toLowerCase() as T;
 
   const allEndpoints =
@@ -40,30 +39,24 @@ export function applyStrictRoutingRules<T extends string>(
           ];
 
   const hadBooleanDisable = typeof config.disable === "boolean";
-
-  // IMPORTANT: Order matters in deepmerge!
-  // User config must be SECOND argument to override defaults
-
   if (hadBooleanDisable) {
     const disableValue = config.disable;
-    const disableObject: Record<string, boolean> = {};
-    const endpointConfigs: Record<string, any> = {};
+    config.disable = {};
 
     for (const endpoint of allEndpoints) {
-      (disableObject as any)[endpoint] = disableValue;
-      endpointConfigs[endpoint] = deepmerge((config as any)[endpoint] || {}, {
-        disabled: disableValue,
-      });
+      config.disable[endpoint] = disableValue;
+
+      if (!config[endpoint]) {
+        config[endpoint] = {};
+      }
+      config[endpoint].disabled = disableValue;
     }
 
-    return deepmerge(config as any, {
-      disable: disableObject,
-      ...endpointConfigs,
-    }) as RouterConfig<T>;
+    return config as RouterConfig<T>;
   }
 
   if (strictMode === true) {
-    const strictDefaults: any =
+    const strictDefaults: Record<string, boolean> =
       appModule === "auth"
         ? {
             getMe: true,
@@ -93,88 +86,56 @@ export function applyStrictRoutingRules<T extends string>(
               deleteMany: true,
             };
 
-    const disableConfig: any = deepmerge(
-      strictDefaults,
-      (config?.disable as any) || {}
-    );
-
-    const endpointConfigs: Record<string, any> = {};
-    for (const endpoint of Object.keys(strictDefaults)) {
-      endpointConfigs[endpoint] = deepmerge(
-        { disabled: strictDefaults[endpoint] },
-        (config as any)[endpoint] || {}
-      );
-    }
-
-    const syncedDisable: Record<string, boolean> = { ...disableConfig };
-    for (const endpoint of allEndpoints) {
-      const endpointDisabled = (config as any)[endpoint]?.disabled;
-      if (endpointDisabled !== undefined) {
-        syncedDisable[endpoint] = endpointDisabled;
-      }
-    }
-
-    const syncedEndpoints: Record<string, any> = { ...endpointConfigs };
-    for (const endpoint of allEndpoints) {
-      if (syncedDisable[endpoint] !== undefined) {
-        syncedEndpoints[endpoint] = deepmerge(syncedEndpoints[endpoint] || {}, {
-          disabled: syncedDisable[endpoint],
-        });
-      }
-    }
-
-    return deepmerge(config as any, {
-      disable: syncedDisable,
-      ...syncedEndpoints,
-    }) as RouterConfig<T>;
+    applyDisabledFlags(config, allEndpoints, strictDefaults);
   } else if (
     strictMode === "no-bulk" &&
     !["auth", "file-upload"].includes(appModule.toLowerCase())
   ) {
-    const noBulkDefaults: any = {
+    const noBulkDefaults: Record<string, boolean> = {
       createMany: true,
       updateMany: true,
       deleteMany: true,
     };
 
-    const disableConfig: any = deepmerge(
-      noBulkDefaults,
-      (config.disable as any) || {}
-    );
-
-    const endpointConfigs: Record<string, any> = {};
-    for (const endpoint of Object.keys(noBulkDefaults)) {
-      endpointConfigs[endpoint] = deepmerge(
-        { disabled: noBulkDefaults[endpoint] },
-        (config as any)[endpoint] || {}
-      );
-    }
-
-    const syncedDisable: Record<string, boolean> = { ...disableConfig };
-    for (const endpoint of allEndpoints) {
-      const endpointDisabled = (config as any)[endpoint]?.disabled;
-      if (endpointDisabled !== undefined) {
-        syncedDisable[endpoint] = endpointDisabled;
-      }
-    }
-
-    const syncedEndpoints: Record<string, any> = { ...endpointConfigs };
-    for (const endpoint of allEndpoints) {
-      if (syncedDisable[endpoint] !== undefined) {
-        syncedEndpoints[endpoint] = deepmerge(
-          { disabled: syncedDisable[endpoint] },
-          syncedEndpoints[endpoint] || {}
-        );
-      }
-    }
-
-    return deepmerge(config as any, {
-      disable: syncedDisable,
-      ...syncedEndpoints,
-    }) as RouterConfig<T>;
+    applyDisabledFlags(config, allEndpoints, noBulkDefaults);
   }
 
-  return config;
+  return config as RouterConfig<T>;
+}
+
+function applyDisabledFlags(
+  config: any,
+  allEndpoints: string[],
+  defaults: Record<string, boolean>
+): void {
+  if (!config.disable || typeof config.disable === "boolean") {
+    config.disable = {};
+  }
+
+  for (const endpoint of allEndpoints) {
+    const defaultDisabled = defaults[endpoint];
+    const userDisableOverride = config.disable[endpoint];
+    const endpointDisabled = config[endpoint]?.disabled;
+
+    let finalDisabled: boolean | undefined;
+
+    if (endpointDisabled !== undefined) {
+      finalDisabled = endpointDisabled;
+    } else if (userDisableOverride !== undefined) {
+      finalDisabled = userDisableOverride;
+    } else if (defaultDisabled !== undefined) {
+      finalDisabled = defaultDisabled;
+    }
+
+    if (finalDisabled !== undefined) {
+      config.disable[endpoint] = finalDisabled;
+
+      if (!config[endpoint]) {
+        config[endpoint] = {};
+      }
+      config[endpoint].disabled = finalDisabled;
+    }
+  }
 }
 
 export function validateRouterConfigConsistency(

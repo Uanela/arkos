@@ -1,23 +1,17 @@
-import arkos from 'arkos';
+import arkos from "arkos";
+import { ArkosRouter } from "arkos";
 
-arkos.init({
-  cors: {
-    allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+const router = ArkosRouter();
+
+router.post(
+  {
+    path: "/api/test",
+    bodyParser: [{ parser: "json" }, { parser: "multipart" }],
   },
-  authentication: {
-    mode: 'static',
-    login: {
-      allowedUsernames: ['username'],
-    }
-  },
-  routers: {
-    strict: true
-  },
-  validation: {
-    resolver: 'zod'
-  },
-  swagger: {
-    mode: 'zod', 
-    strict: false,
+  (req, res, next) => {
+    console.log(req.body);
+    res.json({ message: req.body });
   }
-});
+);
+
+arkos.init({ use: [router] });

@@ -1,5 +1,5 @@
 import { getMetadataStorage } from "class-validator";
-import { defaultMetadataStorage } from "class-transformer/cjs/storage";
+import { defaultMetadataStorage } from "class-transformer/cjs/storage.js";
 import { validationMetadatasToSchemas } from "class-validator-jsonschema";
 
 export default function classValidatorToJsonSchema(

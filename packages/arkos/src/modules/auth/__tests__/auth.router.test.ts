@@ -411,7 +411,7 @@ describe("Auth Router", () => {
       prismaQueryOptions: mockPrismaQueryOptions,
     });
 
-    getAuthRouter({});
+    getAuthRouter({ authentication: { mode: "static" } });
 
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(

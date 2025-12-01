@@ -1,1 +1,1 @@
-declare module "class-transformer/cjs/storage";
+declare module "class-transformer/cjs/storage.js";

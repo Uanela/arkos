@@ -12,6 +12,8 @@ import {
 import { isEndpointDisabled } from "../../modules/base/utils/helpers/base.router.helpers";
 import deepmerge from "./deepmerge.helper";
 import { ArkosRouteConfig } from "../arkos-router/types";
+import { getArkosConfig } from "./arkos-config.helpers";
+import { ArkosConfig } from "../../exports";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
   if (middleware && typeof middleware !== "function")
@@ -103,6 +105,7 @@ export function getAuthenticationConfig(
  * @returns Route configuration object
  */
 export function createRouteConfig(
+  arkosConfig: ArkosConfig,
   endpoint: RouterEndpoint | AuthRouterEndpoint,
   routeName: string,
   path: string,
@@ -114,10 +117,12 @@ export function createRouteConfig(
   let config: ArkosRouteConfig = {
     path: `/${routeName}${path}`,
     disabled: isEndpointDisabled(routerConfig, endpoint),
-    authentication:
-      typeof authConfigs === "boolean"
-        ? authConfigs
-        : getAuthenticationConfig(endpoint, modelNameInKebab, authConfigs),
+    ...(arkosConfig.authentication?.mode && {
+      authentication:
+        typeof authConfigs === "boolean"
+          ? authConfigs
+          : getAuthenticationConfig(endpoint, modelNameInKebab, authConfigs),
+    }),
     validation: validationSchema ? { body: validationSchema } : undefined,
     experimental: { openapi: false },
   };
