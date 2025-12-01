@@ -13,15 +13,13 @@ describe("JavaScript config template rendering", () => {
 
     const result = renderTemplate(templatePath, context);
 
-    // Parse the result as JSON to ensure it's valid
     const config = JSON.parse(result);
 
-    // Check compiler options
     expect(config.compilerOptions).toBeDefined();
     expect(config.compilerOptions.target).toBe("ES6");
     expect(config.compilerOptions.module).toBe("Node16");
     expect(config.compilerOptions.moduleResolution).toBe("node16");
-    expect(config.compilerOptions.rootDir).toBe("./src");
+    expect(config.compilerOptions.rootDir).toBe(".");
     expect(config.compilerOptions.sourceMap).toBe(true);
     expect(config.compilerOptions.esModuleInterop).toBe(true);
     expect(config.compilerOptions.forceConsistentCasingInFileNames).toBe(true);
@@ -75,7 +73,7 @@ describe("JavaScript config template rendering", () => {
     expect(result).toContain('"target": "ES6"');
     expect(result).toContain('"module": "Node16"');
     expect(result).toContain('"moduleResolution": "node16"');
-    expect(result).toContain('"rootDir": "./src"');
+    expect(result).toContain('"rootDir": "."');
     expect(result).toContain('"sourceMap": true');
     expect(result).toContain('"esModuleInterop": true');
     expect(result).toContain('"forceConsistentCasingInFileNames": true');

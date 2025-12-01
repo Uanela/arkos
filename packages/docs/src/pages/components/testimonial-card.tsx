@@ -28,7 +28,7 @@ export default function TestimonialCard({
 
         <div className="flex flex-col">
           <span className="text-white font-medium text-sm">{name}</span>
-          <span className="text-slate-400 text-sm line-clamp-1">
+          <span className="text-slate-400 text-sm">
             {role} / <span className="text-sky-400">{projectName}</span>
           </span>
         </div>
