@@ -8,6 +8,7 @@ import compression from "compression";
 import { queryParser } from "../../../helpers/query-parser.helpers";
 import uploadManager from "./upload-manager";
 import multer from "multer";
+import { catchAsync } from "../../../../exports/error-handler";
 
 export function extractArkosRoutes(
   app: any,
@@ -104,9 +105,11 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
     parsers.forEach((parser) => {
       if (typeof parser === "object" && parser.parser)
         if (parser.parser !== "multipart")
-          middlewares.push(express[parser.parser](parser.options));
+          middlewares.push(catchAsync(express[parser.parser](parser.options)));
         else if (parser.parser === "multipart")
-          middlewares.push(multer({ limits: parser.options }).none());
+          middlewares.push(
+            catchAsync(multer({ limits: parser.options }).none())
+          );
     });
   }
 
