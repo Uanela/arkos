@@ -93,7 +93,7 @@ describe("ArkosRouter", () => {
       proxied.get({ path: "/api/cacilda", validation: {} });
     } catch (err: any) {
       expect(err.message).toBe(
-        "Trying to pass validators into route config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
+        "Trying to pass validators into route GET /api/cacilda config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
       );
     }
   });
@@ -105,7 +105,7 @@ describe("ArkosRouter", () => {
       proxied.get({ path: "/api/cacilda", authentication: {} });
     } catch (err: any) {
       expect(err.message).toBe(
-        "Trying to authenticate a route without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
+        "Trying to authenticate route GET /api/cacilda without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
       );
     }
   });

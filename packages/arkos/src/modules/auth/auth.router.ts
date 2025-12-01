@@ -21,7 +21,7 @@ import ArkosRouter from "../../utils/arkos-router";
 
 const router = ArkosRouter();
 
-export function getAuthRouter(arkosConfigs: ArkosConfig) {
+export function getAuthRouter(arkosConfig: ArkosConfig) {
   const {
     interceptors,
     dtos,
@@ -50,7 +50,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   const getValidationSchemaOrDto = (
     key: "updateMe" | "updatePassword" | "login" | "signup"
   ) => {
-    const validationConfigs = arkosConfigs?.validation;
+    const validationConfigs = arkosConfig?.validation;
     if (validationConfigs?.resolver === "class-validator") return dtos?.[key];
     else if (validationConfigs?.resolver === "zod") return schemas?.[key];
 
@@ -60,7 +60,15 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   // GET /users/me - Get current user
   if (!isEndpointDisabled(routerConfig, "getMe")) {
     router.get(
-      createRouteConfig("getMe", "users", "/me", routerConfig, "auth", true),
+      createRouteConfig(
+        arkosConfig,
+        "getMe",
+        "users",
+        "/me",
+        routerConfig,
+        "auth",
+        true
+      ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "getMe"
@@ -77,6 +85,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   if (!isEndpointDisabled(routerConfig, "updateMe")) {
     router.patch(
       createRouteConfig(
+        arkosConfig,
         "updateMe",
         "users",
         "/me",
@@ -100,7 +109,15 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   // DELETE /users/me - Delete current user
   if (!isEndpointDisabled(routerConfig, "deleteMe")) {
     router.delete(
-      createRouteConfig("deleteMe", "users", "/me", routerConfig, "auth", true),
+      createRouteConfig(
+        arkosConfig,
+        "deleteMe",
+        "users",
+        "/me",
+        routerConfig,
+        "auth",
+        true
+      ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
         "deleteMe"
@@ -135,7 +152,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
               });
             },
           },
-          arkosConfigs?.authentication?.rateLimit || {}
+          arkosConfig?.authentication?.rateLimit || {}
         )
       )
     );
@@ -145,6 +162,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   if (!isEndpointDisabled(routerConfig, "login")) {
     router.post(
       createRouteConfig(
+        arkosConfig,
         "login",
         "auth",
         "/login",
@@ -169,6 +187,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   if (!isEndpointDisabled(routerConfig, "logout")) {
     router.delete(
       createRouteConfig(
+        arkosConfig,
         "logout",
         "auth",
         "/logout",
@@ -188,6 +207,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   if (!isEndpointDisabled(routerConfig, "signup")) {
     router.post(
       createRouteConfig(
+        arkosConfig,
         "signup",
         "auth",
         "/signup",
@@ -212,6 +232,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   if (!isEndpointDisabled(routerConfig, "updatePassword")) {
     router.post(
       createRouteConfig(
+        arkosConfig,
         "updatePassword",
         "auth",
         "/update-password",
@@ -238,6 +259,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   if (!isEndpointDisabled(routerConfig, "findManyAuthAction")) {
     router.get(
       createRouteConfig(
+        arkosConfig,
         "findManyAuthAction",
         "auth-actions",
         "",
@@ -259,6 +281,7 @@ export function getAuthRouter(arkosConfigs: ArkosConfig) {
   if (!isEndpointDisabled(routerConfig, "findOneAuthAction")) {
     router.get(
       createRouteConfig(
+        arkosConfig,
         "findOneAuthAction",
         "auth-actions",
         "/:resourceName",

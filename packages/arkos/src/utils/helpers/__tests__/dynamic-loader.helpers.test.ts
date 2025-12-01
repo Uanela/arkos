@@ -4,6 +4,7 @@ import {
   validateRouterConfigConsistency,
 } from "../dynamic-loader.helpers";
 import { ArkosConfig, RouterConfig } from "../../../exports";
+import bodyParser from "body-parser";
 
 // Mock the dynamic-loader helpers
 jest.mock("../../dynamic-loader", () => ({
@@ -140,6 +141,17 @@ describe("applyStrictRoutingRules", () => {
           findMany: true,
           updateMany: true,
           deleteMany: true,
+        });
+      });
+
+      it("should correctly keep bodyParser config", () => {
+        const result = applyStrictRoutingRules("user", strictArkosConfig, {
+          createOne: { bodyParser: [{ parser: "multipart" }] },
+        });
+
+        expect(result.createOne).toEqual({
+          disabled: true,
+          bodyParser: [{ parser: "multipart" }],
         });
       });
 

@@ -24,7 +24,7 @@ import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
 
-export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
+export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
     const modelModules = getModuleComponents(modelNameInKebab) || {};
@@ -58,7 +58,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     const getValidationSchemaOrDto = (
       key: "create" | "update" | "createMany" | "updateMany"
     ) => {
-      const validationConfigs = arkosConfigs?.validation;
+      const validationConfigs = arkosConfig?.validation;
       if (validationConfigs?.resolver === "class-validator") {
         return (dtos as any)?.[key];
       } else if (validationConfigs?.resolver === "zod") {
@@ -80,6 +80,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     if (!hasCustomImplementation(`/${routeName}`, "post")) {
       router.post(
         createRouteConfig(
+          arkosConfig,
           "createOne",
           routeName,
           "",
@@ -104,6 +105,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     if (!hasCustomImplementation(`/${routeName}`, "get")) {
       router.get(
         createRouteConfig(
+          arkosConfig,
           "findMany",
           routeName,
           "",
@@ -127,6 +129,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     if (!hasCustomImplementation(`/${routeName}/many`, "post")) {
       router.post(
         createRouteConfig(
+          arkosConfig,
           "createMany",
           routeName,
           "/many",
@@ -151,6 +154,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     if (!hasCustomImplementation(`/${routeName}/many`, "patch")) {
       router.patch(
         createRouteConfig(
+          arkosConfig,
           "updateMany",
           routeName,
           "/many",
@@ -174,6 +178,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     if (!hasCustomImplementation(`/${routeName}/many`, "delete")) {
       router.delete(
         createRouteConfig(
+          arkosConfig,
           "deleteMany",
           routeName,
           "/many",
@@ -197,6 +202,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     if (!hasCustomImplementation(`/${routeName}/:id`, "get")) {
       router.get(
         createRouteConfig(
+          arkosConfig,
           "findOne",
           routeName,
           "/:id",
@@ -220,6 +226,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     if (!hasCustomImplementation(`/${routeName}/:id`, "patch")) {
       router.patch(
         createRouteConfig(
+          arkosConfig,
           "updateOne",
           routeName,
           "/:id",
@@ -244,6 +251,7 @@ export function setupRouters(router: IArkosRouter, arkosConfigs: ArkosConfig) {
     if (!hasCustomImplementation(`/${routeName}/:id`, "delete")) {
       router.delete(
         createRouteConfig(
+          arkosConfig,
           "deleteOne",
           routeName,
           "/:id",

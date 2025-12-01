@@ -26,8 +26,15 @@ const serverReplacements: ServerReplacement[] = [
   },
   {
     filePath: "dist/esm/utils/helpers/arkos-config.helpers.js",
-    replacement: `import { importModule } from "./global.helpers";
-import { getUserFileExtension, crd } from "./fs.helpers";
+    replacement: `import { importModule } from "./global.helpers.js";
+import { getUserFileExtension, crd } from "./fs.helpers.js";
+`,
+    old: '("ReplaceWithNeededImportsForArkosConfig");',
+  },
+  {
+    filePath: "dist/esm/utils/helpers/arkos-config.helpers.js",
+    replacement: `import { importModule } from "./global.helpers.js";
+import { getUserFileExtension, crd } from "./fs.helpers.js";
 `,
     old: '("ReplaceWithNeededImportsForArkosConfig");',
   },

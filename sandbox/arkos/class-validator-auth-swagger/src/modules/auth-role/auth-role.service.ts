@@ -1,7 +1,7 @@
 import { BaseService } from "arkos/services";
-import { Prisma } from "@prisma/client"
+import { Prisma } from "@prisma/client";
 
-class AuthRoleService extends BaseService<Prisma.AuthRoleDelegate> {}
+class AuthRoleService extends BaseService<"auth-role"> {}
 
 const authRoleService = new AuthRoleService("auth-role");
 

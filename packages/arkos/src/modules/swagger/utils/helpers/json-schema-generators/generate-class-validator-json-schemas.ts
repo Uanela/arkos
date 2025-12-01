@@ -4,7 +4,7 @@ import { getModuleComponents } from "../../../../../utils/dynamic-loader";
 import { getCorrectJsonSchemaName } from "../swagger.router.helpers";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 import { getUserFileExtension } from "../../../../../utils/helpers/fs.helpers";
-import { defaultMetadataStorage } from "class-transformer/cjs/storage";
+import { defaultMetadataStorage } from "class-transformer/cjs/storage.js";
 
 export function generateClassValidatorJsonSchemas() {
   const requiredAppModules = [

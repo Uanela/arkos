@@ -407,7 +407,10 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(mockApplyStrictRoutingRules).toHaveBeenCalledWith(
         "User",
         arkosConfig,
-        { some: "/users", findMany: { experimental: { openapi: {} } } }
+        {
+          some: "/users",
+          findMany: { disabled: true, experimental: { openapi: {} } },
+        }
       );
     });
 
