@@ -36,11 +36,10 @@
 
 ### Add
 
+- make first stable debugging workable
 - add batch update and delete on services and control
 
 ### Change
-
-- make first stable debugging workable
 
 ### Fix
 
@@ -59,35 +58,67 @@
 
 ### Add
 
-- add `FileUpload` model to handle files uploads kind of like in django ORM.
-- separete the cli to own package cli (`arkos/cli`) -> it is basically development required.
-- add dtos generation into cli
-- add a configuration process to customize global context object
-- mimic base service class behavior into auth service
-- mimic file upload service class behavior into auth service
-- Show suggestion to add invalid --model params components in folders out of module
-- analyze custom forbidden error message per action
-- add docker-compose file into `create-arkos`
 - add automatic middleware to handle request data with files (just like native multer) and auto replace the urls on the specified field.
-- allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
-- change the paramter type of ServiceHookArgs to receive data type as second parameter "BeforeCreateOneHookArgs<Prisma.ProductDelegate, CreateProductDto>"
-- add question about unknow modules when generating compoents -> like to generate in another place
-- add custom validation options under arkos configuration.
+- add `FileUpload` model to handle files uploads kind of like in django ORM.
+- add the api features options under `ArkosRouter`
+- add rate limiting in `ArkosRouter`
+- Throw an error when trying to generate component for unknow modules
+- add correct logic to only allowedOrigins from ArkosConfig if there is nothing in the RouteConfig
+- Add depth search operation under models endpoints.
 
 ### Change
 
-- separete what goes into `arkos.init()` and `arkos.config.ts`.
-- change .middlewares to .interceptor - as it is basically working just like a reference (router alike) when using array of middlewares which will be used on most project. also allowing devs to use .middlewares to actually store the middlewares functions.
-
 ### Remove
 
-- completely remove support for `.prima-query-options.{js|ts}` and `.auht-configs.{js|ts}`
-
 ### Deprecate
-
-- deprecate .middlewares.ts files in favor of .interceptors.ts, add warnings to change, and also warn when find .middlewares.ts and .interceptors.ts with same structure tell which one will be used
 
 ### Annoucment
 
 - Announce the batch and delete methods
+- Announce debugging
+
+## DOING
+
+### Add
+
+- add stable `debugging` with all levels correctly working
+
+## DONE
+
+### Add
+
+- add dtos generation into cli
+- Automatic wrap handlers into catchAsync when using `ArkosRouter()`
+- added a new `ArkosRouter` a simple `Router` wrapper to enhance features
+- allowed nested update without id field
+
+### Deprecated
+
+- deprecated .middlewares.ts files in favor of .interceptors.ts, add warnings to change, and also warn when find .middlewares.ts and .interceptors.ts with same structure tell which one will be used
+
+### Changed
+
+- improved base service and base controller classes by identifying common behaviors among the methods (refactor).
+- changed router template to use ArkosRouter by default
+- no need to wrap handlers into catchAsync when using `ArkosRouter()`
+- order of `ArkosRequest<Params, Body, Query>` types
+
+### Removed
+
+- completely removed support for `.prima-query-options.{js|ts}` and `.auht-configs.{js|ts}` in favor of `.query.ts` and `.auth.ts`
+
+# Canary Notes v1.5.0-beta
+
+### Add
+
+- add a configuration process to customize global context object (`analyze very well because can fall into FAT MODELS trap (using service layer)`)
+- add custom validation options under arkos configuration.
+- add docker-compose file into `create-arkos`
+- allow exporting json of auth role and permissions, allows auto-updating and adding missing fields when exported to existing json file.
+- add question about unknow modules when generating compoents -> like to generate in another place
+
+### Change
+
+- separete what goes into `arkos.init()` and `arkos.config.ts`.
+- separete the cli to own package cli (`arkos/cli`) -> it is basically development required.
 - tell about the new support for usernameFields, `user.profile.nickname` can now be written like `user__profile__nickname` to match pattern used in `req.query`

@@ -213,7 +213,7 @@ describe("startCommand", () => {
       .spyOn(require("../../../server"), "getArkosConfig")
       .mockResolvedValue({ getArkosConfig: () => ({ available: true }) });
 
-    (importModule as jest.Mock).mockImplementation(async (path) => {
+    (importModule as jest.Mock).mockImplementation(async () => {
       return {
         getArkosConfig: () => ({ available: true }),
       };

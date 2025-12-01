@@ -1272,6 +1272,14 @@ describe("BaseService", () => {
 
       const results = await baseService.batchUpdate(dataArray);
 
+      expect(mockPrisma.post.update).toHaveBeenCalledWith({
+        data: { title: "Updated Title 1" },
+        where: { id: "1" },
+      });
+      expect(mockPrisma.post.update).toHaveBeenCalledWith({
+        data: { title: "Updated Title 2" },
+        where: { id: "2" },
+      });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(results).toHaveLength(2);
       expect(results[0]).toEqual({ id: "1", title: "Updated Title 1" });

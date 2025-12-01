@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "description": "The Express & Prisma Framework For RESTful API",
+  "scripts": {
+    "build:arkos": "",
+    "publish:arkos": "",
+    "build:create-arkos": "",
+    "publish:create-arkos": ""
+  },
   "license": "MIT",
   "engines": {
     "node": ">=16.0.0",

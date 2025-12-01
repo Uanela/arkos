@@ -1,0 +1,43 @@
+{{#if typescript}}
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const beforeFindFile = [];
+
+export const beforeUploadFile = [];
+
+export const afterUploadFile = [];
+
+export const onUploadFileError = [];
+
+export const beforeUpdateFile = [];
+
+export const afterUpdateFile = [];
+
+export const onUpdateFileError = [];
+
+export const beforeDeleteFile = [];
+
+export const afterDeleteFile = [];
+
+export const onDeleteFileError = [];
+{{else}}
+export const beforeFindFile = [];
+
+export const beforeUploadFile = [];
+
+export const afterUploadFile = [];
+
+export const onUploadFileError = [];
+
+export const beforeUpdateFile = [];
+
+export const afterUpdateFile = [];
+
+export const onUpdateFileError = [];
+
+export const beforeDeleteFile = [];
+
+export const afterDeleteFile = [];
+
+export const onDeleteFileError = [];
+{{/if}}

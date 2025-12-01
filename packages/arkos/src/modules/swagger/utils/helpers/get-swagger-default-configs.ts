@@ -3,11 +3,11 @@ import { ArkosConfig } from "../../../../exports";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
 import portAndHostAllocator from "../../../../utils/features/port-and-host-allocator";
 
-export default async function getSwaggerDefaultConfig(
+export default function getSwaggerDefaultConfig(
   defaultModelsPaths: Record<string, any>,
   defaultJsonSchemas: OpenAPIV3.PathsObject<{}, {}>
 ) {
-  const portAndHost = await portAndHostAllocator.getHostAndAvailablePort({});
+  const portAndHost = portAndHostAllocator;
 
   return {
     endpoint: "/docs",
@@ -24,7 +24,7 @@ export default async function getSwaggerDefaultConfig(
         },
         servers: [
           {
-            url: `http://${portAndHost.host}:${portAndHost.port}`,
+            url: `http://${["0.0.0.0", "localhost", "127.0.0.1"].includes(portAndHost.host!) ? "localhost" : portAndHost.host}:${portAndHost.port}`,
             description: `Local ${capitalize(process.env.NODE_ENV || "development")} Server`,
           },
         ],

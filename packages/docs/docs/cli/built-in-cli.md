@@ -1,6 +1,9 @@
 ---
 sidebar_position: 14
+title: Arkos CLI
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # Built-in Arkos.js CLI
 
@@ -31,7 +34,27 @@ arkos [command] [options]
 | `arkos generate router` | `arkos g r` | Generate a new router |
 | `arkos generate auth-configs` | `arkos g a` | Generate auth configuration |
 | `arkos generate query-options` | `arkos g q` | Generate Prisma query options |
-| `arkos generate middlewares` | `arkos g m` | Generate middleware file |
+| `arkos generate middlewares` | `arkos g m` | Generate interceptors file |
+| `arkos generate interceptors` | `arkos g i` | Generate interceptors file |
+
+:::info
+The command `arkos generate interceptors` is the recommend from `v1.4.0-beta` when wanting to generate interceptor middlwares.
+:::
+
+
+### Utilities Exportation Commands
+> Available from `v1.4.0-beta`
+
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `arkos export auth-action` | `arkos e ac` | Exports all auth-actions |
+
+### Typescript Types Generation
+> Available from `v1.4.0-beta`
+
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `arkos prisma generate` | `arkos p g` | Generate prisma client types and sync arkos internal types with the prisma client for better typescript |
 
 ## Development Server
 
@@ -160,13 +183,9 @@ arkos g c -m user
 ```typescript
 import { BaseController } from "arkos/controllers";
 
-class UserController extends BaseController {
-  constructor() {
-    super("user");
-  }
-}
+class UserController extends BaseController {  }
 
-const userController = new UserController();
+const userController = new UserController("user");
 
 export default userController;
 ```
@@ -183,30 +202,49 @@ arkos generate service --model user
 arkos g s -m user
 ```
 
-Is worth mentioning that beside your models name, the option `--model` or `-m` (which are the same) can also take values such as:
+Is worth mentioning that beside your models name, the option `--module` (`v1.4.0+`), `modle` (`v1.3.0 and earlier`) or `-m` (which are the same) can also take values such as:
 
 - **auth**: will generate the component you want to generate but for the `Authentication` module as they slightly differ on some classes and simple implementations.
 - **file-upload**: will generate the component you want to genreate but for the `File Upload` module as they also slightly differ on some simple implementations.
 
 :::warning
-Even though the `--model` or `-m` option can take values such as `auth` and `file-upload` for component generation, not all components are available for both
+Even though the `--model`,`--module`, `-m` option can take values such as `auth` and `file-upload` for component generation, not all components are available for both
 :::
 
 **Generated Template:**
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+import { BaseService } from "arkos/services";
+
+class UserService extends BaseService<"user"> {
+  // Add your custom service methods here
+}
+
+const userService = new UserService("user");
+
+export default userService;
+```
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
 ```typescript
 import { prisma } from "../../utils/prisma";
 import { BaseService } from "arkos/services";
 
 class UserService extends BaseService<typeof prisma.user> {
-  constructor() {
-    super("user");
-  }
   // Add your custom service methods here
 }
 
-const userService = new UserService();
+const userService = new UserService("user");
+
 export default userService;
 ```
+
+</TabItem>
+</Tabs>
 
 **Features:**
 - Extends `BaseService` with Prisma type safety
@@ -216,7 +254,7 @@ export default userService;
 ### Router Generation
 
 ```bash
-arkos generate router --model User
+arkos generate router --module User
 arkos g r -m User
 ```
 
@@ -247,7 +285,7 @@ export default userRouter
 ### Auth Configuration Generation
 
 ```bash
-arkos generate auth-configs --model user
+arkos generate auth-configs --module user
 arkos g a -m user
 ```
 
@@ -256,16 +294,16 @@ Generates authentication configuration for role-based access control.
 ### Query Options Generation
 
 ```bash
-arkos generate query-options --model user
+arkos generate query-options --module user
 arkos g q -m user
 ```
 
 **Generated Template:**
 ```typescript
-import { prisma } from "../../utils/prisma";
+import { Prisma } from "@prisma/client";
 import { PrismaQueryOptions } from 'arkos/prisma';
 
-const userQueryOptions: PrismaQueryOptions<typeof prisma.user> = {
+const userQueryOptions: PrismaQueryOptions<Prisma.UserDelete> = {
     global: {},
     find: {},
     findOne: {},
@@ -292,12 +330,25 @@ export default userQueryOptions;
 - Supports all CRUD operations
 - Special handling for auth models
 
-### Middleware Generation
+### Interceptors Generation
+
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 ```bash
-arkos generate middlewares --model user
+arkos generate interceptors --module user
+arkos g i -m user
+```
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```bash
+arkos generate middlewares --module user
 arkos g m -m user
 ```
+</TabItem>
+</Tabs>
 
 Generates custom intercpetor middlewares files for request processing.
 
@@ -381,7 +432,7 @@ The CLI provides detailed feedback:
 
 ```bash
 # Development server with file change notifications
-12:34:56 Restarting: user.controller.ts changed
+12:34:56 [Info] Restarting: user.controller.ts changed
 
 # Build process with environment info
   Arkos.js 1.0.0

@@ -64,7 +64,7 @@ describe("TemplateCompiler", () => {
       expect(skippedFiles).toContain("auth-role.prisma.hbs");
       expect(skippedFiles).toContain("user-role.prisma.hbs");
       expect(skippedFiles).toContain("login.schema.ts.hbs");
-      expect(skippedFiles).toContain("auth.middlewares.ts.hbs");
+      expect(skippedFiles).toContain("auth.interceptors.ts.hbs");
       expect(skippedFiles).toContain("user.service.ts.hbs");
     });
 

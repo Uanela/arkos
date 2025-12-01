@@ -42,7 +42,7 @@ describe("generateTemplate", () => {
 
     it("should generate router template", () => {
       const result = generateTemplate("router", { modelName: mockModelName });
-      expect(result).toContain("const userRouter = Router()");
+      expect(result).toContain("const userRouter = ArkosRouter()");
     });
 
     it("should generate auth-configs template", () => {
@@ -119,10 +119,7 @@ describe("generateTemplate", () => {
       mockedGetUserFileExtension.mockReturnValue("ts");
       const result = generateTemplate("service", { modelName: mockModelName });
 
-      expect(result).toContain('import { Prisma } from "@prisma/client"');
-      expect(result).toContain(
-        "class UserService extends BaseService<Prisma.UserDelegate>"
-      );
+      expect(result).toContain('class UserService extends BaseService<"user">');
     });
 
     it("should generate TypeScript service template from special modules", () => {
@@ -182,16 +179,14 @@ describe("generateTemplate", () => {
 
       const result = generateTemplate("router", { modelName: mockModelName });
 
-      expect(result).toContain("import { Router } from 'express'");
-      expect(result).toContain("import { authService } from 'arkos/services'");
+      expect(result).toContain("import { ArkosRouter } from 'arkos'");
       expect(result).toContain(
         'import userController from "./user.controller"'
       );
-      expect(result).toContain("const userRouter = Router()");
-      expect(result).toContain("'/custom-endpoint'");
-      expect(result).toContain("authService.authenticate");
+      expect(result).toContain("const userRouter = ArkosRouter()");
+      expect(result).toContain(`"/custom-endpoint"`);
       expect(result).toContain(
-        "authService.handleAccessControl('CustomAction', 'user')"
+        `authentication: { action: "CustomAction", resource: "user" }`
       );
       expect(result).toContain("userController.someHandler");
       expect(result).toContain("export default userRouter");
@@ -202,8 +197,7 @@ describe("generateTemplate", () => {
 
       const result = generateTemplate("router", { modelName: mockModelName });
 
-      expect(result).toContain("import { Router } from 'express'");
-      expect(result).toContain("import { authService } from 'arkos/services'");
+      expect(result).toContain("import { ArkosRouter } from 'arkos'");
       expect(result).toContain(
         'import userController from "./user.controller"'
       );
@@ -254,7 +248,7 @@ describe("generateTemplate", () => {
       const result = generateTemplate("router", { modelName: kebabModelName });
 
       expect(result).toContain(
-        "authService.handleAccessControl('CustomAction', 'user-profile')"
+        `authentication: { action: "CustomAction", resource: "user-profile" }`
       );
     });
 
@@ -366,10 +360,10 @@ describe("generateTemplate", () => {
         modelName: mockModelName,
       });
 
-      expect(result).toContain(
+      expect(result).not.toContain(
         "import { ArkosRequest, ArkosResponse, ArkosNextFunction }"
       );
-      expect(result).toContain(
+      expect(result).not.toContain(
         "req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction"
       );
       expect(result).toContain("beforeCreateOne");
@@ -415,7 +409,7 @@ describe("generateTemplate", () => {
       });
 
       expect(result).not.toContain("ArkosRequest");
-      expect(result).toContain("req, res, next");
+      expect(result).toContain("[]");
       expect(result).toContain("beforeCreateOne");
     });
 

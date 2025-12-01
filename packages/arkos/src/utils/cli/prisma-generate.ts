@@ -7,11 +7,25 @@ import path from "path";
 
 export default function prismaGenerateCommand() {
     const content = `
-import { ModelGroupRelationFields } from "./utils/helpers/base.service.helpers";
-import { ServiceBaseContext } from "./types/base.service.types";
-import { Prisma } from "@prisma/client"
+import { ServiceBaseContext } from "arkos/services";
+import { Prisma, PrismaClient } from "@prisma/client"
 
-declare type ModelsGetPayload<T extends Record<string, any>> = {
+export interface PrismaField {
+  name: string;
+  type: string;
+  isOptional: boolean;
+  isArray: boolean;
+  foreignKeyField?: string;
+  foreignReferenceField?: string;
+  isRelation: boolean;
+  defaultValue?: any;
+  isId?: boolean;
+  isUnique?: boolean;
+  attributes: string[];
+}
+
+
+export declare type ModelsGetPayload<T extends Record<string, any>> = {
 ${prismaSchemaParser.models.map(
     (model) =>
         `
@@ -40,8 +54,11 @@ export declare class BaseService<
     TModelName extends keyof ModelsGetPayload<any>
 > {
     modelName: TModelName;
-    relationFields: ModelGroupRelationFields;
-    prisma: any;
+    relationFields: {
+        singular: PrismaField[] | undefined;
+        list: PrismaField[] | undefined;
+    };
+    prisma: PrismaClient;
     
     constructor(modelName: TModelName);
     
@@ -111,10 +128,27 @@ export declare class BaseService<
     execSync("npx prisma generate", { stdio: "inherit" });
 
     const filePath = path.resolve(
-        __dirname,
-        `../../../types/modules/base/base.service.d.ts`
+        process.cwd(),
+        `node_modules/@arkosjs/types/`
     );
-    fs.writeFileSync(filePath, content, {
+    fs.mkdirSync(filePath, { recursive: true });
+    fs.writeFileSync(filePath + "/base.service.d.ts", content, {
+        encoding: "utf8",
+    });
+
+    const pkgPath = path.resolve(
+        process.cwd(),
+        `node_modules/@arkosjs/types/package.json`
+    );
+    const pkgJsonContent = `{
+      "name": "@arkosjs/types",
+      "version": "1.0.0",
+      "types": "./base.service.d.ts",
+      "exports": {
+        "./base.service": "./base.service.d.ts"
+      }
+    }`;
+    fs.writeFileSync(pkgPath, pkgJsonContent, {
         encoding: "utf8",
     });
 

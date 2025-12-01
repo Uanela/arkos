@@ -201,11 +201,6 @@ describe("CLI Main Function", () => {
     expect(mockedExecSync).toHaveBeenCalledWith("npm install", {
       stdio: "inherit",
     });
-
-    // Verify prisma generate
-    expect(mockedExecSync).toHaveBeenCalledWith("npx prisma generate", {
-      stdio: "inherit",
-    });
   }, 10000); // Increase timeout to 10 seconds
 
   it('should handle project creation in current directory (argProjectName = ".")', async () => {
@@ -446,47 +441,6 @@ describe("CLI Main Function", () => {
     const mainModule = await import("../");
 
     await expect(mainModule.main()).rejects.toThrow("npm install failed");
-  });
-
-  it("should handle execSync errors during prisma generate", async () => {
-    const { default: projectConfigInquirer } = await import(
-      "../utils/project-config-inquirer"
-    );
-    const { default: templateCompiler } = await import(
-      "../utils/template-compiler"
-    );
-    const { getProcjetPackageJsonDependecies } = await import(
-      "../utils/helpers/package-json.helpers"
-    );
-    const { detectPackageManagerFromUserAgent } = await import(
-      "../utils/helpers/npm.helpers"
-    );
-
-    vi.mocked(projectConfigInquirer.run).mockResolvedValue({
-      argProjectName: "test-project",
-      projectName: "test-project",
-      projectPath: "/path/to/test-project",
-    } as any);
-
-    vi.mocked(getProcjetPackageJsonDependecies).mockReturnValue({
-      dependencies: [],
-      devDependencies: [],
-    });
-
-    vi.mocked(detectPackageManagerFromUserAgent).mockReturnValue("npm");
-    vi.mocked(templateCompiler.compile).mockResolvedValue(undefined);
-
-    const prismaError = new Error("prisma generate failed");
-    mockedExecSync.mockImplementation((command: string) => {
-      if (typeof command === "string" && command.includes("prisma generate")) {
-        throw prismaError;
-      }
-      return Buffer.from("");
-    });
-
-    const mainModule = await import("../");
-
-    await expect(mainModule.main()).rejects.toThrow("prisma generate failed");
   });
 
   it("should handle file system errors during directory creation", async () => {

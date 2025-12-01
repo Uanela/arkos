@@ -69,7 +69,6 @@ export function parseQueryParamsWithModifiers(
     if (!value && value !== false && value !== "false" && parts.length < 2)
       continue;
 
-    // Convert value to string if it's not already
     const stringValue = Array.isArray(value) ? value[0]?.toString() : value;
 
     let currentResult: any = {};
@@ -82,22 +81,18 @@ export function parseQueryParamsWithModifiers(
     } else {
       const fieldName = parts[0];
 
-      // Handle ordering
       if (fieldName === "orderBy" && parts.length === 2) {
         currentResult.orderBy = {};
         currentResult.orderBy[parts[1]] = stringValue as "asc" | "desc";
       } else if (parts.length === 1) {
-        // Handle simple equals case
         currentResult[fieldName] = {
           equals: convertValue(stringValue, fieldName, fieldConfig),
         };
       } else {
-        // Build nested structure
         let nestedObj: any = {};
         let currentLevel = nestedObj;
         let currentKey = fieldName;
 
-        // Create the nested path
         for (let i = 1; i < parts.length - 1; i++) {
           currentLevel[currentKey] = {};
           currentLevel = currentLevel[currentKey];
@@ -106,7 +101,6 @@ export function parseQueryParamsWithModifiers(
 
         const lastOperator = parts[parts.length - 1];
 
-        // Handle special operators
         switch (lastOperator) {
           case "icontains":
             currentLevel[currentKey] = {

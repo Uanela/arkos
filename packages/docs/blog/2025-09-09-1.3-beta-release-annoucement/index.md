@@ -5,7 +5,7 @@ authors: [uanela]
 tags: [arkosjs, superm7, webpropax, finegrained, swagger, servicehooks]
 ---
 
-Today I am excited to share the newest beta version of Arkos.js, the 1.3.0-beta, a major update that brings enterprise-grade access control, automatic API documentation, and enhanced service layer capabilities to simplify the development of scalable and secure RESTful APIs.
+Today I am excited to share the newest beta version of Arkos.js, the 1.3.0-beta, a minor update that brings enterprise-grade access control, automatic API documentation, and enhanced service layer capabilities to simplify the development of scalable and secure RESTful APIs.
 
 <!-- truncate -->
 
@@ -35,7 +35,7 @@ Or start a new project with the enhanced `create-arkos` CLI:
 npm create arkos@latest my-project
 ```
 
-## Major New Features In Practice
+## New Features In Practice
 
 Let's dive deeper into the most impactful features that make this release a significant step forward.
 

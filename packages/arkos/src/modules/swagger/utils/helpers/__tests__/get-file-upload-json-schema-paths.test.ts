@@ -1,6 +1,5 @@
 import { ArkosConfig } from "../../../../../exports";
 import getFileUploadJsonSchemaPaths from "../get-file-upload-json-schema-paths";
-// import { fileUploadDefaultRestrictions } from "../../../../file-upload/file-upload.service";
 
 jest.mock("fs");
 jest.mock("../../../../../utils/dynamic-loader", () => ({

@@ -40,9 +40,9 @@ describe("Arkos config template rendering", () => {
     const result = renderTemplate(templatePath, context);
 
     expect(result).not.toContain("import { ArkosConfig } from 'arkos'");
-    expect(result).not.toContain("const config: ArkosConfig = {}");
+    expect(result).not.toContain("const config: ArkosConfig");
     expect(result).toContain("/** @type {import('arkos').ArkosConfig} */");
-    expect(result).toContain("const config = {}");
+    expect(result).toContain("const config");
   });
 
   it("should include the export default statement in both versions", () => {
@@ -86,7 +86,20 @@ describe("Arkos config template rendering", () => {
 
     const expected = `import { ArkosConfig } from 'arkos'
 
-const config: ArkosConfig = {}
+const config: ArkosConfig = {
+  routers: {
+    strict: "no-bulk"
+  },
+  swagger: {
+    mode: 'prisma',
+    strict: false,
+  },
+  middlewares: {
+    cors: {
+      allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+    },
+  }
+}
 
 export default config`;
 
@@ -101,7 +114,20 @@ export default config`;
     const result = renderTemplate(templatePath, context);
 
     const expected = `/** @type {import('arkos').ArkosConfig} */
-const config = {}
+const config = {
+  routers: {
+    strict: "no-bulk"
+  },
+  swagger: {
+    mode: 'prisma',
+    strict: false,
+  },
+  middlewares: {
+    cors: {
+      allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+    },
+  }
+}
 
 export default config`;
 

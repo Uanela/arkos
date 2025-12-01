@@ -207,10 +207,10 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        code: "Unknown",
         status: "error",
         message: "Internal server error, please try again later.",
         meta: {},
+        code: "Unknown",
       });
     });
 

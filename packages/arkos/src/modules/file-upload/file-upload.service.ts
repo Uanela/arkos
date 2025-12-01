@@ -46,9 +46,8 @@ export class FileUploadService {
     this.allowedFileTypes = allowedFileTypes;
     this.maxCount = maxCount;
 
-    if (!fs.existsSync(this.uploadDir)) {
+    if (!fs.existsSync(this.uploadDir))
       fs.mkdirSync(this.uploadDir, { recursive: true });
-    }
 
     this.storage = multer.diskStorage({
       destination: (_, _1, cb) => {
@@ -139,11 +138,7 @@ export class FileUploadService {
   public handleMultipleUpload(): ArkosRequestHandler {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
       const upload = this.getUpload().array(this.getFieldName(), this.maxCount);
-      upload(req, res, (err) => {
-        if (err instanceof multer.MulterError) return next(err);
-        else if (err) return next(err);
-        next();
-      });
+      upload(req, res, next);
     };
   }
 
@@ -175,24 +170,18 @@ export class FileUploadService {
    */
   public async deleteFileByUrl(fileUrl: string): Promise<boolean> {
     try {
-      // Get configuration values
       const { fileUpload } = getArkosConfig();
       const baseRoute = fileUpload?.baseRoute || "/api/uploads";
 
-      // Parse the URL to get the path
       let urlPath: string;
       if (fileUrl.startsWith("http")) {
         const url = new URL(fileUrl);
         urlPath = url.pathname;
-      } else {
-        urlPath = fileUrl;
-      }
+      } else urlPath = fileUrl;
 
-      // Extract the path after the base route
       const baseRouteIndex = urlPath.indexOf(baseRoute);
-      if (baseRouteIndex === -1) {
+      if (baseRouteIndex === -1)
         throw new AppError("Invalid file URL: base route not found", 400);
-      }
 
       const pathAfterBaseRoute = urlPath.substring(
         baseRouteIndex + baseRoute.length
@@ -201,7 +190,6 @@ export class FileUploadService {
         ? pathAfterBaseRoute.substring(1)
         : pathAfterBaseRoute;
 
-      // Determine file type and file name
       const fileTypes = ["images", "videos", "documents", "files"];
       let fileType: string | null = null;
       let fileName: string | null = null;
@@ -248,8 +236,6 @@ export class FileUploadService {
           throw new AppError(`Unsupported file type: ${fileType}`, 400);
       }
 
-      // Delete the file
-
       await promisify(fs.stat)(filePath);
       await promisify(fs.unlink)(filePath);
 
@@ -259,9 +245,7 @@ export class FileUploadService {
         throw error;
       }
 
-      if (error.code === "ENOENT") {
-        throw new AppError("File not found", 404);
-      }
+      if (error.code === "ENOENT") throw new AppError("File not found", 404);
 
       throw new AppError(`Failed to delete file: ${error.message}`, 500);
     }
@@ -305,12 +289,10 @@ export class FileUploadService {
     fileUpload?.baseRoute || "/api/uploads";
 
     return new Promise((resolve, reject) => {
-      // Determine if it's a single or multiple file upload
       const isMultiple = Array.isArray(req.query.multiple)
         ? req.query.multiple[0] == "true"
         : req.query.multiple == "true";
 
-      // Use appropriate upload handler
       const uploadHandler = isMultiple
         ? this.getUpload().array(this.getFieldName(), this.maxCount)
         : this.getUpload().single(this.getFieldName());
@@ -319,13 +301,6 @@ export class FileUploadService {
         if (err) return reject(err);
 
         try {
-          // Determine the base URL for file access
-          const protocol = req.get("host")?.includes?.("localhost")
-            ? "http"
-            : "https";
-          `${protocol}://${req.get("host")}`;
-
-          // Get file type from uploadDir path
           const dirParts = this.uploadDir.split("/");
           (this.uploadDir.endsWith("/")
             ? dirParts[dirParts.length - 2]
@@ -345,10 +320,9 @@ export class FileUploadService {
                 req.files.map((file) => processFile(req, file.path))
               );
             }
-            // Filter out any null values from failed processing
+
             data = data.filter((url) => url !== null);
           } else if (req.file) {
-            // Process a single file
             const isImageUpload = this.uploadDir?.includes?.("/images");
             if (isImageUpload) {
               data = await processImage(req, next, req.file.path, options);
@@ -356,7 +330,14 @@ export class FileUploadService {
               data = await processFile(req, req.file.path);
             }
           } else {
-            return reject(new AppError("No file uploaded", 400));
+            return reject(
+              new AppError(
+                `No file or files were attached on field ${req.params.fileType} on the request body as form data.`,
+                400,
+                {},
+                "NoFileOrFilesAttached"
+              )
+            );
           }
 
           resolve(data);
@@ -389,7 +370,6 @@ export class FileUploadService {
         );
       }
 
-      // Get the appropriate uploader service based on file type
       const {
         documentUploadService,
         fileUploadService,

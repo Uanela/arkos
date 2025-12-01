@@ -7,6 +7,7 @@ import sheu from "./sheu";
 import {
   applyStrictRoutingRules,
   pathExists,
+  validateRouterConfigConsistency,
 } from "./helpers/dynamic-loader.helpers";
 import { kebabCase, pascalCase } from "./helpers/change-case.helpers";
 import { crd, getUserFileExtension } from "./helpers/fs.helpers";
@@ -24,7 +25,7 @@ let prismaModelsModules: Record<string, AppModuleComponent> = {};
 export function setModuleComponents(
   modelName: string,
   modules: AppModuleComponent
-): any {
+) {
   prismaModelsModules[pascalCase(modelName)] = modules;
 }
 
@@ -51,11 +52,10 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
   return {
     core: {
       hooks: `${kebabModelName}.hooks.${ext}`,
-      interceptors: `${kebabModelName}.middlewares.${ext}`,
-      authConfigs: `${kebabModelName}.auth-configs.${ext}`,
-      authConfigsNew: `${kebabModelName}.auth.${ext}`,
-      prismaQueryOptions: `${kebabModelName}.prisma-query-options.${ext}`,
-      prismaQueryOptionsNew: `${kebabModelName}.query.${ext}`,
+      interceptors: `${kebabModelName}.interceptors.${ext}`,
+      interceptorsOld: `${kebabModelName}.middlewares.${ext}`,
+      authConfigs: `${kebabModelName}.auth.${ext}`,
+      prismaQueryOptions: `${kebabModelName}.query.${ext}`,
       router: `${kebabModelName}.router.${ext}`,
     },
     dtos: isAuthModule
@@ -111,7 +111,7 @@ export function isClass(value: any): boolean {
 }
 
 export function isZodSchema(value: any): value is ZodTypeAny {
-  return value instanceof z.ZodType;
+  return value?._def?.typeName?.startsWith("Zod");
 }
 
 export async function processSubdir(
@@ -178,6 +178,7 @@ type ImportModuleComponentsReturnType = {
   hooks?: Record<string, ServiceHook | ServiceHook[]>;
   interceptors?: Record<string, Function | Function[]>;
   authConfigs?: AuthConfigs;
+  interceptorsOld?: any;
   authConfigsNew?: AuthConfigs;
   prismaQueryOptions?: PrismaQueryOptions<any>;
   prismaQueryOptionsNew?: PrismaQueryOptions<any>;
@@ -200,6 +201,68 @@ type ImportModuleComponentsReturnType = {
   };
 };
 
+const availableInterceptors = {
+  auth: [
+    "beforeGetMe",
+    "afterGetMe",
+    "onGetMeError",
+    "beforeUpdateMe",
+    "afterUpdateMe",
+    "onUpdateMeError",
+    "beforeLogin",
+    "afterLogin",
+    "onLoginError",
+    "beforeLogout",
+    "afterLogout",
+    "onLogoutError",
+    "beforeSignup",
+    "afterSignup",
+    "onSignupError",
+    "beforeUpdatePassword",
+    "afterUpdatePassword",
+    "onUpdatePasswordError",
+  ],
+  "file-upload": [
+    "beforeFindFile",
+    "onFindFileError",
+    "beforeUploadFile",
+    "afterUploadFile",
+    "onUploadFileError",
+    "beforeUpdateFile",
+    "afterUpdateFile",
+    "onUpdateFileError",
+    "beforeDeleteFile",
+    "afterDeleteFile",
+    "onDeleteFileError",
+  ],
+  prisma: [
+    "beforeCreateOne",
+    "afterCreateOne",
+    "onCreateOneError",
+    "beforeFindOne",
+    "afterFindOne",
+    "onFindOneError",
+    "beforeFindMany",
+    "afterFindMany",
+    "onFindManyError",
+    "beforeUpdateOne",
+    "afterUpdateOne",
+    "onUpdateOneError",
+    "beforeDeleteOne",
+    "afterDeleteOne",
+    "onDeleteOneError",
+    "beforeCreateMany",
+    "afterCreateMany",
+    "onCreateManyError",
+    "beforeUpdateMany",
+    "afterUpdateMany",
+    "onUpdateManyError",
+    "beforeDeleteMany",
+    "afterDeleteMany",
+    "onDeleteManyError",
+  ],
+};
+
 /**
  * Validates naming convention conflicts for prismaQueryOptions and authConfigs
  * @param {string} key - The current file key being processed
@@ -212,52 +275,11 @@ export function validateNamingConventions(
   fileName: string,
   result: ImportModuleComponentsReturnType
 ): void {
-  if (key === "prismaQueryOptions") {
-    sheu.warn(
-      `Found ${fileName} which will be deprecated from 1.4.0-beta, consider switching to ${fileName.replace("prisma-query-options", "query")}.`
-    );
-    if (result.prismaQueryOptions) {
-      killServerChildProcess();
-      throw new Error(
-        `\n Cannot use both ${fileName} and ${fileName.replace(
-          "prisma-query-options",
-          "query"
-        )} at once, please choose only one name convention. \n`
+  if (key === "interceptorsOld") {
+    if (!result.interceptors)
+      sheu.warn(
+        `Found deprecated ${fileName} that will removed from v1.6.0-beta, consider switching to ${fileName.replace("middlewares", "interceptors")}`
       );
-    }
-  } else if (key === "prismaQueryOptionsNew") {
-    if (result.prismaQueryOptions) {
-      killServerChildProcess();
-      throw new Error(
-        `\n Cannot use both ${fileName} and ${fileName.replace(
-          "query",
-          "prisma-query-options"
-        )} at once, please choose only one name convention. \n`
-      );
-    }
-  } else if (key === "authConfigs") {
-    sheu.warn(
-      `Found ${fileName} which will be deprecated from 1.4.0-beta, consider switching to ${fileName.replace("auth-configs", "auth")}.`
-    );
-    if (result.authConfigs) {
-      killServerChildProcess();
-      throw new Error(
-        `\n Cannot use both ${fileName} and ${fileName.replace(
-          "auth-configs",
-          "auth"
-        )} at once, please choose only one name convention. \n`
-      );
-    }
-  } else if (key === "authConfigsNew") {
-    if (result.authConfigs) {
-      killServerChildProcess();
-      throw new Error(
-        `\n Cannot use both ${fileName} and ${fileName.replace(
-          "auth",
-          "auth-configs"
-        )} at once, please choose only one name convention. \n`
-      );
-    }
   }
 }
 
@@ -274,12 +296,31 @@ export function assignModuleToResult(
   result: ImportModuleComponentsReturnType,
   arkosConfig: ArkosConfig
 ): void {
-  if (key === "prismaQueryOptions" || key === "prismaQueryOptionsNew") {
-    result.prismaQueryOptions = module.default || module;
-  } else if (key === "authConfigs" || key === "authConfigsNew") {
-    result.authConfigs = module.default || module;
-  } else if (key === "interceptors") {
-    result[key] = module;
+  if (key === "interceptors") result.interceptors = module;
+  else if (key === "interceptorsOld") {
+    const kebabCaseAppModule = kebabCase(appModule);
+    const moduleName =
+      kebabCaseAppModule === "auth"
+        ? "auth"
+        : kebabCaseAppModule === "file-upload"
+          ? "file-upload"
+          : "prisma";
+
+    if (
+      result.interceptors &&
+      Object.keys(module).some((interceptorName) =>
+        availableInterceptors[moduleName].includes(interceptorName)
+      )
+    ) {
+      const exportedInterceptors = Object.keys(module).filter(
+        (interceptorName) =>
+          availableInterceptors[moduleName].includes(interceptorName)
+      );
+      const ext = getUserFileExtension();
+      sheu.warn(
+        `Found ${kebabCaseAppModule}.middlewares.${ext} exporting ${exportedInterceptors.join(", ")}. Which by convention should go at ${kebabCaseAppModule}.interceptors.${ext} This is simply a warning that will stop from v1.5.0-beta`
+      );
+    } else if (!result.interceptors) result.interceptors = module;
   } else if (key === "router") {
     result[key] = {
       ...module,
@@ -289,6 +330,10 @@ export function assignModuleToResult(
         module?.config || {}
       ),
     };
+    validateRouterConfigConsistency(
+      kebabCase(appModule),
+      result[key]?.config || {}
+    );
   } else {
     result[key as keyof typeof result] = module.default || module;
   }
@@ -325,9 +370,9 @@ export async function importModuleComponents(
       : "dtos"
     : null;
 
-  // Batch process core files
-  const [_, validators] = await Promise.all([
-    Object.entries(fileStructure.core).map(async ([key, fileName]) => {
+  const [validators] = await Promise.all([
+    validationSubdir && processSubdir(modelName, validationSubdir),
+    ...Object.entries(fileStructure.core).map(async ([key, fileName]) => {
       if (
         ["createMany", "findMany", "findOne", "updateMany"].includes(key) ||
         !fileName
@@ -364,10 +409,8 @@ export async function importModuleComponents(
         if (!module && key === "router" && usingStrictRouting) module = {};
 
         if (module) {
-          // Validate naming conventions before assignment
+          (result as any)[key] = module;
           validateNamingConventions(key, fileName, result);
-
-          // Assign module to result
           assignModuleToResult(modelName, key, module, result, arkosConfig);
         }
       } catch (err: any) {
@@ -376,7 +419,6 @@ export async function importModuleComponents(
         killServerChildProcess();
       }
     }),
-    validationSubdir && processSubdir(modelName, validationSubdir),
   ]);
 
   prismaModelsModules[pascalCase(modelName)] = {
@@ -394,7 +436,7 @@ export const appModules = Array.from(
   new Set([
     "auth",
     "file-upload",
-    ...prismaSchemaParser.getModelsAsArrayOfStrings(),
+    ...(prismaSchemaParser.getModelsAsArrayOfStrings() || []),
   ])
 );
 

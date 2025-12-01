@@ -6,7 +6,7 @@ import { configDotenv } from "dotenv";
 configDotenv();
 
 const config: Config = {
-  title: "Arkos.js",
+  title: "Arkos.js - The Express And Prisma RESTful Framework",
   tagline: "The Express And Prisma RESTful Framework",
   favicon: "img/favicon.ico",
   url: "https://www.arkosjs.com",

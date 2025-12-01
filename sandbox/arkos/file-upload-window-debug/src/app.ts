@@ -22,3 +22,7 @@ arkos.init({
     strict: false,
   },
 });
+
+const hello = (test: any, test2: any, test3: any) => {};
+
+console.log(hello.length);

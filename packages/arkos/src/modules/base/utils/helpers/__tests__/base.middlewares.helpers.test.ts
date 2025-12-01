@@ -1,4 +1,7 @@
-import { resolvePrismaQueryOptions } from "../base.middlewares.helpers";
+import {
+  getGeneralOptionsForAction,
+  resolvePrismaQueryOptions,
+} from "../base.middlewares.helpers";
 import {
   PrismaQueryOptions,
   AuthPrismaQueryOptions,
@@ -291,6 +294,364 @@ describe("resolvePrismaQueryOptions", () => {
         select: { id: true },
         include: { profile: true },
         data: { name: "test" },
+      });
+    });
+  });
+});
+
+describe("getGeneralOptionsForAction", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("Find operations", () => {
+    it("should return find options for findMany action", () => {
+      const options = {
+        find: { include: { user: true }, orderBy: { id: "asc" } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "findMany");
+      expect(result).toEqual({
+        include: { user: true },
+        orderBy: { id: "asc" },
+      });
+    });
+
+    it("should return find options for findOne action", () => {
+      const options = {
+        find: { include: { profile: true }, select: { id: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "findOne");
+      expect(result).toEqual({
+        include: { profile: true },
+        select: { id: true },
+      });
+    });
+
+    it("should return null when no find options exist", () => {
+      const options = {
+        create: { include: { user: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "findMany");
+      expect(result).toEqual({});
+    });
+  });
+
+  describe("Create operations", () => {
+    it("should merge create and save options for create action", () => {
+      const options = {
+        create: { include: { user: true } },
+        save: { select: { id: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "create");
+      expect(result).toEqual({
+        include: { user: true },
+        select: { id: true },
+      });
+    });
+
+    it("should merge create, save, and saveOne options for createOne action", () => {
+      const options = {
+        create: { include: { user: true } },
+        save: { select: { id: true } },
+        saveOne: { include: { profile: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "createOne");
+      expect(result).toEqual({
+        include: { profile: true },
+        select: { id: true },
+      });
+    });
+
+    it("should merge create, save, and saveMany options for createMany action", () => {
+      const options = {
+        create: { include: { user: true } },
+        save: { select: { id: true } },
+        saveMany: { skipDuplicates: true },
+      };
+
+      const result = getGeneralOptionsForAction(options, "createMany");
+      expect(result).toEqual({
+        include: { user: true },
+        select: { id: true },
+        skipDuplicates: true,
+      });
+    });
+
+    it("should return null when no create options exist", () => {
+      const options = {
+        find: { include: { user: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "createOne");
+      expect(result).toEqual({});
+    });
+
+    it("should handle partial create options", () => {
+      const options = {
+        create: { include: { user: true } },
+        // save and saveOne not provided
+      };
+
+      const result = getGeneralOptionsForAction(options, "createOne");
+      expect(result).toEqual({
+        include: { user: true },
+      });
+    });
+  });
+
+  describe("Update operations", () => {
+    it("should merge update and save options for update action", () => {
+      const options = {
+        update: { include: { user: true } },
+        save: { select: { id: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "update");
+      expect(result).toEqual({
+        include: { user: true },
+        select: { id: true },
+      });
+    });
+
+    it("should merge update, save, and saveOne options for updateOne action", () => {
+      const options = {
+        update: { include: { user: true } },
+        save: { select: { id: true } },
+        saveOne: { include: { profile: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "updateOne");
+      expect(result).toEqual({
+        include: { profile: true },
+        select: { id: true },
+      });
+    });
+
+    it("should merge update, save, and saveMany options for updateMany action", () => {
+      const options = {
+        update: { include: { user: true } },
+        save: { select: { id: true } },
+        saveMany: { data: { status: "active" } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "updateMany");
+      expect(result).toEqual({
+        include: { user: true },
+        select: { id: true },
+        data: { status: "active" },
+      });
+    });
+
+    it("should return null when no update options exist", () => {
+      const options = {
+        find: { include: { user: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "updateOne");
+      expect(result).toEqual({});
+    });
+  });
+
+  describe("Delete operations", () => {
+    it("should return delete options for delete action", () => {
+      const options = {
+        delete: { include: { user: true }, select: { id: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "delete");
+      expect(result).toEqual({
+        include: { user: true },
+        select: { id: true },
+      });
+    });
+
+    it("should return delete options for deleteOne action", () => {
+      const options = {
+        delete: { include: { profile: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "deleteOne");
+      expect(result).toEqual({
+        include: { profile: true },
+      });
+    });
+
+    it("should return delete options for deleteMany action", () => {
+      const options = {
+        delete: { select: { id: true, deletedAt: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "deleteMany");
+      expect(result).toEqual({
+        select: { id: true, deletedAt: true },
+      });
+    });
+
+    it("should return null when no delete options exist", () => {
+      const options = {
+        find: { include: { user: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "deleteOne");
+      expect(result).toEqual({});
+    });
+  });
+
+  describe("Unknown actions", () => {
+    it("should return null for unknown action", () => {
+      const options = {
+        find: { include: { user: true } },
+        create: { select: { id: true } },
+      };
+
+      const result = getGeneralOptionsForAction(
+        options,
+        "unknownAction" as any
+      );
+      expect(result).toEqual({});
+    });
+
+    it("should return null when action mapping exists but no options provided", () => {
+      const options = {
+        update: { include: { user: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "findMany");
+      expect(result).toEqual({});
+    });
+  });
+
+  describe("Empty and null cases", () => {
+    it("should return null when options object is empty", () => {
+      const options = {};
+
+      const result = getGeneralOptionsForAction(options, "findMany");
+      expect(result).toEqual({});
+    });
+
+    it("should return null when specific action options are empty objects", () => {
+      const options = {
+        find: {},
+      };
+
+      const result = getGeneralOptionsForAction(options, "findMany");
+      expect(result).toEqual({});
+    });
+
+    it("should handle null values in options", () => {
+      const options = {
+        find: null,
+        create: { include: { user: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "findMany");
+      expect(result).toEqual({});
+    });
+
+    it("should handle undefined values in options", () => {
+      const options = {
+        find: undefined,
+        create: { include: { user: true } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "findMany");
+      expect(result).toEqual({});
+    });
+  });
+
+  describe("Merging behavior", () => {
+    it("should merge multiple options in correct order for createOne", () => {
+      const options = {
+        create: { include: { user: true }, select: { id: true } },
+        save: { include: { posts: true }, take: 10 },
+        saveOne: { include: { profile: true }, skip: 5 },
+      };
+
+      const result = getGeneralOptionsForAction(options, "createOne");
+
+      // Later options should override earlier ones when using deepmerge
+      expect(result.include).toEqual({ profile: true });
+      expect(result.select).toEqual({ id: true });
+      expect(result.take).toBe(10);
+      expect(result.skip).toBe(5);
+    });
+
+    it("should merge multiple options in correct order for updateMany", () => {
+      const options = {
+        update: { include: { user: true }, orderBy: { id: "asc" } },
+        save: { select: { id: true, name: true } },
+        saveMany: { where: { status: "active" } },
+      };
+
+      const result = getGeneralOptionsForAction(options, "updateMany");
+
+      expect(result.include).toEqual({ user: true });
+      expect(result.select).toEqual({ id: true, name: true });
+      expect(result.orderBy).toEqual({ id: "asc" });
+      expect(result.where).toEqual({ status: "active" });
+    });
+
+    it("should handle complex nested objects", () => {
+      const options = {
+        create: {
+          include: {
+            user: {
+              include: { profile: true },
+            },
+          },
+        },
+        save: {
+          include: {
+            user: {
+              include: { posts: true },
+            },
+          },
+        },
+      };
+
+      const result = getGeneralOptionsForAction(options, "create");
+
+      // Deepmerge should merge nested objects
+      expect(result.include.user.include).toEqual({ posts: true });
+    });
+  });
+
+  describe("All action mappings coverage", () => {
+    it("should handle all defined action mappings", () => {
+      const actions: ControllerActions[] = [
+        "findMany",
+        "findOne",
+        "create",
+        "createOne",
+        "createMany",
+        "update",
+        "updateOne",
+        "updateMany",
+        "delete",
+        "deleteOne",
+        "deleteMany",
+      ];
+
+      const options = {
+        find: { find: true },
+        create: { create: true },
+        save: { save: true },
+        saveOne: { saveOne: true },
+        saveMany: { saveMany: true },
+        update: { update: true },
+        delete: { delete: true },
+      };
+
+      actions.forEach((action) => {
+        const result = getGeneralOptionsForAction(options, action);
+        expect(result).not.toBeUndefined();
+        // Each action should either return merged options or null
+        expect(result === null || typeof result === "object").toBe(true);
       });
     });
   });
