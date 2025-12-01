@@ -37,7 +37,10 @@ jest.mock("../../../utils/dynamic-loader");
 jest.mock("../../auth/auth.service");
 jest.mock("../file-upload.controller");
 jest.mock("../../base/base.middlewares");
-jest.mock("path");
+jest.mock("path", () => ({
+  resolve: jest.fn(),
+  join: jest.fn((...val: string[]) => val.join("/")),
+}));
 jest.mock("fs");
 jest.mock("../../../utils/helpers/deepmerge.helper");
 
@@ -67,7 +70,7 @@ describe("File Upload Router", () => {
       fileUpload: {
         baseRoute: "/api/uploads/",
         baseUploadDir: "uploads",
-        expressStaticOptions: {
+        expressStatic: {
           maxAge: "30d",
         },
       },
@@ -89,7 +92,7 @@ describe("File Upload Router", () => {
     expect(getModuleComponents).toHaveBeenCalledWith("file-upload");
 
     // Check static file middleware setup
-    expect(path.resolve).toHaveBeenCalledWith(process.cwd(), "uploads");
+    expect(path.resolve).toHaveBeenCalledWith(process.cwd() + "/uploads");
     expect(express.static).toHaveBeenCalledWith(
       "/resolved/path/to/uploads",
       expect.any(Object)
@@ -492,7 +495,7 @@ describe("File Upload Router", () => {
     await getFileUploadRouter(configWithoutBaseUploadDir);
 
     // Assert
-    expect(path.resolve).toHaveBeenCalledWith(process.cwd(), "uploads");
+    expect(path.resolve).toHaveBeenCalledWith(process.cwd() + "/uploads");
   });
 
   test("should handle custom interceptors and auth configs from model modules", async () => {
@@ -591,7 +594,7 @@ describe("File Upload Router", () => {
     const configWithCustomStaticOptions = {
       fileUpload: {
         ...mockArkosConfig.fileUpload,
-        expressStaticOptions: customStaticOptions,
+        expressStatic: customStaticOptions,
       },
     };
 

@@ -2,8 +2,6 @@ import { Router } from "express";
 import { getModuleComponents } from "../../utils/dynamic-loader";
 import authService from "../auth/auth.service";
 import fileUploadController from "./file-upload.controller";
-import { ArkosConfig } from "../../types/arkos-config";
-import path from "path";
 import express from "express";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthConfigs } from "../../types/auth";
@@ -14,10 +12,12 @@ import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
+import { ArkosConfig } from "../../exports";
+import path from "path";
 
 const router: Router = Router();
 
-export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
+export function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const { fileUpload } = arkosConfig;
 
   const moduleComponents = getModuleComponents("file-upload");
@@ -53,6 +53,11 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
   if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
 
   if (!isEndpointDisabled(routerConfig, "findFile")) {
+    const baseUploadDirFullPath = path.resolve(
+      path
+        .join(process.cwd(), fileUpload?.baseUploadDir || "uploads")
+        .replaceAll("//", "/")
+    );
     router.get(
       `${basePathname}*`,
       authService.handleAuthenticationControl(
@@ -67,7 +72,7 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
       ...processMiddleware(interceptors?.beforeFindFile),
       adjustRequestUrl,
       express.static(
-        path.resolve(process.cwd(), fileUpload?.baseUploadDir || "uploads"),
+        baseUploadDirFullPath,
         deepmerge(
           {
             maxAge: "1y",
@@ -78,7 +83,7 @@ export async function getFileUploadRouter(arkosConfig: ArkosConfig) {
             index: false,
             cacheControl: true,
           },
-          fileUpload?.expressStaticOptions || {}
+          fileUpload?.expressStatic || {}
         )
       ),
       ...processMiddleware(interceptors?.onFindFileError, { type: "error" })

@@ -24,34 +24,34 @@ const userAuthConfigs = {
   },
   {{#if (eq authentication.type "static")}}
   accessControl: {
-    // Create: {
+    Create: {
     {{#if (eq authentication.type "static")}}
-    //   roles: [],
+      roles: [],
     {{/if}}
-    //   name: "Create New User",
-    //   description: "Permission to create user records"
-    // },
-    // Update: {
+      name: "Create New User",
+      description: "Permission to create user records"
+    },
+    Update: {
     {{#if (eq authentication.type "static")}}
-    //   roles: [],
+      roles: [],
     {{/if}}
-    //   name: "Update User",
-    //   description: "Permission to update user records"
-    // },
-    // Delete: {
+      name: "Update User",
+      description: "Permission to update user records"
+    },
+    Delete: {
     {{#if (eq authentication.type "static")}}
-    //   roles: [],
+      roles: [],
     {{/if}}
-    //   name: "Delete User",
-    //   description: "Permission to delete user records"
-    // },
-    // View: {
+      name: "Delete User",
+      description: "Permission to delete user records"
+    },
+    View: {
     {{#if (eq authentication.type "static")}}
-    //   roles: [],
+      roles: [],
     {{/if}}
-    //   name: "View User",
-    //   description: "Permission to update user records"
-    // },
+      name: "View User",
+      description: "Permission to update user records"
+    },
   },
   {{/if}}
 };

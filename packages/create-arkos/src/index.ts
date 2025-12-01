@@ -50,8 +50,8 @@ export async function main() {
   execSync(`${packageManager} install`, { stdio: "inherit" });
 
   process.chdir(projectPath);
-  console.info("\nRunning npx prisma generate...");
-  execSync(`npx prisma generate`, { stdio: "inherit" });
+  // console.info("\nRunning npx arkos prisma generate...");
+  // execSync(`npx arkos prisma generate`, { stdio: "inherit" });
 
   console.info(`
   \n${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
@@ -61,12 +61,14 @@ export async function main() {
     argProjectName !== "."
       ? `1. cd ${config.projectName}
   2. setup your ${chalk.cyan("DATABASE_URL")} under .env
-  3. npx prisma db push
-  4. ${packageManager} run dev
+  3. npx arkos prisma generate
+  4. npx prisma db push
+  5. ${packageManager} run dev
 `
       : `1. setup your ${chalk.cyan("DATABASE_URL")} under .env
-  2. npx prisma db push
-  3. ${packageManager} run dev
+  2. npx arkos prisma generate
+  3. npx prisma db push
+  4. ${packageManager} run dev
 `
   }
     `);

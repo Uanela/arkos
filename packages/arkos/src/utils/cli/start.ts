@@ -42,6 +42,7 @@ export async function startCommand(options: StartOptions = {}) {
       ...(port && { CLI_PORT: port }),
       ...(host && { CLI_HOST: host }),
       ARKOS_BUILD: "true",
+      CLI: "false",
     };
 
     child = spawn("node", [entryPoint], {

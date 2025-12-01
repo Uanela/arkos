@@ -71,6 +71,8 @@ class AppError extends Error {
     if (typeof code === "object") this.meta = code;
     if (typeof meta === "string") this.code = meta || "Unknown";
     if (typeof meta === "object") this.meta = meta;
+    if (!code) this.code = "Unknown";
+
     this.missing = false;
 
     Error.captureStackTrace(this, this.constructor);

@@ -3,13 +3,14 @@ import * as dynamicLoader from "../dynamic-loader";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import { importModule } from "../helpers/global.helpers";
 import { pathExists } from "../helpers/dynamic-loader.helpers";
-import { applyStrictRoutingRules } from "../helpers/dynamic-loader.helpers";
+import * as dynamicLoaderHelpers from "../helpers/dynamic-loader.helpers";
 import { killServerChildProcess } from "../cli/utils/cli.helpers";
 import sheu from "../sheu";
+import z from "zod";
 
 export const prismaModelsUniqueFields: Record<string, any[]> = [] as any;
 
-// Mocking dependencies
+jest.mock("../../modules/debugger/debugger.service");
 jest.mock("path");
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
@@ -20,10 +21,6 @@ jest.mock("fs", () => ({
 }));
 jest.mock("../helpers/global.helpers", () => ({
   importModule: jest.fn(),
-}));
-jest.mock("../helpers/dynamic-loader.helpers", () => ({
-  pathExists: jest.fn(),
-  applyStrictRoutingRules: jest.fn(),
 }));
 jest.mock("../cli/utils/cli.helpers", () => ({
   killServerChildProcess: jest.fn(),
@@ -51,15 +48,23 @@ jest.mock("../prisma/prisma-schema-parser", () => ({
 }));
 
 describe("Dynamic Prisma Model Loader", () => {
+  let mockApplyStrictRoutingRules: any;
+
+  mockApplyStrictRoutingRules = jest
+    .spyOn(dynamicLoaderHelpers, "pathExists")
+    .mockImplementation(jest.fn());
+
   beforeEach(() => {
     jest.clearAllMocks();
-
+    mockApplyStrictRoutingRules = jest.spyOn(
+      dynamicLoaderHelpers,
+      "applyStrictRoutingRules"
+    );
     // Reset Error mock
     mockError.mockClear();
     mockError.mockImplementation((message) => {
       const error = new originalError(message);
       error.name = "MockError";
-      // console.info(error);
       if (message === "Path check failed") return error;
       return {};
     });
@@ -74,11 +79,6 @@ describe("Dynamic Prisma Model Loader", () => {
 
     // Default pathExists to true
     (pathExists as jest.Mock).mockResolvedValue(true);
-
-    // Default applyStrictRoutingRules mock
-    (applyStrictRoutingRules as jest.Mock).mockImplementation(
-      (_, _1, config) => config
-    );
 
     // Clear any cached modules
     dynamicLoader.setModuleComponents("User", null as any);
@@ -123,11 +123,10 @@ describe("Dynamic Prisma Model Loader", () => {
 
       expect(result.core).toEqual({
         hooks: "user.hooks.ts",
-        interceptors: "user.middlewares.ts",
-        authConfigs: "user.auth-configs.ts",
-        authConfigsNew: "user.auth.ts",
-        prismaQueryOptions: "user.prisma-query-options.ts",
-        prismaQueryOptionsNew: "user.query.ts",
+        interceptors: "user.interceptors.ts",
+        interceptorsOld: "user.middlewares.ts",
+        authConfigs: "user.auth.ts",
+        prismaQueryOptions: "user.query.ts",
         router: "user.router.ts",
       });
     });
@@ -257,100 +256,18 @@ describe("Dynamic Prisma Model Loader", () => {
   });
 
   describe("validateNamingConventions", () => {
-    it("should warn about deprecated prismaQueryOptions", () => {
+    it("should warn about deprecated .middlewares.js", () => {
       const result = {};
 
       dynamicLoader.validateNamingConventions(
-        "prismaQueryOptions",
-        "user.prisma-query-options.js",
+        "interceptorsOld",
+        "user.middlewares.js",
         result
       );
 
       expect(sheu.warn).toHaveBeenCalledWith(
-        "Found user.prisma-query-options.js which will be deprecated from 1.4.0-beta, consider switching to user.query.js."
+        "Found deprecated user.middlewares.js that will removed from v1.6.0-beta, consider switching to user.interceptors.js"
       );
-    });
-
-    it("should warn about deprecated authConfigs", () => {
-      const result = {};
-
-      dynamicLoader.validateNamingConventions(
-        "authConfigs",
-        "user.auth-configs.js",
-        result
-      );
-
-      expect(sheu.warn).toHaveBeenCalledWith(
-        "Found user.auth-configs.js which will be deprecated from 1.4.0-beta, consider switching to user.auth.js."
-      );
-    });
-
-    it("should throw error when conflicting prismaQueryOptions exist", () => {
-      const result = { prismaQueryOptions: {} };
-
-      try {
-        dynamicLoader.validateNamingConventions(
-          "prismaQueryOptions",
-          "user.prisma-query-options.ts",
-          result
-        );
-      } catch (error) {
-        expect(mockError).toHaveBeenCalledWith(
-          "\n Cannot use both user.prisma-query-options.ts and user.query.ts at once, please choose only one name convention. \n"
-        );
-      }
-      expect(killServerChildProcess).toHaveBeenCalled();
-    });
-
-    it("should throw error when conflicting authConfigs exist", () => {
-      const result = { authConfigs: {} };
-
-      try {
-        dynamicLoader.validateNamingConventions(
-          "authConfigs",
-          "user.auth-configs.ts",
-          result
-        );
-      } catch (error) {
-        expect(mockError).toHaveBeenCalledWith(
-          "\n Cannot use both user.auth-configs.ts and user.auth.ts at once, please choose only one name convention. \n"
-        );
-      }
-      expect(killServerChildProcess).toHaveBeenCalled();
-    });
-
-    it("should throw error when new naming conflicts with old prismaQueryOptions", () => {
-      const result = { prismaQueryOptions: {} };
-
-      try {
-        dynamicLoader.validateNamingConventions(
-          "prismaQueryOptionsNew",
-          "user.query.ts",
-          result
-        );
-      } catch (error) {
-        expect(mockError).toHaveBeenCalledWith(
-          "\n Cannot use both user.query.ts and user.prisma-query-options.ts at once, please choose only one name convention. \n"
-        );
-      }
-      expect(killServerChildProcess).toHaveBeenCalled();
-    });
-
-    it("should throw error when new naming conflicts with old authConfigs", () => {
-      const result = { authConfigs: {} };
-
-      try {
-        dynamicLoader.validateNamingConventions(
-          "authConfigsNew",
-          "user.auth.ts",
-          result
-        );
-      } catch (error) {
-        expect(mockError).toHaveBeenCalledWith(
-          "\n Cannot use both user.auth.ts and user.auth-configs.ts at once, please choose only one name convention. \n"
-        );
-      }
-      expect(killServerChildProcess).toHaveBeenCalled();
     });
   });
 
@@ -390,18 +307,18 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(result.prismaQueryOptions).toEqual({ query: "options" });
     });
 
-    it("should assign prismaQueryOptionsNew", () => {
-      const module = { default: { query: "options" } };
+    it("should assign interceptorsOld", () => {
+      const module = { beforeCreateOne: jest.fn() };
 
       dynamicLoader.assignModuleToResult(
         "User",
-        "prismaQueryOptionsNew",
+        "interceptorsOld",
         module,
         result,
         arkosConfig
       );
 
-      expect(result.prismaQueryOptions).toEqual({ query: "options" });
+      expect(result.interceptors).toEqual(module);
     });
 
     it("should assign authConfigs", () => {
@@ -410,20 +327,6 @@ describe("Dynamic Prisma Model Loader", () => {
       dynamicLoader.assignModuleToResult(
         "User",
         "authConfigs",
-        module,
-        result,
-        arkosConfig
-      );
-
-      expect(result.authConfigs).toEqual({ auth: "config" });
-    });
-
-    it("should assign authConfigsNew", () => {
-      const module = { default: { auth: "config" } };
-
-      dynamicLoader.assignModuleToResult(
-        "User",
-        "authConfigsNew",
         module,
         result,
         arkosConfig
@@ -447,11 +350,10 @@ describe("Dynamic Prisma Model Loader", () => {
     });
 
     it("should assign router with strict routing rules applied", () => {
-      const module = { routes: [], config: { path: "/users" } };
-      (applyStrictRoutingRules as jest.Mock).mockReturnValue({
-        path: "/users",
-        strict: true,
-      });
+      const module = {
+        routes: [],
+        config: { some: "/users", findMany: { experimental: { openapi: {} } } },
+      };
 
       dynamicLoader.assignModuleToResult(
         "User",
@@ -463,12 +365,52 @@ describe("Dynamic Prisma Model Loader", () => {
 
       expect(result.router).toEqual({
         routes: [],
-        config: { path: "/users", strict: true },
+        config: {
+          disable: {
+            createMany: true,
+            createOne: true,
+            deleteMany: true,
+            deleteOne: true,
+            findMany: true,
+            findOne: true,
+            updateMany: true,
+            updateOne: true,
+          },
+          createMany: {
+            disabled: true,
+          },
+          createOne: {
+            disabled: true,
+          },
+          deleteMany: {
+            disabled: true,
+          },
+          deleteOne: {
+            disabled: true,
+          },
+          findMany: {
+            disabled: true,
+            experimental: { openapi: {} },
+          },
+          findOne: {
+            disabled: true,
+          },
+          updateMany: {
+            disabled: true,
+          },
+          updateOne: {
+            disabled: true,
+          },
+          some: "/users",
+        },
       });
-      expect(applyStrictRoutingRules).toHaveBeenCalledWith(
+      expect(mockApplyStrictRoutingRules).toHaveBeenCalledWith(
         "User",
         arkosConfig,
-        { path: "/users" }
+        {
+          some: "/users",
+          findMany: { disabled: true, experimental: { openapi: {} } },
+        }
       );
     });
 
@@ -483,7 +425,7 @@ describe("Dynamic Prisma Model Loader", () => {
         arkosConfig
       );
 
-      expect(applyStrictRoutingRules).toHaveBeenCalledWith(
+      expect(mockApplyStrictRoutingRules).toHaveBeenCalledWith(
         "User",
         arkosConfig,
         {}
@@ -549,8 +491,13 @@ describe("Dynamic Prisma Model Loader", () => {
 
     it("should process modules with zod validation", async () => {
       (pathExists as jest.Mock).mockResolvedValue(true);
-      (importModule as jest.Mock).mockResolvedValue({
-        default: { test: "data" },
+      const CreateUserSchema = z.object({});
+      (importModule as jest.Mock).mockImplementation(async (path: string) => {
+        if (path.includes("create-user.schema.js"))
+          return { default: CreateUserSchema };
+        return {
+          default: { test: "data" },
+        };
       });
 
       const result = await dynamicLoader.importModuleComponents(
@@ -559,13 +506,20 @@ describe("Dynamic Prisma Model Loader", () => {
         true
       );
 
-      expect(result).toHaveProperty("schemas");
+      expect(result).toStrictEqual(
+        expect.objectContaining({
+          schemas: expect.objectContaining({
+            create: CreateUserSchema,
+            createOne: CreateUserSchema,
+          }),
+        })
+      );
     });
 
     it("should process modules with dto validation", async () => {
       const arkosConfig = { validation: { resolver: "zod" as const } };
       (pathExists as jest.Mock).mockResolvedValue(true);
-      (importModule as jest.Mock).mockResolvedValue({
+      (importModule as jest.Mock).mockResolvedValueOnce({
         default: { test: "data" },
       });
 
@@ -583,6 +537,7 @@ describe("Dynamic Prisma Model Loader", () => {
         routers: { strict: true },
         validation: { resolver: "zod" as const },
       };
+      const promiseAllSpy = jest.spyOn(Promise, "all");
       (pathExists as jest.Mock).mockImplementation((filePath) => {
         return !filePath.includes("router");
       });
@@ -594,7 +549,54 @@ describe("Dynamic Prisma Model Loader", () => {
         true
       );
 
-      expect(result.router).toBeDefined();
+      // Checks correctly if the first promises array was destructed
+      expect(promiseAllSpy).toHaveBeenCalled();
+      const passedArray = promiseAllSpy.mock.calls[0][0];
+      // Helps ensuring that all of the values on promise all where Promises
+      // This is comment is here because of previous found Bug, because the test
+      // is obvious by itself.
+      expect(passedArray.every((item: any) => item instanceof Promise)).toBe(
+        true
+      );
+      expect(importModule).toHaveBeenCalledTimes(12);
+      expect(result.router).toEqual({
+        config: {
+          disable: {
+            createMany: true,
+            createOne: true,
+            deleteMany: true,
+            deleteOne: true,
+            findMany: true,
+            findOne: true,
+            updateMany: true,
+            updateOne: true,
+          },
+          createMany: {
+            disabled: true,
+          },
+          createOne: {
+            disabled: true,
+          },
+          deleteMany: {
+            disabled: true,
+          },
+          deleteOne: {
+            disabled: true,
+          },
+          findMany: {
+            disabled: true,
+          },
+          findOne: {
+            disabled: true,
+          },
+          updateMany: {
+            disabled: true,
+          },
+          updateOne: {
+            disabled: true,
+          },
+        },
+      });
     });
 
     it("should skip router when not using strict routing and file doesn't exist", async () => {
@@ -620,23 +622,6 @@ describe("Dynamic Prisma Model Loader", () => {
 
       expect(sheu.error).toHaveBeenCalled();
       expect(killServerChildProcess).toHaveBeenCalled();
-    });
-
-    it("should handle validation naming conflicts and rethrow", async () => {
-      (pathExists as jest.Mock).mockResolvedValue(true);
-      (importModule as jest.Mock).mockResolvedValue({ default: {} });
-
-      expect(
-        await dynamicLoader.importModuleComponents(
-          "User",
-          baseArkosConfig,
-          true
-        )
-      );
-
-      expect(mockError).toHaveBeenCalledWith(
-        expect.stringContaining("Cannot use both")
-      );
     });
 
     it("should handle general errors and kill process", async () => {

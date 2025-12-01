@@ -9,13 +9,16 @@ import {
 } from "../../types";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { catchAsync } from "../../exports/error-handler";
+import { AppError, catchAsync } from "../../exports/error-handler";
 import validateDto from "../../utils/validate-dto";
 import validateSchema from "../../utils/validate-schema";
 import { ZodSchema } from "zod";
 import { ClassConstructor } from "class-transformer";
 import { ValidatorOptions } from "class-validator";
 import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
+import { ArkosRouteConfig } from "../../utils/arkos-router/types";
+import { capitalize } from "../../utils/helpers/text.helpers";
+import { isClass, isZodSchema } from "../../utils/dynamic-loader";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -51,7 +54,6 @@ export function sendResponse(req: ArkosRequest, res: ArkosResponse) {
   let responseData;
   let responseStatus;
 
-  // Get original values (set by controller)
   const originalData = (res as any).originalData;
   const originalStatus = (res as any).originalStatus;
 
@@ -158,9 +160,8 @@ export function handleRequestLogs(
   res: Response,
   next: NextFunction
 ) {
-  const startTime = Date.now(); // Capture the start time
+  const startTime = Date.now();
 
-  // Define colors for each HTTP method
   const methodColors = {
     GET: "\x1b[36m", // Cyan
     POST: "\x1b[32m", // Green
@@ -231,6 +232,123 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
         );
       else if (validationConfigs?.resolver === "zod" && schemaOrDtoClass)
         req.body = await validateSchema(schemaOrDtoClass as ZodSchema<T>, body);
+
+      next();
+    }
+  );
+}
+
+export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
+  const arkosConfig = getArkosConfig();
+  const validationConfig = arkosConfig.validation;
+  const strictValidation = validationConfig?.strict;
+  const validators = routeConfig?.validation;
+  const openapi = routeConfig?.experimental?.openapi;
+
+  const validationToParameterMapping = {
+    query: "query",
+    params: "path",
+    headers: "header",
+    cookies: "cookie",
+  };
+
+  if (!validationConfig?.resolver && validators)
+    throw Error(
+      "Trying to pass validators into route config validation option without choosing a validation resolver under arkos config { validation: {} }."
+    );
+
+  if ((validators as any) === true)
+    throw Error(
+      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`
+    );
+
+  const validatorFn: (validator: any, data: any, options: any) => Promise<any> =
+    validationConfig?.resolver == "zod" ? validateSchema : validateDto;
+  const validatorsKey: ("body" | "query" | "params")[] = [
+    "body",
+    "query",
+    "params",
+  ];
+
+  const isValidValidator =
+    validationConfig?.resolver == "zod" ? isZodSchema : isClass;
+  const validatorName =
+    validationConfig?.resolver == "zod" ? "zod schema" : "class-validator dto";
+  const validatorNameType =
+    validationConfig?.resolver == "zod" ? "Schema" : "Dto";
+
+  if (typeof validators === "object")
+    validatorsKey.forEach((key) => {
+      if (
+        openapi &&
+        typeof openapi === "object" &&
+        key != "body" &&
+        openapi.parameters?.some(
+          (parameter: any) => parameter.in === validationToParameterMapping[key]
+        ) &&
+        validators[key]
+      ) {
+        throw Error(
+          `When usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+        );
+      }
+
+      if (
+        openapi &&
+        typeof openapi === "object" &&
+        openapi.requestBody &&
+        validators[key] &&
+        key === "body"
+      ) {
+        throw Error(
+          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+        );
+      }
+
+      if (strictValidation && !(key in validators))
+        throw Error(
+          `No { validation: { ${key}: ${validatorNameType} } } was found, while using strict validation you will need to pass undefined into ${key} in order to deny any request ${key} input.`
+        );
+
+      if (
+        key in validators &&
+        validators?.[key] !== undefined &&
+        validators?.[key] !== false &&
+        !isValidValidator(validators[key])
+      )
+        throw Error(
+          `Your validation resolver is set to ${arkosConfig.validation!.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}`
+        );
+    });
+
+  return catchAsync(
+    async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+      for (const key of validatorsKey) {
+        if (typeof validators === "boolean" && validators === false)
+          throw new AppError(
+            `No request ${key} is allowed on this route`,
+            400,
+            `NoRequest${capitalize(key)}Allowed`,
+            { [key]: req[key] }
+          );
+
+        const validator = validators?.[key];
+
+        if (strictValidation && !validator && Object.keys(req[key]).length > 0)
+          throw new AppError(
+            `No request ${key} is allowed on this route`,
+            400,
+            `NoRequest${capitalize(key)}Allowed`,
+            { [key]: req[key] }
+          );
+
+        if (validator)
+          req[key] = await validatorFn(
+            validator,
+            req[key],
+            arkosConfig.validation?.validationOptions
+          );
+      }
 
       next();
     }

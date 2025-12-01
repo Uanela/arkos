@@ -1,12 +1,12 @@
-import { spawn, ChildProcess } from "child_process";
+import { spawn, ChildProcess, execSync } from "child_process";
 import chokidar from "chokidar";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
-import { getVersion } from "./utils/cli.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import fs from "fs";
 import path from "path";
 import sheu from "../sheu";
 import portAndHostAllocator from "../features/port-and-host-allocator";
+import watermarkStamper from "./utils/watermark-stamper";
 
 interface DevOptions {
   port?: string;
@@ -32,12 +32,40 @@ export async function devCommand(options: DevOptions = {}) {
     let restartingFiles = new Set<string>();
 
     const fileExt = getUserFileExtension();
-
     const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
 
     if (!fs.existsSync(entryPoint)) {
       console.error(`Could not find application entry point at ${entryPoint}`);
       process.exit(1);
+    }
+
+    const baseServiceTypesPath = path.resolve(
+      process.cwd(),
+      `node_modules/@arkosjs/types/base.service.d.ts`
+    );
+    if (fileExt === "ts" && !fs.existsSync(baseServiceTypesPath)) {
+      const answer = await new Promise<boolean>((resolve) => {
+        sheu.warn(
+          'Missing base services types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client'
+        );
+        process.stdout.write(
+          `\n${sheu.green("?", { bold: true })} Would you like to run "npx arkos prisma generate"? (Y/n): `
+        );
+        process.stdin.once("data", (data) => {
+          const result = data.toString().trim().toLowerCase();
+          process.stdin.pause();
+          resolve(result === "y" || result.length === 0);
+        });
+      });
+
+      if (answer) {
+        console.info("\nSyncing base service with @prisma/client...");
+        console.log("");
+        execSync(`npx arkos prisma generate`);
+      } else
+        throw Error(
+          'Missing BaseService types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client, see more at https://www.arkosjs.com/docs/cli/built-in-cli#typescript-types-generation.'
+        );
     }
 
     const getEnv = () =>
@@ -46,6 +74,7 @@ export async function devCommand(options: DevOptions = {}) {
         ...process.env,
         ...(port && { CLI_PORT: port }),
         ...(host && { CLI_HOST: host }),
+        CLI: "false",
       }) as { [x: string]: string };
 
     const startServer = () => {
@@ -143,15 +172,10 @@ export async function devCommand(options: DevOptions = {}) {
       { logWarning: true }
     );
 
-    console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-    console.info(
-      `  - Local:        http://${hostAndPort?.host}:${hostAndPort?.port}`
-    );
-    console.info(
-      `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-        .replaceAll(`\\`, "")
-        .replaceAll("/", "")}\n`
-    );
+    watermarkStamper.stamp({
+      ...hostAndPort,
+      envFiles,
+    });
 
     const cleanup = () => {
       if (restartTimeout) clearTimeout(restartTimeout);
@@ -169,17 +193,16 @@ export async function devCommand(options: DevOptions = {}) {
       process.exit(0);
     };
 
-    // Handle process exit
     process.on("SIGINT", cleanup);
     process.on("SIGTERM", cleanup);
 
-    // Handle uncaught exceptions
     process.on("uncaughtException", (error) => {
       console.error("Uncaught Exception:", error);
       cleanup();
     });
   } catch (error) {
-    console.error("Development server failed to start:", error);
+    sheu.error("Development server failed to start:");
+    console.error(error);
 
     if (child) {
       (child as ChildProcess)?.kill?.();

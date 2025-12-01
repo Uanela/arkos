@@ -1,10 +1,44 @@
 {{#if typescript}}
 import { ArkosConfig } from 'arkos'
 
-const config: ArkosConfig = {}
+const config: ArkosConfig = {
 {{else}}
 /** @type {import('arkos').ArkosConfig} */
-const config = {}
+const config = {
 {{/if}}
+  {{#if authentication.type}}
+  authentication: {
+    mode: '{{authentication.type}}',
+    login: {
+      allowedUsernames: ['{{authentication.usernameField}}'],
+    }
+  },
+  {{/if}}
+  routers: {
+  {{#if routing.strict}}
+    strict: true
+  {{else}}
+    strict: "no-bulk"
+  {{/if}}
+  },
+  {{#if validation.type}}
+  validation: {
+    resolver: '{{validation.type}}'
+  },
+  {{/if}}
+  swagger: {
+    {{#if validation.type}}
+    mode: '{{validation.type}}',
+    {{else}}
+    mode: 'prisma',
+    {{/if}}
+    strict: false,
+  },
+  middlewares: {
+    cors: {
+      allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+    },
+  }
+}
 
 export default config

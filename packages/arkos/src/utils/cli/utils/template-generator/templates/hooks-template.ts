@@ -11,39 +11,6 @@ export default function generateHooksTemplate(
 
   if (!modelName) throw new Error("Module name is required for hooks template");
 
-  const baseImports = isTypeScript
-    ? `// import { 
-// BeforeFindOneHookArgs, 
-// AfterFindOneHookArgs, 
-// BeforeUpdateOneHookArgs, 
-// AfterUpdateOneHookArgs,
-// BeforeCreateOneHookArgs,
-// AfterCreateOneHookArgs,
-// BeforeCreateManyHookArgs,
-// AfterCreateManyHookArgs,
-// BeforeCountHookArgs,
-// AfterCountHookArgs,
-// BeforeFindManyHookArgs,
-// AfterFindManyHookArgs,
-// BeforeUpdateManyHookArgs,
-// AfterUpdateManyHookArgs,
-// BeforeDeleteOneHookArgs,
-// AfterDeleteOneHookArgs,
-// BeforeDeleteManyHookArgs,
-// AfterDeleteManyHookArgs,
-// OnCreateOneErrorHookArgs,
-// OnCreateManyErrorHookArgs,
-// OnCountErrorHookArgs,
-// OnFindManyErrorHookArgs,
-// OnFindByIdErrorHookArgs,
-// OnFindOneErrorHookArgs,
-// OnUpdateOneErrorHookArgs,
-// OnUpdateManyErrorHookArgs,
-// OnDeleteOneErrorHookArgs,
-// OnDeleteManyErrorHookArgs
-// } from "arkos/services";`
-    : ``;
-
   const serviceImport = `"./${modelName.kebab}.service${ext === "ts" ? "" : "." + "js"}";`;
 
   const getHookArgsType = (hookName: string) => {
@@ -202,8 +169,7 @@ export default function generateHooksTemplate(
 // ];
 `;
 
-  return `${baseImports}
-// import { Prisma } from "@prisma/client"
+  return `// import { Prisma } from "@prisma/client"
 // import ${modelName.camel}Service from ${serviceImport}
 
 ${hooks}`;

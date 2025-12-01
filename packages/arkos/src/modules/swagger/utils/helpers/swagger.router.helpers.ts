@@ -18,16 +18,14 @@ import {
 /**
  * Helps choosing the right json schemas according to swagger configurations
  */
-export async function getOpenAPIJsonSchemasByConfigMode(
-  arkosConfig: ArkosConfig
-) {
+export function getOpenAPIJsonSchemasByConfigMode(arkosConfig: ArkosConfig) {
   switch (arkosConfig?.swagger!.mode) {
     case "prisma":
-      return await generatePrismaJsonSchemas(arkosConfig);
+      return generatePrismaJsonSchemas(arkosConfig);
     case "class-validator":
-      return await generateClassValidatorJsonSchemas();
+      return generateClassValidatorJsonSchemas();
     case "zod":
-      return await generateZodJsonSchemas();
+      return generateZodJsonSchemas();
     default:
       throw Error(
         "Unknown mode for auto documentation, supported values are prisma, class-validator, zod or json-schemas"
@@ -104,9 +102,9 @@ export function getSchemaRef(
   }
 }
 
-export async function generatePathsForModels(
+export function generatePathsForModels(
   arkosConfig: ArkosConfig
-): Promise<OpenAPIV3.PathsObject> {
+): OpenAPIV3.PathsObject {
   const swaggerConfig = arkosConfig?.swagger;
 
   if (!swaggerConfig) return {};
@@ -115,9 +113,8 @@ export async function generatePathsForModels(
   const models = prismaSchemaParser.getModelsAsArrayOfStrings();
 
   for (const model of models) {
-    await generatePrismaModelMainRoutesPaths(model, paths, arkosConfig);
-
-    await generatePrismaModelParentRoutePaths(model, paths, arkosConfig);
+    generatePrismaModelMainRoutesPaths(model, paths, arkosConfig);
+    generatePrismaModelParentRoutePaths(model, paths, arkosConfig);
   }
 
   paths = {
@@ -127,7 +124,7 @@ export async function generatePathsForModels(
 
   paths = {
     ...paths,
-    ...((await getAuthenticationJsonSchemaPaths(arkosConfig)) || {}),
+    ...(getAuthenticationJsonSchemaPaths(arkosConfig) || {}),
   };
 
   return paths;
@@ -141,7 +138,7 @@ export async function generatePathsForModels(
  * @param arkosConfig {ArkosConfig} - the arkos.js configuration
  * @returns boolean
  */
-export async function localValidatorFileExists(
+export function localValidatorFileExists(
   action: ValidationFileMappingKey,
   modelName: string,
   arkosConfig: ArkosConfig

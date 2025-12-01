@@ -1,7 +1,5 @@
 import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
-import { ArkosConfig } from "../../types/arkos-config";
-import deepmerge from "../../utils/helpers/deepmerge.helper";
 import {
   generatePathsForModels,
   getOpenAPIJsonSchemasByConfigMode,
@@ -10,19 +8,26 @@ import missingJsonSchemaGenerator from "./utils/helpers/missing-json-schemas-gen
 import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs";
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
 import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/generate-system-json-schemas";
+import { generateOpenAPIFromApp } from "../../utils/arkos-router";
+import express from "express";
 import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-schema-paths";
+import { ArkosConfig, ArkosRequest, ArkosResponse } from "../../exports";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
 
 const swaggerRouter = Router();
 
 export async function getSwaggerRouter(
-  arkosConfig: ArkosConfig
+  arkosConfig: ArkosConfig,
+  app: express.Express
 ): Promise<Router> {
-  let defaultJsonSchemas = await getOpenAPIJsonSchemasByConfigMode(arkosConfig);
-  const defaultModelsPaths = await generatePathsForModels(arkosConfig);
+  let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
+  const defaultModelsPaths = generatePathsForModels(arkosConfig);
+  const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
+
   const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(arkosConfig);
 
   const missingJsonSchemas =
-    await missingJsonSchemaGenerator.generateMissingJsonSchemas(
+    missingJsonSchemaGenerator.generateMissingJsonSchemas(
       defaultModelsPaths,
       defaultJsonSchemas,
       arkosConfig
@@ -35,13 +40,14 @@ export async function getSwaggerRouter(
   };
 
   const swaggerConfigs = deepmerge(
-    (await getSwaggerDefaultConfig(
+    getSwaggerDefaultConfig(
       {
         ...defaultModelsPaths,
         ...fileUploadDefaultPaths,
+        ...pathsFromCustomArkosRouters,
       },
       defaultJsonSchemas
-    )) || {},
+    ) || {},
     arkosConfig.swagger || {}
   ) as ArkosConfig["swagger"];
 
@@ -56,8 +62,15 @@ export async function getSwaggerRouter(
     "@scalar/express-api-reference"
   );
 
+  const endpoint = swaggerConfigs!.endpoint!;
+
+  swaggerRouter.get(
+    `${endpoint}/openapi.json`,
+    (_: ArkosRequest, res: ArkosResponse) => res.json(swaggerSpecification)
+  );
+
   swaggerRouter.use(
-    swaggerConfigs!.endpoint!,
+    endpoint,
     scalar.apiReference({
       content: swaggerSpecification,
       ...swaggerConfigs?.scalarApiReferenceConfiguration,

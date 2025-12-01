@@ -21,7 +21,7 @@ describe("TypeScript config template rendering", () => {
     expect(config.compilerOptions.target).toBe("ES6");
     expect(config.compilerOptions.module).toBe("Node16");
     expect(config.compilerOptions.moduleResolution).toBe("node16");
-    expect(config.compilerOptions.rootDir).toBe("./src");
+    expect(config.compilerOptions.rootDir).toBe(".");
     expect(config.compilerOptions.strict).toBe(true);
     expect(config.compilerOptions.sourceMap).toBe(true);
     expect(config.compilerOptions.inlineSources).toBe(true);
@@ -78,7 +78,7 @@ describe("TypeScript config template rendering", () => {
     expect(result).toContain('"target": "ES6"');
     expect(result).toContain('"module": "Node16"');
     expect(result).toContain('"moduleResolution": "node16"');
-    expect(result).toContain('"rootDir": "./src"');
+    expect(result).toContain('"rootDir": "."');
     expect(result).toContain('"strict": true');
     expect(result).toContain('"sourceMap": true');
     expect(result).toContain('"inlineSources": true');

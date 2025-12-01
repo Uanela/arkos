@@ -17,7 +17,7 @@ export function handleJWTExpired() {
 
 export function handlePrismaClientValidationError(err: AppError) {
   const message =
-    err?.message?.split("\n")[err?.message.split("\n").length - 1];
+    err?.message?.split("\n")[err?.message?.split("\n").length - 1];
   return new AppError(message, 400);
 }
 

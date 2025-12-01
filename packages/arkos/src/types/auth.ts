@@ -11,7 +11,7 @@ export type AccessAction = "Create" | "Update" | "Delete" | "View" | string;
 
 export type DetailedAccessControlRule = {
   /** Array of role names that have permission for this action */
-  roles: string[];
+  roles?: string[];
   /** Human-readable name for this permission (optional) */
   name?: string;
   /** Detailed description of what this permission allows (optional) */

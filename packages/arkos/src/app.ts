@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import express, { IRouter, Router } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { getAuthRouter } from "./modules/auth/auth.router";
@@ -12,44 +12,49 @@ import compression from "compression";
 import { handleRequestLogs } from "./modules/base/base.middlewares";
 import { loadPrismaModule } from "./utils/helpers/prisma.helpers";
 import { getFileUploadRouter } from "./modules/file-upload/file-upload.router";
-import { ArkosConfig } from "./types/arkos-config";
 import { queryParser } from "./utils/helpers/query-parser.helpers";
 import deepmerge from "./utils/helpers/deepmerge.helper";
 import { getSwaggerRouter } from "./modules/swagger/swagger.router";
 import { loadAllModuleComponents } from "./utils/dynamic-loader";
 import { AppError } from "./exports/error-handler";
 import debuggerService from "./modules/debugger/debugger.service";
-
+import { getArkosConfig } from "./exports";
+import { ArkosInitConfig } from "./types/arkos-config";
+import { isAuthenticationEnabled } from "./utils/helpers/arkos-config.helpers";
 export const app: express.Express = express();
 const knowModulesRouter = Router();
 
 export async function bootstrap(
-  arkosConfig: ArkosConfig
+  initConfig: ArkosInitConfig
 ): Promise<express.Express> {
+  const arkosConfig = getArkosConfig();
+
   await Promise.all([
     loadPrismaModule(),
     loadAllModuleComponents(arkosConfig),
-    arkosConfig?.configureApp && (await arkosConfig?.configureApp(app)),
+    initConfig?.configureApp && (await initConfig?.configureApp(app)),
   ]);
 
   const middlewaresConfig = arkosConfig?.middlewares;
-  const disabledMiddlewares = middlewaresConfig?.disable || [];
-  const replacedMiddlewares = middlewaresConfig?.replace || {};
 
-  if (!disabledMiddlewares?.includes?.("compression"))
-    app.use(
-      replacedMiddlewares.compression ||
-        compression(arkosConfig?.compressionOptions)
-    );
+  if (middlewaresConfig?.compression !== false) {
+    if (typeof middlewaresConfig?.compression === "function") {
+      app.use(middlewaresConfig.compression);
+    } else {
+      app.use(compression(middlewaresConfig?.compression || {}));
+    }
+  }
 
-  if (!disabledMiddlewares?.includes?.("global-rate-limit"))
-    app.use(
-      replacedMiddlewares.globalRateLimit ||
+  if (middlewaresConfig?.rateLimit !== false) {
+    if (typeof middlewaresConfig?.rateLimit === "function") {
+      app.use(middlewaresConfig.rateLimit);
+    } else {
+      app.use(
         rateLimit(
           deepmerge(
             {
               windowMs: 60 * 1000,
-              limit: 500,
+              limit: 300,
               standardHeaders: "draft-7",
               legacyHeaders: false,
               handler: (_, res) => {
@@ -58,35 +63,38 @@ export async function bootstrap(
                 });
               },
             },
-            arkosConfig?.globalRequestRateLimitOptions || {}
+            middlewaresConfig?.rateLimit || {}
           )
         )
-    );
+      );
+    }
+  }
 
-  if (!disabledMiddlewares?.includes?.("cors"))
-    app.use(
-      replacedMiddlewares.cors ||
+  if (middlewaresConfig?.cors !== false) {
+    if (typeof middlewaresConfig?.cors === "function") {
+      app.use(middlewaresConfig.cors);
+    } else {
+      app.use(
         cors(
-          arkosConfig?.cors?.customHandler
-            ? arkosConfig.cors.customHandler
+          middlewaresConfig?.cors?.customHandler
+            ? middlewaresConfig.cors.customHandler
             : deepmerge(
                 {
                   origin: (
                     origin: string,
                     cb: (err: Error | null, allow?: boolean) => void
                   ) => {
-                    const allowed = arkosConfig?.cors?.allowedOrigins;
+                    const allowed = (middlewaresConfig?.cors as any)
+                      ?.allowedOrigins;
 
-                    if (allowed === "*") {
-                      cb(null, true);
-                    } else if (Array.isArray(allowed)) {
+                    if (allowed === "*") cb(null, true);
+                    else if (Array.isArray(allowed))
                       cb(null, !origin || allowed?.includes?.(origin));
-                    } else if (typeof allowed === "string") {
+                    else if (typeof allowed === "string")
                       cb(null, !origin || allowed === origin);
-                    } else {
-                      cb(null, false);
-                    }
+                    else cb(null, false);
                   },
+
                   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
                   allowedHeaders: [
                     "Content-Type",
@@ -95,84 +103,89 @@ export async function bootstrap(
                   ],
                   credentials: true,
                 },
-                arkosConfig?.cors?.options || {}
+                middlewaresConfig?.cors?.options || {}
               )
         )
-    );
+      );
+    }
+  }
 
-  if (!disabledMiddlewares?.includes?.("express-json"))
-    app.use(
-      replacedMiddlewares.expressJson ||
-        express.json(arkosConfig?.jsonBodyParserOptions)
-    );
+  if (middlewaresConfig?.expressJson !== false) {
+    if (typeof middlewaresConfig?.expressJson === "function") {
+      app.use(middlewaresConfig.expressJson);
+    } else {
+      app.use(express.json(middlewaresConfig?.expressJson || {}));
+    }
+  }
 
-  if (!disabledMiddlewares?.includes?.("cookie-parser"))
-    app.use(
-      replacedMiddlewares.cookieParser ||
-        cookieParser(...[...(arkosConfig?.cookieParserParameters || [])])
-    );
+  if (middlewaresConfig?.cookieParser !== false) {
+    if (typeof middlewaresConfig?.cookieParser === "function") {
+      app.use(middlewaresConfig.cookieParser);
+    } else {
+      const params = Array.isArray(middlewaresConfig?.cookieParser)
+        ? middlewaresConfig.cookieParser
+        : [];
+      app.use(cookieParser(...(params as any))); // FIXME: check types correctly
+    }
+  }
 
-  if (!disabledMiddlewares?.includes?.("query-parser"))
-    app.use(
-      replacedMiddlewares.queryParser ||
+  if (middlewaresConfig?.queryParser !== false) {
+    if (typeof middlewaresConfig?.queryParser === "function") {
+      app.use(middlewaresConfig.queryParser);
+    } else {
+      app.use(
         queryParser(
           deepmerge(
             {
               parseNull: true,
               parseUndefined: true,
               parseBoolean: true,
+              parseNumber: true,
             },
-            arkosConfig?.queryParserOptions || {}
+            middlewaresConfig?.queryParser || {}
           )
         )
-    );
+      );
+    }
+  }
 
-  if (!disabledMiddlewares?.includes?.("request-logger"))
-    app.use(replacedMiddlewares.requestLogger || handleRequestLogs);
-
-  if (arkosConfig?.middlewares?.additional)
-    arkosConfig.middlewares.additional.forEach((middleware) => {
-      app.use(middleware);
-    });
-
-  const routersConfig = arkosConfig?.routers;
-  const disabledRouters = routersConfig?.disable || [];
-  const replacedRouters = routersConfig?.replace || {};
-
-  if (!disabledRouters?.includes?.("welcome-endpoint"))
-    app.get(
-      "/api",
-      replacedRouters.welcomeEndpoint ||
-        ((_, res) => {
-          res.status(200).json({ message: arkosConfig.welcomeMessage });
-        })
-    );
+  if (middlewaresConfig?.requestLogger !== false) {
+    if (typeof middlewaresConfig?.requestLogger === "function") {
+      app.use(middlewaresConfig.requestLogger);
+    } else {
+      app.use(handleRequestLogs);
+    }
+  }
 
   app.use(debuggerService.logRequestInfo);
 
-  if (!disabledRouters?.includes?.("file-upload")) {
-    const fileUploadRouter = replacedRouters.fileUpload
-      ? await replacedRouters.fileUpload(arkosConfig)
-      : await getFileUploadRouter(arkosConfig);
-    knowModulesRouter.use(fileUploadRouter);
+  const routersConfig = arkosConfig?.routers;
+
+  if (routersConfig?.welcomeRoute !== false) {
+    if (typeof routersConfig?.welcomeRoute === "function") {
+      app.get("/api", routersConfig.welcomeRoute);
+    } else {
+      app.get("/api", (_, res) => {
+        res.status(200).json({ message: arkosConfig.welcomeMessage });
+      });
+    }
   }
 
-  if (
-    !disabledRouters?.includes?.("auth-router") &&
-    arkosConfig.authentication
-  ) {
-    const authRouter = replacedRouters.authRouter
-      ? await replacedRouters.authRouter(arkosConfig)
-      : await getAuthRouter(arkosConfig);
+  if (initConfig?.use)
+    for (const mwOrRouter of initConfig.use) {
+      app.use(mwOrRouter as IRouter);
+    }
+
+  const fileUploadRouter = getFileUploadRouter(arkosConfig);
+  knowModulesRouter.use(fileUploadRouter);
+
+  if (isAuthenticationEnabled()) {
+    const authRouter = getAuthRouter(arkosConfig) as any;
     knowModulesRouter.use("/api", authRouter);
   }
 
-  if (!disabledRouters?.includes?.("prisma-models-router")) {
-    const modelsRouter = replacedRouters.prismaModelsRouter
-      ? await replacedRouters.prismaModelsRouter(arkosConfig)
-      : await getPrismaModelsRouter(arkosConfig);
-    knowModulesRouter.use("/api", modelsRouter);
-  }
+  const modelsRouter = getPrismaModelsRouter(arkosConfig);
+  knowModulesRouter.use("/api", modelsRouter as any);
 
   app.use(knowModulesRouter);
   app.use("/api", getAvailableResourcesAndRoutesRouter());
@@ -182,24 +195,24 @@ export async function bootstrap(
     (process.env.ARKOS_BUILD !== "true" ||
       arkosConfig.swagger.enableAfterBuild === true)
   )
-    app.use("/api", await getSwaggerRouter(arkosConfig));
-
-  if (routersConfig?.additional)
-    routersConfig.additional.forEach((router) => {
-      app.use(router);
-    });
+    app.use("/api", await getSwaggerRouter(arkosConfig, app));
 
   app.use("*", (req) => {
     throw new AppError(
       "Route not found",
       404,
-      { route: req.route },
+      { route: req.path },
       "RouteNotFound"
     );
   });
 
-  if (!disabledMiddlewares?.includes?.("global-error-handler"))
-    app.use(replacedMiddlewares.globalErrorHandler || errorHandler);
+  if (middlewaresConfig?.errorHandler !== false) {
+    if (typeof middlewaresConfig?.errorHandler === "function") {
+      app.use(middlewaresConfig.errorHandler);
+    } else {
+      app.use(errorHandler);
+    }
+  }
 
   return app;
 }

@@ -60,12 +60,12 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     );
     (isEndpointDisabled as jest.Mock).mockReturnValue(false);
     (getModuleComponents as jest.Mock).mockReturnValue(mockModuleComponents);
-    (localValidatorFileExists as jest.Mock).mockResolvedValue(false);
+    (localValidatorFileExists as jest.Mock).mockReturnValue(false);
   });
 
   describe("Basic Functionality", () => {
     it("should generate all CRUD routes for a basic model", async () => {
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       // Check that all main routes are created
       expect(paths["/api/users"]).toBeDefined();
@@ -87,11 +87,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       (kebabToHuman as jest.Mock).mockReturnValue("User Profile");
       (pluralize.plural as jest.Mock).mockReturnValue("User Profiles");
 
-      await generatePrismaModelMainRoutesPaths(
-        "UserProfile",
-        paths,
-        arkosConfig
-      );
+      generatePrismaModelMainRoutesPaths("UserProfile", paths, arkosConfig);
 
       expect(kebabCase).toHaveBeenCalledWith("UserProfile");
       expect(pascalCase).toHaveBeenCalledWith("UserProfile");
@@ -101,7 +97,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     });
 
     it("should call getModuleComponents with correct parameters", async () => {
-      await generatePrismaModelMainRoutesPaths("Product", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("Product", paths, arkosConfig);
 
       expect(getModuleComponents).toHaveBeenCalledWith("Product");
     });
@@ -112,7 +108,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       mockModuleComponents.router.config = { disable: true };
       (getModuleComponents as jest.Mock).mockReturnValue(mockModuleComponents);
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(Object.keys(paths)).toHaveLength(0);
     });
@@ -121,7 +117,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       mockModuleComponents.router = undefined;
       (getModuleComponents as jest.Mock).mockReturnValue(mockModuleComponents);
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       // Should still generate routes when router config is undefined
       expect(paths["/api/users"]).toBeDefined();
@@ -130,7 +126,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     it("should handle missing model modules gracefully", async () => {
       (getModuleComponents as jest.Mock).mockReturnValue(null);
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       // Should still generate routes when model modules are null
       expect(paths["/api/users"]).toBeDefined();
@@ -143,7 +139,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         (_, endpoint) => endpoint === "createOne"
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users"]).toBeDefined();
       expect(paths["/api/users"].post).toBeUndefined();
@@ -155,7 +151,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         (_, endpoint) => endpoint === "findMany"
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users"]).toBeDefined();
       expect(paths["/api/users"].get).toBeUndefined();
@@ -167,7 +163,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         (_, endpoint) => endpoint === "createMany"
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users/many"]).toBeDefined();
       expect(paths["/api/users/many"].post).toBeUndefined();
@@ -178,7 +174,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         (_, endpoint) => endpoint === "updateMany"
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users/many"]).toBeDefined();
       expect(paths["/api/users/many"].patch).toBeUndefined();
@@ -189,7 +185,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         (_, endpoint) => endpoint === "deleteMany"
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users/many"]).toBeDefined();
       expect(paths["/api/users/many"].delete).toBeUndefined();
@@ -200,7 +196,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         (_, endpoint) => endpoint === "findOne"
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users/{id}"].get).toBeUndefined();
     });
@@ -210,7 +206,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         (_, endpoint) => endpoint === "updateOne"
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users/{id}"]).toBeDefined();
       expect(paths["/api/users/{id}"].patch).toBeUndefined();
@@ -221,7 +217,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         (_, endpoint) => endpoint === "deleteOne"
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users/{id}"]).toBeDefined();
       expect(paths["/api/users/{id}"].delete).toBeUndefined();
@@ -233,7 +229,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       arkosConfig.swagger.strict = true;
       arkosConfig.swagger.mode = "zod";
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(getSchemaRef).toHaveBeenCalledWith("CreateUser", "zod");
       expect(localValidatorFileExists).not.toHaveBeenCalled();
@@ -243,16 +239,16 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       arkosConfig.swagger.strict = true;
       arkosConfig.swagger.mode = undefined;
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(getSchemaRef).toHaveBeenCalledWith("CreateUser", "prisma");
     });
 
     it("should use prisma when local file does not exist and not strict", async () => {
       arkosConfig.swagger.strict = false;
-      (localValidatorFileExists as jest.Mock).mockResolvedValue(false);
+      (localValidatorFileExists as jest.Mock).mockReturnValue(false);
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(getSchemaRef).toHaveBeenCalledWith("CreateUser", "prisma");
     });
@@ -260,9 +256,9 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     it("should use swagger mode when local file exists and not strict", async () => {
       arkosConfig.swagger.strict = false;
       arkosConfig.swagger.mode = "class-validator";
-      (localValidatorFileExists as jest.Mock).mockResolvedValue(true);
+      (localValidatorFileExists as jest.Mock).mockReturnValue(true);
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(getSchemaRef).toHaveBeenCalledWith(
         "CreateUser",
@@ -272,9 +268,9 @@ describe("generatePrismaModelMainRoutesPaths", () => {
 
     it("should call localValidatorFileExists for each action when not strict", async () => {
       arkosConfig.swagger.strict = false;
-      (localValidatorFileExists as jest.Mock).mockResolvedValue(false);
+      (localValidatorFileExists as jest.Mock).mockReturnValue(false);
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       // Should be called for each CRUD operation
       expect(localValidatorFileExists).toHaveBeenCalledTimes(6); // create, findMany, createMany, updateMany, findOne, update
@@ -290,7 +286,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         },
       };
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       // Should preserve existing method and add new ones
       expect(paths["/api/users"].options).toBeDefined();
@@ -304,7 +300,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       (kebabToHuman as jest.Mock).mockReturnValue("User Billing Address");
       (pluralize.plural as jest.Mock).mockImplementation((str) => str + "s");
 
-      await generatePrismaModelMainRoutesPaths(
+      generatePrismaModelMainRoutesPaths(
         "UserBillingAddress",
         paths,
         arkosConfig
@@ -321,27 +317,27 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       (kebabToHuman as jest.Mock).mockReturnValue("");
       (pluralize.plural as jest.Mock).mockReturnValue("");
 
-      await generatePrismaModelMainRoutesPaths("", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("", paths, arkosConfig);
 
       expect(paths["/api/"]).toBeDefined();
     });
 
     it("should handle undefined arkosConfig", async () => {
-      await expect(
-        generatePrismaModelMainRoutesPaths("User", paths, {})
-      ).resolves.toBe(undefined);
+      expect(generatePrismaModelMainRoutesPaths("User", paths, {})).toBe(
+        undefined
+      );
     });
 
     it("should handle empty paths object", async () => {
-      await expect(
-        generatePrismaModelMainRoutesPaths("User", {}, arkosConfig)
-      ).resolves.toBe(undefined);
+      expect(generatePrismaModelMainRoutesPaths("User", {}, arkosConfig)).toBe(
+        undefined
+      );
     });
 
     it("should handle arkosConfig without swagger property", async () => {
       arkosConfig = {};
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       // Should still work with default behavior
       expect(paths["/api/users"]).toBeDefined();
@@ -350,7 +346,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
 
   describe("Response Structure Validation", () => {
     it("should generate correct OpenAPI structure for createOne", async () => {
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       const createRoute = paths["/api/users"].post;
       expect(createRoute.tags).toEqual(["Users"]);
@@ -365,7 +361,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     });
 
     it("should generate correct OpenAPI structure for findMany", async () => {
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       const findManyRoute = paths["/api/users"].get;
       expect(findManyRoute.parameters).toHaveLength(5); // filter, sort, page, limit, fields
@@ -389,7 +385,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     });
 
     it("should generate correct OpenAPI structure for updateMany", async () => {
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       const updateManyRoute = paths["/api/users/many"].patch;
       expect(updateManyRoute.parameters).toHaveLength(1); // filter
@@ -398,7 +394,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     });
 
     it("should generate correct OpenAPI structure for deleteOne", async () => {
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       const deleteOneRoute = paths["/api/users/{id}"].delete;
       expect(deleteOneRoute.responses["204"]).toBeDefined();
@@ -408,37 +404,13 @@ describe("generatePrismaModelMainRoutesPaths", () => {
     });
   });
 
-  describe("Async Error Handling", () => {
-    it("should handle errors from localValidatorFileExists", async () => {
-      arkosConfig.swagger.strict = false;
-      (localValidatorFileExists as jest.Mock).mockRejectedValue(
-        new Error("File system error")
-      );
-
-      await expect(
-        generatePrismaModelMainRoutesPaths("User", paths, arkosConfig)
-      ).rejects.toThrow("File system error");
-    });
-
-    it("should handle partial failures in schema mode detection", async () => {
-      arkosConfig.swagger.strict = false;
-      (localValidatorFileExists as jest.Mock)
-        .mockResolvedValueOnce(true) // create succeeds
-        .mockRejectedValue(new Error("File system error")); // findMany fails
-
-      await expect(
-        generatePrismaModelMainRoutesPaths("User", paths, arkosConfig)
-      ).rejects.toThrow("File system error");
-    });
-  });
-
   describe("Multiple Endpoint Combinations", () => {
     it("should handle multiple disabled endpoints", async () => {
       (isEndpointDisabled as jest.Mock).mockImplementation((_, endpoint) =>
         ["createOne", "updateMany", "deleteOne"].includes(endpoint)
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users"].post).toBeUndefined(); // createOne disabled
       expect(paths["/api/users"].get).toBeDefined(); // findMany enabled
@@ -455,7 +427,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         )
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users"].post).toBeDefined(); // createOne
       expect(paths["/api/users"].get).toBeUndefined(); // findMany disabled
@@ -468,7 +440,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
         ["createOne", "findOne", "updateOne", "deleteOne"].includes(endpoint)
       );
 
-      await generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       expect(paths["/api/users"].post).toBeUndefined(); // createOne disabled
       expect(paths["/api/users"].get).toBeDefined(); // findMany enabled

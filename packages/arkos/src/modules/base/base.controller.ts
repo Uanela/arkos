@@ -10,31 +10,6 @@ import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import { APIFeatures } from "../../exports/utils";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 
-/**
- * The `BaseController` class provides standardized RESTful API endpoints
- * for any Prisma model based on its name. It supports automatic integration
- * with Prisma services and dynamic middleware hooks for extending behaviors.
- *
- * This controller includes:
- * - `createOne` / `createMany`
- * - `findOne` / `findMany`
- * - `updateOne` / `updateMany`
- * - `deleteOne` / `deleteMany`
- *
- * It handles:
- * - Prisma query options
- * - APIFeatures: filtering, sorting, pagination, field limiting
- * - Middleware hooks: `afterCreateOne`, `afterUpdateMany`, etc.
- *
- * @class BaseController
- *
- * @param {string} modelName - The Prisma model name this controller handles.
- *
- * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-controller-class}
- *--
- * **See about how Arkos handles routers**
- * @see {@link https://www.arkosjs.com/docs/guide/adding-custom-routers}
- */
 export interface OperationHooks {
   beforeQuery?: (req: ArkosRequest) => void | Promise<void>;
   afterQuery?: (
@@ -64,6 +39,31 @@ interface OperationConfig {
   hooks?: OperationHooks;
 }
 
+/**
+ * The `BaseController` class provides standardized RESTful API endpoints
+ * for any Prisma model based on its name. It supports automatic integration
+ * with Prisma services and dynamic middleware hooks for extending behaviors.
+ *
+ * This controller includes:
+ * - `createOne` / `createMany`
+ * - `findOne` / `findMany`
+ * - `updateOne` / `updateMany`
+ * - `deleteOne` / `deleteMany`
+ *
+ * It handles:
+ * - Prisma query options
+ * - APIFeatures: filtering, sorting, pagination, field limiting
+ * - Middleware hooks: `afterCreateOne`, `afterUpdateMany`, etc.
+ *
+ * @class BaseController
+ *
+ * @param {string} modelName - The Prisma model name this controller handles.
+ *
+ * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-controller-class}
+ *--
+ * **See about how Arkos handles routers**
+ * @see {@link https://www.arkosjs.com/docs/guide/adding-custom-routers}
+ */
 export class BaseController {
   /**
    * Service instance to handle business logic operations

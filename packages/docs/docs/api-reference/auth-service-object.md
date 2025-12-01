@@ -1,8 +1,8 @@
 ---
-sidebar_position: 7
+sidebar_position: 4
 ---
 
-# The Auth Service Object
+# Auth Service Object
 
 The `authService` object provides comprehensive authentication functionality for your Arkos application. While Arkos handles authentication automatically behind the scenes, you may need direct access to the authentication methods in your business logic.
 
@@ -43,10 +43,10 @@ Signs a JWT token for a user.
 ```ts
 // In a custom middleware
 export const beforeCreateOne = catchAsync(async (req, res, next) => {
-  // Generate a token with custom expiration for special access
-  const temporaryToken = authService.signJwtToken(req.user.id, "4h");
-  req.body.temporaryAccessToken = temporaryToken;
-  next();
+    // Generate a token with custom expiration for special access
+    const temporaryToken = authService.signJwtToken(req.user.id, "4h");
+    req.body.temporaryAccessToken = temporaryToken;
+    next();
 });
 ```
 
@@ -72,17 +72,17 @@ Verifies the authenticity of a JWT token.
 ```ts
 // A custom middleware for API key validation
 export const validateApiKey = catchAsync(async (req, res, next) => {
-  try {
-    const apiKey = req.headers["x-api-key"] as string;
-    const decoded = await authService.verifyJwtToken(apiKey);
+    try {
+        const apiKey = req.headers["x-api-key"] as string;
+        const decoded = await authService.verifyJwtToken(apiKey);
 
-    // Add custom authorization flags
-    req.isApiRequest = true;
-    req.apiClientId = decoded.id;
-    next();
-  } catch (err) {
-    next(new AppError("Invalid API key", 401));
-  }
+        // Add custom authorization flags
+        req.isApiRequest = true;
+        req.apiClientId = decoded.id;
+        next();
+    } catch (err) {
+        next(new AppError("Invalid API key", 401));
+    }
 });
 ```
 
@@ -106,23 +106,23 @@ Compares a candidate password with the stored user password.
 ```ts
 // Custom password validation for sensitive operations
 export const beforeCreateOne = catchAsync(async (req, res, next) => {
-  // Require password confirmation for critical operations
-  if (!req.body.confirmPassword) {
-    return next(new AppError("Please confirm your password", 400));
-  }
+    // Require password confirmation for critical operations
+    if (!req.body.confirmPassword) {
+        return next(new AppError("Please confirm your password", 400));
+    }
 
-  const isValid = await authService.isCorrectPassword(
-    req.body.confirmPassword,
-    req.user.password
-  );
+    const isValid = await authService.isCorrectPassword(
+        req.body.confirmPassword,
+        req.user.password
+    );
 
-  if (!isValid) {
-    return next(new AppError("Password confirmation failed", 401));
-  }
+    if (!isValid) {
+        return next(new AppError("Password confirmation failed", 401));
+    }
 
-  // Remove password from request body to prevent accidental exposure
-  delete req.body.confirmPassword;
-  next();
+    // Remove password from request body to prevent accidental exposure
+    delete req.body.confirmPassword;
+    next();
 });
 ```
 
@@ -143,17 +143,17 @@ Hashes a plain text password using bcrypt.
 ```ts
 // In a custom user invitation flow
 export const beforeCreateOne = catchAsync(async (req, res, next) => {
-  // Generate a secure one-time password for invited users
-  if (req.body.isInvitedUser) {
-    const tempPassword = generateSecureRandomPassword();
-    req.body.password = await authService.hashPassword(tempPassword);
-    req.body.passwordResetRequired = true;
+    // Generate a secure one-time password for invited users
+    if (req.body.isInvitedUser) {
+        const tempPassword = generateSecureRandomPassword();
+        req.body.password = await authService.hashPassword(tempPassword);
+        req.body.passwordResetRequired = true;
 
-    // Store the plain password temporarily for email sending
-    req.tempPassword = tempPassword;
-  }
+        // Store the plain password temporarily for email sending
+        req.tempPassword = tempPassword;
+    }
 
-  next();
+    next();
 });
 ```
 
@@ -174,21 +174,21 @@ Checks if a password meets strength requirements.
 ```ts
 // Add custom password policies beyond default requirements
 export const beforeUpdatePassword = catchAsync(async (req, res, next) => {
-  const { newPassword } = req.body;
+    const { newPassword } = req.body;
 
-  // Or can use built-in validation through DTO or Schema
-  if (!authService.isPasswordStrong(newPassword)) {
-    return next(
-      new AppError("Password doesn't meet security requirements", 400)
-    );
-  }
+    // Or can use built-in validation through DTO or Schema
+    if (!authService.isPasswordStrong(newPassword)) {
+        return next(
+            new AppError("Password doesn't meet security requirements", 400)
+        );
+    }
 
-  // Add additional custom password policy checks
-  if (newPassword.includes(req.user.username)) {
-    return next(new AppError("Password cannot contain your username", 400));
-  }
+    // Add additional custom password policy checks
+    if (newPassword.includes(req.user.username)) {
+        return next(new AppError("Password cannot contain your username", 400));
+    }
 
-  next();
+    next();
 });
 ```
 
@@ -212,25 +212,28 @@ Checks if a user changed their password after a JWT was issued.
 ```ts
 //  A custom middleware for API integrations
 export const validateLongTermToken = catchAsync(async (req, res, next) => {
-  const integrationToken = req.headers["x-integration-token"];
-  if (!integrationToken) return next();
+    const integrationToken = req.headers["x-integration-token"];
+    if (!integrationToken) return next();
 
-  const decoded = await authService.verifyJwtToken(integrationToken);
-  const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    const decoded = await authService.verifyJwtToken(integrationToken);
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
 
-  if (!user) {
-    return next(new AppError("Integration user not found", 401));
-  }
+    if (!user) {
+        return next(new AppError("Integration user not found", 401));
+    }
 
-  // Check if password was changed, invalidating all tokens
-  if (authService.userChangedPasswordAfter(user, decoded.iat)) {
-    return next(
-      new AppError("Integration token expired due to password change", 401)
-    );
-  }
+    // Check if password was changed, invalidating all tokens
+    if (authService.userChangedPasswordAfter(user, decoded.iat)) {
+        return next(
+            new AppError(
+                "Integration token expired due to password change",
+                401
+            )
+        );
+    }
 
-  req.integrationUser = user;
-  next();
+    req.integrationUser = user;
+    next();
 });
 ```
 
@@ -255,29 +258,29 @@ Retrieves the authenticated user from a request.
 ```ts
 // Custom conditional authentication based on route context
 export const optionalAuthentication = catchAsync(async (req, res, next) => {
-  try {
-    // Try to authenticate but don't require it
-    const user = await authService.getAuthenticatedUser(req);
+    try {
+        // Try to authenticate but don't require it
+        const user = await authService.getAuthenticatedUser(req);
 
-    if (user) {
-      req.user = user;
-      req.isAuthenticated = true;
-    } else {
-      req.isAuthenticated = false;
+        if (user) {
+            req.user = user;
+            req.isAuthenticated = true;
+        } else {
+            req.isAuthenticated = false;
+        }
+
+        // Content filtering logic based on authentication status
+        if (!req.isAuthenticated) {
+            req.query.isPublic = true;
+        }
+
+        next();
+    } catch (err) {
+        // Continue as unauthenticated rather than failing
+        req.isAuthenticated = false;
+        req.query.isPublic = true;
+        next();
     }
-
-    // Content filtering logic based on authentication status
-    if (!req.isAuthenticated) {
-      req.query.isPublic = true;
-    }
-
-    next();
-  } catch (err) {
-    // Continue as unauthenticated rather than failing
-    req.isAuthenticated = false;
-    req.query.isPublic = true;
-    next();
-  }
 });
 ```
 
@@ -297,32 +300,35 @@ const router = Router();
 
 // Only allow access during business hours
 const businessHoursOnly = catchAsync(async (req, res, next) => {
-  const now = new Date();
-  const hour = now.getHours();
+    const now = new Date();
+    const hour = now.getHours();
 
-  if (hour < 9 || hour >= 17) {
-    return next(
-      new AppError("This API is only available during business hours", 403)
-    );
-  }
+    if (hour < 9 || hour >= 17) {
+        return next(
+            new AppError(
+                "This API is only available during business hours",
+                403
+            )
+        );
+    }
 
-  next();
+    next();
 });
 
 // Route with custom authentication chain
 router.get(
-  "/api/business-data",
-  authService.authenticate,
-  businessHoursOnly,
-  (req, res) => {
-    res.status(200).json({
-      status: "success",
-      data: {
-        message: "Welcome to the business API",
-        user: req.user,
-      },
-    });
-  }
+    "/api/business-data",
+    authService.authenticate,
+    businessHoursOnly,
+    (req, res) => {
+        res.status(200).json({
+            status: "success",
+            data: {
+                message: "Welcome to the business API",
+                user: req.user,
+            },
+        });
+    }
 );
 
 export default router;
@@ -352,33 +358,36 @@ import { authService } from "arkos/services";
 import { catchAsync } from "arkos/error-handler";
 
 const generateDepartmentReport = catchAsync(async (req, res, next) => {
-  // Report generation logic
-  const report = await generateReport(req.params.departmentId);
-  res.status(200).json({ status: "success", data: report });
+    // Report generation logic
+    const report = await generateReport(req.params.departmentId);
+    res.status(200).json({ status: "success", data: report });
 });
 
 // Apply contextual access control with department check
 const protectedReportAccess = [
-  authService.authenticate,
-  authService.handleAccessControl(
-    "View", // action
-    "report", // resource name
-    ["Admin", "DepartmentHead"]
-    // restricts only to those roles in static rbac
-  ),
-  // Additional custom department ownership check
-  catchAsync(async (req, res, next) => {
-    if (
-      req.user.role !== "Admin" &&
-      req.user.departmentId !== parseInt(req.params.departmentId)
-    ) {
-      return next(
-        new AppError("You can only access your own department reports", 403)
-      );
-    }
-    next();
-  }),
-  generateDepartmentReport,
+    authService.authenticate,
+    authService.handleAccessControl(
+        "View", // action
+        "report", // resource name
+        ["Admin", "DepartmentHead"]
+        // restricts only to those roles in static rbac
+    ),
+    // Additional custom department ownership check
+    catchAsync(async (req, res, next) => {
+        if (
+            req.user.role !== "Admin" &&
+            req.user.departmentId !== parseInt(req.params.departmentId)
+        ) {
+            return next(
+                new AppError(
+                    "You can only access your own department reports",
+                    403
+                )
+            );
+        }
+        next();
+    }),
+    generateDepartmentReport,
 ];
 
 export { protectedReportAccess };
@@ -405,29 +414,29 @@ import { authService } from "arkos/services";
 import { catchAsync } from "arkos/error-handler";
 
 const getContentData = catchAsync(async (req, res, next) => {
-  let contentLevel = "basic";
+    let contentLevel = "basic";
 
-  // If authenticated, provide premium content
-  if (req.isAuthenticated) {
-    contentLevel = "premium";
-  }
+    // If authenticated, provide premium content
+    if (req.isAuthenticated) {
+        contentLevel = "premium";
+    }
 
-  const data = await getContentByLevel(contentLevel);
-  res.status(200).json({ status: "success", data });
+    const data = await getContentByLevel(contentLevel);
+    res.status(200).json({ status: "success", data });
 });
 
 // Apply optional authentication for tiered content
 const tieredContentAccess = [
-  authService.handleAuthenticationControl(
-    "View",
-    { View: false } // Not required but supported
-  ),
-  // Custom middleware to track authentication status
-  catchAsync(async (req, res, next) => {
-    req.isAuthenticated = !!req.user;
-    next();
-  }),
-  getContentData,
+    authService.handleAuthenticationControl(
+        "View",
+        { View: false } // Not required but supported
+    ),
+    // Custom middleware to track authentication status
+    catchAsync(async (req, res, next) => {
+        req.isAuthenticated = !!req.user;
+        next();
+    }),
+    getContentData,
 ];
 
 export { tieredContentAccess };
@@ -446,26 +455,26 @@ When defining custom actions, note that the standard base actions ("Create", "Up
 ```ts
 // Custom export functionality with specific access controls
 router.get(
-  "/api/reports/export",
-  authService.authenticate,
-  authService.handleAccessControl(
-    "Export", // Custom action in Pascal case
-    "report",
-    ["Admin", "Analyst"] // accessControl
-  ),
-  exportReportController
+    "/api/reports/export",
+    authService.authenticate,
+    authService.handleAccessControl(
+        "Export", // Custom action in Pascal case
+        "report",
+        ["Admin", "Analyst"] // accessControl
+    ),
+    exportReportController
 );
 
 // Custom bulk operation with specific permissions
 router.post(
-  "/api/users/bulk-invite",
-  authService.authenticate,
-  authService.handleAccessControl(
-    "BulkInvite", // Custom action in Pascal case
-    "user",
-    ["Admin", "HR"] // accessControl
-  ),
-  bulkInviteController
+    "/api/users/bulk-invite",
+    authService.authenticate,
+    authService.handleAccessControl(
+        "BulkInvite", // Custom action in Pascal case
+        "user",
+        ["Admin", "HR"] // accessControl
+    ),
+    bulkInviteController
 );
 ```
 
@@ -491,7 +500,7 @@ Defines access control rules for different controller actions. Each key maps to 
 
 ```ts
 export type AccessControlRules = {
-  [key in AccessAction]: string[];
+    [key in AccessAction]: string[];
 };
 ```
 
@@ -501,7 +510,7 @@ Specifies which actions require authentication.
 
 ```ts
 export type AuthenticationControlRules = {
-  [key in AccessAction]: boolean;
+    [key in AccessAction]: boolean;
 };
 ```
 
@@ -511,8 +520,8 @@ Configuration for authentication control. Can be a boolean (applies to all actio
 
 ```ts
 export type AuthenticationControlConfig =
-  | boolean
-  | Partial<AuthenticationControlRules>;
+    | boolean
+    | Partial<AuthenticationControlRules>;
 ```
 
 ### `AccessControlConfig`
@@ -529,8 +538,8 @@ Configuration for authentication and access control.
 
 ```ts
 export type AuthConfigs = {
-  authenticationControl?: AuthenticationControlConfig;
-  accessControl?: AccessControlConfig;
+    authenticationControl?: AuthenticationControlConfig;
+    accessControl?: AccessControlConfig;
 };
 ```
 
@@ -540,8 +549,8 @@ Payload structure for JWT-based authentication, extending the standard `JwtPaylo
 
 ```ts
 export interface AuthJwtPayload extends JwtPayload {
-  id?: number | string;
-  [x: string]: any;
+    id?: number | string;
+    [x: string]: any;
 }
 ```
 
