@@ -41,22 +41,19 @@ describe("Package.json template rendering", () => {
     expect(packageJson.devDependencies["@types/node"]).toBe("^24.0.12");
     expect(packageJson.devDependencies["@types/express"]).toBe("^5.0.0");
     expect(packageJson.devDependencies["@types/swagger-jsdoc"]).toBe("^6.0.4");
-    expect(packageJson.devDependencies["tsx-strict"]).toBe("^0.1.4");
-    expect(packageJson.devDependencies.prisma).toBe("^6.11.1");
+    expect(packageJson.devDependencies["tsx-strict"]).toBe("^0.2.0");
+    expect(packageJson.devDependencies.prisma).toBe("^6.19.0");
 
     // Check dependencies
-    expect(packageJson.dependencies.arkos).toBe("^1.2.16-beta");
+    expect(packageJson.dependencies.arkos).toBe("^1.3.10-beta");
     expect(packageJson.dependencies.express).toBe("^4.21.2");
-    expect(packageJson.dependencies["@prisma/client"]).toBe("^6.4.1");
+    expect(packageJson.dependencies["@prisma/client"]).toBe("^6.19.0");
     expect(packageJson.dependencies["swagger-jsdoc"]).toBe("^6.2.8");
 
     // Check class-validator dependencies
     expect(packageJson.dependencies["reflect-metadata"]).toBe("^0.2.2");
     expect(packageJson.dependencies["class-transformer"]).toBe("^0.5.1");
     expect(packageJson.dependencies["class-validator"]).toBe("^0.14.1");
-    expect(packageJson.dependencies["class-validator-jsonschema"]).toBe(
-      "^5.0.2"
-    );
   });
 
   it("should render with JavaScript configuration when typescript is false", () => {
@@ -86,15 +83,11 @@ describe("Package.json template rendering", () => {
 
     // Check zod dependencies
     expect(packageJson.dependencies.zod).toBe("^3.24.2");
-    expect(packageJson.dependencies["zod-to-json-schema"]).toBe("^3.24.6");
 
     // Should not have class-validator dependencies
     expect(packageJson.dependencies["reflect-metadata"]).toBeUndefined();
     expect(packageJson.dependencies["class-transformer"]).toBeUndefined();
     expect(packageJson.dependencies["class-validator"]).toBeUndefined();
-    expect(
-      packageJson.dependencies["class-validator-jsonschema"]
-    ).toBeUndefined();
   });
 
   it("should handle no validation type", () => {
@@ -108,9 +101,9 @@ describe("Package.json template rendering", () => {
     const packageJson = JSON.parse(result);
 
     // Should have basic dependencies without validation libraries
-    expect(packageJson.dependencies.arkos).toBe("^1.3.7-beta");
+    expect(packageJson.dependencies.arkos).toBe("^1.3.10-beta");
     expect(packageJson.dependencies.express).toBe("^4.21.2");
-    expect(packageJson.dependencies["@prisma/client"]).toBe("^6.4.1");
+    expect(packageJson.dependencies["@prisma/client"]).toBe("^6.19.0");
     expect(packageJson.dependencies["swagger-jsdoc"]).toBe("^6.2.8");
 
     // Should not have any validation dependencies
