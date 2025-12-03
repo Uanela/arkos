@@ -58,14 +58,17 @@ body:
     validations:
       required: true
 
-  - type: textarea
+  - type: dropdown
     id: impact
     attributes:
       label: Impact on Workflow
       description: How often do you encounter this? How much time would this save?
-      placeholder: |
-        I generate new components multiple times per day. This would save 10-15 seconds each time,
-        and reduce errors from typos in paths.
+      options:
+        - Multiple times per day - would save significant time
+        - Daily - would save moderate time
+        - Weekly - would save some time
+        - Monthly - minor convenience improvement
+        - Rarely - nice to have
     validations:
       required: true
 
@@ -90,13 +93,6 @@ body:
         - Not sure
     validations:
       required: true
-
-  - type: textarea
-    id: additional
-    attributes:
-      label: Additional Context
-      description: Any mockups, examples, or other relevant information
-      placeholder: Attached is a screenshot of how the improved UX could look...
 
   - type: checkboxes
     id: checklist
