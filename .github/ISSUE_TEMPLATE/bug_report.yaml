@@ -41,7 +41,7 @@ body:
       required: true
 
   - type: textarea
-    id: code
+    id: arkos-config
     attributes:
       label: Arkos configuration
       description: Provide your arkos configuration
@@ -59,7 +59,7 @@ body:
         export default arkosConfig
 
   - type: textarea
-    id: code
+    id: workaround
     attributes:
       label: Possible Workaround
       description: Provide a possible workaround for this bug (if applicable)
