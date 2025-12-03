@@ -40,6 +40,32 @@ body:
     validations:
       required: true
 
+  - type: textarea
+    id: code
+    attributes:
+      label: Arkos configuration
+      description: Provide your arkos configuration
+      render: typescript
+      placeholder: |
+        // arkos.router.ts
+        import { ArkosConfig } from 'arkos';
+
+        const arkosConfig: ArkosConfig = {
+          authentication: {
+            mode: "static"
+          },
+        }
+        
+        export default arkosConfig
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Possible Workaround
+      description: Provide a possible workaround for this bug (if applicable)
+      render: typescript
+      placeholder: |
+
   - type: input
     id: arkos-version
     attributes:
