@@ -73,16 +73,16 @@ body:
       required: true
 
   - type: dropdown
-  id: package
-  attributes:
-    label: Package
-    description: Which package you want to open issue to?
-    options:
-      - arkos
-      - create-arkos
-      - Other (specify in additional context)
-  validations:
-    required: true
+    id: package
+    attributes:
+      label: Package
+      description: Which package you want to open issue to?
+      options:
+        - arkos
+        - create-arkos
+        - Other (specify in additional context)
+    validations:
+      required: true
 
   - type: input
     id: arkos-version
