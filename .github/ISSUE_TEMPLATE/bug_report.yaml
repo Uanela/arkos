@@ -63,8 +63,9 @@ body:
     attributes:
       label: Possible Workaround
       description: Provide a possible workaround for this bug (if applicable)
-      render: typescript
+      render: text
       placeholder: |
+        I can manually add a custom middleware to...
 
   - type: input
     id: arkos-version
