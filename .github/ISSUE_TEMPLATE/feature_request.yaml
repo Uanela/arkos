@@ -74,6 +74,7 @@ body:
         - Other (specify in additional context)
     validations:
       required: true
+      
 
   - type: dropdown
     id: priority
@@ -85,6 +86,27 @@ body:
         - High - Significantly improves workflow
         - Medium - Nice to have
         - Low - Minor improvement
+    validations:
+      required: true
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package you want to open issue to?
+      options:
+        - arkos
+        - create-arkos
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: arkos-version
+    attributes:
+      label: Arkos.js Version (or Package version)
+      description: Which version of Arkos.js are you using?
+      placeholder: 1.4.0-beta
     validations:
       required: true
 
