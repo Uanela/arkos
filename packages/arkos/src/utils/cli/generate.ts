@@ -100,13 +100,13 @@ const generateFile = async (
     const content = generateTemplate(config.templateName, templateData);
     if (fs.existsSync(filePath))
       throw new Error(
-        `${capitalize(humamReadableTemplateName.toLowerCase())} for ${options.model} already exists.`
+        `${capitalize(humamReadableTemplateName.toLowerCase())} for ${names.kebab.replace("-", "")} already exists.`
       );
     fs.writeFileSync(filePath, content);
 
     console.info("");
     sheu.done(
-      `${humamReadableTemplateName} for ${options.model} generated under ${fullCleanCwd(filePath)}`
+      `${humamReadableTemplateName} for ${names.kebab.replace("-", "")} generated under ${fullCleanCwd(filePath)}`
     );
   } catch (err: any) {
     console.info("");
