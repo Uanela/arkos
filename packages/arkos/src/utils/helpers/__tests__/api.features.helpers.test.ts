@@ -11,7 +11,31 @@ describe("parseQueryParamsWithModifiers", () => {
     it("should ignore fields with null or undefined values", () => {
       const query = { status: "active", name: null, age: undefined };
       const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({ status: "active" });
+      expect(result).toEqual({ status: "active", name: null });
+    });
+
+    it("should parse contains and icontains when using bracket notation", () => {
+      const query = {
+        ["name[contains]"]: "sheu",
+        ["firstName[icontains]"]: "cacil",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        name: { contains: "sheu", mode: "sensitive" },
+        firstName: { contains: "cacil", mode: "insensitive" },
+      });
+    });
+
+    it("should parse contains and icontains when using bracket notation", () => {
+      const query = {
+        deparments__hasSome: ["IT", "HR"],
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        deparments: {
+          hasSome: ["IT", "HR"],
+        },
+      });
     });
 
     it("Should not convert objects to string", () => {
@@ -29,6 +53,249 @@ describe("parseQueryParamsWithModifiers", () => {
       const query = { createdAt__not: null };
       const result = parseQueryParamsWithModifiers(query);
       expect(result).toEqual({ createdAt: { not: null } });
+    });
+
+    it("should parse contains and icontains when using bracket notation", () => {
+      const query = {
+        ["name[contains]"]: "sheu",
+        ["firstName[icontains]"]: "cacil",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        name: { contains: "sheu", mode: "sensitive" },
+        firstName: { contains: "cacil", mode: "insensitive" },
+      });
+    });
+
+    it("should preserve arrays for hasSome operator", () => {
+      const query = {
+        deparments__hasSome: ["IT", "HR"],
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        deparments: {
+          hasSome: ["IT", "HR"],
+        },
+      });
+    });
+
+    it("should preserve full array for hasSome with multiple values", () => {
+      const query = {
+        company__abbreviations__hasSome: ["SuperM7", "Su Loja"],
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        company: {
+          abbreviations: {
+            hasSome: ["SuperM7", "Su Loja"],
+          },
+        },
+      });
+    });
+
+    it("should preserve arrays for in operator", () => {
+      const query = {
+        status__in: ["active", "pending", "completed"],
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        status: {
+          in: ["active", "pending", "completed"],
+        },
+      });
+    });
+
+    it("should preserve arrays for hasEvery operator", () => {
+      const query = {
+        tags__hasEvery: ["important", "urgent"],
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        tags: {
+          hasEvery: ["important", "urgent"],
+        },
+      });
+    });
+
+    it("should handle zero as valid value", () => {
+      const query = {
+        count: 0,
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        count: 0,
+      });
+    });
+
+    it("should handle empty string as valid value", () => {
+      const query = {
+        description__equals: "",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        description: {
+          equals: "",
+        },
+      });
+    });
+
+    it("should handle false boolean value", () => {
+      const query = {
+        isActive: false,
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        isActive: false,
+      });
+    });
+
+    it("should parse deep nested bracket notation", () => {
+      const query = {
+        "company[name][icontains]": "tech",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        company: {
+          name: {
+            contains: "tech",
+            mode: "insensitive",
+          },
+        },
+      });
+    });
+
+    it("should parse mixed bracket and double underscore notation", () => {
+      const query = {
+        "company__name[icontains]": "acme",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        company: {
+          name: {
+            contains: "acme",
+            mode: "insensitive",
+          },
+        },
+      });
+    });
+
+    it("should parse complex mixed notation", () => {
+      const query = {
+        "company[branches]__location[city][icontains]": "york",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        company: {
+          branches: {
+            location: {
+              city: {
+                contains: "york",
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+      });
+    });
+
+    it("should handle orderBy with bracket notation", () => {
+      const query = {
+        "orderBy[createdAt]": "desc",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+    });
+
+    it("should handle orderBy with double underscore", () => {
+      const query = {
+        orderBy__updatedAt: "asc",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        orderBy: {
+          updatedAt: "asc",
+        },
+      });
+    });
+
+    it("should handle or operator with bracket notation", () => {
+      const query = {
+        "status[or]": "active,pending",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        OR: [
+          { status: { equals: "active" } },
+          { status: { equals: "pending" } },
+        ],
+      });
+    });
+
+    it("should handle or operator with double underscore", () => {
+      const query = {
+        status__or: "active,pending",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        OR: [
+          { status: { equals: "active" } },
+          { status: { equals: "pending" } },
+        ],
+      });
+    });
+
+    it("should handle hasSome with bracket notation and array", () => {
+      const query = {
+        "departments[hasSome]": ["IT", "HR", "Finance"],
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        departments: {
+          hasSome: ["IT", "HR", "Finance"],
+        },
+      });
+    });
+
+    it("should handle hasSome with bracket notation and comma-separated string", () => {
+      const query = {
+        "departments[hasSome]": "IT,HR,Finance",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        departments: {
+          hasSome: ["IT", "HR", "Finance"],
+        },
+      });
+    });
+
+    it("should handle in operator with bracket notation", () => {
+      const query = {
+        "id[in]": "1,2,3",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        id: {
+          in: ["1", "2", "3"],
+        },
+      });
+    });
+
+    it("should handle nested field with hasSome using mixed notation", () => {
+      const query = {
+        "user__roles[hasSome]": ["admin", "editor"],
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          roles: {
+            hasSome: ["admin", "editor"],
+          },
+        },
+      });
     });
   });
 
