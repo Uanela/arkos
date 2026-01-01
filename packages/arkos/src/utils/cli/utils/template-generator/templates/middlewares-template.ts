@@ -1,10 +1,7 @@
-import { getUserFileExtension } from "../../../../helpers/fs.helpers";
 import { TemplateOptions } from "../../template-generators";
 
 export function generateMiddlewaresTemplate(options: TemplateOptions): string {
   const { modelName } = options;
-  const ext = getUserFileExtension();
-  const isTypeScript = ext === "ts";
 
   if (!modelName)
     throw new Error("Module name is required for middleware template");

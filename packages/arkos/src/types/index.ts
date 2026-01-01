@@ -287,7 +287,10 @@ export interface ArkosRequest<
   modelName?: string;
 }
 
-export interface ArkosResponse extends Response {}
+export interface ArkosResponse<
+  ResBody = any,
+  Locals extends Record<string, any> = Record<string, any>,
+> extends Response<ResBody, Locals> {}
 export interface ArkosNextFunction extends NextFunction {}
 export interface ArkosRequestHandler extends RequestHandler {}
 export interface ArkosErrorRequestHandler extends ErrorRequestHandler {}
