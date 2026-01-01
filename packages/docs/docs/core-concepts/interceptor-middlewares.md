@@ -92,27 +92,27 @@ It's important to follow the convention above because Arkos expects to find thos
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const beforeCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Add custom logic before creating a post
-    console.log("Creating post:", req.body.title);
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Add custom logic before creating a post
+        console.log("Creating post:", req.body.title);
 
-    // Modify the request data
-    req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
+        // Modify the request data
+        req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
 
-    next(); // Always call next() to continue
-  },
+        next(); // Always call next() to continue
+    },
 ];
 
 export const afterCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Access the created post data
-    const createdPost = res.locals.data.data;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Access the created post data
+        const createdPost = res.locals.data.data;
 
-    // Send notification, update cache, etc.
-    await sendNotification(`New post created: ${createdPost.title}`);
+        // Send notification, update cache, etc.
+        await sendNotification(`New post created: ${createdPost.title}`);
 
-    next();
-  },
+        next();
+    },
 ];
 ```
 
@@ -123,27 +123,27 @@ export const afterCreateOne = [
 // src/modules/post/post.interceptors.js
 
 export const beforeCreateOne = [
-  async (req, res, next) => {
-    // Add custom logic before creating a post
-    console.log("Creating post:", req.body.title);
+    async (req, res, next) => {
+        // Add custom logic before creating a post
+        console.log("Creating post:", req.body.title);
 
-    // Modify the request data
-    req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
+        // Modify the request data
+        req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
 
-    next(); // Always call next() to continue
-  },
+        next(); // Always call next() to continue
+    },
 ];
 
 export const afterCreateOne = [
-  async (req, res, next) => {
-    // Access the created post data
-    const createdPost = res.locals.data.data;
+    async (req, res, next) => {
+        // Access the created post data
+        const createdPost = res.locals.data.data;
 
-    // Send notification, update cache, etc.
-    await sendNotification(`New post created: ${createdPost.title}`);
+        // Send notification, update cache, etc.
+        await sendNotification(`New post created: ${createdPost.title}`);
 
-    next();
-  },
+        next();
+    },
 ];
 ```
 
@@ -161,27 +161,27 @@ export const afterCreateOne = [
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const beforeCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Add custom logic before creating a post
-    console.log("Creating post:", req.body.title);
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Add custom logic before creating a post
+        console.log("Creating post:", req.body.title);
 
-    // Modify the request data
-    req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
+        // Modify the request data
+        req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
 
-    next(); // Always call next() to continue
-  },
+        next(); // Always call next() to continue
+    },
 ];
 
 export const afterCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Access the created post data
-    const createdPost = res.locals.data.data;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Access the created post data
+        const createdPost = res.locals.data.data;
 
-    // Send notification, update cache, etc.
-    await sendNotification(`New post created: ${createdPost.title}`);
+        // Send notification, update cache, etc.
+        await sendNotification(`New post created: ${createdPost.title}`);
 
-    next();
-  },
+        next();
+    },
 ];
 ```
 
@@ -192,27 +192,27 @@ export const afterCreateOne = [
 // src/modules/post/post.middlewares.js
 
 export const beforeCreateOne = [
-  async (req, res, next) => {
-    // Add custom logic before creating a post
-    console.log("Creating post:", req.body.title);
+    async (req, res, next) => {
+        // Add custom logic before creating a post
+        console.log("Creating post:", req.body.title);
 
-    // Modify the request data
-    req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
+        // Modify the request data
+        req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
 
-    next(); // Always call next() to continue
-  },
+        next(); // Always call next() to continue
+    },
 ];
 
 export const afterCreateOne = [
-  async (req, res, next) => {
-    // Access the created post data
-    const createdPost = res.locals.data.data;
+    async (req, res, next) => {
+        // Access the created post data
+        const createdPost = res.locals.data.data;
 
-    // Send notification, update cache, etc.
-    await sendNotification(`New post created: ${createdPost.title}`);
+        // Send notification, update cache, etc.
+        await sendNotification(`New post created: ${createdPost.title}`);
 
-    next();
-  },
+        next();
+    },
 ];
 ```
 
@@ -254,38 +254,38 @@ It's worth mentioning that you can pass multiple functions into the interceptors
 import { AppError } from "arkos/error-handler";
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import {
-  validatePostOwnership,
-  sanitizePostContent,
-  checkPostQuota,
-  logPostActivity,
+    validatePostOwnership,
+    sanitizePostContent,
+    checkPostQuota,
+    logPostActivity,
 } from "./utils/helpers";
 import postService from "./post.service";
 
 export const beforeUpdateOne = [
-  // 1. Validate user permissions and post ownership
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Ensure authors can only update their own posts
-    if (req.user.role === "author") {
-      const post = await postService.findOne({
-        id: req.params.id,
-        authorId: req.user.id,
-      });
-      if (!post) {
-        throw new AppError("You can only update your own posts", 403);
-      }
-      // Pass data to subsequent middleware
-      req.originalPost = post;
-    }
-    next();
-  },
-  // 2. Additional ownership validation helper
-  validatePostOwnership,
-  // 3. Sanitize and validate post content
-  sanitizePostContent,
-  // 4. Check user's post update quota
-  checkPostQuota,
-  // 5. Log activity for audit purposes
-  logPostActivity,
+    // 1. Validate user permissions and post ownership
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Ensure authors can only update their own posts
+        if (req.user.role === "author") {
+            const post = await postService.findOne({
+                id: req.params.id,
+                authorId: req.user.id,
+            });
+            if (!post) {
+                throw new AppError("You can only update your own posts", 403);
+            }
+            // Pass data to subsequent middleware
+            req.originalPost = post;
+        }
+        next();
+    },
+    // 2. Additional ownership validation helper
+    validatePostOwnership,
+    // 3. Sanitize and validate post content
+    sanitizePostContent,
+    // 4. Check user's post update quota
+    checkPostQuota,
+    // 5. Log activity for audit purposes
+    logPostActivity,
 ];
 ```
 
@@ -301,7 +301,7 @@ After interceptors provide access to three key objects:
 
 - `res.locals.data.data` - The data that will be sent to the client
 - `res.locals.status` - The HTTP status code that will be sent
-- `res.locals.additionalData` - Extra data from the operation (usually null)
+- `res.locals.additional.data` - Extra data from the operation (usually null)
 
 **Legacy (prior to v1.3.0-beta, still supported):**
 
@@ -332,32 +332,32 @@ export const afterFindMany = [];
 // src/modules/author/author.interceptors.ts
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import {
-  removeSensitiveData,
-  addComputedFields,
-  formatResponseData,
-  logAuthorActivity,
+    removeSensitiveData,
+    addComputedFields,
+    formatResponseData,
+    logAuthorActivity,
 } from "./utils/helpers";
 
 export const afterFindMany = [
-  // 1. Remove sensitive data from all authors
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const authors = res.locals.data.data.map((author) => {
-      delete author.email; // Hide emails from public listings
-      delete author.phone; // Hide phone numbers
-      return author;
-    });
+    // 1. Remove sensitive data from all authors
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const authors = res.locals.data.data.map((author) => {
+            delete author.email; // Hide emails from public listings
+            delete author.phone; // Hide phone numbers
+            return author;
+        });
 
-    res.locals.data.data = authors;
-    next();
-  },
-  // 2. Additional sensitive data removal helper
-  removeSensitiveData,
-  // 3. Add computed fields to each author
-  addComputedFields,
-  // 4. Format response data structure
-  formatResponseData,
-  // 5. Log activity for analytics
-  logAuthorActivity,
+        res.locals.data.data = authors;
+        next();
+    },
+    // 2. Additional sensitive data removal helper
+    removeSensitiveData,
+    // 3. Add computed fields to each author
+    addComputedFields,
+    // 4. Format response data structure
+    formatResponseData,
+    // 5. Log activity for analytics
+    logAuthorActivity,
 ];
 ```
 
@@ -392,43 +392,43 @@ export const onFindManyError = [];
 // src/modules/user/user.interceptors.ts
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import {
-  handlePrismaErrors,
-  handleValidationErrors,
-  handleFileCleanupErrors,
-  handleTransactionRollbackErrors,
-  logErrorDetails,
+    handlePrismaErrors,
+    handleValidationErrors,
+    handleFileCleanupErrors,
+    handleTransactionRollbackErrors,
+    logErrorDetails,
 } from "./utils/error-helpers";
 
 export const onCreateOneError = [
-  // 1. Main error handling logic
-  async (
-    err: any,
-    req: ArkosRequest,
-    res: ArkosResponse,
-    next: ArkosNextFunction
-  ) => {
-    // Cleanup uploaded profile picture if user creation fails
-    if (req.uploadedFiles) await cleanupFiles(req.uploadedFiles);
+    // 1. Main error handling logic
+    async (
+        err: any,
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Cleanup uploaded profile picture if user creation fails
+        if (req.uploadedFiles) await cleanupFiles(req.uploadedFiles);
 
-    // Rollback any database changes made in beforeCreateOne
-    if (req.transactionData) await rollbackTransaction(req.transactionData);
+        // Rollback any database changes made in beforeCreateOne
+        if (req.transactionData) await rollbackTransaction(req.transactionData);
 
-    // Log the error for debugging
-    console.error("User creation failed:", err.message);
+        // Log the error for debugging
+        console.error("User creation failed:", err.message);
 
-    // Pass error to next middleware
-    next(err);
-  },
-  // 2. Handle Prisma-specific database errors
-  handlePrismaErrors,
-  // 3. Handle validation and input errors
-  handleValidationErrors,
-  // 4. Additional file cleanup handling
-  handleFileCleanupErrors,
-  // 5. Additional transaction rollback handling
-  handleTransactionRollbackErrors,
-  // 6. Detailed error logging
-  logErrorDetails,
+        // Pass error to next middleware
+        next(err);
+    },
+    // 2. Handle Prisma-specific database errors
+    handlePrismaErrors,
+    // 3. Handle validation and input errors
+    handleValidationErrors,
+    // 4. Additional file cleanup handling
+    handleFileCleanupErrors,
+    // 5. Additional transaction rollback handling
+    handleTransactionRollbackErrors,
+    // 6. Detailed error logging
+    logErrorDetails,
 ];
 ```
 
@@ -479,32 +479,35 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import { AppError } from "arkos/error-handler";
 
 export const beforeLogin = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Track login attempts
-    const identifier = req.body.email || req.body.username;
-    const attempts = await getFailedLoginAttempts(identifier);
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Track login attempts
+        const identifier = req.body.email || req.body.username;
+        const attempts = await getFailedLoginAttempts(identifier);
 
-    if (attempts > 5) {
-      throw new AppError("Too many failed attempts. Try again later.", 429);
-    }
+        if (attempts > 5) {
+            throw new AppError(
+                "Too many failed attempts. Try again later.",
+                429
+            );
+        }
 
-    // Log login attempt
-    await logLoginAttempt(identifier, req.ip);
+        // Log login attempt
+        await logLoginAttempt(identifier, req.ip);
 
-    next();
-  },
+        next();
+    },
 ];
 
 export const beforeSignup = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Generate email verification token
-    req.body.verificationToken = crypto.randomBytes(32).toString("hex");
-    req.body.verificationTokenExpires = new Date(
-      Date.now() + 24 * 60 * 60 * 1000
-    );
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Generate email verification token
+        req.body.verificationToken = crypto.randomBytes(32).toString("hex");
+        req.body.verificationTokenExpires = new Date(
+            Date.now() + 24 * 60 * 60 * 1000
+        );
 
-    next();
-  },
+        next();
+    },
 ];
 ```
 
@@ -512,40 +515,41 @@ export const beforeSignup = [
 
 ```typescript
 export const afterLogin = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const user = res.locals.data.data;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const user = res.locals.data.data;
 
-    // Reset failed login attempts
-    await resetFailedLoginAttempts(user.email);
+        // Reset failed login attempts
+        await resetFailedLoginAttempts(user.email);
 
-    // Update last login timestamp
-    await updateLastLogin(user.id);
+        // Update last login timestamp
+        await updateLastLogin(user.id);
 
-    // Log successful authentication
-    auditLog.info("User login", { userId: user.id, ip: req.ip });
+        // Log successful authentication
+        auditLog.info("User login", { userId: user.id, ip: req.ip });
 
-    next();
-  },
+        next();
+    },
 ];
 
 export const afterSignup = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const user = res.locals.data.data;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const user = res.locals.data.data;
 
-    // Send verification email (don't block response)
-    emailService
-      .sendVerificationEmail(user.email, user.verificationToken)
-      .catch(console.error);
+        // Send verification email (don't block response)
+        emailService
+            .sendVerificationEmail(user.email, user.verificationToken)
+            .catch(console.error);
 
-    // Remove sensitive data from response
-    delete res.locals.data.data.verificationToken;
-    delete res.locals.data.data.verificationTokenExpires;
+        // Remove sensitive data from response
+        delete res.locals.data.data.verificationToken;
+        delete res.locals.data.data.verificationTokenExpires;
 
-    // Add success message
-    res.locals.data.message = "Please check your email to verify your account";
+        // Add success message
+        res.locals.data.message =
+            "Please check your email to verify your account";
 
-    next();
-  },
+        next();
+    },
 ];
 ```
 
@@ -553,44 +557,44 @@ export const afterSignup = [
 
 ```typescript
 export const onLoginError = [
-  async (
-    err: any,
-    req: ArkosRequest,
-    res: ArkosResponse,
-    next: ArkosNextFunction
-  ) => {
-    // Increment failed login attempts
-    const identifier = req.body.email || req.body.username;
-    if (identifier) {
-      await incrementFailedLoginAttempts(identifier);
-    }
+    async (
+        err: any,
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Increment failed login attempts
+        const identifier = req.body.email || req.body.username;
+        if (identifier) {
+            await incrementFailedLoginAttempts(identifier);
+        }
 
-    // Log failed login attempt
-    securityLog.warn("Failed login attempt", {
-      identifier,
-      ip: req.ip,
-      error: err.message,
-    });
+        // Log failed login attempt
+        securityLog.warn("Failed login attempt", {
+            identifier,
+            ip: req.ip,
+            error: err.message,
+        });
 
-    next(err);
-  },
+        next(err);
+    },
 ];
 
 export const onSignupError = [
-  async (
-    err: any,
-    req: ArkosRequest,
-    res: ArkosResponse,
-    next: ArkosNextFunction
-  ) => {
-    // Clean up partial user data if signup fails
-    if (req.body.email && err.code === "P2002") {
-      // Unique constraint error
-      await cleanupFailedSignup(req.body.email);
-    }
+    async (
+        err: any,
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+    ) => {
+        // Clean up partial user data if signup fails
+        if (req.body.email && err.code === "P2002") {
+            // Unique constraint error
+            await cleanupFailedSignup(req.body.email);
+        }
 
-    next(err);
-  },
+        next(err);
+    },
 ];
 ```
 
@@ -600,41 +604,41 @@ The `/api/users/me` endpoint supports additional interceptors:
 
 ```typescript
 export const beforeUpdateMe = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Prevent password updates through profile endpoint
-    if ("password" in req.body) {
-      throw new AppError(
-        "Use /api/auth/update-password to change password",
-        400
-      );
-    }
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Prevent password updates through profile endpoint
+        if ("password" in req.body) {
+            throw new AppError(
+                "Use /api/auth/update-password to change password",
+                400
+            );
+        }
 
-    // Audit profile changes
-    req.profileChangeAudit = {
-      userId: req.user.id,
-      changes: Object.keys(req.body),
-      timestamp: new Date(),
-    };
+        // Audit profile changes
+        req.profileChangeAudit = {
+            userId: req.user.id,
+            changes: Object.keys(req.body),
+            timestamp: new Date(),
+        };
 
-    next();
-  },
+        next();
+    },
 ];
 
 export const afterDeleteMe = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const userId = req.user.id;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const userId = req.user.id;
 
-    // Perform cleanup after account deletion
-    // Note: User record is soft-deleted (deletedSelfAccountAt set)
-    cleanupUserData(userId).catch(console.error);
+        // Perform cleanup after account deletion
+        // Note: User record is soft-deleted (deletedSelfAccountAt set)
+        cleanupUserData(userId).catch(console.error);
 
-    // Send farewell email
-    emailService
-      .sendAccountDeletionConfirmation(req.user.email)
-      .catch(console.error);
+        // Send farewell email
+        emailService
+            .sendAccountDeletionConfirmation(req.user.email)
+            .catch(console.error);
 
-    next();
-  },
+        next();
+    },
 ];
 ```
 
@@ -700,29 +704,29 @@ import { PrismaQueryOptions } from "arkos/prisma";
 import { Prisma } from "@prisma/client";
 
 const userPrismaQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
-  global: {
-    // Applied to all operations
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      profile: true, // Always include profile
+    global: {
+        // Applied to all operations
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            profile: true, // Always include profile
+        },
     },
-  },
-  findMany: {
-    // Only for findMany operations
-    orderBy: {
-      createdAt: "desc",
+    findMany: {
+        // Only for findMany operations
+        orderBy: {
+            createdAt: "desc",
+        },
+        take: 50, // Limit to 50 results
     },
-    take: 50, // Limit to 50 results
-  },
-  createOne: {
-    // Only for create operations
-    include: {
-      profile: true,
-      posts: true,
+    createOne: {
+        // Only for create operations
+        include: {
+            profile: true,
+            posts: true,
+        },
     },
-  },
 };
 
 export default userPrismaQueryOptions;
@@ -771,29 +775,29 @@ Use the request object to pass data from before to after interceptors:
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const beforeCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Store data for after interceptor
-    (req as any).startTime = Date.now();
-    (req as any).clientIP = req.ip;
-    next();
-  },
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Store data for after interceptor
+        (req as any).startTime = Date.now();
+        (req as any).clientIP = req.ip;
+        next();
+    },
 ];
 
 export const afterCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Access the stored data
-    const duration = Date.now() - (req as any).startTime;
-    const clientIP = (req as any).clientIP;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Access the stored data
+        const duration = Date.now() - (req as any).startTime;
+        const clientIP = (req as any).clientIP;
 
-    await logPerformance({
-      operation: "createOne",
-      duration,
-      clientIP,
-      resourceId: res.locals.data.data.id,
-    });
+        await logPerformance({
+            operation: "createOne",
+            duration,
+            clientIP,
+            resourceId: res.locals.data.data.id,
+        });
 
-    next();
-  },
+        next();
+    },
 ];
 ```
 
@@ -808,57 +812,59 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import postService from "./post.service";
 
 export const beforeCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Auto-generate slug from title
-    if (req.body.title && !req.body.slug) {
-      req.body.slug = req.body.title
-        .toLowerCase()
-        .replace(/[^a-zA-Z0-9\s]/g, "")
-        .replace(/\s+/g, "-");
-    }
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Auto-generate slug from title
+        if (req.body.title && !req.body.slug) {
+            req.body.slug = req.body.title
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9\s]/g, "")
+                .replace(/\s+/g, "-");
+        }
 
-    // Check for duplicate slugs
-    const existingPost = await postService.findOne({
-      slug: req.body.slug,
-    });
+        // Check for duplicate slugs
+        const existingPost = await postService.findOne({
+            slug: req.body.slug,
+        });
 
-    if (existingPost) {
-      req.body.slug += `-${Date.now()}`;
-    }
+        if (existingPost) {
+            req.body.slug += `-${Date.now()}`;
+        }
 
-    next();
-  },
+        next();
+    },
 ];
 
 export const afterCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const post = res.locals.data.data;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const post = res.locals.data.data;
 
-    // Send notifications
-    notificationService
-      .notifyFollowers(post.authorId, {
-        type: "new_post",
-        postId: post.id,
-        title: post.title,
-      })
-      .catch(console.error); // Don't block response
+        // Send notifications
+        notificationService
+            .notifyFollowers(post.authorId, {
+                type: "new_post",
+                postId: post.id,
+                title: post.title,
+            })
+            .catch(console.error); // Don't block response
 
-    // Update search index
-    searchService.indexPost(post).catch(console.error);
+        // Update search index
+        searchService.indexPost(post).catch(console.error);
 
-    next();
-  },
+        next();
+    },
 ];
 
 export const onCreateOneError = [
-  async (err, req, res, next) => {
-    // Clean up any uploaded images if post creation fails
-    if (req.body.featuredImage) {
-      await deleteUploadedFile(req.body.featuredImage).catch(console.error);
-    }
+    async (err, req, res, next) => {
+        // Clean up any uploaded images if post creation fails
+        if (req.body.featuredImage) {
+            await deleteUploadedFile(req.body.featuredImage).catch(
+                console.error
+            );
+        }
 
-    next(err);
-  },
+        next(err);
+    },
 ];
 ```
 
