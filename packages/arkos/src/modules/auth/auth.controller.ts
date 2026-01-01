@@ -370,7 +370,6 @@ export const authControllerFactory = (interceptors: any = {}) => {
           { id: user.id },
           {
             password: await authService.hashPassword(newPassword),
-            passwordChangedAt: new Date(Date.now()),
           }
         );
 
