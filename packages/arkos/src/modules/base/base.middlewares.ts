@@ -324,24 +324,24 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   return catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       for (const key of validatorsKey) {
-        if (typeof validators === "boolean" && validators === false)
-          throw new AppError(
-            `No request ${key} is allowed on this route`,
-            400,
-            `NoRequest${capitalize(key)}Allowed`,
-            { [key]: req[key] }
-          );
+        const reqInput = Object.keys(req[key]).length > 0;
+        const validator = (validators as any)?.[key];
+        const notAllowedInputError = new AppError(
+          `Request ${key} is not allowed on this route`,
+          400,
+          `Request${capitalize(key)}NotAllowed`,
+          { [key]: req[key] }
+        );
 
-        const validator = validators?.[key];
+        if (
+          ((typeof validators === "boolean" && validators === false) ||
+            validator === false) &&
+          reqInput
+        )
+          throw notAllowedInputError;
 
-        if (strictValidation && !validator && Object.keys(req[key]).length > 0)
-          throw new AppError(
-            `No request ${key} is allowed on this route`,
-            400,
-            `NoRequest${capitalize(key)}Allowed`,
-            { [key]: req[key] }
-          );
-
+        if (strictValidation && !validator && reqInput)
+          throw notAllowedInputError;
         if (validator)
           req[key] = await validatorFn(
             validator,

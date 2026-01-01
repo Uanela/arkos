@@ -11,6 +11,7 @@ import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 import uploadManager from "./utils/helpers/upload-manager";
+import { getUserFileExtension } from "../helpers/fs.helpers";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -123,7 +124,8 @@ export default function ArkosRouter(): IArkosRouter {
 
           if (config.authentication && !authenticationConfig?.mode)
             throw Error(
-              `Trying to authenticate route ${route} without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })`
+              `Trying to authenticate route ${route} without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication-system.`
             );
 
           handlers = [...getMiddlewareStack(config), ...handlers];
