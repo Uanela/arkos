@@ -209,11 +209,14 @@ export class BaseController {
 
         if (this.interceptors[interceptorName]) {
           this.setResponseData(req, res, responseData, config.successStatus);
-          return next();
+          next();
+          return;
         }
 
-        if (config.operationType === "deleteOne")
-          return res.status(config.successStatus).send();
+        if (config.operationType === "deleteOne") {
+          res.status(config.successStatus).send();
+          return;
+        }
 
         res.status(config.successStatus).json(responseData);
       }

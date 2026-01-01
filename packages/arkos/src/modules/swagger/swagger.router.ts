@@ -66,7 +66,9 @@ export async function getSwaggerRouter(
 
   swaggerRouter.get(
     `${endpoint}/openapi.json`,
-    (_: ArkosRequest, res: ArkosResponse) => res.json(swaggerSpecification)
+    (_: ArkosRequest, res: ArkosResponse) => {
+      res.json(swaggerSpecification);
+    }
   );
 
   swaggerRouter.use(

@@ -14,7 +14,7 @@ export const config: RouterConfig<"file-upload"> = {
 const fileUploadRouter = ArkosRouter();
 
 fileUploadRouter.get(
-  { route: "u", openapi: {} },
+  { path: "u" },
   authService.authenticate,
   authService.handleAccessControl("CustomAction", "file-upload"),
   catchAsync(fileUploadController.findMany)
