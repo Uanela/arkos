@@ -32,7 +32,7 @@ describe("ArkosRouter", () => {
       proxied.get("/normal", jest.fn());
     } catch (err: any) {
       expect(err.message).toBe(
-        "Please pass valid value for path field to use in your route"
+        "First argument of ArkosRouter().get() must be a valid ArkosRouteConfig object with path field, but recevied /normal"
       );
     }
   });
@@ -104,8 +104,8 @@ describe("ArkosRouter", () => {
       const proxied = ArkosRouter() as any;
       proxied.get({ path: "/api/cacilda", authentication: {} });
     } catch (err: any) {
-      expect(err.message).toBe(
-        "Trying to authenticate route GET /api/cacilda without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })"
+      expect(err.message).toContain(
+        "Trying to authenticate route GET /api/cacilda without choosing an authentication mode under arkos.config.js"
       );
     }
   });
@@ -147,6 +147,23 @@ describe("generateOpenAPIFromApp", () => {
         method: "GET",
         config: {}, // Should use defaults
       },
+      {
+        path: "/products/:id/views/:viewId/:userId",
+        method: "GET",
+        config: {
+          experimental: {
+            openapi: {
+              parameters: [
+                {
+                  name: "userId",
+                  in: "path",
+                  description: "the userId in product",
+                },
+              ],
+            },
+          },
+        }, // Should use defaults
+      },
     ];
 
     mockApp = {
@@ -172,6 +189,14 @@ describe("generateOpenAPIFromApp", () => {
 
     // Mock RouteConfigRegistry.get to return appropriate configs
     (RouteConfigRegistry.get as jest.Mock).mockImplementation((handler) => {
+      if (handler === "product") {
+        const route = mockRoutes.find(
+          (r) => r.path === "/products/:id/views/:viewId/:userId"
+        );
+
+        return route.config;
+      }
+
       const route = mockRoutes.find(
         (r) =>
           r.path === "/users" &&
@@ -198,7 +223,7 @@ describe("generateOpenAPIFromApp", () => {
   });
 
   it("should generate OpenAPI paths from Express app routes", async () => {
-    const openapiPaths = await generateOpenAPIFromApp(mockApp);
+    const openapiPaths = generateOpenAPIFromApp(mockApp);
 
     expect(openapiPaths).toHaveProperty("/users");
     expect(openapiPaths["/users"]).toHaveProperty("get");
@@ -207,10 +232,35 @@ describe("generateOpenAPIFromApp", () => {
   });
 
   it("should skip routes with openapi set to false", async () => {
-    const openapiPaths = await generateOpenAPIFromApp(mockApp);
+    const openapiPaths = generateOpenAPIFromApp(mockApp);
 
     // Route with openapi: false should be skipped
     expect(openapiPaths).not.toHaveProperty("/users/:id");
+  });
+
+  it("should export path parameters from route path", async () => {
+    const routePath = "/products/:id/views/:viewId/:userId";
+    const app = {
+      _router: {
+        stack: [
+          {
+            route: {
+              path: routePath,
+              methods: { get: true },
+              stack: [{ handle: "product" }],
+            },
+          },
+        ],
+      },
+    };
+
+    const openapiPaths: any = generateOpenAPIFromApp(app);
+
+    expect(openapiPaths[routePath].get.parameters[0].description).toBe(
+      "the userId in product"
+    );
+    expect(openapiPaths[routePath].get.parameters[1].name).toBe("id");
+    expect(openapiPaths[routePath].get.parameters[2].name).toBe("viewId");
   });
 
   // it("should use default values when openapi config is not provided", async () => {
@@ -245,7 +295,7 @@ describe("generateOpenAPIFromApp", () => {
       operationId: "customOperation",
     };
 
-    const openapiPaths = await generateOpenAPIFromApp(mockApp);
+    const openapiPaths = generateOpenAPIFromApp(mockApp);
 
     expect(openapiPaths["/users"]["get"].summary).toBe("Custom summary");
     expect(openapiPaths["/users"]["get"].description).toBe(
@@ -280,7 +330,7 @@ describe("generateOpenAPIFromApp", () => {
 
     const openapiPaths = await generateOpenAPIFromApp(mockApp);
 
-    expect(openapiPaths["/users"]["get"].summary).toBe("GET /users");
+    expect(openapiPaths["/users"]["get"].summary).toBe("/users");
     expect(openapiPaths["/users"]["get"].description).toBe("GET /users");
     expect(openapiPaths["/users"]["get"].tags).toEqual(["Defaults"]);
   });
@@ -291,7 +341,7 @@ describe("generateOpenAPIFromApp", () => {
     const openapiPaths = await generateOpenAPIFromApp(mockApp);
 
     expect(openapiPaths["/users"]["get"]).toMatchObject({
-      summary: "GET /users",
+      summary: "/users",
       description: "GET /users",
       tags: ["Defaults"],
       operationId: "get:/users",

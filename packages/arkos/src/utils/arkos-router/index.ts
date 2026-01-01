@@ -3,7 +3,11 @@ import { IArkosRouter, ArkosRouteConfig } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
 import RouteConfigRegistry from "./route-config-registry";
-import { extractArkosRoutes, getMiddlewareStack } from "./utils/helpers";
+import {
+  extractArkosRoutes,
+  extractPathParams,
+  getMiddlewareStack,
+} from "./utils/helpers";
 import { getArkosConfig } from "../../exports";
 import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
@@ -74,7 +78,7 @@ export default function ArkosRouter(): IArkosRouter {
               `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
 
-          if (!path)
+          if ([null, undefined].includes(path as any))
             throw Error(
               "Please pass valid value for path field to use in your route"
             );
@@ -124,7 +128,8 @@ export default function ArkosRouter(): IArkosRouter {
 
           if (config.authentication && !authenticationConfig?.mode)
             throw Error(
-              `Trying to authenticate route ${route} without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
+              `Trying to authenticate route ${route} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
+
 For further help see https://www.arkosjs.com/docs/core-concepts/authentication-system.`
             );
 
@@ -210,12 +215,29 @@ export function generateOpenAPIFromApp(app: any) {
     const convertedOpenAPI =
       openApiSchemaConverter.convertOpenAPIConfig(openapi);
 
+    const allParameters: OpenAPIV3.ParameterObject[] = [
+      ...(convertedOpenAPI.parameters || []),
+      ...parameters,
+    ];
+    const pathParatemersFromRoutePath = extractPathParams(path);
+
+    for (const parameter of pathParatemersFromRoutePath) {
+      if (
+        !allParameters.find(
+          ({ name, in: paramIn }) => name === parameter && paramIn === "path"
+        )
+      )
+        allParameters.push({ name: parameter, in: "path" });
+    }
+
+    delete convertedOpenAPI.parameters;
+
     (paths as any)[path][method.toLowerCase()] = {
-      summary: openapi?.summary || `${method} ${path}`,
+      summary: openapi?.summary || `${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Defaults"],
       operationId: `${method.toLowerCase()}:${path}`,
-      parameters: [...(convertedOpenAPI.parameters || []), ...parameters],
+      parameters: allParameters,
       ...(!convertedOpenAPI.requestBody &&
         config?.validation &&
         config?.validation?.body && {

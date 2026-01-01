@@ -1,4 +1,4 @@
-import { extractArkosRoutes } from "../index";
+import { extractArkosRoutes, extractPathParams } from "../index";
 import RouteConfigRegistry from "../../../route-config-registry";
 
 jest.mock("fs");
@@ -90,5 +90,50 @@ describe("extractArkosRoutes", () => {
     const app = {};
     const result = extractArkosRoutes(app);
     expect(result).toEqual([]);
+  });
+});
+
+describe("extractPathParams", () => {
+  it("should extract single path parameter", () => {
+    const path = "/api/users/:userId";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["userId"]);
+  });
+
+  it("should extract multiple path parameters", () => {
+    const path = "/api/users/:userId/posts/:postId";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["userId", "postId"]);
+  });
+
+  it("should return empty array when no parameters", () => {
+    const path = "/api/users";
+    const result = extractPathParams(path);
+    expect(result).toEqual([]);
+  });
+
+  it("should extract parameters with underscores", () => {
+    const path = "/api/users/:user_id/posts/:post_id";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["user_id", "post_id"]);
+  });
+
+  it("should extract parameters from complex paths", () => {
+    const path =
+      "/api/:version/users/:userId/posts/:postId/comments/:commentId";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["version", "userId", "postId", "commentId"]);
+  });
+
+  it("should handle trailing slashes", () => {
+    const path = "/api/users/:userId/";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["userId"]);
+  });
+
+  it("should handle paths starting without slash", () => {
+    const path = "api/users/:userId";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["userId"]);
   });
 });
