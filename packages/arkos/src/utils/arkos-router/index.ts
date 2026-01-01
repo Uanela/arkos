@@ -38,7 +38,7 @@ import { getUserFileExtension } from "../helpers/fs.helpers";
  * @see {@link ArkosRouteConfig} for configuration options
  */
 export default function ArkosRouter(): IArkosRouter {
-  const router: IArkosRouter = Router();
+  const router = Router();
 
   return new Proxy(router, {
     get(target, prop, receiver) {
@@ -69,14 +69,14 @@ export default function ArkosRouter(): IArkosRouter {
 
           const path = config.path;
 
-          if (!path)
-            throw Error(
-              "Please pass valid value for path field to use in your route"
-            );
-
           if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
               `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
+            );
+
+          if (!path)
+            throw Error(
+              "Please pass valid value for path field to use in your route"
             );
 
           const method = prop as string;
