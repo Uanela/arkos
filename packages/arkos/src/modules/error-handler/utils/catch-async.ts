@@ -33,7 +33,7 @@ const catchAsync = (
         req: ArkosRequest,
         res: ArkosResponse,
         next: ArkosNextFunction
-      ): Promise<void> => {
+      ): Promise<any> => {
         try {
           return (await (fn as any)(err, req, res, next)) as void;
         } catch (err) {
@@ -44,7 +44,7 @@ const catchAsync = (
         req: ArkosRequest,
         res: ArkosResponse,
         next: ArkosNextFunction
-      ): Promise<void> => {
+      ): Promise<any> => {
         try {
           return (await (fn as ArkosRequestHandler)(req, res, next)) as void;
         } catch (err) {
