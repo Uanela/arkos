@@ -176,6 +176,9 @@ export async function devCommand(options: DevOptions = {}) {
       envFiles,
     });
 
+    process.env.__PORT = hostAndPort.port || "";
+    process.env.__HOST = hostAndPort.host || "";
+
     const cleanup = () => {
       if (restartTimeout) clearTimeout(restartTimeout);
 

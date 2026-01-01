@@ -5,6 +5,7 @@ import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { fullCleanCwd } from "../helpers/fs.helpers";
 import portAndHostAllocator from "../features/port-and-host-allocator";
 import watermarkStamper from "./utils/watermark-stamper";
+import sheu from "../sheu";
 
 interface StartOptions {
   port?: string;
@@ -29,8 +30,8 @@ export async function startCommand(options: StartOptions = {}) {
     const entryPoint = path.join(process.cwd(), ".build", "src", "app.js");
 
     if (!fs.existsSync(path.join(entryPoint))) {
-      console.error(
-        `❌ Could not find built application entry point at ${fullCleanCwd(entryPoint)}`
+      sheu.error(
+        `Could not find built application entry point at ${fullCleanCwd(entryPoint)}`
       );
       process.exit(1);
     }
@@ -63,12 +64,16 @@ export async function startCommand(options: StartOptions = {}) {
       }
     );
 
+    process.env.__PORT = hostAndPort.port || "";
+    process.env.__HOST = hostAndPort.host || "";
+
     watermarkStamper.stamp({
       envFiles,
       ...hostAndPort,
     });
   } catch (error) {
-    console.error("❌ Production server failed to start:", error);
+    sheu.error("Production server failed to start:");
+    console.error(error);
     process.exit(1);
   }
 }
