@@ -14,6 +14,7 @@ import {
   getModuleComponents,
   ValidationFileMappingKey,
 } from "../../../../utils/dynamic-loader";
+import { isAuthenticationEnabled } from "../../../../utils/helpers/arkos-config.helpers";
 
 /**
  * Helps choosing the right json schemas according to swagger configurations
@@ -122,10 +123,11 @@ export function generatePathsForModels(
     ...getSystemJsonSchemaPaths(),
   };
 
-  paths = {
-    ...paths,
-    ...(getAuthenticationJsonSchemaPaths(arkosConfig) || {}),
-  };
+  if (isAuthenticationEnabled())
+    paths = {
+      ...paths,
+      ...(getAuthenticationJsonSchemaPaths(arkosConfig) || {}),
+    };
 
   return paths;
 }
