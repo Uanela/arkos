@@ -38,6 +38,12 @@ export const afterSignup = []
 
 export const onSignupError = []
 
+export const beforeUpdateMe = []
+
+export const afterUpdateMe = []
+
+export const onUpdateMeError = []
+
 export const beforeUpdatePassword = []
 
 export const afterUpdatePassword = []
