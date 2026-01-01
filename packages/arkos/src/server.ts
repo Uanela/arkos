@@ -4,7 +4,6 @@ import { Express } from "express";
 import { bootstrap } from "./app";
 import http from "http";
 import sheu from "./utils/sheu";
-import { capitalize } from "./utils/helpers/text.helpers";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";
 import { killDevelopmentServerChildProcess } from "./utils/cli/dev";
 import { killServerChildProcess } from "./utils/cli/utils/cli.helpers";
