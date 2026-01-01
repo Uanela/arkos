@@ -136,7 +136,7 @@ export const generateCommand = {
       customImports: () => ({
         baseService: "arkos/services",
       }),
-      allowedModules: knownModules,
+      allowedModules: [...knownModules, "email"],
     });
   },
 
