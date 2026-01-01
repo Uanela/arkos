@@ -1,6 +1,7 @@
 import { ArkosRouter } from "arkos";
 import { RouterConfig } from "arkos";
 import { IRouter, Router } from "express";
+import userController from "./user.controller";
 
 export const config: RouterConfig = {
   findMany: {
@@ -13,13 +14,16 @@ export const config: RouterConfig = {
 const userRouter = ArkosRouter();
 
 const router: Router = Router();
-userRouter.get({ path: "" }, () => {});
+userRouter.get({ path: "/{userAge}/{another}" }, (req: any, res: any) => {
+  res.send("hello");
+});
 
 router.get("", () => {});
 
 const aux = "" as any as Omit<Router, "post">;
+userRouter.route("").get();
 
-userRouter.use("", router);
-userRouter.use("", userRouter.use(userRouter));
+// userRouter.get({ path: "" }, userController.myMethod);
+// userRouter.use("", userRouter.use(userRouter));
 
 export default userRouter;
