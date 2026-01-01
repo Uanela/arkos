@@ -217,10 +217,11 @@ export interface User {
 }
 
 export interface ArkosRequest<
-  Params extends Record<string, any> = any,
-  Body = any,
+  P extends Record<string, any> = any,
+  ResBody = any,
+  ReqBody = any,
   Query extends Record<string, any> = any,
-> extends Request<Params, any, Body, Query> {
+> extends Request<P, ResBody, ReqBody, Query> {
   /**
    * Authenticated user with additional fields
    */
@@ -254,7 +255,7 @@ export interface ArkosRequest<
   /**
    * Typed request body
    */
-  body: Body;
+  body: ReqBody;
 
   /**
    * Prisma query options (where, orderBy, select, etc.)
