@@ -92,7 +92,7 @@ async function initApp(
           sheu.ready(
             message.replace(
               "{{server}}",
-              `${process.env.ARKOS_BUILD === "true" ? "Production" : "development"} server`
+              `${process.env.ARKOS_BUILD === "true" ? "Production" : "Development"} server`
             )
           );
           if (networkHost && portAndHost.host === "0.0.0.0")
