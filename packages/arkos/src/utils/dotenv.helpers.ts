@@ -17,11 +17,11 @@ export function loadEnvironmentVariables() {
   let loadedEnvs: string[] = [];
 
   const envFiles = [
-    path.resolve(cwd, `.env.defaults`),
+    path.resolve(cwd, ".env.defaults"),
+    path.resolve(cwd, ".env"),
+    path.resolve(cwd, ".env.local"),
     path.resolve(cwd, `.env.${ENV}`),
     path.resolve(cwd, `.env.${ENV}.local`),
-    path.resolve(cwd, ".env.local"),
-    path.resolve(cwd, ".env"),
   ];
 
   envFiles.forEach((filePath) => {
@@ -31,7 +31,11 @@ export function loadEnvironmentVariables() {
           `Skipping the local ${filePath.replace(cwd, "")} files in production`
         );
       else {
-        const result = dotenv.config({ path: filePath, override: true });
+        const result = dotenv.config({
+          path: filePath,
+          override: true,
+          quiet: true,
+        });
 
         if (result.error) {
           console.warn(`Warning: Error loading ${filePath}`, result.error);

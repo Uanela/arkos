@@ -12,8 +12,7 @@ export default async function exportAuthActionCommand(options: {
   process.env.CLI_COMMAND = "EXPORT_AUTH_ACTION";
   process.env.CLI_COMMAND_OPTIONS = JSON.stringify(options);
 
-  if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
-    process.env.NODE_ENV = "development";
+  if (!process.env.NODE_ENV) process.env.NODE_ENV = "development";
 
   const envFiles = loadEnvironmentVariables() || [];
   let child: ChildProcess | null = null;
