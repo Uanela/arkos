@@ -9,6 +9,7 @@ import { isEndpointDisabled } from "../../../../../base/utils/helpers/base.route
 import { ArkosConfig, RouterConfig } from "../../../../../../exports";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
+import deepmerge from "../../../../../../utils/helpers/deepmerge.helper";
 
 export function generatePrismaModelMainRoutesPaths(
   model: string,
@@ -50,14 +51,22 @@ export function generatePrismaModelMainRoutesPaths(
 
   // Create One
   if (!isEndpointDisabled(routerConfig, "createOne")) {
-    if (!paths[`/api/${routeName}`]) paths[`/api/${routeName}`] = {};
+    const pathname = `/api/${routeName}`;
+    if (!paths[pathname]) paths[pathname] = {};
     const createMode = getSchemaMode("create");
-    paths[`/api/${routeName}`]!.post = {
-      tags: [humanReadableNamePlural],
-      summary: `Create a new ${humanReadableName}`,
+    const currentPath = paths[pathname]!.post;
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Create a new ${humanReadableName}`
+          : currentPath?.summary,
       description: `Creates a new ${humanReadableName} record in the system`,
       operationId: `create${pascalModelName}`,
-      requestBody: {
+      requestBody: currentPath?.requestBody || {
         description: `${humanReadableName} data to create`,
         required: true,
         content: {
@@ -69,7 +78,7 @@ export function generatePrismaModelMainRoutesPaths(
         },
       },
       responses: {
-        "201": {
+        "201": currentPath?.responses?.["201"] || {
           description: `${humanReadableName} created successfully`,
           content: {
             "application/json": {
@@ -79,18 +88,20 @@ export function generatePrismaModelMainRoutesPaths(
             },
           },
         },
-        "400": {
+        "400": currentPath?.responses?.["400"] || {
           description: "Invalid input data provided",
         },
-        "401": {
+        "401": currentPath?.responses?.["401"] || {
           description: "Authentication required",
         },
-        "403": {
+        "403": currentPath?.responses?.["403"] || {
           description: "Insufficient permissions",
         },
       },
       security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.post = deepmerge(currentPath || {}, defaultSpec);
   }
 
   // Find Many

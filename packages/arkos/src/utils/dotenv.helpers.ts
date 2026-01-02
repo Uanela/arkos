@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
+import sheu from "./sheu";
 
 /**
  * Loads environment variables in a prioritized order
@@ -26,8 +27,8 @@ export function loadEnvironmentVariables() {
   envFiles.forEach((filePath) => {
     if (fs.existsSync(filePath)) {
       if (process.env.ARKOS_BUILD === "true" && filePath.endsWith(".local"))
-        console.info(
-          `Skipping the local ${filePath.replace(cwd, "")} files in production build`
+        sheu.warn(
+          `Skipping the local ${filePath.replace(cwd, "").replace("/", "")} files in production build`
         );
       else {
         const result = dotenv.config({
