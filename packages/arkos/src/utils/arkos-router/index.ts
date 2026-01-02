@@ -227,7 +227,12 @@ export function generateOpenAPIFromApp(app: any) {
           ({ name, in: paramIn }) => name === parameter && paramIn === "path"
         )
       )
-        allParameters.push({ name: parameter, in: "path" });
+        allParameters.push({
+          name: parameter,
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        });
     }
 
     delete convertedOpenAPI.parameters;
