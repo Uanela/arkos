@@ -9,6 +9,16 @@ import { isEndpointDisabled } from "../../../../../base/utils/helpers/base.route
 import { ArkosConfig, RouterConfig } from "../../../../../../exports";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
+import { isAuthenticationEnabled } from "../../../../../../utils/helpers/arkos-config.helpers";
+
+function getAuthErrorResponses(): Record<string, any> {
+  if (!isAuthenticationEnabled()) return {};
+
+  return {
+    "401": { description: "Authentication required" },
+    "403": { description: "Insufficient permissions" },
+  };
+}
 
 export function generatePrismaModelMainRoutesPaths(
   model: string,
@@ -50,14 +60,22 @@ export function generatePrismaModelMainRoutesPaths(
 
   // Create One
   if (!isEndpointDisabled(routerConfig, "createOne")) {
-    if (!paths[`/api/${routeName}`]) paths[`/api/${routeName}`] = {};
+    const pathname = `/api/${routeName}`;
+    if (!paths[pathname]) paths[pathname] = {};
     const createMode = getSchemaMode("create");
-    paths[`/api/${routeName}`]!.post = {
-      tags: [humanReadableNamePlural],
-      summary: `Create a new ${humanReadableName}`,
+    const currentPath = paths[pathname]!.post;
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Create a new ${humanReadableName}`
+          : currentPath?.summary,
       description: `Creates a new ${humanReadableName} record in the system`,
       operationId: `create${pascalModelName}`,
-      requestBody: {
+      requestBody: currentPath?.requestBody || {
         description: `${humanReadableName} data to create`,
         required: true,
         content: {
@@ -69,7 +87,8 @@ export function generatePrismaModelMainRoutesPaths(
         },
       },
       responses: {
-        "201": {
+        ...(currentPath?.responses || {}),
+        "201": currentPath?.responses?.["201"] || {
           description: `${humanReadableName} created successfully`,
           content: {
             "application/json": {
@@ -79,76 +98,84 @@ export function generatePrismaModelMainRoutesPaths(
             },
           },
         },
-        "400": {
+        "400": currentPath?.responses?.["400"] || {
           description: "Invalid input data provided",
         },
-        "401": {
-          description: "Authentication required",
-        },
-        "403": {
-          description: "Insufficient permissions",
-        },
+        ...getAuthErrorResponses(),
       },
       security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.post = { ...(currentPath || {}), ...defaultSpec };
   }
 
   // Find Many
   if (!isEndpointDisabled(routerConfig, "findMany")) {
-    if (!paths[`/api/${routeName}`]) paths[`/api/${routeName}`] = {};
+    const pathname = `/api/${routeName}`;
+    if (!paths[pathname]) paths[pathname] = {};
     const findManyMode = getSchemaMode("findMany");
-    paths[`/api/${routeName}`]!.get = {
-      tags: [humanReadableNamePlural],
-      summary: `Get ${humanReadableNamePlural}`,
+    const currentPath = paths[pathname]!.get;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "filters",
+        in: "query",
+        description: "Filter criteria in JSON format",
+        schema: { type: "string" },
+      },
+      {
+        name: "sort",
+        in: "query",
+        description: "Sort field (prefix with '-' for descending order)",
+        schema: { type: "string" },
+      },
+      {
+        name: "page",
+        in: "query",
+        description: "Page number (starts from 1)",
+        schema: { type: "integer", minimum: 1 },
+      },
+      {
+        name: "limit",
+        in: "query",
+        description: "Number of items per page",
+        schema: { type: "integer", minimum: 1, maximum: 100 },
+      },
+      {
+        name: "fields",
+        in: "query",
+        description: "Comma-separated list of fields to include in response",
+        schema: { type: "string" },
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Get ${humanReadableNamePlural}`
+          : currentPath?.summary,
       description: `Retrieves a paginated list of ${humanReadableNamePlural} with optional filtering and sorting`,
       operationId: `find${pluralize.plural(pascalModelName)}`,
-      parameters: [
-        {
-          name: "filters",
-          in: "query",
-          description: "Filter criteria in JSON format",
-          schema: {
-            type: "string",
-          },
-        },
-        {
-          name: "sort",
-          in: "query",
-          description: "Sort field (prefix with '-' for descending order)",
-          schema: {
-            type: "string",
-          },
-        },
-        {
-          name: "page",
-          in: "query",
-          description: "Page number (starts from 1)",
-          schema: {
-            type: "integer",
-            minimum: 1,
-          },
-        },
-        {
-          name: "limit",
-          in: "query",
-          description: "Number of items per page",
-          schema: {
-            type: "integer",
-            minimum: 1,
-            maximum: 100,
-          },
-        },
-        {
-          name: "fields",
-          in: "query",
-          description: "Comma-separated list of fields to include in response",
-          schema: {
-            type: "string",
-          },
-        },
-      ],
+      parameters: mergedParameters,
       responses: {
-        "200": {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
           description: `List of ${humanReadableNamePlural} retrieved successfully`,
           content: {
             "application/json": {
@@ -178,96 +205,119 @@ export function generatePrismaModelMainRoutesPaths(
             },
           },
         },
-        "401": {
-          description: "Authentication required",
-        },
-        "403": {
-          description: "Insufficient permissions",
-        },
+        ...getAuthErrorResponses(),
       },
       security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.get = { ...(currentPath || {}), ...defaultSpec };
   }
 
   // Create Many
   if (!isEndpointDisabled(routerConfig, "createMany")) {
+    const pathname = `/api/${routeName}/many`;
+    if (!paths[pathname]) paths[pathname] = {};
     const createManyMode = getSchemaMode("createMany");
-    paths[`/api/${routeName}/many`] = {
-      post: {
-        tags: [humanReadableNamePlural],
-        summary: `Create multiple ${humanReadableNamePlural}`,
-        description: `Creates multiple ${humanReadableNamePlural} records in a single batch operation`,
-        operationId: `createMany${pascalModelName}`,
-        requestBody: {
-          description: `Array of ${humanReadableName} data to create`,
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "array",
-                items: {
-                  $ref: getSchemaRef(
-                    `CreateMany${pascalModelName}`,
-                    createManyMode
-                  ),
-                },
+    const currentPath = paths[pathname]!.post;
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Create multiple ${humanReadableNamePlural}`
+          : currentPath?.summary,
+      description: `Creates multiple ${humanReadableNamePlural} records in a single batch operation`,
+      operationId: `createMany${pascalModelName}`,
+      requestBody: currentPath?.requestBody || {
+        description: `Array of ${humanReadableName} data to create`,
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "array",
+              items: {
+                $ref: getSchemaRef(
+                  `CreateMany${pascalModelName}`,
+                  createManyMode
+                ),
               },
             },
           },
         },
-        responses: {
-          "201": {
-            description: `${humanReadableNamePlural} created successfully`,
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    count: {
-                      type: "integer",
-                      description: "Number of records created",
-                    },
+      },
+      responses: {
+        ...(currentPath?.responses || {}),
+        "201": currentPath?.responses?.["201"] || {
+          description: `${humanReadableNamePlural} created successfully`,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  count: {
+                    type: "integer",
+                    description: "Number of records created",
                   },
                 },
               },
             },
           },
-          "400": {
-            description: "Invalid input data provided",
-          },
-          "401": {
-            description: "Authentication required",
-          },
-          "403": {
-            description: "Insufficient permissions",
-          },
         },
-        security: [{ BearerAuth: [] }],
+        "400": currentPath?.responses?.["400"] || {
+          description: "Invalid input data provided",
+        },
+        ...getAuthErrorResponses(),
       },
+      security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.post = { ...(currentPath || {}), ...defaultSpec };
   }
 
   // Update Many
   if (!isEndpointDisabled(routerConfig, "updateMany")) {
-    if (!paths[`/api/${routeName}/many`]) paths[`/api/${routeName}/many`] = {};
+    const pathname = `/api/${routeName}/many`;
+    if (!paths[pathname]) paths[pathname] = {};
     const updateManyMode = getSchemaMode("updateMany");
-    paths[`/api/${routeName}/many`]!.patch = {
-      tags: [humanReadableNamePlural],
-      summary: `Update multiple ${humanReadableNamePlural}`,
+    const currentPath = paths[pathname]!.patch;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "filters",
+        in: "query",
+        description: "Filter criteria in JSON format (required)",
+        required: true,
+        schema: { type: "string" },
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Update multiple ${humanReadableNamePlural}`
+          : currentPath?.summary,
       description: `Updates multiple ${humanReadableNamePlural} records that match the specified filter criteria`,
       operationId: `updateMany${pascalModelName}`,
-      parameters: [
-        {
-          name: "filters",
-          in: "query",
-          description: "Filter criteria in JSON format (required)",
-          required: true,
-          schema: {
-            type: "string",
-          },
-        },
-      ],
-      requestBody: {
+      parameters: mergedParameters,
+      requestBody: currentPath?.requestBody || {
         description: `Partial ${humanReadableName} data to update`,
         required: true,
         content: {
@@ -282,7 +332,8 @@ export function generatePrismaModelMainRoutesPaths(
         },
       },
       responses: {
-        "200": {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
           description: `${humanReadableNamePlural} updated successfully`,
           content: {
             "application/json": {
@@ -298,41 +349,60 @@ export function generatePrismaModelMainRoutesPaths(
             },
           },
         },
-        "400": {
+        "400": currentPath?.responses?.["400"] || {
           description: "Invalid input data or missing filter criteria",
         },
-        "401": {
-          description: "Authentication required",
-        },
-        "403": {
-          description: "Insufficient permissions",
-        },
+        ...getAuthErrorResponses(),
       },
       security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.patch = { ...(currentPath || {}), ...defaultSpec };
   }
 
   // Delete Many
   if (!isEndpointDisabled(routerConfig, "deleteMany")) {
-    if (!paths[`/api/${routeName}/many`]) paths[`/api/${routeName}/many`] = {};
-    paths[`/api/${routeName}/many`]!.delete = {
-      tags: [humanReadableNamePlural],
-      summary: `Delete multiple ${humanReadableNamePlural}`,
+    const pathname = `/api/${routeName}/many`;
+    if (!paths[pathname]) paths[pathname] = {};
+    const currentPath = paths[pathname]!.delete;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "filters",
+        in: "query",
+        description: "Filter criteria in JSON format (required)",
+        required: true,
+        schema: { type: "string" },
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Delete multiple ${humanReadableNamePlural}`
+          : currentPath?.summary,
       description: `Deletes multiple ${humanReadableNamePlural} records that match the specified filter criteria`,
       operationId: `deleteMany${pascalModelName}`,
-      parameters: [
-        {
-          name: "filters",
-          in: "query",
-          description: "Filter criteria in JSON format (required)",
-          required: true,
-          schema: {
-            type: "string",
-          },
-        },
-      ],
+      parameters: mergedParameters,
       responses: {
-        "200": {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
           description: `${humanReadableNamePlural} deleted successfully`,
           content: {
             "application/json": {
@@ -348,87 +418,123 @@ export function generatePrismaModelMainRoutesPaths(
             },
           },
         },
-        "400": {
+        "400": currentPath?.responses?.["400"] || {
           description: "Missing filter criteria",
         },
-        "401": {
-          description: "Authentication required",
-        },
-        "403": {
-          description: "Insufficient permissions",
-        },
+        ...getAuthErrorResponses(),
       },
       security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.delete = { ...(currentPath || {}), ...defaultSpec };
   }
 
   // Find One
   if (!isEndpointDisabled(routerConfig, "findOne")) {
+    const pathname = `/api/${routeName}/{id}`;
+    if (!paths[pathname]) paths[pathname] = {};
     const findOneMode = getSchemaMode("findOne");
-    paths[`/api/${routeName}/{id}`] = {
-      get: {
-        tags: [humanReadableNamePlural],
-        summary: `Get ${humanReadableName} by ID`,
-        description: `Retrieves a single ${humanReadableName} record by its unique identifier`,
-        operationId: `find${pascalModelName}ById`,
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            description: `Unique identifier of the ${humanReadableName}`,
-            required: true,
-            schema: {
-              type: "string",
-            },
-          },
-        ],
-        responses: {
-          "200": {
-            description: `${humanReadableName} retrieved successfully`,
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: getSchemaRef(`FindOne${pascalModelName}`, findOneMode),
-                },
+    const currentPath = paths[pathname]!.get;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "id",
+        in: "path",
+        description: `Unique identifier of the ${humanReadableName}`,
+        required: true,
+        schema: { type: "string" },
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Get ${humanReadableName} by ID`
+          : currentPath?.summary,
+      description: `Retrieves a single ${humanReadableName} record by its unique identifier`,
+      operationId: `find${pascalModelName}ById`,
+      parameters: mergedParameters,
+      responses: {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
+          description: `${humanReadableName} retrieved successfully`,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: getSchemaRef(`FindOne${pascalModelName}`, findOneMode),
               },
             },
           },
-          "401": {
-            description: "Authentication required",
-          },
-          "403": {
-            description: "Insufficient permissions",
-          },
-          "404": {
-            description: `${humanReadableName} not found`,
-          },
         },
-        security: [{ BearerAuth: [] }],
+        ...getAuthErrorResponses(),
+        "404": currentPath?.responses?.["404"] || {
+          description: `${humanReadableName} not found`,
+        },
       },
+      security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.get = { ...(currentPath || {}), ...defaultSpec };
   }
 
   // Update One
   if (!isEndpointDisabled(routerConfig, "updateOne")) {
-    if (!paths[`/api/${routeName}/{id}`]) paths[`/api/${routeName}/{id}`] = {};
+    const pathname = `/api/${routeName}/{id}`;
+    if (!paths[pathname]) paths[pathname] = {};
     const updateMode = getSchemaMode("update");
-    paths[`/api/${routeName}/{id}`]!.patch = {
-      tags: [humanReadableNamePlural],
-      summary: `Update ${humanReadableName} by ID`,
+    const currentPath = paths[pathname]!.patch;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "id",
+        in: "path",
+        description: `Unique identifier of the ${humanReadableName}`,
+        required: true,
+        schema: { type: "string" },
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Update ${humanReadableName} by ID`
+          : currentPath?.summary,
       description: `Updates a single ${humanReadableName} record by its unique identifier`,
       operationId: `update${pascalModelName}`,
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          description: `Unique identifier of the ${humanReadableName}`,
-          required: true,
-          schema: {
-            type: "string",
-          },
-        },
-      ],
-      requestBody: {
+      parameters: mergedParameters,
+      requestBody: currentPath?.requestBody || {
         description: `Partial ${humanReadableName} data to update`,
         required: true,
         content: {
@@ -440,7 +546,8 @@ export function generatePrismaModelMainRoutesPaths(
         },
       },
       responses: {
-        "200": {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
           description: `${humanReadableName} updated successfully`,
           content: {
             "application/json": {
@@ -450,57 +557,75 @@ export function generatePrismaModelMainRoutesPaths(
             },
           },
         },
-        "400": {
+        "400": currentPath?.responses?.["400"] || {
           description: "Invalid input data provided",
         },
-        "401": {
-          description: "Authentication required",
-        },
-        "403": {
-          description: "Insufficient permissions",
-        },
-        "404": {
+        ...getAuthErrorResponses(),
+        "404": currentPath?.responses?.["404"] || {
           description: `${humanReadableName} not found`,
         },
       },
       security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.patch = { ...(currentPath || {}), ...defaultSpec };
   }
 
   // Delete One
   if (!isEndpointDisabled(routerConfig, "deleteOne")) {
-    if (!paths[`/api/${routeName}/{id}`]) paths[`/api/${routeName}/{id}`] = {};
-    paths[`/api/${routeName}/{id}`]!.delete = {
-      tags: [humanReadableNamePlural],
-      summary: `Delete ${humanReadableName} by ID`,
+    const pathname = `/api/${routeName}/{id}`;
+    if (!paths[pathname]) paths[pathname] = {};
+    const currentPath = paths[pathname]!.delete;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "id",
+        in: "path",
+        description: `Unique identifier of the ${humanReadableName}`,
+        required: true,
+        schema: { type: "string" },
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? `Delete ${humanReadableName} by ID`
+          : currentPath?.summary,
       description: `Permanently deletes a single ${humanReadableName} record by its unique identifier`,
       operationId: `delete${pascalModelName}`,
-      parameters: [
-        {
-          name: "id",
-          in: "path",
-          description: `Unique identifier of the ${humanReadableName}`,
-          required: true,
-          schema: {
-            type: "string",
-          },
-        },
-      ],
+      parameters: mergedParameters,
       responses: {
-        "204": {
+        ...(currentPath?.responses || {}),
+        "204": currentPath?.responses?.["204"] || {
           description: `${humanReadableName} deleted successfully`,
         },
-        "401": {
-          description: "Authentication required",
-        },
-        "403": {
-          description: "Insufficient permissions",
-        },
-        "404": {
+        ...getAuthErrorResponses(),
+        "404": currentPath?.responses?.["404"] || {
           description: `${humanReadableName} not found`,
         },
       },
       security: [{ BearerAuth: [] }],
     };
+
+    paths[pathname]!.delete = { ...(currentPath || {}), ...defaultSpec };
   }
+
+  return paths;
 }

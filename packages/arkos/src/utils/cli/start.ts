@@ -45,6 +45,21 @@ export async function startCommand(options: StartOptions = {}) {
       CLI: "false",
     };
 
+    const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
+      env,
+      {
+        logWarning: true,
+      }
+    );
+
+    env.__PORT = hostAndPort.port || "";
+    env.__HOST = hostAndPort.host || "";
+
+    watermarkStamper.stamp({
+      envFiles,
+      ...hostAndPort,
+    });
+
     child = spawn("node", [entryPoint], {
       stdio: "inherit",
       env,
@@ -55,21 +70,6 @@ export async function startCommand(options: StartOptions = {}) {
       if (child) child.kill();
 
       process.exit(0);
-    });
-
-    const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
-      env,
-      {
-        logWarning: true,
-      }
-    );
-
-    process.env.__PORT = hostAndPort.port || "";
-    process.env.__HOST = hostAndPort.host || "";
-
-    watermarkStamper.stamp({
-      envFiles,
-      ...hostAndPort,
     });
   } catch (error) {
     sheu.error("Production server failed to start:");

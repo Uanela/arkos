@@ -12,7 +12,7 @@ const config: ArkosConfig = {
     login: {
       allowedUsernames: ["username"],
     },
-    enabled: false,
+    enabled: true,
   },
   validation: {
     resolver: "zod",

@@ -123,7 +123,7 @@ export function createRouteConfig(
           : getAuthenticationConfig(endpoint, modelNameInKebab, authConfigs),
     }),
     validation: validationSchema ? { body: validationSchema } : undefined,
-    experimental: { openapi: false },
+    // experimental: { openapi: false },
   };
 
   const endpointConfig = (routerConfig as any)[endpoint];

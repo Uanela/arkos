@@ -21,10 +21,16 @@ export async function getSwaggerRouter(
   app: express.Express
 ): Promise<Router> {
   let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
-  const defaultModelsPaths = generatePathsForModels(arkosConfig);
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
+  const defaultModelsPaths = generatePathsForModels(
+    arkosConfig,
+    pathsFromCustomArkosRouters
+  );
 
-  const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(arkosConfig);
+  const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(
+    arkosConfig,
+    pathsFromCustomArkosRouters
+  );
 
   const missingJsonSchemas =
     missingJsonSchemaGenerator.generateMissingJsonSchemas(
@@ -42,9 +48,9 @@ export async function getSwaggerRouter(
   const swaggerConfigs = deepmerge(
     getSwaggerDefaultConfig(
       {
+        ...pathsFromCustomArkosRouters,
         ...defaultModelsPaths,
         ...fileUploadDefaultPaths,
-        ...pathsFromCustomArkosRouters,
       },
       defaultJsonSchemas
     ) || {},

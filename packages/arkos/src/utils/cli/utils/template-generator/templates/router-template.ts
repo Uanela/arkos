@@ -14,7 +14,10 @@ export function generateRouterTemplate(options: TemplateOptions): string {
   const controllerPath =
     imports?.controller || `./${modelName.kebab}.controller.${ext}`;
 
-  const routerConfigTsType = ext === "ts" ? ": RouterConfig" : "";
+  const routerConfigTsType =
+    ext === "ts"
+      ? `: RouterConfig<${["file-upload", "auth"].includes(modelName.kebab) ? modelName.kebab : "prisma"}>`
+      : "";
   const routerConfigTsTypeImport =
     ext === "ts" ? "import { RouterConfig } from 'arkos'" : "";
 
