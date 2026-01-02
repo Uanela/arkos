@@ -1,13 +1,12 @@
 import { OpenAPIV3 } from "openapi-types";
 import { ArkosConfig } from "../../../../exports";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
-import portAndHostAllocator from "../../../../utils/features/port-and-host-allocator";
 
 export default function getSwaggerDefaultConfig(
   defaultModelsPaths: Record<string, any>,
   defaultJsonSchemas: OpenAPIV3.PathsObject<{}, {}>
 ) {
-  const portAndHost = portAndHostAllocator;
+  const portAndHost = { port: process.env.__PORT, host: process.env.__HOST! };
 
   return {
     endpoint: "/docs",
