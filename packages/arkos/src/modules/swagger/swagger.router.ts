@@ -27,7 +27,10 @@ export async function getSwaggerRouter(
     pathsFromCustomArkosRouters
   );
 
-  const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(arkosConfig);
+  const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(
+    arkosConfig,
+    pathsFromCustomArkosRouters
+  );
 
   const missingJsonSchemas =
     missingJsonSchemaGenerator.generateMissingJsonSchemas(

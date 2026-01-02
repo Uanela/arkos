@@ -127,7 +127,7 @@ export function generatePathsForModels(
   if (isAuthenticationEnabled())
     paths = {
       ...paths,
-      ...(getAuthenticationJsonSchemaPaths(arkosConfig) || {}),
+      ...(getAuthenticationJsonSchemaPaths(arkosConfig, existingPaths) || {}),
     };
 
   return paths;

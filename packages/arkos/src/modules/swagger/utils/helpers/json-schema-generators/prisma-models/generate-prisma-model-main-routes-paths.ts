@@ -87,6 +87,7 @@ export function generatePrismaModelMainRoutesPaths(
         },
       },
       responses: {
+        ...(currentPath?.responses || {}),
         "201": currentPath?.responses?.["201"] || {
           description: `${humanReadableName} created successfully`,
           content: {
@@ -173,6 +174,7 @@ export function generatePrismaModelMainRoutesPaths(
       operationId: `find${pluralize.plural(pascalModelName)}`,
       parameters: mergedParameters,
       responses: {
+        ...(currentPath?.responses || {}),
         "200": currentPath?.responses?.["200"] || {
           description: `List of ${humanReadableNamePlural} retrieved successfully`,
           content: {
@@ -246,6 +248,7 @@ export function generatePrismaModelMainRoutesPaths(
         },
       },
       responses: {
+        ...(currentPath?.responses || {}),
         "201": currentPath?.responses?.["201"] || {
           description: `${humanReadableNamePlural} created successfully`,
           content: {
@@ -329,6 +332,7 @@ export function generatePrismaModelMainRoutesPaths(
         },
       },
       responses: {
+        ...(currentPath?.responses || {}),
         "200": currentPath?.responses?.["200"] || {
           description: `${humanReadableNamePlural} updated successfully`,
           content: {
@@ -397,6 +401,7 @@ export function generatePrismaModelMainRoutesPaths(
       operationId: `deleteMany${pascalModelName}`,
       parameters: mergedParameters,
       responses: {
+        ...(currentPath?.responses || {}),
         "200": currentPath?.responses?.["200"] || {
           description: `${humanReadableNamePlural} deleted successfully`,
           content: {
@@ -466,6 +471,7 @@ export function generatePrismaModelMainRoutesPaths(
       operationId: `find${pascalModelName}ById`,
       parameters: mergedParameters,
       responses: {
+        ...(currentPath?.responses || {}),
         "200": currentPath?.responses?.["200"] || {
           description: `${humanReadableName} retrieved successfully`,
           content: {
@@ -540,6 +546,7 @@ export function generatePrismaModelMainRoutesPaths(
         },
       },
       responses: {
+        ...(currentPath?.responses || {}),
         "200": currentPath?.responses?.["200"] || {
           description: `${humanReadableName} updated successfully`,
           content: {
@@ -605,6 +612,7 @@ export function generatePrismaModelMainRoutesPaths(
       operationId: `delete${pascalModelName}`,
       parameters: mergedParameters,
       responses: {
+        ...(currentPath?.responses || {}),
         "204": currentPath?.responses?.["204"] || {
           description: `${humanReadableName} deleted successfully`,
         },
