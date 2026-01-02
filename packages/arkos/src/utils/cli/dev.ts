@@ -130,59 +130,59 @@ export async function devCommand(options: DevOptions = {}) {
       }
     };
 
-    const scheduleRestart = (reason: string, filePath?: string) => {
-      if (filePath) restartingFiles.add(filePath);
+    // const scheduleRestart = (reason: string, filePath?: string) => {
+    //   if (filePath) restartingFiles.add(filePath);
 
-      if (restartTimeout) clearTimeout(restartTimeout);
-      const now = new Date();
-      const time = now.toTimeString().split(" ")[0];
+    //   if (restartTimeout) clearTimeout(restartTimeout);
+    //   const now = new Date();
+    //   const time = now.toTimeString().split(" ")[0];
 
-      isRestarting = true;
-      if (child) {
-        child.kill();
-        child = null;
-      }
+    //   isRestarting = true;
+    //   if (child) {
+    //     child.kill();
+    //     child = null;
+    //   }
 
-      restartTimeout = setTimeout(() => {
-        sheu.info(`\x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`);
-        startServer();
-        isRestarting = false;
-        restartTimeout = null;
-        if (filePath) restartingFiles.delete(filePath);
-      }, 1000);
-    };
+    //   restartTimeout = setTimeout(() => {
+    //     sheu.info(`\x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`);
+    //     startServer();
+    //     isRestarting = false;
+    //     restartTimeout = null;
+    //     if (filePath) restartingFiles.delete(filePath);
+    //   }, 1000);
+    // };
 
-    const setupEnvWatcher = () => {
-      const envWatcher = chokidar.watch(
-        fullCleanCwd(envFiles?.join(",") || "")
-          .replaceAll("/", "")
-          .split(",") || [],
-        {
-          ignoreInitial: true,
-          persistent: true,
-        }
-      );
+    // const setupEnvWatcher = () => {
+    //   const envWatcher = chokidar.watch(
+    //     fullCleanCwd(envFiles?.join(",") || "")
+    //       .replaceAll("/", "")
+    //       .split(",") || [],
+    //     {
+    //       ignoreInitial: true,
+    //       persistent: true,
+    //     }
+    //   );
 
-      envWatcher.on("all", (_, filePath) => {
-        try {
-          envFiles = loadEnvironmentVariables();
-          scheduleRestart("Environment files changed", "env-files");
-        } catch (error) {
-          console.error(`Error reloading ${filePath}:`, error);
-        }
-      });
+    //   envWatcher.on("all", (_, filePath) => {
+    //     try {
+    //       envFiles = loadEnvironmentVariables();
+    //       scheduleRestart("Environment files changed", "env-files");
+    //     } catch (error) {
+    //       console.error(`Error reloading ${filePath}:`, error);
+    //     }
+    //   });
 
-      return envWatcher;
-    };
+    //   return envWatcher;
+    // };
 
     startServer();
 
-    const envWatcher = setupEnvWatcher();
+    // const envWatcher = setupEnvWatcher();
 
     const cleanup = () => {
       if (restartTimeout) clearTimeout(restartTimeout);
 
-      if (envWatcher) envWatcher.close();
+      // if (envWatcher) envWatcher.close();
 
       if (child) {
         child.kill("SIGTERM");
