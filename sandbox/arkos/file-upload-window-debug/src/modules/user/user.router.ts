@@ -2,11 +2,20 @@ import { ArkosRouter } from "arkos";
 import { RouterConfig } from "arkos";
 import { IRouter, Router } from "express";
 import userController from "./user.controller";
+import z from "zod";
 
 export const config: RouterConfig = {
   findMany: {
     validation: {
       query: false,
+    },
+  },
+  createOne: {
+    validation: {
+      body: z.object({ the: z.string() }),
+    },
+    experimental: {
+      // openapi: {},
     },
   },
 };

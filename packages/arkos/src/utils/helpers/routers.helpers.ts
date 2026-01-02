@@ -12,7 +12,6 @@ import {
 import { isEndpointDisabled } from "../../modules/base/utils/helpers/base.router.helpers";
 import deepmerge from "./deepmerge.helper";
 import { ArkosRouteConfig } from "../arkos-router/types";
-import { getArkosConfig } from "./arkos-config.helpers";
 import { ArkosConfig } from "../../exports";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
