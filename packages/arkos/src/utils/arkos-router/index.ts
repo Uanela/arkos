@@ -166,6 +166,15 @@ export function generateOpenAPIFromApp(app: any) {
 
   routes.forEach(({ path, method, config }) => {
     if (config?.experimental?.openapi === false) return;
+    const originalPath = path;
+
+    const pathParatemersFromRoutePath = extractPathParams(path);
+    for (const parameter of pathParatemersFromRoutePath) {
+      path = path.replaceAll(
+        `:${parameter}`,
+        parameter.endsWith("?") ? `{${parameter}}?` : `{${parameter}}`
+      );
+    }
 
     if (!paths[path]) paths[path] = {};
 
@@ -219,20 +228,30 @@ export function generateOpenAPIFromApp(app: any) {
       ...(convertedOpenAPI.parameters || []),
       ...parameters,
     ];
-    const pathParatemersFromRoutePath = extractPathParams(path);
 
     for (const parameter of pathParatemersFromRoutePath) {
       if (
         !allParameters.find(
-          ({ name, in: paramIn }) => name === parameter && paramIn === "path"
+          ({ name, in: paramIn }) =>
+            name === parameter.replace("?", "") && paramIn === "path"
         )
       )
         allParameters.push({
           name: parameter,
           in: "path",
-          required: true,
+          required: parameter.includes("?"),
           schema: { type: "string" },
         });
+    }
+
+    for (const param of allParameters) {
+      if (
+        !pathParatemersFromRoutePath.includes(param.name) &&
+        !pathParatemersFromRoutePath.includes(`${param.name}?`)
+      )
+        throw new Error(
+          `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`
+        );
     }
 
     delete convertedOpenAPI.parameters;
