@@ -239,7 +239,7 @@ export function generateOpenAPIFromApp(app: any) {
         allParameters.push({
           name: parameter,
           in: "path",
-          required: parameter.includes("?"),
+          required: !parameter.includes("?"),
           schema: { type: "string" },
         });
     }

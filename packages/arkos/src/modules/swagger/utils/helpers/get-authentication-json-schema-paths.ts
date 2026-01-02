@@ -458,5 +458,91 @@ export default function getAuthenticationJsonSchemaPaths(
     paths[pathname]!.get = { ...(currentPath || {}), ...defaultSpec };
   }
 
+  if (!isAuthEndpointDisabled("findOneAuthAction")) {
+    const pathname = "/api/auth-actions/{resourceName}";
+    if (!paths[pathname]) paths[pathname] = {};
+    const currentPath = paths[pathname]!.get;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "resourceName",
+        in: "path",
+        description: "Name of the resource to retrieve auth actions for",
+        required: true,
+        schema: { type: "string" },
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: ["Authentication", ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? "Get authentication actions by resource"
+          : currentPath?.summary,
+      description:
+        currentPath?.description ||
+        "Retrieves all authentication actions for a specific resource",
+      operationId: currentPath?.operationId || "findOneAuthAction",
+      security: [{ BearerAuth: [] }],
+      parameters: mergedParameters,
+      responses: {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
+          description: "Auth actions for resource retrieved successfully",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  total: {
+                    type: "number",
+                    description:
+                      "Total number of auth actions for this resource",
+                  },
+                  results: {
+                    type: "number",
+                    description: "Number of auth actions returned",
+                  },
+                  data: {
+                    type: "array",
+                    items: {
+                      $ref: "#/components/schemas/FindManyAuthActionSystemSchema",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        "401": currentPath?.responses?.["401"] || {
+          description: "Authentication required",
+        },
+        "403": currentPath?.responses?.["403"] || {
+          description: "Insufficient permissions",
+        },
+        "404": currentPath?.responses?.["404"] || {
+          description: "Resource not found",
+        },
+      },
+    };
+
+    paths[pathname]!.get = { ...(currentPath || {}), ...defaultSpec };
+  }
+
   return paths;
 }
