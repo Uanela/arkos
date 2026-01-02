@@ -76,6 +76,20 @@ export async function devCommand(options: DevOptions = {}) {
         CLI: "false",
       }) as { [x: string]: string };
 
+    const env = getEnv();
+    const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
+      env,
+      { logWarning: true }
+    );
+
+    watermarkStamper.stamp({
+      ...hostAndPort,
+      envFiles,
+    });
+
+    process.env.__PORT = hostAndPort.port || "";
+    process.env.__HOST = hostAndPort.host || "";
+
     const startServer = () => {
       if (child) {
         child.kill();
@@ -164,20 +178,6 @@ export async function devCommand(options: DevOptions = {}) {
     startServer();
 
     const envWatcher = setupEnvWatcher();
-
-    const env = getEnv();
-    const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
-      env,
-      { logWarning: true }
-    );
-
-    watermarkStamper.stamp({
-      ...hostAndPort,
-      envFiles,
-    });
-
-    process.env.__PORT = hostAndPort.port || "";
-    process.env.__HOST = hostAndPort.host || "";
 
     const cleanup = () => {
       if (restartTimeout) clearTimeout(restartTimeout);

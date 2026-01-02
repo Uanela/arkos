@@ -104,13 +104,14 @@ export function getSchemaRef(
 }
 
 export function generatePathsForModels(
-  arkosConfig: ArkosConfig
+  arkosConfig: ArkosConfig,
+  existingPaths: OpenAPIV3.PathsObject = {}
 ): OpenAPIV3.PathsObject {
   const swaggerConfig = arkosConfig?.swagger;
 
   if (!swaggerConfig) return {};
 
-  let paths: OpenAPIV3.PathsObject = {};
+  let paths: OpenAPIV3.PathsObject = { ...existingPaths };
   const models = prismaSchemaParser.getModelsAsArrayOfStrings();
 
   for (const model of models) {
@@ -126,7 +127,7 @@ export function generatePathsForModels(
   if (isAuthenticationEnabled())
     paths = {
       ...paths,
-      ...(getAuthenticationJsonSchemaPaths(arkosConfig) || {}),
+      ...(getAuthenticationJsonSchemaPaths(arkosConfig, existingPaths) || {}),
     };
 
   return paths;
