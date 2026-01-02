@@ -164,7 +164,7 @@ npx arkos export auth-action --overwrite
       }
     }
 
-    const fileContent = `const authActions = ${JSON.stringify(finalAuthActions, null, 2)}${getUserFileExtension() === "ts" ? "as const" : ""};
+    const fileContent = `const authActions = ${JSON.stringify(finalAuthActions, null, 2)}${getUserFileExtension() === "ts" ? " as const" : ""};
 
 export default authActions;
 `;
