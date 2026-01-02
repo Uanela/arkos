@@ -201,7 +201,7 @@ export async function bootstrap(
     throw new AppError(
       "Route not found",
       404,
-      { route: req.path },
+      { route: req.originalUrl },
       "RouteNotFound"
     );
   });

@@ -198,7 +198,11 @@ program
   .command("auth-action")
   .description("Export file with an array containing all auth-actions")
   .option("-o, --overwrite", "Overwrites all the changes on the object")
-  .option("-p, --path <path>", "Custom path for auth-actions", "cache/auth")
+  .option(
+    "-p, --path <path>",
+    "Custom path for auth-actions",
+    "src/modules/auth/utils"
+  )
   .action(exportAuthActionCommand);
 
 program.parse(process.argv);

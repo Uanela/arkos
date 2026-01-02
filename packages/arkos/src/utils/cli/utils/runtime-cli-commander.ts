@@ -2,7 +2,7 @@ import { authActionService } from "../../../exports/services";
 import fs from "fs/promises";
 import path from "path";
 import sheu from "../../sheu";
-import { getUserFileExtension } from "../../helpers/fs.helpers";
+import { fullCleanCwd, getUserFileExtension } from "../../helpers/fs.helpers";
 import { importModule } from "../../helpers/global.helpers";
 import deepmerge from "../../helpers/deepmerge.helper";
 import { killDevelopmentServerChildProcess } from "../dev";
@@ -87,12 +87,84 @@ class RuntimeCliCommander {
       try {
         const existingModule = await importModule(targetPath);
         const existingActions = existingModule.default || existingModule;
-        finalAuthActions = deepmerge(existingActions, authActions);
+
+        const rolesChanges: string[] = [];
+
+        for (const newAction of authActions) {
+          const existingAction = existingActions.find(
+            (existing: any) =>
+              existing.action === newAction.action &&
+              existing.resource === newAction.resource
+          );
+
+          if (existingAction) {
+            const existingRoles = existingAction.roles
+              ? [...existingAction.roles].sort()
+              : [];
+            const newRoles = newAction.roles ? [...newAction.roles].sort() : [];
+
+            const rolesMatch =
+              existingRoles.length === newRoles.length &&
+              existingRoles.every((role, index) => role === newRoles[index]);
+
+            if (!rolesMatch) {
+              rolesChanges.push(
+                `  - ${newAction.action}:${newAction.resource}: [${existingRoles.join(", ")}] → [${newRoles.join(", ")}]`
+              );
+            }
+          }
+        }
+
+        if (rolesChanges.length > 0) {
+          const warningMessage = `Roles for the following permissions will be updated:\n${rolesChanges.join("\n")}`;
+
+          sheu.warn(warningMessage);
+
+          const answer = await new Promise<boolean>((resolve) => {
+            process.stdout.write(
+              `\n${sheu.green("?", { bold: true })} Do you want to proceed with updating these roles? (Y/n): `
+            );
+            process.stdin.once("data", (data) => {
+              const result = data.toString().trim().toLowerCase();
+              process.stdin.pause();
+              resolve(result === "y" || result.length === 0);
+            });
+          });
+
+          if (!answer) {
+            throw new Error(
+              `Auth action export cancelled. Roles were not updated to preserve existing permissions., if you would like to overwrite existing auth actions run:
+
+npx arkos export auth-action --overwrite
+`
+            );
+          }
+        }
+
+        finalAuthActions = authActions.map((newAction) => {
+          const existingAction = existingActions.find(
+            (existing: any) =>
+              existing.action === newAction.action &&
+              existing.resource === newAction.resource
+          );
+
+          if (existingAction) {
+            return {
+              ...newAction,
+              ...existingAction,
+              roles: newAction.roles,
+            };
+          }
+
+          return newAction;
+        });
         isUpdate = true;
-      } catch (error) {}
+      } catch (error) {
+        // Handle error appropriately
+      }
     }
 
-    const fileContent = `const authActions = ${JSON.stringify(finalAuthActions, null, 2)};
+    const fileContent = `const authActions = ${JSON.stringify(finalAuthActions, null, 2)}${getUserFileExtension() === "ts" ? "as const" : ""};
 
 export default authActions;
 `;
@@ -101,8 +173,14 @@ export default authActions;
     await fs.writeFile(targetPath, fileContent, "utf-8");
 
     console.info("");
-    if (isUpdate) sheu.done("Auth actions updated and exported successfully!");
-    else sheu.done("Auth actions exported successfully!");
+    if (isUpdate)
+      sheu.done(
+        `Auth actions updated and exported successfully ${fullCleanCwd(targetPath)}`
+      );
+    else
+      sheu.done(
+        `Auth actions exported successfully at ${fullCleanCwd(targetPath)}`
+      );
 
     this.end();
   }
