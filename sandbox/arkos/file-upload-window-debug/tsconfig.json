@@ -3,7 +3,7 @@
     "target": "ES6",
     "module": "Node16",
     "moduleResolution": "node16",
-    "rootDir": "./src",
+    "rootDir": ".",
     "strict": true,
     "sourceMap": true,
     "inlineSources": true,
