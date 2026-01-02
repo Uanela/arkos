@@ -26,12 +26,13 @@ export function getArkosConfig(): ArkosConfig {
 process.on("uncaughtException", (err) => {
   if (err.message.includes("EPIPE")) return;
 
-  sheu.error("\nUNCAUGHT EXCEPTION! SHUTTING DOWN...\n", {
-    timestamp: true,
-    bold: true,
-  });
+  if (process.env.CLI !== "true")
+    sheu.error("UNCAUGHT EXCEPTION! SHUTTING DOWN...\n", {
+      timestamp: true,
+      bold: true,
+    });
 
-  console.error(err.name, err.message);
+  // console.error(err.name, err.message);
   console.error(err);
   process.exit(1);
 });
@@ -127,15 +128,18 @@ async function initApp(
 }
 
 process.on("unhandledRejection", (err: AppError) => {
-  sheu.error("\nUNHANDLED REJECTION! SHUTTING DOWN...\n", {
-    timestamp: true,
-    bold: true,
-  });
-  console.error(err.name, err.message);
+  if (process.env.CLI !== "true")
+    sheu.error("UNHANDLED REJECTION! SHUTTING DOWN...\n", {
+      timestamp: true,
+      bold: true,
+    });
+  // console.error(err.name, err.message);
   console.error(err);
-  server?.close(() => {
-    process.exit(1);
-  });
+  if (server?.close)
+    server?.close(() => {
+      process.exit(1);
+    });
+  else process.exit(1);
 });
 
 /**

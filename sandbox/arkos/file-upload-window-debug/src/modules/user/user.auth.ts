@@ -2,11 +2,17 @@ import { AuthConfigs } from "arkos/auth";
 import { authService } from "arkos/services";
 
 export const userPermissions = {
-  canCreate: authService.permission("Create", "user"),
+  canCreate: authService.permission("Create", "user", {
+    Create: {
+      roles: ["User", "Admin"],
+      name: "Create New User",
+      description: "Permission to create user records",
+    },
+  }),
   canUpdate: authService.permission("Update", "user"),
   canDelete: authService.permission("Delete", "user"),
   canView: authService.permission("View", "user"),
-}
+};
 
 const userAuthConfigs: AuthConfigs = {
   authenticationControl: {
@@ -16,11 +22,11 @@ const userAuthConfigs: AuthConfigs = {
     View: true,
   },
   accessControl: {
-    // Create: {
-    //   roles: [],
-    //   name: "Create New User",
-    //   description: "Permission to create user records"
-    // },
+    Create: {
+      roles: ["User", "Admin"],
+      name: "Create New User",
+      description: "Permission to create user records",
+    },
     // Update: {
     //   roles: [],
     //   name: "Update User",
