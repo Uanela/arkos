@@ -194,7 +194,7 @@
     "swagger-ui-express": "^5.0.1",
     "trash-cli": "6.0.0",
     "zod": "^3.24.2",
-    "tsx-strict": "^0.2.0",
+    "tsx-strict": "^0.3.0",
     "zod-to-json-schema": "^3.24.6"
   },
   "engines": {
