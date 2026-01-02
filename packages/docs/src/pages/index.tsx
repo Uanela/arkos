@@ -12,7 +12,7 @@ import AnnoucementBanner from "../components/annoucement-banner";
 export default function Home() {
   return (
     <div className="tailwind overflow-hidden max-w-[100vw]">
-      <AnnoucementBanner />
+      {/* <AnnoucementBanner /> */}
       <Layout description="Node.js backend framework for simplifying API development with automatic route generation, authentication, and minimal configuration.">
         <HeroSection />
         <CompaniesLogos />
