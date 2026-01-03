@@ -38,10 +38,22 @@ class AuthActionService {
     if (existingAuthAction) {
       const inconsistencies: string[] = [];
 
+      const defaultName = `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`;
+      const defaultDescription = `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`;
+      const defaultErrorMessage =
+        "You do not have permission to perform this operation";
+
+      const isNonDefault = (
+        value: string | undefined,
+        defaultValue: string
+      ): boolean => {
+        return value !== undefined && value !== defaultValue;
+      };
+
       if (
-        existingAuthAction.name !== transformedAction.name &&
-        existingAuthAction.name !== undefined &&
-        transformedAction.name !== undefined
+        isNonDefault(existingAuthAction.name, defaultName) &&
+        isNonDefault(transformedAction.name, defaultName) &&
+        existingAuthAction.name !== transformedAction.name
       ) {
         inconsistencies.push(
           `  - name: "${existingAuthAction.name}" vs "${transformedAction.name}"`
@@ -49,9 +61,9 @@ class AuthActionService {
       }
 
       if (
-        existingAuthAction.description !== transformedAction.description &&
-        existingAuthAction.description !== undefined &&
-        transformedAction.description !== undefined
+        isNonDefault(existingAuthAction.description, defaultDescription) &&
+        isNonDefault(transformedAction.description, defaultDescription) &&
+        existingAuthAction.description !== transformedAction.description
       ) {
         inconsistencies.push(
           `  - description: "${existingAuthAction.description}" vs "${transformedAction.description}"`
@@ -59,15 +71,14 @@ class AuthActionService {
       }
 
       if (
-        existingAuthAction.errorMessage !== transformedAction.errorMessage &&
-        existingAuthAction.errorMessage !== undefined &&
-        transformedAction.errorMessage !== undefined
+        isNonDefault(existingAuthAction.errorMessage, defaultErrorMessage) &&
+        isNonDefault(transformedAction.errorMessage, defaultErrorMessage) &&
+        existingAuthAction.errorMessage !== transformedAction.errorMessage
       ) {
         inconsistencies.push(
           `  - errorMessage: "${existingAuthAction.errorMessage}" vs "${transformedAction.errorMessage}"`
         );
       }
-
       if (inconsistencies.length > 0) {
         throw new Error(
           `Inconsistent metadata for permission "${action}:${resource}". ` +
