@@ -12,10 +12,12 @@ import { generateClassValidatorJsonSchemas } from "../json-schema-generators/gen
 import generateZodJsonSchemas from "../json-schema-generators/generate-zod-json-schemas";
 import { generatePrismaModelMainRoutesPaths } from "../json-schema-generators/prisma-models/generate-prisma-model-main-routes-paths";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
+import { isAuthenticationEnabled } from "../../../../../utils/helpers/arkos-config.helpers";
 
 // Mock all dependencies
 jest.mock("../../../../../utils/dynamic-loader");
 jest.mock("../../../../../utils/sheu");
+jest.mock("../../../../../utils/helpers/arkos-config.helpers");
 jest.mock("../get-system-json-schema-paths");
 jest.mock("../get-authentication-json-schema-paths");
 jest.mock("../json-schema-generators/generate-zod-json-schemas");
@@ -174,6 +176,7 @@ describe("Swagger Utility Functions", () => {
     });
 
     it("should include system and auth paths", async () => {
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
       const systemPaths = { "/system": { get: {} } };
       const authPaths = { "/auth": { post: {} } };
 
@@ -189,6 +192,24 @@ describe("Swagger Utility Functions", () => {
       expect(result).toMatchObject({
         ...systemPaths,
         ...authPaths,
+      });
+    });
+
+    it("should include system and not auth paths when auth is disabled", async () => {
+      const systemPaths = { "/system": { get: {} } };
+      const authPaths = { "/auth": { post: {} } };
+
+      (
+        require("../get-system-json-schema-paths")
+          .getSystemJsonSchemaPaths as jest.Mock
+      ).mockReturnValue(systemPaths);
+      (
+        require("../get-authentication-json-schema-paths").default as jest.Mock
+      ).mockReturnValue(authPaths);
+
+      const result = generatePathsForModels(mockConfig);
+      expect(result).toMatchObject({
+        ...systemPaths,
       });
     });
 

@@ -1,6 +1,5 @@
 import { spawn, ChildProcess, execSync } from "child_process";
-import chokidar from "chokidar";
-import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
+import { getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import fs from "fs";
 import path from "path";
@@ -28,14 +27,13 @@ export async function devCommand(options: DevOptions = {}) {
   try {
     const { port, host } = options;
     let isRestarting = false;
-    let restartingFiles = new Set<string>();
 
     const fileExt = getUserFileExtension();
     const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
 
     if (!fs.existsSync(entryPoint)) {
       console.error(`Could not find application entry point at ${entryPoint}`);
-      process.exit(1);
+      return process.exit(1);
     }
 
     const baseServiceTypesPath = path.resolve(
@@ -130,59 +128,10 @@ export async function devCommand(options: DevOptions = {}) {
       }
     };
 
-    // const scheduleRestart = (reason: string, filePath?: string) => {
-    //   if (filePath) restartingFiles.add(filePath);
-
-    //   if (restartTimeout) clearTimeout(restartTimeout);
-    //   const now = new Date();
-    //   const time = now.toTimeString().split(" ")[0];
-
-    //   isRestarting = true;
-    //   if (child) {
-    //     child.kill();
-    //     child = null;
-    //   }
-
-    //   restartTimeout = setTimeout(() => {
-    //     sheu.info(`\x1b[90m${time}\x1b[0m Restarting: ${reason.toLowerCase()}`);
-    //     startServer();
-    //     isRestarting = false;
-    //     restartTimeout = null;
-    //     if (filePath) restartingFiles.delete(filePath);
-    //   }, 1000);
-    // };
-
-    // const setupEnvWatcher = () => {
-    //   const envWatcher = chokidar.watch(
-    //     fullCleanCwd(envFiles?.join(",") || "")
-    //       .replaceAll("/", "")
-    //       .split(",") || [],
-    //     {
-    //       ignoreInitial: true,
-    //       persistent: true,
-    //     }
-    //   );
-
-    //   envWatcher.on("all", (_, filePath) => {
-    //     try {
-    //       envFiles = loadEnvironmentVariables();
-    //       scheduleRestart("Environment files changed", "env-files");
-    //     } catch (error) {
-    //       console.error(`Error reloading ${filePath}:`, error);
-    //     }
-    //   });
-
-    //   return envWatcher;
-    // };
-
     startServer();
-
-    // const envWatcher = setupEnvWatcher();
 
     const cleanup = () => {
       if (restartTimeout) clearTimeout(restartTimeout);
-
-      // if (envWatcher) envWatcher.close();
 
       if (child) {
         child.kill("SIGTERM");

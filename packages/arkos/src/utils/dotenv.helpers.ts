@@ -20,8 +20,12 @@ export function loadEnvironmentVariables() {
   const envFiles = [
     path.resolve(cwd, ".env"),
     path.resolve(cwd, ".env.local"),
-    path.resolve(cwd, `.env.${ENV}`),
-    path.resolve(cwd, `.env.${ENV}.local`),
+    ...(ENV
+      ? [
+          path.resolve(cwd, `.env.${ENV}`),
+          path.resolve(cwd, `.env.${ENV}.local`),
+        ]
+      : []),
   ];
 
   envFiles.forEach((filePath) => {

@@ -23,6 +23,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
       strict: false,
     },
   };
+  const mockPaths = {};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,13 +31,13 @@ describe("getAuthenticationJsonSchemaPaths", () => {
 
   it("should return empty paths when swagger mode is not configured", async () => {
     const config = { ...mockConfig, swagger: undefined };
-    const result = await getAuthenticationJsonSchemaPaths(config);
+    const result = getAuthenticationJsonSchemaPaths(config, mockPaths);
     expect(result).toEqual({});
   });
 
   it("should use prisma mode when no validator file exists", async () => {
     (localValidatorFileExists as jest.Mock).mockReturnValue(false);
-    const result = await getAuthenticationJsonSchemaPaths(mockConfig);
+    const result = getAuthenticationJsonSchemaPaths(mockConfig, mockPaths);
 
     expect(
       (result["/api/auth/login"]?.post?.requestBody as any)?.content?.[
@@ -45,9 +46,48 @@ describe("getAuthenticationJsonSchemaPaths", () => {
     ).toEqual({ $ref: "#/components/schemas/Login" });
   });
 
+  it("should use custom user properites when passed in existing paths", async () => {
+    (localValidatorFileExists as jest.Mock).mockReturnValue(false);
+    const result = getAuthenticationJsonSchemaPaths(mockConfig, {
+      "/api/auth/login": {
+        post: {
+          parameters: [{ name: "usernameField", in: "path" }],
+          requestBody: {
+            content: {
+              ["application/json"]: {
+                schema: {
+                  properties: {
+                    name: {
+                      type: "string",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    } as any);
+
+    expect(
+      (result["/api/auth/login"]?.post?.requestBody as any)?.content?.[
+        "application/json"
+      ].schema
+    ).toEqual({
+      properties: {
+        name: {
+          type: "string",
+        },
+      },
+    });
+    expect(result["/api/auth/login"]?.post?.parameters as any).toEqual([
+      { name: "usernameField", in: "path" },
+    ]);
+  });
+
   it("should use configured mode when validator file exists", async () => {
     (localValidatorFileExists as jest.Mock).mockReturnValue(true);
-    const result = await getAuthenticationJsonSchemaPaths(mockConfig);
+    const result = getAuthenticationJsonSchemaPaths(mockConfig, mockPaths);
 
     expect(
       (result["/api/auth/login"]?.post?.requestBody as any)?.content?.[
@@ -61,7 +101,10 @@ describe("getAuthenticationJsonSchemaPaths", () => {
       ...mockConfig,
       swagger: { ...mockConfig.swagger, strict: true },
     };
-    const result = await getAuthenticationJsonSchemaPaths(strictConfig as any);
+    const result = getAuthenticationJsonSchemaPaths(
+      strictConfig as any,
+      mockPaths
+    );
 
     expect(
       (result["/api/auth/login"]?.post?.requestBody as any)?.content?.[
@@ -71,7 +114,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should include all authentication endpoints", async () => {
-    const result = await getAuthenticationJsonSchemaPaths(mockConfig);
+    const result = getAuthenticationJsonSchemaPaths(mockConfig, mockPaths);
 
     expect(result).toHaveProperty("/api/auth/login");
     expect(result).toHaveProperty("/api/auth/logout");
@@ -80,19 +123,8 @@ describe("getAuthenticationJsonSchemaPaths", () => {
     expect(result).toHaveProperty("/api/users/me");
   });
 
-  it("should handle concurrent requests safely", async () => {
-    const promises = Array(5)
-      .fill(0)
-      .map(() => getAuthenticationJsonSchemaPaths(mockConfig));
-    const results = await Promise.all(promises);
-
-    results.forEach((result) => {
-      expect(result).toHaveProperty("/api/auth/login");
-    });
-  });
-
   it("should maintain consistent schema references", async () => {
-    const result = await getAuthenticationJsonSchemaPaths(mockConfig);
+    const result = getAuthenticationJsonSchemaPaths(mockConfig, mockPaths);
 
     const loginSchema = (result["/api/auth/login"]?.post?.requestBody as any)
       ?.content?.["application/json"].schema;
@@ -105,7 +137,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
   });
 
   it("should properly secure authenticated endpoints", async () => {
-    const result = await getAuthenticationJsonSchemaPaths(mockConfig);
+    const result = getAuthenticationJsonSchemaPaths(mockConfig, mockPaths);
 
     expect(result["/api/auth/logout"]?.delete?.security).toEqual([
       { BearerAuth: [] },
@@ -123,7 +155,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
       async (action: string) => action !== "invalidAction"
     );
 
-    const result = await getAuthenticationJsonSchemaPaths(mockConfig);
+    const result = getAuthenticationJsonSchemaPaths(mockConfig, mockPaths);
     expect(result).toBeDefined();
   });
 });

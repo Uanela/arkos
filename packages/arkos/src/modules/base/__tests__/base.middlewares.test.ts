@@ -1549,7 +1549,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("No request body is allowed on this route");
+        ).rejects.toThrow("Request body is not allowed on this route");
       });
 
       it("should throw AppError when query data exists but no validator in strict mode", async () => {
@@ -1571,7 +1571,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("No request query is allowed on this route");
+        ).rejects.toThrow("Request query is not allowed on this route");
       });
 
       it("should throw AppError when params data exists but no validator in strict mode", async () => {
@@ -1593,7 +1593,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("No request params is allowed on this route");
+        ).rejects.toThrow("Request params is not allowed on this route");
       });
 
       it("should pass when no data exists and validator is undefined in strict mode", async () => {

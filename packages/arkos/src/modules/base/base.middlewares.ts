@@ -324,7 +324,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   return catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       for (const key of validatorsKey) {
-        const reqInput = Object.keys(req[key]).length > 0;
+        const reqInput = Object.keys(req[key] || {}).length > 0;
         const validator = (validators as any)?.[key];
         const notAllowedInputError = new AppError(
           `Request ${key} is not allowed on this route`,

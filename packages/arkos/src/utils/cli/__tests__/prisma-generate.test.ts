@@ -38,14 +38,40 @@ describe("prismaGenerateCommand", () => {
     expect(execSync).toHaveBeenCalledWith("npx prisma generate", {
       stdio: "inherit",
     });
+
+    // The function calls path.resolve twice - once for the types directory, once for package.json
     expect(path.resolve).toHaveBeenCalledWith(
-      __dirname.replace("/__tests__", ""),
-      "../../../types/modules/base/base.service.d.ts"
+      process.cwd(),
+      "node_modules/@arkosjs/types/"
     );
-    expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(path.resolve).toHaveBeenCalledWith(
+      process.cwd(),
+      "node_modules/@arkosjs/types/package.json"
+    );
+
+    expect(fs.mkdirSync).toHaveBeenCalled();
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(2); // Once for base.service.d.ts, once for package.json
     expect(sheu.done).toHaveBeenCalledWith(
       "Types for @prisma/client and base service generated successfully!"
     );
+  });
+
+  it("should generate proper BaseService class structure", () => {
+    prismaGenerateCommand();
+
+    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
+    const fileContent = writeFileCall[1];
+
+    expect(fileContent).toContain("export declare class BaseService<");
+    expect(fileContent).toContain(
+      "TModelName extends keyof ModelsGetPayload<any>"
+    );
+    expect(fileContent).toContain("modelName: TModelName");
+    expect(fileContent).toContain("relationFields: {");
+    expect(fileContent).toContain("singular: PrismaField[] | undefined;");
+    expect(fileContent).toContain("list: PrismaField[] | undefined;");
+    expect(fileContent).toContain("prisma: PrismaClient");
+    expect(fileContent).toContain("constructor(modelName: TModelName)");
   });
 
   it("should generate correct type definitions for models", () => {
@@ -214,21 +240,5 @@ describe("prismaGenerateCommand", () => {
     expectedOperations.forEach((operation) => {
       expect(fileContent).toContain(`${operation}: Prisma.User${operation}`);
     });
-  });
-
-  it("should generate proper BaseService class structure", () => {
-    prismaGenerateCommand();
-
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
-
-    expect(fileContent).toContain("export declare class BaseService<");
-    expect(fileContent).toContain(
-      "TModelName extends keyof ModelsGetPayload<any>"
-    );
-    expect(fileContent).toContain("modelName: TModelName");
-    expect(fileContent).toContain("relationFields: ModelGroupRelationFields");
-    expect(fileContent).toContain("prisma: PrismaClient");
-    expect(fileContent).toContain("constructor(modelName: TModelName)");
   });
 });

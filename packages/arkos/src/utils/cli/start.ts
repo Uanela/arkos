@@ -3,7 +3,6 @@ import fs from "fs";
 import { ChildProcess, spawn } from "child_process";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { fullCleanCwd } from "../helpers/fs.helpers";
-import portAndHostAllocator from "../features/port-and-host-allocator";
 import watermarkStamper from "./utils/watermark-stamper";
 import sheu from "../sheu";
 
@@ -18,7 +17,7 @@ let envFiles: string[] | undefined;
 /**
  * Production start command for the arkos CLI
  */
-export async function startCommand(options: StartOptions = {}) {
+export function startCommand(options: StartOptions = {}) {
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
   process.env.ARKOS_BUILD = "true";
 
@@ -45,19 +44,22 @@ export async function startCommand(options: StartOptions = {}) {
       CLI: "false",
     };
 
-    const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
-      env,
-      {
-        logWarning: true,
-      }
-    );
+    env.__HOST =
+      env?.CLI_HOST ||
+      // config?.host ||
+      env?.HOST ||
+      (env.ARKOS_BUILD !== "true" ? "0.0.0.0" : "127.0.0.1");
 
-    env.__PORT = hostAndPort.port || "";
-    env.__HOST = hostAndPort.host || "";
+    env.__PORT =
+      env?.CLI_PORT ||
+      // || config?.port
+      env?.PORT ||
+      "8000";
 
     watermarkStamper.stamp({
       envFiles,
-      ...hostAndPort,
+      port: env.__PORT,
+      host: env.__HOST,
     });
 
     child = spawn("node", [entryPoint], {

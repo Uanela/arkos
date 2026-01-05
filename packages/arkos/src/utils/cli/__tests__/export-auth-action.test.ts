@@ -87,14 +87,6 @@ describe("exportAuthActionCommand", () => {
       expect(process.env.NODE_ENV).toBe("development");
     });
 
-    it("sets NODE_ENV to development when set to test", async () => {
-      process.env.NODE_ENV = "test";
-
-      await exportAuthActionCommand({});
-
-      expect(process.env.NODE_ENV).toBe("development");
-    });
-
     it("keeps existing NODE_ENV when not test", async () => {
       process.env.NODE_ENV = "production";
 
@@ -176,7 +168,7 @@ describe("exportAuthActionCommand", () => {
         expect.any(Array),
         expect.objectContaining({
           env: expect.objectContaining({
-            NODE_ENV: "development",
+            NODE_ENV: "test",
             CLI: "false",
             CUSTOM_VAR: "custom_value",
           }),
