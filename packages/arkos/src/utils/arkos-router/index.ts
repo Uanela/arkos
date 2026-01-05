@@ -247,7 +247,8 @@ export function generateOpenAPIFromApp(app: any) {
     for (const param of allParameters) {
       if (
         !pathParatemersFromRoutePath.includes(param.name) &&
-        !pathParatemersFromRoutePath.includes(`${param.name}?`)
+        !pathParatemersFromRoutePath.includes(`${param.name}?`) &&
+        param.in === "path"
       )
         throw new Error(
           `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`
