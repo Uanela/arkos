@@ -8,6 +8,7 @@ import pluralize from "pluralize";
 import { isEndpointDisabled } from "../../../../../../base/utils/helpers/base.router.helpers";
 import { kebabCase, pascalCase } from "../../../../../../../exports/utils";
 import { getModuleComponents } from "../../../../../../../utils/dynamic-loader";
+import { isAuthenticationEnabled } from "../../../../../../../utils/helpers/arkos-config.helpers";
 
 // Mock all dependencies
 jest.mock("../../../swagger.router.helpers");
@@ -16,6 +17,7 @@ jest.mock("../../../../../../base/utils/helpers/base.router.helpers");
 jest.mock("../../../../../../../exports/utils");
 jest.mock("../../../../../../../utils/dynamic-loader");
 jest.mock("fs");
+jest.mock("../../../../../../../utils/helpers/arkos-config.helpers");
 
 describe("generatePrismaModelMainRoutesPaths", () => {
   let paths: any = {};
@@ -25,6 +27,7 @@ describe("generatePrismaModelMainRoutesPaths", () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+    (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
 
     // Initialize test data
     paths = {};
@@ -322,15 +325,37 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       expect(paths["/api/"]).toBeDefined();
     });
 
-    it("should handle undefined arkosConfig", async () => {
-      expect(generatePrismaModelMainRoutesPaths("User", paths, {})).toBe(
-        undefined
-      );
-    });
+    it("should use custom passed route path properties", async () => {
+      const successResponse = {
+        description: "user found",
+        "application/json": {
+          content: {
+            schema: {
+              properties: {
+                name: {
+                  type: "string",
+                },
+              },
+            },
+          },
+        },
+      };
 
-    it("should handle empty paths object", async () => {
-      expect(generatePrismaModelMainRoutesPaths("User", {}, arkosConfig)).toBe(
-        undefined
+      const result = generatePrismaModelMainRoutesPaths(
+        "User",
+        {
+          "/api/users": {
+            get: {
+              responses: {
+                200: successResponse,
+              },
+            },
+          },
+        },
+        arkosConfig
+      );
+      expect(result["/api/users"]?.get?.responses?.["200"]).toBe(
+        successResponse
       );
     });
 

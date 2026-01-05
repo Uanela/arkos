@@ -4,7 +4,6 @@ import path from "path";
 import sheu from "../../sheu";
 import { fullCleanCwd, getUserFileExtension } from "../../helpers/fs.helpers";
 import { importModule } from "../../helpers/global.helpers";
-import deepmerge from "../../helpers/deepmerge.helper";
 import { killDevelopmentServerChildProcess } from "../dev";
 
 /**
@@ -73,11 +72,12 @@ class RuntimeCliCommander {
   async exportAuthAction(): Promise<void> {
     const options = this.getOptions() as { overwrite?: boolean; path?: string };
     const authActions = authActionService.getAll();
+    const ext = getUserFileExtension();
 
     const targetPath = path.join(
       process.cwd(),
       options.path || "",
-      `auth-actions.${getUserFileExtension()}`
+      `auth-actions.${ext}`
     );
 
     let finalAuthActions = authActions;
@@ -141,30 +141,31 @@ npx arkos export auth-action --overwrite
           }
         }
 
-        finalAuthActions = authActions.map((newAction) => {
-          const existingAction = existingActions.find(
-            (existing: any) =>
-              existing.action === newAction.action &&
-              existing.resource === newAction.resource
-          );
+        finalAuthActions = [...authActions, ...existingActions].map(
+          (newAction) => {
+            const existingAction = existingActions.find(
+              (existing: any) =>
+                existing.action === newAction.action &&
+                existing.resource === newAction.resource
+            );
 
-          if (existingAction) {
-            return {
-              ...newAction,
-              ...existingAction,
-              roles: newAction.roles,
-            };
+            if (existingAction) {
+              return {
+                ...newAction,
+                ...existingAction,
+                roles: newAction.roles,
+              };
+            }
+
+            return newAction;
           }
+        );
 
-          return newAction;
-        });
         isUpdate = true;
-      } catch (error) {
-        // Handle error appropriately
-      }
+      } catch (error) {}
     }
 
-    const fileContent = `const authActions = ${JSON.stringify(finalAuthActions, null, 2)}${getUserFileExtension() === "ts" ? " as const" : ""};
+    const fileContent = `const authActions = ${JSON.stringify(finalAuthActions, null, 2)}${ext === "ts" ? " as const" : ""};
 
 export default authActions;
 `;
@@ -175,7 +176,7 @@ export default authActions;
     console.info("");
     if (isUpdate)
       sheu.done(
-        `Auth actions updated and exported successfully ${fullCleanCwd(targetPath)}`
+        `Auth actions updated and exported successfully at ${fullCleanCwd(targetPath)}`
       );
     else
       sheu.done(

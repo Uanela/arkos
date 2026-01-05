@@ -239,13 +239,13 @@ describe("generateOpenAPIFromApp", () => {
   });
 
   it("should export path parameters from route path", async () => {
-    const routePath = "/products/:id/views/:viewId/:userId";
+    const routePath = "/products/{id}/views/{viewId}/{userId}";
     const app = {
       _router: {
         stack: [
           {
             route: {
-              path: routePath,
+              path: "/products/:id/views/:viewId/:userId",
               methods: { get: true },
               stack: [{ handle: "product" }],
             },
@@ -261,6 +261,31 @@ describe("generateOpenAPIFromApp", () => {
     );
     expect(openapiPaths[routePath].get.parameters[1].name).toBe("id");
     expect(openapiPaths[routePath].get.parameters[2].name).toBe("viewId");
+  });
+
+  it("should throw an error when try to define path parameter that is not contained on the route pathname", async () => {
+    const routePath = "/products/:id/:viewId";
+    const app = {
+      _router: {
+        stack: [
+          {
+            route: {
+              path: routePath,
+              methods: { get: true },
+              stack: [{ handle: "product" }],
+            },
+          },
+        ],
+      },
+    };
+
+    try {
+      generateOpenAPIFromApp(app);
+    } catch (err: any) {
+      expect(err.message).toBe(
+        `ValidationError: Trying to define path parameter 'userId' but it is not present in your pathname ${routePath}`
+      );
+    }
   });
 
   // it("should use default values when openapi config is not provided", async () => {

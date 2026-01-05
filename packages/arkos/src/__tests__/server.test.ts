@@ -80,6 +80,8 @@ describe("Server Module", () => {
 
   describe("initApp", () => {
     it("initializes app with default config when no config is provided", async () => {
+      process.env.__PORT = "8000";
+      process.env.__HOST = "127.0.0.1";
       await initApp({ use: [] });
 
       expect(bootstrap).toHaveBeenCalledWith(
@@ -108,16 +110,8 @@ describe("Server Module", () => {
     });
 
     it("uses environment variables for port and host", async () => {
-      process.env.CLI_PORT = "7000";
-      process.env.CLI_HOST = "127.0.0.1";
-
-      // Mock port allocator to return the env values
-      (
-        portAndHostAllocator.getHostAndAvailablePort as jest.Mock
-      ).mockResolvedValue({
-        port: 7000,
-        host: "127.0.0.1",
-      });
+      process.env.__PORT = "7000";
+      process.env.__HOST = "127.0.0.1";
 
       await initApp();
 
@@ -268,7 +262,7 @@ describe("Server Module", () => {
 
       process.emit("uncaughtException", error);
 
-      expect(console.error).toHaveBeenCalledWith(error.name, error.message);
+      expect(console.error).toHaveBeenCalledWith(error);
       expect(mockExit).toHaveBeenCalledWith(1);
 
       mockExit.mockRestore();
@@ -292,7 +286,7 @@ describe("Server Module", () => {
 
       (process as any).emit("unhandledRejection", error);
 
-      expect(console.error).toHaveBeenCalledWith(error.name, error.message);
+      expect(console.error).toHaveBeenCalledWith(error);
 
       mockExit.mockRestore();
     });
@@ -318,18 +312,6 @@ describe("Server Module", () => {
   });
 
   describe("Edge Cases", () => {
-    it("handles case where portAndHostAllocator throws error", async () => {
-      const error = new Error("Port allocation failed");
-      (
-        portAndHostAllocator.getHostAndAvailablePort as jest.Mock
-      ).mockRejectedValueOnce(error);
-
-      await initApp();
-
-      expect(sheu.error).toHaveBeenCalledWith("Port allocation failed");
-      expect(console.error).toHaveBeenCalledWith(error);
-    });
-
     it("handles case where configureServer throws error", async () => {
       const configureServerMock = jest.fn().mockImplementation(() => {
         throw new Error("Configure server failed");

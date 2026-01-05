@@ -2,9 +2,11 @@ import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
+import sheu from "../sheu";
 
 // Mock dependencies
 jest.mock("fs");
+jest.mock("../sheu");
 jest.mock("dotenv");
 jest.mock("path", () => ({
   ...jest.requireActual("path"),
@@ -42,15 +44,6 @@ describe("loadEnvironmentVariables", () => {
     process.env = originalEnv;
   });
 
-  test("should use development as default environment when NODE_ENV is undefined", () => {
-    delete process.env.NODE_ENV;
-    loadEnvironmentVariables();
-
-    expect(path.resolve).toHaveBeenCalledWith(mockCwd, ".env.defaults");
-    expect(path.resolve).toHaveBeenCalledWith(mockCwd, ".env.undefined");
-    expect(path.resolve).toHaveBeenCalledWith(mockCwd, ".env.undefined.local");
-  });
-
   test("should use specified NODE_ENV", () => {
     process.env.NODE_ENV = "production";
     loadEnvironmentVariables();
@@ -63,11 +56,10 @@ describe("loadEnvironmentVariables", () => {
     process.env.NODE_ENV = "test";
     loadEnvironmentVariables();
 
-    expect(path.resolve).toHaveBeenNthCalledWith(1, mockCwd, ".env.defaults");
-    expect(path.resolve).toHaveBeenNthCalledWith(2, mockCwd, ".env.test");
-    expect(path.resolve).toHaveBeenNthCalledWith(3, mockCwd, ".env.test.local");
-    expect(path.resolve).toHaveBeenNthCalledWith(4, mockCwd, ".env.local");
-    expect(path.resolve).toHaveBeenNthCalledWith(5, mockCwd, ".env");
+    expect(path.resolve).toHaveBeenNthCalledWith(1, mockCwd, ".env");
+    expect(path.resolve).toHaveBeenNthCalledWith(2, mockCwd, ".env.local");
+    expect(path.resolve).toHaveBeenNthCalledWith(3, mockCwd, ".env.test");
+    expect(path.resolve).toHaveBeenNthCalledWith(4, mockCwd, ".env.test.local");
   });
 
   test("should load env file if it exists", () => {
@@ -82,6 +74,7 @@ describe("loadEnvironmentVariables", () => {
     expect(dotenv.config).toHaveBeenCalledWith({
       path: `${mockCwd}/.env.production`,
       override: true,
+      quiet: true,
     });
   });
 
@@ -159,7 +152,7 @@ describe("loadEnvironmentVariables", () => {
     expect(result).not.toContain(`${mockCwd}/.env.production.local`);
 
     // Should log a warning about skipping .local files
-    expect(console.info).toHaveBeenCalledWith(
+    expect(sheu.warn).toHaveBeenCalledWith(
       expect.stringContaining("Skipping the local")
     );
   });

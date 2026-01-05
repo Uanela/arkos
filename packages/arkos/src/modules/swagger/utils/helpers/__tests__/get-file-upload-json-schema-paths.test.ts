@@ -38,6 +38,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
       baseUploadDir: "uploads",
     },
   };
+  const mockPaths = {};
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -45,12 +46,12 @@ describe("getFileUploadJsonSchemaPaths", () => {
 
   it("should return empty paths when fileUpload is not configured", async () => {
     const config = { ...mockConfig, fileUpload: undefined };
-    const result = await getFileUploadJsonSchemaPaths(config);
+    const result = getFileUploadJsonSchemaPaths(config, mockPaths);
     expect(result).toEqual({});
   });
 
   it("should include all file upload endpoints", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
 
     expect(result).toHaveProperty("/api/uploads/{filePath*}");
     expect(result).toHaveProperty("/api/uploads/{fileType}");
@@ -58,7 +59,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should configure GET endpoint for static file serving", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const getEndpoint: any = result["/api/uploads/{filePath*}"]?.get;
 
     expect(getEndpoint).toBeDefined();
@@ -69,7 +70,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should configure POST endpoint with multipart/form-data", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
 
     expect(postEndpoint).toBeDefined();
@@ -80,7 +81,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should include image processing query parameters", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
 
     const paramNames = postEndpoint?.parameters?.map((p: any) => p.name);
@@ -91,7 +92,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should document file type enum in path parameter", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
 
     const fileTypeParam = postEndpoint?.parameters?.find(
@@ -106,7 +107,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should include file restrictions in descriptions", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
 
     const schema =
@@ -119,7 +120,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should configure PATCH endpoint for file updates", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const patchEndpoint = result["/api/uploads/{fileType}/{fileName}"]?.patch;
 
     expect(patchEndpoint).toBeDefined();
@@ -130,7 +131,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should configure DELETE endpoint for file deletion", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const deleteEndpoint = result["/api/uploads/{fileType}/{fileName}"]?.delete;
 
     expect(deleteEndpoint).toBeDefined();
@@ -148,7 +149,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
       },
     };
 
-    const result = await getFileUploadJsonSchemaPaths(customConfig);
+    const result = getFileUploadJsonSchemaPaths(customConfig, mockPaths);
 
     expect(result).toHaveProperty("/custom/files/{filePath*}");
     expect(result).toHaveProperty("/custom/files/{fileType}");
@@ -164,7 +165,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
       },
     };
 
-    const result = await getFileUploadJsonSchemaPaths(customConfig);
+    const result = getFileUploadJsonSchemaPaths(customConfig, mockPaths);
 
     expect(result).toHaveProperty("/api/uploads/{filePath*}");
     expect(result).toHaveProperty("/api/uploads/{fileType}");
@@ -183,7 +184,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
       },
     };
 
-    const result = await getFileUploadJsonSchemaPaths(customConfig);
+    const result = getFileUploadJsonSchemaPaths(customConfig, mockPaths);
     const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
     const schema =
       postEndpoint?.requestBody?.content?.["multipart/form-data"]?.schema;
@@ -191,20 +192,8 @@ describe("getFileUploadJsonSchemaPaths", () => {
     expect(schema?.properties?.images?.description).toContain("10 MB");
   });
 
-  it("should handle concurrent requests safely", async () => {
-    const promises = Array(5)
-      .fill(0)
-      .map(() => getFileUploadJsonSchemaPaths(mockConfig));
-    const results = await Promise.all(promises);
-
-    results.forEach((result) => {
-      expect(result).toHaveProperty("/api/uploads/{filePath*}");
-      expect(result).toHaveProperty("/api/uploads/{fileType}");
-    });
-  });
-
   it("should format file sizes correctly", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
     const schema =
       postEndpoint?.requestBody?.content?.["multipart/form-data"]?.schema;
@@ -219,7 +208,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should include proper response schemas for upload", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
 
     const successResponse =
@@ -230,8 +219,39 @@ describe("getFileUploadJsonSchemaPaths", () => {
     expect(successResponse?.properties).toHaveProperty("message");
   });
 
+  it("should use passed paths properties", async () => {
+    const result = getFileUploadJsonSchemaPaths(mockConfig, {
+      "/api/uploads/{fileType}": {
+        post: {
+          responses: {
+            200: {
+              description: "",
+              content: {
+                "application/json": {
+                  schema: {
+                    properties: {
+                      fileType: {
+                        type: "string",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
+
+    const successResponse =
+      postEndpoint?.responses?.["200"]?.content?.["application/json"]?.schema;
+
+    expect(successResponse?.properties).toHaveProperty("fileType");
+  });
+
   it("should handle oneOf for single and multiple file responses", async () => {
-    const result = await getFileUploadJsonSchemaPaths(mockConfig);
+    const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
     const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
 
     const dataProperty =
@@ -254,7 +274,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       });
 
-      const result = await getFileUploadJsonSchemaPaths(mockConfig);
+      const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
       const getEndpoint = result["/api/uploads/{filePath*}"]?.get;
 
       expect(getEndpoint?.security).toEqual([{ BearerAuth: [] }]);
@@ -278,7 +298,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       });
 
-      const result = await getFileUploadJsonSchemaPaths(mockConfig);
+      const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
 
       expect(result["/api/uploads/{fileType}"]?.post?.security).toEqual([
         { BearerAuth: [] },
@@ -303,7 +323,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       });
 
-      const result = await getFileUploadJsonSchemaPaths(mockConfig);
+      const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
 
       expect(result["/api/uploads/{filePath*}"]?.get?.security).toBeUndefined();
       expect(result["/api/uploads/{fileType}"]?.post?.security).toBeUndefined();
@@ -320,7 +340,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       });
 
-      const result = await getFileUploadJsonSchemaPaths(mockConfig);
+      const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
       const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
 
       expect(postEndpoint?.responses).toHaveProperty("401");
@@ -351,7 +371,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       });
 
-      const result = await getFileUploadJsonSchemaPaths(mockConfig);
+      const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
 
       expect(result["/api/uploads/{fileType}"]?.post).toBeUndefined();
       expect(
@@ -376,7 +396,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       });
 
-      const result = await getFileUploadJsonSchemaPaths(mockConfig);
+      const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
       expect(result).toEqual({});
     });
 
@@ -393,7 +413,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       });
 
-      const result = await getFileUploadJsonSchemaPaths(mockConfig);
+      const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
 
       expect(result["/api/uploads/{filePath*}"]?.get).toBeDefined();
       expect(result["/api/uploads/{fileType}"]?.post).toBeDefined();
@@ -414,7 +434,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       };
 
-      const result = await getFileUploadJsonSchemaPaths(customConfig);
+      const result = getFileUploadJsonSchemaPaths(customConfig, mockPaths);
       expect(result).toBeDefined();
     });
 
@@ -432,7 +452,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       };
 
-      const result = await getFileUploadJsonSchemaPaths(customConfig);
+      const result = getFileUploadJsonSchemaPaths(customConfig, mockPaths);
       expect(result).toBeDefined();
     });
 
@@ -451,7 +471,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
         },
       };
 
-      const result = await getFileUploadJsonSchemaPaths(customConfig);
+      const result = getFileUploadJsonSchemaPaths(customConfig, mockPaths);
       const postEndpoint: any = result["/api/uploads/{fileType}"]?.post;
       const schema =
         postEndpoint?.requestBody?.content?.["multipart/form-data"]?.schema;
@@ -460,7 +480,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
     });
 
     it("should maintain path structure consistency", async () => {
-      const result = await getFileUploadJsonSchemaPaths(mockConfig);
+      const result = getFileUploadJsonSchemaPaths(mockConfig, mockPaths);
       const paths = Object.keys(result);
 
       paths.forEach((path) => {

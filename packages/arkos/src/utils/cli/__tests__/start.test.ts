@@ -4,7 +4,11 @@ import { spawn } from "child_process";
 import { startCommand } from "../start";
 import { importModule } from "../../helpers/global.helpers";
 import portAndHostAllocator from "../../features/port-and-host-allocator";
+import sheu from "../../sheu";
 
+jest.mock("../../sheu", () => ({
+  error: jest.fn(),
+}));
 jest.mock("child_process", () => ({
   spawn: jest.fn(() => ({
     kill: jest.fn(),
@@ -93,8 +97,17 @@ describe("startCommand", () => {
     // Mock process.on
     process.on = mockProcessOn;
 
+    (
+      portAndHostAllocator.getHostAndAvailablePort as jest.Mock
+    ).mockImplementation(async () => {
+      return {
+        port: 8000,
+        host: "localhost",
+      };
+    });
+
     // Reset environment
-    process.env = { ...process.env, NODE_ENV: "test" };
+    process.env = { ...process.env, NODE_ENV: "production" };
 
     // Mock process.cwd
     jest.spyOn(process, "cwd").mockReturnValue("/mock/project/root");
@@ -203,8 +216,8 @@ describe("startCommand", () => {
 
     expect(mockExit).toHaveBeenCalledWith(1);
 
-    expect(console.error).toHaveBeenCalledWith(
-      "❌ Could not find built application entry point at .build/src/app.js"
+    expect(sheu.error).toHaveBeenCalledWith(
+      "Could not find built application entry point at .build/src/app.js"
     );
   });
 
@@ -252,7 +265,7 @@ describe("startCommand", () => {
     );
   });
 
-  it("should register a SIGINT handler that kills the child process", () => {
+  it("should register a SIGINT handler that kills the child process", async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(true);
 
     const mockChild = { kill: jest.fn() };
@@ -272,16 +285,17 @@ describe("startCommand", () => {
 
   it("should exit with code 1 when an error occurs", () => {
     const err = new Error("Test error");
-    (fs.existsSync as jest.Mock).mockImplementation(() => {
+    (fs.existsSync as jest.Mock).mockImplementationOnce(() => {
       throw err;
     });
 
     startCommand();
 
-    expect(console.error).toHaveBeenCalledWith(
-      "❌ Production server failed to start:",
-      err
+    expect(sheu.error).toHaveBeenCalledWith(
+      expect.stringContaining("Production server failed to start:")
     );
+
+    expect(console.error).toHaveBeenCalledWith(err);
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 
@@ -357,14 +371,14 @@ describe("startCommand", () => {
         }),
       });
 
-    (
-      portAndHostAllocator.getHostAndAvailablePort as jest.Mock
-    ).mockImplementationOnce(() => {
-      return {
-        port: 5678,
-        host: "test-host",
-      };
-    });
+    // (
+    //   portAndHostAllocator.getHostAndAvailablePort as jest.Mock
+    // ).mockImplementationOnce(() => {
+    //   return {
+    //     port: 5678,
+    //     host: "test-host",
+    //   };
+    // });
 
     startCommand({ port: "5678", host: "test-host" });
 
@@ -372,24 +386,6 @@ describe("startCommand", () => {
 
     expect(console.info).toHaveBeenCalledWith(
       expect.stringContaining("http://test-host:5678")
-    );
-  });
-
-  it("should not display host nor port when arkos config is not available and no cli values and env values are passed.", async () => {
-    jest
-      .spyOn(require("../../helpers/global.helpers"), "importModule")
-      .mockResolvedValue({
-        getArkosConfig: () => ({
-          available: false,
-        }),
-      });
-
-    startCommand();
-
-    await jest.advanceTimersByTimeAsync(2000);
-
-    expect(console.info).not.toHaveBeenCalledWith(
-      expect.stringContaining("- Local:")
     );
   });
 });

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, RouterOptions } from "express";
 import { IArkosRouter, ArkosRouteConfig } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
@@ -41,8 +41,8 @@ import { getUserFileExtension } from "../helpers/fs.helpers";
  *
  * @see {@link ArkosRouteConfig} for configuration options
  */
-export default function ArkosRouter(): IArkosRouter {
-  const router = Router();
+export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
+  const router = Router(options);
 
   return new Proxy(router, {
     get(target, prop, receiver) {
