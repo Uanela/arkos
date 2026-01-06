@@ -18,7 +18,7 @@ const ArkosRouterWrapper = (opts: any) => {
   const router = Router();
   const proxied = ArkosRouter(opts) as any;
 
-  // proxied.__router__ = router;
+  proxied.__router__ = router;
 
   return proxied;
 };
@@ -313,7 +313,7 @@ describe("generateOpenAPIFromApp", () => {
   //     config: {}, // No openapi config
   //   });
 
-  //   const openapiPaths = await generateOpenAPIFromApp(mockApp);
+  //   const openapiPaths =  generateOpenAPIFromApp(mockApp);
 
   //   expect(openapiPaths).toHaveProperty("/products");
   //   expect(openapiPaths["/products"]["get"].summary).toBe("GET /products");
@@ -346,7 +346,7 @@ describe("generateOpenAPIFromApp", () => {
       },
     };
 
-    const openapiPaths = await generateOpenAPIFromApp(emptyApp);
+    const openapiPaths = generateOpenAPIFromApp(emptyApp);
 
     expect(openapiPaths).toEqual({});
   });
@@ -354,7 +354,7 @@ describe("generateOpenAPIFromApp", () => {
   it("should handle routes without config in registry", async () => {
     (RouteConfigRegistry.get as jest.Mock).mockReturnValue(null);
 
-    const openapiPaths = await generateOpenAPIFromApp(mockApp);
+    const openapiPaths = generateOpenAPIFromApp(mockApp);
 
     expect(openapiPaths).toEqual({});
   });
@@ -362,7 +362,7 @@ describe("generateOpenAPIFromApp", () => {
   it("should handle boolean openapi config true", async () => {
     mockRoutes[0].config.experimental.openapi = true;
 
-    const openapiPaths = await generateOpenAPIFromApp(mockApp);
+    const openapiPaths = generateOpenAPIFromApp(mockApp);
 
     expect(openapiPaths["/users"]["get"].summary).toBe("/users");
     expect(openapiPaths["/users"]["get"].description).toBe("GET /users");
@@ -372,7 +372,7 @@ describe("generateOpenAPIFromApp", () => {
   it("should convert boolean openapi config to object", async () => {
     mockRoutes[0].config.experimental.openapi = true;
 
-    const openapiPaths = await generateOpenAPIFromApp(mockApp);
+    const openapiPaths = generateOpenAPIFromApp(mockApp);
 
     expect(openapiPaths["/users"]["get"]).toMatchObject({
       summary: "/users",
