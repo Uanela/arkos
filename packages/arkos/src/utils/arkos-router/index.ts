@@ -76,12 +76,13 @@ export default function ArkosRouter(
         ) {
           if (config.disabled) return;
 
-          const path = applyPrefix(options?.prefix, config.path);
-
           if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
               `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
+
+          const path = applyPrefix(options?.prefix, config.path);
+
           config = { ...config, path };
 
           if ([null, undefined].includes(path as any))
