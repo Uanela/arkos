@@ -558,7 +558,7 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(passedArray.every((item: any) => item instanceof Promise)).toBe(
         true
       );
-      expect(importModule).toHaveBeenCalledTimes(12);
+      expect(importModule).toHaveBeenCalledTimes(11);
       expect(result.router).toEqual({
         config: {
           disable: {

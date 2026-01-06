@@ -4,7 +4,7 @@ import { validate } from "class-validator";
 
 // Mock dependencies
 jest.mock("class-transformer", () => ({
-  plainToInstance: jest.fn((cls, data) => data),
+  plainToInstance: jest.fn((_, data) => data),
 }));
 
 jest.mock("class-validator", () => ({
@@ -62,7 +62,9 @@ describe("validateDto", () => {
     // Act & Assert
     try {
       expect(await validateDto(TestUserDto, mockData)).rejects.toThrow();
-    } catch (err) {}
+    } catch (err) {
+      console.log(err);
+    }
 
     expect(AppError).toHaveBeenCalledWith(
       "Invalid request body",
