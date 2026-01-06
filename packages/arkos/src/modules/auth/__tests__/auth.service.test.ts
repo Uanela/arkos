@@ -679,21 +679,15 @@ describe("AuthService", () => {
         await authService.getAuthenticatedUser(mockReq);
       } catch (err: any) {
         expect(err?.message).toBe(
-          "ValidationError: Trying to call getAuthenticatedUser without setting up authentication"
+          "ValidationError: Trying to call AuthService.getAuthenticatedUser without setting up authentication"
         );
       }
-      // Verify
     });
 
-    it("should throw an error if no token is found", async () => {
-      // Setup - No token in request
+    it("should return null no token is found", async () => {
       mockReq = {};
 
-      // Execute and Verify
-
-      await expect(
-        authService.getAuthenticatedUser(mockReq)
-      ).rejects.toBeInstanceOf(AppError);
+      expect(await authService.getAuthenticatedUser(mockReq)).toBe(null);
     });
 
     it("should extract token from Authorization header", async () => {

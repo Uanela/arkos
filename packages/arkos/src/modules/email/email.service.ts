@@ -8,7 +8,7 @@ import AppError from "../error-handler/utils/app-error";
  */
 export type EmailOptions = {
   subject: string;
-};
+} & SendMailOptions;
 
 /**
  * Defines the authentication options for SMTP.
@@ -150,9 +150,10 @@ export class EmailService {
       ...options,
       from: fromAddress,
       text:
-        options?.text || (typeof options.html === "string" && options.html)
+        options?.text ||
+        (typeof options.html === "string" && options.html
           ? convert(options.html as string)
-          : undefined,
+          : undefined),
     });
 
     return { success: true, ...info };
