@@ -14,6 +14,15 @@ jest.mock("../../../server", () => ({ getArkosConfig: jest.fn(() => ({})) }));
 RouteConfigRegistry.register = jest.fn();
 RouteConfigRegistry.get = jest.fn();
 
+const ArkosRouterWrapper = (opts: any) => {
+  const router = Router();
+  const proxied = ArkosRouter(opts) as any;
+
+  // proxied.__router__ = router;
+
+  return proxied;
+};
+
 describe("ArkosRouter", () => {
   const config = { path: "/test" };
 
@@ -370,6 +379,93 @@ describe("generateOpenAPIFromApp", () => {
       description: "GET /users",
       tags: ["Defaults"],
       operationId: "get:/users",
+    });
+  });
+
+  describe("ArkosRouter prefix handling", () => {
+    let router: any;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      router = ArkosRouter() as any;
+    });
+
+    it("should apply string prefix to string route path", () => {
+      const router = ArkosRouterWrapper({ prefix: "/api" });
+      router.get({ path: "/users" }, jest.fn());
+
+      expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.objectContaining({ path: "/api/users" }),
+        "get"
+      );
+    });
+
+    it("should apply string prefix to regex route path", () => {
+      const router = ArkosRouterWrapper({ prefix: "/api" });
+      router.get({ path: /^\/users\/\d+$/ }, jest.fn());
+
+      const registeredPath = (RouteConfigRegistry.register as jest.Mock).mock
+        .calls[0][1].path;
+
+      expect(registeredPath).toBeInstanceOf(RegExp);
+      expect(registeredPath.test("/api/users/1")).toBe(true);
+      expect(registeredPath.test("/users/1")).toBe(false);
+    });
+
+    it("should apply regex prefix to string route path", () => {
+      const router = ArkosRouterWrapper({ prefix: /^\/v\d+/ });
+      router.get({ path: "/users" }, jest.fn());
+
+      const registeredPath = (RouteConfigRegistry.register as jest.Mock).mock
+        .calls[0][1].path;
+
+      expect(registeredPath).toBeInstanceOf(RegExp);
+      expect(registeredPath.test("/v1/users")).toBe(true);
+      expect(registeredPath.test("/users")).toBe(false);
+    });
+
+    it("should apply regex prefix to regex route path", () => {
+      const router = ArkosRouterWrapper({ prefix: /^\/api/ });
+      router.get({ path: /^\/users\/\d+$/ }, jest.fn());
+
+      const registeredPath = (RouteConfigRegistry.register as jest.Mock).mock
+        .calls[0][1].path;
+
+      expect(registeredPath).toBeInstanceOf(RegExp);
+      expect(registeredPath.test("/api/users/1")).toBe(true);
+      expect(registeredPath.test("/users/1")).toBe(false);
+    });
+
+    it("should apply array prefix to route path", () => {
+      const router = ArkosRouterWrapper({ prefix: ["/api", "/v1"] });
+      router.get({ path: "/users" }, jest.fn());
+
+      const registeredPath = (RouteConfigRegistry.register as jest.Mock).mock
+        .calls[0][1].path;
+
+      expect(registeredPath).toEqual(["/api/users", "/v1/users"]);
+    });
+
+    it("should apply prefix only once per route", () => {
+      const router = ArkosRouterWrapper({ prefix: "/api" });
+      router.get({ path: "/users" }, jest.fn());
+      router.get({ path: "/posts" }, jest.fn());
+
+      const calls = (RouteConfigRegistry.register as jest.Mock).mock.calls;
+
+      expect(calls[0][1].path).toBe("/api/users");
+      expect(calls[1][1].path).toBe("/api/posts");
+    });
+
+    it("should not modify path when no prefix is defined", () => {
+      router.get({ path: "/users" }, jest.fn());
+
+      expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.objectContaining({ path: "/users" }),
+        "get"
+      );
     });
   });
 });
