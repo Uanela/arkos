@@ -69,9 +69,8 @@ export function handleUniqueConstraintError(err: AppError) {
     message,
     409,
     (err.meta?.modelName &&
-      `${pascalCase(err.meta?.modelName)}With${pascalCase(err.meta?.target?.[0])}`) ||
-      "Unknown",
-    err?.meta
+      `${pascalCase(err.meta?.modelName)}${pascalCase(err.meta?.target?.[0])}UniqueConstraint`) ||
+      "Unknown"
   );
 }
 

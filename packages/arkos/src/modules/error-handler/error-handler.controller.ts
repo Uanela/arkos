@@ -41,7 +41,6 @@ export default function errorHandler(
     error = errorControllerHelper.handleJWTError();
   if (err.name === "TokenExpiredError")
     error = errorControllerHelper.handleJWTExpired();
-
   if (err.name === "PrismaClientValidationError")
     error = errorControllerHelper.handlePrismaClientValidationError(err);
   if (err.name === "PrismaClientInitializationError")
