@@ -1,4 +1,4 @@
-import { pascalCase } from "../../../exports/utils";
+import { pascalCase } from "../../../utils/features/change-case.features";
 import AppError from "./app-error";
 
 export interface PrismaError {
@@ -230,7 +230,6 @@ export function handlePrismaClientInitializationError(_: any) {
   return new AppError(
     "Service temporarily unavailable",
     503,
-    {},
     "DatabaseNotAvailable"
   );
 }

@@ -19,6 +19,7 @@ import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.help
 import { ArkosRouteConfig } from "../../utils/arkos-router/types";
 import { capitalize } from "../../utils/helpers/text.helpers";
 import { isClass, isZodSchema } from "../../utils/dynamic-loader";
+import errorPrettifier from "./utils/error-prettifier";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -343,11 +344,28 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         if (strictValidation && !validator && reqInput)
           throw notAllowedInputError;
         if (validator)
-          req[key] = await validatorFn(
-            validator,
-            req[key],
-            arkosConfig.validation?.validationOptions
-          );
+          try {
+            req[key] = await validatorFn(
+              validator,
+              req[key],
+              arkosConfig.validation?.validationOptions
+            );
+          } catch (err: any) {
+            const resolver = validationConfig?.resolver;
+            const isZod = validationConfig?.resolver === "zod";
+
+            const prettifiedError = errorPrettifier.prettify(
+              resolver as any,
+              err
+            );
+            const error = prettifiedError[0];
+            throw new AppError(
+              error.message,
+              400,
+              error.code,
+              isZod ? err.format() : err
+            );
+          }
       }
 
       next();
