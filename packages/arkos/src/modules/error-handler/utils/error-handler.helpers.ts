@@ -1,3 +1,4 @@
+import { pascalCase } from "../../../exports/utils";
 import AppError from "./app-error";
 
 export interface PrismaError {
@@ -64,7 +65,14 @@ export function handleRecordNotFoundError(_: AppError) {
 export function handleUniqueConstraintError(err: AppError) {
   const field = err?.meta?.target || "unknown field";
   const message = `Duplicate value detected for the unique field(s): ${field}. Please use a different value.`;
-  return new AppError(message, 409);
+  return new AppError(
+    message,
+    409,
+    (err.meta?.modelName &&
+      `${pascalCase(err.meta?.modelName)}With${pascalCase(err.meta?.target?.[0])}`) ||
+      "Unknown",
+    err?.meta
+  );
 }
 
 export function handleForeignKeyConstraintError(_: AppError) {
