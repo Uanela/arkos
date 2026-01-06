@@ -18,25 +18,6 @@ body:
       required: true
 
   - type: textarea
-    id: reproduction
-    attributes:
-      label: Steps to Reproduce
-      description: Provide detailed steps to reproduce the behavior.
-      placeholder: |
-        1. Create a new Arkos project with `npx create-arkos@latest my-project`
-        2. Add a Post model with file upload
-        3. Configure file service with...
-        4. Try to upload a file via POST /api/posts
-        5. See error...
-      value: |
-        1. 
-        2. 
-        3. 
-        4. 
-    validations:
-      required: true
-
-  - type: textarea
     id: expected
     attributes:
       label: Expected Behavior
@@ -46,33 +27,64 @@ body:
       required: true
 
   - type: textarea
-    id: actual
+    id: reproduction
     attributes:
-      label: Actual Behavior
-      description: What actually happened?
-      placeholder: Got error "Cannot read property 'path' of undefined"...
+      label: Steps to Reproduce
+      description: Provide detailed steps to reproduce the behavior.
+      placeholder: |
+        1. Create a new Arkos project with `npx create-arkos@latest my-project`
+        2. Add a Post model with file upload
+      value: |
+        1. 
+        2. 
     validations:
       required: true
 
   - type: textarea
-    id: code
+    id: arkos-config
     attributes:
-      label: Code Sample
-      description: Provide a minimal code sample that reproduces the issue (if applicable)
+      label: Arkos configuration
+      description: Provide your arkos configuration
       render: typescript
       placeholder: |
-        // post.router.ts
-        import { Router } from 'express';
+        // arkos.router.ts
+        import { ArkosConfig } from 'arkos';
+
+        const arkosConfig: ArkosConfig = {
+          authentication: {
+            mode: "static"
+          },
+        }
         
-        const router = Router();
-        // your code here...
+        export default arkosConfig
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Possible Workaround
+      description: Provide a possible workaround for this bug (if applicable)
+      render: text
+      placeholder: |
+        I can manually add a custom middleware to...
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      description: Which package you want to open issue to?
+      options:
+        - arkos
+        - create-arkos
+        - Other (specify in additional context)
+    validations:
+      required: true
 
   - type: input
     id: arkos-version
     attributes:
-      label: Arkos.js Version
+      label: Arkos.js Version (or Package version)
       description: Which version of Arkos.js are you using?
-      placeholder: 1.3.3-beta
+      placeholder: 1.4.0-beta
     validations:
       required: true
 
@@ -115,24 +127,6 @@ body:
         - Other (specify in additional context)
     validations:
       required: true
-
-  - type: textarea
-    id: error-logs
-    attributes:
-      label: Error Logs
-      description: If applicable, paste any error messages or stack traces
-      render: shell
-      placeholder: |
-        Error: Cannot read property 'path' of undefined
-            at FileService.upload (/node_modules/arkos/dist/services/file.js:45:20)
-            ...
-
-  - type: textarea
-    id: additional
-    attributes:
-      label: Additional Context
-      description: Add any other context, screenshots, or information about the problem
-      placeholder: This only happens on Windows, works fine on macOS...
 
   - type: checkboxes
     id: checklist
