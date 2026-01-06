@@ -216,6 +216,26 @@ export const generateCommand = {
     });
   },
 
+  baseDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "dto",
+      fileSuffix: "dto",
+      customPath: "src/modules/{{module-name}}/dtos",
+      prefix: "",
+      allowedModules: models,
+    });
+  },
+
+  queryDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "query-dto",
+      fileSuffix: "dto",
+      customPath: "src/modules/{{module-name}}/dtos",
+      prefix: "query-",
+      allowedModules: models,
+    });
+  },
+
   queryOptions: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "query-options",

@@ -139,7 +139,7 @@ generate
   .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
-    "Custom path for hooks",
+    "Custom path for dto",
     "src/modules/{{module-name}}"
   )
   .action(generateCommand.createSchema);
@@ -152,7 +152,7 @@ generate
   .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
-    "Custom path for hooks",
+    "Custom path for dto",
     "src/modules/{{module-name}}"
   )
   .action(generateCommand.updateSchema);
@@ -167,7 +167,7 @@ generate
   .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
-    "Custom path for hooks",
+    "Custom path for dto",
     "src/modules/{{module-name}}"
   )
   .action(generateCommand.createDto);
@@ -182,10 +182,40 @@ generate
   .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
-    "Custom path for hooks",
+    "Custom path for dto",
     "src/modules/{{module-name}}"
   )
   .action(generateCommand.updateDto);
+
+generate
+  .command("dto")
+  .alias("d")
+  .description(
+    "Generate a new class-validator base dto file for a prisma model"
+  )
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
+  .option(
+    "-p, --path <path>",
+    "Custom path for dto",
+    "src/modules/{{module-name}}"
+  )
+  .action(generateCommand.baseDto);
+
+generate
+  .command("query-dto")
+  .alias("qd")
+  .description(
+    "Generate a new class-validator base dto file for a prisma model"
+  )
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
+  .option(
+    "-p, --path <path>",
+    "Custom path for dto",
+    "src/modules/{{module-name}}"
+  )
+  .action(generateCommand.queryDto);
 
 program
   .command("prisma")

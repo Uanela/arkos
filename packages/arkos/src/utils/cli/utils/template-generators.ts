@@ -9,6 +9,7 @@ import { generateCreateSchemaTemplate } from "./template-generator/templates/zod
 import { generateUpdateSchemaTemplate } from "./template-generator/templates/zod/update-schema-template";
 import { generateUpdateDtoTemplate } from "./template-generator/templates/class-validator/update-dto-template";
 import { generateCreateDtoTemplate } from "./template-generator/templates/class-validator/create-dto-template";
+import classValidatorDtoGenerator from "./template-generator/templates/dto-generator";
 
 interface ModelName {
   pascal: string;
@@ -51,10 +52,16 @@ export function generateTemplate(
       return generateCreateSchemaTemplate(options);
     case "update-schema":
       return generateUpdateSchemaTemplate(options);
+
     case "create-dto":
-      return generateCreateDtoTemplate(options);
+      return classValidatorDtoGenerator.generateCreateDto(options);
     case "update-dto":
-      return generateUpdateDtoTemplate(options);
+      return classValidatorDtoGenerator.generateUpdateDto(options);
+    case "dto":
+      return classValidatorDtoGenerator.generateBaseDto(options);
+    case "query-dto":
+      return classValidatorDtoGenerator.generateQueryDto(options);
+
     default:
       throw new Error(`Unknown template type: ${type}`);
   }
