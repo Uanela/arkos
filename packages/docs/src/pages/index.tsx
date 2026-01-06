@@ -180,6 +180,18 @@ export default function Home() {
             experience.
           </TestimonialCard>
           <TestimonialCard
+            name="Niuro Langa"
+            role="Software Developer"
+            projectName={
+              <a href="https://sparktechh.com" target="_blank">
+                SparkTech
+              </a>
+            }
+            avatar={"https://github.com/blaze380.png"}
+          >
+           With Arkos.js, I can build backends  in just a few minutes. It removes the boilerplate and lets me focus entirely on the core logic. Fast, simple, and incredibly productive.
+          </TestimonialCard>
+          <TestimonialCard
             name="Uanela Como"
             role="Founder"
             projectName={
