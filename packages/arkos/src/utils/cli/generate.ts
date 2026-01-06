@@ -196,6 +196,26 @@ export const generateCommand = {
     });
   },
 
+  baseSchema: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "schema",
+      fileSuffix: "schema",
+      customPath: "src/modules/{{module-name}}/schemas",
+      prefix: "",
+      allowedModules: models,
+    });
+  },
+
+  querySchema: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "query-schema",
+      fileSuffix: "schema",
+      customPath: "src/modules/{{module-name}}/schemas",
+      prefix: "query-",
+      allowedModules: models,
+    });
+  },
+
   createDto: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "create-dto",
