@@ -1,4 +1,4 @@
-import nodemailer, { Transporter } from "nodemailer";
+import nodemailer, { SendMailOptions, Transporter } from "nodemailer";
 import { convert } from "html-to-text";
 import { getArkosConfig } from "../../server";
 import AppError from "../error-handler/utils/app-error";
@@ -7,11 +7,7 @@ import AppError from "../error-handler/utils/app-error";
  * Defines the options for sending an email.
  */
 export type EmailOptions = {
-  from?: string;
-  to: string | string[];
   subject: string;
-  text?: string;
-  html: string;
 };
 
 /**
@@ -39,7 +35,7 @@ export type SMTPConnectionOptions = {
  * See the api reference [www.arkosjs.com/docs/api-reference/the-email-service-class](https://www.arkosjs.com/docs/api-reference/the-email-service-class)
  */
 export class EmailService {
-  private transporter: Transporter | null = null;
+  transporter: Transporter | null = null;
   private customConfig: SMTPConnectionOptions | null = null;
 
   /**
@@ -133,7 +129,7 @@ export class EmailService {
    * @returns {Promise<{ success: boolean; messageId?: string } & Record<string, any>>} Result with message ID on success.
    */
   public async send(
-    options: EmailOptions,
+    options: EmailOptions & SendMailOptions,
     connectionOptions?: SMTPConnectionOptions,
     skipVerification: boolean = true
   ): Promise<{ success: boolean; messageId?: string } & Record<string, any>> {
@@ -153,7 +149,10 @@ export class EmailService {
     const info = await transporter.sendMail({
       ...options,
       from: fromAddress,
-      text: options?.text || convert(options.html),
+      text:
+        options?.text || (typeof options.html === "string" && options.html)
+          ? convert(options.html as string)
+          : undefined,
     });
 
     return { success: true, ...info };
