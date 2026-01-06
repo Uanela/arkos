@@ -5,11 +5,8 @@ import { generateQueryOptionsTemplate } from "./template-generator/templates/que
 import { generateRouterTemplate } from "./template-generator/templates/router-template";
 import { generateServiceTemplate } from "./template-generator/templates/service-template";
 import generateHooksTemplate from "./template-generator/templates/hooks-template";
-import { generateCreateSchemaTemplate } from "./template-generator/templates/zod/create-schema-template";
-import { generateUpdateSchemaTemplate } from "./template-generator/templates/zod/update-schema-template";
-import { generateUpdateDtoTemplate } from "./template-generator/templates/class-validator/update-dto-template";
-import { generateCreateDtoTemplate } from "./template-generator/templates/class-validator/create-dto-template";
-import classValidatorDtoGenerator from "./template-generator/templates/dto-generator";
+import classValidatorDtoGenerator from "./template-generator/templates/class-validator-dto-generator";
+import zodSchemaGenerator from "./template-generator/templates/zod-schema-generator";
 
 interface ModelName {
   pascal: string;
@@ -48,10 +45,15 @@ export function generateTemplate(
       return generateMiddlewaresTemplate(options);
     case "hooks":
       return generateHooksTemplate(options);
+
     case "create-schema":
-      return generateCreateSchemaTemplate(options);
+      return zodSchemaGenerator.generateCreateSchema(options);
     case "update-schema":
-      return generateUpdateSchemaTemplate(options);
+      return zodSchemaGenerator.generateUpdateSchema(options);
+    case "schema":
+      return zodSchemaGenerator.generateBaseSchema(options);
+    case "query-schema":
+      return zodSchemaGenerator.generateQuerySchema(options);
 
     case "create-dto":
       return classValidatorDtoGenerator.generateCreateDto(options);
