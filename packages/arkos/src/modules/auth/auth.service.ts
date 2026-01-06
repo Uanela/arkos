@@ -305,12 +305,6 @@ export class AuthService {
     return [];
   }
 
-  // private getUserRoles(user: User): string[] {
-  //   if (Array.isArray(user.roles)) return user.roles;
-  //   if (user.role) return [user.role];
-  //   return [];
-  // }
-
   /**
    * Checks if a user has permission for a specific action using static access control rules.
    * Validates user roles against predefined access control configuration.
@@ -448,7 +442,7 @@ export class AuthService {
   async getAuthenticatedUser(req: ArkosRequest): Promise<User | null> {
     if (!isAuthenticationEnabled())
       throw Error(
-        "ValidationError: Trying to call getAuthenticatedUser without setting up authentication"
+        "ValidationError: Trying to call AuthService.getAuthenticatedUser without setting up authentication"
       );
 
     const prisma = getPrismaInstance();
@@ -464,7 +458,7 @@ export class AuthService {
       token = req?.cookies?.arkos_access_token;
     }
 
-    if (!token) throw loginRequiredError;
+    if (!token) return null;
 
     let decoded: AuthJwtPayload | undefined;
 
@@ -483,7 +477,6 @@ export class AuthService {
       throw new AppError(
         "The user belonging to this token does no longer exists",
         401,
-        {},
         "UserNoLongerExists"
       );
 
@@ -494,7 +487,6 @@ export class AuthService {
       throw new AppError(
         "User recently changed password! Please log in again.",
         401,
-        {},
         "PasswordChanged"
       );
 
@@ -512,8 +504,11 @@ export class AuthService {
    */
   authenticate = catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      if (isAuthenticationEnabled())
-        req.user = (await this.getAuthenticatedUser(req)) as User;
+      if (isAuthenticationEnabled()) {
+        const user = (await this.getAuthenticatedUser(req)) as User;
+        if (!user) throw loginRequiredError;
+        req.user = user;
+      }
       next();
     }
   );
