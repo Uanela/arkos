@@ -149,3 +149,79 @@ export function extractPathParams(path: string): string[] {
 
   return params;
 }
+
+type PathLike = string | RegExp;
+type PathInput = PathLike | PathLike[];
+
+export function applyPrefix(
+  prefix: PathInput = "",
+  path: PathInput
+): PathInput {
+  if (!prefix) return path;
+
+  const prefixArr = Array.isArray(prefix) ? prefix : [prefix];
+  const pathArr = Array.isArray(path) ? path : [path];
+
+  const result: PathLike[] = [];
+
+  for (const pfx of prefixArr) {
+    for (const pth of pathArr) {
+      result.push(applySinglePrefix(pfx, pth));
+    }
+  }
+
+  return result.length === 1 ? result[0] : result;
+}
+
+function applySinglePrefix(prefix: PathLike, path: PathLike): PathLike {
+  const isPrefixRegex = prefix instanceof RegExp;
+  const isPathRegex = path instanceof RegExp;
+
+  if (typeof prefix === "string" && typeof path === "string") {
+    const normalizedPrefix = prefix.endsWith("/")
+      ? prefix.slice(0, -1)
+      : prefix;
+
+    return `${normalizedPrefix}${path.startsWith("/") ? "" : "/"}${path}`;
+  }
+
+  if (typeof prefix === "string" && isPathRegex) {
+    const escapedPrefix = prefix
+      .replace(/\/$/, "")
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const source = path.source.startsWith("^")
+      ? path.source.slice(1)
+      : path.source;
+
+    return new RegExp(`^${escapedPrefix}${source}`, path.flags);
+  }
+
+  if (isPrefixRegex && typeof path === "string") {
+    const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const prefixSource = prefix.source.endsWith("$")
+      ? prefix.source.slice(0, -1)
+      : prefix.source;
+
+    return new RegExp(`^${prefixSource}${escapedPath}`, prefix.flags);
+  }
+
+  if (isPrefixRegex && isPathRegex) {
+    const prefixSource = prefix.source.endsWith("$")
+      ? prefix.source.slice(0, -1)
+      : prefix.source;
+
+    const pathSource = path.source.startsWith("^")
+      ? path.source.slice(1)
+      : path.source;
+
+    const flags = Array.from(new Set([...prefix.flags, ...path.flags])).join(
+      ""
+    );
+
+    return new RegExp(`^${prefixSource}${pathSource}`, flags);
+  }
+
+  throw new TypeError("Invalid prefix or path");
+}

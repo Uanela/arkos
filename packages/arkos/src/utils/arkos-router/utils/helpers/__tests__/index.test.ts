@@ -1,4 +1,5 @@
 import {
+  applyPrefix,
   extractArkosRoutes,
   extractPathParams,
   getMiddlewareStack,
@@ -516,5 +517,88 @@ describe("getMiddlewareStack", () => {
       expect(middlewares.length).toBe(1);
       expect(validateRequestInputs).toHaveBeenCalled();
     });
+  });
+});
+
+describe("applyPrefix", () => {
+  it("should prefix string path with string prefix", () => {
+    expect(applyPrefix("/api", "/users")).toBe("/api/users");
+  });
+
+  it("should prefix string path without double slashes", () => {
+    expect(applyPrefix("/api/", "/users")).toBe("/api/users");
+    expect(applyPrefix("/api", "users")).toBe("/api/users");
+  });
+
+  it("should prefix regex path with string prefix", () => {
+    const result = applyPrefix("/api", /^\/users\/\d+$/) as RegExp;
+    expect(result).toBeInstanceOf(RegExp);
+    expect(result.test("/api/users/123")).toBe(true);
+    expect(result.test("/users/123")).toBe(false);
+  });
+
+  it("should prefix string path with regex prefix", () => {
+    const result = applyPrefix(/^\/api/, "/users") as RegExp;
+    expect(result).toBeInstanceOf(RegExp);
+    expect(result.test("/api/users")).toBe(true);
+    expect(result.test("/v1/users")).toBe(false);
+  });
+
+  it("should prefix regex path with regex prefix", () => {
+    const result = applyPrefix(/^\/api/, /^\/users\/\d+$/) as RegExp;
+    expect(result).toBeInstanceOf(RegExp);
+    expect(result.test("/api/users/1")).toBe(true);
+    expect(result.test("/users/1")).toBe(false);
+  });
+
+  it("should merge regex flags when both prefix and path are regex", () => {
+    const result = applyPrefix(/^\/api/i, /^\/users\/\d+$/g) as RegExp;
+    expect(result.flags.includes("i")).toBe(true);
+    expect(result.flags.includes("g")).toBe(true);
+  });
+
+  it("should support array prefix with string path", () => {
+    const result = applyPrefix(["/api", "/v1"], "/users") as any[];
+    expect(result).toEqual(["/api/users", "/v1/users"]);
+  });
+
+  it("should support string prefix with array paths", () => {
+    const result = applyPrefix("/api", ["/users", "/posts"]) as any[];
+    expect(result).toEqual(["/api/users", "/api/posts"]);
+  });
+
+  it("should support array prefix with array paths", () => {
+    const result = applyPrefix(["/api", "/v1"], ["/users", "/posts"]) as any[];
+
+    expect(result).toEqual([
+      "/api/users",
+      "/api/posts",
+      "/v1/users",
+      "/v1/posts",
+    ]);
+  });
+
+  it("should support mixed array types (string and regex)", () => {
+    const result = applyPrefix(
+      ["/api", /^\/v\d+/],
+      ["/users", /^\/posts\/\d+$/]
+    ) as RegExp[];
+
+    expect(result.some((r) => r instanceof RegExp)).toBe(true);
+    expect(
+      result.some((r) =>
+        typeof r === "string" ? r === "/api/users" : r.test("/api/users")
+      )
+    ).toBe(true);
+    expect(
+      result.some((r) =>
+        typeof r === "string" ? r === "/v1/posts/10" : r.test("/v1/posts/10")
+      )
+    ).toBe(true);
+  });
+
+  it("should return original path when prefix is empty", () => {
+    expect(applyPrefix("", "/users")).toBe("/users");
+    expect(applyPrefix("", [/^\/users$/])).toEqual([/^\/users$/]);
   });
 });

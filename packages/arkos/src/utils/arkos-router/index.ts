@@ -4,6 +4,7 @@ import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
 import RouteConfigRegistry from "./route-config-registry";
 import {
+  applyPrefix,
   extractArkosRoutes,
   extractPathParams,
   getMiddlewareStack,
@@ -41,7 +42,11 @@ import { getUserFileExtension } from "../helpers/fs.helpers";
  *
  * @see {@link ArkosRouteConfig} for configuration options
  */
-export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
+export default function ArkosRouter(
+  options?: RouterOptions & {
+    prefix?: string | RegExp | Array<string | RegExp>;
+  }
+): IArkosRouter {
   const router = Router(options);
 
   return new Proxy(router, {
@@ -71,12 +76,13 @@ export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
         ) {
           if (config.disabled) return;
 
-          const path = config.path;
+          const path = applyPrefix(options?.prefix, config.path);
 
           if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
               `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
+          config = { ...config, path };
 
           if ([null, undefined].includes(path as any))
             throw Error(
