@@ -372,7 +372,7 @@ describe("generateAuthConfigsTemplate", () => {
       expect(lines[1]).toBe('import { authService } from "arkos/services";');
 
       // Check that there are no trailing spaces
-      lines.forEach((line, index) => {
+      lines.forEach((line) => {
         if (line.trim() === "") return; // Skip empty lines
         expect(line).not.toMatch(/\s+$/);
       });

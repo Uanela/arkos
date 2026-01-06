@@ -91,10 +91,11 @@ const generateFile = async (
 
   try {
     ensureDirectoryExists(modulePath);
+    const { model, ...restOfOptions } = options;
 
     const templateData = {
       modelName: names,
-      ...options,
+      ...restOfOptions,
       ...(config.customImports && { imports: config.customImports(names) }),
     };
 

@@ -18,6 +18,8 @@ import {
   AccessAction,
   AccessControlConfig,
   AuthenticationControlConfig,
+  AccessControlRules,
+  DetailedAccessControlRule,
 } from "../../types/auth";
 import { MsDuration, toMs } from "./utils/helpers/auth.controller.helpers";
 import { appModules, getModuleComponents } from "../../utils/dynamic-loader";
@@ -267,6 +269,48 @@ export class AuthService {
     });
   }
 
+  private isWildcardAccess(config: AccessControlConfig): config is "*" {
+    return config === "*";
+  }
+
+  private isRoleList(config: AccessControlConfig): config is string[] {
+    return Array.isArray(config);
+  }
+
+  private isAccessRules(
+    config: AccessControlConfig
+  ): config is Partial<AccessControlRules> {
+    return (
+      typeof config === "object" && config !== null && !Array.isArray(config)
+    );
+  }
+
+  private normalizeRuleToRoles(
+    rule: string[] | DetailedAccessControlRule | "*" | undefined
+  ): string[] {
+    if (!rule) return [];
+    if (rule === "*") return ["*"];
+    if (Array.isArray(rule)) return rule;
+    return rule.roles === "*" ? ["*"] : (rule.roles ?? []);
+  }
+
+  private resolveAuthorizedRoles(
+    action: AccessAction,
+    accessControl: AccessControlConfig
+  ): string[] {
+    if (this.isWildcardAccess(accessControl)) return ["*"];
+    if (this.isRoleList(accessControl)) return accessControl;
+    if (this.isAccessRules(accessControl))
+      return this.normalizeRuleToRoles(accessControl[action]);
+    return [];
+  }
+
+  // private getUserRoles(user: User): string[] {
+  //   if (Array.isArray(user.roles)) return user.roles;
+  //   if (user.role) return [user.role];
+  //   return [];
+  // }
+
   /**
    * Checks if a user has permission for a specific action using static access control rules.
    * Validates user roles against predefined access control configuration.
@@ -287,17 +331,14 @@ export class AuthService {
         "Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles."
       );
 
-    let authorizedRoles: string[] = [];
-
-    if (Array.isArray(accessControl)) authorizedRoles = accessControl;
-    else if (accessControl[action])
-      authorizedRoles = Array.isArray(accessControl[action])
-        ? accessControl[action]
-        : accessControl[action].roles || [];
+    let authorizedRoles = this.resolveAuthorizedRoles(action, accessControl);
 
     const userRoles = Array.isArray(user?.roles) ? user.roles : [user.role];
 
-    return !!userRoles.some((role: string) => authorizedRoles.includes(role));
+    return (
+      authorizedRoles?.[0] === "*" ||
+      !!userRoles.some((role: string) => authorizedRoles.includes(role))
+    );
   }
 
   /**

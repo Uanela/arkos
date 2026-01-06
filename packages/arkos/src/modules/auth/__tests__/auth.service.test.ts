@@ -1166,6 +1166,44 @@ describe("AuthService", () => {
       expect(result).toBe(true);
     });
 
+    it("should return true when the roles check is * for all", () => {
+      // Setup
+      const user = { id: "user-123", role: "admin", roles: null } as any;
+      const action = "create";
+      const accessControl = { create: { roles: "*" } };
+
+      // Execute
+      const result1 = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      const result2 = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        { create: "*" }
+      );
+
+      const result3 = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        "*"
+      );
+
+      const result4 = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        { create: { roles: ["*"] } }
+      );
+
+      // Verify
+      expect(result1).toBe(true);
+      expect(result2).toBe(true);
+      expect(result3).toBe(true);
+      expect(result4).toBe(true);
+    });
+
     it("should return true when user role (single role) matches authorized roles using descriptive object instead of simple array ", () => {
       // Setup
       const user = { id: "user-123", role: "admin", roles: null } as any;
