@@ -66,7 +66,6 @@ generate
   .command("router")
   .alias("r")
   .description("Generate a new router")
-
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
   .option(
@@ -82,6 +81,7 @@ generate
   .description("Generate auth configuration")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
+  .option("-a, --advanced", "Advanced code structure")
   .option(
     "-p, --path <path>",
     "Custom path for the router",
@@ -139,7 +139,7 @@ generate
   .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
-    "Custom path for dto",
+    "Custom path for schema",
     "src/modules/{{module-name}}"
   )
   .action(generateCommand.createSchema);
@@ -152,10 +152,36 @@ generate
   .option("--model <name>", "Module name (alias for --module)")
   .option(
     "-p, --path <path>",
-    "Custom path for dto",
+    "Custom path for schema",
     "src/modules/{{module-name}}"
   )
   .action(generateCommand.updateSchema);
+
+generate
+  .command("schema")
+  .alias("sc")
+  .description("Generate a new zod create schema file for a prisma model")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
+  .option(
+    "-p, --path <path>",
+    "Custom path for schema",
+    "src/modules/{{module-name}}"
+  )
+  .action(generateCommand.baseSchema);
+
+generate
+  .command("query-schema")
+  .alias("qs")
+  .description("Generate a new zod update schema file for a prisma model")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
+  .option(
+    "-p, --path <path>",
+    "Custom path for schema",
+    "src/modules/{{module-name}}"
+  )
+  .action(generateCommand.querySchema);
 
 generate
   .command("create-dto")

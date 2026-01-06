@@ -94,6 +94,7 @@ const generateFile = async (
 
     const templateData = {
       modelName: names,
+      ...options,
       ...(config.customImports && { imports: config.customImports(names) }),
     };
 
