@@ -218,7 +218,12 @@ export function handleNonExistingRecord(err: {
   const message =
     err?.meta?.cause ||
     `Operation could not be completed as the required record was not found`;
-  return new AppError(message, 404, err.meta || {}, "RecordNotFound");
+
+  const model = err?.meta?.cause
+    ? err?.meta?.cause?.split("No '")?.[1]?.split?.("'")?.[0]
+    : "Inline";
+
+  return new AppError(message, 404, `Inline${pascalCase(model)}RecordNotFound`);
 }
 
 export function handlePrismaClientInitializationError(_: any) {
