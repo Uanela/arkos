@@ -434,6 +434,12 @@ export class PrismaJsonSchemaGenerator {
     const omittedFields = options?.omit;
     const includeRelations = options?.include;
 
+    if (selectFields && includeRelations) {
+      throw new Error(
+        `Found both 'select' and 'include' in ${model.name} query options. Please use one of them.`
+      );
+    }
+
     for (const field of model.fields) {
       // Skip password fields
       if (field.name === "password") continue;
@@ -447,7 +453,11 @@ export class PrismaJsonSchemaGenerator {
       // Handle relations
       if (this.isModelRelation(field.type)) {
         // Include relation if specified in include option
-        if (includeRelations?.[field.name]) {
+        if (
+          includeRelations?.[field.name] ||
+          selectFields?.[field.name] ||
+          omittedFields?.[field.name] === false
+        ) {
           const relationModel = this.schema.models.find(
             (m) => m.name === field.type
           );
@@ -455,7 +465,9 @@ export class PrismaJsonSchemaGenerator {
           if (relationModel) {
             const relationSchema = this.generateNestedRelationSchema(
               relationModel,
-              includeRelations[field.name]
+              includeRelations?.[field.name] ||
+                selectFields?.[field.name] ||
+                omittedFields?.[field.name]
             );
             properties[field.name] = field.isArray
               ? { type: "array", items: relationSchema }
@@ -492,6 +504,13 @@ export class PrismaJsonSchemaGenerator {
     // Handle nested select
     const selectFields = includeOptions?.select;
     const nestedIncludes = includeOptions?.include;
+    const ommittedFields = includeOptions?.omit;
+
+    if (selectFields && nestedIncludes) {
+      throw new Error(
+        `Found both 'select' and 'include' in nested ${model.name} query options. Please use one of them.`
+      );
+    }
 
     for (const field of model.fields) {
       // Skip password fields
@@ -504,14 +523,20 @@ export class PrismaJsonSchemaGenerator {
       }
 
       if (this.isModelRelation(field.type)) {
-        if (nestedIncludes?.[field.name]) {
+        if (
+          nestedIncludes?.[field.name] ||
+          selectFields?.[field.name] ||
+          ommittedFields?.[field.name] === false
+        ) {
           const relationModel = this.schema.models.find(
             (m) => m.name === field.type
           );
           if (relationModel) {
             const nestedSchema = this.generateNestedRelationSchema(
               relationModel,
-              nestedIncludes[field.name]
+              nestedIncludes?.[field.name] ||
+                selectFields?.[field.name] ||
+                ommittedFields?.[field.name]
             );
             properties[field.name] = field.isArray
               ? { type: "array", items: nestedSchema }

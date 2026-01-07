@@ -91,16 +91,24 @@ export default function ArkosRouter(
             );
 
           const method = prop as string;
+          const UndefinedHandlerError = (handler: any) =>
+            Error(
+              `Wrong value for handler in route ${method.toUpperCase()} ${path}, recevied ${handler}.`
+            );
 
           if (handlers.length > 0) {
             handlers = handlers.map(
               (handler: ArkosAnyRequestHandler | ArkosAnyRequestHandler[]) => {
+                if (!handler) throw UndefinedHandlerError(handler);
+
                 return typeof handler === "function"
                   ? catchAsync(handler, {
                       type: handler.length > 3 ? "error" : "normal",
                     })
                   : Array.isArray(handler)
                     ? handler.map((nesteHandler: any) => {
+                        if (!handler) throw UndefinedHandlerError(nesteHandler);
+
                         if (typeof nesteHandler === "function") return;
                         catchAsync(nesteHandler, {
                           type: handler.length > 3 ? "error" : "normal",
