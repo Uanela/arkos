@@ -112,9 +112,14 @@ export default function getFileUploadJsonSchemaPaths(
           ? "Retrieve uploaded file"
           : currentPath?.summary,
       description:
-        currentPath?.description ||
-        `Serves static files from the upload directory (${baseUploadDir}). This endpoint uses wildcard path matching to serve files from any subdirectory.`,
-      operationId: currentPath?.operationId || "findFile",
+        currentPath?.description === pathname || !currentPath?.description
+          ? `Serves static files from the upload directory (${baseUploadDir}). This endpoint uses wildcard path matching to serve files from any subdirectory.`
+          : currentPath?.description,
+      operationId:
+        currentPath?.operationId?.includes(pathname) ||
+        !currentPath?.operationId
+          ? "findFile"
+          : currentPath?.operationId,
       ...(shouldIncludeSecurity("View") && {
         security: [{ BearerAuth: [] }],
       }),
@@ -231,9 +236,14 @@ export default function getFileUploadJsonSchemaPaths(
           ? "Upload file(s)"
           : currentPath?.summary,
       description:
-        currentPath?.description ||
-        "Upload one or multiple files. Supports image processing options for image uploads.",
-      operationId: currentPath?.operationId || "uploadFile",
+        currentPath?.description === pathname || !currentPath?.description
+          ? "Upload one or multiple files. Supports image processing options for image uploads."
+          : currentPath?.description,
+      operationId:
+        currentPath?.operationId?.includes(pathname) ||
+        !currentPath?.operationId
+          ? "uploadFile"
+          : currentPath?.operationId,
       ...(shouldIncludeSecurity("Create") && {
         security: [{ BearerAuth: [] }],
       }),
@@ -403,9 +413,14 @@ export default function getFileUploadJsonSchemaPaths(
           ? "Update existing file"
           : currentPath?.summary,
       description:
-        currentPath?.description ||
-        "Replace an existing file with a new one. Deletes the old file and uploads the new one.",
-      operationId: currentPath?.operationId || "updateFile",
+        currentPath?.description === pathname || !currentPath?.description
+          ? "Replace an existing file with a new one. Deletes the old file and uploads the new one."
+          : currentPath?.description,
+      operationId:
+        currentPath?.operationId?.includes(pathname) ||
+        !currentPath?.operationId
+          ? "updateFile"
+          : currentPath?.operationId,
       ...(shouldIncludeSecurity("Update") && {
         security: [{ BearerAuth: [] }],
       }),
@@ -541,8 +556,14 @@ export default function getFileUploadJsonSchemaPaths(
           ? "Delete file"
           : currentPath?.summary,
       description:
-        currentPath?.description || "Delete an uploaded file from the server",
-      operationId: currentPath?.operationId || "deleteFile",
+        currentPath?.description === pathname || !currentPath?.description
+          ? "Delete an uploaded file from the server"
+          : currentPath?.description,
+      operationId:
+        currentPath?.operationId?.includes(pathname) ||
+        !currentPath?.operationId
+          ? "deleteFile"
+          : currentPath?.operationId,
       ...(shouldIncludeSecurity("Delete") && {
         security: [{ BearerAuth: [] }],
       }),
