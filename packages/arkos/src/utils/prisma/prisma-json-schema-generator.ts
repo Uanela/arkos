@@ -434,6 +434,12 @@ export class PrismaJsonSchemaGenerator {
     const omittedFields = options?.omit;
     const includeRelations = options?.include;
 
+    if (selectFields && includeRelations) {
+      throw new Error(
+        `Found both 'select' and 'include' in ${model.name} query options. Please use one of them.`
+      );
+    }
+
     for (const field of model.fields) {
       // Skip password fields
       if (field.name === "password") continue;
@@ -499,6 +505,12 @@ export class PrismaJsonSchemaGenerator {
     const selectFields = includeOptions?.select;
     const nestedIncludes = includeOptions?.include;
     const ommittedFields = includeOptions?.omit;
+
+    if (selectFields && nestedIncludes) {
+      throw new Error(
+        `Found both 'select' and 'include' in nested ${model.name} query options. Please use one of them.`
+      );
+    }
 
     for (const field of model.fields) {
       // Skip password fields
