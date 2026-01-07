@@ -1549,7 +1549,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("No request body is allowed on this route");
+        ).rejects.toThrow("Request body is not allowed on this route");
       });
 
       it("should throw AppError when query data exists but no validator in strict mode", async () => {
@@ -1571,7 +1571,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("No request query is allowed on this route");
+        ).rejects.toThrow("Request query is not allowed on this route");
       });
 
       it("should throw AppError when params data exists but no validator in strict mode", async () => {
@@ -1593,7 +1593,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("No request params is allowed on this route");
+        ).rejects.toThrow("Request params is not allowed on this route");
       });
 
       it("should pass when no data exists and validator is undefined in strict mode", async () => {
@@ -1705,9 +1705,12 @@ describe("Express Middleware Functions", () => {
       it("should handle validation errors gracefully", async () => {
         const mockSchema = z.object({ name: z.string() });
         const validators: any = { body: mockSchema };
+        const error: any = new Error("Validation error");
+        error.format = () => error;
 
         mockRequest.body = { name: 123 }; // Invalid type
-        const validationError = new Error("Validation failed");
+        const validationError: any = { issues: [error] };
+        validationError.format = () => error;
         (validateSchema as jest.Mock).mockRejectedValue(validationError);
 
         const middleware = validateRequestInputs({
@@ -1720,7 +1723,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("Validation failed");
+        ).rejects.toThrow("Invalid request body");
 
         expect(nextFunction).not.toHaveBeenCalled();
       });

@@ -151,7 +151,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       mockAuthController.getMe,
@@ -165,7 +164,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       mockAuthController.login,
@@ -179,7 +177,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       mockAuthController.signup,
@@ -263,7 +260,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       customMiddlewares.beforeGetMe,
@@ -279,7 +275,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       customMiddlewares.beforeLogin,
@@ -295,7 +290,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       customMiddlewares.beforeSignup,
@@ -341,7 +335,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: { body: mockDtos.updateMe },
-        experimental: { openapi: false },
       },
       expect.any(Function),
       mockAuthController.updateMe,
@@ -354,7 +347,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: { body: mockDtos.login },
-        experimental: { openapi: false },
       },
       expect.any(Function),
       mockAuthController.login,
@@ -384,7 +376,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: { body: mockSchemas.updateMe },
-        experimental: { openapi: false },
       },
       expect.any(Function),
       mockAuthController.updateMe,
@@ -397,7 +388,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: { body: mockSchemas.login },
-        experimental: { openapi: false },
       },
       expect.any(Function),
       mockAuthController.login,
@@ -420,7 +410,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function),
       expect.any(Function),
@@ -434,7 +423,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function),
       expect.any(Function),
@@ -448,7 +436,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function),
       expect.any(Function),
@@ -462,7 +449,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function),
       expect.any(Function),
@@ -476,7 +462,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function),
       sendResponse
@@ -489,7 +474,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function),
       expect.any(Function),
@@ -503,7 +487,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function),
       expect.any(Function),
@@ -533,7 +516,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // getMe
@@ -548,7 +530,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // updateMe
@@ -563,7 +544,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // deleteMe
@@ -578,7 +558,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // login
@@ -593,7 +572,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // logout
       expect.any(Function), // afterLogout
@@ -607,7 +585,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // signup
@@ -622,7 +599,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // updatePassword
@@ -653,7 +629,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeGetMe
@@ -668,7 +643,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeUpdateMe
@@ -683,7 +657,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeDeleteMe
@@ -698,7 +671,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeLogin
@@ -713,7 +685,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // beforeLogout
       expect.any(Function), // logout
@@ -727,7 +698,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeSignup
@@ -742,7 +712,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeUpdatePassword
@@ -793,7 +762,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeGetMe
@@ -810,7 +778,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeUpdateMe
@@ -827,7 +794,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeDeleteMe
@@ -844,7 +810,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeLogin
@@ -861,7 +826,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // beforeLogout
       expect.any(Function), // logout
@@ -877,7 +841,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: false,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeSignup
@@ -894,7 +857,6 @@ describe("Auth Router", () => {
         disabled: false,
         authentication: true,
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // addPrismaQueryOptionsToRequest
       expect.any(Function), // beforeUpdatePassword
@@ -931,7 +893,6 @@ describe("Auth Router", () => {
           rule: { roles: ["admin"] },
         },
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // findManyAuthAction
       sendResponse
@@ -948,7 +909,6 @@ describe("Auth Router", () => {
           rule: { roles: ["admin"] },
         },
         validation: undefined,
-        experimental: { openapi: false },
       },
       expect.any(Function), // findOneAuthAction
       sendResponse

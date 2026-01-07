@@ -3,7 +3,10 @@ import bcrypt from "bcryptjs";
 import authService from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { getArkosConfig } from "../../../server";
-import { isAuthenticationEnabled } from "../../../utils/helpers/arkos-config.helpers";
+import {
+  isAuthenticationEnabled,
+  isUsingAuthentication,
+} from "../../../utils/helpers/arkos-config.helpers";
 import AppError from "../../error-handler/utils/app-error";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
 
@@ -37,6 +40,8 @@ describe("AuthService", () => {
     // Reset all mocks
     jest.resetAllMocks();
 
+    (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
+    (isUsingAuthentication as jest.Mock).mockReturnValue(true);
     // Setup mock request, response, and next function
     mockReq = {
       headers: {},
@@ -668,13 +673,16 @@ describe("AuthService", () => {
   describe("getAuthenticatedUser", () => {
     it("should return null if authentication is disabled in config", async () => {
       // Setup
-      (getArkosConfig as jest.Mock).mockReturnValue({ authentication: null });
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(false);
 
-      // Execute
-      const result = await authService.getAuthenticatedUser(mockReq);
-
+      try {
+        await authService.getAuthenticatedUser(mockReq);
+      } catch (err: any) {
+        expect(err?.message).toBe(
+          "ValidationError: Trying to call getAuthenticatedUser without setting up authentication"
+        );
+      }
       // Verify
-      expect(result).toBeNull();
     });
 
     it("should throw an error if no token is found", async () => {

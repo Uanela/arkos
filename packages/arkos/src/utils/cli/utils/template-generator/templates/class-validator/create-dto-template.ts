@@ -196,7 +196,7 @@ function getValidatorsForType(
   isUserModule: boolean
 ): string[] {
   const validators: string[] = [];
-  const arrayEach = field.isArray ? ", { each: true }" : "";
+  const arrayEach = field.isArray ? "{ each: true }" : "";
 
   // User module special cases - return early to override default validators
   if (isUserModule) {
@@ -218,7 +218,7 @@ function getValidatorsForType(
     case "Int":
     case "Float":
     case "Decimal":
-      validators.push(`@IsNumber({}${arrayEach})`);
+      validators.push(`@IsNumber(${arrayEach})`);
       break;
     case "Boolean":
       validators.push(`@IsBoolean(${arrayEach})`);
@@ -227,7 +227,7 @@ function getValidatorsForType(
       validators.push(`@IsDate(${arrayEach})`);
       break;
     case "BigInt":
-      validators.push(`@IsNumber({}${arrayEach})`);
+      validators.push(`@IsNumber(${arrayEach})`);
       break;
     case "Json":
       validators.push(`@IsObject(${arrayEach})`);

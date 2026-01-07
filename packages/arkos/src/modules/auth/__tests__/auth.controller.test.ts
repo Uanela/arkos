@@ -815,7 +815,9 @@ describe("Auth Controller Factory", () => {
         { id: "user-id-123" },
         {
           password: "newHashedPassword",
-          passwordChangedAt: expect.any(Date),
+          passwordChangedAt: expect.stringContaining(
+            String(new Date().getFullYear())
+          ),
         }
       );
 

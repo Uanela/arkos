@@ -4,24 +4,14 @@ import {
   DetailedAccessControlRule,
 } from "../../../../types/auth";
 import { getArkosConfig } from "../../../../utils/helpers/arkos-config.helpers";
-import deepmerge from "../../../../utils/helpers/deepmerge.helper";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
 
 interface AuthAction {
-  /** role name, e.g Admin, Manager */
   roles?: string[];
-  /** action name, e.g Create, View, Update, Download, Cancel */
   action: string;
-  /** resource name, e.g user, user-role, product, author */
   resource: string;
-  /** Human-readable name for this permission (optional) */
   name?: string;
-  /** Detailed description of what this permission allows (optional) */
   description?: string;
-  /** Detailed error message of what must be returned on forbidden response (optional)
-   *
-   * Note: not yet implemented
-   */
   errorMessage?: string;
 }
 
@@ -32,7 +22,7 @@ class AuthActionService {
       action: "View",
       resource: "auth-action",
       name: "View auth action",
-      description: "Viewm an auth action",
+      description: "View an auth action",
       errorMessage: "You do not have permission to perform this operation",
     },
   ];
@@ -44,16 +34,97 @@ class AuthActionService {
       accessControl
     );
     const existingAuthAction = this.getOne(action, resource);
-    if (existingAuthAction) this.remove(action, resource);
-    this.authActions.push(
-      deepmerge(existingAuthAction || {}, transformedAction)
-    );
+
+    if (existingAuthAction) {
+      const inconsistencies: string[] = [];
+
+      const defaultName = `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`;
+      const defaultDescription = `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`;
+      const defaultErrorMessage =
+        "You do not have permission to perform this operation";
+
+      const isNonDefault = (
+        value: string | undefined,
+        defaultValue: string
+      ): boolean => {
+        return value !== undefined && value !== defaultValue;
+      };
+
+      if (
+        isNonDefault(existingAuthAction.name, defaultName) &&
+        isNonDefault(transformedAction.name, defaultName) &&
+        existingAuthAction.name !== transformedAction.name
+      ) {
+        inconsistencies.push(
+          `  - name: "${existingAuthAction.name}" vs "${transformedAction.name}"`
+        );
+      }
+
+      if (
+        isNonDefault(existingAuthAction.description, defaultDescription) &&
+        isNonDefault(transformedAction.description, defaultDescription) &&
+        existingAuthAction.description !== transformedAction.description
+      ) {
+        inconsistencies.push(
+          `  - description: "${existingAuthAction.description}" vs "${transformedAction.description}"`
+        );
+      }
+
+      if (
+        isNonDefault(existingAuthAction.errorMessage, defaultErrorMessage) &&
+        isNonDefault(transformedAction.errorMessage, defaultErrorMessage) &&
+        existingAuthAction.errorMessage !== transformedAction.errorMessage
+      ) {
+        inconsistencies.push(
+          `  - errorMessage: "${existingAuthAction.errorMessage}" vs "${transformedAction.errorMessage}"`
+        );
+      }
+      if (inconsistencies.length > 0) {
+        throw new Error(
+          `Inconsistent metadata for permission "${action}:${resource}". ` +
+            `The same action+resource combination is being defined with different values:\n` +
+            inconsistencies.join("\n") +
+            `\n\nPlease ensure all definitions of "${action}:${resource}" have the same name, description, and errorMessage values.`
+        );
+      }
+
+      const mergedRoles =
+        existingAuthAction.roles || transformedAction.roles
+          ? [
+              ...(existingAuthAction.roles || []),
+              ...(transformedAction.roles || []),
+            ]
+          : undefined;
+
+      const uniqueRoles = mergedRoles
+        ? [...new Set(mergedRoles)].sort()
+        : undefined;
+
+      const merged: AuthAction = {
+        action: existingAuthAction.action,
+        resource: existingAuthAction.resource,
+        roles: uniqueRoles,
+        name: existingAuthAction.name ?? transformedAction.name,
+        description:
+          existingAuthAction.description ?? transformedAction.description,
+        errorMessage:
+          existingAuthAction.errorMessage ?? transformedAction.errorMessage,
+      };
+
+      this.remove(action, resource);
+      this.authActions.push(merged);
+    } else {
+      if (transformedAction.roles) {
+        transformedAction.roles = [...transformedAction.roles].sort();
+      }
+      this.authActions.push(transformedAction);
+    }
   }
 
   remove(action: string, resource: string) {
     this.authActions = this.authActions.filter(
       (authAction) =>
-        authAction.action !== action && authAction.resource !== resource
+        !(authAction.action === action && authAction.resource === resource)
     );
   }
 
@@ -104,10 +175,8 @@ class AuthActionService {
 
     if (actionRule) {
       if (Array.isArray(actionRule)) {
-        // If it's just an array of roles, keep the base action
         return baseAuthAction;
       } else if (typeof actionRule === "object") {
-        // If it's a detailed rule object, use its metadata
         return {
           ...baseAuthAction,
           name: actionRule.name || baseAuthAction.name,
@@ -120,45 +189,30 @@ class AuthActionService {
     return baseAuthAction;
   }
 
-  /**
-   * Get all unique actions across all auth actions
-   */
   getUniqueActions(): string[] {
     return [
       ...new Set(this.authActions.map((authAction) => authAction.action)),
     ];
   }
 
-  /**
-   * Get all unique resources across all auth actions
-   */
   getUniqueResources(): string[] {
     return [
       ...new Set(this.authActions.map((authAction) => authAction.resource)),
     ];
   }
 
-  /**
-   * Get all auth actions for a specific resource
-   */
   getByResource(resource: string): AuthAction[] | undefined {
     return this.authActions.filter(
       (authAction) => authAction.resource === resource
     );
   }
 
-  /**
-   * Get all auth actions for a specific action
-   */
   getByAction(action: string): AuthAction[] {
     return this.authActions.filter(
       (authAction) => authAction.action === action
     );
   }
 
-  /**
-   * Check if an auth action exists
-   */
   exists(action: string, resource: string): boolean {
     return !!this.getOne(action, resource);
   }

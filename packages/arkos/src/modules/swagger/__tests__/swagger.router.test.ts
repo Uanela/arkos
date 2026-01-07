@@ -112,7 +112,8 @@ describe("getSwaggerRouter", () => {
     ).toHaveBeenCalledWith(mockConfig);
 
     expect(swaggerRouterHelpers.generatePathsForModels).toHaveBeenCalledWith(
-      mockConfig
+      mockConfig,
+      {}
     );
   });
 

@@ -14,6 +14,7 @@ import {
   getModuleComponents,
   ValidationFileMappingKey,
 } from "../../../../utils/dynamic-loader";
+import { isAuthenticationEnabled } from "../../../../utils/helpers/arkos-config.helpers";
 
 /**
  * Helps choosing the right json schemas according to swagger configurations
@@ -103,13 +104,14 @@ export function getSchemaRef(
 }
 
 export function generatePathsForModels(
-  arkosConfig: ArkosConfig
+  arkosConfig: ArkosConfig,
+  existingPaths: OpenAPIV3.PathsObject = {}
 ): OpenAPIV3.PathsObject {
   const swaggerConfig = arkosConfig?.swagger;
 
   if (!swaggerConfig) return {};
 
-  let paths: OpenAPIV3.PathsObject = {};
+  let paths: OpenAPIV3.PathsObject = { ...existingPaths };
   const models = prismaSchemaParser.getModelsAsArrayOfStrings();
 
   for (const model of models) {
@@ -122,10 +124,11 @@ export function generatePathsForModels(
     ...getSystemJsonSchemaPaths(),
   };
 
-  paths = {
-    ...paths,
-    ...(getAuthenticationJsonSchemaPaths(arkosConfig) || {}),
-  };
+  if (isAuthenticationEnabled())
+    paths = {
+      ...paths,
+      ...(getAuthenticationJsonSchemaPaths(arkosConfig, existingPaths) || {}),
+    };
 
   return paths;
 }
