@@ -2,6 +2,7 @@ import { OpenAPIV3 } from "openapi-types";
 import { ArkosConfig } from "../../../../exports";
 import PrismaJsonSchemaGenerator from "../../../../utils/prisma/prisma-json-schema-generator";
 import pluralize from "pluralize";
+import sheu from "../../../../utils/sheu";
 
 /**
  * Used to backfill missing json schema contained in paths in situation such as when using a `arkosConfig.swagger.mode` different from prisma and `strict` to false, in this situation the jsonSchemas paths are filled with $ref pointing to non existent jsonSchema components.
@@ -265,6 +266,8 @@ class MissingJsonSchemasGenerator {
           missingSchemas[mappedKey] = schema;
         });
       } catch (error) {
+        sheu.error(`Failed to generate schemas for model ${modelName}`);
+        throw error;
         // console.warn(
         //   `Failed to generate schemas for model ${modelName}:`,
         //   error
