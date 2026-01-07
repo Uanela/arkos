@@ -1,5 +1,4 @@
 import { ZodSchema } from "zod";
-import AppError from "../modules/error-handler/utils/app-error";
 
 /**
  * Validates data using a Zod schema and throws an AppError if validation fails.
@@ -32,13 +31,6 @@ export default async function validateSchema<T>(
   options?: any
 ): Promise<T> {
   const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new AppError(
-      "Invalid request body",
-      400,
-      result.error.format(),
-      "InvalidRequestBody"
-    );
-  }
+  if (!result.success) throw result.error;
   return result.data;
 }
