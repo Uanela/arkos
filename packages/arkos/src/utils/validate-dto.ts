@@ -1,6 +1,5 @@
 import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate, ValidatorOptions } from "class-validator";
-import AppError from "../modules/error-handler/utils/app-error";
 
 /**
  * Used to easy validate your data with class validator by passing the validator class and the data to validate, and if whished some validation options

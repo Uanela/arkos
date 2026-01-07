@@ -60,16 +60,7 @@ describe("validateDto", () => {
     (validate as jest.Mock).mockResolvedValue(mockErrors);
 
     // Act & Assert
-    try {
-      expect(await validateDto(TestUserDto, mockData)).rejects.toThrow();
-    } catch (err) {}
-
-    expect(AppError).toHaveBeenCalledWith(
-      "Invalid request body",
-      400,
-      mockErrors,
-      "InvalidRequestBody"
-    );
+    await expect(validateDto(TestUserDto, mockData)).rejects.toBe(mockErrors);
   });
 
   it("should pass custom validation options to validate function", async () => {
