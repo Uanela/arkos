@@ -46,12 +46,13 @@ describe("getAuthenticationJsonSchemaPaths", () => {
     ).toEqual({ $ref: "#/components/schemas/Login" });
   });
 
-  it("should use custom user properites when passed in existing paths", async () => {
+  it("should use custom user properites (different form defaults) when passed in existing paths", async () => {
     (localValidatorFileExists as jest.Mock).mockReturnValue(false);
     const result = getAuthenticationJsonSchemaPaths(mockConfig, {
       "/api/auth/login": {
         post: {
           parameters: [{ name: "usernameField", in: "path" }],
+          operationId: "post:/api/auth/login",
           requestBody: {
             content: {
               ["application/json"]: {
@@ -69,10 +70,10 @@ describe("getAuthenticationJsonSchemaPaths", () => {
       },
     } as any);
 
+    const jsonPath = result["/api/auth/login"]?.post;
+
     expect(
-      (result["/api/auth/login"]?.post?.requestBody as any)?.content?.[
-        "application/json"
-      ].schema
+      (jsonPath?.requestBody as any)?.content?.["application/json"].schema
     ).toEqual({
       properties: {
         name: {
@@ -83,6 +84,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
     expect(result["/api/auth/login"]?.post?.parameters as any).toEqual([
       { name: "usernameField", in: "path" },
     ]);
+    expect(jsonPath?.operationId).not.toBe("post:/api/auth/login");
   });
 
   it("should use configured mode when validator file exists", async () => {

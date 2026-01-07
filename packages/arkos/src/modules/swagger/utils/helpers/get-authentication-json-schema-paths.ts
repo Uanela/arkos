@@ -64,7 +64,9 @@ export default function getAuthenticationJsonSchemaPaths(
       description:
         currentPath?.description ||
         "Authenticates a user and returns an access token",
-      operationId: currentPath?.operationId || "login",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "login"
+        : currentPath?.operationId,
       requestBody: currentPath?.requestBody || {
         description: "User credentials",
         required: true,
@@ -122,7 +124,9 @@ export default function getAuthenticationJsonSchemaPaths(
           : currentPath?.summary,
       description:
         currentPath?.description || "Invalidates the current user's JWT token",
-      operationId: currentPath?.operationId || "logout",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "logout"
+        : currentPath?.operationId,
       security: [{ BearerAuth: [] }],
       responses: {
         ...(currentPath?.responses || {}),
@@ -155,7 +159,9 @@ export default function getAuthenticationJsonSchemaPaths(
           ? "Register a new user"
           : currentPath?.summary,
       description: currentPath?.description || "Creates a new user account",
-      operationId: currentPath?.operationId || "signup",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "signup"
+        : currentPath?.operationId,
       requestBody: currentPath?.requestBody || {
         description: "User registration data",
         required: true,
@@ -209,7 +215,9 @@ export default function getAuthenticationJsonSchemaPaths(
       description:
         currentPath?.description ||
         "Changes the password for the authenticated user",
-      operationId: currentPath?.operationId || "updatePassword",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "updatePassword"
+        : currentPath?.operationId,
       security: [{ BearerAuth: [] }],
       requestBody: currentPath?.requestBody || {
         description: "Current and new password",
@@ -274,7 +282,9 @@ export default function getAuthenticationJsonSchemaPaths(
       description:
         currentPath?.description ||
         "Retrieves information about the currently authenticated user",
-      operationId: currentPath?.operationId || "getMe",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "getMe"
+        : currentPath?.operationId,
       security: [{ BearerAuth: [] }],
       responses: {
         ...(currentPath?.responses || {}),
@@ -316,7 +326,9 @@ export default function getAuthenticationJsonSchemaPaths(
       description:
         currentPath?.description ||
         "Updates information for the currently authenticated user",
-      operationId: currentPath?.operationId || "updateMe",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "updateMe"
+        : currentPath?.operationId,
       security: [{ BearerAuth: [] }],
       requestBody: currentPath?.requestBody || {
         description: "User data to update",
@@ -370,7 +382,9 @@ export default function getAuthenticationJsonSchemaPaths(
       description:
         currentPath?.description ||
         "Marks the current user's account as deleted",
-      operationId: currentPath?.operationId || "deleteMe",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "deleteMe"
+        : currentPath?.operationId,
       security: [{ BearerAuth: [] }],
       responses: {
         ...(currentPath?.responses || {}),
@@ -416,7 +430,9 @@ export default function getAuthenticationJsonSchemaPaths(
       description:
         currentPath?.description ||
         "Retrieves a list of all available authentication actions and permissions",
-      operationId: currentPath?.operationId || "findManyAuthAction",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "findManyAuthAction"
+        : currentPath?.operationId,
       security: [{ BearerAuth: [] }],
       responses: {
         ...(currentPath?.responses || {}),
@@ -497,7 +513,9 @@ export default function getAuthenticationJsonSchemaPaths(
       description:
         currentPath?.description ||
         "Retrieves all authentication actions for a specific resource",
-      operationId: currentPath?.operationId || "findOneAuthAction",
+      operationId: currentPath?.operationId?.includes(pathname)
+        ? "findOneAuthAction"
+        : currentPath?.operationId,
       security: [{ BearerAuth: [] }],
       parameters: mergedParameters,
       responses: {
