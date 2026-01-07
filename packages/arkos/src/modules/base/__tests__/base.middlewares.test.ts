@@ -1705,9 +1705,14 @@ describe("Express Middleware Functions", () => {
       it("should handle validation errors gracefully", async () => {
         const mockSchema = z.object({ name: z.string() });
         const validators: any = { body: mockSchema };
+        const error: any = new Error("Validation error");
+        error.format = () => error;
 
         mockRequest.body = { name: 123 }; // Invalid type
-        const validationError = new Error("Validation failed");
+        const validationError: any = {
+          issues: [{ ...error, message: error.message, path: ["name"] }],
+        };
+        validationError.format = () => error;
         (validateSchema as jest.Mock).mockRejectedValue(validationError);
 
         const middleware = validateRequestInputs({
@@ -1720,7 +1725,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("Validation failed");
+        ).rejects.toThrow("name Validation error");
 
         expect(nextFunction).not.toHaveBeenCalled();
       });
