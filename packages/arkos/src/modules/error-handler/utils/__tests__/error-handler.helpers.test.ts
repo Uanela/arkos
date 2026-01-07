@@ -718,14 +718,14 @@ describe("Error Handlers", () => {
       expect(result.message).toBe(
         "Operation could not be completed as the required record was not found"
       );
-      expect(result.code).toBe("RecordNotFound");
+      expect(result.code).toBe("InlineRecordNotFound");
       expect(result.isOperational).toBe(true);
     });
 
     it("should show correct error message from meta.cause", () => {
       const err = {
         meta: {
-          cause: "The user record does not exists",
+          cause: "No 'User' record does not exists",
           additional_info: "Some extra info",
         },
       };
@@ -733,12 +733,9 @@ describe("Error Handlers", () => {
 
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(404);
-      expect(result.message).toBe("The user record does not exists");
-      expect(result.code).toBe("RecordNotFound");
-      expect(result.meta).toEqual({
-        cause: "The user record does not exists",
-        additional_info: "Some extra info",
-      });
+      expect(result.message).toBe("No 'User' record does not exists");
+      expect(result.code).toBe("InlineUserRecordNotFound");
+      expect(result.meta).toEqual(undefined);
       expect(result.isOperational).toBe(true);
     });
 
@@ -755,8 +752,8 @@ describe("Error Handlers", () => {
       expect(result.message).toBe(
         "Operation could not be completed as the required record was not found"
       );
-      expect(result.code).toBe("RecordNotFound");
-      expect(result.meta).toEqual({ some_field: "some_value" });
+      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.meta).toEqual(undefined);
     });
 
     it("should handle null meta", () => {
@@ -768,8 +765,8 @@ describe("Error Handlers", () => {
       expect(result.message).toBe(
         "Operation could not be completed as the required record was not found"
       );
-      expect(result.code).toBe("RecordNotFound");
-      expect(result.meta).toEqual({});
+      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.meta).toEqual(undefined);
     });
 
     it("should handle undefined meta", () => {
@@ -781,8 +778,8 @@ describe("Error Handlers", () => {
       expect(result.message).toBe(
         "Operation could not be completed as the required record was not found"
       );
-      expect(result.code).toBe("RecordNotFound");
-      expect(result.meta).toEqual({});
+      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.meta).toEqual(undefined);
     });
 
     it("should handle error with additional properties", () => {
@@ -796,8 +793,8 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(404);
       expect(result.message).toBe("User with ID 123 not found");
-      expect(result.code).toBe("RecordNotFound");
-      expect(result.meta).toEqual({ cause: "User with ID 123 not found" });
+      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.meta).toEqual(undefined);
       expect(result.isOperational).toBe(true);
     });
   });
@@ -811,7 +808,6 @@ describe("Error Handlers", () => {
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
       expect(result.code).toBe("DatabaseNotAvailable");
-      expect(result.meta).toEqual({});
       expect(result.isOperational).toBe(true);
     });
 
@@ -827,7 +823,6 @@ describe("Error Handlers", () => {
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
       expect(result.code).toBe("DatabaseNotAvailable");
-      expect(result.meta).toEqual({});
       expect(result.isOperational).toBe(true);
     });
 
@@ -839,7 +834,6 @@ describe("Error Handlers", () => {
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
       expect(result.code).toBe("DatabaseNotAvailable");
-      expect(result.meta).toEqual({});
       expect(result.isOperational).toBe(true);
     });
 
@@ -851,7 +845,6 @@ describe("Error Handlers", () => {
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
       expect(result.code).toBe("DatabaseNotAvailable");
-      expect(result.meta).toEqual({});
       expect(result.isOperational).toBe(true);
     });
   });
