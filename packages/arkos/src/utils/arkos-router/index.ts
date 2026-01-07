@@ -99,11 +99,15 @@ export default function ArkosRouter(
                   ? catchAsync(handler, {
                       type: handler.length > 3 ? "error" : "normal",
                     })
-                  : handler.map((nesteHandler: any) =>
-                      catchAsync(nesteHandler, {
-                        type: handler.length > 3 ? "error" : "normal",
+                  : Array.isArray(handler)
+                    ? handler.map((nesteHandler: any) => {
+                        if (typeof nesteHandler === "function") return;
+                        catchAsync(nesteHandler, {
+                          type: handler.length > 3 ? "error" : "normal",
+                        });
+                        return nesteHandler;
                       })
-                    );
+                    : handler;
               }
             );
 

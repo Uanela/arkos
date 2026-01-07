@@ -32,6 +32,5 @@ export default async function validateSchema<T>(
 ): Promise<T> {
   const result = schema.safeParse(data);
   if (!result.success) throw result.error;
-
   return result.data;
 }
