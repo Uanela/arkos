@@ -1,6 +1,3 @@
-// tests/unit/swagger/get-swagger-default-config.test.ts
-
-import portAndHostAllocator from "../../../../../utils/features/port-and-host-allocator";
 import { capitalize } from "../../../../../utils/helpers/text.helpers";
 import getSwaggerDefaultConfig from "../get-swagger-default-configs";
 
@@ -40,6 +37,8 @@ describe("getSwaggerDefaultConfig", () => {
   });
 
   it("should return default swagger config with correct structure", async () => {
+    process.env.__PORT = "3000";
+    process.env.__HOST = "localhost";
     const result = getSwaggerDefaultConfig(
       mockDefaultModelsPaths,
       mockDefaultJsonSchemas

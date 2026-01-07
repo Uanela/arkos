@@ -734,7 +734,7 @@ export type ArkosConfig = {
         | "Params"
         | "TransformedQuery"
         | "ServiceArgs"
-        | "FinalPrismaQueryArgs"
+        | "PrismaFinalQueryArgs"
       )[];
     };
     /**

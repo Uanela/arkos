@@ -125,3 +125,27 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
 
   return middlewares;
 }
+
+/**
+ * Extracts path parameters from an Express route path
+ *
+ * @param path - Express route path with :param syntax
+ * @returns Array of parameter names
+ *
+ * @example
+ * extractPathParams('/api/users/:userId/posts/:postId')
+ * // => ['userId', 'postId']
+ *
+ */
+export function extractPathParams(path: string): string[] {
+  const params: string[] = [];
+  const segments = path.split("/");
+
+  for (const segment of segments) {
+    if (segment.startsWith(":")) {
+      params.push(segment.substring(1));
+    }
+  }
+
+  return params;
+}

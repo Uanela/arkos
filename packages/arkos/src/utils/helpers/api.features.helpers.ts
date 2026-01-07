@@ -1,5 +1,223 @@
 import deepmerge from "./deepmerge.helper";
 
+function parseKey(key: string): { fields: string[]; operator: string | null } {
+  const fields: string[] = [];
+  let i = 0;
+
+  while (i < key.length) {
+    if (key[i] === "_" && key[i + 1] === "_") {
+      i += 2;
+      continue;
+    }
+
+    if (key[i] === "[") {
+      const closingBracket = key.indexOf("]", i);
+      if (closingBracket === -1) break;
+
+      const bracketContent = key.substring(i + 1, closingBracket);
+      if (bracketContent) {
+        fields.push(bracketContent);
+      }
+      i = closingBracket + 1;
+      continue;
+    }
+
+    let nextDelimiter = key.length;
+    const nextUnderscore = key.indexOf("__", i);
+    const nextBracket = key.indexOf("[", i);
+
+    if (nextUnderscore !== -1 && nextUnderscore < nextDelimiter) {
+      nextDelimiter = nextUnderscore;
+    }
+    if (nextBracket !== -1 && nextBracket < nextDelimiter) {
+      nextDelimiter = nextBracket;
+    }
+
+    const fieldName = key.substring(i, nextDelimiter);
+    if (fieldName) {
+      fields.push(fieldName);
+    }
+    i = nextDelimiter;
+  }
+
+  if (fields.length === 0) return { fields: [], operator: null };
+
+  const possibleOperators = [
+    "icontains",
+    "contains",
+    "in",
+    "notIn",
+    "hasSome",
+    "hasEvery",
+    "or",
+    "isNull",
+    "isEmpty",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "equals",
+    "startsWith",
+    "endsWith",
+    "not",
+    "some",
+    "none",
+    "every",
+  ];
+
+  const lastField = fields[fields.length - 1];
+  if (possibleOperators.includes(lastField)) {
+    const operator = fields.pop()!;
+    return { fields, operator };
+  }
+
+  return { fields, operator: null };
+}
+
+function buildNestedObject(
+  fields: string[],
+  operator: string | null,
+  value: any,
+  fieldConfig: FieldConfig
+): any {
+  if (fields.length === 0) return {};
+
+  const firstField = fields[0];
+
+  if (firstField === "orderBy" && fields.length === 2 && !operator) {
+    return {
+      orderBy: {
+        [fields[1]]: value as "asc" | "desc",
+      },
+    };
+  }
+
+  if (fields.length === 1 && !operator) {
+    if (typeof value === "object" && value !== null) {
+      return { [firstField]: value };
+    }
+
+    const convertedValue =
+      typeof value === "string"
+        ? convertValue(value, firstField, fieldConfig)
+        : value;
+    return { [firstField]: convertedValue };
+  }
+
+  if (operator === "or") {
+    const values = Array.isArray(value) ? value : value.toString().split(",");
+
+    return {
+      OR: values.map((val: any) => {
+        const nested: any = {};
+        let current = nested;
+
+        for (let i = 0; i < fields.length - 1; i++) {
+          current[fields[i]] = {};
+          current = current[fields[i]];
+        }
+
+        current[fields[fields.length - 1]] = {
+          equals: convertValue(
+            typeof val === "string" ? val.trim() : val,
+            fields[0],
+            fieldConfig
+          ),
+        };
+
+        return nested;
+      }),
+    };
+  }
+
+  const result: any = {};
+  let current = result;
+
+  for (let i = 0; i < fields.length - 1; i++) {
+    current[fields[i]] = {};
+    current = current[fields[i]];
+  }
+
+  const lastField = fields[fields.length - 1];
+
+  if (!operator) {
+    current[lastField] = {
+      equals: convertValue(value, fields[0], fieldConfig),
+    };
+    return result;
+  }
+
+  const stringValue = typeof value === "string" ? value : value?.toString();
+
+  switch (operator) {
+    case "icontains":
+      current[lastField] = {
+        contains: stringValue,
+        mode: "insensitive",
+      };
+      break;
+
+    case "contains":
+      current[lastField] = {
+        contains: stringValue,
+        mode: "sensitive",
+      };
+      break;
+
+    case "in":
+    case "notIn":
+      const inValues = Array.isArray(value) ? value : stringValue.split(",");
+
+      current[lastField] = {
+        [operator]: inValues.map((v: any) =>
+          convertValue(
+            typeof v === "string" ? v.trim() : v,
+            fields[0],
+            fieldConfig
+          )
+        ),
+      };
+      break;
+
+    case "hasSome":
+    case "hasEvery":
+      const arrayValues = Array.isArray(value) ? value : stringValue.split(",");
+
+      current[lastField] = {
+        [operator]: arrayValues.map((v: any) =>
+          convertValue(
+            typeof v === "string" ? v.trim() : v,
+            fields[0],
+            fieldConfig
+          )
+        ),
+      };
+      break;
+
+    case "isNull":
+      current[lastField] = {
+        equals: stringValue?.toLowerCase() === "true" ? null : undefined,
+      };
+      break;
+
+    case "isEmpty":
+      current[lastField] = {
+        equals: stringValue?.toLowerCase() === "true" ? "" : undefined,
+      };
+      break;
+
+    default:
+      current[lastField] = {
+        [operator]:
+          value === null
+            ? null
+            : convertValue(stringValue, fields[0], fieldConfig),
+      };
+  }
+
+  return result;
+}
+
 /**
  * Configuration types for field type mapping
  */
@@ -65,100 +283,18 @@ export function parseQueryParamsWithModifiers(
   let result: ParsedFilter = {};
 
   for (const [key, value] of entries) {
-    const parts = key.split("__");
-    if (!value && value !== false && value !== "false" && parts.length < 2)
-      continue;
+    if (value === undefined) continue;
 
-    const stringValue = Array.isArray(value) ? value[0]?.toString() : value;
+    const { fields, operator } = parseKey(key);
 
-    let currentResult: any = {};
+    if (fields.length === 0) continue;
 
-    if (parts.length < 2) {
-      currentResult[key] =
-        typeof value === "string" && !Number.isNaN(value)
-          ? convertValue(stringValue, parts[0], fieldConfig)
-          : value;
-    } else {
-      const fieldName = parts[0];
-
-      if (fieldName === "orderBy" && parts.length === 2) {
-        currentResult.orderBy = {};
-        currentResult.orderBy[parts[1]] = stringValue as "asc" | "desc";
-      } else if (parts.length === 1) {
-        currentResult[fieldName] = {
-          equals: convertValue(stringValue, fieldName, fieldConfig),
-        };
-      } else {
-        let nestedObj: any = {};
-        let currentLevel = nestedObj;
-        let currentKey = fieldName;
-
-        for (let i = 1; i < parts.length - 1; i++) {
-          currentLevel[currentKey] = {};
-          currentLevel = currentLevel[currentKey];
-          currentKey = parts[i];
-        }
-
-        const lastOperator = parts[parts.length - 1];
-
-        switch (lastOperator) {
-          case "icontains":
-            currentLevel[currentKey] = {
-              contains: stringValue,
-              mode: "insensitive",
-            };
-            break;
-
-          case "contains":
-            currentLevel[currentKey] = {
-              contains: stringValue,
-              mode: "sensitive",
-            };
-            break;
-
-          case "in":
-          case "notIn":
-            currentLevel[currentKey] = {
-              [lastOperator]: stringValue
-                .split(",")
-                .map((v: string) =>
-                  convertValue(v.trim(), fieldName, fieldConfig)
-                ),
-            };
-            break;
-
-          case "or":
-            const values: string[] = stringValue.split(",");
-            nestedObj.OR = values.map((val) => ({
-              [fieldName]: {
-                equals: convertValue(val.trim(), fieldName, fieldConfig),
-              },
-            }));
-            break;
-
-          case "isNull":
-            currentLevel[currentKey] = {
-              equals: stringValue.toLowerCase() === "true" ? null : undefined,
-            };
-            break;
-
-          case "isEmpty":
-            currentLevel[currentKey] = {
-              equals: stringValue.toLowerCase() === "true" ? "" : undefined,
-            };
-            break;
-
-          default:
-            currentLevel[currentKey] = {
-              [lastOperator]: convertValue(stringValue, fieldName, fieldConfig),
-            };
-        }
-
-        currentResult = nestedObj;
-      }
-    }
-
-    // Deep merge the current result with the accumulated result
+    const currentResult = buildNestedObject(
+      fields,
+      operator,
+      value,
+      fieldConfig
+    );
     result = deepmerge(result, currentResult);
   }
 
@@ -192,19 +328,21 @@ function convertValue(
   fieldName: string,
   config: FieldConfig
 ): any {
-  // Handle date fields
+  if (typeof value !== "string") {
+    return value;
+  }
+
   if (config.dateFields?.includes?.(fieldName) && value) {
     return new Date(value);
   }
 
-  // Handle boolean fields
-  if (config.booleanFields?.includes?.(fieldName) && value) {
+  if (config.booleanFields?.includes?.(fieldName)) {
     return value.toLowerCase() === "true";
   }
 
-  // Handle numeric fields
-  if (config.numericFields?.includes?.(fieldName) && value) {
-    return Number(value);
+  if (config.numericFields?.includes?.(fieldName)) {
+    const num = Number(value);
+    return isNaN(num) ? value : num;
   }
 
   return value;

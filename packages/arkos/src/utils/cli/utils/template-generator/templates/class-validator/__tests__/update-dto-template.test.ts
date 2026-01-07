@@ -99,7 +99,7 @@ describe("generateUpdateDtoTemplate", () => {
         "@IsOptional()\n  @IsString()\n  name?: string;"
       );
       expect(result).toContain(
-        "@IsOptional()\n  @IsNumber({})\n  price?: number;"
+        "@IsOptional()\n  @IsNumber()\n  price?: number;"
       );
       expect(result).toContain(
         "@IsOptional()\n  @IsBoolean()\n  inStock?: boolean;"
@@ -232,7 +232,7 @@ describe("generateUpdateDtoTemplate", () => {
       });
 
       expect(result).toContain(
-        "@IsOptional()\n  @IsNumber({})\n  size?: bigint;"
+        "@IsOptional()\n  @IsNumber()\n  size?: bigint;"
       );
       expect(result).toContain(
         "@IsOptional()\n  @IsObject()\n  metadata?: any;"
@@ -410,10 +410,10 @@ describe("generateUpdateDtoTemplate", () => {
       });
 
       expect(result).toContain(
-        "@IsOptional()\n  @IsArray()\n  @IsString(, { each: true })\n  tags?: string[];"
+        "@IsOptional()\n  @IsArray()\n  @IsString({ each: true })\n  tags?: string[];"
       );
       expect(result).toContain(
-        "@IsOptional()\n  @IsArray()\n  @IsNumber({}, { each: true })\n  scores?: number[];"
+        "@IsOptional()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
       );
     });
   });
@@ -724,7 +724,7 @@ describe("generateUpdateDtoTemplate", () => {
       });
 
       expect(result).toContain("class ProductForUpdateOrderDto {");
-      expect(result).toContain("@IsNumber({})\n  code!: number;");
+      expect(result).toContain("@IsNumber()\n  code!: number;");
     });
 
     it("should handle already optional relations (still optional)", () => {
@@ -1305,7 +1305,7 @@ describe("generateUpdateDtoTemplate", () => {
         "@IsOptional()\n  @IsString()\n  name?: string;"
       );
       expect(result).toContain(
-        "@IsOptional()\n  @IsNumber({})\n  price?: number;"
+        "@IsOptional()\n  @IsNumber()\n  price?: number;"
       );
       expect(result).toContain(
         "@IsOptional()\n  @IsString()\n  description?: string;"

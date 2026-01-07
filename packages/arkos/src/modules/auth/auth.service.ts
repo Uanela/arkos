@@ -27,7 +27,10 @@ import {
   loginRequiredError,
 } from "./utils/auth-error-objects";
 import authActionService from "./utils/services/auth-action.service";
-import { isAuthenticationEnabled } from "../../utils/helpers/arkos-config.helpers";
+import {
+  isAuthenticationEnabled,
+  isUsingAuthentication,
+} from "../../utils/helpers/arkos-config.helpers";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -402,8 +405,10 @@ export class AuthService {
    * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
    */
   async getAuthenticatedUser(req: ArkosRequest): Promise<User | null> {
-    const arkosConfig = getArkosConfig();
-    if (!arkosConfig?.authentication) return null;
+    if (!isAuthenticationEnabled())
+      throw Error(
+        "ValidationError: Trying to call getAuthenticatedUser without setting up authentication"
+      );
 
     const prisma = getPrismaInstance();
 
@@ -529,10 +534,11 @@ export class AuthService {
 
     authActionService.add(action, resource, accessControl);
 
-    return async (user: Record<string, any>): Promise<boolean> => {
+    return async (user: Record<string, any> | undefined): Promise<boolean> => {
       // getArkosConfig must not be called the same time as arkos.init()
       const configs = getArkosConfig();
-      if (!configs?.authentication)
+
+      if (!isUsingAuthentication())
         throw Error(
           "Validation Error: Trying to use authService.permission without setting up authentication."
         );

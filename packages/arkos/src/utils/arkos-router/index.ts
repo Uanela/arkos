@@ -1,9 +1,13 @@
-import { Router } from "express";
+import { Router, RouterOptions } from "express";
 import { IArkosRouter, ArkosRouteConfig } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
 import RouteConfigRegistry from "./route-config-registry";
-import { extractArkosRoutes, getMiddlewareStack } from "./utils/helpers";
+import {
+  extractArkosRoutes,
+  extractPathParams,
+  getMiddlewareStack,
+} from "./utils/helpers";
 import { getArkosConfig } from "../../exports";
 import { catchAsync } from "../../exports/error-handler";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
@@ -11,6 +15,7 @@ import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 import uploadManager from "./utils/helpers/upload-manager";
+import { getUserFileExtension } from "../helpers/fs.helpers";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -36,8 +41,8 @@ import uploadManager from "./utils/helpers/upload-manager";
  *
  * @see {@link ArkosRouteConfig} for configuration options
  */
-export default function ArkosRouter(): IArkosRouter {
-  const router: IArkosRouter = Router();
+export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
+  const router = Router(options);
 
   return new Proxy(router, {
     get(target, prop, receiver) {
@@ -68,30 +73,42 @@ export default function ArkosRouter(): IArkosRouter {
 
           const path = config.path;
 
-          if (!path)
-            throw Error(
-              "Please pass valid value for path field to use in your route"
-            );
-
           if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
               `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
 
+          if ([null, undefined].includes(path as any))
+            throw Error(
+              "Please pass valid value for path field to use in your route"
+            );
+
           const method = prop as string;
+          const UndefinedHandlerError = (handler: any) =>
+            Error(
+              `Wrong value for handler in route ${method.toUpperCase()} ${path}, recevied ${handler}.`
+            );
 
           if (handlers.length > 0) {
             handlers = handlers.map(
               (handler: ArkosAnyRequestHandler | ArkosAnyRequestHandler[]) => {
+                if (!handler) throw UndefinedHandlerError(handler);
+
                 return typeof handler === "function"
                   ? catchAsync(handler, {
                       type: handler.length > 3 ? "error" : "normal",
                     })
-                  : handler.map((nesteHandler: any) =>
-                      catchAsync(nesteHandler, {
-                        type: handler.length > 3 ? "error" : "normal",
+                  : Array.isArray(handler)
+                    ? handler.map((nesteHandler: any) => {
+                        if (!handler) throw UndefinedHandlerError(nesteHandler);
+
+                        if (typeof nesteHandler === "function") return;
+                        catchAsync(nesteHandler, {
+                          type: handler.length > 3 ? "error" : "normal",
+                        });
+                        return nesteHandler;
                       })
-                    );
+                    : handler;
               }
             );
 
@@ -123,7 +140,9 @@ export default function ArkosRouter(): IArkosRouter {
 
           if (config.authentication && !authenticationConfig?.mode)
             throw Error(
-              `Trying to authenticate route ${route} without choosing an authentication mode under arkos.init({ authentication: { mode: '' } })`
+              `Trying to authenticate route ${route} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
+
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication-system.`
             );
 
           handlers = [...getMiddlewareStack(config), ...handlers];
@@ -159,6 +178,15 @@ export function generateOpenAPIFromApp(app: any) {
 
   routes.forEach(({ path, method, config }) => {
     if (config?.experimental?.openapi === false) return;
+    const originalPath = path;
+
+    const pathParatemersFromRoutePath = extractPathParams(path);
+    for (const parameter of pathParatemersFromRoutePath) {
+      path = path.replaceAll(
+        `:${parameter}`,
+        parameter.endsWith("?") ? `{${parameter}}?` : `{${parameter}}`
+      );
+    }
 
     if (!paths[path]) paths[path] = {};
 
@@ -208,12 +236,45 @@ export function generateOpenAPIFromApp(app: any) {
     const convertedOpenAPI =
       openApiSchemaConverter.convertOpenAPIConfig(openapi);
 
+    const allParameters: OpenAPIV3.ParameterObject[] = [
+      ...(convertedOpenAPI.parameters || []),
+      ...parameters,
+    ];
+
+    for (const parameter of pathParatemersFromRoutePath) {
+      if (
+        !allParameters.find(
+          ({ name, in: paramIn }) =>
+            name === parameter.replace("?", "") && paramIn === "path"
+        )
+      )
+        allParameters.push({
+          name: parameter,
+          in: "path",
+          required: !parameter.includes("?"),
+          schema: { type: "string" },
+        });
+    }
+
+    for (const param of allParameters) {
+      if (
+        !pathParatemersFromRoutePath.includes(param.name) &&
+        !pathParatemersFromRoutePath.includes(`${param.name}?`) &&
+        param.in === "path"
+      )
+        throw new Error(
+          `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`
+        );
+    }
+
+    delete convertedOpenAPI.parameters;
+
     (paths as any)[path][method.toLowerCase()] = {
-      summary: openapi?.summary || `${method} ${path}`,
+      summary: openapi?.summary || `${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Defaults"],
       operationId: `${method.toLowerCase()}:${path}`,
-      parameters: [...(convertedOpenAPI.parameters || []), ...parameters],
+      parameters: allParameters,
       ...(!convertedOpenAPI.requestBody &&
         config?.validation &&
         config?.validation?.body && {

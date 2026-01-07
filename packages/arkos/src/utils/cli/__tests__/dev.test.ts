@@ -1,5 +1,4 @@
 import { spawn, ChildProcess } from "child_process";
-import chokidar from "chokidar";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
 import { getVersion } from "../utils/cli.helpers";
 import { loadEnvironmentVariables } from "../../dotenv.helpers";
@@ -7,8 +6,8 @@ import { importModule } from "../../helpers/global.helpers";
 import fs from "fs";
 import sheu from "../../sheu";
 import portAndHostAllocator from "../../features/port-and-host-allocator";
-import smartFsWatcher from "../utils/smart-fs-watcher";
 import { devCommand, killDevelopmentServerChildProcess } from "../dev";
+import path from "path";
 
 // Mock all dependencies
 jest.mock("child_process");
@@ -23,13 +22,10 @@ jest.mock("../../helpers/global.helpers");
 jest.mock("fs");
 jest.mock("../../sheu");
 jest.mock("../../features/port-and-host-allocator");
-jest.mock("../utils/smart-fs-watcher");
 
 describe("Dev Command", () => {
   let mockSpawn: jest.MockedFunction<typeof spawn>;
   let mockChildProcess: Partial<ChildProcess>;
-  let mockChokidarWatch: jest.MockedFunction<typeof chokidar.watch>;
-  let mockWatcher: { on: jest.Mock; close: jest.Mock; getWatched?: jest.Mock };
   let mockConsoleError: jest.SpyInstance;
   let mockConsoleInfo: jest.SpyInstance;
   let mockProcessExit: jest.SpyInstance;
@@ -39,6 +35,7 @@ describe("Dev Command", () => {
   let mockClearTimeout: jest.SpyInstance;
 
   beforeEach(() => {
+    process.env.NODE_ENV = "development";
     // Setup mock child process
     mockChildProcess = {
       kill: jest.fn(),
@@ -49,19 +46,6 @@ describe("Dev Command", () => {
     // Setup mock spawn
     mockSpawn = spawn as jest.MockedFunction<typeof spawn>;
     mockSpawn.mockReturnValue(mockChildProcess as ChildProcess);
-
-    // Setup mock watcher
-    mockWatcher = {
-      on: jest.fn(),
-      close: jest.fn(),
-      getWatched: jest.fn().mockReturnValue({}),
-    };
-
-    // Setup mock chokidar
-    mockChokidarWatch = chokidar.watch as jest.MockedFunction<
-      typeof chokidar.watch
-    >;
-    mockChokidarWatch.mockReturnValue(mockWatcher as any);
 
     // Mock console methods
     mockConsoleError = jest.spyOn(console, "error").mockImplementation();
@@ -105,11 +89,6 @@ describe("Dev Command", () => {
         host: "localhost",
       }),
     });
-
-    // Mock smartFsWatcher
-    (smartFsWatcher.start as jest.Mock).mockImplementation();
-    (smartFsWatcher.reset as jest.Mock).mockImplementation();
-    (smartFsWatcher.close as jest.Mock).mockImplementation();
   });
 
   afterEach(() => {
@@ -177,30 +156,12 @@ describe("Dev Command", () => {
           env: expect.objectContaining({
             NODE_ENV: "development",
             CLI_PORT: "3000",
+            __PORT: "3000",
+            __HOST: "0.0.0.0",
           }),
           shell: true,
         })
       );
-    });
-
-    it("should setup environment file watcher", async () => {
-      await devCommand();
-      expect(mockChokidarWatch).toHaveBeenCalledWith([".env", ".env.local"], {
-        ignoreInitial: true,
-        persistent: true,
-      });
-    });
-
-    it("should restart server when environment files change", async () => {
-      await devCommand();
-
-      const envCallback = mockWatcher.on.mock.calls.find(
-        (call) => call[0] === "all"
-      )[1];
-
-      envCallback("change", ".env");
-
-      expect(mockSetTimeout).toHaveBeenCalledWith(expect.any(Function), 1000);
     });
 
     it("should handle child process exit with restart", async () => {
@@ -275,34 +236,8 @@ describe("Dev Command", () => {
 
       await devCommand();
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        "Development server failed to start:",
-        testError
-      );
+      expect(mockConsoleError).toHaveBeenCalledWith(testError);
       expect(mockProcessExit).toHaveBeenCalledWith(1);
-    });
-
-    it("should handle errors in environment file reloading", async () => {
-      await devCommand();
-
-      // Get the environment watcher callback
-      const envCallback = mockWatcher.on.mock.calls.find(
-        (call) => call[0] === "all"
-      )[1];
-
-      // Make loadEnvironmentVariables throw an error
-      const testError = new Error("Env load failed");
-      (loadEnvironmentVariables as jest.Mock).mockImplementation(() => {
-        throw testError;
-      });
-
-      // Call the callback to simulate file change
-      envCallback("change", ".env");
-
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        "Error reloading .env:",
-        testError
-      );
     });
   });
 
@@ -317,7 +252,6 @@ describe("Dev Command", () => {
       sigintHandler();
 
       expect(mockChildProcess.kill).toHaveBeenCalledWith("SIGTERM");
-      expect(mockChokidarWatch).toHaveBeenCalled();
       expect(mockProcessExit).toHaveBeenCalledWith(0);
     });
 
@@ -450,25 +384,374 @@ describe("Dev Command", () => {
       expect(mockChildProcess.kill).toHaveBeenCalledWith("SIGKILL");
     });
 
-    it("should handle missing smartFsWatcher gracefully", async () => {
-      const originalReset = smartFsWatcher.reset;
-      const originalClose = smartFsWatcher.close;
-
-      (smartFsWatcher.reset as any) = undefined;
-      (smartFsWatcher.close as any) = undefined;
-
-      await devCommand();
-
-      expect(() => devCommand()).not.toThrow();
-
-      (smartFsWatcher.reset as any) = originalReset;
-      (smartFsWatcher.close as any) = originalClose;
-    });
-
     it("should handle killDevelopmentServerChildProcess when child is null", () => {
       (devCommand as any).child = null;
 
       expect(() => killDevelopmentServerChildProcess()).not.toThrow();
+    });
+  });
+
+  describe("TypeScript Types Missing Scenario", () => {
+    let mockStdoutWrite: jest.SpyInstance;
+    let mockStdinOnce: jest.SpyInstance;
+    let mockStdinPause: jest.SpyInstance;
+    let mockExecSync: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+
+      // Setup stdin/stdout mocks
+      mockStdoutWrite = jest
+        .spyOn(process.stdout, "write")
+        .mockImplementation();
+      mockStdinOnce = jest.spyOn(process.stdin, "once").mockImplementation();
+      mockStdinPause = jest.spyOn(process.stdin, "pause").mockImplementation();
+      mockExecSync = jest
+        .spyOn(require("child_process"), "execSync")
+        .mockImplementation();
+
+      // Default mocks
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+      (loadEnvironmentVariables as jest.Mock).mockReturnValue([".env"]);
+      (
+        portAndHostAllocator.getHostAndAvailablePort as jest.Mock
+      ).mockResolvedValue({
+        host: "0.0.0.0",
+        port: 3000,
+      });
+    });
+
+    describe("when base service types are missing", () => {
+      beforeEach(() => {
+        // Mock existsSync to return false for base.service.d.ts
+        (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
+          if (path.includes("base.service.d.ts")) {
+            return false;
+          }
+          return true; // app.ts exists
+        });
+      });
+
+      it("should warn user about missing base service types", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("y\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(sheu.warn).toHaveBeenCalledWith(
+          'Missing base services types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client'
+        );
+      });
+
+      it("should prompt user with Y/n question", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("y\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockStdoutWrite).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'Would you like to run "npx arkos prisma generate"? (Y/n):'
+          )
+        );
+      });
+
+      it("should execute prisma generate when user answers 'y'", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("y\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockConsoleInfo).toHaveBeenCalledWith(
+          "\nSyncing base service with @prisma/client..."
+        );
+        expect(mockExecSync).toHaveBeenCalledWith("npx arkos prisma generate");
+      });
+
+      it("should execute prisma generate when user answers 'Y' (uppercase)", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("Y\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockExecSync).toHaveBeenCalledWith("npx arkos prisma generate");
+      });
+
+      it("should execute prisma generate when user presses Enter (empty input)", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockExecSync).toHaveBeenCalledWith("npx arkos prisma generate");
+      });
+
+      it("should throw error when user answers 'n'", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("n\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockProcessExit).toHaveBeenCalledWith(1);
+        expect(mockConsoleError).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              'Missing BaseService types please run "npx arkos prisma generate"'
+            ),
+          })
+        );
+      });
+
+      it("should throw error when user answers 'N' (uppercase)", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("N\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockProcessExit).toHaveBeenCalledWith(1);
+      });
+
+      it("should throw error when user answers 'no'", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("no\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockProcessExit).toHaveBeenCalledWith(1);
+      });
+
+      it("should include documentation URL in error message", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("n\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockConsoleError).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message: expect.stringContaining(
+              "https://www.arkosjs.com/docs/cli/built-in-cli#typescript-types-generation"
+            ),
+          })
+        );
+      });
+
+      it("should pause stdin after receiving input", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("y\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockStdinPause).toHaveBeenCalled();
+      });
+
+      it("should trim and lowercase user input", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("  Y  \n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(mockExecSync).toHaveBeenCalledWith("npx arkos prisma generate");
+      });
+
+      it("should log empty line before syncing message", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("y\n"));
+          return process.stdin;
+        });
+
+        const mockConsoleLog = jest.spyOn(console, "log").mockImplementation();
+
+        await devCommand();
+
+        expect(mockConsoleLog).toHaveBeenCalledWith("");
+      });
+
+      it("should handle stdin data event correctly", async () => {
+        let dataCallback: ((data: Buffer) => void) | undefined;
+        mockStdinOnce.mockImplementation((event, callback) => {
+          dataCallback = callback;
+          return process.stdin;
+        });
+
+        const devPromise = devCommand();
+
+        // Wait for prompt to be set up
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(dataCallback).toBeDefined();
+        dataCallback!(Buffer.from("y\n"));
+
+        await devPromise;
+
+        expect(mockExecSync).toHaveBeenCalled();
+      });
+
+      it("should not check for base service types when using JavaScript", async () => {
+        (getUserFileExtension as jest.Mock).mockReturnValue("js");
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+        await devCommand();
+
+        expect(sheu.warn).not.toHaveBeenCalledWith(
+          expect.stringContaining("Missing base services types")
+        );
+        expect(mockStdoutWrite).not.toHaveBeenCalledWith(
+          expect.stringContaining("npx arkos prisma generate")
+        );
+      });
+
+      it("should skip type check when base service types exist", async () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+        await devCommand();
+
+        expect(sheu.warn).not.toHaveBeenCalled();
+        expect(mockStdoutWrite).not.toHaveBeenCalledWith(
+          expect.stringContaining("npx arkos prisma generate")
+        );
+      });
+
+      it("should handle execSync throwing an error", async () => {
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("y\n"));
+          return process.stdin;
+        });
+
+        const execError = new Error("Failed to execute prisma generate");
+        mockExecSync.mockImplementation(() => {
+          throw execError;
+        });
+
+        await devCommand();
+
+        expect(mockProcessExit).toHaveBeenCalledWith(1);
+        expect(mockConsoleError).toHaveBeenCalledWith(execError);
+      });
+
+      it("should handle multiple whitespace variations in user input", async () => {
+        const testCases = ["y\n", " y\n", "y \n", " y \n", "\ty\n", "y\t\n"];
+
+        for (const input of testCases) {
+          jest.clearAllMocks();
+          mockStdinOnce.mockImplementation((event, callback) => {
+            callback(Buffer.from(input));
+            return process.stdin;
+          });
+
+          await devCommand();
+
+          expect(mockExecSync).toHaveBeenCalledWith(
+            "npx arkos prisma generate"
+          );
+        }
+      });
+
+      it("should handle promise resolution correctly", async () => {
+        const promise = new Promise<boolean>((resolve) => {
+          mockStdinOnce.mockImplementation((event, callback) => {
+            callback(Buffer.from("y\n"));
+            resolve(true);
+            return process.stdin;
+          });
+        });
+
+        await devCommand();
+        const result = await promise;
+
+        expect(result).toBe(true);
+      });
+
+      it("should maintain correct execution order", async () => {
+        const executionOrder: string[] = [];
+
+        mockStdinOnce.mockImplementation((event, callback) => {
+          executionOrder.push("stdin-setup");
+          callback(Buffer.from("y\n"));
+          return process.stdin;
+        });
+
+        (sheu.warn as jest.Mock).mockImplementation(() => {
+          executionOrder.push("warn");
+        });
+
+        mockStdoutWrite.mockImplementation(() => {
+          executionOrder.push("prompt");
+        });
+
+        mockStdinPause.mockImplementation(() => {
+          executionOrder.push("pause");
+        });
+
+        mockExecSync.mockImplementation(() => {
+          executionOrder.push("execSync");
+        });
+
+        await devCommand();
+
+        expect(executionOrder).toEqual([
+          "warn",
+          "prompt",
+          "stdin-setup",
+          "pause",
+          "execSync",
+        ]);
+      });
+    });
+
+    describe("edge cases for type checking", () => {
+      it("should check correct path for base.service.d.ts file", async () => {
+        const expectedPath = path.resolve(
+          process.cwd(),
+          "node_modules/@arkosjs/types/base.service.d.ts"
+        );
+
+        (fs.existsSync as jest.Mock).mockImplementation((checkPath: string) => {
+          if (checkPath === expectedPath) {
+            return false;
+          }
+          return true;
+        });
+
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("n\n"));
+          return process.stdin;
+        });
+
+        await devCommand();
+
+        expect(fs.existsSync).toHaveBeenCalledWith(expectedPath);
+      });
+
+      it("should only check for TypeScript types when fileExt is 'ts'", async () => {
+        (getUserFileExtension as jest.Mock).mockReturnValue("tsx");
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+        await devCommand();
+
+        expect(sheu.warn).not.toHaveBeenCalled();
+      });
     });
   });
 });

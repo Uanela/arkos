@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
+import sheu from "./sheu";
 
 /**
  * Loads environment variables in a prioritized order
@@ -17,21 +18,28 @@ export function loadEnvironmentVariables() {
   let loadedEnvs: string[] = [];
 
   const envFiles = [
-    path.resolve(cwd, `.env.defaults`),
-    path.resolve(cwd, `.env.${ENV}`),
-    path.resolve(cwd, `.env.${ENV}.local`),
-    path.resolve(cwd, ".env.local"),
     path.resolve(cwd, ".env"),
+    path.resolve(cwd, ".env.local"),
+    ...(ENV
+      ? [
+          path.resolve(cwd, `.env.${ENV}`),
+          path.resolve(cwd, `.env.${ENV}.local`),
+        ]
+      : []),
   ];
 
   envFiles.forEach((filePath) => {
     if (fs.existsSync(filePath)) {
       if (process.env.ARKOS_BUILD === "true" && filePath.endsWith(".local"))
-        console.info(
-          `Skipping the local ${filePath.replace(cwd, "")} files in production`
+        sheu.warn(
+          `Skipping the local ${filePath.replace(cwd, "").replace("/", "")} files in production build`
         );
       else {
-        const result = dotenv.config({ path: filePath, override: true });
+        const result = dotenv.config({
+          path: filePath,
+          override: true,
+          quiet: true,
+        } as any);
 
         if (result.error) {
           console.warn(`Warning: Error loading ${filePath}`, result.error);
@@ -53,5 +61,5 @@ export function loadEnvironmentVariables() {
     );
   }
 
-  if (loadedEnvs) return loadedEnvs;
+  if (loadedEnvs) return loadedEnvs.reverse();
 }

@@ -96,7 +96,7 @@ describe("generateCreateDtoTemplate", () => {
       );
       expect(result).toContain("export default class CreateProductDto {");
       expect(result).toContain("@IsString()\n  name!: string;");
-      expect(result).toContain("@IsNumber({})\n  price!: number;");
+      expect(result).toContain("@IsNumber()\n  price!: number;");
       expect(result).toContain("@IsBoolean()\n  inStock!: boolean;");
       expect(result).toContain("@IsDate()\n  releaseDate!: Date;");
       expect(result).not.toContain("id:");
@@ -219,7 +219,7 @@ describe("generateCreateDtoTemplate", () => {
         modelName: { pascal: "File", camel: "file", kebab: "file" },
       });
 
-      expect(result).toContain("@IsNumber({})\n  size!: bigint;");
+      expect(result).toContain("@IsNumber()\n  size!: bigint;");
       expect(result).toContain("@IsObject()\n  metadata!: any;");
       expect(result).toContain("data!: Buffer;");
       expect(result).not.toContain("@IsBuffer");
@@ -395,10 +395,10 @@ describe("generateCreateDtoTemplate", () => {
       });
 
       expect(result).toContain(
-        "@IsArray()\n  @IsString(, { each: true })\n  tags!: string[];"
+        "@IsArray()\n  @IsString({ each: true })\n  tags!: string[];"
       );
       expect(result).toContain(
-        "@IsOptional()\n  @IsArray()\n  @IsNumber({}, { each: true })\n  scores?: number[];"
+        "@IsOptional()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
       );
     });
   });
@@ -707,7 +707,7 @@ describe("generateCreateDtoTemplate", () => {
       });
 
       expect(result).toContain("class ProductForCreateOrderDto {");
-      expect(result).toContain("@IsNumber({})\n  code!: number;");
+      expect(result).toContain("@IsNumber()\n  code!: number;");
     });
 
     it("should handle optional relations", () => {

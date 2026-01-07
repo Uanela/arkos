@@ -9,6 +9,8 @@ import { OpenApiConfig } from "./openapi-config";
 import { UploadConfig } from "./upload-config";
 import { BodyParserConfig } from "./body-parser-config";
 
+export type PathParams = string | RegExp | Array<string | RegExp>;
+
 /**
  * Handler function for HTTP methods that accepts route configuration and request handlers.
  *
@@ -16,10 +18,14 @@ import { BodyParserConfig } from "./body-parser-config";
  * @param {...(ArkosRequestHandler | ArkosErrorRequestHandler)[]} handlers - Request and error handlers for the route.
  * @returns {IRouter} The Express router instance.
  */
-type MethodHandler = (
-  config: ArkosRouteConfig,
-  ...handlers: (ArkosRequestHandler | ArkosErrorRequestHandler)[]
-) => IRouter;
+type MethodHandler<T> = (
+  config: ArkosRouteConfig | PathParams,
+  ...handlers: Array<
+    | ArkosRequestHandler
+    | ArkosErrorRequestHandler
+    | Array<ArkosRequestHandler | ArkosErrorRequestHandler>
+  >
+) => T;
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -45,43 +51,31 @@ type MethodHandler = (
  *
  * @see {@link ArkosRouteConfig} for configuration options
  */
-export interface IArkosRouter
-  extends Omit<
-    IRouter,
-    | "get"
-    | "post"
-    | "put"
-    | "patch"
-    | "delete"
-    | "options"
-    | "head"
-    | "trace"
-    | "all"
-  > {
+export interface IArkosRouter extends IRouter {
   /** GET method handler with route configuration support */
-  get: MethodHandler;
+  get: MethodHandler<this>;
   /** POST method handler with route configuration support */
-  post: MethodHandler;
+  post: MethodHandler<this>;
   /** PUT method handler with route configuration support */
-  put: MethodHandler;
+  put: MethodHandler<this>;
   /** PATCH method handler with route configuration support */
-  patch: MethodHandler;
+  patch: MethodHandler<this>;
   /** DELETE method handler with route configuration support */
-  delete: MethodHandler;
+  delete: MethodHandler<this>;
   /** OPTIONS method handler with route configuration support */
-  options: MethodHandler;
+  options: MethodHandler<this>;
   /** HEAD method handler with route configuration support */
-  head: MethodHandler;
-  /** TRACE method handler with route configuration support */
-  trace: MethodHandler;
+  head: MethodHandler<this>;
+  // /** TRACE method handler with route configuration support */
+  trace: MethodHandler<this>;
   /** ALL methods handler with route configuration support */
-  all: MethodHandler;
+  all: MethodHandler<this>;
 }
 
 /**
  * Configuration object for defining routes in Arkos.js.
  */
-export interface ArkosRouteConfig {
+export type ArkosRouteConfig = {
   /**
    * Disables the route by not mounting it internally.
    */
@@ -91,7 +85,7 @@ export interface ArkosRouteConfig {
    *
    * @example "/api/users/:id"
    */
-  path: string;
+  path: PathParams;
   /**
    * Authentication and authorization configuration.
    *
@@ -200,4 +194,4 @@ export interface ArkosRouteConfig {
      */
     uploads?: UploadConfig;
   };
-}
+};

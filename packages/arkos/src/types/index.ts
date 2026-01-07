@@ -217,10 +217,11 @@ export interface User {
 }
 
 export interface ArkosRequest<
-  Params extends Record<string, any> = any,
-  Body = any,
+  P extends Record<string, any> = any,
+  ResBody = any,
+  ReqBody = any,
   Query extends Record<string, any> = any,
-> extends Request<Params, any, Body, Query> {
+> extends Request<P, ResBody, ReqBody, Query> {
   /**
    * Authenticated user with additional fields
    */
@@ -254,7 +255,7 @@ export interface ArkosRequest<
   /**
    * Typed request body
    */
-  body: Body;
+  body: ReqBody;
 
   /**
    * Prisma query options (where, orderBy, select, etc.)
@@ -287,7 +288,25 @@ export interface ArkosRequest<
   modelName?: string;
 }
 
-export interface ArkosResponse extends Response {}
+export interface ArkosResponse<
+  ResBody = any,
+  Locals extends Record<string, any> = Record<string, any>,
+> extends Response<ResBody, Locals> {}
+
 export interface ArkosNextFunction extends NextFunction {}
-export interface ArkosRequestHandler extends RequestHandler {}
-export interface ArkosErrorRequestHandler extends ErrorRequestHandler {}
+
+export interface ArkosRequestHandler<
+  P extends Record<string, any> = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = qs.ParsedQs,
+  Locals extends Record<string, any> = Record<string, any>,
+> extends RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {}
+
+export interface ArkosErrorRequestHandler<
+  P extends Record<string, any> = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = qs.ParsedQs,
+  Locals extends Record<string, any> = Record<string, any>,
+> extends ErrorRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {}

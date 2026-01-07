@@ -5,8 +5,11 @@ import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.help
 import deepmerge from "../../../../utils/helpers/deepmerge.helper";
 import { fileUploadDefaultRestrictions } from "../../../file-upload/file-upload.service";
 
-export default function getFileUploadJsonSchemaPaths(arkosConfig: ArkosConfig) {
-  const paths: OpenAPIV3.PathsObject = {};
+export default function getFileUploadJsonSchemaPaths(
+  arkosConfig: ArkosConfig,
+  existingPaths: OpenAPIV3.PathsObject
+) {
+  const paths: OpenAPIV3.PathsObject = { ...existingPaths };
 
   if (!arkosConfig.fileUpload) return paths;
 
@@ -66,384 +69,525 @@ export default function getFileUploadJsonSchemaPaths(arkosConfig: ArkosConfig) {
     return false;
   };
 
+  // Find File - GET /{filePath*}
   if (!isFileUploadEndpointDisabled("findFile")) {
     const cleanBasePath = basePathname.endsWith("/")
       ? basePathname.slice(0, -1)
       : basePathname;
+    const pathname = `${cleanBasePath}/{filePath*}`;
 
-    paths[`${cleanBasePath}/{filePath*}`] = {
-      get: {
-        tags: ["File Upload"],
-        summary: "Retrieve uploaded file",
-        description: `Serves static files from the upload directory (${baseUploadDir}). This endpoint uses wildcard path matching to serve files from any subdirectory.`,
-        operationId: "findFile",
-        ...(shouldIncludeSecurity("View") && {
-          security: [{ BearerAuth: [] }],
-        }),
-        parameters: [
-          {
-            name: "filePath",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description:
-              "Path to the file including file type directory (e.g., images/photo.jpg, videos/clip.mp4)",
-          },
-        ],
-        responses: {
-          "200": {
-            description: "File retrieved successfully",
-            content: {
-              "application/octet-stream": {
-                schema: {
-                  type: "string",
-                  format: "binary",
-                },
+    if (!paths[pathname]) paths[pathname] = {};
+    const currentPath = paths[pathname]!.get;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "filePath",
+        in: "path",
+        required: true,
+        schema: { type: "string" },
+        description:
+          "Path to the file including file type directory (e.g., images/photo.jpg, videos/clip.mp4)",
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: ["File Upload", ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? "Retrieve uploaded file"
+          : currentPath?.summary,
+      description:
+        currentPath?.description === pathname || !currentPath?.description
+          ? `Serves static files from the upload directory (${baseUploadDir}). This endpoint uses wildcard path matching to serve files from any subdirectory.`
+          : currentPath?.description,
+      operationId:
+        currentPath?.operationId?.includes(pathname) ||
+        !currentPath?.operationId
+          ? "findFile"
+          : currentPath?.operationId,
+      ...(shouldIncludeSecurity("View") && {
+        security: [{ BearerAuth: [] }],
+      }),
+      parameters: mergedParameters,
+      responses: {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
+          description: "File retrieved successfully",
+          content: {
+            "application/octet-stream": {
+              schema: {
+                type: "string",
+                format: "binary",
               },
             },
           },
-          "404": {
-            description: "File not found",
-          },
-          ...(shouldIncludeSecurity("View") && {
-            "401": { description: "Authentication required" },
-            "403": { description: "Insufficient permissions to view files" },
-          }),
         },
+        "404": currentPath?.responses?.["404"] || {
+          description: "File not found",
+        },
+        ...(shouldIncludeSecurity("View") && {
+          "401": currentPath?.responses?.["401"] || {
+            description: "Authentication required",
+          },
+          "403": currentPath?.responses?.["403"] || {
+            description: "Insufficient permissions to view files",
+          },
+        }),
       },
     };
+
+    paths[pathname]!.get = { ...(currentPath || {}), ...defaultSpec };
   }
 
+  // Upload File - POST /{fileType}
   if (!isFileUploadEndpointDisabled("uploadFile")) {
     const cleanBasePath = basePathname.endsWith("/")
       ? basePathname.slice(0, -1)
       : basePathname;
+    const pathname = `${cleanBasePath}/{fileType}`;
 
-    paths[`${cleanBasePath}/{fileType}`] = {
-      post: {
-        tags: ["File Upload"],
-        summary: "Upload file(s)",
+    if (!paths[pathname]) paths[pathname] = {};
+    const currentPath = paths[pathname]!.post;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "fileType",
+        in: "path",
+        required: true,
+        schema: {
+          type: "string",
+          enum: ["images", "videos", "documents", "files"],
+        },
+        description: "Type of file being uploaded",
+      },
+      {
+        name: "format",
+        in: "query",
+        required: false,
+        schema: {
+          type: "string",
+          enum: ["jpeg", "jpg", "png", "webp", "gif", "avif"],
+        },
         description:
-          "Upload one or multiple files. Supports image processing options for image uploads.",
-        operationId: "uploadFile",
-        ...(shouldIncludeSecurity("Create") && {
-          security: [{ BearerAuth: [] }],
-        }),
-        parameters: [
-          {
-            name: "fileType",
-            in: "path",
-            required: true,
+          "Image format for conversion (only applicable for fileType=images)",
+      },
+      {
+        name: "width",
+        in: "query",
+        required: false,
+        schema: { type: "integer", minimum: 1 },
+        description:
+          "Target width for image resize (only applicable for fileType=images)",
+      },
+      {
+        name: "height",
+        in: "query",
+        required: false,
+        schema: { type: "integer", minimum: 1 },
+        description:
+          "Target height for image resize (only applicable for fileType=images)",
+      },
+      {
+        name: "resizeTo",
+        in: "query",
+        required: false,
+        schema: {
+          type: "string",
+          enum: ["cover", "contain", "fill", "inside", "outside"],
+        },
+        description: "Resize strategy (only applicable for fileType=images)",
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: ["File Upload", ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? "Upload file(s)"
+          : currentPath?.summary,
+      description:
+        currentPath?.description === pathname || !currentPath?.description
+          ? "Upload one or multiple files. Supports image processing options for image uploads."
+          : currentPath?.description,
+      operationId:
+        currentPath?.operationId?.includes(pathname) ||
+        !currentPath?.operationId
+          ? "uploadFile"
+          : currentPath?.operationId,
+      ...(shouldIncludeSecurity("Create") && {
+        security: [{ BearerAuth: [] }],
+      }),
+      parameters: mergedParameters,
+      requestBody: currentPath?.requestBody || {
+        required: true,
+        content: {
+          "multipart/form-data": {
             schema: {
-              type: "string",
-              enum: ["images", "videos", "documents", "files"],
+              type: "object",
+              properties: {
+                images: {
+                  type: "array",
+                  items: { type: "string", format: "binary" },
+                  description: getFileTypeDescription("images"),
+                },
+                videos: {
+                  type: "array",
+                  items: { type: "string", format: "binary" },
+                  description: getFileTypeDescription("videos"),
+                },
+                documents: {
+                  type: "array",
+                  items: { type: "string", format: "binary" },
+                  description: getFileTypeDescription("documents"),
+                },
+                files: {
+                  type: "array",
+                  items: { type: "string", format: "binary" },
+                  description: getFileTypeDescription("files"),
+                },
+              },
             },
-            description: "Type of file being uploaded",
           },
-          {
-            name: "format",
-            in: "query",
-            required: false,
-            schema: {
-              type: "string",
-              enum: ["jpeg", "jpg", "png", "webp", "gif", "avif"],
-            },
-            description:
-              "Image format for conversion (only applicable for fileType=images)",
-          },
-          {
-            name: "width",
-            in: "query",
-            required: false,
-            schema: { type: "integer", minimum: 1 },
-            description:
-              "Target width for image resize (only applicable for fileType=images)",
-          },
-          {
-            name: "height",
-            in: "query",
-            required: false,
-            schema: { type: "integer", minimum: 1 },
-            description:
-              "Target height for image resize (only applicable for fileType=images)",
-          },
-          {
-            name: "resizeTo",
-            in: "query",
-            required: false,
-            schema: {
-              type: "string",
-              enum: ["cover", "contain", "fill", "inside", "outside"],
-            },
-            description:
-              "Resize strategy (only applicable for fileType=images)",
-          },
-        ],
-        requestBody: {
-          required: true,
+        },
+      },
+      responses: {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
+          description: "File(s) uploaded successfully",
           content: {
-            "multipart/form-data": {
+            "application/json": {
               schema: {
                 type: "object",
                 properties: {
-                  images: {
-                    type: "array",
-                    items: { type: "string", format: "binary" },
-                    description: getFileTypeDescription("images"),
+                  success: { type: "boolean", example: true },
+                  data: {
+                    oneOf: [
+                      { type: "string", description: "URL of uploaded file" },
+                      {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "URLs of uploaded files",
+                      },
+                    ],
                   },
-                  videos: {
-                    type: "array",
-                    items: { type: "string", format: "binary" },
-                    description: getFileTypeDescription("videos"),
-                  },
-                  documents: {
-                    type: "array",
-                    items: { type: "string", format: "binary" },
-                    description: getFileTypeDescription("documents"),
-                  },
-                  files: {
-                    type: "array",
-                    items: { type: "string", format: "binary" },
-                    description: getFileTypeDescription("files"),
-                  },
+                  message: { type: "string" },
                 },
               },
             },
           },
         },
-        responses: {
-          "200": {
-            description: "File(s) uploaded successfully",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    success: { type: "boolean", example: true },
-                    data: {
-                      oneOf: [
-                        { type: "string", description: "URL of uploaded file" },
-                        {
-                          type: "array",
-                          items: { type: "string" },
-                          description: "URLs of uploaded files",
-                        },
-                      ],
-                    },
-                    message: { type: "string" },
-                  },
-                },
-              },
-            },
-          },
-          "400": {
-            description:
-              "Invalid file type, size limit exceeded, or no file uploaded",
-          },
-          ...(shouldIncludeSecurity("Create") && {
-            "401": { description: "Authentication required" },
-            "403": { description: "Insufficient permissions to upload files" },
-          }),
+        "400": currentPath?.responses?.["400"] || {
+          description:
+            "Invalid file type, size limit exceeded, or no file uploaded",
         },
+        ...(shouldIncludeSecurity("Create") && {
+          "401": currentPath?.responses?.["401"] || {
+            description: "Authentication required",
+          },
+          "403": currentPath?.responses?.["403"] || {
+            description: "Insufficient permissions to upload files",
+          },
+        }),
       },
     };
+
+    paths[pathname]!.post = { ...(currentPath || {}), ...defaultSpec };
   }
 
+  // Update File - PATCH /{fileType}/{fileName}
   if (!isFileUploadEndpointDisabled("updateFile")) {
     const cleanBasePath = basePathname.endsWith("/")
       ? basePathname.slice(0, -1)
       : basePathname;
+    const pathname = `${cleanBasePath}/{fileType}/{fileName}`;
 
-    paths[`${cleanBasePath}/{fileType}/{fileName}`] = {
-      ...(paths[`${cleanBasePath}/{fileType}/{fileName}`] || {}),
-      patch: {
-        tags: ["File Upload"],
-        summary: "Update existing file",
+    if (!paths[pathname]) paths[pathname] = {};
+    const currentPath = paths[pathname]!.patch;
+
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "fileType",
+        in: "path",
+        required: true,
+        schema: {
+          type: "string",
+          enum: ["images", "videos", "documents", "files"],
+        },
+        description: "Type of file being updated",
+      },
+      {
+        name: "fileName",
+        in: "path",
+        required: true,
+        schema: { type: "string" },
+        description: "Name of the file to update",
+      },
+      {
+        name: "format",
+        in: "query",
+        required: false,
+        schema: {
+          type: "string",
+          enum: ["jpeg", "jpg", "png", "webp", "gif", "avif"],
+        },
         description:
-          "Replace an existing file with a new one. Deletes the old file and uploads the new one.",
-        operationId: "updateFile",
-        ...(shouldIncludeSecurity("Update") && {
-          security: [{ BearerAuth: [] }],
-        }),
-        parameters: [
-          {
-            name: "fileType",
-            in: "path",
-            required: true,
+          "Image format for conversion (only applicable for fileType=images)",
+      },
+      {
+        name: "width",
+        in: "query",
+        required: false,
+        schema: { type: "integer", minimum: 1 },
+        description:
+          "Target width for image resize (only applicable for fileType=images)",
+      },
+      {
+        name: "height",
+        in: "query",
+        required: false,
+        schema: { type: "integer", minimum: 1 },
+        description:
+          "Target height for image resize (only applicable for fileType=images)",
+      },
+      {
+        name: "resizeTo",
+        in: "query",
+        required: false,
+        schema: {
+          type: "string",
+          enum: ["cover", "contain", "fill", "inside", "outside"],
+        },
+        description: "Resize strategy (only applicable for fileType=images)",
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: ["File Upload", ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? "Update existing file"
+          : currentPath?.summary,
+      description:
+        currentPath?.description === pathname || !currentPath?.description
+          ? "Replace an existing file with a new one. Deletes the old file and uploads the new one."
+          : currentPath?.description,
+      operationId:
+        currentPath?.operationId?.includes(pathname) ||
+        !currentPath?.operationId
+          ? "updateFile"
+          : currentPath?.operationId,
+      ...(shouldIncludeSecurity("Update") && {
+        security: [{ BearerAuth: [] }],
+      }),
+      parameters: mergedParameters,
+      requestBody: currentPath?.requestBody || {
+        required: true,
+        content: {
+          "multipart/form-data": {
             schema: {
-              type: "string",
-              enum: ["images", "videos", "documents", "files"],
+              type: "object",
+              properties: {
+                images: {
+                  type: "array",
+                  items: { type: "string", format: "binary" },
+                  description: getFileTypeDescription("images"),
+                },
+                videos: {
+                  type: "array",
+                  items: { type: "string", format: "binary" },
+                  description: getFileTypeDescription("videos"),
+                },
+                documents: {
+                  type: "array",
+                  items: { type: "string", format: "binary" },
+                  description: getFileTypeDescription("documents"),
+                },
+                files: {
+                  type: "array",
+                  items: { type: "string", format: "binary" },
+                  description: getFileTypeDescription("files"),
+                },
+              },
             },
-            description: "Type of file being updated",
           },
-          {
-            name: "fileName",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description: "Name of the file to update",
-          },
-          {
-            name: "format",
-            in: "query",
-            required: false,
-            schema: {
-              type: "string",
-              enum: ["jpeg", "jpg", "png", "webp", "gif", "avif"],
-            },
-            description:
-              "Image format for conversion (only applicable for fileType=images)",
-          },
-          {
-            name: "width",
-            in: "query",
-            required: false,
-            schema: { type: "integer", minimum: 1 },
-            description:
-              "Target width for image resize (only applicable for fileType=images)",
-          },
-          {
-            name: "height",
-            in: "query",
-            required: false,
-            schema: { type: "integer", minimum: 1 },
-            description:
-              "Target height for image resize (only applicable for fileType=images)",
-          },
-          {
-            name: "resizeTo",
-            in: "query",
-            required: false,
-            schema: {
-              type: "string",
-              enum: ["cover", "contain", "fill", "inside", "outside"],
-            },
-            description:
-              "Resize strategy (only applicable for fileType=images)",
-          },
-        ],
-        requestBody: {
-          required: true,
+        },
+      },
+      responses: {
+        ...(currentPath?.responses || {}),
+        "200": currentPath?.responses?.["200"] || {
+          description: "File updated successfully",
           content: {
-            "multipart/form-data": {
+            "application/json": {
               schema: {
                 type: "object",
                 properties: {
-                  images: {
-                    type: "array",
-                    items: { type: "string", format: "binary" },
-                    description: getFileTypeDescription("images"),
+                  success: { type: "boolean", example: true },
+                  data: {
+                    oneOf: [
+                      { type: "string", description: "URL of updated file" },
+                      {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "URLs of updated files",
+                      },
+                    ],
                   },
-                  videos: {
-                    type: "array",
-                    items: { type: "string", format: "binary" },
-                    description: getFileTypeDescription("videos"),
-                  },
-                  documents: {
-                    type: "array",
-                    items: { type: "string", format: "binary" },
-                    description: getFileTypeDescription("documents"),
-                  },
-                  files: {
-                    type: "array",
-                    items: { type: "string", format: "binary" },
-                    description: getFileTypeDescription("files"),
-                  },
+                  message: { type: "string" },
                 },
               },
             },
           },
         },
-        responses: {
-          "200": {
-            description: "File updated successfully",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    success: { type: "boolean", example: true },
-                    data: {
-                      oneOf: [
-                        { type: "string", description: "URL of updated file" },
-                        {
-                          type: "array",
-                          items: { type: "string" },
-                          description: "URLs of updated files",
-                        },
-                      ],
-                    },
-                    message: { type: "string" },
-                  },
-                },
-              },
-            },
-          },
-          "400": {
-            description:
-              "Invalid file type, size limit exceeded, or no file uploaded",
-          },
-          "404": {
-            description: "Original file not found",
-          },
-          ...(shouldIncludeSecurity("Update") && {
-            "401": { description: "Authentication required" },
-            "403": { description: "Insufficient permissions to update files" },
-          }),
+        "400": currentPath?.responses?.["400"] || {
+          description:
+            "Invalid file type, size limit exceeded, or no file uploaded",
         },
+        "404": currentPath?.responses?.["404"] || {
+          description: "Original file not found",
+        },
+        ...(shouldIncludeSecurity("Update") && {
+          "401": currentPath?.responses?.["401"] || {
+            description: "Authentication required",
+          },
+          "403": currentPath?.responses?.["403"] || {
+            description: "Insufficient permissions to update files",
+          },
+        }),
       },
     };
+
+    paths[pathname]!.patch = { ...(currentPath || {}), ...defaultSpec };
   }
 
+  // Delete File - DELETE /{fileType}/{fileName}
   if (!isFileUploadEndpointDisabled("deleteFile")) {
     const cleanBasePath = basePathname.endsWith("/")
       ? basePathname.slice(0, -1)
       : basePathname;
+    const pathname = `${cleanBasePath}/{fileType}/{fileName}`;
 
-    if (!paths[`${cleanBasePath}/{fileType}/{fileName}`]) {
-      paths[`${cleanBasePath}/{fileType}/{fileName}`] = {};
-    }
+    if (!paths[pathname]) paths[pathname] = {};
+    const currentPath = paths[pathname]!.delete;
 
-    paths[`${cleanBasePath}/{fileType}/{fileName}`]!.delete = {
-      tags: ["File Upload"],
-      summary: "Delete file",
-      description: "Delete an uploaded file from the server",
-      operationId: "deleteFile",
+    const defaultParameters: OpenAPIV3.ParameterObject[] = [
+      {
+        name: "fileType",
+        in: "path",
+        required: true,
+        schema: {
+          type: "string",
+          enum: ["images", "videos", "documents", "files"],
+        },
+        description: "Type of file being deleted",
+      },
+      {
+        name: "fileName",
+        in: "path",
+        required: true,
+        schema: { type: "string" },
+        description: "Name of the file to delete",
+      },
+    ];
+
+    const existingParams =
+      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
+    const existingParamKeys = new Set(
+      existingParams.map((p) => `${p.in}-${p.name}`)
+    );
+
+    const mergedParameters = [
+      ...existingParams,
+      ...defaultParameters.filter(
+        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
+      ),
+    ];
+
+    const defaultSpec = {
+      tags: ["File Upload", ...(currentPath?.tags || [])].filter(
+        (tag) => tag !== "Defaults"
+      ),
+      summary:
+        currentPath?.summary === pathname || !currentPath?.summary
+          ? "Delete file"
+          : currentPath?.summary,
+      description:
+        currentPath?.description === pathname || !currentPath?.description
+          ? "Delete an uploaded file from the server"
+          : currentPath?.description,
+      operationId:
+        currentPath?.operationId?.includes(pathname) ||
+        !currentPath?.operationId
+          ? "deleteFile"
+          : currentPath?.operationId,
       ...(shouldIncludeSecurity("Delete") && {
         security: [{ BearerAuth: [] }],
       }),
-      parameters: [
-        {
-          name: "fileType",
-          in: "path",
-          required: true,
-          schema: {
-            type: "string",
-            enum: ["images", "videos", "documents", "files"],
-          },
-          description: "Type of file being deleted",
-        },
-        {
-          name: "fileName",
-          in: "path",
-          required: true,
-          schema: { type: "string" },
-          description: "Name of the file to delete",
-        },
-      ],
+      parameters: mergedParameters,
       responses: {
-        "204": {
+        ...(currentPath?.responses || {}),
+        "204": currentPath?.responses?.["204"] || {
           description: "File deleted successfully",
         },
-        "404": {
+        "404": currentPath?.responses?.["404"] || {
           description: "File not found",
         },
         ...(shouldIncludeSecurity("Delete") && {
-          "401": { description: "Authentication required" },
-          "403": { description: "Insufficient permissions to delete files" },
+          "401": currentPath?.responses?.["401"] || {
+            description: "Authentication required",
+          },
+          "403": currentPath?.responses?.["403"] || {
+            description: "Insufficient permissions to delete files",
+          },
         }),
       },
     };
+
+    paths[pathname]!.delete = { ...(currentPath || {}), ...defaultSpec };
   }
 
   return paths;

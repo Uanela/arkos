@@ -3,8 +3,8 @@ import fs from "fs";
 import { ChildProcess, spawn } from "child_process";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { fullCleanCwd } from "../helpers/fs.helpers";
-import portAndHostAllocator from "../features/port-and-host-allocator";
 import watermarkStamper from "./utils/watermark-stamper";
+import sheu from "../sheu";
 
 interface StartOptions {
   port?: string;
@@ -17,9 +17,8 @@ let envFiles: string[] | undefined;
 /**
  * Production start command for the arkos CLI
  */
-export async function startCommand(options: StartOptions = {}) {
-  if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
-    process.env.NODE_ENV = "production";
+export function startCommand(options: StartOptions = {}) {
+  if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
   process.env.ARKOS_BUILD = "true";
 
   envFiles = loadEnvironmentVariables();
@@ -30,8 +29,8 @@ export async function startCommand(options: StartOptions = {}) {
     const entryPoint = path.join(process.cwd(), ".build", "src", "app.js");
 
     if (!fs.existsSync(path.join(entryPoint))) {
-      console.error(
-        `❌ Could not find built application entry point at ${fullCleanCwd(entryPoint)}`
+      sheu.error(
+        `Could not find built application entry point at ${fullCleanCwd(entryPoint)}`
       );
       process.exit(1);
     }
@@ -45,6 +44,24 @@ export async function startCommand(options: StartOptions = {}) {
       CLI: "false",
     };
 
+    env.__HOST =
+      env?.CLI_HOST ||
+      // config?.host ||
+      env?.HOST ||
+      (env.ARKOS_BUILD !== "true" ? "0.0.0.0" : "127.0.0.1");
+
+    env.__PORT =
+      env?.CLI_PORT ||
+      // || config?.port
+      env?.PORT ||
+      "8000";
+
+    watermarkStamper.stamp({
+      envFiles,
+      port: env.__PORT,
+      host: env.__HOST,
+    });
+
     child = spawn("node", [entryPoint], {
       stdio: "inherit",
       env,
@@ -56,20 +73,9 @@ export async function startCommand(options: StartOptions = {}) {
 
       process.exit(0);
     });
-
-    const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
-      env,
-      {
-        logWarning: true,
-      }
-    );
-
-    watermarkStamper.stamp({
-      envFiles,
-      ...hostAndPort,
-    });
   } catch (error) {
-    console.error("❌ Production server failed to start:", error);
+    sheu.error("Production server failed to start:");
+    console.error(error);
     process.exit(1);
   }
 }

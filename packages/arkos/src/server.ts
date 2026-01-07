@@ -4,7 +4,6 @@ import { Express } from "express";
 import { bootstrap } from "./app";
 import http from "http";
 import sheu from "./utils/sheu";
-import { capitalize } from "./utils/helpers/text.helpers";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";
 import { killDevelopmentServerChildProcess } from "./utils/cli/dev";
 import { killServerChildProcess } from "./utils/cli/utils/cli.helpers";
@@ -27,12 +26,13 @@ export function getArkosConfig(): ArkosConfig {
 process.on("uncaughtException", (err) => {
   if (err.message.includes("EPIPE")) return;
 
-  sheu.error("\nUNCAUGHT EXCEPTION! SHUTTING DOWN...\n", {
-    timestamp: true,
-    bold: true,
-  });
+  if (process.env.CLI !== "true")
+    sheu.error("UNCAUGHT EXCEPTION! SHUTTING DOWN...\n", {
+      timestamp: true,
+      bold: true,
+    });
 
-  console.error(err.name, err.message);
+  // console.error(err.name, err.message);
   console.error(err);
   process.exit(1);
 });
@@ -59,10 +59,7 @@ async function initApp(
   try {
     const arkosConfig = getArkosConfig();
 
-    const portAndHost = await portAndHostAllocator.getHostAndAvailablePort(
-      process.env,
-      arkosConfig
-    );
+    const portAndHost = { port: process.env.__PORT, host: process.env.__HOST! };
 
     let networkHost = portAndHostAllocator.getFirstNonLocalIp();
 
@@ -92,7 +89,7 @@ async function initApp(
           sheu.ready(
             message.replace(
               "{{server}}",
-              `${capitalize(process.env.NODE_ENV || "development")} server`
+              `${process.env.ARKOS_BUILD === "true" ? "Production" : "Development"} server`
             )
           );
           if (networkHost && portAndHost.host === "0.0.0.0")
@@ -131,15 +128,18 @@ async function initApp(
 }
 
 process.on("unhandledRejection", (err: AppError) => {
-  sheu.error("\nUNHANDLED REJECTION! SHUTTING DOWN...\n", {
-    timestamp: true,
-    bold: true,
-  });
-  console.error(err.name, err.message);
+  if (process.env.CLI !== "true")
+    sheu.error("UNHANDLED REJECTION! SHUTTING DOWN...\n", {
+      timestamp: true,
+      bold: true,
+    });
+  // console.error(err.name, err.message);
   console.error(err);
-  server?.close(() => {
-    process.exit(1);
-  });
+  if (server?.close)
+    server?.close(() => {
+      process.exit(1);
+    });
+  else process.exit(1);
 });
 
 /**
