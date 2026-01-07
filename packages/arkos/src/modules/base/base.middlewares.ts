@@ -19,6 +19,7 @@ import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.help
 import { ArkosRouteConfig } from "../../utils/arkos-router/types";
 import { capitalize } from "../../utils/helpers/text.helpers";
 import { isClass, isZodSchema } from "../../utils/dynamic-loader";
+import { pascalCase } from "../../exports/utils";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -343,11 +344,22 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         if (strictValidation && !validator && reqInput)
           throw notAllowedInputError;
         if (validator)
-          req[key] = await validatorFn(
-            validator,
-            req[key],
-            arkosConfig.validation?.validationOptions
-          );
+          try {
+            req[key] = await validatorFn(
+              validator,
+              req[key],
+              arkosConfig.validation?.validationOptions
+            );
+          } catch (err: any) {
+            throw new AppError(
+              `Invalid request ${key}`,
+              400,
+              `InvalidRequest${pascalCase(key)}`,
+              (err &&
+                (validationConfig?.resolver === "zod" ? err.format() : err)) ||
+                {}
+            );
+          }
       }
 
       next();
