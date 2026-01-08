@@ -26,7 +26,6 @@ export async function devCommand(options: DevOptions = {}) {
 
   try {
     const { port, host } = options;
-    let isRestarting = false;
 
     const fileExt = getUserFileExtension();
     const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
@@ -120,9 +119,8 @@ export async function devCommand(options: DevOptions = {}) {
         });
 
         child.on("exit", (code, signal) => {
-          if (!isRestarting && signal !== "SIGTERM" && signal !== "SIGINT") {
-            console.info(`Server exited with code ${code}, restarting...`);
-            startServer();
+          if (signal !== "SIGTERM" && signal !== "SIGINT") {
+            console.info(`Server exited with code ${code}`);
           }
         });
       }
