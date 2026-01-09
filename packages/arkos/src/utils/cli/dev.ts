@@ -26,7 +26,6 @@ export async function devCommand(options: DevOptions = {}) {
 
   try {
     const { port, host } = options;
-    let isRestarting = false;
 
     const fileExt = getUserFileExtension();
     const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
