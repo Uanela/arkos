@@ -2,6 +2,7 @@ import arkos from "arkos";
 import { getHandlerErrors, initializeASTs } from "./utils/ast-handler";
 import { AppError } from "arkos/error-handler";
 
+<<<<<<< HEAD
 (async () => {
   console.time("ast");
   await initializeASTs();
@@ -37,3 +38,19 @@ import { AppError } from "arkos/error-handler";
     // },
   });
 })();
+=======
+// console.log(process.env.MY_VAR);
+arkos.init({
+  // a,
+  // configureApp: async (app) => {
+  //   app.use((req, res, next) => {
+  //     console.log(req);
+  //     next();
+  //   });
+  //   return app;
+  // },
+});
+// console.log(a + 2);
+
+const a: any = 1;
+>>>>>>> db6561f579e4ae56191617414e3552e201540f41
