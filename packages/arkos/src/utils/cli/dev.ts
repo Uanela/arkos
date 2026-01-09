@@ -117,12 +117,6 @@ export async function devCommand(options: DevOptions = {}) {
         child.on("error", (error) => {
           console.error("Failed to start server:", error);
         });
-
-        child.on("exit", (code, signal) => {
-          if (signal !== "SIGTERM" && signal !== "SIGINT") {
-            console.info(`Server exited with code ${code}`);
-          }
-        });
       }
     };
 

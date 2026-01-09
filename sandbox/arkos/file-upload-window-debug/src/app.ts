@@ -53,4 +53,7 @@ arkos.init({
 // console.log(a + 2);
 
 const a: any = 1;
+<<<<<<< HEAD
 >>>>>>> db6561f579e4ae56191617414e3552e201540f41
+=======
+>>>>>>> fdc1bc43f6500be704324fc59c677cc90332d66b

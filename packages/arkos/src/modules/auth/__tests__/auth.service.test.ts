@@ -690,6 +690,30 @@ describe("AuthService", () => {
       expect(await authService.getAuthenticatedUser(mockReq)).toBe(null);
     });
 
+    it("should use cookies even if authorization starts with Bearer but there is no token", async () => {
+      // Setup - No token in request
+      mockReq = {
+        headers: { authorization: "Bearer " },
+        cookies: { arkos_access_token: "token-123" },
+      };
+
+      const decodedToken = { id: "user-123", iat: 1617123456 };
+      (authService.verifyJwtToken as any) = jest
+        .fn()
+        .mockResolvedValue(decodedToken);
+
+      const mockUser = { id: "user-123", username: "testuser" };
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+
+      // Execute
+      const result = await authService.getAuthenticatedUser(mockReq);
+
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: "user-123" },
+      });
+      expect(result).toEqual(mockUser);
+    });
+
     it("should extract token from Authorization header", async () => {
       // Setup
       const token = "bearer-token-123";

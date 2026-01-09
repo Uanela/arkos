@@ -451,10 +451,16 @@ export class AuthService {
 
     if (
       req?.headers?.authorization &&
-      req?.headers?.authorization.startsWith("Bearer")
-    ) {
+      req?.headers?.authorization.startsWith("Bearer") &&
+      req?.headers?.authorization.split?.(" ")?.[1]
+    )
       token = req?.headers?.authorization.split(" ")[1];
-    } else if (req?.cookies?.arkos_access_token !== "no-token" && req.cookies) {
+
+    if (
+      !token &&
+      req?.cookies?.arkos_access_token !== "no-token" &&
+      req.cookies
+    ) {
       token = req?.cookies?.arkos_access_token;
     }
 
