@@ -17,6 +17,7 @@ import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/clas
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 import uploadManager from "./utils/helpers/upload-manager";
 import { getUserFileExtension } from "../helpers/fs.helpers";
+import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -275,6 +276,8 @@ export function generateOpenAPIFromApp(app: any) {
     }
 
     delete convertedOpenAPI.parameters;
+    const hasUploadFields =
+      Object.keys(config?.experimental?.uploads || {}).length > 0;
 
     (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${path}`,
@@ -286,11 +289,25 @@ export function generateOpenAPIFromApp(app: any) {
         config?.validation &&
         config?.validation?.body && {
           requestBody: {
-            content: {
-              "application/json": {
-                schema: validatorToJsonSchema(config?.validation?.body as any),
-              },
-            },
+            content: (() => {
+              const schema = validatorToJsonSchema(
+                config?.validation?.body as any
+              );
+
+              return {
+                "application/json": {
+                  schema,
+                },
+                ...(hasUploadFields && {
+                  "multipart/form-data": {
+                    schema: arkosRouterOpenApiManager.addUploadFields(
+                      config.experimental?.uploads!,
+                      schema
+                    ),
+                  },
+                }),
+              };
+            })(),
           },
         }),
       ...convertedOpenAPI,

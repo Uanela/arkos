@@ -2,11 +2,7 @@ import { IRouter } from "express";
 import { ZodSchema } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
-import {
-  AccessControlConfig,
-  AccessControlRules,
-  DetailedAccessControlRule,
-} from "../../../types/auth";
+import { AccessControlConfig } from "../../../types/auth";
 import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../../types";
 import compression from "compression";
 import { OpenApiConfig } from "./openapi-config";
