@@ -241,6 +241,15 @@ generate
   )
   .action(generateCommand.queryDto);
 
+generate
+  .command("model")
+  .alias("m")
+  .description("Generate a new prisma model")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
+  .option("-p, --path <path>", "Custom path for prisma model", "prisma/schema")
+  .action(generateCommand.prismaModel);
+
 program
   .command("prisma")
   .command("generate")

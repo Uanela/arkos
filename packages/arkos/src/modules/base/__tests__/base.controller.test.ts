@@ -221,6 +221,7 @@ describe("BaseController", () => {
             isRelation: true,
             isOptional: false,
             attributes: [],
+            rawLine: "",
           },
         ],
         list: [],

@@ -7,6 +7,7 @@ import { generateServiceTemplate } from "./template-generator/templates/service-
 import generateHooksTemplate from "./template-generator/templates/hooks-template";
 import classValidatorDtoGenerator from "./template-generator/templates/class-validator-dto-generator";
 import zodSchemaGenerator from "./template-generator/templates/zod-schema-generator";
+import prismaSchemaParser from "../../prisma/prisma-schema-parser";
 
 interface ModelName {
   pascal: string;
@@ -63,6 +64,9 @@ export function generateTemplate(
       return classValidatorDtoGenerator.generateBaseDto(options);
     case "query-dto":
       return classValidatorDtoGenerator.generateQueryDto(options);
+
+    case "prisma-model":
+      return prismaSchemaParser.generatePrismaModel(options);
 
     default:
       throw new Error(`Unknown template type: ${type}`);

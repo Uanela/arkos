@@ -27,12 +27,13 @@ interface GenerateOptions {
 
 interface GenerateConfig {
   templateName: string;
-  fileSuffix: string;
+  fileSuffix?: string;
   customValidation?: (modelName: string) => void;
   customImports?: (names: any) => any;
   customPath?: string;
   prefix?: string;
-  allowedModules: string[];
+  allowedModules: string[] | "*";
+  ext?: string;
 }
 
 const generateFile = async (
@@ -48,8 +49,12 @@ const generateFile = async (
 
   if (!modelName?.trim()) throw new Error("Module name is required!");
 
-  const isAllowedModule = config.allowedModules.includes(kebabCase(modelName));
-  const isKnowModule = config.allowedModules.includes(kebabCase(modelName));
+  const isAllowedModule =
+    config.allowedModules === "*" ||
+    config.allowedModules.includes(kebabCase(modelName));
+  const isKnowModule =
+    config.allowedModules === "*" ||
+    config.allowedModules.includes(kebabCase(modelName));
 
   if (!isKnowModule)
     throw new Error(
@@ -70,7 +75,7 @@ const generateFile = async (
     kebab: kebabCase(modelName),
   };
 
-  const ext = getUserFileExtension();
+  const ext = config.ext || getUserFileExtension();
 
   const resolvedPath = (config.customPath || customPath).replaceAll(
     "{{module-name}}",
@@ -79,9 +84,13 @@ const generateFile = async (
 
   const modulePath = path.join(process.cwd(), resolvedPath);
 
+  function getSuffix() {
+    return config.fileSuffix ? `.${config.fileSuffix}` : "";
+  }
+
   const fileName = config.prefix
-    ? `${config.prefix}${names.kebab}.${config.fileSuffix}.${ext}`
-    : `${names.kebab}.${config.fileSuffix}.${ext}`;
+    ? `${config.prefix}${names.kebab}${getSuffix()}.${ext}`
+    : `${names.kebab}${getSuffix()}.${ext}`;
 
   const filePath = path.join(modulePath, fileName);
 
@@ -102,13 +111,13 @@ const generateFile = async (
     const content = generateTemplate(config.templateName, templateData);
     if (fs.existsSync(filePath))
       throw new Error(
-        `${capitalize(humamReadableTemplateName.toLowerCase())} for ${names.kebab.replace("-", "")} already exists.`
+        `${capitalize(humamReadableTemplateName.toLowerCase())} for ${names.kebab.replace("-", " ")} already exists.`
       );
     fs.writeFileSync(filePath, content);
 
     console.info("");
     sheu.done(
-      `${humamReadableTemplateName} for ${names.kebab.replace("-", "")} generated under ${fullCleanCwd(filePath)}`
+      `${humamReadableTemplateName} for ${names.kebab.replace("-", " ")} generated under ${fullCleanCwd(filePath)}`
     );
   } catch (err: any) {
     console.info("");
@@ -263,6 +272,14 @@ export const generateCommand = {
       templateName: "query-options",
       fileSuffix: "query",
       allowedModules: knownModules,
+    });
+  },
+
+  prismaModel: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "prisma-model",
+      allowedModules: "*",
+      ext: "prisma",
     });
   },
 };
