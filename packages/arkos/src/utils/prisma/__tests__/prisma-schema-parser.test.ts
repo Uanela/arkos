@@ -138,6 +138,7 @@ describe("PrismaSchemaParser", () => {
         isId: true,
         isUnique: false,
         attributes: ["@id", "@default(autoincrement())"],
+        rawLine: "id    Int    @id @default(autoincrement())",
       });
 
       // Check email field
@@ -154,6 +155,7 @@ describe("PrismaSchemaParser", () => {
         isId: false,
         isUnique: true,
         attributes: ["@unique"],
+        rawLine: "email String @unique",
       });
 
       // Check name field (optional)
@@ -1389,6 +1391,259 @@ describe("PrismaSchemaParser", () => {
         // Restore
         parser.models = originalModels;
       });
+    });
+  });
+
+  describe("generatePrismaModel()", () => {
+    it("should throw error when modelName is not provided", () => {
+      expect(() => {
+        parser.generatePrismaModel({} as any);
+      }).toThrow("Model name is required for Prisma model template");
+    });
+
+    it("should throw error when no models found in schema", () => {
+      mockGetPrismaSchemasContent.mockReturnValue("");
+      parser.parse({ override: true });
+
+      expect(() => {
+        parser.generatePrismaModel({
+          modelName: { pascal: "Test", camel: "test", kebab: "test" },
+        });
+      }).toThrow("No models found in Prisma schema for reference.");
+    });
+
+    it("should generate model with only fields common to all models", () => {
+      const schemaContent = `
+      model User {
+        id Int @id @default(autoincrement())
+        email String @unique
+        createdAt DateTime @default(now())
+        name String?
+      }
+      
+      model Post {
+        id Int @id @default(autoincrement())
+        title String
+        createdAt DateTime @default(now())
+        published Boolean @default(false)
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+      parser.parse({ override: true });
+
+      const result = parser.generatePrismaModel({
+        modelName: { pascal: "Combined", camel: "combined", kebab: "combined" },
+      });
+
+      expect(result).toContain("model Combined {");
+      // Should contain fields that exist in BOTH models
+      expect(result).toContain("id Int @id @default(autoincrement())");
+      expect(result).toContain("createdAt DateTime @default(now())");
+      // Should NOT contain fields unique to one model
+      expect(result).not.toContain("email String @unique");
+      expect(result).not.toContain("name String?");
+      expect(result).not.toContain("title String");
+      expect(result).not.toContain("published Boolean @default(false)");
+    });
+
+    it("should return only common fields across multiple models", () => {
+      const schemaContent = `
+      model User {
+        id Int @id @default(autoincrement())
+        createdAt DateTime @default(now())
+        updatedAt DateTime @updatedAt
+        email String @unique
+      }
+      
+      model Post {
+        id Int @id @default(autoincrement())
+        createdAt DateTime @default(now())
+        updatedAt DateTime @updatedAt
+        title String
+      }
+      
+      model Comment {
+        id Int @id @default(autoincrement())
+        createdAt DateTime @default(now())
+        updatedAt DateTime @updatedAt
+        content String
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+      parser.parse({ override: true });
+
+      const result = parser.generatePrismaModel({
+        modelName: { pascal: "Combined", camel: "combined", kebab: "combined" },
+      });
+
+      // Count occurrences - should only have common fields
+      expect(result).toContain("id Int @id @default(autoincrement())");
+      expect(result).toContain("createdAt DateTime @default(now())");
+      expect(result).toContain("updatedAt DateTime @updatedAt");
+
+      // Should NOT contain unique fields
+      expect(result).not.toContain("email");
+      expect(result).not.toContain("title");
+      expect(result).not.toContain("content");
+    });
+
+    it("should preserve field attributes and formatting from rawLine", () => {
+      const schemaContent = `
+      model User {
+        id Int @id @default(autoincrement())
+        email String @unique @db.VarChar(255)
+      }
+      
+      model Post {
+        id Int @id @default(autoincrement())
+        title String
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+      parser.parse({ override: true });
+
+      const result = parser.generatePrismaModel({
+        modelName: { pascal: "Test", camel: "test", kebab: "test" },
+      });
+
+      // Should only have the common 'id' field
+      expect(result).toContain("id Int @id @default(autoincrement())");
+      expect(result).not.toContain("email");
+      expect(result).not.toContain("title");
+    });
+
+    it("should handle models with relations only if common", () => {
+      const schemaContent = `
+      model User {
+        id Int @id
+        posts Post[]
+        createdAt DateTime @default(now())
+        @@map("user")
+      }
+      
+      model Post {
+        id Int @id
+        authorId Int
+        createdAt DateTime @default(now())
+        @@map("post")
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+      parser.parse({ override: true });
+
+      const result = parser.generatePrismaModel({
+        modelName: {
+          pascal: "CombinedMobile",
+          camel: "combinedMobile",
+          kebab: "combined-mobile",
+        },
+      });
+
+      // Should only have common fields
+      expect(result).toContain("id Int @id");
+      expect(result).toContain("createdAt DateTime @default(now())");
+      expect(result).toContain('@@map("combined-mobile")');
+      expect(result).not.toContain("posts Post[]");
+      expect(result).not.toContain("authorId");
+    });
+
+    it("should use model name in pascal case", () => {
+      const schemaContent = `
+      model User {
+        id Int @id
+      }
+      
+      model Post {
+        id Int @id
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+      parser.parse({ override: true });
+
+      const result = parser.generatePrismaModel({
+        modelName: {
+          pascal: "MyCustomModel",
+          camel: "myCustomModel",
+          kebab: "my-custom-model",
+        },
+      });
+
+      expect(result).toContain("model MyCustomModel {");
+    });
+
+    it("should return empty model body when models have no common fields", () => {
+      const schemaContent = `
+      model User {
+        id Int @id
+        email String @unique
+      }
+      
+      model Post {
+        postId Int @id
+        title String
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+      parser.parse({ override: true });
+
+      const result = parser.generatePrismaModel({
+        modelName: { pascal: "Test", camel: "test", kebab: "test" },
+      });
+
+      expect(result).toContain("model Test {");
+      expect(result).not.toContain("id Int");
+      expect(result).not.toContain("email");
+      expect(result).not.toContain("postId");
+      expect(result).not.toContain("title");
+    });
+
+    it("should work with single model by returning all its fields", () => {
+      const schemaContent = `
+      model User {
+        id Int @id
+        email String @unique
+        name String?
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+      parser.parse({ override: true });
+
+      const result = parser.generatePrismaModel({
+        modelName: { pascal: "Test", camel: "test", kebab: "test" },
+      });
+
+      expect(result).toContain("model Test {");
+      expect(result).toContain("id Int @id");
+      expect(result).toContain("email String @unique");
+      expect(result).toContain("name String?");
+    });
+
+    it("should filter out fields without rawLine", () => {
+      const schemaContent = `
+      model User {
+        id Int @id
+        email String @unique
+      }
+      
+      model Post {
+        id Int @id
+        email String @unique
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+      const parsed = parser.parse({ override: true });
+
+      // Manually remove rawLine from one field to test filtering
+      if (parsed.models[0]?.fields[0]) {
+        delete (parsed as any).models[0].fields[0].rawLine;
+      }
+
+      const result = parser.generatePrismaModel({
+        modelName: { pascal: "Test", camel: "test", kebab: "test" },
+      });
+
+      // Should only contain the field with rawLine
+      expect(result).toContain("email String @unique");
     });
   });
 });

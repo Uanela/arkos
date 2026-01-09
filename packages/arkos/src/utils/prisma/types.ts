@@ -10,6 +10,7 @@ export interface PrismaField {
   isId?: boolean;
   isUnique?: boolean;
   attributes: string[];
+  rawLine: string;
 }
 
 export interface PrismaModel {

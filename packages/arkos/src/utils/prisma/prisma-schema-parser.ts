@@ -255,6 +255,7 @@ export class PrismaSchemaParser {
       isId,
       isUnique,
       attributes,
+      rawLine: line.trim(),
     };
   }
 
@@ -278,6 +279,9 @@ export class PrismaSchemaParser {
   private parseDefaultValue(defaultStr: string): any {
     defaultStr = defaultStr.trim();
     // Handle string values
+    if (defaultStr.startsWith("[")) {
+      return defaultStr.replace("[", "").replace("]", "").split(",");
+    }
     if (defaultStr.startsWith('"') && defaultStr.endsWith('"'))
       return defaultStr.slice(1, -1);
     // Handle boolean values
@@ -321,6 +325,61 @@ export class PrismaSchemaParser {
       });
 
     return content;
+  }
+
+  generatePrismaModel(options: {
+    modelName: { pascal: string; camel: string; kebab: string };
+  }): string {
+    const { modelName } = options;
+    if (!modelName)
+      throw new Error("Model name is required for Prisma model template");
+    const allModels = prismaSchemaParser.models;
+    if (allModels.length === 0)
+      throw new Error("No models found in Prisma schema for reference.");
+
+    const commonFieldsMap = new Map<string, PrismaField>();
+    let allModelsHaveMap = allModels.length > 0;
+
+    if (allModels.length > 0) {
+      const firstModel = allModels[0];
+
+      if (!firstModel.mapName) allModelsHaveMap = false;
+
+      for (const field of firstModel.fields) {
+        commonFieldsMap.set(field.name, field);
+      }
+
+      for (let i = 1; i < allModels.length; i++) {
+        const currentModel = allModels[i];
+
+        if (!currentModel.mapName) allModelsHaveMap = false;
+
+        const currentFieldNames = new Set(
+          currentModel.fields.map((f) => f.name)
+        );
+
+        for (const fieldName of commonFieldsMap.keys()) {
+          if (!currentFieldNames.has(fieldName)) {
+            commonFieldsMap.delete(fieldName);
+          }
+        }
+      }
+    }
+
+    const fields = Array.from(commonFieldsMap.values());
+    const fieldDefinitions = fields
+      .map((field) => (field.rawLine ? `  ${field.rawLine}` : null))
+      .filter(Boolean)
+      .join("\n");
+
+    const mapDirective = allModelsHaveMap
+      ? `\n\n  @@map("${modelName.kebab}")`
+      : "";
+
+    return `model ${modelName.pascal} {
+${fieldDefinitions}${mapDirective}
+}
+`;
   }
 
   private getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
