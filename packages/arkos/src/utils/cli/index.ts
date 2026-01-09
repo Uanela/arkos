@@ -105,8 +105,6 @@ generate
 generate
   .command("interceptors")
   .alias("i")
-  .alias("middlewares")
-  .alias("m")
   .description("Generate a new interceptors file")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
