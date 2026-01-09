@@ -65,7 +65,7 @@ export type UploadConfig =
    *   ]
    * }
    */
-  | ({
+  | {
       type: "fields";
       /** Array of field configurations describing multipart form fields to process */
       fields: {
@@ -75,8 +75,8 @@ export type UploadConfig =
         maxCount?: number;
         // /** Minimum number of files required for this field */
         // minCount?: number;
-      }[];
-    } & ArkosRouterBaseUploadConfig);
+      } & ArkosRouterBaseUploadConfig[];
+    };
 
 /**
  * Base configuration options for file uploads.
@@ -138,4 +138,15 @@ export type ArkosRouterBaseUploadConfig = {
    * allowedFileTypes: /jpeg|jpg|png|gif/
    */
   allowedFileTypes?: string[] | RegExp;
+  /**
+   * Defines if this file field is required
+   *
+   * @default true
+   */
+  required?: boolean;
+  /**
+   * File description
+   *
+   */
+  description?: string;
 };
