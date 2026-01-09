@@ -32,9 +32,10 @@ process.on("uncaughtException", (err) => {
       bold: true,
     });
 
-  // console.error(err.name, err.message);
   console.error(err);
-  process.exit(1);
+  setTimeout(() => {
+    process.exit(1);
+  }, 0);
 });
 
 let server: Server<typeof IncomingMessage, typeof ServerResponse>;
@@ -133,13 +134,16 @@ process.on("unhandledRejection", (err: AppError) => {
       timestamp: true,
       bold: true,
     });
-  // console.error(err.name, err.message);
   console.error(err);
+
   if (server?.close)
     server?.close(() => {
       process.exit(1);
     });
-  else process.exit(1);
+  else
+    setTimeout(() => {
+      process.exit(1);
+    }, 0);
 });
 
 /**

@@ -11,3 +11,6 @@ arkos.init({
   //   return app;
   // },
 });
+// console.log(a + 2);
+
+const a: any = 1;
