@@ -278,6 +278,15 @@ export function generateOpenAPIFromApp(app: any) {
     delete convertedOpenAPI.parameters;
     const hasUploadFields =
       Object.keys(config?.experimental?.uploads || {}).length > 0;
+    const multipartFormSchema =
+      convertedOpenAPI?.requestBody?.content?.["multipart/form-data"];
+
+    if (hasUploadFields && multipartFormSchema)
+      arkosRouterOpenApiManager.validateMultipartFormDocs(
+        multipartFormSchema,
+        path,
+        config?.experimental?.uploads
+      );
 
     (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${path}`,
@@ -295,9 +304,6 @@ export function generateOpenAPIFromApp(app: any) {
               );
 
               return {
-                "application/json": {
-                  schema,
-                },
                 ...(hasUploadFields && {
                   "multipart/form-data": {
                     schema: arkosRouterOpenApiManager.addUploadFields(
@@ -306,6 +312,30 @@ export function generateOpenAPIFromApp(app: any) {
                     ),
                   },
                 }),
+                "application/json": {
+                  schema,
+                },
+              };
+            })(),
+          },
+        }),
+      ...(convertedOpenAPI?.requestBody?.content?.["application/json"] &&
+        !multipartFormSchema &&
+        !(config as any)?.validation?.body &&
+        hasUploadFields && {
+          requestBody: {
+            content: (() => {
+              const schema =
+                convertedOpenAPI?.requestBody?.content?.["application/json"];
+
+              return {
+                "multipart/form-data": {
+                  schema: arkosRouterOpenApiManager.addUploadFields(
+                    config?.experimental?.uploads! || {},
+                    schema
+                  ),
+                },
+                ...convertedOpenAPI?.requestBody,
               };
             })(),
           },

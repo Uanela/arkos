@@ -145,7 +145,7 @@ export type ArkosRouterBaseUploadConfig = {
    */
   required?: boolean;
   /**
-   * Open api field description
+   * Open API field description
    */
   description?: string;
 };
