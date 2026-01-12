@@ -107,11 +107,12 @@ export default function errorHandler(
  */
 function sendDevelopmentError(err: any, req: Request, res: Response): void {
   if (req.originalUrl.startsWith("/api")) {
-    const { message, ...rest } = err;
+    const { message, code, ...rest } = err;
 
     res.status(err.statusCode).json({
       message:
         err.message?.split?.("\n")[err.message?.split?.("\n").length - 1],
+      code: code || "Unknown",
       ...rest,
       stack: err?.originalError?.stack?.split?.("\n"),
     });
