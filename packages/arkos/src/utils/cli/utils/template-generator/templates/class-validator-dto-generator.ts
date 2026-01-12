@@ -69,7 +69,9 @@ export class ClassValidatorDtoGenerator {
             enumsUsed,
             isTypeScript
           );
-          nestedDtoClasses.push(nestedDtoClass);
+
+          if (!dtoFields.find((dtoField) => dtoField.includes(relationDtoName)))
+            nestedDtoClasses.push(nestedDtoClass);
 
           dtoFields.push(
             `${optionalDecorator}  @ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`
@@ -166,7 +168,9 @@ ${dtoFields.join("\n\n")}
             enumsUsed,
             isTypeScript
           );
-          nestedDtoClasses.push(nestedDtoClass);
+
+          if (!dtoFields.find((dtoField) => dtoField.includes(relationDtoName)))
+            nestedDtoClasses.push(nestedDtoClass);
 
           const typeModifier = isTypeScript ? "?" : "";
           dtoFields.push(
