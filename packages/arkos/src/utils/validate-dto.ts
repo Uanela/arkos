@@ -45,7 +45,7 @@ export default async function validateDto<T extends object>(
     dataDto,
     deepmerge(
       arkosConfig?.validation?.validationOptions || {},
-      validationOptions as any
+      validationOptions || {}
     )
   );
 

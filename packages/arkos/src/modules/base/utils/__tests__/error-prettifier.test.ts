@@ -1,6 +1,6 @@
 import { ValidationError } from "class-validator";
 import { ZodError, ZodIssue } from "zod";
-import { ErrorPrettifier, PrettifiedError } from "../error-prettifier";
+import { ErrorPrettifier } from "../error-prettifier";
 
 describe("ErrorPrettifier", () => {
   let prettifier: ErrorPrettifier;
