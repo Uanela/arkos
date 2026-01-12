@@ -16,6 +16,7 @@ const config: ArkosConfig = {
   },
   validation: {
     resolver: "zod",
+    validationOptions: { forbidNonWhitelisted: true },
   },
   swagger: {
     mode: "zod",
