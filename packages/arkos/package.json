@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.5.0-canary.10",
+  "version": "1.5.0-canary.11",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
