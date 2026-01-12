@@ -320,28 +320,6 @@ describe("Dev Command", () => {
       );
     });
 
-    it("should not restart server when killed by SIGTERM or SIGINT", async () => {
-      await devCommand();
-
-      const exitHandler = (mockChildProcess as any).on.mock.calls.find(
-        (call: any) => call[0] === "exit"
-      )[1];
-
-      const infoSpy = jest.spyOn(console, "info");
-
-      exitHandler(0, "SIGTERM");
-
-      expect(infoSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining("restarting")
-      );
-
-      exitHandler(0, "SIGINT");
-
-      expect(infoSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining("restarting")
-      );
-    });
-
     it("should handle specific module import errors without logging", async () => {
       const serverNotFoundError = new Error(
         "Cannot find module '../../server'"

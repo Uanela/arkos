@@ -364,7 +364,7 @@ describe("getMiddlewareStack", () => {
       const middlewares = getMiddlewareStack(config);
 
       expect(validateRequestInputs).toHaveBeenCalledWith(config);
-      expect(middlewares.length).toBe(3); // handleUpload, validateRequestInputs, handlePostUpload
+      expect(middlewares.length).toBe(4); // handleUpload, validateRequestFiles, ,validateRequestInputs, handlePostUpload
     });
 
     it("should add validateRequestInputs without upload handlers when no uploads", () => {
@@ -424,8 +424,8 @@ describe("getMiddlewareStack", () => {
 
       const middlewares = getMiddlewareStack(config);
 
-      // authentication, rateLimit, compression, queryParser, bodyParser, handleUpload, validateRequestInputs, handlePostUpload
-      expect(middlewares.length).toBe(8);
+      // authentication, rateLimit, compression, queryParser, bodyParser, handleUpload, validateRequestFiles, validateRequestInputs, handlePostUpload
+      expect(middlewares.length).toBe(9);
     });
 
     it("should handle authentication with access control", () => {

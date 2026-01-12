@@ -80,8 +80,8 @@ export default function errorHandler(
   if (process.env.ARKOS_BUILD !== "true")
     return sendDevelopmentError(
       {
-        ...error,
         message: error.message,
+        ...error,
         stack: err.stack,
         originalError: err,
       },
@@ -107,9 +107,9 @@ export default function errorHandler(
 function sendDevelopmentError(err: any, req: Request, res: Response): void {
   if (req.originalUrl.startsWith("/api"))
     res.status(err.statusCode).json({
-      ...err,
       message:
         err.message?.split?.("\n")[err.message?.split?.("\n").length - 1],
+      ...err,
       stack: err?.originalError?.stack?.split?.("\n"),
     });
   else

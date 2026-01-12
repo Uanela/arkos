@@ -57,7 +57,7 @@ describe("buildCommand", () => {
 
   // Mock process.exit
   const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
-    console.error(`Process.exit called with code ${code}`);
+    console.error(`Process.exit called with code ${code} 1234 broooo`);
     return "" as never;
   });
 

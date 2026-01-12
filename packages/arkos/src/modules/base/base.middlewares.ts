@@ -226,13 +226,14 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
           deepmerge(
             {
               whitelist: true,
+              forbidNonWhitelisted: true,
               ...classValidatorValidationOptions,
             },
             validationConfigs?.validationOptions || {}
           )
         );
       else if (validationConfigs?.resolver === "zod" && schemaOrDtoClass)
-        req.body = await validateSchema(schemaOrDtoClass as ZodSchema<T>, body);
+        req.body = await validateSchema(schemaOrDtoClass as any, body);
 
       next();
     }
