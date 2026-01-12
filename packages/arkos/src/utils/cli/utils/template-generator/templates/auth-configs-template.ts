@@ -26,7 +26,7 @@ export function generateAuthConfigsTemplate(
   const helperFunction = advanced
     ? ``
     : `
-function create${modelName.pascal}Permission(action: string) {
+function create${modelName.pascal}Permission(action${isTypeScript ? ": string" : ""}) {
   return authService.permission(action, "${modelName.kebab}", ${modelName.camel}AccessControl);
 }`;
 
@@ -34,14 +34,14 @@ function create${modelName.pascal}Permission(action: string) {
     ? `
 export const ${modelName.camel}Permissions = Object.keys(${modelName.camel}AccessControl).reduce(
   (acc, key) => {
-    acc[\`can\${key}\` as const] = authService.permission(
+    acc[\`can\${key}\`${isTypeScript ? " as const" : ""}] = authService.permission(
       key,
       "${modelName.kebab}",
       ${modelName.camel}AccessControl
     );
     return acc;
   },
-  {} as Record<string, ReturnType<typeof authService.permission>>
+  {} ${isTypeScript ? "as Record<string, ReturnType<typeof authService.permission>>" : ""}
 )${
         isTypeScript
           ? ` as {
@@ -59,13 +59,6 @@ export const ${modelName.camel}Permissions = Object.keys(${modelName.camel}Acces
 };`;
 
   return `${imports}import { authService } from "arkos/services";
-
-export const ${modelName.camel}AuthenticationControl = {
-  Create: true,
-  Update: true,
-  Delete: true,
-  View: true,
-};
 
 export const ${modelName.camel}AccessControl = {
   Create: {
@@ -91,6 +84,13 @@ export const ${modelName.camel}AccessControl = {
 }${typeSatisfies};
 ${helperFunction}
 ${permissions}
+
+export const ${modelName.camel}AuthenticationControl = {
+  Create: true,
+  Update: true,
+  Delete: true,
+  View: true,
+};
 
 const ${modelName.camel}AuthConfigs${isTypeScript ? ": AuthConfigs" : ""} = {
   authenticationControl: ${modelName.camel}AuthenticationControl,
