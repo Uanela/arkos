@@ -158,7 +158,7 @@ class UploadManager {
       const errors: string[] = [];
       const errorCodes: string[] = [];
 
-      if (uploadConfig.required !== true) return next();
+      if (uploadConfig.required === false) return next();
 
       if (uploadConfig.type === "single") {
         if (!req.file) {
