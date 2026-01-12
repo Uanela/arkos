@@ -1102,7 +1102,7 @@ describe("UploadManager", () => {
         const config = {
           type: "single" as const,
           field: "items[0][file]",
-          required: true,
+          // required: true,
         };
         mockReq.file = undefined;
 
@@ -1136,7 +1136,7 @@ describe("UploadManager", () => {
     });
 
     describe("Edge cases", () => {
-      it("should handle undefined required flag (defaults to false)", () => {
+      it("should handle undefined required flag (defaults to true)", () => {
         const config = {
           type: "single" as const,
           field: "avatar",
@@ -1146,7 +1146,7 @@ describe("UploadManager", () => {
         const middleware = uploadManager.validateRequiredFiles(config);
         middleware(mockReq, mockRes, mockNext);
 
-        expect(mockNext).toHaveBeenCalledWith();
+        expect(mockNext).not.toHaveBeenCalledWith();
       });
 
       it("should handle empty field name", () => {
