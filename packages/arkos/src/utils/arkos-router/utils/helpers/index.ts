@@ -114,7 +114,9 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
   }
 
   if (config.experimental?.uploads) {
-    middlewares.push(uploadManager.handleUpload(config.experimental.uploads));
+    const uploadConfig = config.experimental.uploads;
+    middlewares.push(uploadManager.handleUpload(uploadConfig));
+    middlewares.push(uploadManager.validateRequiredFiles(uploadConfig));
 
     middlewares.push(validateRequestInputs(config));
 
