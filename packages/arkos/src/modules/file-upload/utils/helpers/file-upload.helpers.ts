@@ -55,6 +55,8 @@ export function generateRelativePath(filePath: string, uploadDir: string) {
         .replace(`/${baseUploadDir}/`, "")
         .replace(`/${baseUploadDir}`, "")
         .replace(`${baseUploadDir}`, "")
+        .replaceAll("\\", "/")
+        .replaceAll("//", "/")
     );
   }
 }
