@@ -333,16 +333,35 @@ export class PrismaSchemaParser {
     const { modelName } = options;
     if (!modelName)
       throw new Error("Model name is required for Prisma model template");
+
     const allModels = prismaSchemaParser.models;
     if (allModels.length === 0)
       throw new Error("No models found in Prisma schema for reference.");
 
+    const timestampFields = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "create_at",
+      "update_at",
+      "deletedAt",
+      "deleted_at",
+    ];
+
     const commonFieldsMap = new Map<string, PrismaField>();
     let allModelsHaveMap = allModels.length > 0;
 
-    if (allModels.length > 0) {
-      const firstModel = allModels[0];
+    if (allModels.length === 1) {
+      const singleModel = allModels[0];
+      if (!singleModel.mapName) allModelsHaveMap = false;
 
+      for (const field of singleModel.fields) {
+        if (timestampFields.includes(field.name)) {
+          commonFieldsMap.set(field.name, field);
+        }
+      }
+    } else if (allModels.length > 0) {
+      const firstModel = allModels[0];
       if (!firstModel.mapName) allModelsHaveMap = false;
 
       for (const field of firstModel.fields) {
@@ -351,9 +370,7 @@ export class PrismaSchemaParser {
 
       for (let i = 1; i < allModels.length; i++) {
         const currentModel = allModels[i];
-
         if (!currentModel.mapName) allModelsHaveMap = false;
-
         const currentFieldNames = new Set(
           currentModel.fields.map((f) => f.name)
         );
