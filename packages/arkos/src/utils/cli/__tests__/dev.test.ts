@@ -164,20 +164,6 @@ describe("Dev Command", () => {
       );
     });
 
-    // it("should handle child process exit with restart", async () => {
-    //   await devCommand();
-
-    //   const exitHandler = (mockChildProcess as any)?.on?.mock?.calls.find(
-    //     (call: any[]) => call[0] === "exit"
-    //   )[1];
-
-    //   exitHandler(1, null);
-
-    //   expect(mockConsoleInfo).toHaveBeenCalledWith(
-    //     "Server exited with code 1, restarting..."
-    //   );
-    // });
-
     it("should setup process signal handlers", async () => {
       await devCommand();
 

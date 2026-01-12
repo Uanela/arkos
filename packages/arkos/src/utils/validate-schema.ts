@@ -64,12 +64,11 @@ export function parseWithWhitelistCheck<T extends z.ZodObject<any>>(
     const extraKeys = actualKeys.filter((key) => !allowedKeys.includes(key));
 
     extraKeys.forEach((key) => {
-      const pathArray = [...path, key];
       errors.push({
         code: z.ZodIssueCode.unrecognized_keys,
         keys: [key],
-        path: pathArray,
-        message: `Unrecognized key(s) in object: '${path.join(".")}'`,
+        path: [...path, key],
+        message: `Unrecognized key(s) in object${path?.length > 0 ? `: ${path.join(".")}` : ""}`,
       });
     });
 

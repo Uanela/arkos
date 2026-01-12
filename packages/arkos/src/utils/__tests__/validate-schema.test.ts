@@ -368,7 +368,7 @@ describe("parseWithWhitelistCheck", () => {
             code: z.ZodIssueCode.unrecognized_keys,
             keys: ["extra"],
             path: ["extra"],
-            message: "Unrecognized key(s) in object: 'extra'",
+            message: "Unrecognized key(s) in object",
           })
         );
       }
