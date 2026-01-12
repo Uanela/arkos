@@ -1078,6 +1078,7 @@ describe("Express Middleware Functions", () => {
 
         expect(validateDto).toHaveBeenCalledWith(mockDtoClass, null, {
           whitelist: true,
+          forbidNonWhitelisted: true,
         });
         expect(mockRequest.body).toBeNull();
         expect(nextFunction).toHaveBeenCalledTimes(1);

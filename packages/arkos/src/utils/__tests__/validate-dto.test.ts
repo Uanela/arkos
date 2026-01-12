@@ -1,5 +1,4 @@
 import validateDto from "../validate-dto";
-import AppError from "../../modules/error-handler/utils/app-error";
 import { validate } from "class-validator";
 
 // Mock dependencies
@@ -87,6 +86,6 @@ describe("validateDto", () => {
     await validateDto(TestUserDto, mockData);
 
     // Assert
-    expect(validate).toHaveBeenCalledWith(mockData, undefined);
+    expect(validate).toHaveBeenCalledWith(mockData, {});
   });
 });

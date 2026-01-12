@@ -77,11 +77,12 @@ export default function errorHandler(
   if (err.name === "NetworkError")
     error = errorControllerHelper.handleNetworkError(err);
 
+  const { message, ...rest } = error;
   if (process.env.ARKOS_BUILD !== "true")
     return sendDevelopmentError(
       {
         message: error.message,
-        ...error,
+        ...rest,
         stack: err.stack,
         originalError: err,
       },
@@ -89,7 +90,7 @@ export default function errorHandler(
       res
     );
 
-  sendProductionError(error, req, res);
+  sendProductionError({ message, ...rest }, req, res);
 }
 
 /**
@@ -105,14 +106,16 @@ export default function errorHandler(
  * @returns {void} - Sends the response with the error details to the client.
  */
 function sendDevelopmentError(err: any, req: Request, res: Response): void {
-  if (req.originalUrl.startsWith("/api"))
+  if (req.originalUrl.startsWith("/api")) {
+    const { message, ...rest } = err;
+
     res.status(err.statusCode).json({
       message:
         err.message?.split?.("\n")[err.message?.split?.("\n").length - 1],
-      ...err,
+      ...rest,
       stack: err?.originalError?.stack?.split?.("\n"),
     });
-  else
+  } else
     res.status(err.statusCode).json({
       title: "Internal server error",
       message: err.message,

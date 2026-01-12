@@ -1,5 +1,6 @@
 import { ValidationError } from "class-validator";
 import { ZodError, ZodIssue } from "zod";
+import { pascalCase } from "../../../utils/helpers/change-case.helpers";
 
 /**
  * Prettified error result with consistent format
@@ -80,7 +81,7 @@ export class ErrorPrettifier {
   private toPascalCase(path: string): string {
     return path
       .split(".")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .map((part) => pascalCase(part))
       .join("");
   }
 
@@ -340,12 +341,9 @@ export class ErrorPrettifier {
     fieldPath: string,
     issue: ZodIssue
   ): string {
-    // If no field path (root level), return original message
     if (!fieldPath) {
       return message;
     }
-
-    // Handle common Zod message patterns
 
     // "Required" -> "fieldPath is required"
     if (message === "Required") {

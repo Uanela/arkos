@@ -1,4 +1,4 @@
-import { pascalCase } from "../../../utils/features/change-case.features";
+import { pascalCase } from "../../../utils/helpers/change-case.helpers";
 import AppError from "./app-error";
 
 export interface PrismaError {
