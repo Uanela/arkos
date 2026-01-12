@@ -3,12 +3,60 @@ import { AuthConfigs } from "arkos/auth";
 {{/if}}
 import { authService } from "arkos/services";
 
+export const authRoleAccessControl = {
+  Create: {
+    roles: [],
+    name: "Create Role Permission",
+    description: "Permission to create new auth permission records",
+  },
+  Update: {
+    roles: [],
+    name: "Update Role Permission",
+    description: "Permission to update existing auth permission records",
+  },
+  Delete: {
+    roles: [],
+    name: "Delete Role Permission",
+    description: "Permission to delete auth permission records",
+  },
+  View: {
+    roles: [],
+    name: "View Role Permission",
+    description: "Permission to view auth permission records",
+  },
+}{{#if typescript}} as const satisfies AuthConfigs["accessControl"]{{/if}};
+
+{{#if advanced}}
+export const authRolePermissions = Object.keys(authRoleAccessControl).reduce(
+  (acc, key) => {
+    acc[`can${key}`{{#if typescript}} as const{{/if}}] = authService.permission(
+      key,
+      "auth-role",
+      authRoleAccessControl
+    );
+    return acc;
+  },
+  {}{{#if typescript}} as Record<string, ReturnType<typeof authService.permission>>{{/if}}
+){{#if typescript}} as {
+  [K in keyof typeof authRoleAccessControl as `can${K & string}`]: ReturnType
+    typeof authService.permission
+  >;
+}{{/if}};
+{{else}}
 export const authRolePermissions = {
   canCreate: authService.permission("Create", "auth-role"),
   canUpdate: authService.permission("Update", "auth-role"),
   canDelete: authService.permission("Delete", "auth-role"),
   canView: authService.permission("View", "auth-role"),
-}
+};
+{{/if}}
+
+export const authRoleAuthenticationControl = {
+  Create: true,
+  Update: true,
+  Delete: true,
+  View: true,
+};
 
 {{#if typescript}}
 const authRoleAuthConfigs: AuthConfigs = {
@@ -16,44 +64,8 @@ const authRoleAuthConfigs: AuthConfigs = {
 /** @type {import('arkos/auth').AuthConfigs} */
 const authRoleAuthConfigs = {
 {{/if}}
-  authenticationControl: {
-    Create: true,
-    Update: true,
-    Delete: true,
-    View: true,
-  },
-  {{#if (eq authentication.type "static")}}
-  accessControl: {
-    Create: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Create New Auth Role",
-      description: "Permission to create auth role records"
-    },
-    Update: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Update Auth Role",
-      description: "Permission to update auth role records"
-    },
-    Delete: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Delete Auth Role",
-      description: "Permission to delete auth role records"
-    },
-    View: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "View Auth Role",
-      description: "Permission to update auth role records"
-    },
-  },
-  {{/if}}
+  authenticationControl: authRoleAuthenticationControl,
+  accessControl: authRoleAccessControl,
 };
 
 export default authRoleAuthConfigs;
