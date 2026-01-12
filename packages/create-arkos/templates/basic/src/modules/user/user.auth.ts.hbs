@@ -3,12 +3,60 @@ import { AuthConfigs } from "arkos/auth";
 {{/if}}
 import { authService } from "arkos/services";
 
+export const userAccessControl = {
+  Create: {
+    roles: [],
+    name: "Create User",
+    description: "Permission to create new user records",
+  },
+  Update: {
+    roles: [],
+    name: "Update User",
+    description: "Permission to update existing user records",
+  },
+  Delete: {
+    roles: [],
+    name: "Delete User",
+    description: "Permission to delete user records",
+  },
+  View: {
+    roles: [],
+    name: "View User",
+    description: "Permission to view user records",
+  },
+}{{#if typescript}} as const satisfies AuthConfigs["accessControl"]{{/if}};
+
+{{#if advanced}}
+export const userPermissions = Object.keys(userAccessControl).reduce(
+  (acc, key) => {
+    acc[`can${key}`{{#if typescript}} as const{{/if}}] = authService.permission(
+      key,
+      "user",
+      userAccessControl
+    );
+    return acc;
+  },
+  {}{{#if typescript}} as Record<string, ReturnType<typeof authService.permission>>{{/if}}
+){{#if typescript}} as {
+  [K in keyof typeof userAccessControl as `can${K & string}`]: ReturnType
+    typeof authService.permission
+  >;
+}{{/if}};
+{{else}}
 export const userPermissions = {
   canCreate: authService.permission("Create", "user"),
   canUpdate: authService.permission("Update", "user"),
   canDelete: authService.permission("Delete", "user"),
   canView: authService.permission("View", "user"),
-}
+};
+{{/if}}
+
+export const userAuthenticationControl = {
+  Create: true,
+  Update: true,
+  Delete: true,
+  View: true,
+};
 
 {{#if typescript}}
 const userAuthConfigs: AuthConfigs = {
@@ -16,44 +64,8 @@ const userAuthConfigs: AuthConfigs = {
 /** @type {import('arkos/auth').AuthConfigs} */
 const userAuthConfigs = {
 {{/if}}
-  authenticationControl: {
-    Create: true,
-    Update: true,
-    Delete: true,
-    View: true,
-  },
-  {{#if (eq authentication.type "static")}}
-  accessControl: {
-    Create: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Create New User",
-      description: "Permission to create user records"
-    },
-    Update: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Update User",
-      description: "Permission to update user records"
-    },
-    Delete: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Delete User",
-      description: "Permission to delete user records"
-    },
-    View: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "View User",
-      description: "Permission to update user records"
-    },
-  },
-  {{/if}}
+  authenticationControl: userAuthenticationControl,
+  accessControl: userAccessControl,
 };
 
 export default userAuthConfigs;
