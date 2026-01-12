@@ -136,12 +136,13 @@ export class AuthService {
           ? process.env.JWT_COOKIE_HTTP_ONLY === "true"
           : undefined) ??
         true,
-      secure:
-        authConfigs?.jwt?.cookie?.secure ??
-        (process.env.JWT_COOKIE_SECURE === "true" ||
-          req.secure ||
-          req.headers["x-forwarded-proto"] === "https" ||
-          sameSite === "none"),
+      secure: (() => {
+        if (authConfigs?.jwt?.cookie?.secure !== undefined)
+          return authConfigs?.jwt?.cookie?.secure;
+        else if (process.env.JWT_COOKIE_SECURE !== undefined)
+          return process.env.JWT_COOKIE_SECURE === "true";
+        else return req.secure || req.headers["x-forwarded-proto"] === "https";
+      })(),
       sameSite,
     };
   }
