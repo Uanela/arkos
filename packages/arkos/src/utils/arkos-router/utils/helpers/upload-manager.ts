@@ -181,10 +181,10 @@ class UploadManager {
           fullBaseUploadDir = fullBaseUploadDir.replace(process.cwd(), "");
 
           return filePath
-            .replace(/\\/g, "/")
             .replaceAll(process.cwd(), "")
             .replace(`/${fullBaseUploadDir}`, "")
-            .replace(fullBaseUploadDir, "");
+            .replace(fullBaseUploadDir, "")
+            .replace(/\\/g, "/");
         };
 
         const buildFileURL = (file: Express.Multer.File): string => {

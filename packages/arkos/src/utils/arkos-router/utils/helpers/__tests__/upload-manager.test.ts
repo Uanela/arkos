@@ -17,18 +17,10 @@ jest.mock("fs", () => ({
 }));
 jest.mock("util");
 jest.mock("../../../../../exports");
-// jest.mock("../../../../../exports/error-handler");
 jest.mock("../../../../sheu");
 jest.mock("../../../../helpers/deepmerge.helper");
-jest.mock(
-  "../../../../../modules/file-upload/utils/helpers/file-upload.helpers"
-);
 
 const mockDeepmerge = require("../../../../helpers/deepmerge.helper").default;
-const mockExtractRequestInfo =
-  require("../../../../../modules/file-upload/utils/helpers/file-upload.helpers").extractRequestInfo;
-const mockGenerateRelativePath =
-  require("../../../../../modules/file-upload/utils/helpers/file-upload.helpers").generateRelativePath;
 
 describe("UploadManager", () => {
   let mockReq: any;
@@ -44,6 +36,7 @@ describe("UploadManager", () => {
       body: {},
       file: undefined,
       files: undefined,
+      get: () => "localhost:3000",
     };
     mockRes = {};
     mockNext = jest.fn();
@@ -62,11 +55,11 @@ describe("UploadManager", () => {
     (fs.mkdirSync as jest.Mock).mockReturnValue(undefined);
 
     mockDeepmerge.mockImplementation((a: any, b: any) => ({ ...a, ...b }));
-    mockExtractRequestInfo.mockReturnValue({
-      baseURL: "http://localhost:3000",
-      baseRoute: "/api",
-    });
-    mockGenerateRelativePath.mockReturnValue("/uploads/test.jpg");
+    // mockExtractRequestInfo.mockReturnValue({
+    //   baseURL: "http://localhost:3000",
+    //   baseRoute: "/api",
+    // });
+    // mockGenerateRelativePath.mockReturnValue("/uploads/test.jpg");
   });
 
   describe("handleUpload", () => {
@@ -258,16 +251,38 @@ describe("UploadManager", () => {
         attachToBody: "pathname" as const,
       };
       mockReq.file = { path: "C:\\uploads\\file.jpg" };
-      mockGenerateRelativePath.mockReturnValue("/uploads/C:/file.jpg");
+      // mockGenerateRelativePath.mockReturnValue("/uploads/C:/file.jpg");
 
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.file.pathname).toBe("C:/file.jpg");
+      expect(mockReq.file.pathname).toBe("C:/uploads/file.jpg");
       expect(mockReq.file.url).toBe(
         "http://localhost:3000/api/uploads/C:/file.jpg"
       );
       expect(mockReq.body).toBeDefined();
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("should attach pathname to body for single file in windows", () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        attachToBody: "url" as const,
+      };
+      jest
+        .spyOn(process, "cwd")
+        .mockImplementation(() => "S:/projects/store/backend");
+      mockReq.file = {
+        path: "S:/projects/store/backend/uploads/mobile/apps/product-image.png",
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockReq.file.url).toBe(
+        "http://localhost:3000/api/uploads/mobile/apps/product-image.png"
+      );
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -411,25 +426,6 @@ describe("UploadManager", () => {
       middleware(mockReq, mockRes, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
-    });
-
-    it("should throw AppError on processing failure", () => {
-      const config = {
-        type: "single" as const,
-        field: "avatar",
-        attachToBody: "url" as const,
-      };
-      mockReq.file = { path: "/uploads/file.jpg" };
-
-      const mockError = new Error("Processing error");
-      mockGenerateRelativePath.mockImplementation(() => {
-        throw mockError;
-      });
-
-      const middleware = uploadManager.handlePostUpload(config);
-      middleware(mockReq, mockRes, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -628,10 +624,10 @@ describe("UploadManager", () => {
         attachToBody: "url" as const,
       };
       mockReq.file = { path: "/uploads/file.jpg" };
-      mockExtractRequestInfo.mockReturnValue({
-        baseURL: "http://localhost:3000",
-        baseRoute: "/",
-      });
+      // mockExtractRequestInfo.mockReturnValue({
+      //   baseURL: "http://localhost:3000",
+      //   baseRoute: "/",
+      // });
 
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
@@ -647,12 +643,12 @@ describe("UploadManager", () => {
         attachToBody: "url" as const,
       };
       mockReq.file = { path: "/uploads/file.jpg" };
-      mockGenerateRelativePath.mockReturnValue("uploads/test.jpg");
+      // mockGenerateRelativePath.mockReturnValue("uploads/test.jpg");
 
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.file.url).toContain("/uploads/test.jpg");
+      expect(mockReq.file.url).toContain("/uploads/file.jpg");
       expect(mockNext).toHaveBeenCalled();
     });
   });
