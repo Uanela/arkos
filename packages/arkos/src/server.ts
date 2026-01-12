@@ -60,7 +60,10 @@ async function initApp(
   try {
     const arkosConfig = getArkosConfig();
 
-    const portAndHost = { port: process.env.__PORT, host: process.env.__HOST! };
+    const portAndHost = {
+      port: process.env.__PORT || process.env.PORT || "8000",
+      host: process.env.__HOST! || process.env.HOST || "127.0.0.1",
+    };
 
     let networkHost = portAndHostAllocator.getFirstNonLocalIp();
 

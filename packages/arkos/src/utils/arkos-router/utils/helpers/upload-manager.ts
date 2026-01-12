@@ -207,7 +207,7 @@ class UploadManager {
           400,
           `Missing${pascalCase(errorCodes[0]).replaceAll("_", "")}FileField`,
           {
-            missingFiles: errors,
+            errors,
           }
         );
       }

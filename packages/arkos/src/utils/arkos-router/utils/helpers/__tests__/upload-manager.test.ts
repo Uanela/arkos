@@ -703,7 +703,7 @@ describe("UploadManager", () => {
         expect(error.message).toBe("Required upload field 'avatar' is missing");
         expect(error.statusCode).toBe(400);
         expect(error.code).toBe("MissingAvatarFileField");
-        expect(error.meta.missingFiles).toEqual([
+        expect(error.meta.errors).toEqual([
           "Required upload field 'avatar' is missing",
         ]);
       });
@@ -888,7 +888,7 @@ describe("UploadManager", () => {
           "Required upload fields are missing. Expected an object with fields: avatar, resume"
         );
         expect(error.code).toBe("MissingAvatarFileField");
-        expect(error.meta.missingFiles).toEqual([
+        expect(error.meta.errors).toEqual([
           "Required upload fields are missing. Expected an object with fields: avatar, resume",
         ]);
       });
@@ -934,7 +934,7 @@ describe("UploadManager", () => {
           "Required upload field 'resume' is missing or empty"
         );
         expect(error.code).toBe("MissingResumeFileField");
-        expect(error.meta.missingFiles).toEqual([
+        expect(error.meta.errors).toEqual([
           "Required upload field 'resume' is missing or empty",
         ]);
       });
@@ -1006,11 +1006,11 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.meta.missingFiles).toHaveLength(2);
-        expect(error.meta.missingFiles).toContain(
+        expect(error.meta.errors).toHaveLength(2);
+        expect(error.meta.errors).toContain(
           "Required upload field 'resume' is missing or empty"
         );
-        expect(error.meta.missingFiles).toContain(
+        expect(error.meta.errors).toContain(
           "Required upload field 'cover_letter' is missing or empty"
         );
         expect(error.code).toBe("MissingResumeFileField");
