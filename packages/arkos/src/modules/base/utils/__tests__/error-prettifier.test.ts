@@ -708,7 +708,7 @@ describe("ErrorPrettifier", () => {
         expect(result).toEqual([
           {
             message: "Expected object, received string",
-            code: "RootIsObjectConstraint",
+            code: "IsObjectConstraint",
           },
         ]);
       });
@@ -1110,7 +1110,7 @@ describe("ErrorPrettifier", () => {
     expect(result).toEqual([
       {
         message: "Unrecognized key(s) in object",
-        code: "RootUnrecognizedKeysConstraint",
+        code: "UnrecognizedKeysConstraint",
       },
     ]);
   });

@@ -29,6 +29,7 @@ export function buildCommand(options: BuildOptions = {}) {
   const moduleType = validateModuleType(options.module);
 
   try {
+    console.info("");
     console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
     console.info(
       `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")

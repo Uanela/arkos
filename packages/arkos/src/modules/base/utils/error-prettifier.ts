@@ -150,7 +150,6 @@ export class ErrorPrettifier {
         ? `${parentPath}.${error.property}`
         : error.property;
 
-      // Handle nested errors
       if (error.children && error.children.length > 0) {
         result.push(
           ...this.prettifyClassValidator(error.children, currentPath)
@@ -158,18 +157,15 @@ export class ErrorPrettifier {
         continue;
       }
 
-      // Handle constraints on current field
       if (error.constraints) {
         const fieldPascal = this.toPascalCase(currentPath);
 
         for (const [constraintKey, originalMessage] of Object.entries(
           error.constraints
         )) {
-          // Convert constraint key to PascalCase (e.g., 'isString' -> 'IsString')
           const constraintName =
             constraintKey.charAt(0).toUpperCase() + constraintKey.slice(1);
 
-          // Replace the field name in the message with the full path
           const message = this.replaceFieldInMessage(
             originalMessage,
             error.property,
@@ -298,7 +294,7 @@ export class ErrorPrettifier {
 
       const fieldPascal = fieldPath
         ? this.toPascalCase(fieldPath.replace(/\[\d+\]/g, ""))
-        : "Root";
+        : "";
 
       // Map Zod error code to constraint name
       const constraintName = this.mapZodToConstraintName(issue);
