@@ -24,6 +24,7 @@ import {
 } from "../../../../modules/file-upload/utils/helpers/file-upload.helpers";
 import deepmerge from "../../../helpers/deepmerge.helper";
 import { catchAsync } from "../../../../exports/error-handler";
+import { pascalCase } from "../../../helpers/change-case.helpers";
 
 function determineUploadDir(file: Express.Multer.File) {
   if (file.mimetype.includes?.("image")) return "/images";
@@ -119,6 +120,100 @@ class UploadManager {
         });
       }
     );
+  }
+
+  /**
+   * Validates that all required upload files are present in the request.
+   * Checks req.file or req.files based on upload configuration type.
+   *
+   * @param {UploadConfig} uploadConfig - The upload configuration from config.experimental.uploads
+   * @throws {AppError} If required files are missing
+   *
+   * @example
+   * // Single file upload - checks req.file
+   * validateRequiredFiles(
+   *   { type: 'single', field: 'avatar', required: true },
+   *   req,
+   *   '/users/:id/avatar'
+   * )
+   *
+   * @example
+   * // Array file upload - checks req.files array
+   * validateRequiredFiles(
+   *   { type: 'array', field: 'photos', required: true },
+   *   req,
+   *   '/gallery/upload'
+   * )
+   *
+   * @example
+   * // Multiple fields - checks req.files object
+   * validateRequiredFiles(
+   *   { type: 'fields', fields: [{ name: 'avatar' }, { name: 'resume' }], required: true },
+   *   req,
+   *   '/profile/upload'
+   * )
+   */
+  validateRequiredFiles(uploadConfig: UploadConfig) {
+    return catchAsync((req: ArkosRequest, _: any, next: ArkosNextFunction) => {
+      const errors: string[] = [];
+      const errorCodes: string[] = [];
+
+      if (uploadConfig.required !== true) return next();
+
+      if (uploadConfig.type === "single") {
+        if (!req.file) {
+          errors.push(
+            `Required upload field '${uploadConfig.field}' is missing`
+          );
+          errorCodes.push(uploadConfig.field);
+        }
+      } else if (uploadConfig.type === "array") {
+        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+          errors.push(
+            `Required upload field '${uploadConfig.field}' is missing or empty`
+          );
+          errorCodes.push(uploadConfig.field);
+        }
+      } else if (uploadConfig.type === "fields") {
+        if (
+          !req.files ||
+          typeof req.files !== "object" ||
+          Array.isArray(req.files)
+        ) {
+          errors.push(
+            `Required upload fields are missing. Expected an object with fields: ${uploadConfig.fields.map((f) => f.name).join(", ")}`
+          );
+          errorCodes.push(...uploadConfig.fields.map((f) => f.name));
+        } else {
+          for (const field of uploadConfig.fields) {
+            const filesForField = (req.files as any)[field.name];
+            if (
+              !filesForField ||
+              !Array.isArray(filesForField) ||
+              filesForField.length === 0
+            ) {
+              errors.push(
+                `Required upload field '${field.name}' is missing or empty`
+              );
+              errorCodes.push(field.name);
+            }
+          }
+        }
+      }
+
+      if (errors.length > 0) {
+        throw new AppError(
+          errors[0],
+          400,
+          `Missing${pascalCase(errorCodes[0]).replaceAll("_", "")}FileField`,
+          {
+            missingFiles: errors,
+          }
+        );
+      }
+
+      next();
+    });
   }
 
   handleFileCleanup(config: UploadConfig) {
