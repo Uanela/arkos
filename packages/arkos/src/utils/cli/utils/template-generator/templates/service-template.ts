@@ -22,11 +22,18 @@ export function generateServiceTemplate(options: TemplateOptions): string {
   const typeParameter =
     isTypeScript && serviceType === "base" ? `<"${modelName.kebab}">` : "";
 
+  const constructorParam = (() => {
+    if (serviceType === "base") return `"${modelName.kebab}"`;
+    else if (serviceType === "file-upload")
+      return `"/uploads", 10 * 1024 * 1024, /.*/, 10`;
+    else return "";
+  })();
+
   return `${serviceClassImport}
   
 class ${modelName.pascal}Service extends ${serviceName}${typeParameter} {}
 
-const ${modelName.camel}Service = new ${modelName.pascal}Service(${serviceType === "base" ? `"${modelName.kebab}"` : ""});
+const ${modelName.camel}Service = new ${modelName.pascal}Service(${constructorParam});
 
 export default ${modelName.camel}Service;
 `;
