@@ -27,18 +27,22 @@ export const userAccessControl = {
 }{{#if typescript}} as const satisfies AuthConfigs["accessControl"]{{/if}};
 
 {{#if advanced}}
+{{#if typescript}}
+type UserPermissionName = `can${keyof typeof userAccessControl & string}`;
+
+{{/if}}
 export const userPermissions = Object.keys(userAccessControl).reduce(
   (acc, key) => {
-    acc[`can${key}`{{#if typescript}} as const{{/if}}] = authService.permission(
+    acc[`can${key}`{{#if typescript}} as UserPermissionName{{/if}}] = authService.permission(
       key,
       "user",
       userAccessControl
     );
     return acc;
   },
-  {}{{#if typescript}} as Record<string, ReturnType<typeof authService.permission>>{{/if}}
+  {}{{#if typescript}} as Record<UserPermissionName, ReturnType<typeof authService.permission>>{{/if}}
 ){{#if typescript}} as {
-  [K in keyof typeof userAccessControl as `can${K & string}`]: ReturnType
+  [K in keyof typeof userAccessControl as `can${K & string}`]: ReturnType<
     typeof authService.permission
   >;
 }{{/if}};
