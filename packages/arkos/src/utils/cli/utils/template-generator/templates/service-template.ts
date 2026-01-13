@@ -24,7 +24,7 @@ export function generateServiceTemplate(options: TemplateOptions): string {
 
   const constructorParam = (() => {
     if (serviceType === "base") return `"${modelName.kebab}"`;
-    else if (serviceType === "file-upload")
+    else if (serviceType === "fileUpload")
       return `"/uploads", 10 * 1024 * 1024, /.*/, 10`;
     else return "";
   })();

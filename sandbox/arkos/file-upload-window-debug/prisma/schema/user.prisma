@@ -1,6 +1,6 @@
 model User {
   id                   String    @id @default(cuid())
-  username  String   @unique
+  username             String    @unique
   password             String
   passwordChangedAt    DateTime?
   lastLoginAt          DateTime?
@@ -8,10 +8,10 @@ model User {
   isStaff              Boolean   @default(false)
   deletedSelfAccountAt DateTime?
   isActive             Boolean   @default(true)
-  role                String     @default("User") // Roles examples: Admin, User
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  role                 String    @default("User") // Roles examples: Admin, User
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
   // other fields for your application
+  posts                Post[]
+  posts2               Post[]    @relation(name: "posttouser2")
 }
-
-

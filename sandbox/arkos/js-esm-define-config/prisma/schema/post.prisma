@@ -1,0 +1,5 @@
+model Post {
+  id                   String    @id @default(cuid())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
