@@ -259,7 +259,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
     Object.keys(routeConfig.validation || {}).length > 0
   )
     throw Error(
-      `Trying to pass validators into route ${routeConfig.path} config validation option without choosing a validation resolver under arkos config { validation: {} }.`
+      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`
     );
 
   if ((validators as any) === true)

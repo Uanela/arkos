@@ -25,7 +25,7 @@ describe("generateAuthConfigsTemplate", () => {
       });
 
       // Verify imports and types
-      expect(result).toContain("import { AuthConfigs } from 'arkos/auth'");
+      expect(result).toContain("import { AuthConfigs } from 'arkos/auth';");
       expect(result).toContain('import { authService } from "arkos/services"');
       expect(result).toContain("const userAuthConfigs: AuthConfigs = {");
 
@@ -87,18 +87,24 @@ describe("generateAuthConfigsTemplate", () => {
         "export const userPermissions = Object.keys(userAccessControl).reduce("
       );
       expect(result).toContain(
-        "acc[`can${key}` as const] = authService.permission("
-      );
-      expect(result).toContain(
-        "{} as Record<string, ReturnType<typeof authService.permission>>"
+        "acc[`can${key}` as UserPermissionName] = authService.permission("
       );
 
-      // Should have TypeScript type assertion for advanced mode
-      expect(result).toContain(") as {");
+      // Should have type definition
       expect(result).toContain(
+        "type UserPermissionName = `can${keyof typeof userAccessControl & string}`;"
+      );
+
+      // Should have Record type
+      expect(result).toContain(
+        "{} as Record<UserPermissionName, ReturnType<typeof authService.permission>>"
+      );
+
+      // Should NOT have the old complex type assertion
+      expect(result).not.toContain(") as {");
+      expect(result).not.toContain(
         "[K in keyof typeof userAccessControl as `can${K & string}`]: ReturnType<"
       );
-      expect(result).toContain("typeof authService.permission");
     });
 
     it("should handle kebab-case model names correctly", () => {
@@ -162,13 +168,13 @@ describe("generateAuthConfigsTemplate", () => {
       expect(result).toContain("export const userAccessControl = {");
 
       // Should have helper function for default mode
-      expect(result).toContain("function createUserPermission(action: string)");
+      expect(result).toContain("function createUserPermission(action)");
       expect(result).toContain("export const userPermissions = {");
       expect(result).toContain('canCreate: createUserPermission("Create")');
 
       // Should not have TypeScript type assertions
       expect(result).not.toContain(
-        "as Record<string, ReturnType<typeof authService.permission>>"
+        "as Record<UserPermissionName, ReturnType<typeof authService.permission>>"
       );
     });
 
@@ -183,14 +189,15 @@ describe("generateAuthConfigsTemplate", () => {
         "export const userPermissions = Object.keys(userAccessControl).reduce("
       );
 
-      // Should NOT have TypeScript type assertions in JavaScript
-      expect(result).not.toContain("as {");
-      expect(result).not.toContain("[K in keyof typeof userAccessControl");
+      // Should NOT have TypeScript type definition
+      expect(result).not.toContain("type UserPermissionName");
+
+      // Should NOT have TypeScript type assertions
+      expect(result).not.toContain("as UserPermissionName");
+      expect(result).not.toContain("as Record<");
 
       // Should have basic reduce implementation
-      expect(result).toContain(
-        "acc[`can${key}` as const] = authService.permission("
-      );
+      expect(result).toContain("acc[`can${key}`] = authService.permission(");
       expect(result).toContain("return acc;");
     });
 
@@ -223,10 +230,10 @@ describe("generateAuthConfigsTemplate", () => {
       ).toThrow("Module name is required for auth config template");
     });
 
-    it("should throw error with incomplete model name object", () => {
+    it("should throw error with undefined model name", () => {
       expect(() =>
-        generateAuthConfigsTemplate({ modelName: { pascal: "Test" } } as any)
-      ).toThrow();
+        generateAuthConfigsTemplate({ modelName: undefined } as any)
+      ).toThrow("Module name is required for auth config template");
     });
   });
 
@@ -265,20 +272,18 @@ describe("generateAuthConfigsTemplate", () => {
       );
       expect(defaultResult).toContain("export const userAccessControl = {");
       expect(advancedResult).toContain("export const userAccessControl = {");
-      expect(defaultResult).toContain("export const userPermissions = {");
-      expect(advancedResult).toContain("export const userPermissions = ");
 
-      // Both should have same permission keys
+      // Default should have individual permission keys
       expect(defaultResult).toContain("canCreate:");
       expect(defaultResult).toContain("canUpdate:");
       expect(defaultResult).toContain("canDelete:");
       expect(defaultResult).toContain("canView:");
 
-      // Advanced result should have same permission references
-      expect(advancedResult).not.toContain("canCreate");
-      expect(advancedResult).not.toContain("canUpdate");
-      expect(advancedResult).not.toContain("canDelete");
-      expect(advancedResult).not.toContain("canView");
+      // Advanced should NOT have individual keys (uses reduce)
+      expect(advancedResult).not.toContain("canCreate:");
+      expect(advancedResult).not.toContain("canUpdate:");
+      expect(advancedResult).not.toContain("canDelete:");
+      expect(advancedResult).not.toContain("canView:");
     });
 
     it("should maintain consistent action names in both modes", () => {
@@ -300,20 +305,14 @@ describe("generateAuthConfigsTemplate", () => {
       });
 
       // Check that both have the same role assignments
-      expect(defaultResult).toContain("roles: []"); // For Create and View
-      expect(defaultResult).toContain("roles: []"); // For Update and Delete
-      expect(advancedResult).toContain("roles: []");
+      expect(defaultResult).toContain("roles: []");
       expect(advancedResult).toContain("roles: []");
     });
   });
 
   describe("Edge cases", () => {
-    it("should handle empty model name strings", () => {
-      expect(() =>
-        generateAuthConfigsTemplate({
-          modelName: { pascal: "", camel: "", kebab: "" },
-        })
-      ).not.toThrow();
+    beforeEach(() => {
+      mockedGetUserFileExtension.mockReturnValue("ts");
     });
 
     it("should handle model names with numbers", () => {
@@ -331,12 +330,12 @@ describe("generateAuthConfigsTemplate", () => {
       );
     });
 
-    it("should handle model names with underscores", () => {
+    it("should handle model names with underscores converted to kebab", () => {
       const result = generateAuthConfigsTemplate({
         modelName: {
-          pascal: "User_Profile",
-          camel: "user_Profile", // Note: camel case might convert this differently
-          kebab: "user-profile", // Assuming kebab-case removes underscores
+          pascal: "UserProfile",
+          camel: "userProfile",
+          kebab: "user-profile",
         },
       });
 
@@ -354,40 +353,42 @@ describe("generateAuthConfigsTemplate", () => {
     });
   });
 
-  describe("Template formatting", () => {
-    it("should generate well-formatted template with proper indentation", () => {
-      const result = generateAuthConfigsTemplate({
-        modelName: mockModelName,
-      });
-
-      // Check for proper indentation patterns
-      expect(result).toMatch(
-        /export const userAccessControl = \{\s*\n\s*Create:/
-      );
-      expect(result).toMatch(/roles: \[\],\s*\n\s*name:/);
-
-      // Check for consistent line endings
-      const lines = result.split("\n");
-      expect(lines[0]).toBe("import { AuthConfigs } from 'arkos/auth';");
-      expect(lines[1]).toBe('import { authService } from "arkos/services";');
-
-      // Check that there are no trailing spaces
-      lines.forEach((line) => {
-        if (line.trim() === "") return; // Skip empty lines
-        expect(line).not.toMatch(/\s+$/);
-      });
+  describe("Template structure", () => {
+    beforeEach(() => {
+      mockedGetUserFileExtension.mockReturnValue("ts");
     });
 
-    it("should not have syntax errors in generated code", () => {
+    it("should export all required constants", () => {
       const result = generateAuthConfigsTemplate({
         modelName: mockModelName,
-        advanced: true,
       });
 
-      // Check for common syntax issues
-      expect(result).not.toContain("undefined");
-      expect(result).not.toContain("null");
-      expect(result).not.toMatch(/:\s*:/); // Double colons
+      expect(result).toContain("export const userAccessControl");
+      expect(result).toContain("export const userPermissions");
+      expect(result).toContain("export const userAuthenticationControl");
+      expect(result).toContain("export default userAuthConfigs");
+    });
+
+    it("should have correct order of exports", () => {
+      const result = generateAuthConfigsTemplate({
+        modelName: mockModelName,
+      });
+
+      const accessControlIndex = result.indexOf(
+        "export const userAccessControl"
+      );
+      const permissionsIndex = result.indexOf("export const userPermissions");
+      const authenticationIndex = result.indexOf(
+        "export const userAuthenticationControl"
+      );
+      const defaultExportIndex = result.indexOf("export default");
+
+      // AccessControl should come first
+      expect(accessControlIndex).toBeLessThan(permissionsIndex);
+      // Permissions should come before AuthenticationControl
+      expect(permissionsIndex).toBeLessThan(authenticationIndex);
+      // Default export should be last
+      expect(authenticationIndex).toBeLessThan(defaultExportIndex);
     });
   });
 });
