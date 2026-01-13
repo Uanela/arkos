@@ -84,9 +84,7 @@ export function throwErrorIfApiActionIsInvalid(apiAction: string) {
  * allowing developers to manually structure relation operations when needed.
  *
  * @param {Record<string, any>} body - The object containing relation fields to be processed.
- * @param {Object} relationFields - Defines relation field types.
- * @param {RelationFields[]} relationFields.singular - List of one-side relation field names (one-to-one).
- * @param {RelationFields[]} relationFields.list - List of many-side relation field names (one-to-many).
+ * @param {ModelGroupRelationFields} relationFields - List of many-side relation field names (one-to-many).
  * @param {string[]} ignoreActions - Optional list of apiAction values to ignore.
  * @returns {Record<string, any>} The transformed data with appropriate Prisma operations applied.
  */
@@ -94,7 +92,8 @@ export function handleRelationFieldsInBody(
   body: Record<string, any>,
   relationFields: ModelGroupRelationFields,
   ignoreActions: string[] = []
-) {
+): Record<string, any> {
+  body = JSON.parse(JSON.stringify(body));
   let mutableBody = { ...body };
 
   relationFields?.list?.forEach((field) => {
