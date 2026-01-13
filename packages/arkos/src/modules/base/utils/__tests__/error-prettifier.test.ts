@@ -726,7 +726,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "password Password too weak",
+            message: "Password too weak",
             code: "PasswordCustomConstraint",
           },
         ]);
