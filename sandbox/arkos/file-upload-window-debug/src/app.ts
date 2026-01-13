@@ -1,10 +1,7 @@
 import arkos from "arkos";
-<<<<<<< HEAD
 import { getHandlerErrors, initializeASTs } from "./utils/ast-handler";
 import { AppError } from "arkos/error-handler";
-=======
 import userRouter, { r } from "./modules/user/user.router";
->>>>>>> 9a69528c78a1b8af87f9a1b6869380f77c9a7db5
 
 (async () => {
   console.time("ast");
@@ -29,34 +26,20 @@ import userRouter, { r } from "./modules/user/user.router";
   // console.log(errors);
   console.log(new Date().toISOString());
 
-  // console.log(process.env.MY_VAR);
   arkos.init({
     // a,
-    // configureApp: async (app) => {
-    //   app.use((req, res, next) => {
-    //     console.log(req);
-    //     next();
-    //   });
-    //   return app;
-    // },
+    configureApp: async (app) => {
+      app.use((req, res, next) => {
+        // req.headers["x-forwarded-proto"] = "https";
+        console.log(req.originalUrl);
+        next();
+      });
+      return app;
+    },
+    use: [userRouter, r],
   });
 })();
 // console.log(process.env.MY_VAR);
-<<<<<<< HEAD
-=======
-arkos.init({
-  // a,
-  configureApp: async (app) => {
-    app.use((req, res, next) => {
-      // req.headers["x-forwarded-proto"] = "https";
-      console.log(req.originalUrl);
-      next();
-    });
-    return app;
-  },
-  use: [userRouter, r],
-});
->>>>>>> 9a69528c78a1b8af87f9a1b6869380f77c9a7db5
 // console.log(a + 2);
 
 const a: any = 1;
