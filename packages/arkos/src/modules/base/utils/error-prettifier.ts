@@ -372,8 +372,10 @@ export class ErrorPrettifier {
       return `${fieldPath} must be a valid ${type}`;
     }
 
-    // For any other message, prepend the field path
-    return `${fieldPath} ${message}`;
+    // For any other message, return the message
+    if (!message.toLowerCase().includes(fieldPath.toLowerCase()))
+      return `${fieldPath} ${message}`;
+    return message;
   }
 }
 

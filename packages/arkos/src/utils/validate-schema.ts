@@ -68,7 +68,7 @@ export function parseWithWhitelistCheck<T extends z.ZodObject<any>>(
         code: z.ZodIssueCode.unrecognized_keys,
         keys: [key],
         path: [...path, key],
-        message: `Unrecognized key(s) in object${path?.length > 0 ? `: ${path.join(".")}` : ""}`,
+        message: `Unrecognized key(s) in object: ${[...path, key].join(".")}`,
       });
     });
 
@@ -79,7 +79,7 @@ export function parseWithWhitelistCheck<T extends z.ZodObject<any>>(
       if (dataValue === undefined || dataValue === null) return;
 
       if (schemaField._def?.typeName === "ZodObject") {
-        checkNestedKeys(schemaField.shape, dataValue, [...path, key]);
+        checkNestedKeys(schemaField._def.shape(), dataValue, [...path, key]);
       } else if (schemaField._def?.typeName === "ZodArray") {
         const arrayElement = schemaField._def.type;
         if (
@@ -87,18 +87,22 @@ export function parseWithWhitelistCheck<T extends z.ZodObject<any>>(
           Array.isArray(dataValue)
         ) {
           dataValue.forEach((item, index) => {
-            checkNestedKeys(arrayElement.shape, item, [...path, key, index]);
+            checkNestedKeys(arrayElement._def.shape(), item, [
+              ...path,
+              key,
+              index,
+            ]);
           });
         }
       } else if (schemaField._def?.typeName === "ZodOptional") {
         const innerType = schemaField._def.innerType;
         if (innerType._def?.typeName === "ZodObject") {
-          checkNestedKeys(innerType.shape, dataValue, [...path, key]);
+          checkNestedKeys(innerType._def.shape(), dataValue, [...path, key]);
         }
       } else if (schemaField._def?.typeName === "ZodNullable") {
         const innerType = schemaField._def.innerType;
         if (innerType._def?.typeName === "ZodObject") {
-          checkNestedKeys(innerType.shape, dataValue, [...path, key]);
+          checkNestedKeys(innerType._def.shape(), dataValue, [...path, key]);
         }
       }
     });
@@ -109,7 +113,7 @@ export function parseWithWhitelistCheck<T extends z.ZodObject<any>>(
     typeof data === "object" &&
     data !== null
   ) {
-    checkNestedKeys(schema.shape, data);
+    checkNestedKeys(schema._def.shape(), data);
   }
 
   const parseResult = schema.safeParse(data);
