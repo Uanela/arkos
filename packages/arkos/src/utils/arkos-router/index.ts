@@ -1,5 +1,12 @@
 import { Router, RouterOptions } from "express";
-import { IArkosRouter, ArkosRouteConfig } from "./types";
+import {
+  IArkosRouter,
+  ArkosRouteConfig,
+  ArkosAnyRequestHandler,
+  PathParams,
+  ArkosIRoute,
+  ArkosRouteMethodHandler,
+} from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
 import RouteConfigRegistry from "./route-config-registry";
@@ -10,7 +17,6 @@ import {
 } from "./utils/helpers";
 import { getArkosConfig } from "../../exports";
 import { catchAsync } from "../../exports/error-handler";
-import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
@@ -58,13 +64,33 @@ export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
         "head",
         "trace",
         "options",
-      ];
+      ] as const;
 
-      type ArkosAnyRequestHandler =
-        | ArkosRequestHandler
-        | ArkosErrorRequestHandler;
+      if (prop === "route") {
+        return function (path: PathParams) {
+          const routeChain: any = {};
 
-      if (httpMethods.includes(prop as string)) {
+          httpMethods.forEach((method) => {
+            routeChain[method] = function (
+              config: ArkosAnyRequestHandler | Omit<ArkosRouteConfig, "path">,
+              ...handlers: ArkosAnyRequestHandler[]
+            ) {
+              const fullConfig: ArkosRouteConfig = {
+                ...config,
+                path,
+              };
+
+              receiver[method](fullConfig, ...handlers);
+
+              return routeChain as ArkosIRoute;
+            };
+          });
+
+          return routeChain;
+        };
+      }
+
+      if (httpMethods.includes(prop as any)) {
         return function (
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
@@ -90,27 +116,27 @@ export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
             );
 
           if (handlers.length > 0) {
-            handlers = handlers.map(
-              (handler: ArkosAnyRequestHandler | ArkosAnyRequestHandler[]) => {
-                if (!handler) throw UndefinedHandlerError(handler);
+            const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
+              return arr.reduce((flat, item) => {
+                return flat.concat(
+                  Array.isArray(item) ? flattenHandlers(item) : item
+                );
+              }, []);
+            };
 
-                return typeof handler === "function"
-                  ? catchAsync(handler, {
-                      type: handler.length > 3 ? "error" : "normal",
-                    })
-                  : Array.isArray(handler)
-                    ? handler.map((nesteHandler: any) => {
-                        if (!handler) throw UndefinedHandlerError(nesteHandler);
+            const flatHandlers = flattenHandlers(handlers);
 
-                        if (typeof nesteHandler === "function") return;
-                        catchAsync(nesteHandler, {
-                          type: handler.length > 3 ? "error" : "normal",
-                        });
-                        return nesteHandler;
-                      })
-                    : handler;
+            handlers = flatHandlers.map((handler: ArkosAnyRequestHandler) => {
+              if (!handler) throw UndefinedHandlerError(handler);
+
+              if (typeof handler !== "function") {
+                throw UndefinedHandlerError(handler);
               }
-            );
+
+              return catchAsync(handler, {
+                type: handler.length > 3 ? "error" : "normal",
+              });
+            });
 
             const finalHandler = handlers[handlers.length - 1];
             RouteConfigRegistry.register(finalHandler, config, method);
@@ -133,7 +159,10 @@ export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
               "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
             );
 
-          if (!validationConfig?.resolver && config.validation)
+          if (
+            !validationConfig?.resolver &&
+            Object.keys(config.validation || {}).length > 0
+          )
             throw Error(
               `Trying to pass validators into route ${route} config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })`
             );
