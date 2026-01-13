@@ -5,11 +5,8 @@ import { bootstrap } from "./app";
 import http from "http";
 import sheu from "./utils/sheu";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";
-import { killDevelopmentServerChildProcess } from "./utils/cli/dev";
-import { killServerChildProcess } from "./utils/cli/utils/cli.helpers";
-import { killProductionServerChildProcess } from "./utils/cli/start";
 import { ArkosConfig } from "./types/new-arkos-config";
-import { ArkosInitConfig } from "./exports";
+import { ArkosInitConfig } from "./types/arkos-config";
 import { getArkosConfig as getArkosConfigHelper } from "./utils/helpers/arkos-config.helpers";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
 
@@ -122,9 +119,7 @@ async function initApp(
       err?.message || "Something went wrong while starting your application!"
     );
     console.error(err);
-    killDevelopmentServerChildProcess?.();
-    killServerChildProcess?.();
-    killProductionServerChildProcess?.();
+    throw err;
   }
 }
 
