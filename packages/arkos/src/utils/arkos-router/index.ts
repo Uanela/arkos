@@ -261,7 +261,7 @@ export function generateOpenAPIFromApp(app: any) {
         if (["body"].includes(key)) continue;
         if ((config?.validation as any)[key]) {
           const jsonSchema = validatorToJsonSchema(val as any);
-          const params = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+          const params = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
             (validationToParameterMapping as any)[key],
             jsonSchema
           );

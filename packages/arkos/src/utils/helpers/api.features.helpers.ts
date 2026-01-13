@@ -1,6 +1,173 @@
 import deepmerge from "./deepmerge.helper";
+import prismaSchemaParser from "../prisma/prisma-schema-parser";
 
-function parseKey(key: string): { fields: string[]; operator: string | null } {
+function parseNestedObject(
+  key: string,
+  value: any
+): { fields: string[]; operator: string | null; value: any }[] {
+  const results: { fields: string[]; operator: string | null; value: any }[] =
+    [];
+
+  function traverse(obj: any, path: string[] = []) {
+    for (const [k, v] of Object.entries(obj)) {
+      if (k.includes("__")) {
+        const parsedKey = parseKeyString(k);
+        const fullPath = [...path, ...parsedKey.fields];
+
+        if (v && typeof v === "object" && !Array.isArray(v))
+          traverse(v, fullPath);
+        else
+          results.push({
+            fields: fullPath,
+            operator: parsedKey.operator,
+            value: v,
+          });
+      } else {
+        const currentPath = [...path, k];
+
+        if (v && typeof v === "object" && !Array.isArray(v)) {
+          traverse(v, currentPath);
+        } else {
+          const lastPart = currentPath[currentPath.length - 1];
+          const possibleOperators = [
+            "icontains",
+            "contains",
+            "in",
+            "notIn",
+            "hasSome",
+            "hasEvery",
+            "or",
+            "isNull",
+            "isEmpty",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "equals",
+            "startsWith",
+            "endsWith",
+            "not",
+            "some",
+            "none",
+            "every",
+          ];
+
+          let operator: string | null = null;
+          let fields = [...currentPath];
+
+          if (possibleOperators.includes(lastPart)) {
+            operator = lastPart;
+            fields = currentPath.slice(0, -1);
+          }
+
+          results.push({ fields, operator, value: v });
+        }
+      }
+    }
+  }
+
+  traverse({ [key]: value });
+  return results;
+}
+
+function parseKey(
+  key: string,
+  value: any
+): { fields: string[]; operator: string | null; value: any }[] {
+  // If value is an object (not array), check if key has double underscores
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    if (key.includes("__")) {
+      // Parse the key first to get the base fields
+      const parsedKey = parseKeyString(key);
+
+      // Now traverse the object value, starting from the parsed base fields
+      const results: {
+        fields: string[];
+        operator: string | null;
+        value: any;
+      }[] = [];
+
+      function traverse(obj: any, path: string[] = []) {
+        for (const [k, v] of Object.entries(obj)) {
+          if (k.includes("__")) {
+            const innerParsedKey = parseKeyString(k);
+            const fullPath = [...path, ...innerParsedKey.fields];
+
+            if (v && typeof v === "object" && !Array.isArray(v)) {
+              traverse(v, fullPath);
+            } else {
+              results.push({
+                fields: fullPath,
+                operator: innerParsedKey.operator,
+                value: v,
+              });
+            }
+          } else {
+            const currentPath = [...path, k];
+
+            if (v && typeof v === "object" && !Array.isArray(v)) {
+              traverse(v, currentPath);
+            } else {
+              const possibleOperators = [
+                "icontains",
+                "contains",
+                "in",
+                "notIn",
+                "hasSome",
+                "hasEvery",
+                "or",
+                "isNull",
+                "isEmpty",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "equals",
+                "startsWith",
+                "endsWith",
+                "not",
+                "some",
+                "none",
+                "every",
+              ];
+
+              let operator: string | null = null;
+              let fields = [...currentPath];
+
+              if (possibleOperators.includes(k)) {
+                operator = k;
+                fields = currentPath.slice(0, -1);
+              }
+
+              results.push({ fields, operator, value: v });
+            }
+          }
+        }
+      }
+
+      traverse(value, parsedKey.fields);
+      return results;
+    }
+
+    // No double underscores in key, just parse the nested object normally
+    return parseNestedObject(key, value);
+  }
+
+  // Simple string/primitive value with potential double underscore key
+  const parsedKey = parseKeyString(key);
+  return [
+    {
+      fields: parsedKey.fields,
+      operator: parsedKey.operator,
+      value,
+    },
+  ];
+}
+
+function parseKeyString(key: string): {
+  fields: string[];
+  operator: string | null;
+} {
   const fields: string[] = [];
   let i = 0;
 
@@ -10,27 +177,11 @@ function parseKey(key: string): { fields: string[]; operator: string | null } {
       continue;
     }
 
-    if (key[i] === "[") {
-      const closingBracket = key.indexOf("]", i);
-      if (closingBracket === -1) break;
-
-      const bracketContent = key.substring(i + 1, closingBracket);
-      if (bracketContent) {
-        fields.push(bracketContent);
-      }
-      i = closingBracket + 1;
-      continue;
-    }
-
     let nextDelimiter = key.length;
     const nextUnderscore = key.indexOf("__", i);
-    const nextBracket = key.indexOf("[", i);
 
     if (nextUnderscore !== -1 && nextUnderscore < nextDelimiter) {
       nextDelimiter = nextUnderscore;
-    }
-    if (nextBracket !== -1 && nextBracket < nextDelimiter) {
-      nextDelimiter = nextBracket;
     }
 
     const fieldName = key.substring(i, nextDelimiter);
@@ -66,12 +217,15 @@ function parseKey(key: string): { fields: string[]; operator: string | null } {
   ];
 
   const lastField = fields[fields.length - 1];
+  let operator: string | null = null;
+  let finalFields = fields;
+
   if (possibleOperators.includes(lastField)) {
-    const operator = fields.pop()!;
-    return { fields, operator };
+    operator = lastField;
+    finalFields = fields.slice(0, -1);
   }
 
-  return { fields, operator: null };
+  return { fields: finalFields, operator };
 }
 
 function buildNestedObject(
@@ -117,13 +271,11 @@ function buildNestedObject(
           current = current[fields[i]];
         }
 
-        current[fields[fields.length - 1]] = {
-          equals: convertValue(
-            typeof val === "string" ? val.trim() : val,
-            fields[0],
-            fieldConfig
-          ),
-        };
+        current[fields[fields.length - 1]] = convertValue(
+          typeof val === "string" ? val.trim() : val,
+          fields[0],
+          fieldConfig
+        );
 
         return nested;
       }),
@@ -141,9 +293,7 @@ function buildNestedObject(
   const lastField = fields[fields.length - 1];
 
   if (!operator) {
-    current[lastField] = {
-      equals: convertValue(value, fields[0], fieldConfig),
-    };
+    current[lastField] = convertValue(value, fields[0], fieldConfig);
     return result;
   }
 
@@ -155,6 +305,12 @@ function buildNestedObject(
         contains: stringValue,
         mode: "insensitive",
       };
+      if (
+        !["mongodb", "postgresql"].includes(
+          prismaSchemaParser.config.datasourceProvider
+        )
+      )
+        delete current[lastField].mode;
       break;
 
     case "contains":
@@ -162,6 +318,12 @@ function buildNestedObject(
         contains: stringValue,
         mode: "sensitive",
       };
+      if (
+        !["mongodb", "postgresql"].includes(
+          prismaSchemaParser.config.datasourceProvider
+        )
+      )
+        delete current[lastField].mode;
       break;
 
     case "in":
@@ -252,28 +414,6 @@ const DEFAULT_FIELD_CONFIG: FieldConfig = {
  * @param query - Object containing query parameters
  * @param fieldConfig - Optional configuration for field type mapping
  * @returns Structured filter object for database queries
- *
- * @example
- * // Basic usage
- * parseQueryParamsWithModifiers({ name__contains: 'john' })
- * // => { name: { contains: 'john', mode: 'sensitive' } }
- *
- * @example
- * // Deep merge example
- * parseQueryParamsWithModifiers({
- *   'some__data': '1',
- *   'some__info': '2'
- * })
- * // => { some: { data: '1', info: '2' } }
- *
- * @example
- * // Complex query
- * parseQueryParamsWithModifiers({
- *   name__not__equals: 'john',
- *   age__gt: '25',
- *   tags__in: 'tag1,tag2',
- *   orderBy__createdAt: 'desc'
- * })
  */
 export function parseQueryParamsWithModifiers(
   query: Record<string, any>,
@@ -285,17 +425,19 @@ export function parseQueryParamsWithModifiers(
   for (const [key, value] of entries) {
     if (value === undefined) continue;
 
-    const { fields, operator } = parseKey(key);
+    const parsedItems = parseKey(key, value);
 
-    if (fields.length === 0) continue;
+    for (const { fields, operator, value: val } of parsedItems) {
+      if (fields.length === 0) continue;
 
-    const currentResult = buildNestedObject(
-      fields,
-      operator,
-      value,
-      fieldConfig
-    );
-    result = deepmerge(result, currentResult);
+      const currentResult = buildNestedObject(
+        fields,
+        operator,
+        val,
+        fieldConfig
+      );
+      result = deepmerge(result, currentResult);
+    }
   }
 
   return result;
@@ -303,42 +445,18 @@ export function parseQueryParamsWithModifiers(
 
 /**
  * Converts string values to appropriate types based on field configuration
- *
- * @example
- * // Example usage:
- * const query = {
- *   name__not__equals: 'uanela',
- *   email__contains: 'example.com',
- *   description__icontains: 'test',
- *   age__gt: '25',
- *   status: 'active',
- *   tags__in: 'tag1,tag2,tag3',
- *   createdAt__gt: '2024-01-01',
- *   isActive: 'true',
- *   orderBy__createdAt: 'desc',
- *   some__data: '1',
- *   some__info: '2'
- * };
- *
- * const result = parseQueryParamsWithModifiers(query);
- * // Result will properly merge nested objects instead of overwriting
  */
 function convertValue(
   value: string,
   fieldName: string,
   config: FieldConfig
 ): any {
-  if (typeof value !== "string") {
-    return value;
-  }
+  if (typeof value !== "string") return value;
 
-  if (config.dateFields?.includes?.(fieldName) && value) {
-    return new Date(value);
-  }
+  if (config.dateFields?.includes?.(fieldName) && value) return new Date(value);
 
-  if (config.booleanFields?.includes?.(fieldName)) {
+  if (config.booleanFields?.includes?.(fieldName))
     return value.toLowerCase() === "true";
-  }
 
   if (config.numericFields?.includes?.(fieldName)) {
     const num = Number(value);
