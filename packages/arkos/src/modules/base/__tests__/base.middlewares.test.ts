@@ -1172,9 +1172,12 @@ describe("Express Middleware Functions", () => {
         };
 
         expect(() =>
-          validateRequestInputs({ validation: validators } as any)
+          validateRequestInputs({
+            validation: validators,
+            path: "/users",
+          } as any)
         ).toThrow(
-          "Trying to pass validators into route config validation option without choosing a validation resolver under arkos config { validation: {} }."
+          `Trying to pass validators into route "/users" config validation option without choosing a validation resolver under arkos config { validation: {} }.`
         );
       });
 
