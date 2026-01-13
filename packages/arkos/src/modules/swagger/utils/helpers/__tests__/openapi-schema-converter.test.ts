@@ -547,7 +547,7 @@ describe("OpenAPISchemaConverter", () => {
     });
   });
 
-  describe("jsonSchemaToOpeApiParameters", () => {
+  describe("jsonSchemaToOpenApiParameters", () => {
     it("should convert flat object schema to parameters", () => {
       const schema = {
         type: "object",
@@ -558,7 +558,7 @@ describe("OpenAPISchemaConverter", () => {
         required: ["name"],
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -592,7 +592,7 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -621,7 +621,7 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -639,7 +639,7 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -659,7 +659,7 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -682,7 +682,7 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -702,19 +702,19 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const queryResult = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const queryResult = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
-      const pathResult = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const pathResult = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "path",
         schema
       );
-      const headerResult = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const headerResult = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "header",
         schema
       );
-      const cookieResult = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const cookieResult = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "cookie",
         schema
       );
@@ -728,7 +728,7 @@ describe("OpenAPISchemaConverter", () => {
     it("should return empty array for schema without properties", () => {
       const schema = { type: "object" };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -739,7 +739,7 @@ describe("OpenAPISchemaConverter", () => {
     it("should return empty array for non-object schema", () => {
       const schema = { type: "string" };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -756,7 +756,7 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -775,7 +775,7 @@ describe("OpenAPISchemaConverter", () => {
         required: ["field1", "field2"],
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -799,7 +799,7 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
@@ -819,7 +819,7 @@ describe("OpenAPISchemaConverter", () => {
         },
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema,
         "parent"
@@ -853,7 +853,7 @@ describe("OpenAPISchemaConverter", () => {
         required: ["id"],
       };
 
-      const result = openApiSchemaConverter.jsonSchemaToOpeApiParameters(
+      const result = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
         "query",
         schema
       );
