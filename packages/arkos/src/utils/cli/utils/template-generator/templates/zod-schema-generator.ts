@@ -282,16 +282,16 @@ export default ${modelName!.pascal}Schema;${typeExport}
     const filterSchemasSection = filterSchemas ? `\n${filterSchemas}\n` : "";
 
     const typeExport = isTypeScript
-      ? `\n\nexport type ${modelName!.pascal}QuerySchemaType = z.infer<typeof ${modelName!.pascal}QuerySchema>;`
+      ? `\n\nexport type Query${modelName!.pascal}SchemaType = z.infer<typeof Query${modelName!.pascal}Schema>;`
       : "";
 
     return `import { z } from "zod";
 ${enumImports}${filterSchemasSection}
-const ${modelName!.pascal}QuerySchema = z.object({
+const Query${modelName!.pascal}Schema = z.object({
 ${schemaFields.join(",\n")}
 });
 
-export default ${modelName!.pascal}QuerySchema;${typeExport}
+export default Query${modelName!.pascal}Schema;${typeExport}
 `;
   }
 

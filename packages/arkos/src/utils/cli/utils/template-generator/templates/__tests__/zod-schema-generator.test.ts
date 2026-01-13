@@ -454,7 +454,7 @@ describe("ZodSchemaGenerator", () => {
         expect(result).toContain("title: StringFilterSchema.optional()");
         expect(result).toContain("content: StringFilterSchema.optional()");
         expect(result).toContain(
-          "export type PostQuerySchemaType = z.infer<typeof PostQuerySchema>"
+          "export type QueryPostSchemaType = z.infer<typeof QueryPostSchema>"
         );
       });
 
@@ -1122,7 +1122,7 @@ describe("ZodSchemaGenerator", () => {
 
         expect(result).not.toContain("export type");
         expect(result).not.toContain("z.infer");
-        expect(result).toContain("export default PostQuerySchema;");
+        expect(result).toContain("export default QueryPostSchema;");
       });
     });
 
