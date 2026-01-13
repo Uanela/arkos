@@ -1597,12 +1597,13 @@ describe("PrismaSchemaParser", () => {
       expect(result).not.toContain("title");
     });
 
-    it("should work with single model by returning all its fields", () => {
+    it("should work with single model by returning common fields", () => {
       const schemaContent = `
       model User {
         id Int @id
         email String @unique
         name String?
+        createdAt DateTime @default(now())
       }
     `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
@@ -1614,8 +1615,9 @@ describe("PrismaSchemaParser", () => {
 
       expect(result).toContain("model Test {");
       expect(result).toContain("id Int @id");
-      expect(result).toContain("email String @unique");
-      expect(result).toContain("name String?");
+      expect(result).toContain("createdAt DateTime @default(now())");
+      expect(result).not.toContain("email String @unique");
+      expect(result).not.toContain("name String?");
     });
 
     it("should filter out fields without rawLine", () => {

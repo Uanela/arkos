@@ -516,18 +516,18 @@ describe("generateOpenAPIFromApp", () => {
       );
     });
 
-    // it("should apply prefix to route() paths", () => {
-    //   const proxied = ArkosRouter() as any;
-    //   const handler = jest.fn();
+    it("should apply prefix to route() paths", () => {
+      const proxied = ArkosRouter({ prefix: "/api" }) as any;
+      const handler = jest.fn();
 
-    //   proxied.route("/users").get({}, handler);
+      proxied.route("/users").get({}, handler);
 
-    //   expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
-    //     handler,
-    //     { path: "/api/users" },
-    //     "get"
-    //   );
-    // });
+      expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
+        handler,
+        { path: "/api/users" },
+        "get"
+      );
+    });
 
     it("should handle route() with all HTTP methods", () => {
       const proxied = ArkosRouter() as any;
