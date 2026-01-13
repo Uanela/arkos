@@ -204,7 +204,7 @@ export interface AuthPermission {
   role: AuthRole;
 }
 
-export interface User {
+export interface User extends Record<string, any> {
   id: string;
   isSuperUser: boolean;
   password: string;
