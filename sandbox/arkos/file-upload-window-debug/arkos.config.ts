@@ -12,7 +12,7 @@ const config: ArkosConfig = {
     login: {
       allowedUsernames: ["username"],
     },
-    enabled: true,
+    enabled: false,
   },
   validation: {
     resolver: "zod",
@@ -21,6 +21,15 @@ const config: ArkosConfig = {
   swagger: {
     mode: "zod",
     strict: false,
+    scalarApiReferenceConfiguration: {
+      async onBeforeRequest({ request }) {
+        (request as any).method = "GET";
+        // console.log(request);
+      },
+      // async onLoaded(a) {
+      //   console.log(a);
+      // },
+    },
   },
 };
 

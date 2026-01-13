@@ -10,6 +10,7 @@ export const config: RouterConfig = {
   findMany: {
     validation: {
       // params: z.object({ sheu: z.string() }),
+      query: UserQuerySchema,
     },
     experimental: {
       openapi: {
@@ -17,9 +18,13 @@ export const config: RouterConfig = {
       },
     },
   },
+  updateOne: {
+    experimental: {
+      uploads: { field: "photo", type: "single", required: true },
+    },
+  },
   createOne: {
     validation: {
-      body: z.object({ the: z.string() }),
       // params: z.object({ sheu: z.string() }),
     },
     experimental: {

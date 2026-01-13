@@ -31,7 +31,7 @@ const UserQuerySchema = z.object({
   isActive: BooleanFilterSchema.optional(),
   role: StringFilterSchema.optional(),
   createdAt: DateTimeFilterSchema.optional(),
-  updatedAt: DateTimeFilterSchema.optional()
+  updatedAt: DateTimeFilterSchema.optional(),
 });
 
 export default UserQuerySchema;

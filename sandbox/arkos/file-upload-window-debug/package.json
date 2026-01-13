@@ -26,6 +26,8 @@
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
+    "@scalar/api-reference": "1.13.4",
+    "@scalar/express-api-reference": "^0.8.13",
     "@swc/core": "^1.15.8",
     "arkos": "file:../../../packages/arkos",
     "express": "^4.21.2",
