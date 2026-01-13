@@ -21,12 +21,19 @@
     "prisma": "^6.11.1",
     "swc-node": "^1.0.0",
     "tsx": "^4.20.5",
+<<<<<<< HEAD
     "tsx-strict": "file:../../../../tsx-strict",
+=======
+    "tsx-strict": "0.4.2",
+>>>>>>> 9a69528c78a1b8af87f9a1b6869380f77c9a7db5
     "typescript": "^5.7.3"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
+<<<<<<< HEAD
     "@swc/core": "^1.15.8",
+=======
+>>>>>>> 9a69528c78a1b8af87f9a1b6869380f77c9a7db5
     "arkos": "file:../../../packages/arkos",
     "express": "^4.21.2",
     "glob": "^13.0.0",
