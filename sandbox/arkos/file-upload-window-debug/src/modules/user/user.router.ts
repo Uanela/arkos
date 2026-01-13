@@ -4,11 +4,13 @@ import { IRouter, Router } from "express";
 import userController from "./user.controller";
 import z from "zod";
 import { AppError } from "arkos/error-handler";
+import UserQuerySchema from "./schemas/query-user.schema";
 
 export const config: RouterConfig = {
   findMany: {
     validation: {
       // params: z.object({ sheu: z.string() }),
+      query: UserQuerySchema,
     },
     experimental: {
       openapi: {
@@ -76,7 +78,12 @@ function nextCall() {
 
 userRouter
   .route("/the-user")
-  .get({ authentication: false }, nextCall(), [nextCall()], [gen("answer")])
+  .get(
+    { authentication: false, validation: { query: UserQuerySchema } },
+    nextCall(),
+    [nextCall()],
+    [gen("answer")]
+  )
   .post({ authentication: false }, nextCall(), [nextCall()], [gen("answer")]);
 
 export const r = Router();
