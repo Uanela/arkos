@@ -32,25 +32,23 @@ function create${modelName.pascal}Permission(action${isTypeScript ? ": string" :
 
   const permissions = advanced
     ? `
-export const ${modelName.camel}Permissions = Object.keys(${modelName.camel}AccessControl).reduce(
+${
+  isTypeScript
+    ? `type ${modelName.pascal}PermissionName = \`can\${keyof typeof ${modelName.camel}AccessControl & string}\`;
+
+`
+    : "\n"
+}export const ${modelName.camel}Permissions = Object.keys(${modelName.camel}AccessControl).reduce(
   (acc, key) => {
-    acc[\`can\${key}\`${isTypeScript ? " as const" : ""}] = authService.permission(
+    acc[\`can\${key}\`${isTypeScript ? ` as ${modelName.pascal}PermissionName` : ""}] = authService.permission(
       key,
       "${modelName.kebab}",
       ${modelName.camel}AccessControl
     );
     return acc;
   },
-  {} ${isTypeScript ? "as Record<string, ReturnType<typeof authService.permission>>" : ""}
-)${
-        isTypeScript
-          ? ` as {
-  [K in keyof typeof ${modelName.camel}AccessControl as \`can\${K & string}\`]: ReturnType<
-    typeof authService.permission
-  >;
-}`
-          : ""
-      };`
+  {} ${isTypeScript ? `as Record<${modelName.pascal}PermissionName, ReturnType<typeof authService.permission>>` : ""}
+);`
     : `export const ${modelName.camel}Permissions = {
   canCreate: create${modelName.pascal}Permission("Create"),
   canUpdate: create${modelName.pascal}Permission("Update"),
