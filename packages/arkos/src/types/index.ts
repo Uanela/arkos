@@ -206,14 +206,11 @@ export interface AuthPermission {
 
 export interface User {
   id: string;
-  isStaff: boolean;
   isSuperUser: boolean;
   password: string;
   passwordChangedAt?: Date;
   deletedSelfAccountAt: Date;
   isActive: boolean;
-  roles?: UserRole[] | any[];
-  role?: UserRole | any;
 }
 
 export interface ArkosRequest<
