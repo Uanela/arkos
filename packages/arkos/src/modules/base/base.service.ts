@@ -119,6 +119,7 @@ export class BaseService<T extends ModelDelegate = any> {
       list:
         modelFields?.filter((field) => field.isRelation && field.isArray) || [],
     };
+    this.prisma = getPrismaInstance();
   }
 
   private executeOperation = (config: ServiceOperationConfig) => {
