@@ -250,6 +250,19 @@ generate
   .option("-p, --path <path>", "Custom path for prisma model", "prisma/schema")
   .action(generateCommand.prismaModel);
 
+generate
+  .command("components")
+  .alias("co")
+  .description("Generate multiple components for a module")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
+  .option("-a, --all", "Generate all components")
+  .option(
+    "-n, --names <names>",
+    "Comma-separated list of components (e.g., s,sc,m or service,schema,model)"
+  )
+  .action(generateCommand.multipleComponents);
+
 program
   .command("prisma")
   .command("generate")

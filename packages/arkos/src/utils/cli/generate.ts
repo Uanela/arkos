@@ -12,6 +12,9 @@ import sheu from "../sheu";
 import { capitalize } from "../helpers/text.helpers";
 import prismaSchemaParser from "../prisma/prisma-schema-parser";
 import { kebabToHuman } from "../../modules/swagger/utils/helpers/swagger.router.helpers";
+import generateMultipleComponents, {
+  MultipleComponentsGenerateOptions,
+} from "./utils/template-generator/templates/generate-multiple-components";
 
 const models = prismaSchemaParser
   .getModelsAsArrayOfStrings()
@@ -19,11 +22,14 @@ const models = prismaSchemaParser
 
 const knownModules = [...models, "file-upload", "auth"];
 
-interface GenerateOptions {
+export type GenerateOptions = {
   path?: string;
   model?: string;
   module?: string;
-}
+  shouldExit?: boolean;
+  shouldPrintError?: boolean;
+  isBulk?: boolean;
+};
 
 interface GenerateConfig {
   templateName: string;
@@ -115,16 +121,19 @@ const generateFile = async (
       );
     fs.writeFileSync(filePath, content);
 
-    console.info("");
+    if (!options.isBulk) console.info("");
     sheu.done(
-      `${humamReadableTemplateName} for ${names.kebab.replace("-", " ")} generated under ${fullCleanCwd(filePath)}`
+      `${humamReadableTemplateName} ${options.isBulk ? "" : `for ${names.kebab.replace("-", " ")} `}generated under ${fullCleanCwd(filePath)}`
     );
   } catch (err: any) {
-    console.info("");
-    sheu.error(
-      `Failed because of ${err?.message?.toLowerCase() || "unknown reason"}`
-    );
-    process.exit(1);
+    if (options.shouldPrintError !== false) {
+      console.info("");
+      sheu.error(
+        `Failed because of ${err?.message?.toLowerCase() || "unknown reason"}`
+      );
+    } else throw err;
+
+    if (options.shouldExit !== false) process.exit(1);
   }
 };
 
@@ -281,5 +290,9 @@ export const generateCommand = {
       allowedModules: "*",
       ext: "prisma",
     });
+  },
+
+  multipleComponents: async (options: MultipleComponentsGenerateOptions) => {
+    await generateMultipleComponents(options);
   },
 };
