@@ -26,6 +26,7 @@ export type GenerateOptions = {
   path?: string;
   model?: string;
   module?: string;
+  overwrite?: boolean;
   shouldExit?: boolean;
   shouldPrintError?: boolean;
   isBulk?: boolean;
@@ -115,7 +116,7 @@ const generateFile = async (
     };
 
     const content = generateTemplate(config.templateName, templateData);
-    if (fs.existsSync(filePath))
+    if (!options.overwrite !== true && fs.existsSync(filePath))
       throw new Error(
         `${capitalize(humamReadableTemplateName.toLowerCase())} for ${names.kebab.replace("-", " ")} already exists.`
       );

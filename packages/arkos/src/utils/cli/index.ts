@@ -34,152 +34,116 @@ program
 const generate = program
   .command("generate")
   .alias("g")
-  .description("Generate arkos components");
+  .description("Generate arkos components")
+  .option("-m, --module <name>", "Module name")
+  .option("--model <name>", "Module name (alias for --module)")
+  .option(
+    "-p, --path <path>",
+    "Custom path for the component",
+    "src/modules/{{module-name}}"
+  )
+  .option("-o, --overwrite", "Overwrites all the content on the existing file");
 
 generate
   .command("controller")
   .alias("c")
   .description("Generate a new controller")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the controller",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.controller);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.controller({ ...generateOptions, ...options });
+  });
 
 generate
   .command("service")
   .alias("s")
   .description("Generate a new service")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the service",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.service);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.service({ ...generateOptions, ...options });
+  });
 
 generate
   .command("router")
   .alias("r")
   .description("Generate a new router")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the router",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.router);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.router({ ...generateOptions, ...options });
+  });
 
 generate
   .command("auth-configs")
   .alias("a")
   .description("Generate auth configuration")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
   .option("-a, --advanced", "Advanced code structure")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the router",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.authConfigs);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.authConfigs({ ...generateOptions, ...options });
+  });
 
 generate
   .command("query-options")
   .alias("q")
   .description("Generate prisma query options")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for query options",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.queryOptions);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.queryOptions({ ...generateOptions, ...options });
+  });
 
 generate
   .command("interceptors")
   .alias("i")
   .description("Generate a new interceptors file")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for interceptors",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.interceptors);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.interceptors({ ...generateOptions, ...options });
+  });
 
 generate
   .command("hooks")
   .alias("h")
   .description("Generate a new service hooks file")
 
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for hooks",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.hooks);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.hooks({ ...generateOptions, ...options });
+  });
 
 generate
   .command("create-schema")
   .alias("cs")
   .description("Generate a new zod create schema file for a prisma model")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for schema",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.createSchema);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.createSchema({ ...generateOptions, ...options });
+  });
 
 generate
   .command("update-schema")
   .alias("us")
   .description("Generate a new zod update schema file for a prisma model")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for schema",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.updateSchema);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updateSchema({ ...generateOptions, ...options });
+  });
 
 generate
   .command("schema")
   .alias("sc")
   .description("Generate a new zod create schema file for a prisma model")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for schema",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.baseSchema);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.baseSchema({ ...generateOptions, ...options });
+  });
 
 generate
   .command("query-schema")
   .alias("qs")
   .description("Generate a new zod update schema file for a prisma model")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for schema",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.querySchema);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.querySchema({ ...generateOptions, ...options });
+  });
 
 generate
   .command("create-dto")
@@ -187,14 +151,10 @@ generate
   .description(
     "Generate a new class-validator create dto file for a prisma model"
   )
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for dto",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.createDto);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.createDto({ ...generateOptions, ...options });
+  });
 
 generate
   .command("update-dto")
@@ -202,14 +162,10 @@ generate
   .description(
     "Generate a new class-validator update dto file for a prisma model"
   )
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for dto",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.updateDto);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updateDto({ ...generateOptions, ...options });
+  });
 
 generate
   .command("dto")
@@ -217,14 +173,10 @@ generate
   .description(
     "Generate a new class-validator base dto file for a prisma model"
   )
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for dto",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.baseDto);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.baseDto({ ...generateOptions, ...options });
+  });
 
 generate
   .command("query-dto")
@@ -232,36 +184,34 @@ generate
   .description(
     "Generate a new class-validator base dto file for a prisma model"
   )
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for dto",
-    "src/modules/{{module-name}}"
-  )
-  .action(generateCommand.queryDto);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.queryDto({ ...generateOptions, ...options });
+  });
 
 generate
   .command("model")
   .alias("m")
   .description("Generate a new prisma model")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
   .option("-p, --path <path>", "Custom path for prisma model", "prisma/schema")
-  .action(generateCommand.prismaModel);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.prismaModel({ ...generateOptions, ...options });
+  });
 
 generate
   .command("components")
   .alias("co")
   .description("Generate multiple components for a module")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
   .option("-a, --all", "Generate all components")
   .option(
     "-n, --names <names>",
     "Comma-separated list of components (e.g., s,sc,m or service,schema,model)"
   )
-  .action(generateCommand.multipleComponents);
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.multipleComponents({ ...generateOptions, ...options });
+  });
 
 program
   .command("prisma")
