@@ -116,7 +116,7 @@ const generateFile = async (
     };
 
     const content = generateTemplate(config.templateName, templateData);
-    if (!options.overwrite !== true && fs.existsSync(filePath))
+    if (options.overwrite !== true && fs.existsSync(filePath))
       throw new Error(
         `${capitalize(humamReadableTemplateName.toLowerCase())} for ${names.kebab.replaceAll("-", " ")} already exists.`
       );
