@@ -118,13 +118,18 @@ const generateFile = async (
     const content = generateTemplate(config.templateName, templateData);
     if (!options.overwrite !== true && fs.existsSync(filePath))
       throw new Error(
-        `${capitalize(humamReadableTemplateName.toLowerCase())} for ${names.kebab.replace("-", " ")} already exists.`
+        `${capitalize(humamReadableTemplateName.toLowerCase())} for ${names.kebab.replaceAll("-", " ")} already exists.`
       );
+    else if (options.overwrite)
+      sheu.warn(
+        `Overwriting ${humamReadableTemplateName.toLowerCase()} of ${names.kebab.replaceAll("-", " ")} because it already exists.`
+      );
+
     fs.writeFileSync(filePath, content);
 
     if (!options.isBulk) console.info("");
     sheu.done(
-      `${humamReadableTemplateName} ${options.isBulk ? "" : `for ${names.kebab.replace("-", " ")} `}generated under ${fullCleanCwd(filePath)}`
+      `${humamReadableTemplateName} ${options.isBulk ? "" : `for ${names.kebab.replaceAll("-", " ")} `}generated under ${fullCleanCwd(filePath)}`
     );
   } catch (err: any) {
     if (options.shouldPrintError !== false) {
