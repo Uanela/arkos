@@ -9,7 +9,7 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "inlineSources": true,
-    "removeComments": true,
+    "removeComments": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
