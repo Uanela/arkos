@@ -23,7 +23,7 @@ export function getArkosConfig(): ArkosConfig {
 process.on("uncaughtException", (err) => {
   if (err.message.includes("EPIPE")) return;
 
-  if (process.env.CLI !== "true")
+  if (process.env.NO_CLI === "true")
     sheu.error("UNCAUGHT EXCEPTION! SHUTTING DOWN...\n", {
       timestamp: true,
       bold: true,
@@ -127,7 +127,7 @@ async function initApp(
 }
 
 process.on("unhandledRejection", (err: AppError) => {
-  if (process.env.CLI !== "true")
+  if (process.env.NO_CLI === "true")
     sheu.error("UNHANDLED REJECTION! SHUTTING DOWN...\n", {
       timestamp: true,
       bold: true,
