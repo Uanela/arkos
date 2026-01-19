@@ -87,18 +87,6 @@ interface ServiceOperationConfig {
  *
  * **Example:** accessing request context in hooks
  *
- * ```ts
- * class ProductService extends BaseService<Product> {
- *   async beforeCreateOne(data: CreateOneData<Product>, queryOptions?: CreateOneOptions<Product>, context?: ServiceBaseContext) {
- *     // Access current user from request context
- *     const userId = context?.user?.id;
- *     if (userId) {
- *       data.createdBy = userId;
- *     }
- *   }
- * }
- * ```
- *
  * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-service-class}
  * @see {@link https://www.arkosjs.com/docs/guide/accessing-request-context-in-services}
  *
@@ -525,7 +513,7 @@ export class BaseService<T extends ModelDelegate = any> {
 
   private async processPasswordHashing(data: any): Promise<any> {
     if (Array.isArray(data)) {
-      const processedArray = [];
+      const processedArray: any[] = [];
       for (let i = 0; i < data.length; i++) {
         const curr = data[i];
         if (
@@ -552,6 +540,32 @@ export class BaseService<T extends ModelDelegate = any> {
     return data;
   }
 
+  /**
+   * Creates a single record in the database.
+   *
+   * @template TOptions - The query options type extending CreateOneOptions<T>
+   * @param {CreateOneData<T>} data - The data for creating the record
+   * @param {TOptions} [queryOptions] - Optional Prisma query options (select, include, etc.)
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<CreateOneResult<T>>} The created record
+   *
+   * @example
+   * ```ts
+   * const user = await userService.createOne({
+   *   name: "John Doe",
+   *   email: "john@example.com"
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // With query options
+   * const user = await userService.createOne(
+   *   { name: "John Doe", email: "john@example.com" },
+   *   { include: { posts: true } }
+   * );
+   * ```
+   */
   async createOne<TOptions extends CreateOneOptions<T>>(
     data: CreateOneData<T>,
     queryOptions?: TOptions,
@@ -566,6 +580,24 @@ export class BaseService<T extends ModelDelegate = any> {
     })(data, queryOptions, context);
   }
 
+  /**
+   * Creates multiple records in the database.
+   *
+   * @template TOptions - The query options type extending CreateManyOptions<T>
+   * @param {CreateManyData<T>} data - Array of data objects or object with data array
+   * @param {TOptions} [queryOptions] - Optional Prisma query options
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<CreateManyResult<T>>} Object containing count of created records
+   *
+   * @example
+   * ```ts
+   * const result = await userService.createMany([
+   *   { name: "John Doe", email: "john@example.com" },
+   *   { name: "Jane Smith", email: "jane@example.com" }
+   * ]);
+   * console.log(result.count); // 2
+   * ```
+   */
   async createMany<TOptions extends CreateManyOptions<T>>(
     data: CreateManyData<T>,
     queryOptions?: TOptions,
@@ -580,6 +612,25 @@ export class BaseService<T extends ModelDelegate = any> {
     })(data, queryOptions, context);
   }
 
+  /**
+   * Counts records matching the specified filters.
+   *
+   * @param {CountFilters<T>} [filters] - Optional where conditions to filter records
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<number>} The count of matching records
+   *
+   * @example
+   * ```ts
+   * const totalUsers = await userService.count();
+   * ```
+   *
+   * @example
+   * ```ts
+   * const activeUsers = await userService.count({
+   *   status: "active"
+   * });
+   * ```
+   */
   async count(
     filters?: CountFilters<T>,
     context?: ServiceBaseContext
@@ -591,6 +642,31 @@ export class BaseService<T extends ModelDelegate = any> {
     })(filters, context);
   }
 
+  /**
+   * Finds multiple records matching the specified filters.
+   *
+   * @template TOptions - The query options type extending FindManyOptions<T>
+   * @param {FindManyFilters<T>} [filters] - Optional where conditions to filter records
+   * @param {TOptions} [queryOptions] - Optional Prisma query options (select, include, orderBy, skip, take, etc.)
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<FindManyResult<T, TOptions>>} Array of matching records
+   *
+   * @example
+   * ```ts
+   * const users = await userService.findMany({
+   *   status: "active"
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // With pagination and ordering
+   * const users = await userService.findMany(
+   *   { status: "active" },
+   *   { orderBy: { createdAt: "desc" }, take: 10, skip: 0 }
+   * );
+   * ```
+   */
   async findMany<TOptions extends FindManyOptions<T>>(
     filters?: FindManyFilters<T>,
     queryOptions?: TOptions,
@@ -603,6 +679,29 @@ export class BaseService<T extends ModelDelegate = any> {
     })(filters, queryOptions, context);
   }
 
+  /**
+   * Finds a single record by its ID.
+   *
+   * @template TOptions - The query options type extending FindByIdOptions<T>
+   * @param {string | number} id - The unique identifier of the record
+   * @param {TOptions} [queryOptions] - Optional Prisma query options (select, include, etc.)
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<FindByIdResult<T>>} The matching record or undefined if not found
+   *
+   * @example
+   * ```ts
+   * const user = await userService.findById("user-123");
+   * ```
+   *
+   * @example
+   * ```ts
+   * // With relations
+   * const user = await userService.findById(
+   *   "user-123",
+   *   { include: { posts: true, profile: true } }
+   * );
+   * ```
+   */
   async findById<TOptions extends FindByIdOptions<T>>(
     id: string | number,
     queryOptions?: TOptions,
@@ -615,6 +714,31 @@ export class BaseService<T extends ModelDelegate = any> {
     })(id, queryOptions, context);
   }
 
+  /**
+   * Finds the first record matching the specified filters.
+   *
+   * @template TOptions - The query options type extending FindOneOptions<T>
+   * @param {FindOneFilters<T>} filters - Where conditions to filter records
+   * @param {TOptions} [queryOptions] - Optional Prisma query options (select, include, orderBy, etc.)
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<FindOneResult<T>>} The first matching record or undefined if not found
+   *
+   * @example
+   * ```ts
+   * const user = await userService.findOne({
+   *   email: "john@example.com"
+   * });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // With relations and ordering
+   * const latestPost = await postService.findOne(
+   *   { published: true },
+   *   { include: { author: true }, orderBy: { createdAt: "desc" } }
+   * );
+   * ```
+   */
   async findOne<TOptions extends FindOneOptions<T>>(
     filters: FindOneFilters<T>,
     queryOptions?: TOptions,
@@ -645,6 +769,34 @@ export class BaseService<T extends ModelDelegate = any> {
     })(filters, queryOptions, context);
   }
 
+  /**
+   * Updates a single record matching the specified filters.
+   *
+   * @template TOptions - The query options type extending UpdateOneOptions<T>
+   * @param {UpdateOneFilters<T>} filters - Where conditions to identify the record to update
+   * @param {UpdateOneData<T>} data - The data to update
+   * @param {TOptions} [queryOptions] - Optional Prisma query options (select, include, etc.)
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<UpdateOneResult<T>>} The updated record
+   *
+   * @example
+   * ```ts
+   * const updatedUser = await userService.updateOne(
+   *   { id: "user-123" },
+   *   { name: "John Updated" }
+   * );
+   * ```
+   *
+   * @example
+   * ```ts
+   * // With relations
+   * const updatedUser = await userService.updateOne(
+   *   { id: "user-123" },
+   *   { name: "John Updated" },
+   *   { include: { posts: true } }
+   * );
+   * ```
+   */
   async updateOne<TOptions extends UpdateOneOptions<T>>(
     filters: UpdateOneFilters<T>,
     data: UpdateOneData<T>,
@@ -660,6 +812,25 @@ export class BaseService<T extends ModelDelegate = any> {
     })(filters, data, queryOptions, context);
   }
 
+  /**
+   * Updates multiple records matching the specified filters.
+   *
+   * @template TOptions - The query options type extending UpdateManyOptions<T>
+   * @param {UpdateManyFilters<T>} filters - Where conditions to identify records to update
+   * @param {UpdateManyData<T>} data - The data to update
+   * @param {TOptions} [queryOptions] - Optional Prisma query options
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<UpdateManyResult<T>>} Object containing count of updated records
+   *
+   * @example
+   * ```ts
+   * const result = await userService.updateMany(
+   *   { status: "pending" },
+   *   { status: "active" }
+   * );
+   * console.log(result.count); // Number of updated records
+   * ```
+   */
   async updateMany<TOptions extends UpdateManyOptions<T>>(
     filters: UpdateManyFilters<T>,
     data: UpdateManyData<T>,
@@ -675,6 +846,20 @@ export class BaseService<T extends ModelDelegate = any> {
     })(filters, data, queryOptions, context);
   }
 
+  /**
+   * Deletes a single record matching the specified filters.
+   *
+   * @param {DeleteOneFilters<T>} filters - Where conditions to identify the record to delete
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<DeleteOneResult<T>>} The deleted record
+   *
+   * @example
+   * ```ts
+   * const deletedUser = await userService.deleteOne({
+   *   id: "user-123"
+   * });
+   * ```
+   */
   async deleteOne(
     filters: DeleteOneFilters<T>,
     context?: ServiceBaseContext
@@ -686,6 +871,21 @@ export class BaseService<T extends ModelDelegate = any> {
     })(filters, context);
   }
 
+  /**
+   * Deletes multiple records matching the specified filters.
+   *
+   * @param {DeleteManyFilters<T>} filters - Where conditions to identify records to delete
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<DeleteManyResult<T>>} Object containing count of deleted records
+   *
+   * @example
+   * ```ts
+   * const result = await userService.deleteMany({
+   *   status: "inactive"
+   * });
+   * console.log(result.count); // Number of deleted records
+   * ```
+   */
   async deleteMany(
     filters: DeleteManyFilters<T>,
     context?: ServiceBaseContext
@@ -697,6 +897,24 @@ export class BaseService<T extends ModelDelegate = any> {
     })(filters, context);
   }
 
+  /**
+   * Performs multiple update operations in a single transaction.
+   * Each item in the data array must contain filter criteria to identify the record to update.
+   *
+   * @template TOptions - The query options type extending UpdateOneOptions<T>
+   * @param {UpdateOneData<T>[]} dataArray - Array of update objects, each containing filter criteria and data
+   * @param {TOptions} [queryOptions] - Optional Prisma query options applied to all updates
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<Array<UpdateOneResult<T>>>} Array of updated records
+   *
+   * @example
+   * ```ts
+   * const results = await userService.batchUpdate([
+   *   { where: { id: "user-1" }, data: { status: "active" } },
+   *   { where: { id: "user-2" }, data: { status: "inactive" } }
+   * ]);
+   * ```
+   */
   async batchUpdate<TOptions extends UpdateOneOptions<T>>(
     dataArray: UpdateOneData<T>[],
     queryOptions?: TOptions,
@@ -711,6 +929,22 @@ export class BaseService<T extends ModelDelegate = any> {
     })(dataArray, queryOptions, context);
   }
 
+  /**
+   * Performs multiple delete operations in a single transaction.
+   *
+   * @param {Array<DeleteOneFilters<T>>} batchFilters - Array of where conditions, each identifying a record to delete
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<Array<DeleteOneResult<T>>>} Array of deleted records
+   *
+   * @example
+   * ```ts
+   * const deletedUsers = await userService.batchDelete([
+   *   { id: "user-1" },
+   *   { id: "user-2" },
+   *   { id: "user-3" }
+   * ]);
+   * ```
+   */
   async batchDelete(
     batchFilters: Array<DeleteOneFilters<T>>,
     context?: ServiceBaseContext
