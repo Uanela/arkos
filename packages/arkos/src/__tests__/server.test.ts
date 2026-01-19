@@ -68,7 +68,7 @@ describe("Server Module", () => {
     process.env.__PORT = "8000";
     process.env.__HOST = "127.0.0.1";
     delete process.env.CLI_COMMAND;
-    delete process.env.CLI;
+    delete process.env.NO_CLI;
     delete process.env.ARKOS_BUILD;
 
     originalConsoleError = jest.spyOn(console, "error").mockImplementation();
@@ -508,7 +508,7 @@ describe("Server Module", () => {
     });
 
     it("should log non-EPIPE errors when CLI is not true", () => {
-      delete process.env.CLI;
+      process.env.NO_CLI = "true";
       const error = new Error("Test error");
 
       (process as any).emit("uncaughtException", error);
@@ -521,7 +521,7 @@ describe("Server Module", () => {
     });
 
     it("should not log when CLI is true", () => {
-      process.env.CLI = "true";
+      process.env.NO_CLI = "false";
       const error = new Error("Test error");
 
       (process as any).emit("uncaughtException", error);
@@ -558,7 +558,7 @@ describe("Server Module", () => {
     });
 
     it("should log message when CLI is not true", () => {
-      delete process.env.CLI;
+      process.env.NO_CLI = "true";
       const error = new Error("Test rejection");
 
       try {
@@ -573,7 +573,7 @@ describe("Server Module", () => {
     });
 
     it("should not log message when CLI is true", () => {
-      process.env.CLI = "true";
+      process.env.NO_CLI = "false";
       const error = new Error("Test rejection");
 
       try {
