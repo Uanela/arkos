@@ -18,6 +18,8 @@ let envFiles: string[] | undefined;
  * Production start command for the arkos CLI
  */
 export function startCommand(options: StartOptions = {}) {
+  process.env.NO_CLI = "true";
+
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
   process.env.ARKOS_BUILD = "true";
 

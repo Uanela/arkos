@@ -10,7 +10,7 @@ const serverReplacements: ServerReplacement[] = [
   {
     filePath: "dist/cjs/utils/helpers/arkos-config.helpers.js",
     replacement:
-      'process.env.CLI !== "true" ? __importDefault(require(`${fs_helpers_1.crd()}/arkos.config.${fs_helpers_1.getUserFileExtension()}`)) : () => {}',
+      'process.env.NO_CLI === "true" ? __importDefault(require(`${fs_helpers_1.crd()}/arkos.config.${fs_helpers_1.getUserFileExtension()}`)) : () => {}',
     old: '"ReplaceWithDynamicImport"',
   },
   {
@@ -21,7 +21,7 @@ const serverReplacements: ServerReplacement[] = [
   {
     filePath: "dist/esm/utils/helpers/arkos-config.helpers.js",
     replacement:
-      'process.env.CLI !== "true" ? await importModule(`${crd()}/arkos.config.${getUserFileExtension()}`) : () => {}',
+      'process.env.NO_CLI === "true" ? await importModule(`${crd()}/arkos.config.${getUserFileExtension()}`) : () => {}',
     old: '"ReplaceWithDynamicImport"',
   },
   {
