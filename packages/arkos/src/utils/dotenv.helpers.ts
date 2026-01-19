@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
+import dotenvExpand from "dotenv-expand";
 import sheu from "./sheu";
 
 /**
@@ -44,6 +45,8 @@ export function loadEnvironmentVariables() {
         if (result.error) {
           console.warn(`Warning: Error loading ${filePath}`, result.error);
         } else loadedEnvs.push(filePath);
+
+        dotenvExpand.expand(result);
       }
     }
   });
