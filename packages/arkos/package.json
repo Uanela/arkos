@@ -71,14 +71,30 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/types/exports/*/index.d.ts"],
-      "services": ["./dist/types/exports/services/index.d.ts"],
-      "validation": ["./dist/types/exports/validation/index.d.ts"],
-      "error-handler": ["./dist/types/exports/error-handler/index.d.ts"],
-      "prisma": ["./dist/types/exports/prisma/index.d.ts"],
-      "auth": ["./dist/types/exports/auth/index.d.ts"],
-      "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
-      "utils": ["./dist/types/exports/utils/index.d.ts"]
+      "*": [
+        "./dist/types/exports/*/index.d.ts"
+      ],
+      "services": [
+        "./dist/types/exports/services/index.d.ts"
+      ],
+      "validation": [
+        "./dist/types/exports/validation/index.d.ts"
+      ],
+      "error-handler": [
+        "./dist/types/exports/error-handler/index.d.ts"
+      ],
+      "prisma": [
+        "./dist/types/exports/prisma/index.d.ts"
+      ],
+      "auth": [
+        "./dist/types/exports/auth/index.d.ts"
+      ],
+      "middlewares": [
+        "./dist/types/exports/middlewares/index.d.ts"
+      ],
+      "utils": [
+        "./dist/types/exports/utils/index.d.ts"
+      ]
     }
   },
   "scripts": {
@@ -132,7 +148,11 @@
     "url": "https://github.com/uanela/arkos/issues"
   },
   "homepage": "https://www.arkosjs.com",
-  "files": ["dist", "cli.js", "README.md"],
+  "files": [
+    "dist",
+    "cli.js",
+    "README.md"
+  ],
   "devDependencies": {
     "@babel/preset-typescript": "^7.27.1",
     "@prisma/client": "^6.4.1",
@@ -154,6 +174,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "dotenv-expand": "^12.0.3",
     "esbuild": "^0.25.1",
     "fast-glob": "^3.3.3",
     "jest": "^29.7.0",
@@ -182,6 +203,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
+    "dotenv-expand": "^12.0.3",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "html-to-text": "^9.0.5",
@@ -193,8 +215,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "trash-cli": "6.0.0",
-    "zod": "^3.24.2",
     "tsx-strict": "^0.3.3",
+    "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.6"
   },
   "engines": {
