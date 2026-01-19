@@ -9,12 +9,11 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "inlineSources": true,
-    "removeComments": false,
+    "removeComments": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "stripInternal": false,
     "lib": ["es2021"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
