@@ -1,8 +1,18 @@
 import deepmerge from "./deepmerge.helper";
 import { ArkosConfig } from "../../types/new-arkos-config";
+import sheu from "../sheu";
 ("ReplaceWithNeededImportsForArkosConfig"); // This will be filled by post build script
 
-const definedArkosConfig = "ReplaceWithDynamicImport"; // This will be filled by post build script
+let definedArkosConfig: any;
+
+try {
+  definedArkosConfig = "ReplaceWithDynamicImport"; // This will be filled by post build script
+} catch (err: any) {
+  if (err.message.toLowercase().includes("module not found"))
+    sheu.warn(`No arkos.config.{js|ts} configuration file was found`, {
+      timestamp: true,
+    });
+}
 
 export function isUsingAuthentication() {
   const { authentication } = getArkosConfig();
@@ -48,6 +58,6 @@ export function getArkosConfig(): ArkosConfig {
     defaultArkosConfig,
     typeof definedArkosConfig === "string"
       ? {}
-      : (definedArkosConfig as any).default
+      : (definedArkosConfig as any).default || {}
   );
 }

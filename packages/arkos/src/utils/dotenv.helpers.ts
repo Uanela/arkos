@@ -6,12 +6,10 @@ import sheu from "./sheu";
 
 /**
  * Loads environment variables in a prioritized order
- * 1. Base defaults (.env.defaults) - lowest priority
- * 2. Environment-specific (.env.{NODE_ENV})
- * 3. Environment-specific local (.env.{NODE_ENV}.local)
- * 4. Local environment overrides (.env.local)
- * 5. Main .env file (.env)
- * 6. Process environment variables - highest priority (already loaded by Node)
+ * 1. Main .env file (.env)
+ * 2. Local environment overrides (.env.local)
+ * 3. Environment-specific (.env.{NODE_ENV})
+ * 5. Environment-specific local (.env.{NODE_ENV}.local)
  */
 export function loadEnvironmentVariables() {
   const ENV = process.env.NODE_ENV;
