@@ -1,6 +1,6 @@
 {{#if (neq authentication.type "define later")}}
 model User {
-  id                   String    {{prisma.idDatabaseType}}
+  id                   String    {{{prisma.idDatabaseType}}}
   {{authentication.usernameField}}  String   @unique
   password             String
   passwordChangedAt    DateTime?

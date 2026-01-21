@@ -80,7 +80,10 @@ class TemplateCompiler {
       "user.auth.ts.hbs",
     ];
 
-    if (config.authentication?.type === "define later")
+    if (
+      !config.authentication?.type ||
+      config.authentication?.type === "define later"
+    )
       files.push(
         ...authSharedPrismaFiles,
         ...dynamicAuthPrismaFiles,
@@ -91,7 +94,10 @@ class TemplateCompiler {
         ...userModuleComponents,
         ...authModuleComponents,
         ...authPermissionModuleComponents,
-        ...authRoleModuleComponents
+        ...authRoleModuleComponents,
+        ...userZodSchemaFiles,
+        ...userClassValidatorDtoFiles,
+        "file-upload.auth.ts.hbs"
       );
 
     if (config.authentication?.type === "static")
