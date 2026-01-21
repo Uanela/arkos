@@ -2,11 +2,15 @@ import { ArkosRouteConfig } from "./types";
 
 export default class RouteConfigRegistry {
   private static configs = new WeakMap<
-    Function,
+    Function | Array<Function>,
     ArkosRouteConfig & { method: string }
   >();
 
-  static register(handler: Function, config: ArkosRouteConfig, method: string) {
+  static register(
+    handler: Function | Array<Function>,
+    config: ArkosRouteConfig,
+    method: string
+  ) {
     this.configs.set(handler, { ...config, method });
   }
 

@@ -300,23 +300,83 @@ class OpenAPIchemaConverter {
     return converted;
   }
 
-  jsonSchemaToOpeApiParameters(
+  jsonSchemaToOpenApiParameters(
     paramType: string,
     schema: any,
-    prefix = ""
+    prefix = "",
+    visitedRefs = new Set<string>()
   ): any[] {
-    const params = [];
+    const params: any[] = [];
+
+    if (schema.$ref) {
+      const refPath = schema.$ref;
+      if (visitedRefs.has(refPath)) return params;
+
+      visitedRefs.add(refPath);
+      const resolvedSchema = this.resolveRef(schema, refPath);
+      if (resolvedSchema) {
+        params.push(
+          ...this.jsonSchemaToOpenApiParameters(
+            paramType,
+            resolvedSchema,
+            prefix,
+            visitedRefs
+          )
+        );
+      }
+      visitedRefs.delete(refPath);
+      return params;
+    }
 
     if (schema.type === "object" && schema.properties) {
       for (const [key, value] of Object.entries(schema.properties) as any) {
         const paramName = prefix ? `${prefix}[${key}]` : key;
 
-        if (value.type === "object" && value.properties) {
+        if (value.$ref) {
+          const refPath = value.$ref;
+          if (visitedRefs.has(refPath)) continue;
+
+          visitedRefs.add(refPath);
+          const resolvedSchema = this.resolveRef(schema, refPath);
+
+          if (resolvedSchema) {
+            if (resolvedSchema.type === "object" && resolvedSchema.properties) {
+              params.push(
+                ...this.jsonSchemaToOpenApiParameters(
+                  paramType,
+                  resolvedSchema,
+                  paramName,
+                  visitedRefs
+                )
+              );
+            } else {
+              const param = {
+                in: paramType,
+                name: paramName,
+                required: schema.required?.includes(key) || false,
+                schema: {
+                  type: resolvedSchema.type,
+                  ...(resolvedSchema.enum && { enum: resolvedSchema.enum }),
+                  ...(resolvedSchema.format && {
+                    format: resolvedSchema.format,
+                  }),
+                },
+              };
+              params.push(param);
+            }
+          }
+          visitedRefs.delete(refPath);
+        } else if (value.type === "object" && value.properties) {
           params.push(
-            ...this.jsonSchemaToOpeApiParameters(paramType, value, paramName)
+            ...this.jsonSchemaToOpenApiParameters(
+              paramType,
+              value,
+              paramName,
+              visitedRefs
+            )
           );
         } else {
-          params.push({
+          const param = {
             in: paramType,
             name: paramName,
             required: schema.required?.includes(key) || false,
@@ -325,12 +385,32 @@ class OpenAPIchemaConverter {
               ...(value.enum && { enum: value.enum }),
               ...(value.format && { format: value.format }),
             },
-          });
+          };
+          params.push(param);
         }
       }
     }
 
     return params;
+  }
+
+  resolveRef(rootSchema: any, refPath: string): any {
+    if (!refPath.startsWith("#/properties/")) {
+      return null;
+    }
+
+    const path = refPath.substring(2).split("/");
+    let current = rootSchema;
+
+    for (const part of path) {
+      if (current && current[part] !== undefined) {
+        current = current[part];
+      } else {
+        return null;
+      }
+    }
+
+    return current;
   }
 }
 

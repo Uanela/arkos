@@ -174,7 +174,7 @@ describe("generateServiceTemplate", () => {
         "class FileUploadService extends ArkosFileUploadService {}"
       );
       expect(result).toContain(
-        "const fileUploadService = new FileUploadService();"
+        `const fileUploadService = new FileUploadService("/uploads", 10 * 1024 * 1024, /.*/, 10);`
       );
       expect(result).not.toContain('"file-upload"');
       expect(result).not.toContain("<");
@@ -500,7 +500,9 @@ describe("generateServiceTemplate", () => {
       const result = generateServiceTemplate(options);
 
       expect(result).toContain("FileUploadService");
-      expect(result).toContain("new FileUploadService()");
+      expect(result).toContain(
+        `new FileUploadService("/uploads", 10 * 1024 * 1024, /.*/, 10)`
+      );
       expect(result).not.toContain('"file-upload"');
       expect(result).not.toContain("<");
     });
@@ -611,6 +613,9 @@ describe("generateServiceTemplate", () => {
 
         const result = generateServiceTemplate(options);
         expect(result).not.toContain("<");
+
+        if (pascal === "FileUpload")
+          expect(result).toContain(`("/uploads", 10 * 1024 * 1024, /.*/, 10)`);
       });
     });
   });

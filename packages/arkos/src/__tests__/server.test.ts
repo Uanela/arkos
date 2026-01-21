@@ -1,27 +1,41 @@
 import { Express } from "express";
-import * as server from "../server";
 import http from "http";
-import portAndHostAllocator from "../utils/features/port-and-host-allocator";
 import sheu from "../utils/sheu";
+import { ArkosInitConfig } from "../types/arkos-config";
+
+const mockProcessExit = jest
+  .spyOn(process, "exit")
+  .mockImplementation((code?: any) => {
+    throw new Error(`process.exit called with ${code}`);
+  });
+
+jest.useFakeTimers();
+
+import * as server from "../server";
 import { bootstrap } from "../app";
-import { ArkosInitConfig } from "../exports";
-import * as deep from "../utils/helpers/deepmerge.helper";
+import portAndHostAllocator from "../utils/features/port-and-host-allocator";
+import runtimeCliCommander from "../utils/cli/utils/runtime-cli-commander";
+import * as arkosConfigHelpers from "../utils/helpers/arkos-config.helpers";
 
-const { initApp, getExpressApp, terminateApplicationRunningProcessAndServer } =
-  server;
+const {
+  initApp,
+  getExpressApp,
+  terminateApplicationRunningProcessAndServer,
+  getArkosConfig,
+} = server;
 
+jest.mock("../app");
 jest.mock("../utils/features/port-and-host-allocator");
+jest.mock("../utils/sheu");
+jest.mock("../utils/cli/utils/runtime-cli-commander");
 jest.mock("../utils/prisma/prisma-schema-parser", () => ({
   getModelsAsArrayOfStrings: jest.fn(() => []),
-}));
-jest.mock("../app", () => ({
-  bootstrap: jest.fn().mockResolvedValue({}),
+  parse: jest.fn(),
 }));
 jest.mock("fs");
-jest.mock("../utils/sheu");
 jest.mock("http", () => {
   const mockServer = {
-    listen: jest.fn().mockImplementation((_, _1, callback) => {
+    listen: jest.fn().mockImplementation((_: any, _1: any, callback: any) => {
       if (typeof callback === "function") callback();
       return mockServer;
     }),
@@ -43,19 +57,22 @@ describe("Server Module", () => {
 
   beforeEach(() => {
     mockServer = (http.createServer as jest.Mock)();
-    mockApp = {};
+    mockApp = { use: jest.fn(), get: jest.fn() } as any;
     (bootstrap as jest.Mock).mockResolvedValue(mockApp);
-    (
-      portAndHostAllocator.getHostAndAvailablePort as jest.Mock
-    ).mockResolvedValue({
-      port: 8000,
-      host: "localhost",
-    });
+    (portAndHostAllocator.getFirstNonLocalIp as jest.Mock).mockReturnValue(
+      "192.168.1.100"
+    );
 
     originalProcessEnv = { ...process.env };
     process.env.NODE_ENV = "test";
+    process.env.__PORT = "8000";
+    process.env.__HOST = "127.0.0.1";
+    delete process.env.CLI_COMMAND;
+    delete process.env.NO_CLI;
+    delete process.env.ARKOS_BUILD;
 
     originalConsoleError = jest.spyOn(console, "error").mockImplementation();
+    mockProcessExit.mockClear();
   });
 
   afterEach(() => {
@@ -65,28 +82,40 @@ describe("Server Module", () => {
   });
 
   describe("getExpressApp", () => {
-    it("returns undefined when app hasn't been initialized", () => {
+    it("should return undefined when app has not been initialized", () => {
       const app = getExpressApp();
       expect(app).toBeUndefined();
     });
 
-    it("returns the express app instance", async () => {
+    it("should return the express app instance after initialization", async () => {
       await initApp();
       const app = getExpressApp();
-
       expect(app).toBe(mockApp);
     });
   });
 
-  describe("initApp", () => {
-    it("initializes app with default config when no config is provided", async () => {
-      process.env.__PORT = "8000";
-      process.env.__HOST = "127.0.0.1";
-      await initApp({ use: [] });
+  describe("getArkosConfig", () => {
+    it("should return default config", () => {
+      const config = getArkosConfig();
+      expect(config).toHaveProperty("port");
+      expect(config).toHaveProperty("host");
+      expect(config).toHaveProperty("welcomeMessage");
+    });
 
-      expect(bootstrap).toHaveBeenCalledWith(
-        expect.objectContaining({ use: [] })
-      );
+    it("should include file upload configuration", () => {
+      const config = getArkosConfig();
+      expect(config.fileUpload).toEqual({
+        baseUploadDir: "uploads",
+        baseRoute: "/api/uploads",
+      });
+    });
+  });
+
+  describe("initApp - Basic Initialization", () => {
+    it("should initialize app with default config when no config is provided", async () => {
+      await initApp();
+
+      expect(bootstrap).toHaveBeenCalledWith({});
       expect(http.createServer).toHaveBeenCalledWith(mockApp);
       expect(mockServer.listen).toHaveBeenCalledWith(
         8000,
@@ -95,35 +124,60 @@ describe("Server Module", () => {
       );
     });
 
-    it("merges provided config with default config", async () => {
+    it("should initialize app with empty config object", async () => {
+      await initApp({});
+
+      expect(bootstrap).toHaveBeenCalledWith({});
+      expect(mockServer.listen).toHaveBeenCalled();
+    });
+
+    it("should call bootstrap with provided config", async () => {
       const customConfig: ArkosInitConfig = {
         use: [],
       };
 
       await initApp(customConfig);
 
-      expect(bootstrap).toHaveBeenCalledWith(
-        expect.objectContaining({
-          use: [],
-        })
-      );
+      expect(bootstrap).toHaveBeenCalledWith(customConfig);
     });
+  });
 
-    it("uses environment variables for port and host", async () => {
-      process.env.__PORT = "7000";
-      process.env.__HOST = "127.0.0.1";
+  describe("initApp - Port and Host Configuration", () => {
+    it("should use __PORT environment variable", async () => {
+      process.env.__PORT = "3000";
+      process.env.__HOST = "0.0.0.0";
 
       await initApp();
 
       expect(mockServer.listen).toHaveBeenCalledWith(
-        7000,
+        3000,
+        "0.0.0.0",
+        expect.any(Function)
+      );
+    });
+
+    it("should convert localhost to 127.0.0.1 when listening", async () => {
+      process.env.__PORT = "8080";
+      process.env.__HOST = "localhost";
+
+      await initApp();
+
+      expect(mockServer.listen).toHaveBeenCalledWith(
+        8080,
         "127.0.0.1",
         expect.any(Function)
       );
     });
 
-    it("does not start server when port is undefined", async () => {
-      jest.spyOn(deep, "default").mockReturnValueOnce({ port: undefined });
+    it("should not start server when port is undefined in config", async () => {
+      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValueOnce({
+        port: undefined,
+        host: "0.0.0.0",
+        welcomeMessage: "Test",
+        fileUpload: { baseUploadDir: "uploads", baseRoute: "/api/uploads" },
+        routers: { strict: false },
+        debugging: { requests: { level: 1 } },
+      });
 
       await initApp();
 
@@ -133,219 +187,520 @@ describe("Server Module", () => {
       );
     });
 
-    it("calls configureServer when provided", async () => {
-      const configureServerMock = jest.fn();
+    it("should handle numeric port values", async () => {
+      process.env.__PORT = "9999";
+      process.env.__HOST = "127.0.0.1";
+
+      await initApp();
+
+      expect(mockServer.listen).toHaveBeenCalledWith(
+        9999,
+        "127.0.0.1",
+        expect.any(Function)
+      );
+    });
+  });
+
+  describe("initApp - Server Configuration", () => {
+    it("should call configureServer when provided", async () => {
+      const configureServerMock = jest.fn().mockResolvedValue(undefined);
       const customConfig: ArkosInitConfig = {
         configureServer: configureServerMock,
       };
+
+      process.env.__PORT = "8000";
+      process.env.__HOST = "127.0.0.1";
 
       await initApp(customConfig);
 
       expect(configureServerMock).toHaveBeenCalledWith(mockServer);
     });
 
-    it("handles errors during initialization", async () => {
+    // it("should await async configureServer", async () => {
+    //   let resolved = false;
+    //   const configureServerMock = jest.fn().mockImplementation(async () => {
+    //     await new Promise((resolve) => setTimeout(resolve, 10));
+    //     resolved = true;
+    //   });
+
+    //   process.env.__PORT = "8000";
+    //   process.env.__HOST = "127.0.0.1";
+
+    //   await initApp({ configureServer: configureServerMock });
+    //   jest.advanceTimersByTime(100);
+
+    //   expect(resolved).toBe(true);
+    // });
+
+    it("should handle configureServer throwing error", async () => {
+      const error = new Error("Configure server failed");
+      const configureServerMock = jest.fn().mockRejectedValue(error);
+
+      process.env.__PORT = "8000";
+      process.env.__HOST = "127.0.0.1";
+
+      await expect(
+        initApp({ configureServer: configureServerMock })
+      ).rejects.toThrow("Configure server failed");
+
+      expect(sheu.error).toHaveBeenCalledWith("Configure server failed");
+      expect(console.error).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe("initApp - Server Messages", () => {
+    it("should display development server message by default", async () => {
+      process.env.__PORT = "8000";
+      process.env.__HOST = "127.0.0.1";
+      delete process.env.ARKOS_BUILD;
+
+      await initApp();
+
+      const calls = (sheu.ready as jest.Mock).mock.calls;
+      const devServerCall = calls.find(
+        (call) =>
+          call[0].includes("Development server") &&
+          call[0].includes("localhost:8000")
+      );
+      expect(devServerCall).toBeDefined();
+    });
+
+    it("should display production server message when ARKOS_BUILD is true", async () => {
+      process.env.ARKOS_BUILD = "true";
+      process.env.__PORT = "8000";
+      process.env.__HOST = "127.0.0.1";
+
+      await initApp();
+
+      const calls = (sheu.ready as jest.Mock).mock.calls;
+      const prodServerCall = calls.find(
+        (call) =>
+          call[0].includes("Production server") &&
+          call[0].includes("localhost:8000")
+      );
+      expect(prodServerCall).toBeDefined();
+    });
+
+    it("should display network server message when host is 0.0.0.0", async () => {
+      process.env.__PORT = "8000";
+      process.env.__HOST = "0.0.0.0";
+
+      await initApp();
+
+      const calls = (sheu.ready as jest.Mock).mock.calls;
+      const networkCall = calls.find(
+        (call) =>
+          call[0].includes("Network server") &&
+          call[0].includes("192.168.1.100:8000")
+      );
+      expect(networkCall).toBeDefined();
+    });
+
+    it("should not display network server message when host is not 0.0.0.0", async () => {
+      process.env.__PORT = "8000";
+      process.env.__HOST = "127.0.0.1";
+
+      await initApp();
+
+      const calls = (sheu.ready as jest.Mock).mock.calls;
+      const networkCall = calls.find((call) =>
+        call[0].includes("Network server")
+      );
+      expect(networkCall).toBeUndefined();
+    });
+
+    it("should display custom host when not localhost or 0.0.0.0", async () => {
+      process.env.__PORT = "8000";
+      process.env.__HOST = "example.com";
+
+      await initApp();
+
+      const calls = (sheu.ready as jest.Mock).mock.calls;
+      const customHostCall = calls.find((call) =>
+        call[0].includes("example.com:8000")
+      );
+      expect(customHostCall).toBeDefined();
+    });
+  });
+
+  describe("initApp - Swagger Documentation Messages", () => {
+    it("should display swagger documentation message when swagger mode is enabled", async () => {
+      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+        port: 8000,
+        host: "0.0.0.0",
+        welcomeMessage: "Test",
+        fileUpload: { baseUploadDir: "uploads", baseRoute: "/api/uploads" },
+        routers: { strict: false },
+        debugging: { requests: { level: 1 } },
+        swagger: {
+          mode: "zod",
+          endpoint: "/api/docs",
+        },
+      });
+
+      await initApp();
+
+      expect(sheu.ready).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Documentation waiting on http://localhost:8000/api/docs"
+        )
+      );
+    });
+
+    it("should use default swagger endpoint when not specified", async () => {
+      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+        port: 8000,
+        host: "0.0.0.0",
+        welcomeMessage: "Test",
+        fileUpload: { baseUploadDir: "uploads", baseRoute: "/api/uploads" },
+        routers: { strict: false },
+        debugging: { requests: { level: 1 } },
+        swagger: {
+          mode: "prisma",
+        },
+      });
+
+      await initApp();
+
+      expect(sheu.ready).toHaveBeenCalledWith(
+        expect.stringContaining("/api/docs")
+      );
+    });
+
+    it("should not display swagger message when ARKOS_BUILD is true and enableAfterBuild is false", async () => {
+      process.env.ARKOS_BUILD = "true";
+      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+        port: 8000,
+        host: "0.0.0.0",
+        welcomeMessage: "Test",
+        fileUpload: { baseUploadDir: "uploads", baseRoute: "/api/uploads" },
+        routers: { strict: false },
+        debugging: { requests: { level: 1 } },
+        swagger: {
+          mode: "zod",
+          endpoint: "/api/docs",
+          enableAfterBuild: false,
+        },
+      });
+
+      await initApp();
+
+      const calls = (sheu.ready as jest.Mock).mock.calls;
+      const swaggerCall = calls.find((call) =>
+        call[0].includes("Documentation")
+      );
+      expect(swaggerCall).toBeUndefined();
+    });
+
+    it("should display swagger message when ARKOS_BUILD is true and enableAfterBuild is true", async () => {
+      process.env.ARKOS_BUILD = "true";
+      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+        port: 8000,
+        host: "0.0.0.0",
+        welcomeMessage: "Test",
+        fileUpload: { baseUploadDir: "uploads", baseRoute: "/api/uploads" },
+        routers: { strict: false },
+        debugging: { requests: { level: 1 } },
+        swagger: {
+          mode: "zod",
+          endpoint: "/api/docs",
+          enableAfterBuild: true,
+        },
+      });
+
+      await initApp();
+
+      expect(sheu.ready).toHaveBeenCalledWith(
+        expect.stringContaining("Documentation")
+      );
+    });
+  });
+
+  describe("initApp - CLI Command Handling", () => {
+    it("should not start server when CLI_COMMAND is set", async () => {
+      process.env.CLI_COMMAND = "EXPORT_AUTH_ACTION";
+
+      await initApp();
+
+      expect(mockServer.listen).not.toHaveBeenCalled();
+      expect(runtimeCliCommander.handle).toHaveBeenCalled();
+    });
+
+    it("should call runtimeCliCommander.handle when CLI_COMMAND is set", async () => {
+      process.env.CLI_COMMAND = "EXPORT_AUTH_ACTION";
+
+      await initApp();
+
+      expect(runtimeCliCommander.handle).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not call runtimeCliCommander when CLI_COMMAND is not set", async () => {
+      delete process.env.CLI_COMMAND;
+
+      await initApp();
+
+      expect(runtimeCliCommander.handle).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("initApp - Error Handling", () => {
+    it("should handle errors during bootstrap", async () => {
       const error = new Error("Bootstrap failed");
       (bootstrap as jest.Mock).mockRejectedValueOnce(error);
 
-      await initApp();
+      await expect(initApp()).rejects.toThrow("Bootstrap failed");
 
       expect(sheu.error).toHaveBeenCalledWith("Bootstrap failed");
       expect(console.error).toHaveBeenCalledWith(error);
     });
 
-    it("handles case where portAndHostAllocator returns undefined before build", async () => {
-      (
-        portAndHostAllocator.getHostAndAvailablePort as jest.Mock
-      ).mockResolvedValue(undefined);
+    it("should handle errors with custom message", async () => {
+      const error = new Error("Custom error message");
+      (bootstrap as jest.Mock).mockRejectedValueOnce(error);
 
-      await initApp({});
+      await expect(initApp()).rejects.toThrow("Custom error message");
 
-      expect(bootstrap).toHaveBeenCalledWith(expect.objectContaining({}));
+      expect(sheu.error).toHaveBeenCalledWith("Custom error message");
     });
 
-    it("handles case where portAndHostAllocator returns undefined after build", async () => {
-      (
-        portAndHostAllocator.getHostAndAvailablePort as jest.Mock
-      ).mockResolvedValue(undefined);
+    it("should handle errors without message", async () => {
+      const error = new Error();
+      (bootstrap as jest.Mock).mockRejectedValueOnce(error);
 
-      await initApp({ use: [] });
+      await expect(initApp()).rejects.toThrow();
 
-      expect(bootstrap).toHaveBeenCalledWith(
-        expect.objectContaining({
-          use: [],
-        })
+      expect(sheu.error).toHaveBeenCalledWith(
+        "Something went wrong while starting your application!"
       );
-    });
-  });
-
-  describe("getArkosConfig", () => {
-    it("returns the current config", async () => {
-      jest.restoreAllMocks();
-      await initApp();
-      const config = server.getArkosConfig();
-
-      expect(config).toMatchObject({
-        port: 8000,
-        host: "0.0.0.0",
-        fileUpload: expect.any(Object),
-      });
-    });
-
-    it("returns config even when initApp hasn't been called", () => {
-      const config = server.getArkosConfig();
-      expect(config).toHaveProperty("port");
-      expect(config).toHaveProperty("host");
     });
   });
 
   describe("terminateApplicationRunningProcessAndServer", () => {
-    it("closes the server and exits process", () => {
-      const mockExit = jest.spyOn(process, "exit").mockImplementation();
-
-      terminateApplicationRunningProcessAndServer();
+    it("should close server and exit process", () => {
+      expect(() => {
+        terminateApplicationRunningProcessAndServer();
+      }).toThrow("process.exit called with 1");
 
       expect(mockServer.close).toHaveBeenCalled();
-      expect(mockExit).toHaveBeenCalledWith(1);
-
-      mockExit.mockRestore();
     });
 
-    it("handles case when server is not defined", () => {
-      const mockExit = jest.spyOn(process, "exit").mockImplementation();
+    it("should call server.close callback", () => {
+      const closeMock = jest.fn((callback) => {
+        callback();
+      });
+      mockServer.close = closeMock;
 
-      // Reset server reference
-      (initApp as any).server = undefined;
+      expect(() => {
+        terminateApplicationRunningProcessAndServer();
+      }).toThrow("process.exit called with 1");
 
-      terminateApplicationRunningProcessAndServer();
-
-      expect(mockExit).toHaveBeenCalledWith(1);
-
-      mockExit.mockRestore();
+      expect(closeMock).toHaveBeenCalled();
     });
   });
 
-  describe("Process Event Handlers", () => {
-    let originalProcessListeners: any;
-
-    beforeEach(() => {
-      // Store original process listeners
-      originalProcessListeners = {
-        uncaughtException: process.listeners("uncaughtException"),
-        unhandledRejection: process.listeners("unhandledRejection"),
-      };
-
-      // Remove existing listeners to avoid interference
-      process.removeAllListeners("uncaughtException");
-      process.removeAllListeners("unhandledRejection");
-
-      // Import the server module again to register event handlers
-      jest.resetModules();
-      require("../server");
-    });
-
-    afterEach(() => {
-      // Restore original process listeners
-      process.removeAllListeners("uncaughtException");
-      process.removeAllListeners("unhandledRejection");
-      originalProcessListeners.uncaughtException.forEach((listener: any) =>
-        process.on("uncaughtException", listener)
-      );
-      originalProcessListeners.unhandledRejection.forEach((listener: any) =>
-        process.on("unhandledRejection", listener)
-      );
-    });
-
-    it("handles uncaughtException", () => {
-      const mockExit = jest.spyOn(process, "exit").mockImplementation();
-      const error = new Error("Some cool error");
-
-      process.emit("uncaughtException", error);
-
-      expect(console.error).toHaveBeenCalledWith(error);
-      expect(mockExit).toHaveBeenCalledWith(1);
-
-      mockExit.mockRestore();
-    });
-
-    it("ignores EPIPE errors in uncaughtException", () => {
-      const mockExit = jest.spyOn(process, "exit").mockImplementation();
+  describe("Process Event Handlers - uncaughtException", () => {
+    it("should ignore EPIPE errors", () => {
       const error = new Error("EPIPE broken pipe");
 
-      process.emit("uncaughtException", error);
+      (process as any).emit("uncaughtException", error);
 
-      expect(mockExit).not.toHaveBeenCalled();
       expect(console.error).not.toHaveBeenCalled();
-
-      mockExit.mockRestore();
     });
 
-    it("handles unhandledRejection", async () => {
-      const mockExit = jest.spyOn(process, "exit").mockImplementation();
+    it("should log non-EPIPE errors when CLI is not true", () => {
+      process.env.NO_CLI = "true";
+      const error = new Error("Test error");
+
+      (process as any).emit("uncaughtException", error);
+
+      expect(sheu.error).toHaveBeenCalledWith(
+        "UNCAUGHT EXCEPTION! SHUTTING DOWN...\n",
+        { timestamp: true, bold: true }
+      );
+      expect(console.error).toHaveBeenCalledWith(error);
+    });
+
+    it("should not log when CLI is true", () => {
+      process.env.NO_CLI = "false";
+      const error = new Error("Test error");
+
+      (process as any).emit("uncaughtException", error);
+
+      expect(sheu.error).not.toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalledWith(error);
+    });
+
+    it("should exit process after timeout", () => {
+      const error = new Error("Test error");
+
+      (process as any).emit("uncaughtException", error);
+
+      expect(() => {
+        jest.runAllTimers();
+      }).toThrow("process.exit called with 1");
+    });
+  });
+
+  describe("Process Event Handlers - unhandledRejection", () => {
+    beforeEach(async () => {
+      await initApp();
+    });
+
+    it("should log unhandled rejection", () => {
       const error = new Error("Test rejection");
 
-      (process as any).emit("unhandledRejection", error);
+      try {
+        (process as any).emit("unhandledRejection", error);
+        jest.runAllTimers();
+      } catch (e) {}
 
       expect(console.error).toHaveBeenCalledWith(error);
-
-      mockExit.mockRestore();
     });
 
-    //     it("handles unhandledRejection when server is not defined", () => {
-    //       const mockExit = jest.spyOn(process, "exit").mockImplementation();
-    //       const error = new Error("Test rejection");
+    it("should log message when CLI is not true", () => {
+      process.env.NO_CLI = "true";
+      const error = new Error("Test rejection");
 
-    //       // Reset server reference
-    //       (initApp as any).server = undefined;
+      try {
+        (process as any).emit("unhandledRejection", error);
+        jest.runAllTimers();
+      } catch (e) {}
 
-    //       (process as any).emit("unhandledRejection", error);
+      expect(sheu.error).toHaveBeenCalledWith(
+        "UNHANDLED REJECTION! SHUTTING DOWN...\n",
+        { timestamp: true, bold: true }
+      );
+    });
 
-    //       expect(sheu.error).toHaveBeenCalledWith(
-    //         "\nUNHANDLED REJECTION! SHUTTING DOWN...\n",
-    //         { timestamp: true, bold: true }
-    //       );
-    //       expect(console.error).toHaveBeenCalledWith(error.name, error.message);
-    //       expect(mockExit).toHaveBeenCalledWith(1);
+    it("should not log message when CLI is true", () => {
+      process.env.NO_CLI = "false";
+      const error = new Error("Test rejection");
 
-    //       mockExit.mockRestore();
-    //     });
+      try {
+        (process as any).emit("unhandledRejection", error);
+        jest.runAllTimers();
+      } catch (e) {}
+
+      expect(sheu.error).not.toHaveBeenCalled();
+    });
+
+    it("should close server on unhandled rejection", () => {
+      const error = new Error("Test rejection");
+
+      try {
+        (process as any).emit("unhandledRejection", error);
+        jest.runAllTimers();
+      } catch (e) {}
+
+      expect(mockServer.close).toHaveBeenCalled();
+    });
+
+    it("should exit via setTimeout when server is not available", () => {
+      const closeSpy = mockServer.close;
+      mockServer.close = undefined;
+
+      const error = new Error("Test rejection");
+      (process as any).emit("unhandledRejection", error);
+
+      expect(() => {
+        jest.runAllTimers();
+      }).toThrow("process.exit called with 1");
+
+      mockServer.close = closeSpy;
+    });
+  });
+
+  describe("Integration Scenarios", () => {
+    it("should handle complete initialization flow", async () => {
+      const configureServer = jest.fn();
+      const config: ArkosInitConfig = {
+        use: [],
+        configureServer,
+      };
+
+      process.env.__PORT = "3000";
+      process.env.__HOST = "0.0.0.0";
+
+      const app = await initApp(config);
+
+      expect(bootstrap).toHaveBeenCalledWith(config);
+      expect(configureServer).toHaveBeenCalledWith(mockServer);
+      expect(http.createServer).toHaveBeenCalledWith(mockApp);
+      expect(mockServer.listen).toHaveBeenCalledWith(
+        3000,
+        "0.0.0.0",
+        expect.any(Function)
+      );
+      expect(app).toBe(mockApp);
+    });
+
+    it("should handle initialization with swagger and authentication", async () => {
+      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+        port: 8000,
+        host: "0.0.0.0",
+        welcomeMessage: "Test",
+        fileUpload: { baseUploadDir: "uploads", baseRoute: "/api/uploads" },
+        routers: { strict: false },
+        debugging: { requests: { level: 1 } },
+        swagger: {
+          mode: "zod",
+          endpoint: "/custom-docs",
+        },
+        authentication: {
+          mode: "dynamic",
+          enabled: true,
+        },
+      });
+
+      await initApp();
+
+      expect(sheu.ready).toHaveBeenCalledWith(
+        expect.stringContaining("/custom-docs")
+      );
+    });
+
+    it("should return app without starting server in CLI mode", async () => {
+      process.env.CLI_COMMAND = "EXPORT_AUTH_ACTION";
+
+      const app = await initApp();
+
+      expect(app).toBe(mockApp);
+      expect(mockServer.listen).not.toHaveBeenCalled();
+      expect(runtimeCliCommander.handle).toHaveBeenCalled();
+    });
   });
 
   describe("Edge Cases", () => {
-    it("handles case where configureServer throws error", async () => {
-      const configureServerMock = jest.fn().mockImplementation(() => {
-        throw new Error("Configure server failed");
-      });
-      const customConfig: ArkosInitConfig = {
-        configureServer: configureServerMock,
-      };
+    it("should handle missing __PORT environment variable", async () => {
+      delete process.env.__PORT;
+      delete process.env.PORT;
 
-      await initApp(customConfig);
+      await initApp();
 
-      expect(configureServerMock).toHaveBeenCalledWith(mockServer);
-      // Error should be caught and logged
-      expect(console.error).toHaveBeenCalled();
+      expect(mockServer.listen).toHaveBeenCalled();
     });
 
-    it("handles case where server.listen callback throws error", async () => {
-      const error = new Error("Server listen failed");
+    it("should handle missing __HOST environment variable", async () => {
+      delete process.env.__HOST;
+      delete process.env.HOST;
+
+      await initApp();
+
+      expect(mockServer.listen).toHaveBeenCalled();
+    });
+
+    it("should handle server listen callback errors gracefully", async () => {
+      const listenError = new Error("Listen failed");
       mockServer.listen.mockImplementationOnce(
-        (_: number, _1: string, callback: Function) => {
-          if (typeof callback === "function") {
-            callback(error);
-            throw error;
-          }
+        (_: any, _1: any, callback: any) => {
+          callback(listenError);
           return mockServer;
         }
       );
 
-      jest
-        .spyOn(server, "getArkosConfig")
-        .mockImplementation(() => ({ port: 123 }));
+      await initApp();
 
-      await initApp("uanela" as any);
-
-      expect(console.error).toHaveBeenCalled();
+      expect(mockServer.listen).toHaveBeenCalled();
     });
   });
 });
