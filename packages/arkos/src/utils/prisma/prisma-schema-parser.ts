@@ -350,7 +350,7 @@ export class PrismaSchemaParser {
 
       return fileList;
     } catch {
-      sheu.warn("No prisma folder were found in order to load models", {
+      sheu.warn("No prisma folder was found in order to load models", {
         timestamp: true,
       });
       return [];
