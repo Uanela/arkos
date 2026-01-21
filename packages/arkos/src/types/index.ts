@@ -204,16 +204,13 @@ export interface AuthPermission {
   role: AuthRole;
 }
 
-export interface User {
+export interface User extends Record<string, any> {
   id: string;
-  isStaff: boolean;
   isSuperUser: boolean;
   password: string;
   passwordChangedAt?: Date;
   deletedSelfAccountAt: Date;
   isActive: boolean;
-  roles?: UserRole[] | any[];
-  role?: UserRole | any;
 }
 
 export interface ArkosRequest<

@@ -232,7 +232,7 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
           )
         );
       else if (validationConfigs?.resolver === "zod" && schemaOrDtoClass)
-        req.body = await validateSchema(schemaOrDtoClass as ZodSchema<T>, body);
+        req.body = await validateSchema(schemaOrDtoClass as any, body);
 
       next();
     }
@@ -253,9 +253,12 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
     cookies: "cookie",
   };
 
-  if (!validationConfig?.resolver && validators)
+  if (
+    !validationConfig?.resolver &&
+    Object.keys(routeConfig.validation || {}).length > 0
+  )
     throw Error(
-      "Trying to pass validators into route config validation option without choosing a validation resolver under arkos config { validation: {} }."
+      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`
     );
 
   if ((validators as any) === true)

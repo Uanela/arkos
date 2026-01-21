@@ -1,4 +1,4 @@
-import { IRouter } from "express";
+import { IRoute, IRouter } from "express";
 import { ZodSchema } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
@@ -11,6 +11,11 @@ import { BodyParserConfig } from "./body-parser-config";
 
 export type PathParams = string | RegExp | Array<string | RegExp>;
 
+export type ArkosAnyRequestHandler =
+  | ArkosRequestHandler
+  | ArkosErrorRequestHandler
+  | Array<ArkosRequestHandler | ArkosErrorRequestHandler>;
+
 /**
  * Handler function for HTTP methods that accepts route configuration and request handlers.
  *
@@ -18,14 +23,40 @@ export type PathParams = string | RegExp | Array<string | RegExp>;
  * @param {...(ArkosRequestHandler | ArkosErrorRequestHandler)[]} handlers - Request and error handlers for the route.
  * @returns {IRouter} The Express router instance.
  */
-type MethodHandler<T> = (
+type RouterMethodHandler<T> = (
   config: ArkosRouteConfig | PathParams,
+  ...handlers: Array<ArkosAnyRequestHandler>
+) => T;
+
+export type ArkosRouteMethodHandler<T> = (
+  config: ArkosAnyRequestHandler | Omit<ArkosRouteConfig, "path">,
   ...handlers: Array<
     | ArkosRequestHandler
     | ArkosErrorRequestHandler
     | Array<ArkosRequestHandler | ArkosErrorRequestHandler>
   >
 ) => T;
+
+export interface ArkosIRoute extends IRoute {
+  /** GET method handler with route configuration support */
+  get: ArkosRouteMethodHandler<this>;
+  /** POST method handler with route configuration support */
+  post: ArkosRouteMethodHandler<this>;
+  /** PUT method handler with route configuration support */
+  put: ArkosRouteMethodHandler<this>;
+  /** PATCH method handler with route configuration support */
+  patch: ArkosRouteMethodHandler<this>;
+  /** DELETE method handler with route configuration support */
+  delete: ArkosRouteMethodHandler<this>;
+  /** OPTIONS method handler with route configuration support */
+  options: ArkosRouteMethodHandler<this>;
+  /** HEAD method handler with route configuration support */
+  head: ArkosRouteMethodHandler<this>;
+  // /** TRACE method handler with route configuration support */
+  trace: ArkosRouteMethodHandler<this>;
+  /** ALL methods handler with route configuration support */
+  all: ArkosRouteMethodHandler<this>;
+}
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -53,23 +84,26 @@ type MethodHandler<T> = (
  */
 export interface IArkosRouter extends IRouter {
   /** GET method handler with route configuration support */
-  get: MethodHandler<this>;
+  get: RouterMethodHandler<this>;
   /** POST method handler with route configuration support */
-  post: MethodHandler<this>;
+  post: RouterMethodHandler<this>;
   /** PUT method handler with route configuration support */
-  put: MethodHandler<this>;
+  put: RouterMethodHandler<this>;
   /** PATCH method handler with route configuration support */
-  patch: MethodHandler<this>;
+  patch: RouterMethodHandler<this>;
   /** DELETE method handler with route configuration support */
-  delete: MethodHandler<this>;
+  delete: RouterMethodHandler<this>;
   /** OPTIONS method handler with route configuration support */
-  options: MethodHandler<this>;
+  options: RouterMethodHandler<this>;
   /** HEAD method handler with route configuration support */
-  head: MethodHandler<this>;
+  head: RouterMethodHandler<this>;
   // /** TRACE method handler with route configuration support */
-  trace: MethodHandler<this>;
+  trace: RouterMethodHandler<this>;
   /** ALL methods handler with route configuration support */
-  all: MethodHandler<this>;
+  all: RouterMethodHandler<this>;
+
+  route<T extends string>(prefix: T): ArkosIRoute;
+  route(prefix: PathParams): ArkosIRoute;
 }
 
 /**

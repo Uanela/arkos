@@ -130,6 +130,32 @@ describe("handleRelationFieldsInBody", () => {
       });
     });
 
+    it("should strip out undefined variables when evaluating", () => {
+      const body = {
+        name: "John Doe",
+        profile: {
+          id: "123",
+          apiAction: undefined,
+        },
+      };
+
+      const relationFields: any = {
+        singular: [{ name: "profile", type: "Profile" }],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "John Doe",
+        profile: {
+          connect: {
+            id: "123",
+          },
+        },
+      });
+    });
+
     it("should handle connect operation for singular relation with unique field", () => {
       const body = {
         name: "John Doe",
