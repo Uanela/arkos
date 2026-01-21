@@ -1,6 +1,6 @@
 {{#if (eq authentication.type "dynamic")}}
 model UserRole {
-  id        String     {{prisma.idDatabaseType}}
+  id        String     {{{prisma.idDatabaseType}}}
   {{#if authentication.multipleRoles}}
   userId    String     
   {{else}}

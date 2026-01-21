@@ -50,8 +50,6 @@ export async function main() {
   execSync(`${packageManager} install`, { stdio: "inherit" });
 
   process.chdir(projectPath);
-  // console.info("\nRunning npx arkos prisma generate...");
-  // execSync(`npx arkos prisma generate`, { stdio: "inherit" });
 
   console.info(`
   \n${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
