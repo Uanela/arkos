@@ -2,6 +2,13 @@ import path from "path";
 import { PrismaSchema, PrismaModel, PrismaEnum, PrismaField } from "./types";
 import { camelCase, pascalCase } from "../helpers/change-case.helpers";
 import fs from "fs";
+import sheu from "../sheu";
+
+interface SchemaConfig {
+  generatorProvider: string;
+  datasourceProvider: string;
+  datasourceUrl: string;
+}
 
 /**
  * A parser for Prisma schema files that extracts models, enums, and their properties.
@@ -26,9 +33,11 @@ export class PrismaSchemaParser {
   /** Current loaded prisma schemas content as a single file */
   prismaSchemasContent: string = "";
   parsed: boolean = false;
+  config: SchemaConfig;
 
   constructor() {
     this.parse();
+    this.config = this.parseSchemaConfig();
   }
 
   /**
@@ -324,22 +333,90 @@ export class PrismaSchemaParser {
   }
 
   private getAllPrismaFiles(dirPath: string, fileList: string[] = []) {
-    const files = fs.readdirSync(dirPath);
+    try {
+      const files = fs.readdirSync(dirPath);
 
-    files?.forEach((file) => {
-      const filePath = path.join(dirPath, file);
-      const stat = fs.statSync(filePath);
+      files?.forEach((file) => {
+        const filePath = path.join(dirPath, file);
+        const stat = fs.statSync(filePath);
 
-      // Skip migrations folder
-      if (stat.isDirectory() && file !== "migrations") {
-        fileList = this.getAllPrismaFiles(filePath, fileList);
-      } else if (stat.isFile() && file.endsWith(".prisma")) {
-        fileList.push(filePath);
-      }
-    });
+        // Skip migrations folder
+        if (stat.isDirectory() && file !== "migrations") {
+          fileList = this.getAllPrismaFiles(filePath, fileList);
+        } else if (stat.isFile() && file.endsWith(".prisma")) {
+          fileList.push(filePath);
+        }
+      });
 
-    return fileList;
+      return fileList;
+    } catch {
+      sheu.warn("No prisma folder was found in order to load models", {
+        timestamp: true,
+      });
+      return [];
+    }
   }
+
+  parseSchemaConfig(): SchemaConfig {
+    const config: SchemaConfig = {
+      generatorProvider: "",
+      datasourceProvider: "",
+      datasourceUrl: "",
+    };
+
+    const lines = this.getPrismaSchemasContent().split("\n");
+    let inGenerator = false;
+    let inDatasource = false;
+    let braceCount = 0;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      if (trimmed.startsWith("//") || trimmed.startsWith("#")) continue;
+
+      if (trimmed.startsWith("generator")) {
+        inGenerator = true;
+        continue;
+      }
+
+      if (trimmed.startsWith("datasource")) {
+        inDatasource = true;
+        continue;
+      }
+
+      if (trimmed.includes("{")) braceCount++;
+      if (trimmed.includes("}")) braceCount--;
+
+      // Check if we're exiting blocks
+      if (braceCount === 0) {
+        if (inGenerator && trimmed.includes("}")) inGenerator = false;
+
+        if (inDatasource && trimmed.includes("}")) inDatasource = false;
+      }
+
+      if (inGenerator && trimmed.includes("provider")) {
+        const match = trimmed.match(/provider\s*=\s*"([^"]+)"/);
+        if (match) config.generatorProvider = match[1];
+      }
+
+      if (inDatasource && trimmed.includes("provider")) {
+        const match = trimmed.match(/provider\s*=\s*"([^"]+)"/);
+        if (match) {
+          config.datasourceProvider = match[1];
+        }
+      }
+
+      if (inDatasource && trimmed.includes("url")) {
+        const match = trimmed.match(/url\s*=\s*(env\("([^"]+)"\)|"([^"]+)")/);
+        if (match) {
+          config.datasourceUrl = match[1];
+        }
+      }
+    }
+
+    return config;
+  }
+
   /**
    * Checks if a given type name corresponds to a defined enum.
    *

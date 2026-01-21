@@ -21,13 +21,14 @@
     "@types/node": "^24.0.12",
     "@types/express": "^5.0.0",
     {{/if}}
-    "tsx-strict": "^0.3.3",
-    "tsx": "^4.20.5",
+    "tsx-strict": "^0.4.2",
+    "tsx": "^4.21.0",
     "prisma": "^6.19.0"
   },
   "dependencies": {
     "arkos": "^1.4.3-beta", 
-    "express": "^4.21.2",
+    "express": "^4.22.1",
+    "@scalar/express-api-reference": "^0.8.35",
     "@prisma/client": "^6.19.0"{{#if validation.type}},{{/if}}
     {{#if (eq validation.type "class-validator")}}
     "reflect-metadata": "^0.2.2",

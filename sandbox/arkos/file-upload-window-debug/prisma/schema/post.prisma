@@ -1,0 +1,9 @@
+model Post {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  userId2   String
+  user2     User     @relation(fields: [userId2], references: [id], name: "posttouser2")
+}

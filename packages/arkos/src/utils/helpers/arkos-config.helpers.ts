@@ -1,8 +1,22 @@
 import deepmerge from "./deepmerge.helper";
 import { ArkosConfig } from "../../types/new-arkos-config";
+import sheu from "../sheu";
+import * as fsHelpers from "./fs.helpers";
 ("ReplaceWithNeededImportsForArkosConfig"); // This will be filled by post build script
 
-const definedArkosConfig = "ReplaceWithDynamicImport"; // This will be filled by post build script
+let definedArkosConfig: any = {};
+
+try {
+  definedArkosConfig = "ReplaceWithDynamicImport"; // This will be filled by post build script
+} catch (err: any) {
+  if (err.message.toLowerCase().includes("cannot find module"))
+    sheu.warn(
+      `Using default configs, because arkos.config.${fsHelpers.getUserFileExtension()} was not found`,
+      {
+        timestamp: true,
+      }
+    );
+}
 
 export function isUsingAuthentication() {
   const { authentication } = getArkosConfig();
@@ -36,6 +50,7 @@ export const defaultArkosConfig: ArkosConfig & { available?: boolean } = {
       level: 1,
     },
   },
+  swagger: { mode: "prisma" },
 };
 
 /**
@@ -44,10 +59,21 @@ export const defaultArkosConfig: ArkosConfig & { available?: boolean } = {
  * @returns {ArkosConfig}
  */
 export function getArkosConfig(): ArkosConfig {
-  return deepmerge(
-    defaultArkosConfig,
+  const userConfig =
     typeof definedArkosConfig === "string"
       ? {}
-      : (definedArkosConfig as any).default
-  );
+      : (definedArkosConfig as any)?.default || {};
+  let config = deepmerge(defaultArkosConfig, userConfig);
+
+  if (userConfig?.swagger?.mode) {
+    config = {
+      ...config,
+      swagger: {
+        ...config.swagger,
+        mode: userConfig?.swagger?.mode,
+      },
+    };
+  }
+
+  return config;
 }

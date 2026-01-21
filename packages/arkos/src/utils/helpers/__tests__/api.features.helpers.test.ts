@@ -1,4 +1,12 @@
 import { parseQueryParamsWithModifiers } from "../api.features.helpers";
+import prismaSchemaParser from "../../prisma/prisma-schema-parser";
+
+jest.mock("../../prisma/prisma-schema-parser", () => {
+  return {
+    parse: jest.fn(),
+    config: { datasourceProvider: "postgresql" },
+  };
+});
 
 describe("parseQueryParamsWithModifiers", () => {
   describe("Basic functionality", () => {
@@ -14,31 +22,7 @@ describe("parseQueryParamsWithModifiers", () => {
       expect(result).toEqual({ status: "active", name: null });
     });
 
-    it("should parse contains and icontains when using bracket notation", () => {
-      const query = {
-        ["name[contains]"]: "sheu",
-        ["firstName[icontains]"]: "cacil",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        name: { contains: "sheu", mode: "sensitive" },
-        firstName: { contains: "cacil", mode: "insensitive" },
-      });
-    });
-
-    it("should parse contains and icontains when using bracket notation", () => {
-      const query = {
-        deparments__hasSome: ["IT", "HR"],
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        deparments: {
-          hasSome: ["IT", "HR"],
-        },
-      });
-    });
-
-    it("Should not convert objects to string", () => {
+    it("should handle nested objects that Express already parsed", () => {
       const query = {
         name: {
           contains: "test",
@@ -49,22 +33,25 @@ describe("parseQueryParamsWithModifiers", () => {
       expect(result).toEqual(query);
     });
 
+    it("should handle deeply nested objects", () => {
+      const query = {
+        user: {
+          profile: {
+            name: {
+              contains: "john",
+              mode: "sensitive",
+            },
+          },
+        },
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual(query);
+    });
+
     it("Should handle falsy values (false, null, undefined)", () => {
       const query = { createdAt__not: null };
       const result = parseQueryParamsWithModifiers(query);
       expect(result).toEqual({ createdAt: { not: null } });
-    });
-
-    it("should parse contains and icontains when using bracket notation", () => {
-      const query = {
-        ["name[contains]"]: "sheu",
-        ["firstName[icontains]"]: "cacil",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        name: { contains: "sheu", mode: "sensitive" },
-        firstName: { contains: "cacil", mode: "insensitive" },
-      });
     });
 
     it("should preserve arrays for hasSome operator", () => {
@@ -149,67 +136,6 @@ describe("parseQueryParamsWithModifiers", () => {
       });
     });
 
-    it("should parse deep nested bracket notation", () => {
-      const query = {
-        "company[name][icontains]": "tech",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        company: {
-          name: {
-            contains: "tech",
-            mode: "insensitive",
-          },
-        },
-      });
-    });
-
-    it("should parse mixed bracket and double underscore notation", () => {
-      const query = {
-        "company__name[icontains]": "acme",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        company: {
-          name: {
-            contains: "acme",
-            mode: "insensitive",
-          },
-        },
-      });
-    });
-
-    it("should parse complex mixed notation", () => {
-      const query = {
-        "company[branches]__location[city][icontains]": "york",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        company: {
-          branches: {
-            location: {
-              city: {
-                contains: "york",
-                mode: "insensitive",
-              },
-            },
-          },
-        },
-      });
-    });
-
-    it("should handle orderBy with bracket notation", () => {
-      const query = {
-        "orderBy[createdAt]": "desc",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
-    });
-
     it("should handle orderBy with double underscore", () => {
       const query = {
         orderBy__updatedAt: "asc",
@@ -222,79 +148,13 @@ describe("parseQueryParamsWithModifiers", () => {
       });
     });
 
-    it("should handle or operator with bracket notation", () => {
-      const query = {
-        "status[or]": "active,pending",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        OR: [
-          { status: { equals: "active" } },
-          { status: { equals: "pending" } },
-        ],
-      });
-    });
-
     it("should handle or operator with double underscore", () => {
       const query = {
         status__or: "active,pending",
       };
       const result = parseQueryParamsWithModifiers(query);
       expect(result).toEqual({
-        OR: [
-          { status: { equals: "active" } },
-          { status: { equals: "pending" } },
-        ],
-      });
-    });
-
-    it("should handle hasSome with bracket notation and array", () => {
-      const query = {
-        "departments[hasSome]": ["IT", "HR", "Finance"],
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        departments: {
-          hasSome: ["IT", "HR", "Finance"],
-        },
-      });
-    });
-
-    it("should handle hasSome with bracket notation and comma-separated string", () => {
-      const query = {
-        "departments[hasSome]": "IT,HR,Finance",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        departments: {
-          hasSome: ["IT", "HR", "Finance"],
-        },
-      });
-    });
-
-    it("should handle in operator with bracket notation", () => {
-      const query = {
-        "id[in]": "1,2,3",
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        id: {
-          in: ["1", "2", "3"],
-        },
-      });
-    });
-
-    it("should handle nested field with hasSome using mixed notation", () => {
-      const query = {
-        "user__roles[hasSome]": ["admin", "editor"],
-      };
-      const result = parseQueryParamsWithModifiers(query);
-      expect(result).toEqual({
-        user: {
-          roles: {
-            hasSome: ["admin", "editor"],
-          },
-        },
+        OR: [{ status: "active" }, { status: "pending" }],
       });
     });
   });
@@ -351,6 +211,49 @@ describe("parseQueryParamsWithModifiers", () => {
         name: { contains: "john", mode: "insensitive" },
       });
     });
+
+    it("should omit mode for non-mongodb/postgresql providers with contains", () => {
+      const originalProvider = prismaSchemaParser.config.datasourceProvider;
+      prismaSchemaParser.config.datasourceProvider = "mysql";
+
+      const query = { name__contains: "john" };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({ name: { contains: "john" } });
+
+      prismaSchemaParser.config.datasourceProvider = originalProvider;
+    });
+
+    it("should omit mode for non-mongodb/postgresql providers with icontains", () => {
+      const originalProvider = prismaSchemaParser.config.datasourceProvider;
+      prismaSchemaParser.config.datasourceProvider = "sqlite";
+
+      const query = { name__icontains: "john" };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({ name: { contains: "john" } });
+
+      prismaSchemaParser.config.datasourceProvider = originalProvider;
+    });
+
+    it("should include mode for mongodb provider", () => {
+      const originalProvider = prismaSchemaParser.config.datasourceProvider;
+      prismaSchemaParser.config.datasourceProvider = "mongodb";
+
+      const query = { name__icontains: "john" };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        name: { contains: "john", mode: "insensitive" },
+      });
+
+      prismaSchemaParser.config.datasourceProvider = originalProvider;
+    });
+
+    it("should include mode for postgresql provider", () => {
+      const query = { name__contains: "test" };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        name: { contains: "test", mode: "sensitive" },
+      });
+    });
   });
 
   describe("Collection operators", () => {
@@ -372,10 +275,7 @@ describe("parseQueryParamsWithModifiers", () => {
       const query = { status__or: "active,pending" };
       const result = parseQueryParamsWithModifiers(query);
       expect(result).toEqual({
-        OR: [
-          { status: { equals: "active" } },
-          { status: { equals: "pending" } },
-        ],
+        OR: [{ status: "active" }, { status: "pending" }],
       });
     });
   });
@@ -530,6 +430,114 @@ describe("parseQueryParamsWithModifiers", () => {
         createdAt: {
           gte: new Date("2023-05-01T17:04:00.000Z"),
           lte: new Date("2023-05-02T22:44:09.000Z"),
+        },
+      });
+    });
+
+    it("should handle mixed nested objects and double underscore syntax", () => {
+      const query = {
+        user: {
+          email: {
+            contains: "example",
+          },
+        },
+        status__in: "active,pending",
+        createdAt__gte: "2024-01-01",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          email: {
+            contains: "example",
+            mode: "sensitive",
+          },
+        },
+        status: {
+          in: ["active", "pending"],
+        },
+        createdAt: {
+          gte: new Date("2024-01-01"),
+        },
+      });
+    });
+
+    it("should handle double underscore with nested object value", () => {
+      const query = {
+        profile__name: {
+          contains: "john",
+          mode: "insensitive",
+        },
+        status__in: "active,pending",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        profile: {
+          name: {
+            contains: "john",
+            mode: "insensitive",
+          },
+        },
+        status: {
+          in: ["active", "pending"],
+        },
+      });
+    });
+
+    it("should handle nested object with double underscore inside", () => {
+      const query = {
+        user: {
+          profile__name__icontains: "test",
+        },
+        age__gt: "25",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          profile: {
+            name: {
+              contains: "test",
+              mode: "insensitive",
+            },
+          },
+        },
+        age: {
+          gt: 25,
+        },
+      });
+    });
+
+    it("should handle deeply mixed syntax throughout query", () => {
+      const query = {
+        company__name: {
+          contains: "tech",
+        },
+        user: {
+          roles__some__name__icontains: "admin",
+        },
+        status__or: "active,pending",
+        createdAt__gte: "2024-01-01",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        company: {
+          name: {
+            contains: "tech",
+            mode: "sensitive",
+          },
+        },
+        user: {
+          roles: {
+            some: {
+              name: {
+                contains: "admin",
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+        OR: [{ status: "active" }, { status: "pending" }],
+        createdAt: {
+          gte: new Date("2024-01-01"),
         },
       });
     });

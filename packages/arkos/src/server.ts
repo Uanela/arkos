@@ -5,11 +5,8 @@ import { bootstrap } from "./app";
 import http from "http";
 import sheu from "./utils/sheu";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";
-import { killDevelopmentServerChildProcess } from "./utils/cli/dev";
-import { killServerChildProcess } from "./utils/cli/utils/cli.helpers";
-import { killProductionServerChildProcess } from "./utils/cli/start";
 import { ArkosConfig } from "./types/new-arkos-config";
-import { ArkosInitConfig } from "./exports";
+import { ArkosInitConfig } from "./types/arkos-config";
 import { getArkosConfig as getArkosConfigHelper } from "./utils/helpers/arkos-config.helpers";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
 
@@ -26,7 +23,7 @@ export function getArkosConfig(): ArkosConfig {
 process.on("uncaughtException", (err) => {
   if (err.message.includes("EPIPE")) return;
 
-  if (process.env.CLI !== "true")
+  if (process.env.NO_CLI === "true")
     sheu.error("UNCAUGHT EXCEPTION! SHUTTING DOWN...\n", {
       timestamp: true,
       bold: true,
@@ -60,7 +57,10 @@ async function initApp(
   try {
     const arkosConfig = getArkosConfig();
 
-    const portAndHost = { port: process.env.__PORT, host: process.env.__HOST! };
+    const portAndHost = {
+      port: process.env.__PORT || process.env.PORT || "8000",
+      host: process.env.__HOST! || process.env.HOST || "127.0.0.1",
+    };
 
     let networkHost = portAndHostAllocator.getFirstNonLocalIp();
 
@@ -122,14 +122,12 @@ async function initApp(
       err?.message || "Something went wrong while starting your application!"
     );
     console.error(err);
-    killDevelopmentServerChildProcess?.();
-    killServerChildProcess?.();
-    killProductionServerChildProcess?.();
+    throw err;
   }
 }
 
 process.on("unhandledRejection", (err: AppError) => {
-  if (process.env.CLI !== "true")
+  if (process.env.NO_CLI === "true")
     sheu.error("UNHANDLED REJECTION! SHUTTING DOWN...\n", {
       timestamp: true,
       bold: true,

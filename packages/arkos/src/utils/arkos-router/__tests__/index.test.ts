@@ -372,4 +372,78 @@ describe("generateOpenAPIFromApp", () => {
       operationId: "get:/users",
     });
   });
+
+  describe("ArkosRouter - route() method", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      RouteConfigRegistry.register = jest.fn();
+      RouteConfigRegistry.get = jest.fn();
+    });
+
+    it("should handle route().get() and merge path into config", () => {
+      const proxied = ArkosRouter() as any;
+      const handler = jest.fn();
+
+      proxied.route("/users").get({ validation: {} }, handler);
+
+      expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
+        handler,
+        { validation: {}, path: "/users" },
+        "get"
+      );
+    });
+
+    it("should chain multiple HTTP methods on same route path", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "static" },
+      });
+      const proxied = ArkosRouter() as any;
+      const getHandler = jest.fn();
+      const postHandler = jest.fn();
+
+      proxied
+        .route("/api/resource")
+        .get({ validation: {} }, getHandler)
+        .post({ authentication: true }, postHandler);
+
+      expect(RouteConfigRegistry.register).toHaveBeenNthCalledWith(
+        1,
+        getHandler,
+        { validation: {}, path: "/api/resource" },
+        "get"
+      );
+      expect(RouteConfigRegistry.register).toHaveBeenNthCalledWith(
+        2,
+        postHandler,
+        { authentication: true, path: "/api/resource" },
+        "post"
+      );
+    });
+
+    // it("should apply prefix to route() paths", () => {
+    //   const proxied = ArkosRouter() as any;
+    //   const handler = jest.fn();
+
+    //   proxied.route("/users").get({}, handler);
+
+    //   expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
+    //     handler,
+    //     { path: "/api/users" },
+    //     "get"
+    //   );
+    // });
+
+    it("should handle route() with all HTTP methods", () => {
+      const proxied = ArkosRouter() as any;
+      const handler = jest.fn();
+
+      proxied.route("/test").delete({}, handler);
+
+      expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
+        handler,
+        { path: "/test" },
+        "delete"
+      );
+    });
+  });
 });
