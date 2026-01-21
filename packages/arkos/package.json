@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.5.0-canary.25",
+  "version": "1.5.0-canary.26",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -174,7 +174,7 @@
   },
   "peerDependencies": {
     "@prisma/client": "^6.4.1",
-    "@scalar/express-api-reference": "^0.8.32",
+    "@scalar/express-api-reference": "^0.8.35",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -184,7 +184,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "dotenv-expand": "^12.0.3",
-    "express": "^4.21.2",
+    "express": "^4.22.1",
     "express-rate-limit": "^7.5.0",
     "html-to-text": "^9.0.5",
     "jsonwebtoken": "^9.0.2",
