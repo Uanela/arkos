@@ -77,7 +77,7 @@ jest
   .mockReturnValue(["User"]);
 
 describe("setupRouters", () => {
-  let router: Router;
+  let router: any;
   let mockBaseController: any;
 
   beforeEach(() => {
@@ -723,7 +723,7 @@ describe("setupRouters", () => {
   });
 
   describe("setupRouters - Additional Coverage Tests", () => {
-    let router: Router;
+    let router: any;
     let mockBaseController: any;
 
     beforeEach(() => {

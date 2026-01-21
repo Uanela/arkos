@@ -1,8 +1,8 @@
 import { z } from 'zod';
 {{#if typescript}}
-import CreateAuthPermissionSchema from "../../auth-permission/schemas/create-auth-permission"
+import CreateAuthPermissionSchema from "../../auth-permission/schemas/create-auth-permission.schema"
 {{else}}
-import CreateAuthPermissionSchema from "../../auth-permission/schemas/create-auth-permission.js"
+import CreateAuthPermissionSchema from "../../auth-permission/schemas/create-auth-permission.schema.js"
 {{/if}}
 
 const UpdateAuthRoleSchema = z.object({
