@@ -22,7 +22,15 @@ export class ZodSchemaGenerator {
 
     const ext = getUserFileExtension();
     const isTypeScript = ext === "ts";
-    const restrictedFields = ["id", "createdAt", "updatedAt", "deletedAt"];
+    const restrictedFields = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "created_at",
+      "update_at",
+      "deleted_at",
+    ];
     const isUserModule = modelName!.kebab === "user";
     const enumsUsed = new Set<string>();
 
@@ -329,11 +337,8 @@ export default Query${modelName!.pascal}Schema;${typeExport}
 
     if (filterSchemasNeeded.has("StringFilterSchema")) {
       schemas.push(`const StringFilterSchema = z.object({
-  contains: z.string().optional(),
   icontains: z.string().optional(),
   equals: z.string().optional(),
-  in: z.array(z.string()).optional(),
-  notIn: z.array(z.string()).optional(),
 });`);
     }
 
@@ -342,10 +347,6 @@ export default Query${modelName!.pascal}Schema;${typeExport}
   equals: z.number().optional(),
   gte: z.number().optional(),
   lte: z.number().optional(),
-  gt: z.number().optional(),
-  lt: z.number().optional(),
-  in: z.array(z.number()).optional(),
-  notIn: z.array(z.number()).optional(),
 });`);
     }
 
@@ -360,8 +361,6 @@ export default Query${modelName!.pascal}Schema;${typeExport}
   equals: z.string().optional(),
   gte: z.string().optional(),
   lte: z.string().optional(),
-  gt: z.string().optional(),
-  lt: z.string().optional(),
 });`);
     }
 
@@ -370,8 +369,6 @@ export default Query${modelName!.pascal}Schema;${typeExport}
       if (filterSchemasNeeded.has(`${enumName}FilterSchema`)) {
         schemas.push(`const ${enumName}FilterSchema = z.object({
   equals: z.nativeEnum(${enumName}).optional(),
-  in: z.array(z.nativeEnum(${enumName})).optional(),
-  notIn: z.array(z.nativeEnum(${enumName})).optional(),
 });`);
       }
     }

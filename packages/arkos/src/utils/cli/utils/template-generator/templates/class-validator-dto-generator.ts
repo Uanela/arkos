@@ -21,7 +21,15 @@ export class ClassValidatorDtoGenerator {
 
     const ext = getUserFileExtension();
     const isTypeScript = ext === "ts";
-    const restrictedFields = ["id", "createdAt", "updatedAt", "deletedAt"];
+    const restrictedFields = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "created_at",
+      "update_at",
+      "deleted_at",
+    ];
     const isUserModule = modelName!.kebab === "user";
     const enumsUsed = new Set<string>();
     const validatorsUsed = new Set<string>();
@@ -407,8 +415,8 @@ ${dtoFields.join("\n\n")}
   private generateRelationFilterClass(
     model: PrismaModel,
     className: string,
-    validatorsUsed: Set<string>,
-    transformersUsed: Set<string>,
+    _: Set<string>,
+    _1: Set<string>,
     enumsUsed: Set<string>,
     filterClassesNeeded: Set<string>,
     isTypeScript: boolean
@@ -469,7 +477,7 @@ ${fields.join("\n\n")}
   private generateFilterClasses(
     filterClassesNeeded: Set<string>,
     enumsUsed: Set<string>,
-    validatorsUsed: Set<string>,
+    _: Set<string>,
     isTypeScript: boolean
   ): string {
     const classes: string[] = [];
@@ -479,25 +487,11 @@ ${fields.join("\n\n")}
       classes.push(`class StringFilter {
   @IsOptional()
   @IsString()
-  contains${typeModifier}: string;
-
-  @IsOptional()
-  @IsString()
   icontains${typeModifier}: string;
 
   @IsOptional()
   @IsString()
   equals${typeModifier}: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  in${typeModifier}: string[];
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  notIn${typeModifier}: string[];
 }`);
     }
 
@@ -514,24 +508,6 @@ ${fields.join("\n\n")}
   @IsOptional()
   @IsNumber()
   lte${typeModifier}: number;
-
-  @IsOptional()
-  @IsNumber()
-  gt${typeModifier}: number;
-
-  @IsOptional()
-  @IsNumber()
-  lt${typeModifier}: number;
-
-  @IsOptional()
-  @IsArray()
-  @IsNumber({}, { each: true })
-  in${typeModifier}: number[];
-
-  @IsOptional()
-  @IsArray()
-  @IsNumber({}, { each: true })
-  notIn${typeModifier}: number[];
 }`);
     }
 
@@ -556,14 +532,6 @@ ${fields.join("\n\n")}
   @IsOptional()
   @IsString()
   lte${typeModifier}: string;
-
-  @IsOptional()
-  @IsString()
-  gt${typeModifier}: string;
-
-  @IsOptional()
-  @IsString()
-  lt${typeModifier}: string;
 }`);
     }
 
@@ -574,16 +542,6 @@ ${fields.join("\n\n")}
   @IsOptional()
   @IsEnum(${enumName})
   equals${typeModifier}: ${enumName};
-
-  @IsOptional()
-  @IsArray()
-  @IsEnum(${enumName}, { each: true })
-  in${typeModifier}: ${enumName}[];
-
-  @IsOptional()
-  @IsArray()
-  @IsEnum(${enumName}, { each: true })
-  notIn${typeModifier}: ${enumName}[];
 }`);
       }
     }
