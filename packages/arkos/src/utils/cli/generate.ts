@@ -120,14 +120,16 @@ const generateFile = async (
       throw new Error(
         `${capitalize(humamReadableTemplateName.toLowerCase())} for ${names.kebab.replaceAll("-", " ")} already exists.`
       );
-    else if (options.overwrite)
+    else if (options.overwrite) {
+      if (!options.isBulk) console.info("");
       sheu.warn(
         `Overwriting ${humamReadableTemplateName.toLowerCase()} of ${names.kebab.replaceAll("-", " ")} because it already exists.`
       );
+    }
 
     fs.writeFileSync(filePath, content);
 
-    if (!options.isBulk) console.info("");
+    if (!options.isBulk && !options.overwrite) console.info("");
     sheu.done(
       `${humamReadableTemplateName} ${options.isBulk ? "" : `for ${names.kebab.replaceAll("-", " ")} `}generated under ${fullCleanCwd(filePath)}`
     );
