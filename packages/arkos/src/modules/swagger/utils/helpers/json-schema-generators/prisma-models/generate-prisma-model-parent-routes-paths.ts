@@ -145,14 +145,6 @@ export default function generatePrismaModelParentRoutesPaths(
           },
         },
         {
-          name: "filters",
-          in: "query",
-          description: "Additional filters criteria in JSON format",
-          schema: {
-            type: "string",
-          },
-        },
-        {
           name: "sort",
           in: "query",
           description: "Sort field (prefix with '-' for descending order)",

@@ -116,38 +116,38 @@ export function generatePrismaModelMainRoutesPaths(
     const findManyMode = getSchemaMode("findMany");
     const currentPath = paths[pathname]!.get;
 
-    const defaultParameters: OpenAPIV3.ParameterObject[] = [
-      {
-        name: "filters",
-        in: "query",
-        description: "Filter criteria in JSON format",
-        schema: { type: "string" },
-      },
-      {
-        name: "sort",
-        in: "query",
-        description: "Sort field (prefix with '-' for descending order)",
-        schema: { type: "string" },
-      },
-      {
-        name: "page",
-        in: "query",
-        description: "Page number (starts from 1)",
-        schema: { type: "integer", minimum: 1 },
-      },
-      {
-        name: "limit",
-        in: "query",
-        description: "Number of items per page",
-        schema: { type: "integer", minimum: 1, maximum: 100 },
-      },
-      {
-        name: "fields",
-        in: "query",
-        description: "Comma-separated list of fields to include in response",
-        schema: { type: "string" },
-      },
-    ];
+    const defaultParameters: OpenAPIV3.ParameterObject[] =
+      currentPath?.parameters?.every(
+        (parameter: any) => parameter?.in === "path"
+      )
+        ? [
+            {
+              name: "sort",
+              in: "query",
+              description: "Sort field (prefix with '-' for descending order)",
+              schema: { type: "string" },
+            },
+            {
+              name: "page",
+              in: "query",
+              description: "Page number (starts from 1)",
+              schema: { type: "integer", minimum: 1 },
+            },
+            {
+              name: "limit",
+              in: "query",
+              description: "Number of items per page",
+              schema: { type: "integer", minimum: 1, maximum: 100 },
+            },
+            {
+              name: "fields",
+              in: "query",
+              description:
+                "Comma-separated list of fields to include in response",
+              schema: { type: "string" },
+            },
+          ]
+        : [];
 
     const existingParams =
       (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
