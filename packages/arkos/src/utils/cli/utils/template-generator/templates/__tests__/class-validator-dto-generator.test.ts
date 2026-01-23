@@ -595,11 +595,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class StringFilter {");
-        expect(result).toContain("contains?: string;");
         expect(result).toContain("icontains?: string;");
-        expect(result).toContain("equals?: string;");
-        expect(result).toContain("in?: string[];");
-        expect(result).toContain("notIn?: string[];");
       });
 
       it("should generate NumberFilter for numeric fields", () => {
@@ -641,10 +637,6 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).toContain("equals?: number;");
         expect(result).toContain("gte?: number;");
         expect(result).toContain("lte?: number;");
-        expect(result).toContain("gt?: number;");
-        expect(result).toContain("lt?: number;");
-        expect(result).toContain("in?: number[];");
-        expect(result).toContain("notIn?: number[];");
       });
 
       it("should generate BooleanFilter for boolean fields", () => {
@@ -675,8 +667,10 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).toContain("class BooleanFilter {");
-        expect(result).toContain("equals?: boolean;");
+        expect(result).not.toContain("class BooleanFilter {");
+        expect(result).toContain(
+          "@IsOptional()\n  @IsBoolean()\n  published?: boolean;"
+        );
       });
 
       it("should generate DateTimeFilter for DateTime fields", () => {
@@ -711,8 +705,6 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).toContain("equals?: string;");
         expect(result).toContain("gte?: string;");
         expect(result).toContain("lte?: string;");
-        expect(result).toContain("gt?: string;");
-        expect(result).toContain("lt?: string;");
       });
 
       it("should generate enum filters with proper naming", () => {
@@ -747,10 +739,10 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain('import { Role } from "@prisma/client"');
-        expect(result).toContain("class RoleFilter {");
-        expect(result).toContain("equals?: Role;");
-        expect(result).toContain("in?: Role[];");
-        expect(result).toContain("notIn?: Role[];");
+        expect(result).not.toContain("class RoleFilter {");
+        expect(result).toContain(
+          "@IsOptional()\n  @IsEnum(Role)\n  role?: Role;"
+        );
       });
     });
 
@@ -797,11 +789,10 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Product", camel: "product", kebab: "product" },
         });
 
-        // Should have blank lines between filter classes
         expect(result).toMatch(
           /class StringFilter \{[\s\S]*?\}\n\nclass NumberFilter \{/
         );
-        expect(result).toMatch(
+        expect(result).not.toMatch(
           /class NumberFilter \{[\s\S]*?\}\n\nclass BooleanFilter \{/
         );
       });
@@ -836,7 +827,7 @@ describe("ClassValidatorDtoGenerator", () => {
 
         // Should have newline after imports before filter classes
         expect(result).toMatch(
-          /from "class-validator";\nimport { Type } from \"class-transformer\";\n\nclass StringFilter/
+          /from "class-validator";\nimport { Type, Transform } from \"class-transformer\";\n\nclass StringFilter/
         );
         // Should have newline after filter classes before main DTO
         expect(result).toMatch(/\}\n\nexport default class PostQueryDto/);
@@ -907,16 +898,8 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).toContain("class UserRelationFilter {");
-        expect(result).toContain(
-          "@IsOptional()\n  @ValidateNested()\n  @Type(() => StringFilter)\n  name?: StringFilter;"
-        );
-        expect(result).toContain(
-          "@IsOptional()\n  @ValidateNested()\n  @Type(() => StringFilter)\n  email?: StringFilter;"
-        );
-        expect(result).toContain(
-          "@IsOptional()\n  @ValidateNested()\n  @Type(() => UserRelationFilter)\n  author?: UserRelationFilter;"
-        );
+        expect(result).toContain("class UserForQueryPostDto {");
+        expect(result).toContain("@IsString()\n  id!: string;");
       });
 
       it("should skip array relations", () => {
@@ -951,7 +934,7 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).not.toContain("PostRelationFilter");
       });
 
-      it("should not nest relations in relation filters (single level only)", () => {
+      it("should only include reference field in nested DTOs (single level)", () => {
         (prismaSchemaParser.models as any) = [
           {
             name: "Post",
@@ -1022,20 +1005,19 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).toContain("class CategoryRelationFilter {");
-        // Should have name and parentId fields
-        expect(result).toMatch(
-          /class CategoryRelationFilter \{[\s\S]*?name\?:/
+        expect(result).toContain("class CategoryForQueryPostDto {");
+        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsOptional()\n  @ValidateNested()\n  @Type(() => CategoryForQueryPostDto)\n  category?: CategoryForQueryPostDto;"
         );
-        expect(result).toMatch(
-          /class CategoryRelationFilter \{[\s\S]*?parentId\?:/
+
+        const categoryDtoMatch = result.match(
+          /class CategoryForQueryPostDto \{([\s\S]*?)\}/
         );
-        // Should NOT have parent relation in the filter
-        const categoryFilterMatch = result.match(
-          /class CategoryRelationFilter \{([\s\S]*?)\}/
-        );
-        if (categoryFilterMatch) {
-          expect(categoryFilterMatch[1]).not.toContain("parent?:");
+        if (categoryDtoMatch) {
+          expect(categoryDtoMatch[1]).not.toContain("name");
+          expect(categoryDtoMatch[1]).not.toContain("parentId");
+          expect(categoryDtoMatch[1]).not.toContain("parent");
         }
       });
     });
@@ -1092,7 +1074,7 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).not.toContain("password?:");
       });
 
-      it("should exclude password from relation filters for user model", () => {
+      it("should exclude password from relation nested DTOs for user model", () => {
         (prismaSchemaParser.models as any) = [
           {
             name: "Post",
@@ -1162,15 +1144,16 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).toContain("class UserRelationFilter {");
-        // Should have email and name
-        const userFilterMatch = result.match(
-          /class UserRelationFilter \{([\s\S]*?)\}/
+        expect(result).toContain("class UserForQueryPostDto {");
+        expect(result).toContain("@IsString()\n  id!: string;");
+
+        const userDtoMatch = result.match(
+          /class UserForQueryPostDto \{([\s\S]*?)\}/
         );
-        if (userFilterMatch) {
-          expect(userFilterMatch[1]).toContain("email?:");
-          expect(userFilterMatch[1]).toContain("name?:");
-          expect(userFilterMatch[1]).not.toContain("password?:");
+        if (userDtoMatch) {
+          expect(userDtoMatch[1]).not.toContain("password");
+          expect(userDtoMatch[1]).not.toContain("email");
+          expect(userDtoMatch[1]).not.toContain("name");
         }
       });
 
@@ -1244,12 +1227,10 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Product", camel: "product", kebab: "product" },
         });
 
-        // Should import validators used in filter classes
         expect(result).toContain("IsOptional");
         expect(result).toContain("ValidateNested");
         expect(result).toContain("IsString");
         expect(result).toContain("IsNumber");
-        expect(result).toContain("IsArray");
       });
 
       it("should import Type from class-transformer", () => {
@@ -1280,7 +1261,9 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).toContain('import { Type } from "class-transformer"');
+        expect(result).not.toContain(
+          'import { Type } from "class-transformer"'
+        );
       });
 
       it("should import enums when used", () => {
@@ -1320,7 +1303,75 @@ describe("ClassValidatorDtoGenerator", () => {
     });
 
     describe("All Fields Optional", () => {
-      it("should make all fields optional with proper decorators", () => {
+      it("should generate simple nested DTOs for single relations", () => {
+        (prismaSchemaParser.models as any) = [
+          {
+            name: "Post",
+            fields: [
+              {
+                name: "id",
+                type: "String",
+                isId: true,
+                isOptional: false,
+                isArray: false,
+                isRelation: false,
+              },
+              {
+                name: "authorId",
+                type: "String",
+                isOptional: false,
+                isArray: false,
+                isRelation: false,
+              },
+              {
+                name: "author",
+                type: "User",
+                isOptional: false,
+                isArray: false,
+                isRelation: true,
+                foreignKeyField: "authorId",
+              },
+            ],
+          },
+          {
+            name: "User",
+            fields: [
+              {
+                name: "id",
+                type: "String",
+                isId: true,
+                isOptional: false,
+                isArray: false,
+                isRelation: false,
+              },
+              {
+                name: "name",
+                type: "String",
+                isOptional: false,
+                isArray: false,
+                isRelation: false,
+              },
+              {
+                name: "email",
+                type: "String",
+                isOptional: false,
+                isArray: false,
+                isRelation: false,
+              },
+            ],
+          },
+        ];
+
+        const result = classValidatorDtoGenerator.generateQueryDto({
+          modelName: { pascal: "Post", camel: "post", kebab: "post" },
+        });
+
+        expect(result).toContain("class UserForQueryPostDto {");
+        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).not.toContain("UserRelationFilter");
+      });
+
+      it("should include meta fields (page, limit, sort, fields)", () => {
         (prismaSchemaParser.models as any) = [
           {
             name: "Post",
@@ -1340,13 +1391,6 @@ describe("ClassValidatorDtoGenerator", () => {
                 isArray: false,
                 isRelation: false,
               },
-              {
-                name: "views",
-                type: "Int",
-                isOptional: false,
-                isArray: false,
-                isRelation: false,
-              },
             ],
           },
         ];
@@ -1356,13 +1400,16 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @ValidateNested()\n  @Type(() => StringFilter)\n  id?: StringFilter;"
+          "@IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page?: number;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @ValidateNested()\n  @Type(() => StringFilter)\n  title?: StringFilter;"
+          "@IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit?: number;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @ValidateNested()\n  @Type(() => NumberFilter)\n  views?: NumberFilter;"
+          "@IsOptional()\n  @IsString()\n  @Type(() => String)\n  sort?: string;"
+        );
+        expect(result).toContain(
+          "@IsOptional()\n  @IsString()\n  @Type(() => String)\n  fields?: string;"
         );
       });
     });

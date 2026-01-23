@@ -28,7 +28,7 @@ export class ZodSchemaGenerator {
       "updatedAt",
       "deletedAt",
       "created_at",
-      "update_at",
+      "updated_at",
       "deleted_at",
     ];
     const isUserModule = modelName!.kebab === "user";
@@ -123,7 +123,6 @@ export default Create${modelName!.pascal}Schema;${typeExport}
             (f) => f.name === refField
           );
           const zodType = this.mapPrismaTypeToZod(refFieldType?.type!);
-          // ALL relations are optional in update
           schemaFields.push(
             `  ${field.name}: z.object({ ${refField}: ${zodType} }).optional()`
           );
@@ -135,7 +134,6 @@ export default Create${modelName!.pascal}Schema;${typeExport}
         enumsUsed.add(field.type);
       }
 
-      // ALL fields are optional in update
       const zodSchema = this.generateZodField(field, isUserModule, true);
       schemaFields.push(`  ${field.name}: ${zodSchema}`);
     }
@@ -171,12 +169,10 @@ export default Update${modelName!.pascal}Schema;${typeExport}
     let schemaFields: string[] = [];
 
     for (const field of model.fields) {
-      // Skip password field for user module (sensitive data)
       if (isUserModule && field.name === "password") {
         continue;
       }
 
-      // Skip all relations - user can add them manually if needed
       if (field.isRelation) {
         continue;
       }
@@ -217,62 +213,91 @@ export default ${modelName!.pascal}Schema;${typeExport}
     const isUserModule = modelName!.kebab === "user";
     const enumsUsed = new Set<string>();
     const filterSchemasNeeded = new Set<string>();
+    const restrictedFields = ["id"];
+    const timestampFields = [
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ];
 
     let schemaFields: string[] = [];
+    let timestampSchemaFields: string[] = [];
+
+    schemaFields.push(`  page: z.coerce.number().optional()`);
+    schemaFields.push(`  limit: z.coerce.number().optional()`);
+    schemaFields.push(`  sort: z.string().optional()`);
+    schemaFields.push(`  fields: z.string().optional()`);
 
     for (const field of model.fields) {
-      // Skip password field in query schema for user module
-      if (isUserModule && field.name === "password") {
-        continue;
-      }
+      if (isUserModule && field.name === "password") continue;
+      if (restrictedFields.includes(field.name)) continue;
+
+      const isForeignKey = model.fields.some(
+        (f) => f.foreignKeyField === field.name
+      );
+      if (isForeignKey) continue;
 
       if (field.isRelation) {
-        if (field.isArray) continue; // Skip array relations
+        if (field.isArray) continue;
 
-        // Single relation - create inline relation filter
         const referencedModel = prismaSchemaParser.models.find(
           (m) => m.name === field.type
         );
 
         if (referencedModel) {
-          const relationFilterFields: string[] = [];
-          const isUserModel = referencedModel.name.toLowerCase() === "user";
+          const refField = field.foreignReferenceField || "id";
+          const refFieldType = referencedModel.fields.find(
+            (f) => f.name === refField
+          );
+          const zodType = this.mapPrismaTypeToZod(refFieldType?.type!);
 
-          for (const refField of referencedModel.fields) {
-            // Skip password for user model in relation filters
-            if (isUserModel && refField.name === "password") {
-              continue;
-            }
+          const fieldDef = `  ${field.name}: z.object({ ${refField}: ${zodType}.optional() }).optional()`;
 
-            // Skip relations in relation filters (single level only)
-            if (refField.isRelation) continue;
-
-            const filterSchemaName = this.getFilterSchemaForField(
-              refField,
-              enumsUsed
-            );
-            if (filterSchemaName) {
-              filterSchemasNeeded.add(filterSchemaName);
-              relationFilterFields.push(
-                `    ${refField.name}: ${filterSchemaName}.optional()`
-              );
-            }
-          }
-
-          if (relationFilterFields.length > 0) {
-            schemaFields.push(
-              `  ${field.name}: z.object({\n${relationFilterFields.join(",\n")}\n  }).optional()`
-            );
+          if (timestampFields.includes(field.name)) {
+            timestampSchemaFields.push(fieldDef);
+          } else {
+            schemaFields.push(fieldDef);
           }
         }
         continue;
       }
 
-      // Regular fields get filter schemas
+      if (prismaSchemaParser.isEnum(field.type)) {
+        enumsUsed.add(field.type);
+        const fieldDef = `  ${field.name}: z.nativeEnum(${field.type}).optional()`;
+
+        if (timestampFields.includes(field.name)) {
+          timestampSchemaFields.push(fieldDef);
+        } else {
+          schemaFields.push(fieldDef);
+        }
+        continue;
+      }
+
+      if (field.type === "Boolean") {
+        const fieldDef = `  ${field.name}: z.boolean().optional()`;
+
+        if (timestampFields.includes(field.name)) {
+          timestampSchemaFields.push(fieldDef);
+        } else {
+          schemaFields.push(fieldDef);
+        }
+        continue;
+      }
+
       const filterSchemaName = this.getFilterSchemaForField(field, enumsUsed);
       if (filterSchemaName) {
         filterSchemasNeeded.add(filterSchemaName);
-        schemaFields.push(`  ${field.name}: ${filterSchemaName}.optional()`);
+        const fieldDef = `  ${field.name}: ${filterSchemaName}.optional()`;
+
+        if (timestampFields.includes(field.name)) {
+          timestampSchemaFields.push(fieldDef);
+        } else {
+          schemaFields.push(fieldDef);
+        }
       }
     }
 
@@ -281,7 +306,6 @@ export default ${modelName!.pascal}Schema;${typeExport}
         ? `import { ${Array.from(enumsUsed).join(", ")} } from "@prisma/client";\n`
         : "";
 
-    // Generate filter schemas
     const filterSchemas = this.generateFilterSchemas(
       filterSchemasNeeded,
       enumsUsed
@@ -293,10 +317,12 @@ export default ${modelName!.pascal}Schema;${typeExport}
       ? `\n\nexport type Query${modelName!.pascal}SchemaType = z.infer<typeof Query${modelName!.pascal}Schema>;`
       : "";
 
+    const allFields = [...schemaFields, ...timestampSchemaFields];
+
     return `import { z } from "zod";
 ${enumImports}${filterSchemasSection}
 const Query${modelName!.pascal}Schema = z.object({
-${schemaFields.join(",\n")}
+${allFields.join(",\n")}
 });
 
 export default Query${modelName!.pascal}Schema;${typeExport}
@@ -320,8 +346,6 @@ export default Query${modelName!.pascal}Schema;${typeExport}
       case "Decimal":
       case "BigInt":
         return "NumberFilterSchema";
-      case "Boolean":
-        return "BooleanFilterSchema";
       case "DateTime":
         return "DateTimeFilterSchema";
       default:
@@ -331,28 +355,21 @@ export default Query${modelName!.pascal}Schema;${typeExport}
 
   private generateFilterSchemas(
     filterSchemasNeeded: Set<string>,
-    enumsUsed: Set<string>
+    _: Set<string>
   ): string {
     const schemas: string[] = [];
 
     if (filterSchemasNeeded.has("StringFilterSchema")) {
       schemas.push(`const StringFilterSchema = z.object({
-  icontains: z.string().optional(),
-  equals: z.string().optional(),
+  icontains: z.string().optional()
 });`);
     }
 
     if (filterSchemasNeeded.has("NumberFilterSchema")) {
       schemas.push(`const NumberFilterSchema = z.object({
-  equals: z.number().optional(),
-  gte: z.number().optional(),
-  lte: z.number().optional(),
-});`);
-    }
-
-    if (filterSchemasNeeded.has("BooleanFilterSchema")) {
-      schemas.push(`const BooleanFilterSchema = z.object({
-  equals: z.boolean().optional(),
+  equals: z.coerce.number().optional(),
+  gte: z.coerce.number().optional(),
+  lte: z.coerce.number().optional()
 });`);
     }
 
@@ -360,17 +377,8 @@ export default Query${modelName!.pascal}Schema;${typeExport}
       schemas.push(`const DateTimeFilterSchema = z.object({
   equals: z.string().optional(),
   gte: z.string().optional(),
-  lte: z.string().optional(),
+  lte: z.string().optional()
 });`);
-    }
-
-    // Generate enum filter schemas
-    for (const enumName of enumsUsed) {
-      if (filterSchemasNeeded.has(`${enumName}FilterSchema`)) {
-        schemas.push(`const ${enumName}FilterSchema = z.object({
-  equals: z.nativeEnum(${enumName}).optional(),
-});`);
-      }
     }
 
     return schemas.join("\n\n");
@@ -393,7 +401,6 @@ export default Query${modelName!.pascal}Schema;${typeExport}
         : `z.nativeEnum(${field.type})`;
     }
 
-    // User module special cases
     if (isUserModule) {
       if (field.name === "email") {
         zodType = `z.string().email()`;

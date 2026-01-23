@@ -445,11 +445,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
         expect(result).toContain("const StringFilterSchema = z.object({");
-        expect(result).toContain("contains: z.string().optional()");
         expect(result).toContain("icontains: z.string().optional()");
-        expect(result).toContain("equals: z.string().optional()");
-        expect(result).toContain("in: z.array(z.string()).optional()");
-        expect(result).toContain("notIn: z.array(z.string()).optional()");
 
         expect(result).toContain("title: StringFilterSchema.optional()");
         expect(result).toContain("content: StringFilterSchema.optional()");
@@ -507,13 +503,9 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
         expect(result).toContain("const NumberFilterSchema = z.object({");
-        expect(result).toContain("equals: z.number().optional()");
-        expect(result).toContain("gte: z.number().optional()");
-        expect(result).toContain("lte: z.number().optional()");
-        expect(result).toContain("gt: z.number().optional()");
-        expect(result).toContain("lt: z.number().optional()");
-        expect(result).toContain("in: z.array(z.number()).optional()");
-        expect(result).toContain("notIn: z.array(z.number()).optional()");
+        expect(result).toContain("equals: z.coerce.number().optional()");
+        expect(result).toContain("gte: z.coerce.number().optional()");
+        expect(result).toContain("lte: z.coerce.number().optional()");
 
         expect(result).toContain("price: NumberFilterSchema.optional()");
         expect(result).toContain("quantity: NumberFilterSchema.optional()");
@@ -554,9 +546,7 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
-        expect(result).toContain("const BooleanFilterSchema = z.object({");
-        expect(result).toContain("equals: z.boolean().optional()");
-        expect(result).toContain("published: BooleanFilterSchema.optional()");
+        expect(result).toContain("published: z.boolean().optional()");
       });
 
       it("should generate DateTimeFilterSchema for DateTime fields", () => {
@@ -604,8 +594,6 @@ describe("ZodSchemaGenerator", () => {
         expect(result).toContain("equals: z.string().optional()");
         expect(result).toContain("gte: z.string().optional()");
         expect(result).toContain("lte: z.string().optional()");
-        expect(result).toContain("gt: z.string().optional()");
-        expect(result).toContain("lt: z.string().optional()");
 
         expect(result).toContain(
           "publishedAt: DateTimeFilterSchema.optional()"
@@ -651,13 +639,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
         expect(result).toContain('import { Role } from "@prisma/client"');
-        expect(result).toContain("const RoleFilterSchema = z.object({");
-        expect(result).toContain("equals: z.nativeEnum(Role).optional()");
-        expect(result).toContain("in: z.array(z.nativeEnum(Role)).optional()");
-        expect(result).toContain(
-          "notIn: z.array(z.nativeEnum(Role)).optional()"
-        );
-        expect(result).toContain("role: RoleFilterSchema.optional()");
+        expect(result).toContain("role: z.nativeEnum(Role).optional()");
       });
     });
 
@@ -731,12 +713,9 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
-        expect(result).toContain("const StringFilterSchema = z.object({");
-        expect(result).toContain("author: z.object({");
-        expect(result).toContain("    id: StringFilterSchema.optional()");
-        expect(result).toContain("    name: StringFilterSchema.optional()");
-        expect(result).toContain("    email: StringFilterSchema.optional()");
-        expect(result).toContain("  }).optional()");
+        expect(result).toContain(
+          "author: z.object({ id: z.string().optional() }).optional()"
+        );
       });
 
       it("should skip array relations", () => {
@@ -853,10 +832,9 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
-        expect(result).toContain("category: z.object({");
-        expect(result).toContain("    id: StringFilterSchema.optional()");
-        expect(result).toContain("    name: StringFilterSchema.optional()");
-        expect(result).toContain("    parentId: StringFilterSchema.optional()");
+        expect(result).toContain(
+          "category: z.object({ id: z.string().optional() }).optional()"
+        );
         expect(result).not.toContain("parent:");
       });
     });
@@ -991,10 +969,9 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
-        expect(result).toContain("author: z.object({");
-        expect(result).toContain("    id: StringFilterSchema.optional()");
-        expect(result).toContain("    email: StringFilterSchema.optional()");
-        expect(result).toContain("    name: StringFilterSchema.optional()");
+        expect(result).toContain(
+          "author: z.object({ id: z.string().optional() }).optional()"
+        );
         expect(result).not.toContain("password:");
       });
 
@@ -1078,7 +1055,6 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
-        expect(result).toContain("id: StringFilterSchema.optional()");
         expect(result).toContain("title: StringFilterSchema.optional()");
         expect(result).toContain("views: NumberFilterSchema.optional()");
       });
