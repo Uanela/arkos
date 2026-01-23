@@ -27,7 +27,7 @@ export class ClassValidatorDtoGenerator {
       "updatedAt",
       "deletedAt",
       "created_at",
-      "update_at",
+      "updated_at",
       "deleted_at",
     ];
     const isUserModule = modelName!.kebab === "user";
@@ -161,7 +161,6 @@ ${dtoFields.join("\n\n")}
         );
 
         if (referencedModel) {
-          // ALL relations are optional in update DTO
           validatorsUsed.add("IsOptional");
           validatorsUsed.add("ValidateNested");
           transformersUsed.add("Type");
@@ -197,7 +196,6 @@ ${dtoFields.join("\n\n")}
         isUserModule,
         validatorsUsed
       );
-      // ALL fields are optional in update DTO
       const typeModifier = isTypeScript ? "?" : "";
       dtoFields.push(`${decorators}  ${field.name}${typeModifier}: ${type};`);
     }
@@ -240,12 +238,10 @@ ${dtoFields.join("\n\n")}
     let dtoFields: string[] = [];
 
     for (const field of model.fields) {
-      // Skip password field in base DTO for user module (sensitive data)
       if (isUserModule && field.name === "password") {
         continue;
       }
 
-      // Skip all relations - user can add them manually if needed
       if (field.isRelation) {
         continue;
       }
@@ -296,84 +292,141 @@ ${dtoFields.join("\n\n")}
     const validatorsUsed = new Set<string>();
     const transformersUsed = new Set<string>();
     const filterClassesNeeded = new Set<string>();
-    const relationFilterClasses: string[] = [];
+    const nestedDtoClasses: string[] = [];
+    const restrictedFields = ["id"];
+    const timestampFields = [
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ];
 
     validatorsUsed.add("IsOptional");
+    validatorsUsed.add("IsString");
+    validatorsUsed.add("IsNumber");
     validatorsUsed.add("ValidateNested");
     transformersUsed.add("Type");
+    transformersUsed.add("Transform");
 
     let dtoFields: string[] = [];
+    let timestampDtoFields: string[] = [];
+    const typeModifier = isTypeScript ? "?" : "";
+
+    dtoFields.push(
+      `  @IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page${typeModifier}: number;`
+    );
+    dtoFields.push(
+      `  @IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit${typeModifier}: number;`
+    );
+    dtoFields.push(
+      `  @IsOptional()\n  @IsString()\n  @Type(() => String)\n  sort${typeModifier}: string;`
+    );
+    dtoFields.push(
+      `  @IsOptional()\n  @IsString()\n  @Type(() => String)\n  fields${typeModifier}: string;`
+    );
 
     for (const field of model.fields) {
-      // Skip password field in query DTO for user module
-      if (isUserModule && field.name === "password") {
-        continue;
-      }
+      if (isUserModule && field.name === "password") continue;
+      if (restrictedFields.includes(field.name)) continue;
 
-      // Skip relation array fields and restricted fields
+      const isForeignKey = model.fields.some(
+        (f) => f.foreignKeyField === field.name
+      );
+      if (isForeignKey) continue;
+
       if (field.isRelation) {
-        if (field.isArray) continue; // Skip array relations for now
+        if (field.isArray) continue;
 
-        // Single relation - create a relation filter
         const referencedModel = prismaSchemaParser.models.find(
           (m) => m.name === field.type
         );
 
         if (referencedModel) {
-          const relationFilterName = `${referencedModel.name}RelationFilter`;
+          validatorsUsed.add("ValidateNested");
+          transformersUsed.add("Type");
 
-          // Generate relation filter class
-          const relationFilterClass = this.generateRelationFilterClass(
+          const relationDtoName = `${referencedModel.name}ForQuery${modelName!.pascal}Dto`;
+
+          const nestedDtoClass = this.generateNestedDtoClass(
+            field,
             referencedModel,
-            relationFilterName,
+            relationDtoName,
             validatorsUsed,
-            transformersUsed,
             enumsUsed,
-            filterClassesNeeded,
             isTypeScript
           );
-          relationFilterClasses.push(relationFilterClass);
 
-          const typeModifier = isTypeScript ? "?" : "";
-          dtoFields.push(
-            `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${relationFilterName})\n  ${field.name}${typeModifier}: ${relationFilterName};`
-          );
+          if (
+            !dtoFields.find((dtoField) => dtoField.includes(relationDtoName)) &&
+            !timestampDtoFields.find((dtoField) =>
+              dtoField.includes(relationDtoName)
+            )
+          ) {
+            nestedDtoClasses.push(nestedDtoClass);
+          }
+
+          const fieldDef = `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`;
+
+          if (timestampFields.includes(field.name)) {
+            timestampDtoFields.push(fieldDef);
+          } else {
+            dtoFields.push(fieldDef);
+          }
         }
         continue;
       }
 
-      // Regular fields get filter types
+      if (prismaSchemaParser.isEnum(field.type)) {
+        enumsUsed.add(field.type);
+        validatorsUsed.add("IsEnum");
+
+        const enumType = field.type;
+        const fieldDef = `  @IsOptional()\n  @IsEnum(${enumType})\n  ${field.name}${typeModifier}: ${enumType};`;
+
+        if (timestampFields.includes(field.name)) {
+          timestampDtoFields.push(fieldDef);
+        } else {
+          dtoFields.push(fieldDef);
+        }
+        continue;
+      }
+
+      if (field.type === "Boolean") {
+        validatorsUsed.add("IsBoolean");
+
+        const fieldDef = `  @IsOptional()\n  @IsBoolean()\n  ${field.name}${typeModifier}: boolean;`;
+
+        if (timestampFields.includes(field.name)) {
+          timestampDtoFields.push(fieldDef);
+        } else {
+          dtoFields.push(fieldDef);
+        }
+        continue;
+      }
+
       const filterType = this.getFilterTypeForField(field, enumsUsed);
       if (filterType) {
         filterClassesNeeded.add(filterType);
-        const typeModifier = isTypeScript ? "?" : "";
-        dtoFields.push(
-          `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${filterType})\n  ${field.name}${typeModifier}: ${filterType};`
-        );
+        const fieldDef = `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${filterType})\n  ${field.name}${typeModifier}: ${filterType};`;
+
+        if (timestampFields.includes(field.name)) {
+          timestampDtoFields.push(fieldDef);
+        } else {
+          dtoFields.push(fieldDef);
+        }
       }
     }
 
-    // Add all validators used by filter classes
     if (filterClassesNeeded.has("StringFilter")) {
       validatorsUsed.add("IsString");
-      validatorsUsed.add("IsArray");
     }
     if (filterClassesNeeded.has("NumberFilter")) {
       validatorsUsed.add("IsNumber");
-      validatorsUsed.add("IsArray");
-    }
-    if (filterClassesNeeded.has("BooleanFilter")) {
-      validatorsUsed.add("IsBoolean");
     }
     if (filterClassesNeeded.has("DateTimeFilter")) {
       validatorsUsed.add("IsString");
-    }
-    // Add IsEnum and IsArray for enum filters
-    for (const enumName of enumsUsed) {
-      if (filterClassesNeeded.has(`${enumName}Filter`)) {
-        validatorsUsed.add("IsEnum");
-        validatorsUsed.add("IsArray");
-      }
     }
 
     const enumImports =
@@ -391,7 +444,6 @@ ${dtoFields.join("\n\n")}
         ? `import { ${Array.from(transformersUsed).join(", ")} } from "class-transformer";\n`
         : "";
 
-    // Generate filter classes
     const filterClasses = this.generateFilterClasses(
       filterClassesNeeded,
       enumsUsed,
@@ -401,50 +453,14 @@ ${dtoFields.join("\n\n")}
 
     const filterClassesSection = filterClasses ? `\n${filterClasses}\n` : "";
 
-    const relationFilterSection =
-      relationFilterClasses.length > 0
-        ? `\n${relationFilterClasses.join("\n\n")}\n`
-        : "";
+    const nestedDtoSection =
+      nestedDtoClasses.length > 0 ? `\n${nestedDtoClasses.join("\n\n")}\n` : "";
 
-    return `${validatorImports}${transformerImports}${enumImports}${filterClassesSection}${relationFilterSection}
+    const allFields = [...dtoFields, ...timestampDtoFields];
+
+    return `${validatorImports}${transformerImports}${enumImports}${filterClassesSection}${nestedDtoSection}
 export default class ${modelName!.pascal}QueryDto {
-${dtoFields.join("\n\n")}
-}`;
-  }
-
-  private generateRelationFilterClass(
-    model: PrismaModel,
-    className: string,
-    _: Set<string>,
-    _1: Set<string>,
-    enumsUsed: Set<string>,
-    filterClassesNeeded: Set<string>,
-    isTypeScript: boolean
-  ): string {
-    const fields: string[] = [];
-    const isUserModel = model.name.toLowerCase() === "user";
-
-    for (const field of model.fields) {
-      // Skip password field for user model
-      if (isUserModel && field.name === "password") {
-        continue;
-      }
-
-      // Skip relations in relation filters (only single level)
-      if (field.isRelation) continue;
-
-      const filterType = this.getFilterTypeForField(field, enumsUsed);
-      if (filterType) {
-        filterClassesNeeded.add(filterType);
-        const typeModifier = isTypeScript ? "?" : "";
-        fields.push(
-          `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${filterType})\n  ${field.name}${typeModifier}: ${filterType};`
-        );
-      }
-    }
-
-    return `class ${className} {
-${fields.join("\n\n")}
+${allFields.join("\n\n")}
 }`;
   }
 
@@ -465,8 +481,6 @@ ${fields.join("\n\n")}
       case "Decimal":
       case "BigInt":
         return "NumberFilter";
-      case "Boolean":
-        return "BooleanFilter";
       case "DateTime":
         return "DateTimeFilter";
       default:
@@ -476,8 +490,8 @@ ${fields.join("\n\n")}
 
   private generateFilterClasses(
     filterClassesNeeded: Set<string>,
-    enumsUsed: Set<string>,
     _: Set<string>,
+    _1: Set<string>,
     isTypeScript: boolean
   ): string {
     const classes: string[] = [];
@@ -487,11 +501,8 @@ ${fields.join("\n\n")}
       classes.push(`class StringFilter {
   @IsOptional()
   @IsString()
+  @Type(() => String)
   icontains${typeModifier}: string;
-
-  @IsOptional()
-  @IsString()
-  equals${typeModifier}: string;
 }`);
     }
 
@@ -499,23 +510,18 @@ ${fields.join("\n\n")}
       classes.push(`class NumberFilter {
   @IsOptional()
   @IsNumber()
+  @Transform(({ value }) => (value ? Number(value) : undefined))
   equals${typeModifier}: number;
 
   @IsOptional()
   @IsNumber()
+  @Transform(({ value }) => (value ? Number(value) : undefined))
   gte${typeModifier}: number;
 
   @IsOptional()
   @IsNumber()
+  @Transform(({ value }) => (value ? Number(value) : undefined))
   lte${typeModifier}: number;
-}`);
-    }
-
-    if (filterClassesNeeded.has("BooleanFilter")) {
-      classes.push(`class BooleanFilter {
-  @IsOptional()
-  @IsBoolean()
-  equals${typeModifier}: boolean;
 }`);
     }
 
@@ -523,27 +529,19 @@ ${fields.join("\n\n")}
       classes.push(`class DateTimeFilter {
   @IsOptional()
   @IsString()
+  @Type(() => String)
   equals${typeModifier}: string;
 
   @IsOptional()
   @IsString()
+  @Type(() => String)
   gte${typeModifier}: string;
 
   @IsOptional()
   @IsString()
+  @Type(() => String)
   lte${typeModifier}: string;
 }`);
-    }
-
-    // Generate enum filters
-    for (const enumName of enumsUsed) {
-      if (filterClassesNeeded.has(`${enumName}Filter`)) {
-        classes.push(`class ${enumName}Filter {
-  @IsOptional()
-  @IsEnum(${enumName})
-  equals${typeModifier}: ${enumName};
-}`);
-      }
     }
 
     return classes.join("\n\n");
@@ -635,7 +633,6 @@ ${fields.join("\n\n")}
     let decorators: string[] = [];
     let type = this.mapPrismaTypeToTS(field.type);
 
-    // ALL fields in update DTO are optional
     decorators.push("@IsOptional()");
     validatorsUsed.add("IsOptional");
 
@@ -675,7 +672,6 @@ ${fields.join("\n\n")}
     const validators: string[] = [];
     const arrayEach = field.isArray ? "{ each: true }" : "";
 
-    // User module special cases
     if (isUserModule) {
       if (field.name === "email") {
         return ["@IsEmail()"];
