@@ -1,4 +1,4 @@
-import { AuthConfigs } from "arkos/auth";
+import { AuthConfigs } from 'arkos/auth';
 import { authService } from "arkos/services";
 
 export const postAccessControl = {
@@ -24,19 +24,15 @@ export const postAccessControl = {
   },
 } as const satisfies AuthConfigs["accessControl"];
 
-type PostPermissionName = `can${keyof typeof postAccessControl & string}`;
-
-export const postPermissions = Object.keys(postAccessControl).reduce(
-  (acc, key) => {
-    acc[`can${key}` as PostPermissionName] = authService.permission(
-      key,
-      "post",
-      postAccessControl
-    );
-    return acc;
-  },
-  {} as Record<PostPermissionName, ReturnType<typeof authService.permission>>
-);
+function createPostPermission(action: string) {
+  return authService.permission(action, "post", postAccessControl);
+}
+export const postPermissions = {
+  canCreate: createPostPermission("Create"),
+  canUpdate: createPostPermission("Update"),
+  canDelete: createPostPermission("Delete"),
+  canView: createPostPermission("View"),
+};
 
 export const postAuthenticationControl = {
   Create: true,
