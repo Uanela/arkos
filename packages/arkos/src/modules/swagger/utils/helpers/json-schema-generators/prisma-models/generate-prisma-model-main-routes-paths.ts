@@ -117,16 +117,13 @@ export function generatePrismaModelMainRoutesPaths(
     const currentPath = paths[pathname]!.get;
 
     const defaultParameters: OpenAPIV3.ParameterObject[] =
-      currentPath?.parameters?.every(
-        (parameter: any) => parameter?.in === "path"
-      )
+      ((currentPath?.parameters?.length || 0) > 0 &&
+        currentPath?.parameters?.every(
+          (parameter: any) => parameter?.in === "path"
+        )) ||
+      !currentPath?.parameters ||
+      (!currentPath?.parameters?.length || 0) === 0
         ? [
-            {
-              name: "sort",
-              in: "query",
-              description: "Sort field (prefix with '-' for descending order)",
-              schema: { type: "string" },
-            },
             {
               name: "page",
               in: "query",
@@ -144,6 +141,12 @@ export function generatePrismaModelMainRoutesPaths(
               in: "query",
               description:
                 "Comma-separated list of fields to include in response",
+              schema: { type: "string" },
+            },
+            {
+              name: "sort",
+              in: "query",
+              description: "Sort field (prefix with '-' for descending order)",
               schema: { type: "string" },
             },
           ]

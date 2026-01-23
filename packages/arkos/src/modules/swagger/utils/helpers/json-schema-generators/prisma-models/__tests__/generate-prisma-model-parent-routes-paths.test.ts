@@ -585,7 +585,7 @@ describe("generatePrismaModelParentRoutesPaths", () => {
 
       const findManyEndpoint = paths["/api/posts/{id}/comments"]?.get;
       expect(findManyEndpoint).toBeDefined();
-      expect(findManyEndpoint?.parameters).toHaveLength(6);
+      expect(findManyEndpoint?.parameters).toHaveLength(5);
 
       const pageParam = findManyEndpoint?.parameters?.find(
         (p: any) => p.name === "page"
