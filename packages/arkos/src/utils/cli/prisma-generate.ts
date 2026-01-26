@@ -6,7 +6,7 @@ import sheu from "../sheu";
 import path from "path";
 
 export default function prismaGenerateCommand() {
-    const content = `
+  const content = `
 import { ServiceBaseContext } from "arkos/services";
 import { Prisma, PrismaClient } from "@prisma/client"
 
@@ -27,8 +27,8 @@ export interface PrismaField {
 
 export declare type ModelsGetPayload<T extends Record<string, any>> = {
 ${prismaSchemaParser.models.map(
-    (model) =>
-        `
+  (model) =>
+    `
     "${kebabCase(model.name)}": {
         Delegate: Prisma.${model.name}Delegate,
         GetPayload: Prisma.${model.name}GetPayload<T>,
@@ -232,6 +232,58 @@ export declare class BaseService<
         queryOptions?: TOptions, 
         context?: ServiceBaseContext
     ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload'] | null>;
+
+    /**
+     * Updates a single record matching the specified id.
+     *
+     * @template TOptions - The query options type extending query options excluding 'where' and 'data'
+     * @param {string | number} id - The unique identifier of the record
+     * @param {ExtractData} data - The data to update
+     * @param {TOptions} [queryOptions] - Optional Prisma query options (select, include, etc.)
+     * @param {ServiceBaseContext} [context] - Optional service execution context
+     * @returns {Promise<ModelsGetPayload>} The updated record
+     *
+     * @example
+     * \`\`\`ts
+     * const updatedUser = await userService.updateById(
+     *   "user-123",
+     *   { name: "John Updated" }
+     * );
+     * \`\`\`
+     *
+     * @example
+     * \`\`\`ts
+     * // With relations
+     * const updatedUser = await userService.updateById(
+     *   "user-123",
+     *   { name: "John Updated" },
+     *   { include: { posts: true } }
+     * );
+     * \`\`\`
+     */
+    updateById<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['UpdateArgs'], 'where' | 'data'>>(
+        id: string | number,
+        data: ExtractData<ModelsGetPayload<any>[TModelName]['UpdateArgs']>, 
+        queryOptions?: TOptions, 
+        context?: ServiceBaseContext
+    ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload']>;
+
+    /**
+     * Deletes a single record matching the specified id.
+     *
+     * @param {string | number} id - The unique identifier of the record
+     * @param {ServiceBaseContext} [context] - Optional service execution context
+     * @returns {Promise<ModelsGetPayload>} The deleted record
+     *
+     * @example
+     * \`\`\`ts
+     * const deletedUser = await userService.deleteById("user-123");
+     * \`\`\`
+     */
+    deleteById(
+        id: string | number,
+        context?: ServiceBaseContext
+    ): Promise<ModelsGetPayload<any>[TModelName]['GetPayload']>;
 
     /**
      * Finds the first record matching the specified filters.
@@ -446,22 +498,19 @@ export declare class BaseService<
     ): Promise<Array<ModelsGetPayload<TOptions>[TModelName]['GetPayload']>>;
 }
 `;
-    execSync("npx prisma generate", { stdio: "inherit" });
+  execSync("npx prisma generate", { stdio: "inherit" });
 
-    const filePath = path.resolve(
-        process.cwd(),
-        `node_modules/@arkosjs/types/`
-    );
-    fs.mkdirSync(filePath, { recursive: true });
-    fs.writeFileSync(filePath + "/base.service.d.ts", content, {
-        encoding: "utf8",
-    });
+  const filePath = path.resolve(process.cwd(), `node_modules/@arkosjs/types/`);
+  fs.mkdirSync(filePath, { recursive: true });
+  fs.writeFileSync(filePath + "/base.service.d.ts", content, {
+    encoding: "utf8",
+  });
 
-    const pkgPath = path.resolve(
-        process.cwd(),
-        `node_modules/@arkosjs/types/package.json`
-    );
-    const pkgJsonContent = `{
+  const pkgPath = path.resolve(
+    process.cwd(),
+    `node_modules/@arkosjs/types/package.json`
+  );
+  const pkgJsonContent = `{
       "name": "@arkosjs/types",
       "version": "1.0.0",
       "types": "./base.service.d.ts",
@@ -469,11 +518,11 @@ export declare class BaseService<
         "./base.service": "./base.service.d.ts"
       }
     }`;
-    fs.writeFileSync(pkgPath, pkgJsonContent, {
-        encoding: "utf8",
-    });
+  fs.writeFileSync(pkgPath, pkgJsonContent, {
+    encoding: "utf8",
+  });
 
-    sheu.done(
-        "Types for @prisma/client and base service generated successfully!"
-    );
+  sheu.done(
+    "Types for @prisma/client and base service generated successfully!"
+  );
 }

@@ -813,6 +813,49 @@ export class BaseService<T extends ModelDelegate = any> {
   }
 
   /**
+   * Updates a single record matching the specified id.
+   *
+   * @template TOptions - The query options type extending UpdateOneOptions<T>
+   * @param {string | number} id - The unique identifier of the record
+   * @param {UpdateOneData<T>} data - The data to update
+   * @param {TOptions} [queryOptions] - Optional Prisma query options (select, include, etc.)
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<UpdateOneResult<T>>} The updated record
+   *
+   * @example
+   * ```ts
+   * const updatedUser = await userService.updateById(
+   *   "user-123",
+   *   { name: "John Updated" }
+   * );
+   * ```
+   *
+   * @example
+   * ```ts
+   * // With relations
+   * const updatedUser = await userService.updateById(
+   *   "user-123",
+   *   { name: "John Updated" },
+   *   { include: { posts: true } }
+   * );
+   * ```
+   */
+  async updateById<TOptions extends UpdateOneOptions<T>>(
+    id: string | number,
+    data: UpdateOneData<T>,
+    queryOptions?: TOptions,
+    context?: ServiceBaseContext
+  ): Promise<UpdateOneResult<T>> {
+    return this.executeOperation({
+      operationType: "updateOne",
+      prismaMethod: "update",
+      requiresPasswordHashing: true,
+      relationFieldsHandling: [],
+      returnsFallback: undefined,
+    })({ id }, data, queryOptions, context);
+  }
+
+  /**
    * Updates multiple records matching the specified filters.
    *
    * @template TOptions - The query options type extending UpdateManyOptions<T>
@@ -848,6 +891,31 @@ export class BaseService<T extends ModelDelegate = any> {
 
   /**
    * Deletes a single record matching the specified filters.
+   *
+   * @param {string | number} id - The unique identifier of the record
+   * @param {ServiceBaseContext} [context] - Optional service execution context
+   * @returns {Promise<DeleteOneResult<T>>} The deleted record
+   *
+   * @example
+   * ```ts
+   * const deletedUser = await userService.deleteById(
+   *   "user-123"
+   * );
+   * ```
+   */
+  async deleteById(
+    id: string | number,
+    context?: ServiceBaseContext
+  ): Promise<DeleteOneResult<T>> {
+    return this.executeOperation({
+      operationType: "deleteOne",
+      prismaMethod: "delete",
+      returnsFallback: undefined,
+    })({ id }, context);
+  }
+
+  /**
+   * Deletes a single record matching the specified id.
    *
    * @param {DeleteOneFilters<T>} filters - Where conditions to identify the record to delete
    * @param {ServiceBaseContext} [context] - Optional service execution context
