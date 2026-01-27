@@ -220,7 +220,7 @@ export function handleNonExistingRecord(err: {
 }) {
   const message =
     err?.meta?.cause ||
-    `Operation could not be completed as the required record was not found`;
+    `Operation could not be completed as some required record was not found`;
 
   const model = err?.meta?.cause
     ? err?.meta?.cause?.split("No '")?.[1]?.split?.("'")?.[0]
@@ -228,8 +228,8 @@ export function handleNonExistingRecord(err: {
 
   return new AppError(
     message,
-    404,
-    `Inline${pascalCase(model || "")}RecordNotFound`
+    model ? 400 : 404,
+    `${model ? "Inline" : ""}${pascalCase(model || "")}RecordNotFound`
   );
 }
 
