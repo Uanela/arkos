@@ -368,12 +368,12 @@ export class ErrorPrettifier {
 
     // "Invalid email" -> "fieldPath must be a valid email"
     if (message.startsWith("Invalid ")) {
-      const type = message.replace("Invalid ", "").toLowerCase();
+      const type = message.replace("Invalid ", "");
       return `${fieldPath} must be a valid ${type}`;
     }
 
     // For any other message, return the message
-    if (!message.toLowerCase().includes(fieldPath.toLowerCase()))
+    if (!message.toLowerCase().includes(fieldPath))
       return `${fieldPath} ${message}`;
     return message;
   }
