@@ -807,7 +807,7 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
-      expect(result.code).toBe("DatabaseNotAvailable");
+      expect(result.code).toBe("ServiceUnavailable");
       expect(result.isOperational).toBe(true);
     });
 
@@ -822,7 +822,7 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
-      expect(result.code).toBe("DatabaseNotAvailable");
+      expect(result.code).toBe("ServiceUnavailable");
       expect(result.isOperational).toBe(true);
     });
 
@@ -833,7 +833,7 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
-      expect(result.code).toBe("DatabaseNotAvailable");
+      expect(result.code).toBe("ServiceUnavailable");
       expect(result.isOperational).toBe(true);
     });
 
@@ -844,7 +844,7 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
-      expect(result.code).toBe("DatabaseNotAvailable");
+      expect(result.code).toBe("ServiceUnavailable");
       expect(result.isOperational).toBe(true);
     });
   });

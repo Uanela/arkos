@@ -37,45 +37,74 @@ export default function errorHandler(
 
   if (process.env.ARKOS_BUILD === "true") delete error?.stack;
 
-  if (err.name === "JsonWebTokenError")
-    error = errorControllerHelper.handleJWTError();
-  if (err.name === "TokenExpiredError")
-    error = errorControllerHelper.handleJWTExpired();
-  if (err.name === "PrismaClientValidationError")
-    error = errorControllerHelper.handlePrismaClientValidationError(err);
-  if (err.name === "PrismaClientInitializationError")
-    error = errorControllerHelper.handlePrismaClientInitializationError(err);
-  if (err.code === "P1000")
-    error = errorControllerHelper.handleAuthenticationError(err);
-  if (err.code === "P1001")
-    error = errorControllerHelper.handleServerNotReachableError(err);
-  if (err.code === "P1002")
-    error = errorControllerHelper.handleConnectionTimeoutError(err);
-  if (err.code === "P1003")
-    error = errorControllerHelper.handleDatabaseNotFoundError(err);
-  if (err.code === "P2000")
-    error = errorControllerHelper.handleFieldValueTooLargeError(err);
-  if (err.code === "P2001")
-    error = errorControllerHelper.handleRecordNotFoundError(err);
-  if (err.code === "P2002")
-    error = errorControllerHelper.handleUniqueConstraintError(err);
-  if (err.code === "P2003")
-    error = errorControllerHelper.handleForeignKeyConstraintError(err);
-  if (err.code === "P2004")
-    error = errorControllerHelper.handleConstraintFailedError(err);
-  if (err.code === "P2025")
-    error = errorControllerHelper.handleNonExistingRecord(err);
-  if (err.code === "P3000")
-    error = errorControllerHelper.handleSchemaCreationFailedError(err);
-  if (err.code === "P3001")
-    error = errorControllerHelper.handleMigrationAlreadyAppliedError(err);
-  if (err.code === "P3002")
-    error = errorControllerHelper.handleMigrationScriptFailedError(err);
-  if (err.code === "P3003")
-    error = errorControllerHelper.handleVersionMismatchError(err);
+  switch (err.name) {
+    case "JsonWebTokenError":
+      error = errorControllerHelper.handleJWTError();
+      break;
+    case "TokenExpiredError":
+      error = errorControllerHelper.handleJWTExpired();
+      break;
+    case "PrismaClientValidationError":
+      error = errorControllerHelper.handlePrismaClientValidationError(err);
+      break;
+    case "PrismaClientInitializationError":
+      error = errorControllerHelper.handlePrismaClientInitializationError(err);
+      break;
+    case "NetworkError":
+      error = errorControllerHelper.handleNetworkError(err);
+      break;
+  }
 
-  if (err.name === "NetworkError")
-    error = errorControllerHelper.handleNetworkError(err);
+  switch (err.code) {
+    case "P1000":
+      error = errorControllerHelper.handleAuthenticationError(err);
+      break;
+    case "P1001":
+      error = errorControllerHelper.handleServerNotReachableError(err);
+      break;
+    case "P1002":
+      error = errorControllerHelper.handleConnectionTimeoutError(err);
+      break;
+    case "P1003":
+      error = errorControllerHelper.handleDatabaseNotFoundError(err);
+      break;
+    case "P2000":
+      error = errorControllerHelper.handleFieldValueTooLargeError(err);
+      break;
+    case "P2001":
+      error = errorControllerHelper.handleRecordNotFoundError(err);
+      break;
+    case "P2002":
+      error = errorControllerHelper.handleUniqueConstraintError(err);
+      break;
+    case "P2003":
+      error = errorControllerHelper.handleForeignKeyConstraintError(err);
+      break;
+    case "P2004":
+      error = errorControllerHelper.handleConstraintFailedError(err);
+      break;
+    case "P2011":
+      error = errorControllerHelper.handleNullConstraintViolationError(err);
+      break;
+    case "P2014":
+      error = errorControllerHelper.handleRequiredRelationViolationError(err);
+      break;
+    case "P2025":
+      error = errorControllerHelper.handleNonExistingRecord(err);
+      break;
+    case "P3000":
+      error = errorControllerHelper.handleSchemaCreationFailedError(err);
+      break;
+    case "P3001":
+      error = errorControllerHelper.handleMigrationAlreadyAppliedError(err);
+      break;
+    case "P3002":
+      error = errorControllerHelper.handleMigrationScriptFailedError(err);
+      break;
+    case "P3003":
+      error = errorControllerHelper.handleVersionMismatchError(err);
+      break;
+  }
 
   const { message, ...rest } = error;
   if (process.env.ARKOS_BUILD !== "true")
