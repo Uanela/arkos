@@ -1,13 +1,75 @@
-import prismaSchemaParser from "../prisma/prisma-schema-parser";
-import { kebabCase } from "../helpers/change-case.helpers";
-import fs from "fs";
+import fs from "fs/promises";
 import { execSync } from "child_process";
-import sheu from "../sheu";
 import path from "path";
+import sheu from "../../sheu";
+import { kebabCase } from "../../helpers/change-case.helpers";
+import prismaSchemaParser from "../../prisma/prisma-schema-parser";
 
-export default function prismaGenerateCommand() {
-  const content = `
-import { ServiceBaseContext } from "arkos/services";
+class StaticTypesGenerator {
+  private readonly outputDir: string;
+  private readonly packageName = "@arkosjs/types";
+
+  constructor() {
+    this.outputDir = path.resolve(
+      process.cwd(),
+      `node_modules/${this.packageName}`
+    );
+  }
+
+  /**
+   * Generates all static types including Prisma types and package metadata
+   * @returns Promise<void>
+   */
+  async generate(): Promise<void> {
+    try {
+      // Step 1: Generate Prisma client types
+      await this.generatePrismaClient();
+
+      // Step 2: Ensure output directory exists
+      await this.ensureOutputDirectory();
+
+      // Step 3: Generate TypeScript declaration file
+      await this.generateTypeDeclarations();
+
+      // Step 4: Generate package.json
+      await this.generatePackageJson();
+
+      sheu.done(
+        "Types for @prisma/client and base service generated successfully!"
+      );
+    } catch (error) {
+      sheu.error("Failed to generate static types:");
+      console.log(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Executes Prisma client generation
+   */
+  private async generatePrismaClient(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      try {
+        execSync("npx prisma generate", { stdio: "inherit" });
+        resolve();
+      } catch (error) {
+        reject(new Error(`Prisma generation failed: ${error}`));
+      }
+    });
+  }
+
+  /**
+   * Ensures the output directory exists
+   */
+  private async ensureOutputDirectory(): Promise<void> {
+    await fs.mkdir(this.outputDir, { recursive: true });
+  }
+
+  /**
+   * Generates the TypeScript declaration file content
+   */
+  private generateDeclarationContent(): string {
+    return `import { ServiceBaseContext } from "arkos/services";
 import { Prisma, PrismaClient } from "@prisma/client"
 
 export interface PrismaField {
@@ -26,24 +88,24 @@ export interface PrismaField {
 
 
 export declare type ModelsGetPayload<T extends Record<string, any>> = {
-${prismaSchemaParser.models.map(
-  (model) =>
-    `
-    "${kebabCase(model.name)}": {
-        Delegate: Prisma.${model.name}Delegate,
-        GetPayload: Prisma.${model.name}GetPayload<T>,
-        FindManyArgs: Prisma.${model.name}FindManyArgs,
-        FindFirstArgs: Prisma.${model.name}FindFirstArgs,
-        CreateArgs: Prisma.${model.name}CreateArgs,
-        CreateManyArgs: Prisma.${model.name}CreateManyArgs,
-        UpdateArgs: Prisma.${model.name}UpdateArgs,
-        UpdateManyArgs: Prisma.${model.name}UpdateManyArgs,
-        DeleteArgs: Prisma.${model.name}DeleteArgs,
-        DeleteManyArgs: Prisma.${model.name}DeleteManyArgs,
-        CountArgs: Prisma.${model.name}CountArgs
-    }
-`
-)}
+${prismaSchemaParser.models
+  .map(
+    (model) =>
+      `  "${kebabCase(model.name)}": {
+      Delegate: Prisma.${model.name}Delegate,
+      GetPayload: Prisma.${model.name}GetPayload<T>,
+      FindManyArgs: Prisma.${model.name}FindManyArgs,
+      FindFirstArgs: Prisma.${model.name}FindFirstArgs,
+      CreateArgs: Prisma.${model.name}CreateArgs,
+      CreateManyArgs: Prisma.${model.name}CreateManyArgs,
+      UpdateArgs: Prisma.${model.name}UpdateArgs,
+      UpdateManyArgs: Prisma.${model.name}UpdateManyArgs,
+      DeleteArgs: Prisma.${model.name}DeleteArgs,
+      DeleteManyArgs: Prisma.${model.name}DeleteManyArgs,
+      CountArgs: Prisma.${model.name}CountArgs
+  }`
+  )
+  .join(",\n")}
 }
 
 export type ExtractFilters<T> = T extends { where?: infer W; [x: string]: any } ? W : any;
@@ -498,32 +560,44 @@ export declare class BaseService<
     ): Promise<Array<ModelsGetPayload<TOptions>[TModelName]['GetPayload']>>;
 }
 `;
-  execSync("npx prisma generate", { stdio: "inherit" });
+  }
 
-  const filePath = path.resolve(process.cwd(), `node_modules/@arkosjs/types/`);
-  fs.mkdirSync(filePath, { recursive: true });
-  fs.writeFileSync(filePath + "/base.service.d.ts", content, {
-    encoding: "utf8",
-  });
+  /**
+   * Writes the TypeScript declaration file
+   */
+  private async generateTypeDeclarations(): Promise<void> {
+    const content = this.generateDeclarationContent();
+    const filePath = path.join(this.outputDir, "base.service.d.ts");
+    await fs.writeFile(filePath, content, { encoding: "utf8" });
+  }
 
-  const pkgPath = path.resolve(
-    process.cwd(),
-    `node_modules/@arkosjs/types/package.json`
-  );
+  /**
+   * Generates the package.json content
+   */
+  private generatePackageJsonContent(): string {
+    return JSON.stringify(
+      {
+        name: this.packageName,
+        version: "1.0.0",
+        types: "./base.service.d.ts",
+        exports: {
+          "./base.service": "./base.service.d.ts",
+        },
+      },
+      null,
+      2
+    );
+  }
 
-  const pkgJsonContent = `{
-      "name": "@arkosjs/types",
-      "version": "1.0.0",
-      "types": "./base.service.d.ts",
-      "exports": {
-        "./base.service": "./base.service.d.ts"
-      }
-    }`;
-  fs.writeFileSync(pkgPath, pkgJsonContent, {
-    encoding: "utf8",
-  });
-
-  sheu.done(
-    "Types for @prisma/client and base service generated successfully!"
-  );
+  /**
+   * Writes the package.json file
+   */
+  private async generatePackageJson(): Promise<void> {
+    const content = this.generatePackageJsonContent();
+    const pkgPath = path.join(this.outputDir, "package.json");
+    await fs.writeFile(pkgPath, content, { encoding: "utf8" });
+  }
 }
+
+const staticTypesGenerator = new StaticTypesGenerator();
+export default staticTypesGenerator;
