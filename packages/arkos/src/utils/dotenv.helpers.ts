@@ -46,7 +46,7 @@ export function loadEnvironmentVariables() {
 
   const expanded = dotenvExpand.expand({
     parsed: mergedParsed,
-    processEnv: {} as any,
+    processEnv: mergedParsed,
   });
 
   Object.assign(process.env, expanded.parsed || mergedParsed);
