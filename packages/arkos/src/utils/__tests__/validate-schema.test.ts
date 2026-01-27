@@ -19,6 +19,15 @@ describe("validateSchema", () => {
   });
 
   describe("basic validation", () => {
+    it("should validate array schema directly", async () => {
+      const schema = z.array(z.string());
+      const invalidData = "not an array";
+
+      await expect(validateSchema(schema, invalidData)).rejects.toThrow(
+        ZodError
+      );
+    });
+
     it("should return validated data when validation succeeds", async () => {
       const testSchema = z.object({
         name: z.string(),
@@ -120,6 +129,24 @@ describe("validateSchema", () => {
       });
 
       expect(result).toEqual({ name: "John", email: "john@example.com" });
+    });
+
+    it("should validate array of objects with forbidNonWhitelisted", async () => {
+      const schema = z.array(
+        z.object({
+          name: z.string(),
+          email: z.string().email(),
+        })
+      );
+
+      const invalidData = [
+        { name: "John", email: "john@example.com", extra: "not allowed" },
+        { name: "Jane", email: "jane@example.com" },
+      ];
+
+      await expect(
+        validateSchema(schema, invalidData, { forbidNonWhitelisted: true })
+      ).rejects.toThrow(ZodError);
     });
 
     it("should reject extra keys when forbidNonWhitelisted is true", async () => {

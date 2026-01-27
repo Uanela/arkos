@@ -28,7 +28,7 @@ export type ZodValidationOptions = { forbidNonWhitelisted?: boolean };
  * }
  * ```
  */
-export default async function validateSchema<T extends z.ZodObject<any>>(
+export default async function validateSchema<T extends z.ZodTypeAny>(
   schema: T,
   data: unknown,
   options?: ZodValidationOptions
@@ -39,12 +39,11 @@ export default async function validateSchema<T extends z.ZodObject<any>>(
     data,
     deepmerge(arkosConfig?.validation?.validationOptions || {}, options || {})
   );
-
   if (!result.success) throw result.error;
   return result.data;
 }
 
-export function parseWithWhitelistCheck<T extends z.ZodObject<any>>(
+export function parseWithWhitelistCheck<T extends z.ZodTypeAny>(
   schema: T,
   data: unknown,
   options?: ZodValidationOptions
@@ -52,72 +51,62 @@ export function parseWithWhitelistCheck<T extends z.ZodObject<any>>(
   const errors: z.ZodIssue[] = [];
 
   function checkNestedKeys(
-    schemaShape: any,
-    dataObj: any,
+    schemaType: any,
+    dataValue: any,
     path: (string | number)[] = []
   ): void {
-    if (typeof dataObj !== "object" || dataObj === null) return;
-    if (Array.isArray(dataObj)) return;
+    if (typeof dataValue !== "object" || dataValue === null) return;
 
-    const allowedKeys = Object.keys(schemaShape);
-    const actualKeys = Object.keys(dataObj);
-    const extraKeys = actualKeys.filter((key) => !allowedKeys.includes(key));
-
-    extraKeys.forEach((key) => {
-      errors.push({
-        code: z.ZodIssueCode.unrecognized_keys,
-        keys: [key],
-        path: [...path, key],
-        message: `Unrecognized key(s) in object: ${[...path, key].join(".")}`,
+    // Handle arrays
+    if (Array.isArray(dataValue) && schemaType._def?.typeName === "ZodArray") {
+      const arrayElement = schemaType._def.type;
+      dataValue.forEach((item, index) => {
+        checkNestedKeys(arrayElement, item, [...path, index]);
       });
-    });
+      return;
+    }
 
-    allowedKeys.forEach((key) => {
-      const schemaField = schemaShape[key];
-      const dataValue = dataObj[key];
+    // Handle objects
+    if (schemaType._def?.typeName === "ZodObject") {
+      const schemaShape = schemaType._def.shape();
+      const allowedKeys = Object.keys(schemaShape);
+      const actualKeys = Object.keys(dataValue);
+      const extraKeys = actualKeys.filter((key) => !allowedKeys.includes(key));
 
-      if (dataValue === undefined || dataValue === null) return;
+      extraKeys.forEach((key) => {
+        errors.push({
+          code: z.ZodIssueCode.unrecognized_keys,
+          keys: [key],
+          path: [...path, key],
+          message: `Unrecognized key(s) in object: ${key}`,
+        });
+      });
 
-      if (schemaField._def?.typeName === "ZodObject") {
-        checkNestedKeys(schemaField._def.shape(), dataValue, [...path, key]);
-      } else if (schemaField._def?.typeName === "ZodArray") {
-        const arrayElement = schemaField._def.type;
+      // Check nested fields
+      allowedKeys.forEach((key) => {
+        const schemaField = schemaShape[key];
+        const nestedValue = dataValue[key];
+        if (nestedValue === undefined || nestedValue === null) return;
+
+        // Handle optional/nullable wrappers
+        let unwrappedSchema = schemaField;
         if (
-          arrayElement._def?.typeName === "ZodObject" &&
-          Array.isArray(dataValue)
+          schemaField._def?.typeName === "ZodOptional" ||
+          schemaField._def?.typeName === "ZodNullable"
         ) {
-          dataValue.forEach((item, index) => {
-            checkNestedKeys(arrayElement._def.shape(), item, [
-              ...path,
-              key,
-              index,
-            ]);
-          });
+          unwrappedSchema = schemaField._def.innerType;
         }
-      } else if (schemaField._def?.typeName === "ZodOptional") {
-        const innerType = schemaField._def.innerType;
-        if (innerType._def?.typeName === "ZodObject") {
-          checkNestedKeys(innerType._def.shape(), dataValue, [...path, key]);
-        }
-      } else if (schemaField._def?.typeName === "ZodNullable") {
-        const innerType = schemaField._def.innerType;
-        if (innerType._def?.typeName === "ZodObject") {
-          checkNestedKeys(innerType._def.shape(), dataValue, [...path, key]);
-        }
-      }
-    });
+
+        checkNestedKeys(unwrappedSchema, nestedValue, [...path, key]);
+      });
+    }
   }
 
-  if (
-    options?.forbidNonWhitelisted !== false &&
-    typeof data === "object" &&
-    data !== null
-  ) {
-    checkNestedKeys(schema._def.shape(), data);
+  if (options?.forbidNonWhitelisted !== false && data !== null) {
+    checkNestedKeys(schema, data);
   }
 
   const parseResult = schema.safeParse(data);
-
   if (!parseResult.success) {
     errors.push(...parseResult.error.issues);
   }
