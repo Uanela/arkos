@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import authService from "../auth.service";
+import authServiceImport from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { getArkosConfig } from "../../../server";
 import {
@@ -9,6 +9,8 @@ import {
 } from "../../../utils/helpers/arkos-config.helpers";
 import AppError from "../../error-handler/utils/app-error";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
+
+const authService: any = authServiceImport;
 
 // Mock dependencies
 jest.mock("jsonwebtoken");
