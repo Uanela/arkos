@@ -1,4 +1,7 @@
-import { pascalCase } from "../../../utils/helpers/change-case.helpers";
+import {
+  kebabCase,
+  pascalCase,
+} from "../../../utils/helpers/change-case.helpers";
 import AppError from "./app-error";
 
 export interface PrismaError {
@@ -234,6 +237,18 @@ export function handlePrismaClientInitializationError(_: any) {
   return new AppError(
     "Service temporarily unavailable",
     503,
-    "DatabaseNotAvailable"
+    "ServiceUnavailable"
+  );
+}
+
+export function handleRequiredRelationViolationError(err: AppError) {
+  const modelA = err?.meta?.model_a_name || "Record";
+  const modelB = err?.meta?.model_b_name || "another record";
+  const message = `This operation violates a required relationship between ${kebabCase(modelA).replaceAll("-", " ")} and ${kebabCase(modelB).replaceAll("-", " ")}.`;
+
+  return new AppError(
+    message,
+    400,
+    `${pascalCase(modelA || "")}RelationViolation`
   );
 }
