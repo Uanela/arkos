@@ -577,7 +577,7 @@ export class AuthService {
 
     authActionService.add(action, resource, accessControl);
 
-    return async (user: Record<string, any> | undefined): Promise<boolean> => {
+    return async (user: User | undefined): Promise<boolean> => {
       // getArkosConfig must not be called the same time as arkos.init()
       const configs = getArkosConfig();
 
