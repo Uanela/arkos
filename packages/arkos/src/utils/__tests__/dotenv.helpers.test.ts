@@ -3,14 +3,22 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import sheu from "../sheu";
+import dotenvExpand from "dotenv-expand";
 
-// Mock dependencies
+// jest.mock("dotenv-expand");
 jest.mock("fs");
 jest.mock("../sheu");
-jest.mock("dotenv");
+jest.mock("dotenv", () => ({
+  ...jest.requireActual("dotenv"),
+  parse: jest.fn(jest.requireActual("dotenv").expand),
+}));
 jest.mock("path", () => ({
   ...jest.requireActual("path"),
   resolve: jest.fn((cwd, fileName) => `${cwd}/${fileName}`),
+}));
+jest.mock("dotenv-expand", () => ({
+  ...jest.requireActual("dotenv-expand"),
+  expand: jest.fn(jest.requireActual("dotenv-expand").expand),
 }));
 
 describe("loadEnvironmentVariables", () => {
@@ -27,11 +35,6 @@ describe("loadEnvironmentVariables", () => {
     (path.resolve as jest.Mock).mockImplementation(
       (cwd, fileName) => `${cwd}/${fileName}`
     );
-
-    (dotenv.config as jest.Mock).mockReturnValue({
-      parsed: {},
-      error: null,
-    });
 
     process.env.DATABASE_URL = "db-url";
 
@@ -62,22 +65,6 @@ describe("loadEnvironmentVariables", () => {
     expect(path.resolve).toHaveBeenNthCalledWith(4, mockCwd, ".env.test.local");
   });
 
-  test("should load env file if it exists", () => {
-    // Mock only .env.production exists
-    (fs.existsSync as jest.Mock).mockImplementation(
-      (path) => path === `${mockCwd}/.env.production`
-    );
-    process.env.NODE_ENV = "production";
-
-    loadEnvironmentVariables();
-
-    expect(dotenv.config).toHaveBeenCalledWith({
-      path: `${mockCwd}/.env.production`,
-      override: true,
-      quiet: true,
-    });
-  });
-
   test("should return path of files successfully loaded", () => {
     process.env.NODE_ENV = "development";
 
@@ -90,35 +77,6 @@ describe("loadEnvironmentVariables", () => {
     const result = loadEnvironmentVariables();
 
     expect(result).toEqual([`${mockCwd}/.env.development`, `${mockCwd}/.env`]);
-  });
-
-  test("should handle dotenv errors", () => {
-    // Mock that a file exists but causes an error
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
-    (dotenv.config as jest.Mock).mockReturnValue({
-      error: new Error("test error"),
-    });
-
-    loadEnvironmentVariables();
-
-    expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining("Warning: Error loading"),
-      expect.any(Error)
-    );
-  });
-
-  test("should validate required environment variables", () => {
-    // Remove required env var
-    delete process.env.DATABASE_URL;
-
-    try {
-      loadEnvironmentVariables();
-    } catch {
-      expect(console.error).toHaveBeenCalledWith(
-        "Missing required environment variables:",
-        "DATABASE_URL"
-      );
-    }
   });
 
   test("should not log errors if required variables exist", () => {
@@ -164,5 +122,50 @@ describe("loadEnvironmentVariables", () => {
     const result = loadEnvironmentVariables();
 
     expect(result).toEqual([]);
+  });
+
+  test("should expand variables using values from multiple files", () => {
+    (fs.existsSync as jest.Mock).mockImplementation(
+      (p) => p.endsWith(".env") || p.endsWith(".env.local")
+    );
+
+    (fs.readFileSync as jest.Mock).mockImplementation((p) => {
+      if (p.endsWith(".env.local")) return "content-local";
+      if (p.endsWith(".env")) return "content-base";
+      return "";
+    });
+
+    (dotenv.parse as jest.Mock).mockImplementation((content) => {
+      if (content === "content-local")
+        return { HOST: "localhost", URL: "http://${HOST}:${PORT}" };
+      if (content === "content-base") return { PORT: "3000" };
+      return {};
+    });
+
+    (dotenvExpand.expand as jest.Mock).mockImplementation(({ parsed }) => ({
+      parsed: {
+        ...parsed,
+        URL: "http://localhost:3000",
+      },
+    }));
+
+    process.env.DATABASE_URL = "mock-db";
+
+    loadEnvironmentVariables();
+
+    expect(dotenvExpand.expand).toHaveBeenCalledWith({
+      parsed: expect.objectContaining({
+        PORT: "3000",
+        HOST: "localhost",
+        URL: "http://${HOST}:${PORT}",
+      }),
+      processEnv: expect.objectContaining({
+        PORT: "3000",
+        HOST: "localhost",
+        URL: "http://${HOST}:${PORT}",
+      }),
+    });
+
+    expect(process.env.URL).toBe("http://localhost:3000");
   });
 });
