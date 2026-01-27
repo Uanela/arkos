@@ -422,7 +422,7 @@ export class BaseController {
     operationType: "createMany",
     serviceMethod: "createMany",
     successStatus: 201,
-    queryFeatures: [],
+    queryFeatures: ["limitFields"],
     usesRequestBody: true,
   });
 
@@ -443,7 +443,7 @@ export class BaseController {
     operationType: "findOne",
     serviceMethod: "findOne",
     successStatus: 200,
-    queryFeatures: ["limitFields"],
+    queryFeatures: ["limitFields", "filter"],
     usesRequestParams: true,
   });
 
@@ -454,7 +454,7 @@ export class BaseController {
     operationType: "updateOne",
     serviceMethod: "updateOne",
     successStatus: 200,
-    queryFeatures: ["limitFields"],
+    queryFeatures: ["limitFields", "filter"],
     usesRequestParams: true,
     usesRequestBody: true,
   });
@@ -466,7 +466,7 @@ export class BaseController {
     operationType: "updateMany",
     serviceMethod: "updateMany",
     successStatus: 200,
-    queryFeatures: ["filter"],
+    queryFeatures: ["filter", "limitFields"],
     requiresQueryForBulk: true,
     preventORFilter: true,
     usesRequestBody: true,
@@ -479,7 +479,7 @@ export class BaseController {
     operationType: "batchUpdate",
     serviceMethod: "batchUpdate",
     successStatus: 200,
-    queryFeatures: ["limitFields"],
+    queryFeatures: ["limitFields", "filter"],
     usesRequestBody: true,
   });
 
@@ -490,7 +490,7 @@ export class BaseController {
     operationType: "deleteOne",
     serviceMethod: "deleteOne",
     successStatus: 204,
-    queryFeatures: [],
+    queryFeatures: ["filter"],
     usesRequestParams: true,
   });
 
@@ -513,7 +513,7 @@ export class BaseController {
     operationType: "batchDelete",
     serviceMethod: "batchDelete",
     successStatus: 200,
-    queryFeatures: [],
+    queryFeatures: ["filter"],
     usesRequestBody: true,
   });
 }
