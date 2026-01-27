@@ -716,9 +716,9 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(404);
       expect(result.message).toBe(
-        "Operation could not be completed as the required record was not found"
+        "Operation could not be completed as some required record was not found"
       );
-      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.code).toBe("RecordNotFound");
       expect(result.isOperational).toBe(true);
     });
 
@@ -732,7 +732,7 @@ describe("Error Handlers", () => {
       const result = errorHandlers.handleNonExistingRecord(err);
 
       expect(result).toBeInstanceOf(AppError);
-      expect(result.statusCode).toBe(404);
+      expect(result.statusCode).toBe(400);
       expect(result.message).toBe("No 'User' record does not exists");
       expect(result.code).toBe("InlineUserRecordNotFound");
       expect(result.meta).toEqual(undefined);
@@ -750,9 +750,9 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(404);
       expect(result.message).toBe(
-        "Operation could not be completed as the required record was not found"
+        "Operation could not be completed as some required record was not found"
       );
-      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.code).toBe("RecordNotFound");
       expect(result.meta).toEqual(undefined);
     });
 
@@ -763,9 +763,9 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(404);
       expect(result.message).toBe(
-        "Operation could not be completed as the required record was not found"
+        "Operation could not be completed as some required record was not found"
       );
-      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.code).toBe("RecordNotFound");
       expect(result.meta).toEqual(undefined);
     });
 
@@ -776,9 +776,9 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(404);
       expect(result.message).toBe(
-        "Operation could not be completed as the required record was not found"
+        "Operation could not be completed as some required record was not found"
       );
-      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.code).toBe("RecordNotFound");
       expect(result.meta).toEqual(undefined);
     });
 
@@ -793,7 +793,7 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(404);
       expect(result.message).toBe("User with ID 123 not found");
-      expect(result.code).toBe("InlineRecordNotFound");
+      expect(result.code).toBe("RecordNotFound");
       expect(result.meta).toEqual(undefined);
       expect(result.isOperational).toBe(true);
     });
