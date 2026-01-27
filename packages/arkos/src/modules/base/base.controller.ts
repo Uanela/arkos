@@ -268,10 +268,10 @@ export class BaseController {
         return [where, queryOptions, context];
 
       case "findOne":
-        return [req.params, mergedOptions, context];
+        return [{ ...req.params, ...where }, mergedOptions, context];
 
       case "updateOne":
-        return [req.params, req.body, mergedOptions, context];
+        return [{ ...req.params, ...where }, req.body, mergedOptions, context];
 
       case "updateMany":
         // Remove include for bulk operations
@@ -279,16 +279,29 @@ export class BaseController {
         return [where, req.body, queryOptions, context];
 
       case "batchUpdate":
-        return [req.body, mergedOptions, context];
+        return [
+          req.body.map((data: any) => ({
+            ...data,
+            where: { ...data.where, ...where },
+          })),
+          mergedOptions,
+          context,
+        ];
 
       case "deleteOne":
-        return [req.params, context];
+        return [{ ...req.params, ...where }, context];
 
       case "deleteMany":
         return [where, context];
 
       case "batchDelete":
-        return [req.body, context];
+        return [
+          req.body.map((data: any) => ({
+            ...data,
+            where: { ...data.where, ...where },
+          })),
+          context,
+        ];
 
       default:
         throw new Error(`Unknown operation type: ${config.operationType}`);
@@ -380,26 +393,23 @@ export class BaseController {
     additionalData: any,
     operationType: string
   ): any {
-    if (operationType === "findMany" && additionalData) {
+    if (operationType === "findMany" && additionalData)
       return {
         total: additionalData.total,
         results: additionalData.results,
         data,
       };
-    }
 
     if (
       operationType.includes("Many") &&
       data &&
       typeof data === "object" &&
       "count" in data
-    ) {
+    )
       return { results: data.count, data };
-    }
 
-    if (operationType.includes("batch") && Array.isArray(data)) {
+    if (operationType.includes("batch") && Array.isArray(data))
       return { results: data.length, data };
-    }
 
     return { data };
   }
