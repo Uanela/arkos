@@ -334,9 +334,11 @@ export function generateOpenAPIFromApp(app: any) {
               return {
                 ...(hasUploadFields && {
                   "multipart/form-data": {
-                    schema: arkosRouterOpenApiManager.addUploadFields(
-                      config.experimental?.uploads!,
-                      schema
+                    schema: openApiSchemaConverter.flattenSchema(
+                      arkosRouterOpenApiManager.addUploadFields(
+                        config.experimental?.uploads!,
+                        schema
+                      )
                     ),
                   },
                 }),
@@ -358,9 +360,11 @@ export function generateOpenAPIFromApp(app: any) {
 
               return {
                 "multipart/form-data": {
-                  schema: arkosRouterOpenApiManager.addUploadFields(
-                    config?.experimental?.uploads! || {},
-                    schema
+                  schema: openApiSchemaConverter.flattenSchema(
+                    arkosRouterOpenApiManager.addUploadFields(
+                      config?.experimental?.uploads! || {},
+                      schema
+                    )
                   ),
                 },
                 ...convertedOpenAPI?.requestBody,
