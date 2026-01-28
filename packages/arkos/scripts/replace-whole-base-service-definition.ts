@@ -72,7 +72,7 @@ export interface ArkosRequest<
   /**
    * Authenticated user 
    */
-  user?: User | undefined;
+  user?: User;
 
   /**
    * Fields to include in relational queries
