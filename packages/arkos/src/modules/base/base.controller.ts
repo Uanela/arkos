@@ -434,6 +434,21 @@ export class BaseController {
     successStatus: 201,
     queryFeatures: ["limitFields"],
     usesRequestBody: true,
+    hooks: {
+      async beforeQuery(req) {
+        console.log(
+          req.body,
+          !req.body || (Array.isArray(req.body) && req.body.length === 0)
+        );
+        if (!req.body || (Array.isArray(req.body) && req.body.length === 0))
+          throw new AppError(
+            "Expected request body array to contain at least on item but received none",
+            400,
+            { body: req.body },
+            "MissingArrayRequestBody"
+          );
+      },
+    },
   });
 
   /**

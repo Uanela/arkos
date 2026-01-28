@@ -79,6 +79,20 @@ describe("loadEnvironmentVariables", () => {
     expect(result).toEqual([`${mockCwd}/.env.development`, `${mockCwd}/.env`]);
   });
 
+  test("should validate required environment variables", () => {
+    // Remove required env var
+    delete process.env.DATABASE_URL;
+
+    try {
+      loadEnvironmentVariables();
+    } catch {
+      expect(console.error).toHaveBeenCalledWith(
+        "Missing required environment variables:",
+        "DATABASE_URL"
+      );
+    }
+  });
+
   test("should not log errors if required variables exist", () => {
     // DATABASE_URL is already set in beforeEach
     loadEnvironmentVariables();
