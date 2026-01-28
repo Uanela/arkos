@@ -1512,7 +1512,7 @@ describe("AuthService", () => {
       // Setup
       mockConfig.authentication.mode = "dynamic";
       const permissionChecker = authService.permission("create", "User");
-      const user = { id: "user-123" };
+      const user: any = { id: "user-123" };
 
       // Mock checkDynamicAccessControl to return true
       jest
@@ -1546,7 +1546,7 @@ describe("AuthService", () => {
         .mockReturnValue(true);
 
       // Execute
-      const result = await permissionChecker(user);
+      const result = await permissionChecker(user as any);
 
       // Verify
       expect(
@@ -1562,7 +1562,7 @@ describe("AuthService", () => {
       const user = { id: "user-123", role: "admin" };
 
       // Execute
-      const result = await permissionChecker(user);
+      const result = await permissionChecker(user as any);
 
       // Verify
       expect(result).toBe(false);
@@ -1579,7 +1579,7 @@ describe("AuthService", () => {
       const user = { id: "user-123", role: "Admin" };
 
       // Execute
-      const result = await permissionChecker(user);
+      const result = await permissionChecker(user as any);
 
       // Verify
       expect(result).toBe(false);
@@ -1592,7 +1592,7 @@ describe("AuthService", () => {
       const user = { id: "user-123" };
 
       // Execute
-      const result = await permissionChecker(user);
+      const result = await permissionChecker(user as any);
 
       // Verify
       expect(result).toBe(false);
