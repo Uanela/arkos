@@ -92,10 +92,10 @@ export class ErrorPrettifier {
    * @example
    * ```typescript
    * replaceFieldInMessage('id must be a UUID', 'id', 'user.id')
-   * // Returns: 'user.id must be a UUID'
+   * // Returns: ''user.id' must be a UUID'
    *
    * replaceFieldInMessage('name must be a string', 'name', 'tags[0].name')
-   * // Returns: 'tags[0].name must be a string'
+   * // Returns: ''tags[0].name' must be a string'
    * ```
    *
    * @param message - Original validation message
@@ -114,21 +114,21 @@ export class ErrorPrettifier {
     }
 
     // Replace the field name at the start of the message with the full path
-    // Handle cases like "id must be a UUID" -> "user.id must be a UUID"
+    // Handle cases like "id must be a UUID" -> "'user.id' must be a UUID"
     const regex = new RegExp(`^${fieldName}\\b`, "i");
     if (regex.test(message)) {
-      return message.replace(regex, fullPath);
+      return message.replace(regex, `'${fullPath}'`);
     }
 
     // If field name is not at the start, try to find it and replace
     // This handles cases like "must be a valid id" or other formats
     const wordBoundaryRegex = new RegExp(`\\b${fieldName}\\b`, "gi");
     if (wordBoundaryRegex.test(message)) {
-      return message.replace(wordBoundaryRegex, fullPath);
+      return message.replace(wordBoundaryRegex, `'${fullPath}'`);
     }
 
     // If we can't find the field name in the message, prepend the path
-    return `${fullPath} ${message}`;
+    return `'${fullPath}' ${message}`;
   }
 
   /**
@@ -321,10 +321,10 @@ export class ErrorPrettifier {
    * @example
    * ```typescript
    * injectFieldPathInZodMessage('String must contain at least 100 character(s)', 'user.id', issue)
-   * // Returns: 'user.id must contain at least 100 character(s)'
+   * // Returns: ''user.id' must contain at least 100 character(s)'
    *
    * injectFieldPathInZodMessage('Required', 'email', issue)
-   * // Returns: 'email is required'
+   * // Returns: ''email' is required'
    * ```
    *
    * @param message - Original Zod error message
@@ -341,40 +341,40 @@ export class ErrorPrettifier {
       return message;
     }
 
-    // "Required" -> "fieldPath is required"
+    // "Required" -> "'fieldPath' is required"
     if (message === "Required") {
-      return `${fieldPath} is required`;
+      return `'${fieldPath}' is required`;
     }
 
-    // "String must..." -> "fieldPath must..."
+    // "String must..." -> "'fieldPath' must..."
     if (message.startsWith("String must")) {
-      return message.replace(/^String must/, `${fieldPath} must`);
+      return message.replace(/^String must/, `'${fieldPath}' must`);
     }
 
-    // "Number must..." -> "fieldPath must..."
+    // "Number must..." -> "'fieldPath' must..."
     if (message.startsWith("Number must")) {
-      return message.replace(/^Number must/, `${fieldPath} must`);
+      return message.replace(/^Number must/, `'${fieldPath}' must`);
     }
 
-    // "Array must..." -> "fieldPath must..."
+    // "Array must..." -> "'fieldPath' must..."
     if (message.startsWith("Array must")) {
-      return message.replace(/^Array must/, `${fieldPath} must`);
+      return message.replace(/^Array must/, `'${fieldPath}' must`);
     }
 
-    // "Expected string, received number" -> "fieldPath: Expected string, received number"
+    // "Expected string, received number" -> "'fieldPath': Expected string, received number"
     if (message.startsWith("Expected")) {
-      return `${fieldPath} must be valid: ${message}`;
+      return `'${fieldPath}' must be valid: ${message}`;
     }
 
-    // "Invalid email" -> "fieldPath must be a valid email"
+    // "Invalid email" -> "'fieldPath' must be a valid email"
     if (message.startsWith("Invalid ")) {
       const type = message.replace("Invalid ", "");
-      return `${fieldPath} must be a valid ${type}`;
+      return `'${fieldPath}' must be a valid ${type}`;
     }
 
     // For any other message, return the message
     if (!message.toLowerCase().includes(fieldPath))
-      return `${fieldPath} ${message}`;
+      return `'${fieldPath}' ${message}`;
     return message;
   }
 }

@@ -1729,7 +1729,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("name Validation error");
+        ).rejects.toThrow("'name' Validation error");
 
         expect(nextFunction).not.toHaveBeenCalled();
       });
