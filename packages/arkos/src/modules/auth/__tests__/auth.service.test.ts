@@ -1454,6 +1454,23 @@ describe("AuthService", () => {
     //     "Validation Error: Trying to use authService.permission without setting up authentication."
     //   );
     // });
+    it("should throw login error when auth is enabled and user is undefined", async () => {
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
+
+      const permissionChecker = authService.permission("create", "User");
+
+      await expect(permissionChecker(undefined)).rejects.toBeInstanceOf(
+        AppError
+      );
+    });
+
+    it("should not throw login error when auth is disabled and user is undefined", async () => {
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(false);
+
+      const permissionChecker = authService.permission("create", "User");
+
+      await expect(permissionChecker(undefined)).resolves.toBe(false);
+    });
 
     it("should return function that calls checkDynamicAccessControl for dynamic mode", async () => {
       // Setup
