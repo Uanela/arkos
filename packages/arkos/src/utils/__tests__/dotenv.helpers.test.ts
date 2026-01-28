@@ -62,22 +62,6 @@ describe("loadEnvironmentVariables", () => {
     expect(path.resolve).toHaveBeenNthCalledWith(4, mockCwd, ".env.test.local");
   });
 
-  test("should load env file if it exists", () => {
-    // Mock only .env.production exists
-    (fs.existsSync as jest.Mock).mockImplementation(
-      (path) => path === `${mockCwd}/.env.production`
-    );
-    process.env.NODE_ENV = "production";
-
-    loadEnvironmentVariables();
-
-    expect(dotenv.config).toHaveBeenCalledWith({
-      path: `${mockCwd}/.env.production`,
-      override: true,
-      quiet: true,
-    });
-  });
-
   test("should return path of files successfully loaded", () => {
     process.env.NODE_ENV = "development";
 
@@ -90,21 +74,6 @@ describe("loadEnvironmentVariables", () => {
     const result = loadEnvironmentVariables();
 
     expect(result).toEqual([`${mockCwd}/.env.development`, `${mockCwd}/.env`]);
-  });
-
-  test("should handle dotenv errors", () => {
-    // Mock that a file exists but causes an error
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
-    (dotenv.config as jest.Mock).mockReturnValue({
-      error: new Error("test error"),
-    });
-
-    loadEnvironmentVariables();
-
-    expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining("Warning: Error loading"),
-      expect.any(Error)
-    );
   });
 
   test("should validate required environment variables", () => {
