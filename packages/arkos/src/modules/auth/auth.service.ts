@@ -586,8 +586,9 @@ export class AuthService {
           "Validation Error: Trying to use authService.permission without setting up authentication."
         );
 
+      if (!isAuthenticationEnabled()) return false;
       if (!user) throw loginRequiredError;
-      if (user.isSuperUser) return true;
+      if (user?.isSuperUser) return true;
 
       if (configs?.authentication?.mode === "dynamic") {
         return await this.checkDynamicAccessControl(user?.id, action, resource);
