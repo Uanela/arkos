@@ -96,6 +96,127 @@ class OpenAPIchemaConverter {
   }
 
   /**
+   * Flattens a JSON schema into bracket notation parameters
+   * @param schema - The JSON schema to flatten
+   * @param prefix - Optional prefix for nested properties
+   * @returns Array of flattened parameter names with their schemas
+   */
+  flattenJsonSchema(
+    schema: any,
+    prefix = "",
+    visitedRefs = new Set<string>()
+  ): Array<{ name: string; schema: any; required: boolean }> {
+    const flattened: Array<{ name: string; schema: any; required: boolean }> =
+      [];
+
+    if (schema.$ref) {
+      const refPath = schema.$ref;
+      if (visitedRefs.has(refPath)) return flattened;
+
+      visitedRefs.add(refPath);
+      const resolvedSchema = this.resolveRef(schema, refPath);
+      if (resolvedSchema) {
+        flattened.push(
+          ...this.flattenJsonSchema(resolvedSchema, prefix, visitedRefs)
+        );
+      }
+      visitedRefs.delete(refPath);
+      return flattened;
+    }
+
+    if (schema.type === "array" && schema.items) {
+      const arrayPrefix = prefix ? `${prefix}[0]` : "[0]";
+
+      if (
+        schema.items.properties ||
+        schema.items.type === "object" ||
+        schema.items.type === "array"
+      ) {
+        flattened.push(
+          ...this.flattenJsonSchema(schema.items, arrayPrefix, visitedRefs)
+        );
+      } else if (schema.items.type || schema.items.$ref) {
+        flattened.push(
+          ...this.flattenJsonSchema(schema.items, arrayPrefix, visitedRefs)
+        );
+      }
+
+      return flattened;
+    }
+
+    if (schema.type === "object" && schema.properties) {
+      for (const [key, value] of Object.entries(schema.properties) as any) {
+        const paramName = prefix ? `${prefix}[${key}]` : key;
+
+        if (value.$ref) {
+          const refPath = value.$ref;
+          if (visitedRefs.has(refPath)) continue;
+
+          visitedRefs.add(refPath);
+          const resolvedSchema = this.resolveRef(schema, refPath);
+
+          if (resolvedSchema) {
+            flattened.push(
+              ...this.flattenJsonSchema(resolvedSchema, paramName, visitedRefs)
+            );
+          }
+          visitedRefs.delete(refPath);
+        } else if (value.type === "array" && value.items) {
+          const arrayPrefix = `${paramName}[0]`;
+          flattened.push(
+            ...this.flattenJsonSchema(value.items, arrayPrefix, visitedRefs)
+          );
+        } else if (value.type === "object" && value.properties) {
+          flattened.push(
+            ...this.flattenJsonSchema(value, paramName, visitedRefs)
+          );
+        } else {
+          flattened.push({
+            name: paramName,
+            schema: {
+              type: value.type,
+              ...(value.enum && { enum: value.enum }),
+              ...(value.format && { format: value.format }),
+            },
+            required: schema.required?.includes(key) || false,
+          });
+        }
+      }
+      return flattened;
+    }
+
+    if (schema.properties && !schema.type) {
+      for (const [key, value] of Object.entries(schema.properties) as any) {
+        const paramName = prefix ? `${prefix}[${key}]` : key;
+        flattened.push({
+          name: paramName,
+          schema: {
+            type: value.type,
+            ...(value.enum && { enum: value.enum }),
+            ...(value.format && { format: value.format }),
+          },
+          required: schema.required?.includes(key) || false,
+        });
+      }
+      return flattened;
+    }
+
+    if (schema.type && prefix) {
+      flattened.push({
+        name: prefix,
+        schema: {
+          type: schema.type,
+          ...(schema.enum && { enum: schema.enum }),
+          ...(schema.format && { format: schema.format }),
+        },
+        required: false,
+      });
+    }
+
+    return flattened;
+  }
+
+  /**
    * Converts a response definition (shorthand, medium, or full format) into a standard
    * OpenAPI ResponseObject.
    *
@@ -306,92 +427,14 @@ class OpenAPIchemaConverter {
     prefix = "",
     visitedRefs = new Set<string>()
   ): any[] {
-    const params: any[] = [];
+    const flattened = this.flattenJsonSchema(schema, prefix, visitedRefs);
 
-    if (schema.$ref) {
-      const refPath = schema.$ref;
-      if (visitedRefs.has(refPath)) return params;
-
-      visitedRefs.add(refPath);
-      const resolvedSchema = this.resolveRef(schema, refPath);
-      if (resolvedSchema) {
-        params.push(
-          ...this.jsonSchemaToOpenApiParameters(
-            paramType,
-            resolvedSchema,
-            prefix,
-            visitedRefs
-          )
-        );
-      }
-      visitedRefs.delete(refPath);
-      return params;
-    }
-
-    if (schema.type === "object" && schema.properties) {
-      for (const [key, value] of Object.entries(schema.properties) as any) {
-        const paramName = prefix ? `${prefix}[${key}]` : key;
-
-        if (value.$ref) {
-          const refPath = value.$ref;
-          if (visitedRefs.has(refPath)) continue;
-
-          visitedRefs.add(refPath);
-          const resolvedSchema = this.resolveRef(schema, refPath);
-
-          if (resolvedSchema) {
-            if (resolvedSchema.type === "object" && resolvedSchema.properties) {
-              params.push(
-                ...this.jsonSchemaToOpenApiParameters(
-                  paramType,
-                  resolvedSchema,
-                  paramName,
-                  visitedRefs
-                )
-              );
-            } else {
-              const param = {
-                in: paramType,
-                name: paramName,
-                required: schema.required?.includes(key) || false,
-                schema: {
-                  type: resolvedSchema.type,
-                  ...(resolvedSchema.enum && { enum: resolvedSchema.enum }),
-                  ...(resolvedSchema.format && {
-                    format: resolvedSchema.format,
-                  }),
-                },
-              };
-              params.push(param);
-            }
-          }
-          visitedRefs.delete(refPath);
-        } else if (value.type === "object" && value.properties) {
-          params.push(
-            ...this.jsonSchemaToOpenApiParameters(
-              paramType,
-              value,
-              paramName,
-              visitedRefs
-            )
-          );
-        } else {
-          const param = {
-            in: paramType,
-            name: paramName,
-            required: schema.required?.includes(key) || false,
-            schema: {
-              type: value.type,
-              ...(value.enum && { enum: value.enum }),
-              ...(value.format && { format: value.format }),
-            },
-          };
-          params.push(param);
-        }
-      }
-    }
-
-    return params;
+    return flattened.map(({ name, schema, required }) => ({
+      in: paramType,
+      name,
+      required,
+      schema,
+    }));
   }
 
   resolveRef(rootSchema: any, refPath: string): any {
