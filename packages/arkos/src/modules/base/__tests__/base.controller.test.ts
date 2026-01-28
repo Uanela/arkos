@@ -175,6 +175,32 @@ describe("BaseController", () => {
       });
     });
 
+    it("should throw an error on empty array", async () => {
+      const mockBody: any[] = [];
+      const mockResult = { count: 2 };
+      mockRequest.body = mockBody;
+      mockBaseService.createMany.mockResolvedValue(mockResult);
+      try {
+        await baseController.createMany(mockRequest, mockResponse, mockNext);
+      } catch (err: any) {
+        expect(err).toBeDefined();
+      }
+
+      expect(mockBaseService.createMany).not.toHaveBeenCalledWith(
+        mockBody,
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
+      expect(mockResponse.status).not.toHaveBeenCalledWith(201);
+      expect(mockResponse.json).not.toHaveBeenCalledWith({
+        data: mockResult,
+        results: mockResult.count,
+      });
+    });
+
     it("should call next with error if createMany returns null", async () => {
       const mockBody = [{ title: "Post 1" }];
       mockRequest.body = mockBody;
