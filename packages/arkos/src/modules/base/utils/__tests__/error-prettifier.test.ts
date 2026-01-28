@@ -125,7 +125,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "user.id must be a UUID",
+            message: "'user.id' must be a UUID",
             code: "UserIdIsUuidConstraint",
           },
         ]);
@@ -156,7 +156,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "user.address.street must be a string",
+            message: "'user.address.street' must be a string",
             code: "UserAddressStreetIsStringConstraint",
           },
         ]);
@@ -189,11 +189,11 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toHaveLength(2);
         expect(result).toContainEqual({
-          message: "user.name must be a string",
+          message: "'user.name' must be a string",
           code: "UserNameIsStringConstraint",
         });
         expect(result).toContainEqual({
-          message: "user.email must be an email",
+          message: "'user.email' must be an email",
           code: "UserEmailIsEmailConstraint",
         });
       });
@@ -229,7 +229,7 @@ describe("ErrorPrettifier", () => {
           code: "IdIsUuidConstraint",
         });
         expect(result).toContainEqual({
-          message: "user.email must be an email",
+          message: "'user.email' must be an email",
           code: "UserEmailIsEmailConstraint",
         });
       });
@@ -276,7 +276,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "name must be valid: Expected string, received number",
+            message: "'name' must be valid: Expected string, received number",
             code: "NameIsStringConstraint",
           },
         ]);
@@ -297,7 +297,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "age must be valid: Expected number, received string",
+            message: "'age' must be valid: Expected number, received string",
             code: "AgeIsNumberConstraint",
           },
         ]);
@@ -320,7 +320,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "id must contain at least 100 character(s)",
+            message: "'id' must contain at least 100 character(s)",
             code: "IdMinLengthConstraint",
           },
         ]);
@@ -343,7 +343,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "age must be greater than or equal to 18",
+            message: "'age' must be greater than or equal to 18",
             code: "AgeMinConstraint",
           },
         ]);
@@ -366,7 +366,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "name must contain at most 50 character(s)",
+            message: "'name' must contain at most 50 character(s)",
             code: "NameMaxLengthConstraint",
           },
         ]);
@@ -386,7 +386,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "email must be a valid email",
+            message: "'email' must be a valid email",
             code: "EmailIsEmailConstraint",
           },
         ]);
@@ -406,7 +406,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "id must be a valid uuid",
+            message: "'id' must be a valid uuid",
             code: "IdIsUuidConstraint",
           },
         ]);
@@ -427,7 +427,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "email is required",
+            message: "'email' is required",
             code: "EmailIsStringConstraint",
           },
         ]);
@@ -447,7 +447,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "role must be a valid enum value",
+            message: "'role' must be a valid enum value",
             code: "RoleIsEnumConstraint",
           },
         ]);
@@ -469,7 +469,7 @@ describe("ErrorPrettifier", () => {
         expect(result).toEqual([
           {
             message:
-              "isActive must be valid: Expected boolean, received string",
+              "'isActive' must be valid: Expected boolean, received string",
             code: "IsActiveIsBooleanConstraint",
           },
         ]);
@@ -492,7 +492,8 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "user.id must be valid: Expected string, received number",
+            message:
+              "'user.id' must be valid: Expected string, received number",
             code: "UserIdIsStringConstraint",
           },
         ]);
@@ -512,7 +513,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "user.contact.email must be a valid email",
+            message: "'user.contact.email' must be a valid email",
             code: "UserContactEmailIsEmailConstraint",
           },
         ]);
@@ -535,7 +536,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "user.id must contain at least 100 character(s)",
+            message: "'user.id' must contain at least 100 character(s)",
             code: "UserIdMinLengthConstraint",
           },
         ]);
@@ -558,7 +559,8 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "tags[0] must be valid: Expected string, received number",
+            message:
+              "'tags[0]' must be valid: Expected string, received number",
             code: "TagsIsStringConstraint",
           },
         ]);
@@ -578,7 +580,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "users[0].email must be a valid email",
+            message: "'users[0].email' must be a valid email",
             code: "UsersEmailIsEmailConstraint",
           },
         ]);
@@ -600,7 +602,7 @@ describe("ErrorPrettifier", () => {
         expect(result).toEqual([
           {
             message:
-              "posts[1].tags[2].name must be valid: Expected string, received number",
+              "'posts[1].tags[2].name' must be valid: Expected string, received number",
             code: "PostsTagsNameIsStringConstraint",
           },
         ]);
@@ -623,7 +625,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "tags must contain at least 1 element(s)",
+            message: "'tags' must contain at least 1 element(s)",
             code: "TagsArrayMinSizeConstraint",
           },
         ]);
@@ -652,11 +654,11 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toHaveLength(2);
         expect(result).toContainEqual({
-          message: "name is required",
+          message: "'name' is required",
           code: "NameIsStringConstraint",
         });
         expect(result).toContainEqual({
-          message: "email must be a valid email",
+          message: "'email' must be a valid email",
           code: "EmailIsEmailConstraint",
         });
       });
@@ -681,11 +683,11 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toHaveLength(2);
         expect(result).toContainEqual({
-          message: "id must be a valid uuid",
+          message: "'id' must be a valid uuid",
           code: "IdIsUuidConstraint",
         });
         expect(result).toContainEqual({
-          message: "user.email must be a valid email",
+          message: "'user.email' must be a valid email",
           code: "UserEmailIsEmailConstraint",
         });
       });
@@ -746,7 +748,7 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "website must be a valid url",
+            message: "'website' must be a valid url",
             code: "WebsiteIsUrlConstraint",
           },
         ]);
@@ -767,7 +769,8 @@ describe("ErrorPrettifier", () => {
 
         expect(result).toEqual([
           {
-            message: "birthDate must be valid: Expected date, received string",
+            message:
+              "'birthDate' must be valid: Expected date, received string",
             code: "BirthDateIsDateConstraint",
           },
         ]);
@@ -807,11 +810,11 @@ describe("ErrorPrettifier", () => {
 
       expect(result).toHaveLength(2);
       expect(result).toContainEqual({
-        message: "order.items.product.id must be a UUID",
+        message: "'order.items.product.id' must be a UUID",
         code: "OrderItemsProductIdIsUuidConstraint",
       });
       expect(result).toContainEqual({
-        message: "order.items.product.id should not be empty",
+        message: "'order.items.product.id' should not be empty",
         code: "OrderItemsProductIdIsNotEmptyConstraint",
       });
     });
@@ -839,12 +842,12 @@ describe("ErrorPrettifier", () => {
 
       expect(result).toHaveLength(2);
       expect(result).toContainEqual({
-        message: "orders[0].items[1].productId must be a valid uuid",
+        message: "'orders[0].items[1].productId' must be a valid uuid",
         code: "OrdersItemsProductIdIsUuidConstraint",
       });
       expect(result).toContainEqual({
         message:
-          "orders[0].items[1].quantity must be greater than or equal to 1",
+          "'orders[0].items[1].quantity' must be greater than or equal to 1",
         code: "OrdersItemsQuantityMinConstraint",
       });
     });
@@ -870,7 +873,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "user.password is too weak",
+        message: "'user.password' is too weak",
         code: "UserPasswordMatchesConstraint",
       },
     ]);
@@ -896,7 +899,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "data.value must match the expected value format",
+        message: "'data.value' must match the expected value format",
         code: "DataValueCustomConstraint",
       },
     ]);
@@ -922,7 +925,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "user.field This is invalid",
+        message: "'user.field' This is invalid",
         code: "UserFieldCustomConstraint",
       },
     ]);
@@ -944,7 +947,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "field must be valid: Expected unknown, received string",
+        message: "'field' must be valid: Expected unknown, received string",
         code: "FieldInvalidTypeConstraint",
       },
     ]);
@@ -967,7 +970,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "field Value is too small",
+        message: "'field' Value is too small",
         code: "FieldTooSmallConstraint",
       },
     ]);
@@ -990,7 +993,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "field Value is too big",
+        message: "'field' Value is too big",
         code: "FieldTooBigConstraint",
       },
     ]);
@@ -1010,7 +1013,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "text must be a valid string",
+        message: "'text' must be a valid string",
         code: "TextContainsConstraint",
       },
     ]);
@@ -1030,7 +1033,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "code must be a valid string",
+        message: "'code' must be a valid string",
         code: "CodeStartsWithConstraint",
       },
     ]);
@@ -1050,7 +1053,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "filename must be a valid string",
+        message: "'filename' must be a valid string",
         code: "FilenameEndsWithConstraint",
       },
     ]);
@@ -1069,7 +1072,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "text must be a valid string format",
+        message: "'text' must be a valid string format",
         code: "TextInvalidStringConstraint",
       },
     ]);
@@ -1089,7 +1092,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "role must be a valid literal value",
+        message: "'role' must be a valid literal value",
         code: "RoleEqualsConstraint",
       },
     ]);
@@ -1129,7 +1132,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "value must be a valid union value",
+        message: "'value' must be a valid union value",
         code: "ValueInvalidUnionConstraint",
       },
     ]);
@@ -1148,7 +1151,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "createdAt must be a valid date",
+        message: "'createdAt' must be a valid date",
         code: "CreatedAtIsDateConstraint",
       },
     ]);
@@ -1167,7 +1170,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "field Unknown error",
+        message: "'field' Unknown error",
         code: "FieldValidationConstraint",
       },
     ]);
@@ -1188,7 +1191,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "items must be valid: Expected array, received string",
+        message: "'items' must be valid: Expected array, received string",
         code: "ItemsIsArrayConstraint",
       },
     ]);
@@ -1209,7 +1212,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "data must be valid: Expected object, received string",
+        message: "'data' must be valid: Expected object, received string",
         code: "DataIsObjectConstraint",
       },
     ]);
@@ -1228,7 +1231,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "field This is a completely custom error message",
+        message: "'field' This is a completely custom error message",
         code: "FieldCustomConstraint",
       },
     ]);
@@ -1251,7 +1254,7 @@ describe("ErrorPrettifier", () => {
 
     expect(result).toEqual([
       {
-        message: "score must be less than or equal to 100",
+        message: "'score' must be less than or equal to 100",
         code: "ScoreMaxConstraint",
       },
     ]);
