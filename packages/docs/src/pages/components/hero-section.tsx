@@ -34,8 +34,8 @@ export default function HeroSection(): ReactElement {
             <span className="text-[#36a394]">Prisma</span> RESTful
             Framework{" "}
           </h2>
-      <p className="my-12 md:text-base text-sm text-gray-300 lg:text-lg z-10 max-w-4xl text-center mx-auto">
-  A tool for backend developers and teams who ship software with{" "}
+      <p className="my-12 md:text-base text-sm text-gray-300 lg:text-lg z-10 text-center mx-auto">
+  A tool for backend developers and teams who ship softwares with{" "}
   <span className="font-bold text-white">complex business logic</span>
   <br />
   under{" "}
