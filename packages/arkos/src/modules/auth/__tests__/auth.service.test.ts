@@ -1454,12 +1454,29 @@ describe("AuthService", () => {
     //     "Validation Error: Trying to use authService.permission without setting up authentication."
     //   );
     // });
+    it("should throw login error when auth is enabled and user is undefined", async () => {
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
+
+      const permissionChecker = authService.permission("create", "User");
+
+      await expect(permissionChecker(undefined)).rejects.toBeInstanceOf(
+        AppError
+      );
+    });
+
+    it("should not throw login error when auth is disabled and user is undefined", async () => {
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(false);
+
+      const permissionChecker = authService.permission("create", "User");
+
+      await expect(permissionChecker(undefined)).resolves.toBe(false);
+    });
 
     it("should return function that calls checkDynamicAccessControl for dynamic mode", async () => {
       // Setup
       mockConfig.authentication.mode = "dynamic";
       const permissionChecker = authService.permission("create", "User");
-      const user = { id: "user-123" };
+      const user: any = { id: "user-123" };
 
       // Mock checkDynamicAccessControl to return true
       jest
@@ -1493,7 +1510,7 @@ describe("AuthService", () => {
         .mockReturnValue(true);
 
       // Execute
-      const result = await permissionChecker(user);
+      const result = await permissionChecker(user as any);
 
       // Verify
       expect(
@@ -1509,7 +1526,7 @@ describe("AuthService", () => {
       const user = { id: "user-123", role: "admin" };
 
       // Execute
-      const result = await permissionChecker(user);
+      const result = await permissionChecker(user as any);
 
       // Verify
       expect(result).toBe(false);
@@ -1526,7 +1543,7 @@ describe("AuthService", () => {
       const user = { id: "user-123", role: "Admin" };
 
       // Execute
-      const result = await permissionChecker(user);
+      const result = await permissionChecker(user as any);
 
       // Verify
       expect(result).toBe(false);
@@ -1539,7 +1556,7 @@ describe("AuthService", () => {
       const user = { id: "user-123" };
 
       // Execute
-      const result = await permissionChecker(user);
+      const result = await permissionChecker(user as any);
 
       // Verify
       expect(result).toBe(false);

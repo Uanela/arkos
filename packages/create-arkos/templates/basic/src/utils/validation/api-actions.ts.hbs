@@ -6,6 +6,6 @@
 *
 * @see {@link https://www.arkosjs.com/docs/advanced-guide/handling-relation-fields-in-prisma-body-requests#the-apiaction-property} 
 */
-const apiActions = ["connect", "disconnect", "delete", "update", "create"];
+const apiActions = ["connect", "disconnect", "delete", "update", "create"]{{#if typescript}} as const{{/if}};
 
 export default apiActions
