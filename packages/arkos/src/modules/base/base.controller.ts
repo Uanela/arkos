@@ -268,10 +268,10 @@ export class BaseController {
         return [where, queryOptions, context];
 
       case "findOne":
-        return [req.params, mergedOptions, context];
+        return [{ ...req.params, ...where }, mergedOptions, context];
 
       case "updateOne":
-        return [req.params, req.body, mergedOptions, context];
+        return [{ ...req.params, ...where }, req.body, mergedOptions, context];
 
       case "updateMany":
         // Remove include for bulk operations
@@ -279,16 +279,29 @@ export class BaseController {
         return [where, req.body, queryOptions, context];
 
       case "batchUpdate":
-        return [req.body, mergedOptions, context];
+        return [
+          req.body.map((data: any) => ({
+            ...data,
+            where: { ...data.where, ...where },
+          })),
+          mergedOptions,
+          context,
+        ];
 
       case "deleteOne":
-        return [req.params, context];
+        return [{ ...req.params, ...where }, context];
 
       case "deleteMany":
         return [where, context];
 
       case "batchDelete":
-        return [req.body, context];
+        return [
+          req.body.map((data: any) => ({
+            ...data,
+            where: { ...data.where, ...where },
+          })),
+          context,
+        ];
 
       default:
         throw new Error(`Unknown operation type: ${config.operationType}`);
@@ -380,26 +393,23 @@ export class BaseController {
     additionalData: any,
     operationType: string
   ): any {
-    if (operationType === "findMany" && additionalData) {
+    if (operationType === "findMany" && additionalData)
       return {
         total: additionalData.total,
         results: additionalData.results,
         data,
       };
-    }
 
     if (
       operationType.includes("Many") &&
       data &&
       typeof data === "object" &&
       "count" in data
-    ) {
+    )
       return { results: data.count, data };
-    }
 
-    if (operationType.includes("batch") && Array.isArray(data)) {
+    if (operationType.includes("batch") && Array.isArray(data))
       return { results: data.length, data };
-    }
 
     return { data };
   }
@@ -422,8 +432,19 @@ export class BaseController {
     operationType: "createMany",
     serviceMethod: "createMany",
     successStatus: 201,
-    queryFeatures: [],
+    queryFeatures: ["limitFields"],
     usesRequestBody: true,
+    hooks: {
+      async beforeQuery(req) {
+        if (!req.body || (Array.isArray(req.body) && req.body.length === 0))
+          throw new AppError(
+            "Expected request body array to contain at least on item but received none",
+            400,
+            { body: req.body },
+            "MissingArrayRequestBody"
+          );
+      },
+    },
   });
 
   /**
@@ -443,7 +464,7 @@ export class BaseController {
     operationType: "findOne",
     serviceMethod: "findOne",
     successStatus: 200,
-    queryFeatures: ["limitFields"],
+    queryFeatures: ["limitFields", "filter"],
     usesRequestParams: true,
   });
 
@@ -454,7 +475,7 @@ export class BaseController {
     operationType: "updateOne",
     serviceMethod: "updateOne",
     successStatus: 200,
-    queryFeatures: ["limitFields"],
+    queryFeatures: ["limitFields", "filter"],
     usesRequestParams: true,
     usesRequestBody: true,
   });
@@ -466,7 +487,7 @@ export class BaseController {
     operationType: "updateMany",
     serviceMethod: "updateMany",
     successStatus: 200,
-    queryFeatures: ["filter"],
+    queryFeatures: ["filter", "limitFields"],
     requiresQueryForBulk: true,
     preventORFilter: true,
     usesRequestBody: true,
@@ -479,7 +500,7 @@ export class BaseController {
     operationType: "batchUpdate",
     serviceMethod: "batchUpdate",
     successStatus: 200,
-    queryFeatures: ["limitFields"],
+    queryFeatures: ["limitFields", "filter"],
     usesRequestBody: true,
   });
 
@@ -490,7 +511,7 @@ export class BaseController {
     operationType: "deleteOne",
     serviceMethod: "deleteOne",
     successStatus: 204,
-    queryFeatures: [],
+    queryFeatures: ["filter"],
     usesRequestParams: true,
   });
 
@@ -513,7 +534,7 @@ export class BaseController {
     operationType: "batchDelete",
     serviceMethod: "batchDelete",
     successStatus: 200,
-    queryFeatures: [],
+    queryFeatures: ["filter"],
     usesRequestBody: true,
   });
 }

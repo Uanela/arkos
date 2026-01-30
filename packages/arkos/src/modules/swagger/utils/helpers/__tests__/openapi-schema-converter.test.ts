@@ -875,4 +875,240 @@ describe("OpenAPISchemaConverter", () => {
       expect(toParam?.required).toBe(false);
     });
   });
+
+  describe("flattenJsonSchema", () => {
+    it("should flatten flat object schema", () => {
+      const schema = {
+        type: "object",
+        properties: {
+          name: { type: "string" },
+          age: { type: "number" },
+        },
+        required: ["name"],
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        name: "name",
+        schema: { type: "string" },
+        required: true,
+      });
+      expect(result[1]).toEqual({
+        name: "age",
+        schema: { type: "number" },
+        required: false,
+      });
+    });
+
+    it("should flatten nested objects with bracket notation", () => {
+      const schema = {
+        type: "object",
+        properties: {
+          user: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              email: { type: "string" },
+            },
+          },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe("user[name]");
+      expect(result[1].name).toBe("user[email]");
+    });
+
+    it("should flatten array items with [0] notation", () => {
+      const schema = {
+        type: "object",
+        properties: {
+          tags: {
+            type: "array",
+            items: { type: "string" },
+          },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("tags[0]");
+      expect(result[0].schema.type).toBe("string");
+    });
+
+    it("should flatten array of objects", () => {
+      const schema = {
+        type: "object",
+        properties: {
+          users: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                age: { type: "number" },
+              },
+            },
+          },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe("users[0][name]");
+      expect(result[1].name).toBe("users[0][age]");
+    });
+
+    it("should flatten root array schema", () => {
+      const schema = {
+        type: "array",
+        items: { type: "string" },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("[0]");
+      expect(result[0].schema.type).toBe("string");
+    });
+
+    it("should flatten root array of objects", () => {
+      const schema = {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            value: { type: "number" },
+          },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe("[0][id]");
+      expect(result[1].name).toBe("[0][value]");
+    });
+
+    it("should flatten deeply nested arrays", () => {
+      const schema = {
+        type: "object",
+        properties: {
+          matrix: {
+            type: "array",
+            items: {
+              type: "array",
+              items: { type: "number" },
+            },
+          },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("matrix[0][0]");
+      expect(result[0].schema.type).toBe("number");
+    });
+
+    it("should flatten mixed nested objects and arrays", () => {
+      const schema = {
+        type: "object",
+        properties: {
+          data: {
+            type: "object",
+            properties: {
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("data[items][0][id]");
+    });
+
+    it("should preserve enum and format in flattened schema", () => {
+      const schema = {
+        type: "object",
+        properties: {
+          status: { type: "string", enum: ["active", "inactive"] },
+          email: { type: "string", format: "email" },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result[0].schema).toEqual({
+        type: "string",
+        enum: ["active", "inactive"],
+      });
+      expect(result[1].schema).toEqual({
+        type: "string",
+        format: "email",
+      });
+    });
+
+    it("should handle prefix parameter", () => {
+      const schema = {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema, "parent");
+
+      expect(result[0].name).toBe("parent[id]");
+    });
+
+    it("should return empty array for schema without properties", () => {
+      const schema = { type: "object" };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toEqual([]);
+    });
+
+    it("should return empty array for non-object non-array schema", () => {
+      const schema = { type: "string" };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toEqual([]);
+    });
+
+    it("should handle array items without type", () => {
+      const schema = {
+        type: "array",
+        items: {
+          properties: {
+            name: { type: "string" },
+          },
+        },
+      };
+
+      const result = openApiSchemaConverter.flattenJsonSchema(schema);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe("[0][name]");
+    });
+  });
 });

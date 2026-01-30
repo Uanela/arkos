@@ -5,7 +5,6 @@ import {
   ArkosAnyRequestHandler,
   PathParams,
   ArkosIRoute,
-  ArkosRouteMethodHandler,
 } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";

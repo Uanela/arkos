@@ -175,6 +175,32 @@ describe("BaseController", () => {
       });
     });
 
+    it("should throw an error on empty array", async () => {
+      const mockBody: any[] = [];
+      const mockResult = { count: 2 };
+      mockRequest.body = mockBody;
+      mockBaseService.createMany.mockResolvedValue(mockResult);
+      try {
+        await baseController.createMany(mockRequest, mockResponse, mockNext);
+      } catch (err: any) {
+        expect(err).toBeDefined();
+      }
+
+      expect(mockBaseService.createMany).not.toHaveBeenCalledWith(
+        mockBody,
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
+      expect(mockResponse.status).not.toHaveBeenCalledWith(201);
+      expect(mockResponse.json).not.toHaveBeenCalledWith({
+        data: mockResult,
+        results: mockResult.count,
+      });
+    });
+
     it("should call next with error if createMany returns null", async () => {
       const mockBody = [{ title: "Post 1" }];
       mockRequest.body = mockBody;
@@ -322,6 +348,27 @@ describe("BaseController", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
     });
 
+    it("should fetch a record by id and and req.query return 200 status", async () => {
+      const mockParams = { id: "1" };
+      const mockData = { id: 1, title: "Test Post" };
+      mockRequest.query = { published: true };
+      mockRequest.params = mockParams;
+      mockBaseService.findOne.mockResolvedValue(mockData);
+
+      await baseController.findOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockBaseService.findOne).toHaveBeenCalledWith(
+        { ...mockParams, published: true },
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
+    });
+
     it("should call next with error if record not found with single id param", async () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
@@ -388,6 +435,30 @@ describe("BaseController", () => {
 
       expect(mockBaseService.updateOne).toHaveBeenCalledWith(
         mockParams,
+        mockBody,
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
+    });
+
+    it("should update a record with id and req.query and return 200 status", async () => {
+      const mockParams = { id: "1" };
+      const mockBody = { title: "Updated Post" };
+      const mockData = { id: 1, ...mockBody };
+      mockRequest.params = mockParams;
+      mockRequest.query = { published: true };
+      mockRequest.body = mockBody;
+      mockBaseService.updateOne.mockResolvedValue(mockData);
+
+      await baseController.updateOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockBaseService.updateOne).toHaveBeenCalledWith(
+        { ...mockParams, published: true },
         mockBody,
         {},
         {
@@ -562,6 +633,25 @@ describe("BaseController", () => {
         accessToken: undefined,
         user: undefined,
       });
+      expect(mockResponse.status).toHaveBeenCalledWith(204);
+      expect(mockResponse.send).toHaveBeenCalled();
+    });
+
+    it("should delete a record with id and req.query and return 204 status", async () => {
+      const mockParams = { id: "1" };
+      mockRequest.params = mockParams;
+      mockRequest.query = { published: true };
+      mockBaseService.deleteOne.mockResolvedValue({ id: 1 });
+
+      await baseController.deleteOne(mockRequest, mockResponse, mockNext);
+
+      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(
+        { ...mockParams, published: true },
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
       expect(mockResponse.status).toHaveBeenCalledWith(204);
       expect(mockResponse.send).toHaveBeenCalled();
     });
