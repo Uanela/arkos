@@ -1614,7 +1614,9 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
         expect(result).not.toContain("categoryId:");
-        expect(result).toContain("category: z.object({ id: z.string() })");
+        expect(result).toContain(
+          "category: z.object({ id: z.string().min(1) })"
+        );
       });
     });
 
@@ -1667,7 +1669,7 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("tags: z.array(z.string())");
+        expect(result).toContain("tags: z.array(z.string().min(1))");
         expect(result).toContain("scores: z.array(z.number()).optional()");
       });
     });
@@ -1928,7 +1930,9 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("category: z.object({ id: z.string() })");
+        expect(result).toContain(
+          "category: z.object({ id: z.string().min(1) })"
+        );
       });
 
       it("should handle optional relation", () => {
@@ -1987,7 +1991,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
         expect(result).toContain(
-          "category: z.object({ id: z.string() }).optional()"
+          "category: z.object({ id: z.string().min(1) }).optional()"
         );
       });
 
@@ -2047,7 +2051,9 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("category: z.object({ slug: z.string() })");
+        expect(result).toContain(
+          "category: z.object({ slug: z.string().min(1) })"
+        );
       });
 
       it("should skip array relations", () => {
@@ -2451,7 +2457,7 @@ describe("ZodSchemaGenerator", () => {
 
       expect(result).not.toContain("categoryId");
       expect(result).toContain(
-        "category: z.object({ id: z.string() }).optional()"
+        "category: z.object({ id: z.string().min(1) }).optional()"
       );
     });
 
@@ -2499,7 +2505,7 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "Product", camel: "product", kebab: "product" },
       });
 
-      expect(result).toContain("tags: z.array(z.string()).optional()");
+      expect(result).toContain("tags: z.array(z.string().min(1)).optional()");
       expect(result).toContain("scores: z.array(z.number()).optional()");
     });
 

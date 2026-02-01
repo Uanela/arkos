@@ -119,10 +119,18 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).toContain("@IsString()\n  id!: string;");
-        expect(result).toContain("@IsString()\n  title!: string;");
-        expect(result).toContain("@IsDate()\n  createdAt!: Date;");
-        expect(result).toContain("@IsDate()\n  updatedAt!: Date;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  title!: string;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsDate()\n  createdAt!: Date;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsDate()\n  updatedAt!: Date;"
+        );
       });
 
       it("should handle optional fields correctly", () => {
@@ -160,9 +168,11 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Product", camel: "product", kebab: "product" },
         });
 
-        expect(result).toContain("@IsString()\n  name!: string;");
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  description?: string;"
+          "@IsNotEmpty()\n  @IsString()\n  name!: string;"
+        );
+        expect(result).toContain(
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  description?: string;"
         );
       });
 
@@ -236,13 +246,27 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Entity", camel: "entity", kebab: "entity" },
         });
 
-        expect(result).toContain("@IsString()\n  name!: string;");
-        expect(result).toContain("@IsNumber()\n  age!: number;");
-        expect(result).toContain("@IsNumber()\n  score!: number;");
-        expect(result).toContain("@IsBoolean()\n  active!: boolean;");
-        expect(result).toContain("@IsDate()\n  birthDate!: Date;");
-        expect(result).toContain("@IsObject()\n  metadata!: any;");
-        expect(result).toContain("@IsNumber()\n  bigNum!: bigint;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  name!: string;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsNumber()\n  age!: number;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsNumber()\n  score!: number;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsBoolean()\n  active!: boolean;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsDate()\n  birthDate!: Date;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsObject()\n  metadata!: any;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsNumber()\n  bigNum!: bigint;"
+        );
       });
     });
 
@@ -297,8 +321,12 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).toContain("@IsString()\n  title!: string;");
-        expect(result).toContain("@IsString()\n  authorId!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  title!: string;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  authorId!: string;"
+        );
         expect(result).not.toContain("author:");
         expect(result).not.toContain("comments:");
         expect(result).not.toContain("ValidateNested");
@@ -343,7 +371,7 @@ describe("ClassValidatorDtoGenerator", () => {
 
         expect(result).not.toContain("category:");
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  categoryId?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  categoryId?: string;"
         );
       });
     });
@@ -391,8 +419,12 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "User", camel: "user", kebab: "user" },
         });
 
-        expect(result).toContain("@IsEmail()\n  email!: string;");
-        expect(result).toContain("@IsString()\n  name!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsEmail()\n  email!: string;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  name!: string;"
+        );
         expect(result).not.toContain("password:");
       });
 
@@ -424,7 +456,9 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Account", camel: "account", kebab: "account" },
         });
 
-        expect(result).toContain("@IsString()\n  password!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  password!: string;"
+        );
       });
 
       it("should apply @IsEmail for user module email field", () => {
@@ -455,8 +489,10 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "User", camel: "user", kebab: "user" },
         });
 
-        expect(result).toContain("@IsEmail()\n  email!: string;");
-        expect(result).not.toContain("@IsString()\n  email");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsEmail()\n  email!: string;"
+        );
+        expect(result).not.toContain("@IsNotEmpty()\n  @IsString()\n  email");
       });
     });
 
@@ -493,7 +529,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain('import { Role } from "@prisma/client"');
-        expect(result).toContain("@IsEnum(Role)\n  role!: Role;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsEnum(Role)\n  role!: Role;"
+        );
       });
     });
 
@@ -899,7 +937,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class UserForQueryPostDto {");
-        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
       });
 
       it("should skip array relations", () => {
@@ -1006,7 +1046,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class CategoryForQueryPostDto {");
-        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
         expect(result).toContain(
           "@IsOptional()\n  @ValidateNested()\n  @Type(() => CategoryForQueryPostDto)\n  category?: CategoryForQueryPostDto;"
         );
@@ -1145,7 +1187,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class UserForQueryPostDto {");
-        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
 
         const userDtoMatch = result.match(
           /class UserForQueryPostDto \{([\s\S]*?)\}/
@@ -1367,7 +1411,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class UserForQueryPostDto {");
-        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
         expect(result).not.toContain("UserRelationFilter");
       });
 
@@ -1400,16 +1446,16 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page?: number;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page?: number;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit?: number;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  @Max(100)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit?: number;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  @Type(() => String)\n  sort?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  @Type(() => String)\n  sort?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  @Type(() => String)\n  fields?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  @Type(() => String)\n  fields?: string;"
         );
       });
     });
@@ -1538,20 +1584,20 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          'import { IsOptional, IsString, IsNumber, IsBoolean, IsDate } from "class-validator"'
+          'import { IsOptional, IsNotEmpty, IsString, IsNumber, IsBoolean, IsDate } from "class-validator"'
         );
         expect(result).toContain("export default class UpdateProductDto {");
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  name?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  name?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNumber()\n  price?: number;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  price?: number;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsBoolean()\n  inStock?: boolean;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsBoolean()\n  inStock?: boolean;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsDate()\n  releaseDate?: Date;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsDate()\n  releaseDate?: Date;"
         );
         expect(result).not.toContain("id:");
       });
@@ -1593,10 +1639,10 @@ describe("ClassValidatorDtoGenerator", () => {
 
         // Both should be optional in update
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  title?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  title?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  content?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  content?: string;"
         );
         expect(result).not.toContain("title!:");
       });
@@ -1631,7 +1677,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  status?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  status?: string;"
         );
       });
 
@@ -1678,12 +1724,14 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsNumber()\n  size?: bigint;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  size?: bigint;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsObject()\n  metadata?: any;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsObject()\n  metadata?: any;"
         );
-        expect(result).toContain("@IsOptional()\n  data?: Buffer;");
+        expect(result).toContain(
+          "@IsOptional()\n  @IsNotEmpty()\n  data?: Buffer;"
+        );
       });
     });
 
@@ -1856,10 +1904,10 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsArray()\n  @IsString({ each: true })\n  tags?: string[];"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsArray()\n  @IsString({ each: true })\n  tags?: string[];"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
         );
       });
     });
@@ -1907,10 +1955,10 @@ describe("ClassValidatorDtoGenerator", () => {
           'import { Role, Status } from "@prisma/client"'
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsEnum(Role)\n  role?: Role;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsEnum(Role)\n  role?: Role;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsEnum(Status)\n  status?: Status;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsEnum(Status)\n  status?: Status;"
         );
       });
 
@@ -1947,7 +1995,7 @@ describe("ClassValidatorDtoGenerator", () => {
 
         expect(result).toContain('import { Tag } from "@prisma/client"');
         expect(result).toContain(
-          "@IsOptional()\n  @IsArray()\n  @IsEnum(Tag, { each: true })\n  tags?: Tag[];"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsArray()\n  @IsEnum(Tag, { each: true })\n  tags?: Tag[];"
         );
       });
 
@@ -2043,10 +2091,12 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(hasMatchingLine).toBe(true);
         expect(result).toContain('import { Type } from "class-transformer"');
         expect(result).toContain("class CategoryForUpdatePostDto {");
-        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
         // Should be optional even though it was required in create
         expect(result).toContain(
-          "@IsOptional()\n  @ValidateNested()\n  @Type(() => CategoryForUpdatePostDto)\n  category?: CategoryForUpdatePostDto;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @ValidateNested()\n  @Type(() => CategoryForUpdatePostDto)\n  category?: CategoryForUpdatePostDto;"
         );
       });
 
@@ -2108,7 +2158,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class CategoryForUpdatePostDto {");
-        expect(result).toContain("@IsString()\n  name!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  name!: string;"
+        );
         expect(result).not.toContain(
           "CategoryForUpdatePostDto {\n  @IsString()\n  id"
         );
@@ -2172,7 +2224,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class ProductForUpdateOrderDto {");
-        expect(result).toContain("@IsNumber()\n  code!: number;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsNumber()\n  code!: number;"
+        );
       });
 
       it("should handle already optional relations (still optional)", () => {
@@ -2225,7 +2279,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @ValidateNested()\n  @Type(() => CategoryForUpdatePostDto)\n  category?: CategoryForUpdatePostDto;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @ValidateNested()\n  @Type(() => CategoryForUpdatePostDto)\n  category?: CategoryForUpdatePostDto;"
         );
       });
 
@@ -2358,9 +2412,13 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class UserForUpdateOrderDto {");
-        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
         expect(result).toContain("class ProductForUpdateOrderDto {");
-        expect(result).toContain("@IsString()\n  code!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  code!: string;"
+        );
       });
     });
 
@@ -2401,14 +2459,14 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          'import { IsOptional, IsEmail, IsString } from "class-validator"'
+          'import { IsOptional, IsNotEmpty, IsEmail, IsString } from "class-validator"'
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsEmail()\n  email?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsEmail()\n  email?: string;"
         );
-        expect(result).not.toContain("@IsString()\n  email");
+        expect(result).not.toContain("@IsNotEmpty()\n  @IsString()\n  email");
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  name?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  name?: string;"
         );
       });
 
@@ -2441,10 +2499,10 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          'import { IsOptional, IsString, MinLength, Matches } from "class-validator"'
+          'import { IsOptional, IsNotEmpty, IsString, MinLength, Matches } from "class-validator"'
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  @MinLength(8)"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  @MinLength(8)"
         );
         expect(result).toContain(
           '@Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, { message: "Password must contain at least one uppercase letter, one lowercase letter, and one number" })'
@@ -2495,14 +2553,14 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsEmail()\n  email?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsEmail()\n  email?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  @MinLength(8)"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  @MinLength(8)"
         );
         expect(result).toContain("@Matches");
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  name?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  name?: string;"
         );
       });
 
@@ -2542,11 +2600,11 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  email?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  email?: string;"
         );
         expect(result).not.toContain("@IsEmail()");
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  password?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  password?: string;"
         );
         expect(result).not.toContain("@MinLength");
         expect(result).not.toContain("@Matches");
@@ -2583,7 +2641,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          'import { IsOptional, IsString } from "class-validator"'
+          'import { IsOptional, IsNotEmpty, IsString } from "class-validator"'
         );
         expect(result).not.toContain("IsNumber");
         expect(result).not.toContain("class-transformer");
@@ -2695,19 +2753,19 @@ describe("ClassValidatorDtoGenerator", () => {
 
         // All should have @IsOptional and ? modifier
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  title?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  title?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  slug?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  slug?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsBoolean()\n  published?: boolean;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsBoolean()\n  published?: boolean;"
         );
 
         // Should not have any required fields (!)
-        expect(result).not.toContain("title!:");
-        expect(result).not.toContain("slug!:");
-        expect(result).not.toContain("published!:");
+        expect(result).not.toContain("title!: string;");
+        expect(result).not.toContain("slug!: string;");
+        expect(result).not.toContain("published!: boolean;");
       });
 
       it("should ensure every field has IsOptional decorator", () => {
@@ -2758,13 +2816,13 @@ describe("ClassValidatorDtoGenerator", () => {
 
         // Verify all fields have @IsOptional
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  name?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  name?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNumber()\n  price?: number;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  price?: number;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  description?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  description?: string;"
         );
       });
     });
@@ -2857,13 +2915,21 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          'import { IsString, IsNumber, IsBoolean, IsDate } from "class-validator"'
+          'import { IsNotEmpty, IsString, IsNumber, IsBoolean, IsDate } from "class-validator"'
         );
         expect(result).toContain("export default class CreateProductDto {");
-        expect(result).toContain("@IsString()\n  name!: string;");
-        expect(result).toContain("@IsNumber()\n  price!: number;");
-        expect(result).toContain("@IsBoolean()\n  inStock!: boolean;");
-        expect(result).toContain("@IsDate()\n  releaseDate!: Date;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  name!: string;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsNumber()\n  price!: number;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsBoolean()\n  inStock!: boolean;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsDate()\n  releaseDate!: Date;"
+        );
         expect(result).not.toContain("id:");
       });
 
@@ -2902,9 +2968,11 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).toContain("title!: string;");
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  content?: string;"
+          "@IsNotEmpty()\n  @IsString()\n  title!: string;"
+        );
+        expect(result).toContain(
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  content?: string;"
         );
       });
 
@@ -2938,7 +3006,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsString()\n  status?: string;"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  status?: string;"
         );
       });
 
@@ -2984,9 +3052,13 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "File", camel: "file", kebab: "file" },
         });
 
-        expect(result).toContain("@IsNumber()\n  size!: bigint;");
-        expect(result).toContain("@IsObject()\n  metadata!: any;");
-        expect(result).toContain("data!: Buffer;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsNumber()\n  size!: bigint;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsObject()\n  metadata!: any;"
+        );
+        expect(result).toContain("@IsNotEmpty()\n  data!: Buffer;");
         expect(result).not.toContain("@IsBuffer");
       });
     });
@@ -3028,8 +3100,8 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Post", camel: "post", kebab: "post" },
         });
 
-        expect(result).not.toContain("!:");
-        expect(result).not.toContain("?:");
+        expect(result).not.toContain("!: string;");
+        expect(result).not.toContain("?: string;");
         expect(result).toContain("title: string;");
         expect(result).toContain("content: string;");
       });
@@ -3118,7 +3190,7 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).not.toContain("updatedAt:");
         expect(result).not.toContain("deletedAt:");
         expect(result).not.toContain("categoryId:");
-        expect(result).toContain("title!:");
+        expect(result).toContain("title!: string;");
         expect(result).toContain("category!");
       });
     });
@@ -3160,10 +3232,10 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsArray()\n  @IsString({ each: true })\n  tags!: string[];"
+          "@IsNotEmpty()\n  @IsArray()\n  @IsString({ each: true })\n  tags!: string[];"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
         );
       });
     });
@@ -3210,9 +3282,11 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).toContain(
           'import { Role, Status } from "@prisma/client"'
         );
-        expect(result).toContain("@IsEnum(Role)\n  role!: Role;");
         expect(result).toContain(
-          "@IsOptional()\n  @IsEnum(Status)\n  status?: Status;"
+          "@IsNotEmpty()\n  @IsEnum(Role)\n  role!: Role;"
+        );
+        expect(result).toContain(
+          "@IsOptional()\n  @IsNotEmpty()\n  @IsEnum(Status)\n  status?: Status;"
         );
       });
 
@@ -3249,7 +3323,7 @@ describe("ClassValidatorDtoGenerator", () => {
 
         expect(result).toContain('import { Tag } from "@prisma/client"');
         expect(result).toContain(
-          "@IsArray()\n  @IsEnum(Tag, { each: true })\n  tags!: Tag[];"
+          "@IsNotEmpty()\n  @IsArray()\n  @IsEnum(Tag, { each: true })\n  tags!: Tag[];"
         );
       });
 
@@ -3346,7 +3420,9 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).toContain('import { Type } from "class-transformer"');
         expect(result).not.toContain("post.sub-dtos");
         expect(result).toContain("class CategoryForCreatePostDto {");
-        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
         expect(result).toContain(
           "@ValidateNested()\n  @Type(() => CategoryForCreatePostDto)\n  category!: CategoryForCreatePostDto;"
         );
@@ -3410,7 +3486,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class CategoryForCreatePostDto {");
-        expect(result).toContain("@IsString()\n  name!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  name!: string;"
+        );
         expect(result).not.toContain(
           "CategoryForCreatePostDto {\n  @IsString()\n  id"
         );
@@ -3474,7 +3552,9 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class ProductForCreateOrderDto {");
-        expect(result).toContain("@IsNumber()\n  code!: number;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsNumber()\n  code!: number;"
+        );
       });
 
       it("should handle optional relations", () => {
@@ -3571,7 +3651,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).not.toContain("posts:");
-        expect(result).toContain("name!:");
+        expect(result).toContain("name!: string;");
       });
 
       it("should handle multiple relations with different reference fields", () => {
@@ -3660,9 +3740,13 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class UserForCreateOrderDto {");
-        expect(result).toContain("@IsString()\n  id!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  id!: string;"
+        );
         expect(result).toContain("class ProductForCreateOrderDto {");
-        expect(result).toContain("@IsString()\n  code!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  code!: string;"
+        );
       });
     });
 
@@ -3703,11 +3787,15 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          'import { IsEmail, IsString } from "class-validator"'
+          'import { IsNotEmpty, IsEmail, IsString } from "class-validator"'
         );
-        expect(result).toContain("@IsEmail()\n  email!: string;");
-        expect(result).not.toContain("@IsString()\n  email");
-        expect(result).toContain("@IsString()\n  name!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsEmail()\n  email!: string;"
+        );
+        expect(result).not.toContain("@IsNotEmpty()\n  @IsString()\n  email");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  name!: string;"
+        );
       });
 
       it("should apply password validation with MinLength and Matches", () => {
@@ -3739,9 +3827,11 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          'import { IsString, MinLength, Matches } from "class-validator"'
+          'import { IsNotEmpty, IsString, MinLength, Matches } from "class-validator"'
         );
-        expect(result).toContain("@IsString()\n  @MinLength(8)");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  @MinLength(8)"
+        );
         expect(result).toContain(
           '@Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, { message: "Password must contain at least one uppercase letter, one lowercase letter, and one number" })'
         );
@@ -3790,10 +3880,16 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "User", camel: "user", kebab: "user" },
         });
 
-        expect(result).toContain("@IsEmail()\n  email!: string;");
-        expect(result).toContain("@IsString()\n  @MinLength(8)");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsEmail()\n  email!: string;"
+        );
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  @MinLength(8)"
+        );
         expect(result).toContain("@Matches");
-        expect(result).toContain("@IsString()\n  name!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  name!: string;"
+        );
       });
 
       it("should not apply user validations to non-user modules", () => {
@@ -3831,9 +3927,13 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Account", camel: "account", kebab: "account" },
         });
 
-        expect(result).toContain("@IsString()\n  email!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  email!: string;"
+        );
         expect(result).not.toContain("@IsEmail()");
-        expect(result).toContain("@IsString()\n  password!: string;");
+        expect(result).toContain(
+          "@IsNotEmpty()\n  @IsString()\n  password!: string;"
+        );
         expect(result).not.toContain("@MinLength");
         expect(result).not.toContain("@Matches");
       });
@@ -3868,7 +3968,9 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "Simple", camel: "simple", kebab: "simple" },
         });
 
-        expect(result).toContain('import { IsString } from "class-validator"');
+        expect(result).toContain(
+          'import { IsNotEmpty, IsString } from "class-validator"'
+        );
         expect(result).not.toContain("IsOptional");
         expect(result).not.toContain("IsNumber");
         expect(result).not.toContain("class-transformer");
