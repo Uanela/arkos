@@ -60,10 +60,12 @@ export class ClassValidatorDtoGenerator {
         if (referencedModel) {
           const isOptional =
             field.isOptional || field.defaultValue !== undefined;
-          const optionalDecorator = isOptional ? "  @IsOptional()\n" : "";
+          const optionalDecorator = "  @IsOptional()\n";
           const typeModifier = isTypeScript ? (isOptional ? "?" : "!") : "";
 
           if (isOptional) validatorsUsed.add("IsOptional");
+
+          validatorsUsed.add("IsNotEmpty");
           validatorsUsed.add("ValidateNested");
           transformersUsed.add("Type");
 
@@ -163,6 +165,7 @@ ${dtoFields.join("\n\n")}
         if (referencedModel) {
           validatorsUsed.add("IsOptional");
           validatorsUsed.add("ValidateNested");
+          validatorsUsed.add("IsNotEmpty");
           transformersUsed.add("Type");
 
           const relationDtoName = `${referencedModel.name}ForUpdate${modelName!.pascal}Dto`;
@@ -181,7 +184,7 @@ ${dtoFields.join("\n\n")}
 
           const typeModifier = isTypeScript ? "?" : "";
           dtoFields.push(
-            `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`
+            `  @IsOptional()\n  @IsNotEmpty()\n  @ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`
           );
         }
         continue;
@@ -307,6 +310,7 @@ ${dtoFields.join("\n\n")}
     validatorsUsed.add("IsString");
     validatorsUsed.add("IsNumber");
     validatorsUsed.add("ValidateNested");
+    validatorsUsed.add("Max");
     transformersUsed.add("Type");
     transformersUsed.add("Transform");
 
@@ -315,10 +319,10 @@ ${dtoFields.join("\n\n")}
     const typeModifier = isTypeScript ? "?" : "";
 
     dtoFields.push(
-      `  @IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page${typeModifier}: number;`
+      `  @IsOptional()\n  @IsNumber()\n  @Max(10)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page${typeModifier}: number;`
     );
     dtoFields.push(
-      `  @IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit${typeModifier}: number;`
+      `  @IsOptional()\n  @IsNumber()\n  @Max(100)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit${typeModifier}: number;`
     );
     dtoFields.push(
       `  @IsOptional()\n  @IsString()\n  @Type(() => String)\n  sort${typeModifier}: string;`
@@ -596,6 +600,9 @@ ${fields.join("\n\n")}
       validatorsUsed.add("IsOptional");
     }
 
+    decorators.push("@IsNotEmpty()");
+    validatorsUsed.add("IsNotEmpty");
+
     if (field.isArray) {
       decorators.push("@IsArray()");
       validatorsUsed.add("IsArray");
@@ -634,7 +641,10 @@ ${fields.join("\n\n")}
     let type = this.mapPrismaTypeToTS(field.type);
 
     decorators.push("@IsOptional()");
+    decorators.push("@IsNotEmpty()");
+
     validatorsUsed.add("IsOptional");
+    validatorsUsed.add("IsNotEmpty");
 
     if (field.isArray) {
       decorators.push("@IsArray()");
