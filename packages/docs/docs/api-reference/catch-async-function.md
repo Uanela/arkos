@@ -1,5 +1,6 @@
 ---
 sidebar_position: 4
+title: Catch Async
 ---
 
 # Catch Async Function
@@ -26,14 +27,14 @@ As you are reading about the `catchAsync` maybe you may want to also read about 
 
 ```ts
 const catchAsync =
-  (fn: ArkosRequestHandler) =>
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    try {
-      await fn(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-  };
+    (fn: ArkosRequestHandler) =>
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        try {
+            await fn(req, res, next);
+        } catch (err) {
+            next(err);
+        }
+    };
 ```
 
 ## Parameters
@@ -61,13 +62,13 @@ import { prisma } from "../../utils/prisma";
 
 // Without try-catch boilerplate
 export const getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany();
 
-  res.status(200).json({
-    status: "success",
-    results: users.length,
-    data: { users },
-  });
+    res.status(200).json({
+        status: "success",
+        results: users.length,
+        data: { users },
+    });
 });
 ```
 
@@ -81,22 +82,22 @@ import { catchAsync } from "arkos/error-handler";
 import { prisma } from "../../utils/prisma";
 
 export const getUserById = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    const user = await prisma.user.findOne({
-      where: { id: req.params.id },
-    });
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        const user = await prisma.user.findOne({
+            where: { id: req.params.id },
+        });
 
-    if (!user) {
-      throw new AppError("User not found", 404, {
-        userId: req.params.id,
-      });
+        if (!user) {
+            throw new AppError("User not found", 404, {
+                userId: req.params.id,
+            });
+        }
+
+        res.status(200).json({
+            status: "success",
+            data: { user },
+        });
     }
-
-    res.status(200).json({
-      status: "success",
-      data: { user },
-    });
-  }
 );
 ```
 
@@ -107,23 +108,23 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import { AppError, catchAsync } from "arkos/error-handler";
 
 export const protectRoute = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Get token from request headers
-    const token = req.headers.authorization?.split(" ")[1];
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Get token from request headers
+        const token = req.headers.authorization?.split(" ")[1];
 
-    if (!token) {
-      throw new AppError("Not authenticated. Please log in.", 401);
+        if (!token) {
+            throw new AppError("Not authenticated. Please log in.", 401);
+        }
+
+        // Verify token
+        const decoded = await verifyToken(token);
+
+        // Add user to request object
+        req.user = decoded;
+
+        // Continue to next middleware/handler
+        next();
     }
-
-    // Verify token
-    const decoded = await verifyToken(token);
-
-    // Add user to request object
-    req.user = decoded;
-
-    // Continue to next middleware/handler
-    next();
-  }
 );
 ```
 
@@ -161,31 +162,35 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 // Controller function
 export const updateUser = catchAsync(
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Validation
-    if (!req.body.name && !req.body.email) {
-      throw new AppError("Please provide name or email to update", 400);
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+        // Validation
+        if (!req.body.name && !req.body.email) {
+            throw new AppError("Please provide name or email to update", 400);
+        }
+
+        // Business logic
+        const updatedUser = await User.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            {
+                new: true,
+                runValidators: true,
+            }
+        );
+
+        // Resource check
+        if (!updatedUser) {
+            throw new AppError("User not found", 404, {
+                userId: req.params.id,
+            });
+        }
+
+        // Response
+        res.status(200).json({
+            status: "success",
+            data: { user: updatedUser },
+        });
     }
-
-    // Business logic
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
-    // Resource check
-    if (!updatedUser) {
-      throw new AppError("User not found", 404, {
-        userId: req.params.id,
-      });
-    }
-
-    // Response
-    res.status(200).json({
-      status: "success",
-      data: { user: updatedUser },
-    });
-  }
 );
 ```
 

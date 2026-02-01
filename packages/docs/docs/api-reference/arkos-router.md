@@ -1,11 +1,9 @@
 ---
 sidebar_position: 1
-title: Arkos Router (new)
+title: Arkos Router
 ---
 
-import SmallTag from "../components/small-tag"
-
-# Arkos Router Guide <SmallTag>New</SmallTag>
+# Arkos Router Guide
 
 > Available from `v1.4.0-beta`
 
