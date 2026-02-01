@@ -44,7 +44,7 @@ npx arkos generate query-dto -m post
 
 **Time saved:** From 30+ minutes of manual setup to **5 seconds** ⚡
 
-Read more about code generation at [Arkos CLI Code Generation Guide.](/docs/cli/built-in-cli#code-generation)
+Read more about code generation at [Arkos CLI Code Generation Guide.](/docs/cli/arkos-cli#code-generation)
 
 ### 2. Auto-Login After Password Update
 

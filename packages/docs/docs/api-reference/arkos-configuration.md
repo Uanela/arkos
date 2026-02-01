@@ -9,7 +9,7 @@ import TabItem from '@theme/TabItem';
 
 Arkos provides a comprehensive configuration system that allows you to customize every aspect of your application. This reference covers all available configuration options for both `arkos.init()` and `arkos.config.ts`.
 
-The dedicated configuration file was introduced on `v1.4.0-beta` it was made for the clearly separate concerns between what is really application configuration and what is initialization configuration. And this also makes possible for different tools such as the [**Built-in CLI**](/docs/cli/built-in-cli) to make usage of the confiugration when generating different components in your project.
+The dedicated configuration file was introduced on `v1.4.0-beta` it was made for the clearly separate concerns between what is really application configuration and what is initialization configuration. And this also makes possible for different tools such as the [**Built-in CLI**](/docs/cli/arkos-cli) to make usage of the confiugration when generating different components in your project.
 
 ### Key Changes From `v1.4.0-beta`
 
