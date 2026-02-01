@@ -8,6 +8,8 @@ tags: [arkosjs, superm7, webpropax, finegrained, swagger, servicehooks]
 
 On September 09, we've launched [**Arkos.js v1.3-beta**](https://www.arkosjs.com/blog/1.3-beta) which was a success, it was a minor update which brought some really handful features to the framework and once again we've ensured to show the world our mission into the JavaScript/TypeScript Backend Development, which is to allow developers to focus on what really matters (The Application Unique Logic) and speed up the development of secure and scalable RESTful APIs.
 
+<!-- truncate -->
+
 As a mother has a favourite son, we've identified also our favourite feature on Arkos.js v1.3-beta so far. To tell the truth all of them are good - really really really good - but this one just took our heart.
 
 I am talking about the [**Fine-Grained Access Control**](https://www.arkosjs.com/docs/advanced-guide/fine-grained-access-control), this feature is outrageous believe me, this really does what it says `Fine Grain The Access Control Of Resources On Your Applications` on a really easy and fascinating way.

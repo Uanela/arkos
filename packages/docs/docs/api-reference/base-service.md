@@ -1,8 +1,9 @@
 ---
 sidebar_position: 2
+title: Base Service
 ---
 
-# Base Service Class
+# Base Service Guide
 
 The `BaseService` class is a fundamental component that provides standardized CRUD (Create, Read, Update, Delete) operations for all models in your application. It serves as the foundation for **Arkos**'s Prisma integration and can be extended for model-specific implementations.
 
@@ -38,42 +39,7 @@ This command does two things:
 
 **What gets generated:**
 
-The command creates type definitions in `node_modules/arkos/types/modules/base/base.service.d.ts` that map your Prisma models to fully typed BaseService methods:
-
-```typescript
-// Automatically generated types
-export declare type ModelsGetPayload<T extends Record<string, any>> = {
-  user: {
-    Delegate: Prisma.UserDelegate;
-    GetPayload: Prisma.UserGetPayload<T>;
-    FindManyArgs: Prisma.UserFindManyArgs;
-    // ... all other Prisma types
-  };
-  post: {
-    Delegate: Prisma.PostDelegate;
-    GetPayload: Prisma.PostGetPayload<T>;
-    // ... all other Prisma types
-  };
-  // ... all your other models
-};
-
-export declare class BaseService<
-  TModelName extends keyof ModelsGetPayload<any>,
-> {
-  createOne<
-    TOptions extends ExtractQueryOptions<
-      ModelsGetPayload<any>[TModelName]["CreateArgs"],
-      "data"
-    >,
-  >(
-    data: ExtractData<ModelsGetPayload<any>[TModelName]["CreateArgs"]>,
-    queryOptions?: TOptions,
-    context?: ServiceBaseContext
-  ): Promise<ModelsGetPayload<TOptions>[TModelName]["GetPayload"]>;
-
-  // ... all other methods with full type inference
-}
-```
+The command creates type definitions in `node_modules/arkos/types/modules/base/base.service.d.ts` that map your Prisma models to fully typed BaseService methods.
 
 ### Creating Type-Safe Services
 
@@ -162,17 +128,13 @@ Creates a new BaseService instance for the specified model.
 
 **Parameters:**
 
-- `modelName`: The camelCase or kebab-case name of your Prisma model
+- `modelName`: The kebab-case name of your Prisma model
 
 **Example:**
 
 ```typescript
 import { BaseService } from "arkos/services";
 
-// Using camelCase
-const userService = new BaseService("user");
-
-// Using kebab-case (also works)
 const userProfileService = new BaseService("user-profile");
 ```
 
@@ -180,7 +142,7 @@ const userProfileService = new BaseService("user-profile");
 
 | Property         | Type                       | Description                                         |
 | ---------------- | -------------------------- | --------------------------------------------------- |
-| `modelName`      | `string`                   | The camelCase name of the model                     |
+| `modelName`      | `string`                   | The kebab-case name of the model                    |
 | `relationFields` | `ModelGroupRelationFields` | Object containing singular and list relation fields |
 | `prisma`         | `PrismaClient`             | Instance of the Prisma client                       |
 
