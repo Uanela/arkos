@@ -17,7 +17,7 @@ export default function HeroSection(): ReactElement {
         {/* Hero Content */}
         <div
           id="tailwind"
-          className="max-w-6xl mx-auto text-center md:mb-20 lg:mt-24 md:mt-16 mt-10 relative h-[100%] md:max-h-[380px]"
+          className="max-w-8xl mx-auto text-center md:mb-20 lg:mt-24 md:mt-16 mt-10 relative h-[100%] md:max-h-[380px]"
         >
           {/* Bubbles */}
           <div className="absolute md:size-[500px] size-[200px] bg-sky-500 rounded-full opacity-10 blur-3xl z-0"></div>
@@ -29,17 +29,16 @@ export default function HeroSection(): ReactElement {
           >
             BETA VERSION
           </div>
-          <h2 className="lg:text-7xl md:text-5xl text-3xl font-bold z-10">
+          <h2 className="lg:text-[84px] md:text-6xl text-3xl font-bold z-10">
             The <span className="text-sky-400 ">Express</span> &{" "}
             <span className="text-[#36a394]">Prisma</span> RESTful
             Framework{" "}
           </h2>
-      <p className="my-12 md:text-base text-sm text-gray-300 lg:text-lg z-10 text-center mx-auto">
-  A tool for backend developers and teams who ship softwares with{" "}
-  <span className="font-bold text-white">complex business logic</span>
-        {" "}under{" "}
-  <span className="font-bold text-white">tight deadlines</span>
-</p>
+          <p className="my-12 md:text-base text-sm text-gray-300 lg:text-lg z-10 text-center mx-auto">
+            A tool for backend developers and teams who ship softwares with{" "}
+            <span className="font-bold text-white">complex business logic</span>{" "}
+            under <span className="font-bold text-white">tight deadlines</span>
+          </p>
           <div className="flex justify-center  z-10 flex-col items-center gap-2 md:flex-row">
             <Link
               to="/docs/intro"
