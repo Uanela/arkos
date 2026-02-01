@@ -311,6 +311,7 @@ ${dtoFields.join("\n\n")}
     validatorsUsed.add("IsNumber");
     validatorsUsed.add("ValidateNested");
     validatorsUsed.add("Max");
+    validatorsUsed.add("IsNotEmpty");
     transformersUsed.add("Type");
     transformersUsed.add("Transform");
 
@@ -319,16 +320,16 @@ ${dtoFields.join("\n\n")}
     const typeModifier = isTypeScript ? "?" : "";
 
     dtoFields.push(
-      `  @IsOptional()\n  @IsNumber()\n  @Max(10)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page${typeModifier}: number;`
+      `  @IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page${typeModifier}: number;`
     );
     dtoFields.push(
-      `  @IsOptional()\n  @IsNumber()\n  @Max(100)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit${typeModifier}: number;`
+      `  @IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  @Max(100)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit${typeModifier}: number;`
     );
     dtoFields.push(
-      `  @IsOptional()\n  @IsString()\n  @Type(() => String)\n  sort${typeModifier}: string;`
+      `  @IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  @Type(() => String)\n  sort${typeModifier}: string;`
     );
     dtoFields.push(
-      `  @IsOptional()\n  @IsString()\n  @Type(() => String)\n  fields${typeModifier}: string;`
+      `  @IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  @Type(() => String)\n  fields${typeModifier}: string;`
     );
 
     for (const field of model.fields) {

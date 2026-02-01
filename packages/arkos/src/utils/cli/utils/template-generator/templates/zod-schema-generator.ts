@@ -55,7 +55,12 @@ export class ZodSchemaGenerator {
           const refFieldType = referencedModel.fields.find(
             (f) => f.name === refField
           );
-          const zodType = this.mapPrismaTypeToZod(refFieldType?.type!);
+          let zodType = this.mapPrismaTypeToZod(refFieldType?.type!);
+          if (
+            refFieldType?.type?.toLowerCase?.() === "string" ||
+            !refFieldType?.type
+          )
+            zodType = zodType + ".min(1)";
           const isOptional =
             field.isOptional || field.defaultValue !== undefined;
           schemaFields.push(
@@ -122,7 +127,13 @@ export default Create${modelName!.pascal}Schema;${typeExport}
           const refFieldType = referencedModel.fields.find(
             (f) => f.name === refField
           );
-          const zodType = this.mapPrismaTypeToZod(refFieldType?.type!);
+          let zodType = this.mapPrismaTypeToZod(refFieldType?.type!);
+          if (
+            refFieldType?.type?.toLowerCase?.() === "string" ||
+            !refFieldType?.type
+          )
+            zodType = zodType + ".min(1)";
+
           schemaFields.push(
             `  ${field.name}: z.object({ ${refField}: ${zodType} }).optional()`
           );
@@ -227,7 +238,7 @@ export default ${modelName!.pascal}Schema;${typeExport}
     let timestampSchemaFields: string[] = [];
 
     schemaFields.push(`  page: z.coerce.number().optional()`);
-    schemaFields.push(`  limit: z.coerce.number().optional()`);
+    schemaFields.push(`  limit: z.coerce.number().max(100).optional()`);
     schemaFields.push(`  sort: z.string().optional()`);
     schemaFields.push(`  fields: z.string().optional()`);
 
@@ -391,15 +402,13 @@ export default Query${modelName!.pascal}Schema;${typeExport}
   ): string {
     let zodType = this.mapPrismaTypeToZod(field.type);
 
-    if (field.isArray) {
-      zodType = `z.array(${zodType})`;
-    }
+    if (field.isArray)
+      zodType = `z.array(${zodType}${field.type === "String" ? ".min(1)" : ""})`;
 
-    if (prismaSchemaParser.isEnum(field.type)) {
+    if (prismaSchemaParser.isEnum(field.type))
       zodType = field.isArray
         ? `z.array(z.nativeEnum(${field.type}))`
         : `z.nativeEnum(${field.type})`;
-    }
 
     if (isUserModule) {
       if (field.name === "email") {
@@ -411,9 +420,7 @@ export default Query${modelName!.pascal}Schema;${typeExport}
 
     const isOptional =
       forceOptional || field.isOptional || field.defaultValue !== undefined;
-    if (isOptional) {
-      zodType += ".optional()";
-    }
+    if (isOptional) zodType += ".optional()";
 
     return zodType;
   }
