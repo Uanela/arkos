@@ -74,6 +74,7 @@ export const config: RouterConfig = {
         maxSize: 5 * 1024 * 1024, // 5MB
         allowedFileTypes: [".jpg", ".jpeg", ".png", ".webp"],
         deleteOnError: true, // (Default) Clean up if user creation fails
+        required: true, // (Default 1.5.0+) Mark a file as required
       },
     },
   },
@@ -84,7 +85,9 @@ export const config: RouterConfig = {
         type: "single",
         field: "profilePhoto",
         uploadDir: "user-profiles",
+        required: false, // (v1.5.0+) Mark the file as optional
         // deleteOnError: true, we can omit this as it is default
+
       },
     },
   },
@@ -94,6 +97,10 @@ const userRouter = ArkosRouter();
 
 export default userRouter;
 ```
+
+:::tip Required Flag
+Notice that the `required` flag defaults to true, if ommited the file will be required yet, so if you want to make it optional pass `required: false`. Is important to know that this feature of `required` flag was added at [v1.5.0+](/blog/1.5-beta).
+:::
 
 **2. Client-side usage - Single API call:**
 
