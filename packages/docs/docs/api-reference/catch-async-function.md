@@ -21,20 +21,20 @@ The `catchAsync` function serves several important purposes:
 4. **Centralized Error Handling**: Works with `AppError` to create a cohesive error management system, [read more about AppError](/docs/api-reference/the-app-error-class).
 5. **Developer Experience**: Reduces boilerplate code and potential for human error
 
-As you are reading about the `catchAsync` maybe you may want to also read about the **Arkos Global Error Handler** [clicking here](/docs/core-concepts/global-error-handler).
+As you are reading about the `catchAsync` maybe you may want to also read about the **Arkos Global Error Handler** [clicking here](/docs/core-concepts/error-handling).
 
 ## Function Signature
 
 ```ts
 const catchAsync =
-    (fn: ArkosRequestHandler) =>
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-        try {
-            await fn(req, res, next);
-        } catch (err) {
-            next(err);
-        }
-    };
+  (fn: ArkosRequestHandler) =>
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    try {
+      await fn(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  };
 ```
 
 ## Parameters
@@ -62,17 +62,17 @@ import { prisma } from "../../utils/prisma";
 
 // Without try-catch boilerplate
 export const getAllUsers = catchAsync(async (req, res, next) => {
-    const users = await prisma.user.findMany();
+  const users = await prisma.user.findMany();
 
-    res.status(200).json({
-        status: "success",
-        results: users.length,
-        data: { users },
-    });
+  res.status(200).json({
+    status: "success",
+    results: users.length,
+    data: { users },
+  });
 });
 ```
 
-As shown below you do not need a try-catch block when using catchAsync, neither forwarding the error to global handler nor even about throwing errors sometimes (Just if you would like a specific message), why??? because **Arkos** handles it for you by providing a set of meaningfull error messages and status code. [read more about](/docs/core-concepts/global-error-handler.md)
+As shown below you do not need a try-catch block when using catchAsync, neither forwarding the error to global handler nor even about throwing errors sometimes (Just if you would like a specific message), why??? because **Arkos** handles it for you by providing a set of meaningfull error messages and status code. [read more about](/docs/core-concepts/error-handling.md)
 
 ### With Custom Error Throwing
 
@@ -82,22 +82,22 @@ import { catchAsync } from "arkos/error-handler";
 import { prisma } from "../../utils/prisma";
 
 export const getUserById = catchAsync(
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-        const user = await prisma.user.findOne({
-            where: { id: req.params.id },
-        });
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const user = await prisma.user.findOne({
+      where: { id: req.params.id },
+    });
 
-        if (!user) {
-            throw new AppError("User not found", 404, {
-                userId: req.params.id,
-            });
-        }
-
-        res.status(200).json({
-            status: "success",
-            data: { user },
-        });
+    if (!user) {
+      throw new AppError("User not found", 404, {
+        userId: req.params.id,
+      });
     }
+
+    res.status(200).json({
+      status: "success",
+      data: { user },
+    });
+  }
 );
 ```
 
@@ -108,23 +108,23 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import { AppError, catchAsync } from "arkos/error-handler";
 
 export const protectRoute = catchAsync(
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-        // Get token from request headers
-        const token = req.headers.authorization?.split(" ")[1];
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    // Get token from request headers
+    const token = req.headers.authorization?.split(" ")[1];
 
-        if (!token) {
-            throw new AppError("Not authenticated. Please log in.", 401);
-        }
-
-        // Verify token
-        const decoded = await verifyToken(token);
-
-        // Add user to request object
-        req.user = decoded;
-
-        // Continue to next middleware/handler
-        next();
+    if (!token) {
+      throw new AppError("Not authenticated. Please log in.", 401);
     }
+
+    // Verify token
+    const decoded = await verifyToken(token);
+
+    // Add user to request object
+    req.user = decoded;
+
+    // Continue to next middleware/handler
+    next();
+  }
 );
 ```
 
@@ -162,35 +162,31 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 // Controller function
 export const updateUser = catchAsync(
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-        // Validation
-        if (!req.body.name && !req.body.email) {
-            throw new AppError("Please provide name or email to update", 400);
-        }
-
-        // Business logic
-        const updatedUser = await User.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
-
-        // Resource check
-        if (!updatedUser) {
-            throw new AppError("User not found", 404, {
-                userId: req.params.id,
-            });
-        }
-
-        // Response
-        res.status(200).json({
-            status: "success",
-            data: { user: updatedUser },
-        });
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    // Validation
+    if (!req.body.name && !req.body.email) {
+      throw new AppError("Please provide name or email to update", 400);
     }
+
+    // Business logic
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    // Resource check
+    if (!updatedUser) {
+      throw new AppError("User not found", 404, {
+        userId: req.params.id,
+      });
+    }
+
+    // Response
+    res.status(200).json({
+      status: "success",
+      data: { user: updatedUser },
+    });
+  }
 );
 ```
 
