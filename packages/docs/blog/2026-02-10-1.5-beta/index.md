@@ -1,4 +1,5 @@
 ---
+slug: 1.5-beta
 title: Arkos.js v1.5.0-beta Is Out
 authors: [uanela]
 tags: [arkosjs, superm7, webpropax, finegrained, swagger, servicehooks]
