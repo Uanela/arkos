@@ -1,0 +1,602 @@
+---
+sidebar_position: 7
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Error Handling
+
+**Arkos** includes a powerful error handling system that automatically processes all errors thrown within your application, transforms them into consistent, meaningful response formats, and manages environment-specific behavior. Starting with [**v1.5.0-beta**](/blog/1.5-beta), error messages are more actionable and human-readable than ever. The arkos error handler system is an global Express middleware that captures all errors passed through your application (via `next(error)` or thrown errors). It processes these errors differently based on your build environment, maps specific database and authentication errors to friendly messages, and sends appropriate responses to clients.
+
+## Key Features
+
+- **Meaningful, Actionable Error Messages ([**v1.5.0-beta**](/blog/1.5-beta))**: Clear field paths and human-readable constraint names
+- **Environment-Aware Responses**: Detailed errors in development, sanitized errors in production
+- **Automatic Error Mapping**: Converts Prisma, JWT, and validation errors to user-friendly messages
+- **Consistent API Response Format**: Standardized error responses across your entire API
+- **`onError` Interceptor Support**: Execute custom logic when operations fail
+- **Type-Safe Error Codes**: Machine-readable codes for client-side handling
+
+## Meaningful Error Messages 
+
+One of the biggest improvements in v1.5.0 is the **dramatically improved error message format**. Errors now tell you exactly what's wrong and where, without digging through nested objects.
+
+<Tabs groupId="version">
+<TabItem value="v1.5" label="Meaningful Messages (v1.5.0+)" default>
+
+```json
+{
+  "status": "error",
+  "message": "'email' must be a valid email address",
+  "code": "EmailIsEmailConstraint",
+  "meta": {
+    "errors": [
+      {
+        "message": "'email' must be a valid email address",
+        "code": "EmailIsEmailConstraint"
+      }
+    ]
+  }
+}
+```
+
+</TabItem>
+<TabItem value="v1.4" label="Generic Messages (before)" default>
+
+
+```json
+{
+  "status": "error",
+  "message": "Invalid request body",
+  "meta": {
+    "errors": [
+      {
+        "path": ["email"],
+        "message": "Expected string, received number"
+      }
+    ]
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+**What changed:**
+- **Clear field paths**: Shows `'email'`, `'user.profile.bio'`, or `'tags[0].name'` directly in the message
+- **Human-readable constraint names**: `IsEmailConstraint`, `MinLengthConstraint`, etc.
+- **Actionable messages**: "must be a valid email" instead of "Expected string, received number"
+- **Consistent format**: Same structure across Zod and class-validator
+
+### Nested Field Errors
+
+For deeply nested fields and arrays, error messages maintain clarity:
+
+```json
+{
+  "status": "error",
+  "message": "'user.profile.bio' must be at least 10 characters",
+  "code": "UserProfileBioMinLengthConstraint"
+}
+```
+
+```json
+{
+  "status": "error", 
+  "message": "'tags[0].name' must be a string",
+  "code": "Tags0NameIsStringConstraint"
+}
+```
+
+## Response Structure
+
+### Development Environment
+
+In development, responses provide detailed information such as the stack trace to aid debugging:
+
+```json
+{
+  "message": "User not found with id: 123",
+  "code": "NotFound",
+  "meta": {},
+  "statusCode": 404,
+  "status": "fail",
+  "isOperational": true,
+  "stack": [
+    "AppError: User not found with id: 123",
+    "    at findOne (/src/modules/base/base.controller.ts:25:11)",
+    "    at processTicksAndRejections (node:internal/process/task_queues:95:5)"
+  ]
+}
+```
+
+### Production Environment
+
+In production, responses are sanitized to avoid exposing sensitive information:
+
+```json
+{
+  "status": "fail",
+  "message": "User not found with id: 123",
+  "code": "NotFound",
+  "meta": {}
+}
+```
+
+For non-operational errors (programming errors, not expected failures), a generic message is returned:
+
+```json
+{
+  "status": "error",
+  "message": "Internal server error, please try again later.",
+  "code": "Unknown",
+  "meta": {}
+}
+```
+
+:::tip Production vs Development
+Arkos does not determine the environment using the `NODE_ENV` environment variable, which can cause confusion for beginners, the production mode is setup automatically when you run `npx arkos build`. It's **not** based on `NODE_ENV` because this ensures your production builds always have sanitized errors, regardless of how you set `NODE_ENV` value.
+:::
+
+## Best Practices: Always Prefer [AppError](/docs/api-reference/app-error)
+
+The most important best practice for error handling in Arkos: **always throw `AppError` instead of sending custom error responses**.
+
+### ❌ Don't Do This
+
+```typescript
+import { ArkosRequest, ArkosResponse } from "arkos";
+
+export const getUserById = async (req: ArkosRequest, res: ArkosResponse) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!user) {
+    // BAD: Custom error response
+    return res.status(404).json({
+      error: "User not found",
+      userId: req.params.id,
+    });
+  }
+
+  res.json({ data: user });
+};
+```
+
+**Problems with this approach:**
+- Inconsistent error format across your API
+- No automatic logging or error tracking
+- Bypasses `onError` interceptors
+- Won't appear in future OpenAPI error documentation (coming soon)
+
+### ✅ Do This Instead
+
+```typescript
+import { AppError } from "arkos/error-handler";
+import { ArkosRequest, ArkosResponse } from "arkos";
+
+export const getUserById = async (req: ArkosRequest, res: ArkosResponse) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!user) {
+    // GOOD: Throw AppError
+    throw new AppError(
+      `User not found with id: ${req.params.id}`,
+      404,
+      "NotFound"
+    );
+  }
+
+  res.json({ data: user });
+};
+```
+
+**Benefits:**
+- Consistent error format
+- Automatic environment-aware responses
+- Triggers `onError` interceptors
+- Better logging and debugging
+- Will be auto-documented in OpenAPI (future feature)
+
+:::tip No catchAsync Needed (v1.3.0+)
+You don't need to wrap your handlers in `catchAsync` when using ArkosRouter or interceptor middlewares - Arkos handles this automatically!
+:::
+
+## AppError API
+
+```typescript
+new AppError(message, statusCode, code?, meta?)
+```
+
+| Parameter | Type | Description | Required |
+|-----------|------|-------------|----------|
+| `message` | `string` | Human-readable error message | Yes |
+| `statusCode` | `number` | HTTP status code (400, 404, 500, etc.) | Yes |
+| `code` | `string` | Machine-readable error code | No |
+| `meta` | `object` | Additional error context/data | No |
+
+**Common Status Codes:**
+- `400` - Bad Request (validation errors, invalid input)
+- `401` - Unauthorized (authentication required)
+- `403` - Forbidden (authenticated but not authorized)
+- `404` - Not Found (resource doesn't exist)
+- `409` - Conflict (duplicate entry, constraint violation)
+- `500` - Internal Server Error (unexpected errors)
+
+**Example with all parameters:**
+
+```typescript
+throw new AppError(
+  "Email already registered",
+  409,
+  "EmailAlreadyExists",
+  { email: req.body.email }
+);
+```
+
+**Response:**
+
+```json
+{
+  "status": "fail",
+  "message": "Email already registered",
+  "code": "EmailAlreadyExists",
+  "meta": {
+    "email": "user@example.com"
+  }
+}
+```
+
+## Error Categories Handled
+
+The global error handler intelligently processes different types of errors:
+
+### Validation Errors (v1.5.0+)
+
+Automatically formatted with rich, meaningful, actionable messages:
+
+```json
+{
+  "status": "error",
+  "message": "'email' must be a valid email address",
+  "code": "EmailIsEmailConstraint",
+  "meta": {
+    "errors": [...]
+  }
+}
+```
+
+### Authentication Errors
+
+- JWT validation failures
+- Expired tokens
+- Authorization issues
+
+```json
+{
+  "status": "fail",
+  "message": "Your token has expired, Please log again!",
+  "code": "Unknown"
+}
+```
+
+### Database Errors
+
+Automatically mapped from Prisma error codes:
+
+**Unique Constraint Violation (P2002):**
+
+```json
+{
+  "status": "fail",
+  "message": "Duplicate value detected for the unique field(s): email. Please use a different value.",
+  "code": "UserEmailUniqueConstraint",
+  "meta": {}
+}
+```
+
+**Record Not Found (P2025):**
+
+```json
+{
+  "status": "error",
+  "message": "Operation could not be completed as some required record was not found",
+  "code": "RecordNotFound",
+  "meta": {}
+}
+```
+
+**Foreign Key Constraint (P2003):**
+
+```json
+{
+  "status": "fail",
+  "message": "Foreign key constraint violation. Ensure that the referenced record exists.",
+  "code": "Unknown",
+  "meta": {}
+}
+```
+
+### Network Errors
+
+Connection issues, timeouts, and server unreachable errors.
+
+## Error Interceptors (v1.3.0+)
+
+Error interceptors allow you to execute custom logic when operations fail - perfect for cleanup, logging, or rollback operations.
+
+### Available Error Interceptors
+
+For auto-generated CRUD endpoints:
+- `onCreateOneError`
+- `onCreateManyError`
+- `onUpdateOneError`
+- `onUpdateManyError`
+- `onDeleteOneError`
+- `onDeleteManyError`
+- `onFindOneError`
+- `onFindManyError`
+
+For authentication endpoints:
+- `onLoginError`
+- `onSignupError`
+- `onLogoutError`
+- `onUpdatePasswordError`
+
+### Error Interceptor Example
+
+```typescript
+// src/modules/user/user.interceptors.ts
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const onCreateOneError = [
+  async (
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    // Cleanup uploaded profile picture if user creation fails
+    if (req.uploadedFiles) {
+      await cleanupFiles(req.uploadedFiles);
+    }
+
+    // Rollback any database changes made in beforeCreateOne
+    if (req.transactionData) {
+      await rollbackTransaction(req.transactionData);
+    }
+
+    // Log the error for monitoring
+    console.error("User creation failed:", err.message);
+
+    // Pass error to next middleware (global error handler)
+    next(err);
+  },
+];
+```
+
+**Important:** Error interceptors must have exactly **4 parameters** `(err, req, res, next)` - this is an Express requirement. Without all 4 parameters, Express won't recognize it as an error middleware.
+
+### Practical Error Handling Example
+
+```typescript
+// src/modules/post/post.interceptors.ts
+import { AppError } from "arkos/error-handler";
+
+export const beforeCreateOne = [
+  async (req, res, next) => {
+    // Upload featured image
+    if (req.body.featuredImage) {
+      const imageUrl = await uploadToS3(req.body.featuredImage);
+      req.uploadedImageUrl = imageUrl;
+      req.body.featuredImageUrl = imageUrl;
+    }
+    next();
+  },
+];
+
+export const onCreateOneError = [
+  async (err, req, res, next) => {
+    // Clean up uploaded S3 image if post creation fails
+    if (req.uploadedImageUrl) {
+      await deleteFromS3(req.uploadedImageUrl).catch(console.error);
+    }
+
+    // Log for debugging
+    console.error("Post creation failed:", {
+      error: err.message,
+      userId: req.user?.id,
+      postData: req.body.title,
+    });
+
+    // Pass error to global handler
+    next(err);
+  },
+];
+```
+
+## Security by Default: forbidNonWhitelisted (v1.5.0+)
+
+Starting with v1.5.0, Arkos **rejects unknown fields by default** for both Zod and class-validator. This closes a common security gap where malicious payloads could slip through.
+
+### Before v1.5.0
+
+```typescript
+// Unknown fields were silently ignored
+POST /api/users
+{
+  "name": "John",
+  "email": "john@example.com",
+  "isAdmin": true  // ⚠️ Ignored but potentially dangerous
+}
+
+// Response: User created (isAdmin was ignored)
+```
+
+### After v1.5.0 (Default Behavior)
+
+```typescript
+POST /api/users
+{
+  "name": "John",
+  "email": "john@example.com",
+  "isAdmin": true
+}
+
+// Response: ERROR
+{
+  "status": "error",
+  "message": "Unrecognized key(s) in object: 'isAdmin'",
+  "code": "UnrecognizedKeysConstraint",
+  "meta": {
+    "errors": [...]
+  }
+}
+```
+
+### Opting Out (If Needed)
+
+```typescript
+// arkos.config.ts
+export default {
+  validation: {
+    resolver: "zod",
+    validationOptions: {
+      forbidNonWhitelisted: false, // Allow unknown fields
+    },
+  },
+};
+```
+
+:::tip
+We strongly recommend keeping `forbidNonWhitelisted: true` (the default). It prevents common security issues like mass assignment vulnerabilities.
+:::
+
+## Integration with catchAsync (No Longer Needed)
+
+Prior to v1.3.0, you needed to wrap handlers in `catchAsync`:
+
+```typescript
+// OLD WAY (pre-v1.3.0)
+import { catchAsync } from "arkos/error-handler";
+
+export const getUser = catchAsync(async (req, res) => {
+  // Your handler logic
+});
+```
+
+**Since v1.3.0**, this is **no longer required** when using:
+- ArkosRouter route handlers
+- Interceptor middlewares
+- Auto-generated controller methods
+
+Arkos handles async error catching automatically!
+
+```typescript
+// NEW WAY (v1.3.0+)
+export const getUser = async (req, res) => {
+  // Your handler logic - errors are caught automatically
+  const user = await userService.findOne({ id: req.params.id });
+  if (!user) throw new AppError("User not found", 404);
+  res.json({ data: user });
+};
+```
+
+:::info When to Use catchAsync
+You only need `catchAsync` if you're using **standard Express routers** (not ArkosRouter) or writing **standalone middleware** outside of Arkos's automatic error handling.
+:::
+
+## Environment Configuration
+
+The global error handler uses the `ARKOS_BUILD` environment variable (set automatically during `npx arkos build`) to determine behavior:
+
+**Development Mode** (`ARKOS_BUILD !== "true"`):
+- Full error details including stack traces
+- All error metadata exposed
+- Helpful for debugging
+
+**Production Mode** (`ARKOS_BUILD === "true"`):
+- Sanitized error messages
+- Stack traces hidden
+- Only operational errors show details
+
+## Best Practices Summary
+
+1. ✅ **Always throw `AppError`** instead of custom `res.json()` error responses
+2. ✅ **Use specific HTTP status codes** (400, 404, 409, etc.)
+3. ✅ **Provide error codes** for client-side error handling
+4. ✅ **Include helpful metadata** when appropriate (but no sensitive data)
+5. ✅ **Use `onError` interceptors** for cleanup and rollback operations
+6. ✅ **Keep `forbidNonWhitelisted: true`** for security
+7. ❌ **Don't include sensitive data** in error metadata (passwords, tokens)
+8. ❌ **Don't use `catchAsync`** when using ArkosRouter (it's automatic)
+
+## Future Features
+
+Starting in upcoming Arkos versions, thrown `AppError` instances will be:
+- **Automatically documented in OpenAPI/Swagger** with their status codes and error schemas
+- **Tracked in error monitoring dashboards**
+- **Analyzed for API health metrics**
+
+This is another reason to consistently use `AppError` throughout your application!
+
+## Complete Example
+
+```typescript
+// src/modules/order/order.interceptors.ts
+import { AppError } from "arkos/error-handler";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { Prisma } from "@prisma/client";
+import { ArkosPrismaInput } from "arkos/prisma";
+
+type CreateOrderBody = ArkosPrismaInput<Prisma.OrderCreateInput>;
+
+export const beforeCreateOne = [
+  async (
+    req: ArkosRequest<any, any, CreateOrderBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    // Validate inventory
+    const hasStock = await checkInventory(req.body.items);
+    if (!hasStock) {
+      throw new AppError(
+        "Insufficient inventory for requested items",
+        400,
+        "InsufficientInventory",
+        { requestedItems: req.body.items }
+      );
+    }
+
+    // Reserve inventory (can be rolled back on error)
+    req.reservationId = await reserveInventory(req.body.items);
+
+    next();
+  },
+];
+
+export const onCreateOneError = [
+  async (err, req, res, next) => {
+    // Rollback inventory reservation
+    if (req.reservationId) {
+      await releaseReservation(req.reservationId).catch(console.error);
+    }
+
+    // Log for monitoring
+    console.error("Order creation failed:", {
+      userId: req.user?.id,
+      error: err.message,
+      items: req.body.items,
+    });
+
+    // Pass to global handler
+    next(err);
+  },
+];
+```
+
+The global error handler ensures your API responds consistently and securely to all errors, while giving you full control over error processing through interceptors and the `AppError` class.
