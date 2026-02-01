@@ -67,9 +67,8 @@ interface OperationConfig {
 export class BaseController {
   /**
    * Service instance to handle business logic operations
-   * @private
    */
-  private service: BaseService<any>;
+  service: BaseService<any>;
 
   /**
    * Name of the model this controller handles
