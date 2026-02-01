@@ -98,7 +98,7 @@ GET /api/products/550e8400-e29b-41d4-a716-446655440000
 - Catch routing errors early
 
 :::tip Type Safety Across All Three
-Use `ArkosRequest<Query, Body, Params>` generics in v1.4.0+ for full TypeScript type safety across all three validation targets:
+Use `ArkosRequest<Params, ResBody, ReqBody, Query>` generics in v1.4.0+ for full TypeScript type safety across all three validation targets:
 
 ```typescript
 import { ArkosRequest, ArkosResponse } from "arkos";
@@ -118,7 +118,7 @@ interface ProductParams {
 }
 
 const handler = async (
-  req: ArkosRequest<ProductQuery, CreateProductBody, ProductParams>,
+  req: ArkosRequest<ProductParams, any, CreateProductBody, ProductQuery>,
   res: ArkosResponse
 ) => {
   // All validated and type-safe!
@@ -232,7 +232,7 @@ interface ProductQuery {
 
 // Use ArkosRequest with generics for type safety
 const myHandler = async (
-  req: ArkosRequest<ProductQuery, CreateProductBody, ProductParams>,
+  req: ArkosRequest<ProductParams, any, CreateProductBody, ProductQuery>,
   res: ArkosResponse,
   next: ArkosNextFunction
 ) => {
@@ -262,11 +262,11 @@ const myHandler = async (
 **Type Signature:**
 
 ```typescript
-ArkosRequest<Query = any, Body = any, Params = any>
+ArkosRequest<Params = any, ResBody = any, ReqBody = any, Query = any>
 ```
 
 :::tip Type Safety Benefits
-Using `ArkosRequest<Query, Body, Params>` generics provides:
+Using `ArkosRequest<Params, ResBody, ReqBody, Query>` generics provides:
 
 - **Autocomplete**: IDE suggestions for all validated properties
 - **Type checking**: Compile-time errors for invalid property access
@@ -1178,7 +1178,7 @@ interface ReportQuery {
 }
 
 const getSummary = async (
-  req: ArkosRequest<ReportQuery>,
+  req: ArkosRequest<any, any, any, ReportQuery>,
   res: ArkosResponse
 ) => {
   // All query params are validated and type-coerced!
