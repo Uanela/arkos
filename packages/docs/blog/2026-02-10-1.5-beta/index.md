@@ -264,13 +264,17 @@ export const postAccessControl = {
   },
 } as const satisfies AuthConfigs["accessControl"];
 
+// Helper function
+function createPostPermission(action: string) {
+  return authService.permission(action, "post", postAccessControl);
+}
+
 // Auto-generated permission helpers
 export const postPermissions = {
-  canPublish: authService.permission("Publish", "post", postAccessControl),
-  canCreate: authService.permission("Create", "post", postAccessControl),
-  canUpdate: authService.permission("Update", "post", postAccessControl),
-  canDelete: authService.permission("Delete", "post", postAccessControl),
-  canView: authService.permission("View", "post", postAccessControl),
+  canCreate: createPostPermission("Create"),
+  canUpdate: createPostPermission("Update"),
+  canDelete: createPostPermission("Delete"),
+  canView: createPostPermission("View"),
 };
 
 // Separated authentication control

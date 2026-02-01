@@ -280,17 +280,135 @@ export default userRouter
 ### Auth Configuration Generation
 
 ```bash
-arkos generate auth-configs --module user
-arkos g a -m user
+arkos generate auth-configs --module post
+arkos g a -m post
 ```
 
 Generates authentication configuration for role-based access control with separated authentication and authorization controls.
 
+```ts
+import { AuthConfigs } from 'arkos/auth';
+import { authService } from "arkos/services";
+
+export const postAccessControl = {
+  Create: {
+    roles: ["Admin", "Editor"],
+    name: "Create Post",
+    description: "Permission to create new post records",
+  },
+  Update: {
+    roles: ["Admin", "Editor", "Author"],
+    name: "Update Post",
+    description: "Permission to update existing post records",
+  },
+  Delete: {
+    roles: ["Admin"],
+    name: "Delete Post",
+    description: "Permission to delete post records",
+  },
+  View: {
+    roles: ["*"], // Wildcard: all authenticated users
+    name: "View Post",
+    description: "Permission to view post records",
+  },
+} as const satisfies AuthConfigs["accessControl"];
+
+function createPostPermission(action: string) {
+  return authService.permission(action, "post", postAccessControl);
+}
+
+export const postPermissions = {
+  canCreate: createPostPermission("Create"),
+  canUpdate: createPostPermission("Update"),
+  canDelete: createPostPermission("Delete"),
+  canView: createPostPermission("View"),
+};
+
+export const postAuthenticationControl = {
+  Create: true,
+  Update: true,
+  Delete: true,
+  View: true,
+};
+
+const postAuthConfigs: AuthConfigs = {
+  authenticationControl: postAuthenticationControl,
+  accessControl: postAccessControl,
+};
+
+export default postAuthConfigs;
+```
 **Features (v1.5.0+):**
 - Separated authentication control (who needs to be logged in)
 - Access control with permission helpers
 - Wildcard role support (`*` for all authenticated users)
 - Auto-generated permission helper functions (with `--advanced` flag)
+
+#### Advanced Auth Configs Generation
+
+
+```bash
+arkos generate auth-configs --module post --advanced
+arkos g a -m post -a
+```
+
+Everything remains the same the only change is that now you will have 
+
+```ts
+import { AuthConfigs } from 'arkos/auth';
+import { authService } from "arkos/services";
+
+export const postAccessControl = {
+  Create: {
+    roles: [],
+    name: "Create Post",
+    description: "Permission to create new post records",
+  },
+  Update: {
+    roles: [],
+    name: "Update Post",
+    description: "Permission to update existing post records",
+  },
+  Delete: {
+    roles: [],
+    name: "Delete Post",
+    description: "Permission to delete post records",
+  },
+  View: {
+    roles: [],
+    name: "View Post",
+    description: "Permission to view post records",
+  },
+} as const satisfies AuthConfigs["accessControl"];
+
+type PostPermissionName = `can${keyof typeof postAccessControl & string}`;
+
+export const postPermissions = Object.keys(postAccessControl).reduce(
+  (acc, key) => {
+    acc[`can${key}` as PostPermissionName] = authService.permission(
+      key,
+      "post",
+      postAccessControl
+    );
+    return acc;
+  },
+  {} as Record<PostPermissionName, ReturnType<typeof authService.permission>>
+);
+
+export const postAuthenticationControl = {
+  Create: true,
+  Update: true,
+  Delete: true,
+  View: true,
+};
+
+const postAuthConfigs: AuthConfigs = {
+  authenticationControl: postAuthenticationControl,
+  accessControl: postAccessControl,
+};
+
+export default postAuthConfigs;
+```
 
 ### Query Options Generation
 
