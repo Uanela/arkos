@@ -56,7 +56,7 @@ throw new AppError(
 ```
 
 :::tip Hint
-If throwing an error while processing a request you may want to wrap your async or even normal function (that throws an error) inside `catchAsync` ([read more about](/docs/api-reference/the-catch-async-function)), so that you can harness the `Built-in Error Handler` ([read more about](/docs/core-concepts/global-error-handler)).
+If throwing an error while processing a request you may want to wrap your async or even normal function (that throws an error) inside `catchAsync` ([read more about](/docs/api-reference/the-catch-async-function)), so that you can harness the `Built-in Error Handler` ([read more about](/docs/core-concepts/error-handling)).
 
 :::
 

@@ -217,7 +217,7 @@ This approach works great for:
 
 ## Beyond Scaffolding
 
-Once your project is created, you have access to **Arkos**'s powerful built-in CLI commands for ongoing development. You can generate controllers, services, and other components on-demand. Explore this incredible tool by reading [built-in CLI Guide](/docs/cli/built-in-cli).
+Once your project is created, you have access to **Arkos**'s powerful built-in CLI commands for ongoing development. You can generate controllers, services, and other components on-demand. Explore this incredible tool by reading [built-in CLI Guide](/docs/cli/arkos-cli).
 
 ## What's Generated Out of the Box
 
