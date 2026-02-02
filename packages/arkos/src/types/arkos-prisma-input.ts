@@ -2,8 +2,9 @@
  * Helper type to exclude properties from T that exist in U
  * Used internally by XOR to create mutually exclusive types
  */
-type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
-
+type Without<T, U> = {
+  [P in Exclude<keyof T, keyof U>]?: never;
+};
 /**
  * XOR (Exclusive OR) type for mutually exclusive union types
  * Ensures that properties from T and U cannot be mixed together
@@ -14,13 +15,12 @@ type XOR<T, U> = T extends object
     ? (Without<T, U> & U) | (Without<U, T> & T)
     : U
   : T;
-
 /**
  * Extract type from Prisma's Enumerable wrapper
  * Currently acts as identity but can be extended to handle array unwrapping
  */
+// type Unpack<T> = T extends Array<infer U> ? U : T extends (infer U)[] ? U : T;
 type Unpack<T> = T;
-
 /**
  * Checks if a field is a Prisma relation field
  * A field is considered a relation if it has any of: create, connect, connectOrCreate, update, delete, disconnect
@@ -30,72 +30,74 @@ type Unpack<T> = T;
  */
 export type IsRelationField<T> =
   Exclude<T, undefined> extends
-    | { create?: any }
-    | { connect?: any }
-    // | { connectOrCreate?: any }
-    | { update?: any }
-    | { delete?: any }
-    | { disconnect?: any }
+    | {
+        create?: { id?: any } | { id?: any }[];
+      }
+    | {
+        connect?: { id?: any } | { id?: any }[];
+      }
+    | {
+        update?: { where?: { id?: any }; data?: any };
+      }
+    | {
+        delete?: { where?: { id?: any } };
+      }
+    | {
+        disconnect?: { where?: { id?: any } };
+      }
     ? true
     : false;
-
 /**
  * Extracts the create data type from a Prisma relation field
  * @template T - The relation field type
  * @returns The type used in the create operation, or never if not present
  */
 export type ExtractCreateType<T> =
-  Exclude<T, undefined> extends { create?: infer C } ? Unpack<C> : never;
+  Exclude<T, undefined> extends { create?: infer C }
+    ? C extends Array<infer U>
+      ? (U & {
+          apiAction?: "create";
+        })[]
+      : C & {
+          apiAction?: "create";
+        }
+    : never;
 
-/**
- * Extracts the connect data type from a Prisma relation field
- * @template T - The relation field type
- * @returns The type used in the connect operation (typically unique identifiers), or never if not present
- */
-type ExtractConnectType<T> =
-  Exclude<T, undefined> extends { connect?: infer C } ? Unpack<C> : never;
-
+type ExtractConnectType<
+  T,
+  action extends "connect" | "delete" | "udpate" | "disconnect" | "deleteMany",
+> =
+  Exclude<T, undefined> extends { [k in action]?: infer C }
+    ? C extends Array<infer U>
+      ? (U & {
+          apiAction?: action;
+        })[]
+      : C & {
+          apiAction?: action;
+        }
+    : never;
 /**
  * Extracts and merges the update data type from a Prisma relation field
  * Combines the 'where' clause and 'data' fields into a single type
  * @template T - The relation field type
  * @returns Merged type of where & data fields, or never if not present
  */
-type ExtractUpdateType<T> = T extends { update?: infer U }
+type ExtractUpdateType<T> = T extends {
+  update?: infer U;
+}
   ? U extends Array<infer Item>
-    ? Item extends { where: infer W; data: infer D }
-      ? W & D
+    ? Item extends {
+        where: infer W;
+        data: infer D;
+      }
+      ? ((W & D) & { apiAction?: "update" })[]
       : never
-    : U extends { where: infer W; data: infer D }
-      ? W & D
+    : U extends {
+          where: infer W;
+          data: infer D;
+        }
+      ? (W & D) & { apiAction?: "update" }
       : never
-  : never;
-
-/**
- * Extracts and merges the upsert data type from a Prisma relation field
- * Combines where, create, and update fields into a single type
- * @template T - The relation field type
- * @returns Merged type of where & (create | update) fields, or never if not present
- */
-type ExtractUpsertType<T> = T extends { upsert?: infer U }
-  ? U extends Array<infer Item>
-    ? Item extends { where: infer W; create: infer C; update: infer D }
-      ? W & (C | D)
-      : never
-    : U extends { where: infer W; create: infer C; update: infer D }
-      ? W & (C | D)
-      : never
-  : never;
-
-/**
- * Extracts the connectOrCreate data type from a Prisma relation field
- * @template T - The relation field type
- * @returns Union of where and create types, or never if not present
- */
-type ExtractConnectOrCreateType<T> = T extends { connectOrCreate?: infer C }
-  ? Unpack<C> extends { where: infer W; create: infer Cr }
-    ? W | Cr
-    : never
   : never;
 
 /**
@@ -105,64 +107,93 @@ type ExtractConnectOrCreateType<T> = T extends { connectOrCreate?: infer C }
  * @template T - The Prisma relation field type
  */
 type FlattenRelationField<T> =
+  /**
+   * Create Operation - Creates a new related entity
+   * Extracts the 'create' data type and recursively flattens nested relations
+   * @example { name: "New Item", apiAction?: "create" }
+   */
   | (ExtractCreateType<T> extends never
       ? never
-      : FlattenRelations<ExtractCreateType<T>> & { apiAction?: "create" })
-  | (ExtractConnectType<T> extends never
+      : FlattenRelations<ExtractCreateType<T>>)
+  /**
+   * Connect Operation - Links to an existing entity using unique fields
+   * Extracts the 'connect' data type (typically unique identifiers like id, email, etc.)
+   * @example { id: 123, apiAction?: "connect" } or { email: "user@example.com", apiAction?: "connect" }
+   */
+  | (ExtractConnectType<T, "connect"> extends never
       ? never
-      : FlattenRelations<ExtractConnectType<T>> & {
-          apiAction?: "create" | "connect";
-        })
+      : FlattenRelations<ExtractConnectType<T, "connect">>)
+  /**
+   * Update Operation - Modifies an existing related entity
+   * Combines the 'where' clause and 'data' fields into a single flat object
+   * @example { id: 123, name: "Updated Name", apiAction?: "update" }
+   */
   | (ExtractUpdateType<T> extends never
       ? never
-      : FlattenRelations<ExtractUpdateType<T>> & { apiAction?: "update" })
-  | (T extends { delete?: any }
-      ? { apiAction: "delete" } & ExtractConnectType<T>
+      : FlattenRelations<ExtractUpdateType<T>> & {
+          apiAction?: "update";
+        })
+  /**
+   * Delete Operation - Removes a related entity from the database
+   * Requires unique identifier(s) and explicit apiAction: "delete"
+   * For arrays, automatically uses deleteMany; for singular relations uses delete
+   * @example { id: 123, apiAction: "delete" }
+   */
+  | (T extends {
+      delete?: any;
+    }
+      ? {
+          apiAction: "delete";
+        } & ExtractConnectType<T, "delete">
       : never)
-  | (T extends { disconnect?: any }
-      ? { apiAction: "disconnect" } & ExtractConnectType<T>
+  /**
+   * Disconnect Operation - Breaks the relationship without deleting the entity
+   * Requires unique identifier(s) and explicit apiAction: "disconnect"
+   * Only available for optional relations
+   * @example { id: 123, apiAction: "disconnect" }
+   */
+  | (T extends {
+      disconnect?: any;
+    }
+      ? {
+          apiAction: "disconnect";
+        } & ExtractConnectType<T, "disconnect">
       : never)
-  | (T extends { set?: infer S } ? Unpack<S> & { apiAction?: "set" } : never)
-  | (T extends { deleteMany?: any }
-      ? { apiAction: "deleteMany" } & ExtractConnectType<T>
+  /**
+   * Set Operation - Replaces all related entities with a new set
+   * Typically used for many-to-many relations to completely replace the relation set
+   * @example { id: 456, apiAction?: "set" }
+   */
+  | (T extends {
+      set?: infer S;
+    }
+      ? Unpack<S> & {
+          apiAction?: "set";
+        }
+      : never)
+  /**
+   * Delete Many Operation - Removes multiple related entities matching criteria
+   * Requires unique identifier(s) and explicit apiAction: "deleteMany"
+   * Used for bulk deletion of related records
+   * @example { id: 123, apiAction: "deleteMany" }
+   */
+  | (T extends {
+      deleteMany?: any;
+    }
+      ? {
+          apiAction: "deleteMany";
+        } & ExtractConnectType<T, "deleteMany">
       : never);
 
-/**
- * Determines if a relation field is an array (one-to-many) relation
- * Checks if any of create, connect, or update operations accept arrays
- * @template T - The relation field type
- * @returns true if the relation is an array relation, false otherwise
- */
-type IsArrayRelation<T> =
-  Exclude<T, undefined> extends
-    | { create?: Array<any> }
-    | { create?: (infer U)[] }
-    ? true
-    : T extends { connect?: Array<any> } | { connect?: (infer U)[] }
-      ? true
-      : T extends { update?: Array<any> } | { update?: (infer U)[] }
-        ? true
-        : false;
-
-/**
- * Recursively flattens all relation fields in a Prisma input type
- * Transforms nested Prisma operations into a simpler, flattened structure
- * Preserves non-relation fields and handles nested objects recursively
- * For singular relations, uses XOR to ensure mutual exclusivity between flattened and Prisma formats
- * @template T - The Prisma input type to flatten
- */
 type FlattenRelations<T> = {
   [K in keyof T]: IsRelationField<T[K]> extends true
-    ? IsArrayRelation<T[K]> extends true
-      ? Array<FlattenRelationField<T[K]>>
-      : XOR<FlattenRelationField<T[K]>, T[K]>
+    ? Exclude<XOR<FlattenRelationField<T[K]>, T[K]>, "AND">
     : T[K] extends object
       ? T[K] extends Date | null | undefined
         ? T[K]
         : FlattenRelations<T[K]>
       : T[K];
 };
-
 /**
  * Flattens Prisma relation inputs into a simpler, developer-friendly format
  *
