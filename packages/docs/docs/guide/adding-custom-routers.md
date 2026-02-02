@@ -494,12 +494,12 @@ router.post(
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
 
-OpenAPI documentation requires manual configuration. See the [OpenAPI/Swagger Guide](/docs/core-concepts/swagger-api-documentation) for v1.3 setup.
+OpenAPI documentation requires manual configuration. See the [OpenAPI/Swagger Guide](/docs/core-concepts/open-api-documentation) for v1.3 setup.
 
 </TabItem>
 </Tabs>
 
-Learn more: [OpenAPI/Swagger Guide](/docs/core-concepts/swagger-api-documentation)
+Learn more: [OpenAPI/Swagger Guide](/docs/core-concepts/open-api-documentation)
 
 ### Other ArkosRouter Features
 
@@ -870,4 +870,4 @@ Now that you understand custom routing, explore related topics:
 - **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Zod and class-validator
 - **[Authentication System](/docs/core-concepts/authentication-system)** - Static and Dynamic RBAC
 - **[File Upload Guide](/docs/core-concepts/file-uploads)** - Handle file uploads
-- **[OpenAPI/Swagger Guide](/docs/core-concepts/swagger-api-documentation)** - Auto-generate API docs
+- **[OpenAPI/Swagger Guide](/docs/core-concepts/open-api-documentation)** - Auto-generate API docs

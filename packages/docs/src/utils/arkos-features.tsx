@@ -183,7 +183,7 @@ export const arkosFeatures = [
     iconColor: "#eab308",
     outline: "hover:outline-yellow-500/50",
     titleHover: "group-hover:text-yellow-500/80",
-    to: "/docs/core-concepts/swagger-api-documentation",
+    to: "/docs/core-concepts/open-api-documentation",
     sideContent: (
       <div className="">
         <img

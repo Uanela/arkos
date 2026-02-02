@@ -1414,7 +1414,7 @@ Your Schemas and DTOs automatically generate JSON Schema for API documentation. 
           maximum: 100
 ```
 
-Learn more about API documentation at [**Swagger API Documentation**](/docs/core-concepts/swagger-api-documentation).
+Learn more about API documentation at [**Swagger API Documentation**](/docs/core-concepts/open-api-documentation).
 
 ## Validation Flow Summary
 
