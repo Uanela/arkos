@@ -119,7 +119,7 @@ const userData: ArkosPrismaInput<Prisma.UserCreateInput> = {
 - Works recursively for deeply nested relations
 - Perfect for interceptors and custom validation
 
-This pairs perfectly with Arkos's built-in relation handling that's been available since the beginning. Learn more at [Handling Prisma Relation Fields](https://www.arkosjs.com/docs/advanced-guide/handling-prisma-relation-fields).
+This pairs perfectly with Arkos's built-in relation handling that's been available since the beginning. Learn more at [Handling Prisma Relation Fields](https://www.arkosjs.com/docs/advanced-guide/handling-prisma-relations).
 
 **Use case example** - Type-safe interceptor:
 
