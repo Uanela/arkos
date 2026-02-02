@@ -316,6 +316,125 @@ Valid `apiAction` values:
 - `"delete"`: Remove relation (uses `deleteMany` for arrays automatically)
 - `"disconnect"`: Disconnect without deleting
 
+## Programmatic Usage with Type Safety
+
+> Available from `v1.5.0-beta`
+
+While Arkos automatically handles relation fields in auto-generated endpoints, you can also use the same flattened format programmatically in your custom code with full TypeScript type safety using `ArkosPrismaInput`.
+
+### Type-Safe Relation Handling
+```typescript
+import { ArkosPrismaInput } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
+import { BaseService } from "arkos/services";
+
+const productService = new BaseService("product");
+
+// Define type-safe input
+type CreateProductInput = ArkosPrismaInput<Prisma.ProductCreateInput>;
+
+// Use flattened format programmatically
+const createProductWithRelations = async (data: CreateProductInput) => {
+  const productData: CreateProductInput = {
+    name: data.name,
+    price: data.price,
+    category: {
+      id: data.categoryId  // Auto-converts to: { connect: { id: ... } }
+    },
+    attributes: data.attributes?.map(attr => ({
+      name: attr.name,
+      value: attr.value  // Auto-converts to: { create: [...] }
+    })),
+    tags: data.existingTagIds?.map(id => ({
+      id  // Auto-converts to: { connect: [...] }
+    }))
+  };
+
+  // Arkos automatically handles the flattened format
+  return await productService.createOne(productData);
+};
+```
+
+### Custom Interceptors with Type Safety
+```typescript
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { Prisma } from "@prisma/client";
+import { ArkosPrismaInput } from "arkos/prisma";
+
+type CreateOrderBody = ArkosPrismaInput<Prisma.OrderCreateInput>;
+
+export const beforeCreateOrder = [
+  async (
+    req: ArkosRequest<any, any, CreateOrderBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    // Type-safe manipulation of flattened relations
+    req.body.customer = { id: req.user!.id };
+    
+    // Add default status to all order items
+    if (req.body.items) {
+      req.body.items = req.body.items.map(item => ({
+        ...item,
+        status: "pending"
+      }));
+    }
+    
+    next();
+  }
+];
+```
+
+### Complex Programmatic Relations
+```typescript
+import { ArkosPrismaInput } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
+
+type UpdatePostInput = ArkosPrismaInput<Prisma.PostUpdateInput>;
+
+// Build complex relation operations programmatically
+const updatePostWithComments = async (
+  postId: number,
+  newComments: Array<{ content: string; authorId: number }>,
+  updateComments: Array<{ id: number; content: string }>,
+  deleteCommentIds: number[]
+) => {
+  const updateData: UpdatePostInput = {
+    comments: [
+      // Create new comments
+      ...newComments.map(comment => ({
+        content: comment.content,
+        author: { id: comment.authorId }
+      })),
+      
+      // Update existing comments
+      ...updateComments.map(comment => ({
+        id: comment.id,
+        content: comment.content,
+        apiAction: "update" as const
+      })),
+      
+      // Delete comments
+      ...deleteCommentIds.map(id => ({
+        id,
+        apiAction: "delete" as const
+      }))
+    ]
+  };
+
+  return await postService.updateOne({ id: postId }, updateData);
+};
+```
+
+**Benefits:**
+
+- **Type Safety**: Full TypeScript inference for all relation operations
+- **Cleaner Code**: Use intuitive flattened format instead of nested Prisma operations
+- **Auto-Detection**: Let Arkos determine the operation based on fields present
+- **Explicit Control**: Use `apiAction` when needed for disambiguation
+
+Learn more about the `ArkosPrismaInput` utility type in the [API Reference](/docs/api-reference/arkos-prisma-input).
+
 ## Integration with Arkos
 
 This utility is automatically integrated into Arkos' base services. If you're using the framework's default base services methods, the relation handling happens automatically:
