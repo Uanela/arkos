@@ -388,7 +388,7 @@ Refresh your knowledge about `ArkosRouter` by reading it's api reference at [Ark
 
 When file uploads are defined, Arkos automatically adds `multipart/form-data` request body documentation with proper field definitions - no manual OpenAPI configuration needed.
 
-Learn more: [Swagger API Documentation](https://www.arkosjs.com/docs/core-concepts/swagger-api-documentation)
+Learn more: [Swagger API Documentation](https://www.arkosjs.com/docs/core-concepts/open-api-documentation)
 
 ### 10. Enhanced Email Service
 

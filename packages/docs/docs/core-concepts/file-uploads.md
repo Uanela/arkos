@@ -129,6 +129,10 @@ console.log(user.profilePhoto); // "/uploads/user-profiles/1234567890-photo.jpg"
 4. Prisma creates the user with the file path included
 5. If creation fails and `deleteOnError: true`, the uploaded file is cleaned up
 
+:::tip OpenAPI Documentation (v1.4.0)
+One of the greatest advantage of using `ArkosRouter` for file uploads is that it will automatically sync with your OpenAPI documentation, basically arkos will create an `requestBody` of type [`multipart/form-data`](https://swagger.io/docs/specification/v3_0/describing-request-body/multipart-requests/) so that you can easily test your api without the need to write it from scratch. Understand how it works by reading [OpenAPI Documentation File Upload Guide](/docs/core-concepts/open-api-documentation#arkosrouter-openapi-integration-with-file-uploads).
+:::
+
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 (Old Way)">
 

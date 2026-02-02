@@ -549,7 +549,7 @@ export type ArkosConfig = {
    *  }
    * })
    * ```
-   * @see {@link https://www.arkosjs.com/docs/core-concepts/swagger-api-documentation}
+   * @see {@link https://www.arkosjs.com/docs/core-concepts/open-api-documentation}
    */
   swagger?: {
     /**

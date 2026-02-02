@@ -663,7 +663,7 @@ router.get(
 - Documenting responses
 - Endpoints without validation
 
-For complete OpenAPI setup and configuration, see the [Swagger API Documentation Guide](/docs/core-concepts/swagger-api-documentation).
+For complete OpenAPI setup and configuration, see the [Swagger API Documentation Guide](/docs/core-concepts/open-api-documentation).
 
 ## Query Parsing
 
@@ -1041,5 +1041,5 @@ export default router;
 - **[Authentication System](/docs/core-concepts/authentication-system)** - Complete authentication setup
 - **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Validation with Zod and class-validator
 - **[File Upload Guide](/docs/core-concepts/file-uploads)** - File upload configuration
-- **[Swagger API Documentation](/docs/core-concepts/swagger-api-documentation)** - OpenAPI documentation setup
+- **[Swagger API Documentation](/docs/core-concepts/open-api-documentation)** - OpenAPI documentation setup
 - **[Request Query Parameters](/docs/guide/request-query-parameters)** - Advanced filtering and querying
