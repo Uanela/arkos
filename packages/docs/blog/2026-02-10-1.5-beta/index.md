@@ -1,6 +1,6 @@
 ---
 slug: 1.5-beta
-title: Arkos.js v1.5.0-beta Is Out
+title: Annoucing Arkos.js v1.5.0-beta
 authors: [uanela]
 tags: [arkosjs, superm7, webpropax, finegrained, swagger, servicehooks]
 ---
@@ -84,30 +84,30 @@ import { ArkosPrismaInput } from "arkos/prisma";
 
 // Traditional Prisma way (verbose)
 const userData: Prisma.UserCreateInput = {
-  name: "John Doe",
-  email: "john@example.com",
-  posts: {
-    create: [{ title: "First Post" }],
-    connect: [{ id: 1 }],
-    update: [
-      {
-        where: { id: 2 },
-        data: { title: "Updated Post" },
-      },
-    ],
-  },
+    name: "John Doe",
+    email: "john@example.com",
+    posts: {
+        create: [{ title: "First Post" }],
+        connect: [{ id: 1 }],
+        update: [
+            {
+                where: { id: 2 },
+                data: { title: "Updated Post" },
+            },
+        ],
+    },
 };
 
 // Arkos way (intuitive) ✨
 const userData: ArkosPrismaInput<Prisma.UserCreateInput> = {
-  name: "John Doe",
-  email: "john@example.com",
-  posts: [
-    { title: "First Post" }, // auto-detects: create
-    { id: 1 }, // auto-detects: connect
-    { id: 2, title: "Updated Post" }, // auto-detects: update
-    { id: 3, apiAction: "delete" }, // explicit operation
-  ],
+    name: "John Doe",
+    email: "john@example.com",
+    posts: [
+        { title: "First Post" }, // auto-detects: create
+        { id: 1 }, // auto-detects: connect
+        { id: 2, title: "Updated Post" }, // auto-detects: update
+        { id: 3, apiAction: "delete" }, // explicit operation
+    ],
 };
 ```
 
@@ -131,18 +131,18 @@ import { ArkosPrismaInput } from "arkos/prisma";
 type CreateUserBody = ArkosPrismaInput<Prisma.UserCreateInput>;
 
 export const addDefaults = async (
-  req: ArkosRequest<any, any, CreateUserBody>,
-  res: ArkosResponse,
-  next: NextFunction
+    req: ArkosRequest<any, any, CreateUserBody>,
+    res: ArkosResponse,
+    next: NextFunction
 ) => {
-  // Type-safe access to flattened relation structure
-  if (!req.body.profile) {
-    req.body.profile = {
-      bio: "New user",
-      isPublic: true,
-    };
-  }
-  next();
+    // Type-safe access to flattened relation structure
+    if (!req.body.profile) {
+        req.body.profile = {
+            bio: "New user",
+            isPublic: true,
+        };
+    }
+    next();
 };
 ```
 
@@ -184,12 +184,12 @@ POST /api/users
 ```typescript
 // arkos.config.ts
 export default arkosConfig = {
-  validation: {
-    resolver: "zod", // or "class-validator"
-    validationOptions: {
-      forbidNonWhitelisted: true, // ✅ Now default for both!
+    validation: {
+        resolver: "zod", // or "class-validator"
+        validationOptions: {
+            forbidNonWhitelisted: true, // ✅ Now default for both!
+        },
     },
-  },
 } satisfies ArkosConfig;
 ```
 
@@ -237,52 +237,52 @@ The new auth config generation creates a clean separation between authentication
 // Generated with: npx arkos generate auth-configs -m post
 
 export const postAccessControl = {
-  Publish: {
-    roles: ["Admin", "Editor"],
-    name: "Publish Post",
-    description: "Permission to publish post records",
-  },
-  Create: {
-    roles: ["Admin", "Editor"],
-    name: "Create Post",
-    description: "Permission to create new post records",
-  },
-  Update: {
-    roles: ["Admin", "Editor", "Author"],
-    name: "Update Post",
-    description: "Permission to update existing post records",
-  },
-  Delete: {
-    roles: ["Admin"],
-    name: "Delete Post",
-    description: "Permission to delete post records",
-  },
-  View: {
-    roles: ["*"], // Wildcard: all authenticated users
-    name: "View Post",
-    description: "Permission to view post records",
-  },
+    Publish: {
+        roles: ["Admin", "Editor"],
+        name: "Publish Post",
+        description: "Permission to publish post records",
+    },
+    Create: {
+        roles: ["Admin", "Editor"],
+        name: "Create Post",
+        description: "Permission to create new post records",
+    },
+    Update: {
+        roles: ["Admin", "Editor", "Author"],
+        name: "Update Post",
+        description: "Permission to update existing post records",
+    },
+    Delete: {
+        roles: ["Admin"],
+        name: "Delete Post",
+        description: "Permission to delete post records",
+    },
+    View: {
+        roles: ["*"], // Wildcard: all authenticated users
+        name: "View Post",
+        description: "Permission to view post records",
+    },
 } as const satisfies AuthConfigs["accessControl"];
 
 // Helper function
 function createPostPermission(action: string) {
-  return authService.permission(action, "post", postAccessControl);
+    return authService.permission(action, "post", postAccessControl);
 }
 
 // Auto-generated permission helpers
 export const postPermissions = {
-  canCreate: createPostPermission("Create"),
-  canUpdate: createPostPermission("Update"),
-  canDelete: createPostPermission("Delete"),
-  canView: createPostPermission("View"),
+    canCreate: createPostPermission("Create"),
+    canUpdate: createPostPermission("Update"),
+    canDelete: createPostPermission("Delete"),
+    canView: createPostPermission("View"),
 };
 
 // Separated authentication control
 export const postAuthenticationControl = {
-  Create: true,
-  Update: true,
-  Delete: true,
-  View: true,
+    Create: true,
+    Update: true,
+    Delete: true,
+    View: true,
 };
 ```
 
@@ -295,15 +295,15 @@ import { postPermissions } from "./post.auth";
 const router = ArkosRouter();
 
 router.post(
-  {
-    path: "/api/posts/publish",
-    authentication: {
-      resource: "post",
-      action: "Create",
-      rule: postPermissions.Publish,
+    {
+        path: "/api/posts/publish",
+        authentication: {
+            resource: "post",
+            action: "Create",
+            rule: postPermissions.Publish,
+        },
     },
-  },
-  postController.publish
+    postController.publish
 );
 ```
 
@@ -358,27 +358,27 @@ File uploads now support **required fields** and **auto-generate OpenAPI documen
 
 ```typescript
 router.post(
-  {
-    path: "/api/products",
-    experimental: {
-      uploads: {
-        type: "fields",
-        fields: [
-          {
-            name: "thumbnail",
-            maxCount: 1,
-            required: true, // ✅ New: Mark as required (new default)
-          },
-          {
-            name: "gallery",
-            maxCount: 5,
-            required: false,
-          },
-        ],
-      },
+    {
+        path: "/api/products",
+        experimental: {
+            uploads: {
+                type: "fields",
+                fields: [
+                    {
+                        name: "thumbnail",
+                        maxCount: 1,
+                        required: true, // ✅ New: Mark as required (new default)
+                    },
+                    {
+                        name: "gallery",
+                        maxCount: 5,
+                        required: false,
+                    },
+                ],
+            },
+        },
     },
-  },
-  productController.create
+    productController.create
 );
 ```
 
@@ -405,9 +405,9 @@ await emailService.transport.verify();
 
 // Send with familiar Nodemailer-like API
 await emailService.send({
-  to: "user@example.com",
-  subject: "Welcome!",
-  html: "<h1>Welcome to our app</h1>",
+    to: "user@example.com",
+    subject: "Welcome!",
+    html: "<h1>Welcome to our app</h1>",
 });
 ```
 
@@ -441,13 +441,13 @@ Move your configuration to `arkos.config.ts`:
 import { ArkosConfig } from "arkos";
 
 const arkosConfig: ArkosConfig = {
-  validation: {
-    resolver: "zod",
-    validationOptions: {
-      forbidNonWhitelisted: true, // Now default for both Zod & class-validator
+    validation: {
+        resolver: "zod",
+        validationOptions: {
+            forbidNonWhitelisted: true, // Now default for both Zod & class-validator
+        },
     },
-  },
-  // ... rest of your config
+    // ... rest of your config
 };
 
 export default arkosConfig;
