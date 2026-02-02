@@ -99,7 +99,6 @@ The type utility supports all Prisma relation operations:
 - **`update`** - Update existing related records
 - **`delete`** - Delete related records
 - **`disconnect`** - Remove relationship without deleting
-- **`set`** - Replace all relations with new set
 - **`deleteMany`** - Delete multiple related records
 
 ## Usage Examples
@@ -200,9 +199,6 @@ const userUpdate: ArkosPrismaInput<Prisma.UserUpdateInput> = {
     
     // Disconnect (remove relation without deleting)
     { id: 4, apiAction: "disconnect" },
-    
-    // Set (replace all relations)
-    { apiAction: "set", id: 5 }
   ]
 };
 ```
