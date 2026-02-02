@@ -1250,6 +1250,89 @@ Each part serves a different purpose and requires validation:
 Validating only `req.body` while ignoring `req.query` and `req.params` leaves security gaps!
 :::
 
+## File Upload Validation
+
+> Available from `v1.4.0-beta`
+
+When combining file uploads with request body validation, Arkos handles validation in a specific order to ensure both file constraints and data validation work correctly.
+
+### Validation Order
+
+1. **File upload validation** happens first (checks file presence, size, type)
+2. **Request body validation** happens second (validates text fields via Schema/DTO)
+3. **Merged result** is available in `req.body` with both validated data and file metadata according to your configuration
+
+:::warning Validation Separation
+Even though Arkos generates a unified `multipart/form-data` OpenAPI schema, **file fields and text fields are validated separately**. You must **not** include upload field names in your validation Schema/DTO.
+
+**Incorrect:**
+```typescript
+// ❌ DON'T DO THIS
+const CreateProductSchema = z.object({
+  name: z.string(),
+  price: z.number(),
+  thumbnail: z.any(), // ← Will fail! File already validated
+});
+
+router.post({
+  path: "/api/products",
+  validation: { body: CreateProductSchema },
+  experimental: {
+    uploads: { type: "single", field: "thumbnail" }
+  }
+}, handler);
+```
+
+**Correct:**
+```typescript
+// ✓ CORRECT
+const CreateProductSchema = z.object({
+  name: z.string(),
+  price: z.number(),
+  // No thumbnail field - it's handled by uploads config
+});
+
+router.post({
+  path: "/api/products",
+  validation: { body: CreateProductSchema },
+  experimental: {
+    uploads: { type: "single", field: "thumbnail" }
+  }
+}, handler);
+```
+:::
+
+### Accessing Validated Data
+
+After both validations complete, access file data through the standard Multer properties:
+```typescript
+import { ArkosRequest, ArkosResponse } from "arkos";
+
+interface CreateProductBody {
+  name: string;
+  price: number;
+  thumbnail: string; // This can be here is it is just a TS type
+  // and by the time it reaches your handler it will be populated
+}
+
+const handler = async (
+  req: ArkosRequest<any, any, CreateProductBody>,
+  res: ArkosResponse
+) => {
+  // Validated text fields
+  const { name, price, thumbnail } = req.body;
+
+  console.log(thumbnail) // Will log the file URL according to your config
+
+  // File data (validated separately)
+  const thumbnail = req.file; // single upload
+  // or
+  const files = req.files; // multiple uploads
+};
+```
+
+Learn more about file upload configuration and OpenAPI integration in the [File Uploads Guide](/docs/core-concepts/file-uploads) and [OpenAPI File Upload Documentation](/docs/core-concepts/open-api-documentation#arkosrouter-openapi-integration-with-file-uploads).
+
 ## Validation Methods (Manual Usage)
 
 For custom validation outside declarative configuration:
