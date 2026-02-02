@@ -49,15 +49,13 @@ export function generateRelativePath(filePath: string, uploadDir: string) {
   if (baseUploadDir.startsWith("..")) {
     return path.join(uploadDir, path.basename(filePath));
   } else {
-    return fullCleanCwd(
-      filePath
-        .replace(`${baseUploadDir}/`, "")
-        .replace(`/${baseUploadDir}/`, "")
-        .replace(`/${baseUploadDir}`, "")
-        .replace(`${baseUploadDir}`, "")
-        .replaceAll("\\", "/")
-        .replaceAll("//", "/")
-    );
+    return fullCleanCwd(filePath)
+      .replace(`${baseUploadDir}/`, "")
+      .replace(`/${baseUploadDir}/`, "")
+      .replace(`/${baseUploadDir}`, "")
+      .replace(`${baseUploadDir}`, "")
+      .replaceAll("\\", "/")
+      .replaceAll("//", "/");
   }
 }
 
