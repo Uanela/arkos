@@ -8,6 +8,7 @@ import path from "path";
 export default function prismaGenerateCommand() {
   const content = `
 import { ServiceBaseContext } from "arkos/services";
+import { ArkosPrismaInput } from "arkos/prisma";
 import { Prisma, PrismaClient } from "@prisma/client"
 
 export interface PrismaField {
