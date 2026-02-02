@@ -785,12 +785,18 @@ The `experimental.uploads` configuration object supports the following options:
 | `type`             | `"single" \| "array" \| "fields"`        | Upload type                              | Required                      |
 | `field`            | `string`                                 | Form field name (for single/array)       | Required for single/array     |
 | `fields`           | `Array<{name: string, maxCount: number}>` | Field configs (for fields type)          | Required for fields type      |
-| `uploadDir`        | `string`                                 | Directory to store files                 | Auto-detected by MIME type    |
+| `required`         | `boolean` (from 1.5.0+)                  | Require or not                         | true                       |
+ `uploadDir`        | `string`                                 | Directory to store files                 | Auto-detected by MIME type    |
 | `maxSize`          | `number`                                 | Max file size in bytes                   | From global config            |
 | `maxCount`         | `number`                                 | Max files (for array type)               | Required for array            |
 | `allowedFileTypes` | `string[] \| RegExp`                     | Allowed file extensions/patterns         | From global config            |
 | `attachToBody`     | `"pathname" \| "url" \| "file" \| false` | How to attach file info to req.body      | `"pathname"`                  |
 | `deleteOnError`    | `boolean`                                | Delete uploaded files if request fails   | `false`                       |
+
+
+:::tip New Required Flag
+Notice that the `required` flag defaults to true, if ommited the file will be required yet, so if you want to make it optional pass `required: false`. Is important to know that this feature of `required` flag was added at [v1.5.0+](/blog/1.5-beta).
+:::
 
 ### Global Configuration
 
