@@ -575,7 +575,7 @@ export const beforeCreateOne = [
     }
 
     // Reserve inventory (can be rolled back on error)
-    req.reservationId = await reserveInventory(req.body.items);
+    res.locals.reservationId = await reserveInventory(req.body.items);
 
     next();
   },
@@ -584,8 +584,8 @@ export const beforeCreateOne = [
 export const onCreateOneError = [
   async (err, req, res, next) => {
     // Rollback inventory reservation
-    if (req.reservationId) {
-      await releaseReservation(req.reservationId).catch(console.error);
+    if (res.locals.reservationId) {
+      await releaseReservation(res.locals.reservationId).catch(console.error);
     }
 
     // Log for monitoring
