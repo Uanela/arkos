@@ -5,9 +5,7 @@ sidebar_position: 1
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Endpoints Auto Generation
-
-## How Arkos Generates API Routes
+# Endpoints Generation
 
 Arkos automatically generates a complete RESTful API for each model defined in your Prisma schema, eliminating the need to manually create routes, controllers, and services. Let's look at how this powerful feature works behind the scenes.
 

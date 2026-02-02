@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 # Error Handling
 
-**Arkos** includes a powerful error handling system that automatically processes all errors thrown within your application, transforms them into consistent, meaningful response formats, and manages environment-specific behavior. Starting with [**v1.5.0-beta**](/blog/1.5-beta), error messages are more actionable and human-readable than ever. The arkos error handler system is an global Express middleware that captures all errors passed through your application (via `next(error)` or thrown errors). It processes these errors differently based on your build environment, maps specific database and authentication errors to friendly messages, and sends appropriate responses to clients.
+**Arkos** includes a powerful error handling system that automatically processes all errors thrown within your application, transforms them into consistent, meaningful response formats, and manages environment-specific behavior. Starting with [**v1.5.0-beta**](/blog/1.5-beta), error messages are more actionable and human-readable than ever. The arkos error handler system is an [global Express middleware](https://expressjs.com/en/guide/error-handling.html#the-default-error-handler) that captures all errors passed through your application (via `next(error)` or thrown errors). It processes these errors differently based on your build environment, maps specific database and authentication errors to friendly messages, and sends appropriate responses to clients.
 
 ## Key Features
 
@@ -379,7 +379,9 @@ export const onCreateOneError = [
 ];
 ```
 
-**Important:** Error interceptors must have exactly **4 parameters** `(err, req, res, next)` - this is an Express requirement. Without all 4 parameters, Express won't recognize it as an error middleware.
+:::tip: Important
+Error interceptors must have exactly **4 parameters** `(err, req, res, next)` - this is an Express requirement. Without all 4 parameters, Express won't recognize it as an error middleware. Learn more about [Writing Express Error Handlers](https://expressjs.com/en/guide/error-handling.html#writing-error-handlers). 
+:::
 
 ### Practical Error Handling Example
 
@@ -512,14 +514,14 @@ You only need `catchAsync` if you're using **standard Express routers** (not Ark
 
 ## Environment Configuration
 
-The global error handler uses the `ARKOS_BUILD` environment variable (set automatically during `npx arkos build`) to determine behavior:
+The global error handler usess an internal mechanism (set automatically during [`npx arkos build`](/docs/cli/arkos-cli#production-build)) to determine environment behavior:
 
-**Development Mode** (`ARKOS_BUILD !== "true"`):
+**Development Mode**:
 - Full error details including stack traces
 - All error metadata exposed
 - Helpful for debugging
 
-**Production Mode** (`ARKOS_BUILD === "true"`):
+**Production Mode**:
 - Sanitized error messages
 - Stack traces hidden
 - Only operational errors show details
