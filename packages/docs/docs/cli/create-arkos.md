@@ -6,7 +6,7 @@ title: Create Arkos CLI
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# create-arkos CLI
+# create-arkos
 
 The official scaffolding tool for Arkos.js projects, providing an interactive setup experience to generate production-ready RESTful APIs with zero configuration. Get up and running with automatic CRUD operations, authentication, validation, and more - all built on top of Express.js and Prisma.
 
