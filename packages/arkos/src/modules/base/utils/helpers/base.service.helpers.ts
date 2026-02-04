@@ -57,8 +57,10 @@ export function isPrismaRelationFormat(obj: Record<string, any>): boolean {
 
 export function throwErrorIfApiActionIsInvalid(apiAction: string) {
   if (apiAction && !prismaOperations.includes(apiAction))
-    throw Error(
-      `Validation Error: Unknown value "${apiAction}" for apiAction field, available values are ${prismaOperations.join(", ")}.`
+    throw new AppError(
+      `Unknown value "${apiAction}" for apiAction field, available values are ${prismaOperations.join(", ")}.`,
+      400,
+      "InvalidApiAction"
     );
 }
 
@@ -91,7 +93,8 @@ export function throwErrorIfApiActionIsInvalid(apiAction: string) {
 export function handleRelationFieldsInBody(
   body: Record<string, any>,
   relationFields: ModelGroupRelationFields,
-  ignoreActions: string[] = []
+  ignoreActions: string[] = [],
+  isRelation: boolean = false
 ): Record<string, any> {
   body = JSON.parse(JSON.stringify(body));
   let mutableBody = { ...body };
@@ -142,7 +145,8 @@ export function handleRelationFieldsInBody(
           dataToPush = handleRelationFieldsInBody(
             dataToPush,
             nestedRelations,
-            ignoreActions
+            ignoreActions,
+            true
           );
         }
 
@@ -187,7 +191,8 @@ export function handleRelationFieldsInBody(
           dataToPush = handleRelationFieldsInBody(
             data,
             nestedRelations,
-            ignoreActions
+            ignoreActions,
+            true
           );
         }
 
@@ -251,7 +256,8 @@ export function handleRelationFieldsInBody(
         dataToCreate = handleRelationFieldsInBody(
           dataToCreate,
           nestedRelations,
-          ignoreActions
+          ignoreActions,
+          true
         );
       }
 
@@ -267,7 +273,8 @@ export function handleRelationFieldsInBody(
         dataToUpdate = handleRelationFieldsInBody(
           data,
           nestedRelations,
-          ignoreActions
+          ignoreActions,
+          true
         );
       }
 
@@ -280,10 +287,10 @@ export function handleRelationFieldsInBody(
     }
   });
 
-  if (mutableBody?.apiAction) {
+  if (mutableBody?.apiAction && !isRelation) {
     throw new AppError(
-      "Validation Error: Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple.",
-      500,
+      "Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple.",
+      400,
       {
         data: {
           ...body,
