@@ -58,7 +58,7 @@ export function isPrismaRelationFormat(obj: Record<string, any>): boolean {
 export function throwErrorIfApiActionIsInvalid(apiAction: string) {
   if (apiAction && !prismaOperations.includes(apiAction))
     throw Error(
-      `Validation Error: Unknown value "${apiAction}" for apiAction field, available values are ${prismaOperations.join(", ")}.`
+      `Unknown value "${apiAction}" for apiAction field, available values are ${prismaOperations.join(", ")}.`
     );
 }
 
@@ -282,7 +282,7 @@ export function handleRelationFieldsInBody(
 
   if (mutableBody?.apiAction) {
     throw new AppError(
-      "Validation Error: Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple.",
+      "Invalid usage of apiAction field, it must only be used on relation fields whether single or multiple.",
       500,
       {
         data: {
