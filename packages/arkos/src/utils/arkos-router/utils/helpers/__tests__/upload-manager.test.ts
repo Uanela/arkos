@@ -264,6 +264,34 @@ describe("UploadManager", () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
+    it("should attach url to body for single file in Windows OS", () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        attachToBody: "pathname" as const,
+      };
+
+      const cwd = "S:\\projects\\store\\backend";
+      jest.spyOn(process, "cwd").mockImplementation(() => cwd);
+      mockReq.file = {
+        path:
+          cwd +
+          "\\uploads\\companies\\logos\\company-1770044939233-8726529.png",
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockReq.file.pathname).toBe(
+        "/uploads/companies/logos/company-1770044939233-8726529.png"
+      );
+      expect(mockReq.file.url).toBe(
+        "http://localhost:3000/api/uploads/companies/logos/company-1770044939233-8726529.png"
+      );
+      expect(mockReq.body).toBeDefined();
+      expect(mockNext).toHaveBeenCalled();
+    });
+
     it("should attach pathname to body for single file in windows", () => {
       const config = {
         type: "single" as const,

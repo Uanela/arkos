@@ -236,11 +236,11 @@ export default class APIFeatures {
       delete this.searchParams.include;
     }
 
-    this._validateNoPasswordExposure(finalSelect, finalInclude, finalOmit);
+    // this._validateNoPasswordExposure(finalSelect, finalInclude, finalOmit);
 
     // ALWAYS protect password field in finalOmit
-    if (finalOmit.password === false)
-      throw new AppError("Cannot disable password omission protection", 400);
+    // if (finalOmit.password === false)
+    //   throw new AppError("Cannot disable password omission protection", 400);
 
     if (this.modelName?.toLowerCase?.() === "user") finalOmit.password = true;
 
