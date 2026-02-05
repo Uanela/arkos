@@ -288,7 +288,6 @@ class UploadManager {
             req.headers["x-upload-dir"] as string
           );
 
-          console.log(relativePath, "thepath");
           return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${
             relativePath.startsWith("/") ? relativePath : `/${relativePath}`
           }`;
