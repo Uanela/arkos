@@ -62,7 +62,7 @@ export async function devCommand(options: DevOptions = {}) {
         execSync(`npx arkos prisma generate`);
       } else
         throw Error(
-          'Missing BaseService types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client, see more at https://www.arkosjs.com/docs/cli/built-in-cli#typescript-types-generation.'
+          'Missing BaseService types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client, see more at https://www.arkosjs.com/docs/cli/arkos-cli#typescript-types-generation.'
         );
     }
 

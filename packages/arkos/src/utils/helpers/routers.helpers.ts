@@ -80,12 +80,11 @@ export function getAuthenticationConfig(
         authenticationControl[action] !== false)) ||
     (!authenticationControl && authenticationControl !== false)
   ) {
+    const rule: any = authConfigs?.accessControl;
     return {
       resource: kebabCase(pluralize.singular(modelName)),
       action: action,
-      rule: Array.isArray(authConfigs?.accessControl)
-        ? authConfigs?.accessControl
-        : (authConfigs?.accessControl || {})?.[action],
+      rule: rule && (action in rule ? rule[action] : rule),
     };
   }
 

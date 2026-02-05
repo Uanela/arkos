@@ -511,7 +511,7 @@ describe("Dev Command", () => {
         expect(mockConsoleError).toHaveBeenCalledWith(
           expect.objectContaining({
             message: expect.stringContaining(
-              "https://www.arkosjs.com/docs/cli/built-in-cli#typescript-types-generation"
+              "https://www.arkosjs.com/docs/cli/arkos-cli#typescript-types-generation"
             ),
           })
         );

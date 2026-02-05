@@ -29,6 +29,7 @@ export interface ProjectConfig {
   routing?: {
     strict?: boolean;
   };
+  advanced?: boolean;
 }
 
 class ProjectConfigInquirer {
@@ -54,6 +55,8 @@ class ProjectConfigInquirer {
         process.cwd(),
         this.config.projectName
       );
+
+    if (process?.argv?.includes?.("--advanced")) this.config.advanced = true;
 
     return this.config;
   }

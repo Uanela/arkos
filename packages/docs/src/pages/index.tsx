@@ -12,7 +12,7 @@ import AnnoucementBanner from "../components/annoucement-banner";
 export default function Home() {
   return (
     <div className="tailwind overflow-hidden max-w-[100vw]">
-      {/* <AnnoucementBanner /> */}
+      <AnnoucementBanner />
       <Layout description="Node.js backend framework for simplifying API development with automatic route generation, authentication, and minimal configuration.">
         <HeroSection />
         <CompaniesLogos />
@@ -189,7 +189,9 @@ export default function Home() {
             }
             avatar={"https://github.com/blaze380.png"}
           >
-           With Arkos.js, I can build backends  in just a few minutes. It removes the boilerplate and lets me focus entirely on the core logic. Fast, simple, and incredibly productive.
+            With Arkos.js, I can build backends in just a few minutes. It
+            removes the boilerplate and lets me focus entirely on the core
+            logic. Fast, simple, and incredibly productive.
           </TestimonialCard>
           <TestimonialCard
             name="Uanela Como"
