@@ -253,7 +253,7 @@ In the following `package.json`, we have `"type": "module"`. This is only requir
 - `dev`: Starts the development server with hot reloading enabled
 - `build`: Builds your application for production deployment
 - `start`: Runs the built application in production mode
-- `arkos`: Provides access to [**Arkos CLI**](/docs/cli/built-in-cli) commands for generating components
+- `arkos`: Provides access to [**Arkos CLI**](/docs/cli/arkos-cli) commands for generating components
 
 ### 9. Initialize Database
 

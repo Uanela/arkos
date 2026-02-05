@@ -98,7 +98,7 @@ GET /api/products/550e8400-e29b-41d4-a716-446655440000
 - Catch routing errors early
 
 :::tip Type Safety Across All Three
-Use `ArkosRequest<Query, Body, Params>` generics in v1.4.0+ for full TypeScript type safety across all three validation targets:
+Use `ArkosRequest<Params, ResBody, ReqBody, Query>` generics in v1.4.0+ for full TypeScript type safety across all three validation targets:
 
 ```typescript
 import { ArkosRequest, ArkosResponse } from "arkos";
@@ -118,7 +118,7 @@ interface ProductParams {
 }
 
 const handler = async (
-  req: ArkosRequest<ProductQuery, CreateProductBody, ProductParams>,
+  req: ArkosRequest<ProductParams, any, CreateProductBody, ProductQuery>,
   res: ArkosResponse
 ) => {
   // All validated and type-safe!
@@ -232,7 +232,7 @@ interface ProductQuery {
 
 // Use ArkosRequest with generics for type safety
 const myHandler = async (
-  req: ArkosRequest<ProductQuery, CreateProductBody, ProductParams>,
+  req: ArkosRequest<ProductParams, any, CreateProductBody, ProductQuery>,
   res: ArkosResponse,
   next: ArkosNextFunction
 ) => {
@@ -262,11 +262,11 @@ const myHandler = async (
 **Type Signature:**
 
 ```typescript
-ArkosRequest<Query = any, Body = any, Params = any>
+ArkosRequest<Params = any, ResBody = any, ReqBody = any, Query = any>
 ```
 
 :::tip Type Safety Benefits
-Using `ArkosRequest<Query, Body, Params>` generics provides:
+Using `ArkosRequest<Params, ResBody, ReqBody, Query>` generics provides:
 
 - **Autocomplete**: IDE suggestions for all validated properties
 - **Type checking**: Compile-time errors for invalid property access
@@ -1178,7 +1178,7 @@ interface ReportQuery {
 }
 
 const getSummary = async (
-  req: ArkosRequest<ReportQuery>,
+  req: ArkosRequest<any, any, any, ReportQuery>,
   res: ArkosResponse
 ) => {
   // All query params are validated and type-coerced!
@@ -1249,6 +1249,89 @@ Each part serves a different purpose and requires validation:
 
 Validating only `req.body` while ignoring `req.query` and `req.params` leaves security gaps!
 :::
+
+## File Upload Validation
+
+> Available from `v1.4.0-beta`
+
+When combining file uploads with request body validation, Arkos handles validation in a specific order to ensure both file constraints and data validation work correctly.
+
+### Validation Order
+
+1. **File upload validation** happens first (checks file presence, size, type)
+2. **Request body validation** happens second (validates text fields via Schema/DTO)
+3. **Merged result** is available in `req.body` with both validated data and file metadata according to your configuration
+
+:::warning Validation Separation
+Even though Arkos generates a unified `multipart/form-data` OpenAPI schema, **file fields and text fields are validated separately**. You must **not** include upload field names in your validation Schema/DTO.
+
+**Incorrect:**
+```typescript
+// ❌ DON'T DO THIS
+const CreateProductSchema = z.object({
+  name: z.string(),
+  price: z.number(),
+  thumbnail: z.any(), // ← Will fail! File already validated
+});
+
+router.post({
+  path: "/api/products",
+  validation: { body: CreateProductSchema },
+  experimental: {
+    uploads: { type: "single", field: "thumbnail" }
+  }
+}, handler);
+```
+
+**Correct:**
+```typescript
+// ✓ CORRECT
+const CreateProductSchema = z.object({
+  name: z.string(),
+  price: z.number(),
+  // No thumbnail field - it's handled by uploads config
+});
+
+router.post({
+  path: "/api/products",
+  validation: { body: CreateProductSchema },
+  experimental: {
+    uploads: { type: "single", field: "thumbnail" }
+  }
+}, handler);
+```
+:::
+
+### Accessing Validated Data
+
+After both validations complete, access file data through the standard Multer properties:
+```typescript
+import { ArkosRequest, ArkosResponse } from "arkos";
+
+interface CreateProductBody {
+  name: string;
+  price: number;
+  thumbnail: string; // This can be here is it is just a TS type
+  // and by the time it reaches your handler it will be populated
+}
+
+const handler = async (
+  req: ArkosRequest<any, any, CreateProductBody>,
+  res: ArkosResponse
+) => {
+  // Validated text fields
+  const { name, price, thumbnail } = req.body;
+
+  console.log(thumbnail) // Will log the file URL according to your config
+
+  // File data (validated separately)
+  const thumbnail = req.file; // single upload
+  // or
+  const files = req.files; // multiple uploads
+};
+```
+
+Learn more about file upload configuration and OpenAPI integration in the [File Uploads Guide](/docs/core-concepts/file-uploads) and [OpenAPI File Upload Documentation](/docs/core-concepts/open-api-documentation#arkosrouter-openapi-integration-with-file-uploads).
 
 ## Validation Methods (Manual Usage)
 
@@ -1414,7 +1497,7 @@ Your Schemas and DTOs automatically generate JSON Schema for API documentation. 
           maximum: 100
 ```
 
-Learn more about API documentation at [**Swagger API Documentation**](/docs/core-concepts/swagger-api-documentation).
+Learn more about API documentation at [**Swagger API Documentation**](/docs/core-concepts/open-api-documentation).
 
 ## Validation Flow Summary
 

@@ -92,7 +92,7 @@ The most powerful feature is automatic synchronization with your Custom Prisma Q
 
 We chose Scalar over traditional Swagger UI for a modern, Postman-like interface that developers actually enjoy using.
 
-Explore the full documentation system at [Swagger API Documentation](/docs/core-concepts/swagger-api-documentation).
+Explore the full documentation system at [Swagger API Documentation](/docs/core-concepts/open-api-documentation).
 
 ### 3. Service Hooks
 

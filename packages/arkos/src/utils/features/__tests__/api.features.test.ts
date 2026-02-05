@@ -2,7 +2,6 @@ import APIFeatures from "../api.features";
 import AppError from "../../../modules/error-handler/utils/app-error";
 import { getPrismaInstance } from "../../helpers/prisma.helpers";
 import prismaSchemaParser from "../../prisma/prisma-schema-parser";
-import { pascalCase } from "../change-case.features";
 
 jest.mock("fs");
 jest.mock("../../helpers/prisma.helpers");
@@ -20,9 +19,6 @@ jest.mock("../../helpers/api.features.helpers", () => ({
 jest.mock("../../prisma/prisma-schema-parser", () => ({
   parse: jest.fn(),
   getModelsAsArrayOfStrings: jest.fn(() => []),
-}));
-jest.mock("../change-case.features", () => ({
-  pascalCase: jest.fn((str) => str.toUpperCase()),
 }));
 
 describe("APIFeatures", () => {
@@ -79,8 +75,6 @@ describe("APIFeatures", () => {
         ],
       },
     ];
-
-    (pascalCase as jest.Mock).mockImplementation((str) => str);
   });
 
   describe("filter", () => {
