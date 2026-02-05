@@ -18,6 +18,8 @@ import {
   AccessAction,
   AccessControlConfig,
   AuthenticationControlConfig,
+  AccessControlRules,
+  DetailedAccessControlRule,
 } from "../../types/auth";
 import { MsDuration, toMs } from "./utils/helpers/auth.controller.helpers";
 import { appModules, getModuleComponents } from "../../utils/dynamic-loader";
@@ -268,6 +270,42 @@ export class AuthService {
     });
   }
 
+  private isWildcardAccess(config: AccessControlConfig): config is "*" {
+    return config === "*";
+  }
+
+  private isRoleList(config: AccessControlConfig): config is string[] {
+    return Array.isArray(config);
+  }
+
+  private isAccessRules(
+    config: AccessControlConfig
+  ): config is Partial<AccessControlRules> {
+    return (
+      typeof config === "object" && config !== null && !Array.isArray(config)
+    );
+  }
+
+  private normalizeRuleToRoles(
+    rule: string[] | DetailedAccessControlRule | "*" | undefined
+  ): string[] {
+    if (!rule) return [];
+    if (rule === "*") return ["*"];
+    if (Array.isArray(rule)) return rule;
+    return rule.roles === "*" ? ["*"] : (rule.roles ?? []);
+  }
+
+  private resolveAuthorizedRoles(
+    action: AccessAction,
+    accessControl: AccessControlConfig
+  ): string[] {
+    if (this.isWildcardAccess(accessControl)) return ["*"];
+    if (this.isRoleList(accessControl)) return accessControl;
+    if (this.isAccessRules(accessControl))
+      return this.normalizeRuleToRoles(accessControl[action]);
+    return [];
+  }
+
   /**
    * Checks if a user has permission for a specific action using static access control rules.
    * Validates user roles against predefined access control configuration.
@@ -288,17 +326,14 @@ export class AuthService {
         "Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles."
       );
 
-    let authorizedRoles: string[] = [];
-
-    if (Array.isArray(accessControl)) authorizedRoles = accessControl;
-    else if (accessControl[action])
-      authorizedRoles = Array.isArray(accessControl[action])
-        ? accessControl[action]
-        : accessControl[action].roles || [];
+    let authorizedRoles = this.resolveAuthorizedRoles(action, accessControl);
 
     const userRoles = Array.isArray(user?.roles) ? user.roles : [user.role];
 
-    return !!userRoles.some((role: string) => authorizedRoles.includes(role));
+    return (
+      authorizedRoles?.[0] === "*" ||
+      !!userRoles.some((role: string) => authorizedRoles.includes(role))
+    );
   }
 
   /**
@@ -408,7 +443,7 @@ export class AuthService {
   async getAuthenticatedUser(req: ArkosRequest): Promise<User | null> {
     if (!isAuthenticationEnabled())
       throw Error(
-        "ValidationError: Trying to call getAuthenticatedUser without setting up authentication"
+        "ValidationError: Trying to call AuthService.getAuthenticatedUser without setting up authentication"
       );
 
     const prisma = getPrismaInstance();
@@ -430,7 +465,7 @@ export class AuthService {
       token = req?.cookies?.arkos_access_token;
     }
 
-    if (!token) throw loginRequiredError;
+    if (!token) return null;
 
     let decoded: AuthJwtPayload | undefined;
 
@@ -449,7 +484,6 @@ export class AuthService {
       throw new AppError(
         "The user belonging to this token does no longer exists",
         401,
-        {},
         "UserNoLongerExists"
       );
 
@@ -460,7 +494,6 @@ export class AuthService {
       throw new AppError(
         "User recently changed password! Please log in again.",
         401,
-        {},
         "PasswordChanged"
       );
 
@@ -478,8 +511,11 @@ export class AuthService {
    */
   authenticate = catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      if (isAuthenticationEnabled())
-        req.user = (await this.getAuthenticatedUser(req)) as User;
+      if (isAuthenticationEnabled()) {
+        const user = (await this.getAuthenticatedUser(req)) as User;
+        if (!user) throw loginRequiredError;
+        req.user = user;
+      }
       next();
     }
   );
@@ -541,7 +577,7 @@ export class AuthService {
 
     authActionService.add(action, resource, accessControl);
 
-    return async (user: Record<string, any> | undefined): Promise<boolean> => {
+    return async (user: User | undefined): Promise<boolean> => {
       // getArkosConfig must not be called the same time as arkos.init()
       const configs = getArkosConfig();
 

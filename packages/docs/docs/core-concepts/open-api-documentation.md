@@ -1,13 +1,13 @@
 ---
 sidebar_position: 5
-title: Swagger API Documentation
+title: OpenAPI Documentation
 ---
 
 import SmallTag from "../components/small-tag"
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Swagger API Documentation
+# OpenAPI Documentation
 
 > Available from `v1.3.0-beta`
 
@@ -147,7 +147,7 @@ export default router;
 
 ## ArkosRouter OpenAPI Integration
 
-The new ArkosRouter approach makes API documentation declarative and type-safe.
+The ArkosRouter approach makes API documentation declarative and type-safe.
 
 ### Basic Route Documentation
 
@@ -171,7 +171,10 @@ router.get(
         tags: ["System"],
         responses: {
           200: {
-            content: z.object({ status: z.string(), timestamp: z.string() }),
+            content: z.object({
+              status: z.string(),
+              timestamp: z.string(),
+            }),
             description: "API is healthy",
           },
         },
@@ -204,7 +207,10 @@ router.post(
         tags: ["Posts"],
         responses: {
           201: {
-            content: z.object({ id: z.string(), title: z.string() }),
+            content: z.object({
+              id: z.string(),
+              title: z.string(),
+            }),
             description: "Post created successfully",
           },
           401: {
@@ -277,6 +283,113 @@ router.post("/api/posts", postController.create);
 
 </TabItem>
 </Tabs>
+
+## ArkosRouter OpenAPI Integration With File Uploads
+
+> Available from `v1.4.0-beta`
+
+When you define file uploads in `ArkosRouter`, Arkos automatically generates proper `multipart/form-data` OpenAPI documentation - no manual specification needed.
+
+### Automatic Generation
+
+```typescript
+import { ArkosRouter } from "arkos";
+
+const router = ArkosRouter();
+
+router.post(
+  {
+    path: "/api/products",
+    validation: {
+      body: z.object({
+        name: z.string(),
+        price: z.number(),
+      }),
+    },
+    experimental: {
+      uploads: {
+        type: "fields",
+        fields: [
+          { name: "thumbnail", maxCount: 1 },
+          { name: "gallery", maxCount: 5 },
+        ],
+        required: true,
+      },
+      openapi: {
+        summary: "Create product with images",
+        responses: {
+          201: ProductSchema,
+        },
+      },
+    },
+  },
+  productController.create
+);
+```
+
+Arkos automatically:
+
+- Merges validation schema with upload fields
+- Generates both `application/json` and `multipart/form-data` content types
+- Flattens nested fields to bracket notation (`user[name]`, `tags[0]`)
+- Marks required fields based on configuration
+- Adds file constraints (maxItems, format: binary) to documentation
+
+:::warning Validation Order
+Even though arkos generates a unique `multipart/form-data` those aren't validated on the same time, so you must not write a Schema/DTO that will try to validate the upload fields because it will fail, the files are the first to be validated and then arkos validates the request body, after both validation occurs (separately) Arkos will merge uploads data into request body depending on your file upload configuration.
+:::
+
+You can learn more about how Arkos handles the validation order when there it generates a unique `multipart/form-data` json-schema with file upload possibilities by reading [ArkosRouter File Uploads Validation](/).
+
+### Manual Definition (Optional)
+
+For full control, define the schema manually:
+
+```typescript
+router.post(
+  {
+    path: "/api/products",
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "image",
+        required: true,
+      },
+      openapi: {
+        requestBody: {
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["image", "name"],
+                properties: {
+                  name: { type: "string" },
+                  image: {
+                    type: "string",
+                    format: "binary",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: ProductSchema,
+        },
+      },
+    },
+  },
+  productController.create
+);
+```
+
+:::caution
+When manually defining `requestBody`, Arkos validates that upload fields match your configuration. Startup fails with detailed errors if validation fails.
+:::
+
+:::tip
+Let Arkos auto-generate the schema. Only use manual definition when you need custom field descriptions or non-standard configurations.
+:::
 
 ### Response Schema Shortcuts
 

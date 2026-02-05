@@ -7,7 +7,7 @@ import { getArkosConfig } from "../../../../utils/helpers/arkos-config.helpers";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
 
 interface AuthAction {
-  roles?: string[];
+  roles?: string[] | "*";
   action: string;
   resource: string;
   name?: string;
@@ -171,7 +171,8 @@ class AuthActionService {
 
     if (Array.isArray(accessControl)) return baseAuthAction;
 
-    const actionRule = accessControl[action];
+    const actionRule =
+      accessControl !== "*" ? accessControl[action] : undefined;
 
     if (actionRule) {
       if (Array.isArray(actionRule)) {

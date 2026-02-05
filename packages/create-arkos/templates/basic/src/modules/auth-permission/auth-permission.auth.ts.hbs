@@ -3,12 +3,64 @@ import { AuthConfigs } from "arkos/auth";
 {{/if}}
 import { authService } from "arkos/services";
 
+export const authPermissionAccessControl = {
+  Create: {
+    roles: [],
+    name: "Create Auth Permission",
+    description: "Permission to create new auth permission records",
+  },
+  Update: {
+    roles: [],
+    name: "Update Auth Permission",
+    description: "Permission to update existing auth permission records",
+  },
+  Delete: {
+    roles: [],
+    name: "Delete Auth Permission",
+    description: "Permission to delete auth permission records",
+  },
+  View: {
+    roles: [],
+    name: "View Auth Permission",
+    description: "Permission to view auth permission records",
+  },
+}{{#if typescript}} as const satisfies AuthConfigs["accessControl"]{{/if}};
+
+{{#if advanced}}
+{{#if typescript}}
+type AuthPermissionPermissionName = `can${keyof typeof authPermissionAccessControl & string}`;
+
+{{/if}}
+export const authPermissionPermissions = Object.keys(authPermissionAccessControl).reduce(
+  (acc, key) => {
+    acc[`can${key}`{{#if typescript}} as AuthPermissionPermissionName{{/if}}] = authService.permission(
+      key,
+      "auth-permission",
+      authPermissionAccessControl
+    );
+    return acc;
+  },
+  {}{{#if typescript}} as Record<AuthPermissionPermissionName, ReturnType<typeof authService.permission>>{{/if}}
+){{#if typescript}} as {
+  [K in keyof typeof authPermissionAccessControl as `can${K & string}`]: ReturnType<
+    typeof authService.permission
+  >;
+}{{/if}};
+{{else}}
 export const authPermissionPermissions = {
   canCreate: authService.permission("Create", "auth-permission"),
   canUpdate: authService.permission("Update", "auth-permission"),
   canDelete: authService.permission("Delete", "auth-permission"),
   canView: authService.permission("View", "auth-permission"),
-}
+};
+{{/if}}
+
+export const authPermissionAuthenticationControl = {
+  Create: true,
+  Update: true,
+  Delete: true,
+  View: true,
+};
 
 {{#if typescript}}
 const authPermissionAuthConfigs: AuthConfigs = {
@@ -16,44 +68,8 @@ const authPermissionAuthConfigs: AuthConfigs = {
 /** @type {import('arkos/auth').AuthConfigs} */
 const authPermissionAuthConfigs = {
 {{/if}}
-  authenticationControl: {
-    Create: true,
-    Update: true,
-    Delete: true,
-    View: true,
-  },
-  {{#if (eq authentication.type "static")}}
-  accessControl: {
-    Create: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Create New Auth Permission",
-      description: "Permission to create auth permission records"
-    },
-    Update: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Update Auth Permission",
-      description: "Permission to update auth permission records"
-    },
-    Delete: {
-    {{#if (eq authen.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Delete Auth Permission",
-      description: "Permission to delete auth permission records"
-    },
-    View: {
-    {{#if (eq authen.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "View Auth Permission",
-      description: "Permission to update auth permission records"
-    },
-  },
-  {{/if}}
+  authenticationControl: authPermissionAuthenticationControl,
+  accessControl: authPermissionAccessControl,
 };
 
 export default authPermissionAuthConfigs;
