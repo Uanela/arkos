@@ -74,6 +74,7 @@ export const config: RouterConfig = {
         maxSize: 5 * 1024 * 1024, // 5MB
         allowedFileTypes: [".jpg", ".jpeg", ".png", ".webp"],
         deleteOnError: true, // (Default) Clean up if user creation fails
+        required: true, // (Default 1.5.0+) Mark a file as required
       },
     },
   },
@@ -84,7 +85,9 @@ export const config: RouterConfig = {
         type: "single",
         field: "profilePhoto",
         uploadDir: "user-profiles",
+        required: false, // (v1.5.0+) Mark the file as optional
         // deleteOnError: true, we can omit this as it is default
+
       },
     },
   },
@@ -94,6 +97,10 @@ const userRouter = ArkosRouter();
 
 export default userRouter;
 ```
+
+:::tip Required Flag
+Notice that the `required` flag defaults to true, if ommited the file will be required yet, so if you want to make it optional pass `required: false`. Is important to know that this feature of `required` flag was added at [v1.5.0+](/blog/1.5-beta).
+:::
 
 **2. Client-side usage - Single API call:**
 
@@ -121,6 +128,10 @@ console.log(user.profilePhoto); // "/uploads/user-profiles/1234567890-photo.jpg"
 3. File path is automatically added to `req.body.profilePhoto`
 4. Prisma creates the user with the file path included
 5. If creation fails and `deleteOnError: true`, the uploaded file is cleaned up
+
+:::tip OpenAPI Documentation (v1.4.0)
+One of the greatest advantage of using `ArkosRouter` for file uploads is that it will automatically sync with your OpenAPI documentation, basically arkos will create an `requestBody` of type [`multipart/form-data`](https://swagger.io/docs/specification/v3_0/describing-request-body/multipart-requests/) so that you can easily test your api without the need to write it from scratch. Understand how it works by reading [OpenAPI Documentation File Upload Guide](/docs/core-concepts/open-api-documentation#arkosrouter-openapi-integration-with-file-uploads).
+:::
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 (Old Way)">
@@ -774,12 +785,18 @@ The `experimental.uploads` configuration object supports the following options:
 | `type`             | `"single" \| "array" \| "fields"`        | Upload type                              | Required                      |
 | `field`            | `string`                                 | Form field name (for single/array)       | Required for single/array     |
 | `fields`           | `Array<{name: string, maxCount: number}>` | Field configs (for fields type)          | Required for fields type      |
-| `uploadDir`        | `string`                                 | Directory to store files                 | Auto-detected by MIME type    |
+| `required`         | `boolean` (from 1.5.0+)                  | Require or not                         | true                       |
+ `uploadDir`        | `string`                                 | Directory to store files                 | Auto-detected by MIME type    |
 | `maxSize`          | `number`                                 | Max file size in bytes                   | From global config            |
 | `maxCount`         | `number`                                 | Max files (for array type)               | Required for array            |
 | `allowedFileTypes` | `string[] \| RegExp`                     | Allowed file extensions/patterns         | From global config            |
 | `attachToBody`     | `"pathname" \| "url" \| "file" \| false` | How to attach file info to req.body      | `"pathname"`                  |
 | `deleteOnError`    | `boolean`                                | Delete uploaded files if request fails   | `false`                       |
+
+
+:::tip New Required Flag
+Notice that the `required` flag defaults to true, if ommited the file will be required yet, so if you want to make it optional pass `required: false`. Is important to know that this feature of `required` flag was added at [v1.5.0+](/blog/1.5-beta).
+:::
 
 ### Global Configuration
 

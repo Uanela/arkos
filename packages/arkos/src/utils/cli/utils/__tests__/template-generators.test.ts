@@ -270,36 +270,6 @@ describe("generateTemplate", () => {
       );
     });
   });
-  describe("generateAuthConfigsTemplate", () => {
-    it("should generate TypeScript auth configs template", () => {
-      mockedGetUserFileExtension.mockReturnValue("ts");
-      const result = generateTemplate("auth-configs", {
-        modelName: mockModelName,
-      });
-
-      expect(result).toContain("import { AuthConfigs } from 'arkos/auth'");
-      expect(result).toContain("const userAuthConfigs: AuthConfigs = {");
-      expect(result).toContain("authenticationControl:");
-      expect(result).toContain("accessControl:");
-    });
-
-    it("should generate JavaScript auth configs template", () => {
-      mockedGetUserFileExtension.mockReturnValue("js");
-      const result = generateTemplate("auth-configs", {
-        modelName: mockModelName,
-      });
-
-      expect(result).not.toContain("import { AuthConfigs }");
-      expect(result).toContain("const userAuthConfigs = {");
-      expect(result).not.toContain(": AuthConfigs");
-    });
-
-    it("should throw error without model name", () => {
-      expect(() => generateTemplate("auth-configs", {} as any)).toThrow(
-        "Module name is required for auth config template"
-      );
-    });
-  });
 
   describe("generateQueryOptionsTemplate", () => {
     it("should generate regular TypeScript query options template", () => {

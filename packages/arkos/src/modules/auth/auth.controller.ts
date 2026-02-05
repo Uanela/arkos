@@ -374,10 +374,33 @@ export const authControllerFactory = (interceptors: any = {}) => {
           }
         );
 
-        const responseData = {
+        const token = authService.signJwtToken(user.id!);
+
+        const cookieOptions = authService.getJwtCookieOptions(req);
+
+        const authConfigs = getArkosConfig()?.authentication;
+
+        const responseData: Record<string, string> = {
           status: "success",
           message: "Password updated successfully!",
         };
+
+        if (
+          authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
+          authConfigs?.login?.sendAccessTokenThrough === "both" ||
+          !authConfigs?.login?.sendAccessTokenThrough
+        ) {
+          responseData.accessToken = token;
+        }
+
+        if (
+          authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
+          authConfigs?.login?.sendAccessTokenThrough === "both" ||
+          !authConfigs?.login?.sendAccessTokenThrough
+        )
+          res.cookie("arkos_access_token", token, cookieOptions);
+
+        req.accessToken = token;
 
         if (interceptors?.afterUpdatePassword) {
           (res as any).originalData = responseData;

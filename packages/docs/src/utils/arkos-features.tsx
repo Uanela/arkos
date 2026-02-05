@@ -25,7 +25,7 @@ export const arkosFeatures = [
     Icon: Code,
     outline: "hover:outline-sky-500/50",
     titleHover: "group-hover:text-sky-500/80",
-    to: "/docs/core-concepts/endpoints-auto-generation",
+    to: "/docs/core-concepts/endpoints-generation",
     sideContent: (
       <div className="">
         <img
@@ -183,7 +183,7 @@ export const arkosFeatures = [
     iconColor: "#eab308",
     outline: "hover:outline-yellow-500/50",
     titleHover: "group-hover:text-yellow-500/80",
-    to: "/docs/core-concepts/swagger-api-documentation",
+    to: "/docs/core-concepts/open-api-documentation",
     sideContent: (
       <div className="">
         <img

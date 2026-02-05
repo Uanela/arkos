@@ -10,6 +10,7 @@ import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
 import RouteConfigRegistry from "./route-config-registry";
 import {
+  applyPrefix,
   extractArkosRoutes,
   extractPathParams,
   getMiddlewareStack,
@@ -21,6 +22,7 @@ import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/clas
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 import uploadManager from "./utils/helpers/upload-manager";
 import { getUserFileExtension } from "../helpers/fs.helpers";
+import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -46,7 +48,11 @@ import { getUserFileExtension } from "../helpers/fs.helpers";
  *
  * @see {@link ArkosRouteConfig} for configuration options
  */
-export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
+export default function ArkosRouter(
+  options?: RouterOptions & {
+    prefix?: string | RegExp | Array<string | RegExp>;
+  }
+): IArkosRouter {
   const router = Router(options);
 
   return new Proxy(router, {
@@ -96,12 +102,14 @@ export default function ArkosRouter(options?: RouterOptions): IArkosRouter {
         ) {
           if (config.disabled) return;
 
-          const path = config.path;
-
           if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
               `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
+
+          const path = applyPrefix(options?.prefix, config.path);
+
+          config = { ...config, path };
 
           if ([null, undefined].includes(path as any))
             throw Error(
@@ -296,6 +304,17 @@ export function generateOpenAPIFromApp(app: any) {
     }
 
     delete convertedOpenAPI.parameters;
+    const hasUploadFields =
+      Object.keys(config?.experimental?.uploads || {}).length > 0;
+    const multipartFormSchema =
+      convertedOpenAPI?.requestBody?.content?.["multipart/form-data"];
+
+    if (hasUploadFields && multipartFormSchema)
+      arkosRouterOpenApiManager.validateMultipartFormDocs(
+        multipartFormSchema,
+        path,
+        config?.experimental?.uploads
+      );
 
     (paths as any)[path][method.toLowerCase()] = {
       summary: openapi?.summary || `${path}`,
@@ -307,11 +326,50 @@ export function generateOpenAPIFromApp(app: any) {
         config?.validation &&
         config?.validation?.body && {
           requestBody: {
-            content: {
-              "application/json": {
-                schema: validatorToJsonSchema(config?.validation?.body as any),
-              },
-            },
+            content: (() => {
+              const schema = validatorToJsonSchema(
+                config?.validation?.body as any
+              );
+
+              return {
+                ...(hasUploadFields && {
+                  "multipart/form-data": {
+                    schema: openApiSchemaConverter.flattenSchema(
+                      arkosRouterOpenApiManager.addUploadFields(
+                        config.experimental?.uploads!,
+                        schema
+                      )
+                    ),
+                  },
+                }),
+                "application/json": {
+                  schema,
+                },
+              };
+            })(),
+          },
+        }),
+      ...(convertedOpenAPI?.requestBody?.content?.["application/json"] &&
+        !multipartFormSchema &&
+        !(config as any)?.validation?.body &&
+        hasUploadFields && {
+          requestBody: {
+            content: (() => {
+              const schema =
+                convertedOpenAPI?.requestBody?.content?.["application/json"];
+
+              return {
+                "multipart/form-data": {
+                  schema: openApiSchemaConverter.flattenSchema(
+                    arkosRouterOpenApiManager.addUploadFields(
+                      config?.experimental?.uploads! || {},
+                      schema
+                    )
+                  ),
+                },
+                ...convertedOpenAPI?.requestBody,
+              };
+            })(),
           },
         }),
       ...convertedOpenAPI,

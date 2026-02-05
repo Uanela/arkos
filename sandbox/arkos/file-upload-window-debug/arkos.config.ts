@@ -16,10 +16,20 @@ const config: ArkosConfig = {
   },
   validation: {
     resolver: "zod",
+    validationOptions: { forbidNonWhitelisted: true },
   },
   swagger: {
     mode: "zod",
     strict: false,
+    scalarApiReferenceConfiguration: {
+      async onBeforeRequest({ request }) {
+        (request as any).method = "GET";
+        // console.log(request);
+      },
+      // async onLoaded(a) {
+      //   console.log(a);
+      // },
+    },
   },
 };
 

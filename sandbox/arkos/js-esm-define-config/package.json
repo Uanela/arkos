@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",
-    "arkos": "file:../../../packages/arkos",
+    "arkos": "1.4.2-beta",
     "express": "^4.21.2",
     "multer": "2.0.1",
     "swagger-jsdoc": "^6.2.8",
