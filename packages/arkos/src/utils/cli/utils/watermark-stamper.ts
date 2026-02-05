@@ -18,7 +18,7 @@ class WatermarkStamper {
     host?: string;
     port?: string;
   }) {
-    console.info(`\n  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+    console.info(`\n  \x1b[1m\x1b[36m⌃ Arkos.js ${getVersion()}\x1b[0m`);
     if (host && port) {
       console.info(
         `  - Local:        http://${["0.0.0.0", "127.0.0.1"].includes(host) ? "localhost" : host}:${port}`
