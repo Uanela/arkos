@@ -11,6 +11,7 @@ import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 import { getModuleComponents } from "../../utils/dynamic-loader";
 import { MulterError } from "multer";
+import { pascalCase } from "../../exports/utils";
 
 /**
  * Handles files uploads and allow to be extended
@@ -19,7 +20,11 @@ export class FileUploadController {
   private handleUploadError(err: any, next: ArkosNextFunction) {
     if (err instanceof MulterError)
       return next(
-        new AppError(err.message, 400, err.code || "FileUploadError")
+        new AppError(
+          err.message,
+          400,
+          pascalCase(err.code || "FileUploadError")
+        )
       );
     else return next(err);
   }
