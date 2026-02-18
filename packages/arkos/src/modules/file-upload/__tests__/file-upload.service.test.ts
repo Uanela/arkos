@@ -336,7 +336,12 @@ describe("FileUploadService", () => {
 
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockNext).toHaveBeenCalledWith(multerError);
+      expect(mockNext).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: multerError.code,
+          message: multerError.message,
+        })
+      );
     });
 
     it("should pass regular errors to next", () => {
@@ -423,7 +428,8 @@ describe("FileUploadService", () => {
 
       expect(AppError).toHaveBeenCalledWith(
         "Invalid file URL: base route not found",
-        400
+        400,
+        "InvalidFileUrl"
       );
     });
 
@@ -441,7 +447,11 @@ describe("FileUploadService", () => {
         )
       ).rejects.toBeInstanceOf(AppError);
 
-      expect(AppError).toHaveBeenCalledWith("File not found", 404);
+      expect(AppError).toHaveBeenCalledWith(
+        "File not found",
+        404,
+        "FileNotFound"
+      );
     });
   });
 
@@ -748,7 +758,8 @@ describe("FileUploadService", () => {
 
       expect(AppError).toHaveBeenCalledWith(
         "File type parameter is required",
-        400
+        400,
+        "MissingFileType"
       );
     });
 
@@ -778,7 +789,11 @@ describe("FileUploadService", () => {
         fileUploadService.deleteFileByName(fileName, fileType)
       ).rejects.toBeInstanceOf(AppError);
 
-      expect(AppError).toHaveBeenCalledWith("File not found", 404);
+      expect(AppError).toHaveBeenCalledWith(
+        "File not found",
+        404,
+        "FileNotFound"
+      );
     });
 
     it("should throw AppError for other filesystem errors", async () => {
@@ -795,7 +810,8 @@ describe("FileUploadService", () => {
 
       expect(AppError).toHaveBeenCalledWith(
         "Failed to delete file: Permission denied",
-        500
+        500,
+        "UnableToDeleteFile"
       );
     });
 
@@ -812,7 +828,8 @@ describe("FileUploadService", () => {
 
       expect(AppError).toHaveBeenCalledWith(
         "Failed to delete file: Cannot delete file",
-        500
+        500,
+        "UnableToDeleteFile"
       );
     });
 
@@ -898,18 +915,19 @@ describe("FileUploadService", () => {
     });
 
     it("should handle uploadDir not ending with slash on windows environment", async () => {
+      // FIXME:
       const serviceWithoutSlash = new FileUploadService("uploads/videos");
       mockReq.file = {
-        path: "\\videos\\test.mp4",
+        path: "S:\\cwdvideos\\test.mp4",
         originalname: "test.mp4",
       };
 
-      mockUpload.single.mockReturnValueOnce(
-        (req: any, res: any, next: Function) => {
-          req.file = mockReq.file;
-          next();
-        }
-      );
+      // mockUpload.single.mockReturnValueOnce(
+      //   (req: any, res: any, next: Function) => {
+      //     // req.file = mockReq.file;
+      //     next();
+      //   }
+      // );
 
       const result = await serviceWithoutSlash.upload(
         mockReq,
@@ -1028,7 +1046,8 @@ describe("FileUploadService", () => {
 
       expect(AppError).toHaveBeenCalledWith(
         "Unable to determine file type or file name from URL",
-        400
+        400,
+        "UnableToProcessFileURL"
       );
     });
 

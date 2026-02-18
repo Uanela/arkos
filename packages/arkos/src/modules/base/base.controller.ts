@@ -279,14 +279,7 @@ export class BaseController {
         return [where, req.body, queryOptions, context];
 
       case "batchUpdate":
-        return [
-          req.body.map((data: any) => ({
-            ...data,
-            where: { ...data.where, ...where },
-          })),
-          mergedOptions,
-          context,
-        ];
+        return [req.body, mergedOptions, context];
 
       case "deleteOne":
         return [{ ...req.params, ...where }, context];
@@ -295,13 +288,7 @@ export class BaseController {
         return [where, context];
 
       case "batchDelete":
-        return [
-          req.body.map((data: any) => ({
-            ...data,
-            where: { ...data.where, ...where },
-          })),
-          context,
-        ];
+        return [req.body, context];
 
       default:
         throw new Error(`Unknown operation type: ${config.operationType}`);
