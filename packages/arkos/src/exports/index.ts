@@ -12,6 +12,7 @@ import {
 } from "../types";
 import { ArkosConfig } from "../types/new-arkos-config";
 import { ArkosInitConfig } from "../types/arkos-config";
+import { loadEnvironmentVariables } from "../utils/dotenv.helpers";
 
 /**
  * Initializes the Arkos application.
@@ -33,6 +34,7 @@ export {
   ArkosConfig,
   ArkosInitConfig,
   RouterConfig,
+  loadEnvironmentVariables,
   getArkosConfig,
   /**
    * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
