@@ -45,7 +45,7 @@ describe("BaseController", () => {
     // Setup mock for API features
     (APIFeatures as jest.Mock).mockImplementation(function (
       req: any,
-      modelName: string
+      _: string
     ) {
       return {
         filters: {},
@@ -774,6 +774,142 @@ describe("BaseController", () => {
 
       expect(mockRequest.responseData).toEqual({
         results: mockResult.count,
+        data: mockResult,
+      });
+      expect(mockRequest.responseStatus).toBe(200);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("batchUpdate", () => {
+    it("should update multiple records with different data and return 200 status", async () => {
+      const mockBody = [
+        { id: "1", title: "Updated Post 1" },
+        { id: "2", title: "Updated Post 2" },
+      ];
+      const mockResult = [
+        { id: 1, title: "Updated Post 1" },
+        { id: 2, title: "Updated Post 2" },
+      ];
+      mockRequest.body = mockBody;
+      mockBaseService.batchUpdate.mockResolvedValue(mockResult);
+
+      await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
+
+      expect(mockBaseService.batchUpdate).toHaveBeenCalledWith(
+        mockBody,
+        {},
+        {
+          accessToken: undefined,
+          user: undefined,
+        }
+      );
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        results: mockResult.length,
+        data: mockResult,
+      });
+    });
+
+    it("should call next with error if batchUpdate returns null", async () => {
+      mockRequest.body = [{ id: "1", title: "Updated Post 1" }];
+      mockBaseService.batchUpdate.mockResolvedValue(null as any);
+
+      await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with error if batchUpdate returns empty array", async () => {
+      mockRequest.body = [{ id: "1", title: "Updated Post 1" }];
+      mockBaseService.batchUpdate.mockResolvedValue([]);
+
+      await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with responseData if afterBatchUpdate middleware exists", async () => {
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        interceptors: { afterBatchUpdate: true },
+      });
+      baseController = new BaseController("Post");
+
+      const mockBody = [{ id: "1", title: "Updated Post 1" }];
+      const mockResult = [{ id: 1, title: "Updated Post 1" }];
+      mockRequest.body = mockBody;
+      mockBaseService.batchUpdate.mockResolvedValue(mockResult);
+
+      await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.responseData).toEqual({
+        results: mockResult.length,
+        data: mockResult,
+      });
+      expect(mockRequest.responseStatus).toBe(200);
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("batchDelete", () => {
+    it("should delete multiple records and return 200 status", async () => {
+      const mockBody = [{ id: "1" }, { id: "2" }];
+      const mockResult = [{ id: 1 }, { id: 2 }];
+      mockRequest.body = mockBody;
+      mockBaseService.batchDelete.mockResolvedValue(mockResult);
+
+      await baseController.batchDelete(mockRequest, mockResponse, mockNext);
+
+      expect(mockBaseService.batchDelete).toHaveBeenCalledWith(mockBody, {
+        accessToken: undefined,
+        user: undefined,
+      });
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        results: mockResult.length,
+        data: mockResult,
+      });
+    });
+
+    it("should call next with error if batchDelete returns null", async () => {
+      mockRequest.body = [{ id: "1" }];
+      mockBaseService.batchDelete.mockResolvedValue(null as any);
+
+      await baseController.batchDelete(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with error if batchDelete returns empty array", async () => {
+      mockRequest.body = [{ id: "1" }];
+      mockBaseService.batchDelete.mockResolvedValue([]);
+
+      await baseController.batchDelete(mockRequest, mockResponse, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
+      expect(mockResponse.json).not.toHaveBeenCalled();
+    });
+
+    it("should call next with responseData if afterBatchDelete middleware exists", async () => {
+      (getModuleComponents as jest.Mock).mockReturnValue({
+        interceptors: { afterBatchDelete: true },
+      });
+      baseController = new BaseController("Post");
+
+      const mockBody = [{ id: "1" }, { id: "2" }];
+      const mockResult = [{ id: 1 }, { id: 2 }];
+      mockRequest.body = mockBody;
+      mockBaseService.batchDelete.mockResolvedValue(mockResult);
+
+      await baseController.batchDelete(mockRequest, mockResponse, mockNext);
+
+      expect(mockRequest.responseData).toEqual({
+        results: mockResult.length,
         data: mockResult,
       });
       expect(mockRequest.responseStatus).toBe(200);
