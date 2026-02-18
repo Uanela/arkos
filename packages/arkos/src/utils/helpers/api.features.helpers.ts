@@ -155,7 +155,7 @@ function parseKey(
         }
       }
 
-      traverse(value, basePath); // ← use basePath instead of parsedKey.fields
+      traverse(value, basePath);
       return results;
     }
 
