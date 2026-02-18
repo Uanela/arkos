@@ -264,7 +264,7 @@ export class FileUploadService {
       throw new AppError(
         `Failed to delete file: ${error.message}`,
         500,
-        "FailedToDeleteFile"
+        "UnableToDeleteFile"
       );
     }
   }
@@ -437,7 +437,7 @@ export class FileUploadService {
       throw new AppError(
         `Failed to delete file: ${error.message}`,
         500,
-        "FailedToDeleteFile"
+        "UnableToDeleteFile"
       );
     }
   }
