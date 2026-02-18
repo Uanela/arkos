@@ -79,7 +79,9 @@ export class FileUploadController {
           uploader = fileUploadService;
           break;
         default:
-          return next(new AppError("Invalid file type", 400));
+          return next(
+            new AppError("Invalid file type", 400, "InvalidFileType")
+          );
       }
 
       uploader.handleMultipleUpload()(req, res, async (err) => {
