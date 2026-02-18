@@ -10,11 +10,20 @@ import { getArkosConfig } from "../../server";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 import { getModuleComponents } from "../../utils/dynamic-loader";
+import { MulterError } from "multer";
 
 /**
  * Handles files uploads and allow to be extended
  */
 export class FileUploadController {
+  private handleUploadError(err: any, next: ArkosNextFunction) {
+    if (err instanceof MulterError)
+      return next(
+        new AppError(err.message, 400, err.code || "FileUploadError")
+      );
+    else return next(err);
+  }
+
   /**
    * Model-specific interceptors loaded from model modules
    * @private
@@ -74,7 +83,7 @@ export class FileUploadController {
       }
 
       uploader.handleMultipleUpload()(req, res, async (err) => {
-        if (err) return next(err);
+        if (err) return this.handleUploadError(err, next);
 
         let data;
         if (req.files && Array.isArray(req.files) && req.files.length > 0) {
@@ -101,7 +110,6 @@ export class FileUploadController {
             new AppError(
               `No file or files were attached on field ${fileType} on the request body as form data.`,
               400,
-              {},
               "NoFileOrFilesAttached"
             )
           );
@@ -167,7 +175,9 @@ export class FileUploadController {
           uploader = fileUploadService;
           break;
         default:
-          return next(new AppError("Invalid file type", 400));
+          return next(
+            new AppError("Invalid file type", 400, "InvalidFileType")
+          );
       }
 
       try {
@@ -200,7 +210,7 @@ export class FileUploadController {
       } catch (error) {
         if (error instanceof AppError) return next(error);
 
-        return next(new AppError("File not found", 404));
+        return next(new AppError("File not found", 404, "FileNotFound"));
       }
     }
   );
@@ -252,17 +262,21 @@ export class FileUploadController {
           uploader = fileUploadService;
           break;
         default:
-          return next(new AppError("Invalid file type", 400));
+          return next(
+            new AppError("Invalid file type", 400, "InvalidFileType")
+          );
       }
 
       uploader.handleMultipleUpload()(req, res, async (err) => {
-        if (err) return next(err);
+        if (err) return this.handleUploadError(err, next);
 
         if (
           !req.file &&
           (!req.files || !Array.isArray(req.files) || req.files.length === 0)
         )
-          return next(new AppError("No new file uploaded", 400));
+          return next(
+            new AppError("No new file uploaded", 400, "MissingNewFile")
+          );
 
         if (fileName && fileName.trim() !== "") {
           try {
