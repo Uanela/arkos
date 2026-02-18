@@ -1,6 +1,8 @@
 import path from "path";
 import fs from "fs";
-import fileUploadController from "../file-upload.controller";
+import fileUploadController, {
+  FileUploadController,
+} from "../file-upload.controller";
 import AppError from "../../error-handler/utils/app-error";
 import { getFileUploadServices } from "../file-upload.service";
 import { getArkosConfig } from "../../../server";
@@ -9,6 +11,8 @@ import {
   processImage,
 } from "../utils/helpers/file-upload.helpers";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
+import { MulterError } from "multer";
+import { ArkosRequest, ArkosResponse } from "../../../types";
 
 jest.mock("../../../utils/prisma/prisma-schema-parser", () => ({
   parse: jest.fn(),
@@ -95,6 +99,76 @@ describe("FileUploadController", () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe("handleUploadError (private)", () => {
+    let controller: FileUploadController;
+    let next: jest.Mock;
+
+    // Access the private method via casting
+    const callHandleUploadError = (
+      controller: FileUploadController,
+      err: any,
+      next: jest.Mock
+    ) => (controller as any).handleUploadError(err, next);
+
+    beforeEach(() => {
+      controller = new FileUploadController();
+      next = jest.fn();
+    });
+
+    it("should call next with an AppError(400) when err is a MulterError", () => {
+      const multerErr = new MulterError("LIMIT_FILE_SIZE");
+
+      callHandleUploadError(controller, multerErr, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      const receivedError = next.mock.calls[0][0];
+      expect(receivedError).toBeInstanceOf(AppError);
+      expect(receivedError.statusCode).toBe(400);
+      expect(receivedError.message).toBe(multerErr.message);
+    });
+
+    it("should use MulterError.code as the AppError code when code is present", () => {
+      const multerErr = new MulterError("LIMIT_FILE_COUNT");
+      // MulterError sets .code automatically to the first argument
+      callHandleUploadError(controller, multerErr, next);
+
+      const receivedError = next.mock.calls[0][0];
+      expect(receivedError.code).toBe("LIMIT_FILE_COUNT");
+    });
+
+    it("should fall back to 'FileUploadError' as the code when MulterError.code is falsy", () => {
+      const multerErr = new MulterError("LIMIT_FILE_SIZE");
+      // Force code to be falsy to test the fallback
+      (multerErr as any).code = undefined;
+
+      callHandleUploadError(controller, multerErr, next);
+
+      const receivedError = next.mock.calls[0][0];
+      expect(receivedError.code).toBe("FileUploadError");
+    });
+
+    it("should forward non-MulterError errors directly to next without wrapping", () => {
+      const genericErr = new Error("something went wrong");
+
+      callHandleUploadError(controller, genericErr, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(next).toHaveBeenCalledWith(genericErr);
+      // Should NOT be wrapped in AppError — it's passed through as-is
+      const receivedError = next.mock.calls[0][0];
+      expect(receivedError).toBe(genericErr);
+    });
+
+    it("should forward an existing AppError directly to next without double-wrapping", () => {
+      const appErr = new AppError("Forbidden", 403, "ForbiddenError");
+
+      callHandleUploadError(controller, appErr, next);
+
+      expect(next).toHaveBeenCalledWith(appErr);
+      expect(next.mock.calls[0][0]).toBe(appErr);
+    });
   });
 
   describe("uploadFile", () => {
@@ -294,6 +368,141 @@ describe("FileUploadController", () => {
         success: true,
         data: ["http://localhost:3000/uploads/files/test1.txt"],
         message: "1 files uploaded successfully",
+      });
+    });
+
+    describe("uploadFile — handleUploadError behavior", () => {
+      let controller: FileUploadController;
+      let req: Partial<ArkosRequest>;
+      let res: Partial<ArkosResponse>;
+      let next: jest.Mock;
+
+      beforeEach(() => {
+        controller = new FileUploadController();
+        next = jest.fn();
+        res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        req = {
+          params: { fileType: "images" },
+          query: {},
+          protocol: "http",
+          get: jest.fn().mockReturnValue("localhost:3000"),
+        };
+
+        // Reset so each test can override the cb behavior
+        jest.clearAllMocks();
+      });
+
+      it("should call next with an AppError(400) when multer emits a MulterError during upload", async () => {
+        const multerErr = new MulterError("LIMIT_FILE_SIZE");
+
+        // Make handleMultipleUpload call cb with a MulterError
+        const { getFileUploadServices } = require("../file-upload.service");
+        getFileUploadServices.mockReturnValueOnce({
+          imageUploadService: {
+            handleMultipleUpload: jest
+              .fn()
+              .mockReturnValue((_req: any, _res: any, cb: Function) =>
+                cb(multerErr)
+              ),
+          },
+          videoUploadService: { handleMultipleUpload: jest.fn() },
+          documentUploadService: { handleMultipleUpload: jest.fn() },
+          fileUploadService: { handleMultipleUpload: jest.fn() },
+        });
+
+        await controller.uploadFile(
+          req as ArkosRequest,
+          res as ArkosResponse,
+          next
+        );
+
+        expect(next).toHaveBeenCalledTimes(1);
+        const receivedError = next.mock.calls[0][0];
+        expect(receivedError).toBeInstanceOf(AppError);
+        expect(receivedError.statusCode).toBe(400);
+        expect(receivedError.message).toBe(multerErr.message);
+      });
+
+      it("should use MulterError.code as the AppError code on upload when code is present", async () => {
+        const multerErr = new MulterError("LIMIT_UNEXPECTED_FILE");
+
+        const { getFileUploadServices } = require("../file-upload.service");
+        getFileUploadServices.mockReturnValueOnce({
+          imageUploadService: {
+            handleMultipleUpload: jest
+              .fn()
+              .mockReturnValue((_req: any, _res: any, cb: Function) =>
+                cb(multerErr)
+              ),
+          },
+          videoUploadService: { handleMultipleUpload: jest.fn() },
+          documentUploadService: { handleMultipleUpload: jest.fn() },
+          fileUploadService: { handleMultipleUpload: jest.fn() },
+        });
+
+        await controller.uploadFile(
+          req as ArkosRequest,
+          res as ArkosResponse,
+          next
+        );
+
+        const receivedError = next.mock.calls[0][0];
+        expect(receivedError.code).toBe("LIMIT_UNEXPECTED_FILE");
+      });
+
+      it("should fall back to 'FileUploadError' as AppError code on upload when MulterError.code is falsy", async () => {
+        const multerErr = new MulterError("LIMIT_FILE_SIZE");
+        (multerErr as any).code = undefined;
+
+        const { getFileUploadServices } = require("../file-upload.service");
+        getFileUploadServices.mockReturnValueOnce({
+          imageUploadService: {
+            handleMultipleUpload: jest
+              .fn()
+              .mockReturnValue((_req: any, _res: any, cb: Function) =>
+                cb(multerErr)
+              ),
+          },
+          videoUploadService: { handleMultipleUpload: jest.fn() },
+          documentUploadService: { handleMultipleUpload: jest.fn() },
+          fileUploadService: { handleMultipleUpload: jest.fn() },
+        });
+
+        await controller.uploadFile(
+          req as ArkosRequest,
+          res as ArkosResponse,
+          next
+        );
+
+        const receivedError = next.mock.calls[0][0];
+        expect(receivedError.code).toBe("FileUploadError");
+      });
+
+      it("should forward a generic Error directly to next without wrapping during upload", async () => {
+        const genericErr = new Error("Disk full");
+
+        const { getFileUploadServices } = require("../file-upload.service");
+        getFileUploadServices.mockReturnValueOnce({
+          imageUploadService: {
+            handleMultipleUpload: jest
+              .fn()
+              .mockReturnValue((_req: any, _res: any, cb: Function) =>
+                cb(genericErr)
+              ),
+          },
+          videoUploadService: { handleMultipleUpload: jest.fn() },
+          documentUploadService: { handleMultipleUpload: jest.fn() },
+          fileUploadService: { handleMultipleUpload: jest.fn() },
+        });
+
+        await controller.uploadFile(
+          req as ArkosRequest,
+          res as ArkosResponse,
+          next
+        );
+
+        expect(next).toHaveBeenCalledWith(genericErr);
+        expect(next.mock.calls[0][0]).toBe(genericErr); // same reference, not wrapped
       });
     });
   });
@@ -532,6 +741,140 @@ describe("FileUploadController", () => {
       expect(mockReq.responseData).toBeDefined();
       expect(mockReq.responseStatus).toBe(200);
       expect(mockNext).toHaveBeenCalledWith();
+    });
+
+    describe("updateFile — handleUploadError behavior", () => {
+      let controller: FileUploadController;
+      let req: Partial<ArkosRequest>;
+      let res: Partial<ArkosResponse>;
+      let next: jest.Mock;
+
+      beforeEach(() => {
+        controller = new FileUploadController();
+        next = jest.fn();
+        res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        req = {
+          params: { fileType: "images", fileName: "old-image.jpg" },
+          query: {},
+          protocol: "http",
+          get: jest.fn().mockReturnValue("localhost:3000"),
+          originalUrl: "/api/uploads/images/old-image.jpg",
+        };
+
+        jest.clearAllMocks();
+      });
+
+      it("should call next with an AppError(400) when multer emits a MulterError during update", async () => {
+        const multerErr = new MulterError("LIMIT_FILE_SIZE");
+
+        const { getFileUploadServices } = require("../file-upload.service");
+        getFileUploadServices.mockReturnValueOnce({
+          imageUploadService: {
+            handleMultipleUpload: jest
+              .fn()
+              .mockReturnValue((_req: any, _res: any, cb: Function) =>
+                cb(multerErr)
+              ),
+          },
+          videoUploadService: { handleMultipleUpload: jest.fn() },
+          documentUploadService: { handleMultipleUpload: jest.fn() },
+          fileUploadService: { handleMultipleUpload: jest.fn() },
+        });
+
+        await controller.updateFile(
+          req as ArkosRequest,
+          res as ArkosResponse,
+          next
+        );
+
+        expect(next).toHaveBeenCalledTimes(1);
+        const receivedError = next.mock.calls[0][0];
+        expect(receivedError).toBeInstanceOf(AppError);
+        expect(receivedError.statusCode).toBe(400);
+        expect(receivedError.message).toBe(multerErr.message);
+      });
+
+      it("should use MulterError.code as the AppError code on update when code is present", async () => {
+        const multerErr = new MulterError("LIMIT_FIELD_COUNT");
+
+        const { getFileUploadServices } = require("../file-upload.service");
+        getFileUploadServices.mockReturnValueOnce({
+          imageUploadService: {
+            handleMultipleUpload: jest
+              .fn()
+              .mockReturnValue((_req: any, _res: any, cb: Function) =>
+                cb(multerErr)
+              ),
+          },
+          videoUploadService: { handleMultipleUpload: jest.fn() },
+          documentUploadService: { handleMultipleUpload: jest.fn() },
+          fileUploadService: { handleMultipleUpload: jest.fn() },
+        });
+
+        await controller.updateFile(
+          req as ArkosRequest,
+          res as ArkosResponse,
+          next
+        );
+
+        const receivedError = next.mock.calls[0][0];
+        expect(receivedError.code).toBe("LIMIT_FIELD_COUNT");
+      });
+
+      it("should fall back to 'FileUploadError' as AppError code on update when MulterError.code is falsy", async () => {
+        const multerErr = new MulterError("LIMIT_FILE_SIZE");
+        (multerErr as any).code = undefined;
+
+        const { getFileUploadServices } = require("../file-upload.service");
+        getFileUploadServices.mockReturnValueOnce({
+          imageUploadService: {
+            handleMultipleUpload: jest
+              .fn()
+              .mockReturnValue((_req: any, _res: any, cb: Function) =>
+                cb(multerErr)
+              ),
+          },
+          videoUploadService: { handleMultipleUpload: jest.fn() },
+          documentUploadService: { handleMultipleUpload: jest.fn() },
+          fileUploadService: { handleMultipleUpload: jest.fn() },
+        });
+
+        await controller.updateFile(
+          req as ArkosRequest,
+          res as ArkosResponse,
+          next
+        );
+
+        const receivedError = next.mock.calls[0][0];
+        expect(receivedError.code).toBe("FileUploadError");
+      });
+
+      it("should forward a generic Error directly to next without wrapping during update", async () => {
+        const genericErr = new Error("Storage unavailable");
+
+        const { getFileUploadServices } = require("../file-upload.service");
+        getFileUploadServices.mockReturnValueOnce({
+          imageUploadService: {
+            handleMultipleUpload: jest
+              .fn()
+              .mockReturnValue((_req: any, _res: any, cb: Function) =>
+                cb(genericErr)
+              ),
+          },
+          videoUploadService: { handleMultipleUpload: jest.fn() },
+          documentUploadService: { handleMultipleUpload: jest.fn() },
+          fileUploadService: { handleMultipleUpload: jest.fn() },
+        });
+
+        await controller.updateFile(
+          req as ArkosRequest,
+          res as ArkosResponse,
+          next
+        );
+
+        expect(next).toHaveBeenCalledWith(genericErr);
+        expect(next.mock.calls[0][0]).toBe(genericErr); // same reference, not wrapped
+      });
     });
   });
 
