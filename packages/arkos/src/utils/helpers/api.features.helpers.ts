@@ -12,13 +12,16 @@ function parseNestedObject(
     for (const [k, v] of Object.entries(obj)) {
       if (k.includes("__")) {
         const parsedKey = parseKeyString(k);
-        const fullPath = [...path, ...parsedKey.fields];
+        const basePath =
+          v && typeof v === "object" && !Array.isArray(v) && parsedKey.operator
+            ? [...path, ...parsedKey.fields, parsedKey.operator]
+            : [...path, ...parsedKey.fields];
 
         if (v && typeof v === "object" && !Array.isArray(v))
-          traverse(v, fullPath);
+          traverse(v, basePath);
         else
           results.push({
-            fields: fullPath,
+            fields: basePath,
             operator: parsedKey.operator,
             value: v,
           });
@@ -74,13 +77,14 @@ function parseKey(
   key: string,
   value: any
 ): { fields: string[]; operator: string | null; value: any }[] {
-  // If value is an object (not array), check if key has double underscores
   if (value && typeof value === "object" && !Array.isArray(value)) {
     if (key.includes("__")) {
-      // Parse the key first to get the base fields
       const parsedKey = parseKeyString(key);
 
-      // Now traverse the object value, starting from the parsed base fields
+      const basePath = parsedKey.operator
+        ? [...parsedKey.fields, parsedKey.operator]
+        : parsedKey.fields;
+
       const results: {
         fields: string[];
         operator: string | null;
@@ -91,13 +95,19 @@ function parseKey(
         for (const [k, v] of Object.entries(obj)) {
           if (k.includes("__")) {
             const innerParsedKey = parseKeyString(k);
-            const fullPath = [...path, ...innerParsedKey.fields];
+            const basePath =
+              v &&
+              typeof v === "object" &&
+              !Array.isArray(v) &&
+              innerParsedKey.operator
+                ? [...path, ...innerParsedKey.fields, innerParsedKey.operator]
+                : [...path, ...innerParsedKey.fields];
 
             if (v && typeof v === "object" && !Array.isArray(v)) {
-              traverse(v, fullPath);
+              traverse(v, basePath);
             } else {
               results.push({
-                fields: fullPath,
+                fields: basePath,
                 operator: innerParsedKey.operator,
                 value: v,
               });
@@ -145,23 +155,15 @@ function parseKey(
         }
       }
 
-      traverse(value, parsedKey.fields);
+      traverse(value, basePath); // ← use basePath instead of parsedKey.fields
       return results;
     }
 
-    // No double underscores in key, just parse the nested object normally
     return parseNestedObject(key, value);
   }
 
-  // Simple string/primitive value with potential double underscore key
   const parsedKey = parseKeyString(key);
-  return [
-    {
-      fields: parsedKey.fields,
-      operator: parsedKey.operator,
-      value,
-    },
-  ];
+  return [{ fields: parsedKey.fields, operator: parsedKey.operator, value }];
 }
 
 function parseKeyString(key: string): {
@@ -237,6 +239,7 @@ function buildNestedObject(
   if (fields.length === 0) return {};
 
   const firstField = fields[0];
+  const lastField = fields[fields.length - 1];
 
   if (firstField === "orderBy" && fields.length === 2 && !operator) {
     return {
@@ -271,9 +274,9 @@ function buildNestedObject(
           current = current[fields[i]];
         }
 
-        current[fields[fields.length - 1]] = convertValue(
+        current[lastField] = convertValue(
           typeof val === "string" ? val.trim() : val,
-          fields[0],
+          lastField,
           fieldConfig
         );
 
@@ -290,10 +293,8 @@ function buildNestedObject(
     current = current[fields[i]];
   }
 
-  const lastField = fields[fields.length - 1];
-
   if (!operator) {
-    current[lastField] = convertValue(value, fields[0], fieldConfig);
+    current[lastField] = convertValue(value, lastField, fieldConfig);
     return result;
   }
 
@@ -329,12 +330,11 @@ function buildNestedObject(
     case "in":
     case "notIn":
       const inValues = Array.isArray(value) ? value : stringValue.split(",");
-
       current[lastField] = {
         [operator]: inValues.map((v: any) =>
           convertValue(
             typeof v === "string" ? v.trim() : v,
-            fields[0],
+            lastField,
             fieldConfig
           )
         ),
@@ -344,12 +344,11 @@ function buildNestedObject(
     case "hasSome":
     case "hasEvery":
       const arrayValues = Array.isArray(value) ? value : stringValue.split(",");
-
       current[lastField] = {
         [operator]: arrayValues.map((v: any) =>
           convertValue(
             typeof v === "string" ? v.trim() : v,
-            fields[0],
+            lastField,
             fieldConfig
           )
         ),
@@ -373,7 +372,7 @@ function buildNestedObject(
         [operator]:
           value === null
             ? null
-            : convertValue(stringValue, fields[0], fieldConfig),
+            : convertValue(stringValue, lastField, fieldConfig),
       };
   }
 
