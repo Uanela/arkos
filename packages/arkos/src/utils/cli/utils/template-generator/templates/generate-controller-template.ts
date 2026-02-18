@@ -41,7 +41,7 @@ export default ${modelName.camel}Controller;
   else
     return `${controllerClassImport}
   
-class ${modelName.pascal}Controller extends ${controllerName} {}
+export class ${modelName.pascal}Controller extends ${controllerName} {}
 
 const ${modelName.camel}Controller = new ${modelName.pascal}Controller(${controllerType === "base" ? `"${modelName.kebab}"` : ""});
 
