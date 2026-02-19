@@ -135,7 +135,6 @@
   "files": ["dist", "cli.js", "README.md"],
   "devDependencies": {
     "@babel/preset-typescript": "^7.27.1",
-    "@prisma/client": "^6.19.2",
     "@scalar/express-api-reference": "^0.8.32",
     "@types/bcrypt": "^5.0.2",
     "@types/body-parser": "^1.19.5",
@@ -172,7 +171,7 @@
     "pluralize": "^8.0.0"
   },
   "peerDependencies": {
-    "@prisma/client": "^6.4.1",
+    "@prisma/client": "^6.19.2",
     "@scalar/express-api-reference": "^0.8.35",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
