@@ -370,9 +370,7 @@ function buildNestedObject(
     default:
       current[lastField] = {
         [operator]:
-          value === null
-            ? null
-            : convertValue(stringValue, lastField, fieldConfig),
+          value === null ? null : convertValue(value, lastField, fieldConfig),
       };
   }
 

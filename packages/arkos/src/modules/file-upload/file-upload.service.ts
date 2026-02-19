@@ -14,6 +14,7 @@ import {
 } from "../../types";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { removeBothSlashes } from "../../utils/helpers/text.helpers";
+import { pascalCase } from "../../exports/utils";
 
 /**
  * Service to handle file uploads, including single and multiple file uploads,
@@ -29,7 +30,11 @@ export class FileUploadService {
   private handleUploadError(err: any, next: ArkosNextFunction) {
     if (err instanceof MulterError)
       return next(
-        new AppError(err.message, 400, err.code || "FileUploadError")
+        new AppError(
+          err.message,
+          400,
+          pascalCase(err.code || "FileUploadError")
+        )
       );
     else return next(err);
   }
@@ -316,7 +321,15 @@ export class FileUploadService {
         : this.getUpload().single(this.getFieldName());
 
       uploadHandler(req, res, async (err) => {
-        if (err) return reject(err);
+        if (err && err instanceof MulterError)
+          return reject(
+            new AppError(
+              err.message,
+              400,
+              pascalCase(err.code || "FileUploadError")
+            )
+          );
+        else if (err) reject(err);
 
         try {
           const dirParts = this.uploadDir.split("/");
@@ -352,7 +365,6 @@ export class FileUploadService {
               new AppError(
                 `No file or files were attached on field ${req.params.fileType} on the request body as form data.`,
                 400,
-                {},
                 "NoFileOrFilesAttached"
               )
             );
