@@ -23,13 +23,13 @@
     {{/if}}
     "tsx-strict": "^0.4.2",
     "tsx": "^4.21.0",
-    "prisma": "^6.19.0"
+    "prisma": "^6.19.2"
   },
   "dependencies": {
-    "arkos": "^1.4.6-canary.4", 
+    "arkos": "^1.4.6-beta", 
     "express": "^4.22.1",
     "@scalar/express-api-reference": "^0.8.35",
-    "@prisma/client": "^6.19.0"{{#if validation.type}},{{/if}}
+    "@prisma/client": "^6.19.2"{{#if validation.type}},{{/if}}
     {{#if (eq validation.type "class-validator")}}
     "reflect-metadata": "^0.2.2",
     "class-transformer": "^0.5.1",
