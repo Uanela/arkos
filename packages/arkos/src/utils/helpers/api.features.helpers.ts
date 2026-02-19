@@ -298,9 +298,7 @@ function buildNestedObject(
     return result;
   }
 
-  const stringValue = ["number", "string", "boolean"].includes(typeof value)
-    ? value
-    : value?.toString();
+  const stringValue = typeof value === "string" ? value : value?.toString();
 
   switch (operator) {
     case "icontains":
@@ -372,9 +370,7 @@ function buildNestedObject(
     default:
       current[lastField] = {
         [operator]:
-          value === null
-            ? null
-            : convertValue(stringValue, lastField, fieldConfig),
+          value === null ? null : convertValue(value, lastField, fieldConfig),
       };
   }
 
