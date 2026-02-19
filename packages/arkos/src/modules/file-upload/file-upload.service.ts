@@ -1,4 +1,4 @@
-import multer, { StorageEngine } from "multer";
+import multer, { MulterError, StorageEngine } from "multer";
 import path from "path";
 import fs from "fs";
 import { NextFunction } from "express";
@@ -14,6 +14,7 @@ import {
 } from "../../types";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { removeBothSlashes } from "../../utils/helpers/text.helpers";
+import { pascalCase } from "../../exports/utils";
 
 /**
  * Service to handle file uploads, including single and multiple file uploads,
@@ -25,6 +26,18 @@ export class FileUploadService {
   private allowedFileTypes: RegExp;
   private storage: StorageEngine;
   private maxCount: number;
+
+  private handleUploadError(err: any, next: ArkosNextFunction) {
+    if (err instanceof MulterError)
+      return next(
+        new AppError(
+          err.message,
+          400,
+          pascalCase(err.code || "FileUploadError")
+        )
+      );
+    else return next(err);
+  }
 
   /**
    * Constructor to initialize the file uploader service.
@@ -104,11 +117,7 @@ export class FileUploadService {
     return (req: ArkosRequest, res: ArkosResponse, next: NextFunction) => {
       const upload = this.getUpload().single(this.getFieldName());
       upload(req, res, async (err) => {
-        if (err instanceof multer.MulterError) {
-          return next(err);
-        } else if (err) {
-          return next(err);
-        }
+        if (err) return this.handleUploadError(err, next);
 
         if (oldFilePath) {
           const { fileUpload: configs } = getArkosConfig();
@@ -181,7 +190,11 @@ export class FileUploadService {
 
       const baseRouteIndex = urlPath.indexOf(baseRoute);
       if (baseRouteIndex === -1)
-        throw new AppError("Invalid file URL: base route not found", 400);
+        throw new AppError(
+          "Invalid file URL: base route not found",
+          400,
+          "InvalidFileUrl"
+        );
 
       const pathAfterBaseRoute = urlPath.substring(
         baseRouteIndex + baseRoute.length
@@ -206,7 +219,8 @@ export class FileUploadService {
       if (!fileType || !fileName) {
         throw new AppError(
           "Unable to determine file type or file name from URL",
-          400
+          400,
+          "UnableToProcessFileURL"
         );
       }
 
@@ -233,7 +247,11 @@ export class FileUploadService {
           filePath = path.join(fileUploadService.uploadDir, fileName);
           break;
         default:
-          throw new AppError(`Unsupported file type: ${fileType}`, 400);
+          throw new AppError(
+            `Unsupported file type: ${fileType}`,
+            400,
+            "UnsupportedFileType"
+          );
       }
 
       await promisify(fs.stat)(filePath);
@@ -245,9 +263,14 @@ export class FileUploadService {
         throw error;
       }
 
-      if (error.code === "ENOENT") throw new AppError("File not found", 404);
+      if (error.code === "ENOENT")
+        throw new AppError("File not found", 404, "FileNotFound");
 
-      throw new AppError(`Failed to delete file: ${error.message}`, 500);
+      throw new AppError(
+        `Failed to delete file: ${error.message}`,
+        500,
+        "UnableToDeleteFile"
+      );
     }
   }
 
@@ -298,7 +321,15 @@ export class FileUploadService {
         : this.getUpload().single(this.getFieldName());
 
       uploadHandler(req, res, async (err) => {
-        if (err) return reject(err);
+        if (err && err instanceof MulterError)
+          return reject(
+            new AppError(
+              err.message,
+              400,
+              pascalCase(err.code || "FileUploadError")
+            )
+          );
+        else if (err) reject(err);
 
         try {
           const dirParts = this.uploadDir.split("/");
@@ -334,7 +365,6 @@ export class FileUploadService {
               new AppError(
                 `No file or files were attached on field ${req.params.fileType} on the request body as form data.`,
                 400,
-                {},
                 "NoFileOrFilesAttached"
               )
             );
@@ -358,7 +388,12 @@ export class FileUploadService {
     fileType: "images" | "videos" | "documents" | "files"
   ): Promise<boolean> {
     try {
-      if (!fileType) throw new AppError("File type parameter is required", 400);
+      if (!fileType)
+        throw new AppError(
+          "File type parameter is required",
+          400,
+          "MissingFileType"
+        );
 
       const validFileTypes = ["images", "videos", "documents", "files"];
       if (!validFileTypes.includes(fileType)) {
@@ -408,11 +443,14 @@ export class FileUploadService {
         throw error;
       }
 
-      if (error.code === "ENOENT") {
-        throw new AppError("File not found", 404);
-      }
+      if (error.code === "ENOENT")
+        throw new AppError("File not found", 404, "FileNotFound");
 
-      throw new AppError(`Failed to delete file: ${error.message}`, 500);
+      throw new AppError(
+        `Failed to delete file: ${error.message}`,
+        500,
+        "UnableToDeleteFile"
+      );
     }
   }
 }

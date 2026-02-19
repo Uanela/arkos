@@ -353,8 +353,8 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toMatch(/import.*\n\s*\nclass/);
-      expect(result).toMatch(/class.*{}\n\s*\nconst/);
+      expect(result).toMatch(/import.*\n\s*\nexport class/);
+      expect(result).toMatch(/export class.*{}\n\s*\nconst/);
       expect(result).toMatch(/;\n\s*\nexport default/);
     });
 
