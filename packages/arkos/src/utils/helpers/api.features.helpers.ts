@@ -298,7 +298,9 @@ function buildNestedObject(
     return result;
   }
 
-  const stringValue = typeof value === "string" ? value : value?.toString();
+  const stringValue = ["number", "string", "boolean"].includes(typeof value)
+    ? value
+    : value?.toString();
 
   switch (operator) {
     case "icontains":
