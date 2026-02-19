@@ -613,6 +613,16 @@ describe("parseQueryParamsWithModifiers", () => {
       });
     });
 
+    it("should handle numberic fields", () => {
+      const query = { deliveredQuantity: { gt: 1 } };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        deliveredQuantity: {
+          gt: 1,
+        },
+      });
+    });
+
     it("should handle mixed nested objects and double underscore syntax", () => {
       const query = {
         user: {
