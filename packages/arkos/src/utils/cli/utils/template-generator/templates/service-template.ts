@@ -31,7 +31,7 @@ export function generateServiceTemplate(options: TemplateOptions): string {
 
   return `${serviceClassImport}
   
-class ${modelName.pascal}Service extends ${serviceName}${typeParameter} {}
+export class ${modelName.pascal}Service extends ${serviceName}${typeParameter} {}
 
 const ${modelName.camel}Service = new ${modelName.pascal}Service(${constructorParam});
 

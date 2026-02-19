@@ -320,10 +320,10 @@ ${dtoFields.join("\n\n")}
     const typeModifier = isTypeScript ? "?" : "";
 
     dtoFields.push(
-      `  @IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page${typeModifier}: number;`
+      `  @IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page${typeModifier}: number;`
     );
     dtoFields.push(
-      `  @IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  @Max(100)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit${typeModifier}: number;`
+      `  @IsOptional()\n  @IsNumber()\n  @Max(100)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit${typeModifier}: number;`
     );
     dtoFields.push(
       `  @IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  @Type(() => String)\n  sort${typeModifier}: string;`

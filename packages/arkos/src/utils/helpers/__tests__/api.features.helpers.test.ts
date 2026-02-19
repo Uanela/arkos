@@ -16,6 +16,185 @@ describe("parseQueryParamsWithModifiers", () => {
       expect(result).toEqual({ status: "active" });
     });
 
+    it("should handle complex nested relational filters with multiple 'some' keywords preserving full nesting", () => {
+      const query = {
+        user__roles__some__role__permissions__some: {
+          action: "ManageOnDepartmentLevel",
+          resource: "request",
+        },
+        filerMode: "AND",
+      };
+
+      const result = parseQueryParamsWithModifiers(query);
+
+      expect(result).toEqual({
+        filerMode: "AND",
+        user: {
+          roles: {
+            some: {
+              role: {
+                permissions: {
+                  some: {
+                    action: "ManageOnDepartmentLevel",
+                    resource: "request",
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+
+    it("should correctly nest trailing 'some' when top-level key has no '__' but object value contains '__' keys ending in operator", () => {
+      const query = {
+        roles: {
+          permissions__some: {
+            action: "ManageOnDepartmentLevel",
+          },
+        },
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        roles: {
+          permissions: {
+            some: {
+              action: "ManageOnDepartmentLevel",
+            },
+          },
+        },
+      });
+    });
+
+    it("should correctly nest trailing 'some' on inner '__' key inside an object value", () => {
+      const query = {
+        roles__some: {
+          role__permissions__some: {
+            action: "ManageOnDepartmentLevel",
+            resource: "request",
+          },
+        },
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        roles: {
+          some: {
+            role: {
+              permissions: {
+                some: {
+                  action: "ManageOnDepartmentLevel",
+                  resource: "request",
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+
+    it("should deep merge two different top-level keys resolving to the same nested 'some' path", () => {
+      const query = {
+        user__roles__some__role__name: "admin",
+        user__roles__some__role__isActive: "true",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          roles: {
+            some: {
+              role: {
+                name: "admin",
+                isActive: true,
+              },
+            },
+          },
+        },
+      });
+    });
+
+    it("should convert boolean value on a nested field", () => {
+      const query = {
+        user__roles__some__role__isActive: "true",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          roles: {
+            some: {
+              role: {
+                isActive: true, // should be boolean, not "true"
+              },
+            },
+          },
+        },
+      });
+    });
+
+    it("should convert numeric value on a nested field", () => {
+      const query = {
+        user__posts__some__rating: "5",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          posts: {
+            some: {
+              rating: 5, // should be number, not "5"
+            },
+          },
+        },
+      });
+    });
+
+    it("should convert date value on a nested field", () => {
+      const query = {
+        user__posts__some__createdAt: "2024-01-01",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          posts: {
+            some: {
+              createdAt: new Date("2024-01-01"), // should be Date, not string
+            },
+          },
+        },
+      });
+    });
+
+    it("should convert boolean value on a nested field using 'in' operator", () => {
+      const query = {
+        user__roles__some__role__isActive__in: "true,false",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        user: {
+          roles: {
+            some: {
+              role: {
+                isActive: {
+                  in: [true, false], // should be booleans, not strings
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+
+    it("should convert numeric value on a nested field using 'or' operator", () => {
+      const query = {
+        user__posts__some__rating__or: "3,5",
+      };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        OR: [
+          { user: { posts: { some: { rating: 3 } } } },
+          { user: { posts: { some: { rating: 5 } } } },
+        ],
+      });
+    });
+
     it("should ignore fields with null or undefined values", () => {
       const query = { status: "active", name: null, age: undefined };
       const result = parseQueryParamsWithModifiers(query);
@@ -430,6 +609,16 @@ describe("parseQueryParamsWithModifiers", () => {
         createdAt: {
           gte: new Date("2023-05-01T17:04:00.000Z"),
           lte: new Date("2023-05-02T22:44:09.000Z"),
+        },
+      });
+    });
+
+    it("should handle numberic fields", () => {
+      const query = { deliveredQuantity: { gt: 1 } };
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        deliveredQuantity: {
+          gt: 1,
         },
       });
     });

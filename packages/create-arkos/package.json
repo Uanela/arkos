@@ -1,6 +1,6 @@
 {
   "name": "create-arkos",
-  "version": "1.5.0-beta",
+  "version": "1.5.1-canary.2.1",
   "type": "module",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
@@ -21,7 +21,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/uanela/arkos.git"
+    "url": "git+https://github.com/uanela/arkos.git"
   },
   "bugs": {
     "url": "https://github.com/uanela/arkos/issues"

@@ -488,7 +488,7 @@ describe("generateTemplate", () => {
       const lines = result.split("\n");
 
       // Check that there's proper indentation structure
-      expect(lines.some((line) => line.startsWith("class"))).toBe(true);
+      expect(lines.some((line) => line.startsWith("export class"))).toBe(true);
     });
   });
 });
