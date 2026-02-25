@@ -1,0 +1,544 @@
+---
+sidebar_position: 4
+title: Service Hooks
+---
+
+import { Tabs, Tab } from "fumadocs-ui/components/tabs"
+ 
+
+# Service Hooks
+
+> Available from `v1.3.0-beta`
+
+Service Hooks allow you to execute custom business logic at the service layer level during CRUD operations. Unlike [Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares) which run at the HTTP request level, Service Hooks execute whenever BaseService methods are called - whether through API endpoints or programmatic service calls.
+
+This ensures your business logic runs consistently across your entire application, regardless of how the data operations are triggered.
+
+```typescript
+// Service hooks run in ALL these scenarios:
+// 1. HTTP API call: POST /api/posts
+// 2. Programmatic call: postService.createOne(data)
+// 3. Internal service usage: await postService.createOne(data, {}, context)
+```
+
+## Service Hooks vs Interceptor Middlewares
+
+Understanding when to use each approach:
+
+| Feature             | Service Hooks                                 | Interceptor Middlewares                                                              |
+| ------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Execution Level** | Service layer (BaseService methods)           | HTTP request layer (Express routes)                                                  |
+| **Scope**           | All service calls (API + programmatic)        | Only HTTP endpoint calls                                                             |
+| **Access to**       | Service context, user info                    | Full Express req/res objects                                                         |
+| **Best for**        | Business logic, data validation, audit trails | Request processing, authentication, response formatting                              |
+| **File Location**   | `[model].hooks.ts`                            | `[model].interceptors.ts (v1.4.0+)` or `[model].middlewares.ts (v1.3.0 and earlier)` |
+
+## Setting Up Service Hooks
+
+### File Structure
+
+Service Hooks follow Arkos's convention-based structure:
+
+```
+my-arkos-project/
+└── src/
+    └── modules/
+        └── [model-name]/
+            ├── [model-name].hooks.ts      ← Service hooks
+            ├── [model-name].service.ts    ← Custom service (optional)
+            ├── [model-name].interceptors.ts ← HTTP interceptors (v1.4.0+ Recommend)
+            └── [model-name].middlewares.ts ← HTTP interceptors (v1.3.0 and earlier)
+```
+
+:::warning Important
+Follow the naming convention exactly as Arkos auto-discovers these files. Model names must be in **kebab-case** (e.g., `UserProfile` becomes `user-profile`).
+:::
+
+### Creating Custom Services
+
+To use Service Hooks effectively, you'll often want to create custom service classes:
+
+```bash
+npx arkos generate service --module post
+```
+
+**Shorthand:**
+
+```bash
+npx arkos g s -m post
+```
+
+This generates:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// src/modules/post/post.service.ts
+import { BaseService } from "arkos/services";
+
+class PostService extends BaseService<"post"> {
+  async getPostsByAuthor(authorId: string) {
+    return this.findMany({ authorId }, { include: { author: true } });
+  }
+}
+
+const postService = new PostService("post");
+
+export default postService;
+```
+
+:::tip Type Inference
+The `"post"` type enables automatic type inference after running `npx arkos prisma generate`. This command generates enhanced type definitions from your Prisma schema.
+:::
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/modules/post/post.service.ts
+import { BaseService } from "arkos/service";
+import { Prisma } from "@prisma/client";
+
+class PostService extends BaseService<Prisma.PostDelegate> {
+  async getPostsByAuthor(authorId: string) {
+    return this.findMany({ authorId }, { include: { author: true } });
+  }
+}
+
+const postService = new PostService("post");
+
+export default postService;
+```
+
+</TabItem>
+</Tabs>
+
+### Basic Hooks Example
+
+```typescript
+// src/modules/post/post.hooks.ts
+import {
+  BeforeCreateOneHookArgs,
+  AfterCreateOneHookArgs,
+  OnCreateOneErrorHookArgs,
+} from "arkos/services";
+import { Prisma } from "@prisma/client";
+import postService from "./post.service";
+
+export const beforeCreateOne = [
+  async ({ data, context }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
+    // Auto-generate slug if not provided
+    if (data.title && !data.slug) {
+      data.slug = data.title
+        .toLowerCase()
+        .replace(/[^a-zA-Z0-9\s]/g, "")
+        .replace(/\s+/g, "-");
+    }
+
+    // Add current user as author if available
+    if (context?.user?.id) data.authorId = context.user.id;
+  },
+];
+
+export const afterCreateOne = [
+  async ({ result, context }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
+    // Send notification to followers
+    await notifyFollowers(result.authorId, {
+      type: "new_post",
+      postId: result.id,
+      title: result.title,
+    });
+
+    // Update search index
+    await searchService.indexPost(result);
+  },
+];
+
+export const onCreateOneError = [
+  async ({
+    error,
+    data,
+    context,
+  }: OnCreateOneErrorHookArgs<Prisma.PostDelegate>) => {
+    // Clean up any uploaded files
+    if (data.featuredImageUrl) await cleanupUploadedFile(data.featuredImageUrl);
+  },
+];
+```
+
+## Available Service Hooks
+
+Service Hooks are available for all CRUD operations provided by the [BaseService class](/docs/api-reference/the-base-service-class):
+
+### Before Hooks
+
+Execute before the main operation:
+
+```typescript
+export const beforeCreateOne = [
+  /* functions */
+];
+export const beforeCreateMany = [
+  /* functions */
+];
+export const beforeFindMany = [
+  /* functions */
+];
+export const beforeFindOne = [
+  /* functions */
+];
+export const beforeUpdateOne = [
+  /* functions */
+];
+export const beforeUpdateMany = [
+  /* functions */
+];
+export const beforeDeleteOne = [
+  /* functions */
+];
+export const beforeDeleteMany = [
+  /* functions */
+];
+export const beforeCount = [
+  /* functions */
+];
+```
+
+### After Hooks
+
+Execute after successful operations:
+
+```typescript
+export const afterCreateOne = [
+  /* functions */
+];
+export const afterCreateMany = [
+  /* functions */
+];
+export const afterFindMany = [
+  /* functions */
+];
+export const afterFindOne = [
+  /* functions */
+];
+export const afterUpdateOne = [
+  /* functions */
+];
+export const afterUpdateMany = [
+  /* functions */
+];
+export const afterDeleteOne = [
+  /* functions */
+];
+export const afterDeleteMany = [
+  /* functions */
+];
+export const afterCount = [
+  /* functions */
+];
+```
+
+### Error Hooks
+
+Execute when operations fail:
+
+```typescript
+export const onCreateOneError = [
+  /* functions */
+];
+export const onCreateManyError = [
+  /* functions */
+];
+export const onFindManyError = [
+  /* functions */
+];
+export const onFindOneError = [
+  /* functions */
+];
+export const onUpdateOneError = [
+  /* functions */
+];
+export const onUpdateManyError = [
+  /* functions */
+];
+export const onDeleteOneError = [
+  /* functions */
+];
+export const onDeleteManyError = [
+  /* functions */
+];
+export const onCountError = [
+  /* functions */
+];
+```
+
+## Hook Arguments and Context
+
+> `TypeScript Only`
+
+Each hook receives typed arguments containing relevant data:
+
+```typescript
+// Before hooks get data being processed
+interface BeforeCreateOneHookArgs<T> {
+  data: CreateOneData<T>;
+  queryOptions?: CreateOneOptions<T>;
+  context?: ServiceBaseContext;
+}
+
+// After hooks get the result + original data
+interface AfterCreateOneHookArgs<T> {
+  result: CreateOneResult<T>;
+  data: CreateOneData<T>;
+  queryOptions?: CreateOneOptions<T>;
+  context?: ServiceBaseContext;
+}
+
+// Error hooks get the error + original data
+interface OnCreateOneErrorHookArgs<T> {
+  error: any;
+  data: CreateOneData<T>;
+  queryOptions?: CreateOneOptions<T>;
+  context?: ServiceBaseContext;
+}
+```
+
+The `ServiceBaseContext` provides request information when available:
+
+```typescript
+interface ServiceBaseContext {
+  user?: User; // Authenticated user
+  accessToken?: string; // Access token from request
+  skip?: ("before" | "after" | "error")[]; // Skip specific hook types
+  throwOnError?: boolean; // Whether to re-throw errors (default: true)
+}
+```
+
+## Practical Examples
+
+### User Registration with Profile Creation
+
+```typescript
+// src/modules/user/user.hooks.ts
+import {
+  BeforeCreateOneHookArgs,
+  AfterCreateOneHookArgs,
+} from "arkos/services";
+import authService from "../auth/auth.service";
+import emailService from "../email/email.service";
+import { Prisma } from "@prisma/client";
+
+export const beforeCreateOne = [
+  async ({ data }: BeforeCreateOneHookArgs<Prisma.UserDelegate>) => {
+    // Hash password if not already hashed
+    if (data.password && !authService.isPasswordHashed(data.password)) {
+      data.password = await authService.hashPassword(data.password);
+    }
+
+    // Generate username if not provided
+    if (!data.username && data.email) {
+      data.username = data.email.split("@")[0];
+    }
+  },
+];
+
+export const afterCreateOne = [
+  async ({ result }: AfterCreateOneHookArgs<Prisma.UserDelegate>) => {
+    // Create default user profile
+    await prisma.profile.create({
+      data: {
+        userId: result.id,
+        displayName: result.username,
+        isPublic: false,
+      },
+    });
+
+    // Send welcome email
+    await emailService.sendWelcomeEmail({
+      to: result.email,
+      username: result.username,
+    });
+  },
+];
+```
+
+### Blog Post with Auto-Slug and Notifications
+
+```typescript
+// src/modules/post/post.hooks.ts
+export const beforeCreateOne = [
+  async ({ data, context }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
+    // Auto-generate slug
+    if (!data.slug && data.title) {
+      data.slug = generateSlug(data.title);
+    }
+
+    // Set publication date
+    if (data.status === "PUBLISHED" && !data.publishedAt) {
+      data.publishedAt = new Date();
+    }
+
+    // Track who created the post
+    if (context?.user?.id) {
+      data.authorId = context.user.id;
+    }
+  },
+];
+
+export const afterCreateOne = [
+  // Multiple functions for separation of concerns
+  async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
+    // Update search index
+    if (result.status === "PUBLISHED") {
+      await searchService.indexPost(result);
+    }
+  },
+
+  async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
+    // Send notifications
+    if (result.status === "PUBLISHED") {
+      await notificationService.notifySubscribers({
+        authorId: result.authorId,
+        postId: result.id,
+        title: result.title,
+      });
+    }
+  },
+
+  async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
+    // Update author statistics
+    await prisma.author.update({
+      where: { id: result.authorId },
+      data: {
+        postCount: { increment: 1 },
+        lastPostAt: new Date(),
+      },
+    });
+  },
+];
+```
+
+## Using Services Programmatically
+
+Service Hooks ensure consistency when calling services directly:
+
+```typescript
+import postService from "../modules/post/post.service";
+
+// All hooks will execute
+const newPost = await postService.createOne(
+  {
+    title: "My New Post",
+    content: "Post content here...",
+  },
+  {
+    include: { author: true },
+  },
+  {
+    user: currentUser, // Context for hooks
+  }
+);
+
+// Skip specific hooks if needed
+const userData = await userService.findOne(
+  { email: "user@example.com" },
+  { include: { profile: true } },
+  {
+    skip: ["after"], // Skip after hooks
+    user: currentUser,
+  }
+);
+
+// Handle errors gracefully
+const result = await postService.createOne(
+  invalidData,
+  {},
+  {
+    throwOnError: false, // Don't throw, return undefined on error
+    user: currentUser,
+  }
+);
+```
+
+## Integration with Interceptor Middlewares
+
+Service Hooks and Interceptor Middlewares work together seamlessly:
+
+```
+HTTP Request → Interceptor beforeCreateOne → Service beforeCreateOne →
+Database Operation → Service afterCreateOne → Interceptor afterCreateOne → HTTP Response
+```
+
+```typescript
+// HTTP Interceptor (post.middlewares.ts)
+export const beforeCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    // HTTP-specific processing
+    req.body.featuredImageUrl = await processUploadedImage(req.file);
+    next();
+  },
+];
+
+// Service Hook (post.hooks.ts)
+export const beforeCreateOne = [
+  async ({ data, context }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
+    // Business logic that applies everywhere
+    if (!data.slug) {
+      data.slug = generateSlug(data.title);
+    }
+  },
+];
+```
+
+## Generating Hooks with CLI
+
+Quickly scaffold hook files:
+
+```bash
+npx arkos generate hooks --module post
+```
+
+**Shorthand:**
+
+```bash
+npx arkos g h -m post
+```
+
+:::info
+Prior to `1.4.0-beta` instead of `--module` you must use `--model`.
+:::
+
+This creates a template with all available hooks commented out, ready to customize:
+
+```typescript
+// src/modules/post/post.hooks.ts
+// import {
+// BeforeFindOneHookArgs,
+// AfterFindOneHookArgs,
+// BeforeUpdateOneHookArgs,
+// AfterUpdateOneHookArgs,
+// // ... all other hook types
+// } from "arkos/services";
+// import { Prisma } from "@prisma/client"
+
+// export const beforeCreateOne = [
+//   async function beforeCreateOne({ context, data, queryOptions }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) {}
+// ];
+
+// export const afterCreateOne = [
+//   async function afterCreateOne({ context, result, data, queryOptions }: AfterCreateOneHookArgs<Prisma.PostDelegate>) {}
+// ];
+
+// ... all other hooks ready to uncomment
+```
+
+## Best Practices
+
+1. **Keep hooks focused** - Each hook function should handle one concern
+2. **Use arrays of functions** - Separate different aspects of your logic
+3. **Handle errors appropriately** - Log errors but don't fail the main operation unless critical
+4. **Leverage context** - Use the context parameter for user-specific logic
+5. **Don't block operations** - Use `.catch()` for non-critical async operations
+
+Service Hooks provide a powerful way to implement consistent business logic across your entire application, ensuring that important operations like validation, notifications, and data processing happen regardless of how your services are called.
