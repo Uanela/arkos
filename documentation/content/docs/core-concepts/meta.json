@@ -1,0 +1,13 @@
+{
+  "title": "Core Concepts",
+  "pages": [
+    "endpoints-generation",
+    "authentication-system",
+    "interceptor-middlewares",
+    "request-data-validation",
+    "open-api-documentation",
+    "file-uploads",
+    "error-handling",
+    "sending-emails"
+  ]
+}
