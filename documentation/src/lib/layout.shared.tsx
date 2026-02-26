@@ -39,22 +39,22 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: "Documentation",
         url: "/docs/intro",
-        secondary: false,
+        on: "nav",
       },
       {
         text: "Blog",
         url: "/blog",
-        secondary: false,
+        on: "nav", 
       },
       {
         text: "Showcase",
         url: "/showcase",
-        secondary: false,
+        on: "nav",
       },
       {
         text: "Sponsors",
         url: "/sponsors",
-        secondary: false,
+        on: "nav", 
       },
     ],
   };
