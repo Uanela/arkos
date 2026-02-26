@@ -14,7 +14,7 @@ export function baseOptions(): BaseLayoutProps {
         <div>
           <Image
             src="/img/arkos-js-logo-dark.svg"
-            className="w-26 aspect-auto object-contain"
+            className="w-26 object-contain"
           />
         </div>
       ),
