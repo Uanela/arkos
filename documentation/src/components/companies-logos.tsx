@@ -15,7 +15,7 @@ export default function CompaniesLogos(): ReactElement {
     <div className="mx-auto md:mt-20 sm:mt-16 mt-10 px-4">
       <div className="flex md:gap-24 sm:gap-20 gap-6 items-center w-fit mx-auto">
         {logos.map((logo) => (
-          <div>
+          <div key={logo.url}>
             <Image
               src={`/img/${logo.url}`}
               alt={logo.url}
