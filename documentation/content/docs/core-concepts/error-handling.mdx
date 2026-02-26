@@ -5,7 +5,6 @@ title: Error Handling
 import { Tabs, Tab } from "fumadocs-ui/components/tabs"
  
 
-# Error Handling
 
 **Arkos** includes a powerful error handling system that automatically processes all errors thrown within your application, transforms them into consistent, meaningful response formats, and manages environment-specific behavior. Starting with [**v1.5.0-beta**](/blog/1.5-beta), error messages are more actionable and human-readable than ever. The arkos error handler system is an [global Express middleware](https://expressjs.com/en/guide/error-handling.html#the-default-error-handler) that captures all errors passed through your application (via `next(error)` or thrown errors). It processes these errors differently based on your build environment, maps specific database and authentication errors to friendly messages, and sends appropriate responses to clients.
 
