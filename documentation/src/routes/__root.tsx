@@ -8,6 +8,7 @@ import * as React from "react";
 import appCss from "@/styles/app.css?url";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 import AnnoucementBanner from "@/components/annoucement-banner";
+import { Image } from "fumadocs-core/framework";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -23,7 +24,8 @@ export const Route = createRootRoute({
       },
       {
         name: "description",
-        content: "The Express And Prisma RESTful Framework",
+        content:
+          "A tool for backend developers and teams who ship softwares with complex business logic under tight deadlines",
       },
       {
         name: "theme-color",

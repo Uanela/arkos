@@ -14,7 +14,7 @@ export function baseOptions(): BaseLayoutProps {
         <div>
           <Image
             src="/img/arkos-js-logo-dark.svg"
-            className="w-26 aspect-auto"
+            className="w-26 aspect-auto object-contain"
           />
         </div>
       ),
@@ -37,6 +37,11 @@ export function baseOptions(): BaseLayoutProps {
     },
     links: [
       {
+        text: "Learn",
+        url: "/learn/intro",
+        on: "nav",
+      },
+      {
         text: "Documentation",
         url: "/docs/intro",
         on: "nav",
@@ -44,7 +49,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: "Blog",
         url: "/blog",
-        on: "nav", 
+        on: "nav",
       },
       {
         text: "Showcase",
@@ -54,7 +59,7 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: "Sponsors",
         url: "/sponsors",
-        on: "nav", 
+        on: "nav",
       },
     ],
   };
