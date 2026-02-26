@@ -17,7 +17,6 @@ function Home() {
   return (
     <HomeLayout {...baseOptions()}>
       <div className="tailwind overflow-hidden max-w-[100vw]">
-        {/* <Layout description="Node.js backend framework for simplifying API development with automatic route generation, authentication, and minimal configuration."> */}
         <HeroSection />
         <CompaniesLogos />
 
@@ -39,7 +38,7 @@ function Home() {
             </p>
             <Link
               to="https://github.com/uanela"
-              className="text-white font-medium py-1 px-2 flex items-center gap-2 justify-center outline-[1px] outline-none outline-sky-500 rounded-full z-10 bg-gray-900 w-fit mx-auto"
+              className="text-white font-medium py-1 px-2 flex items-center gap-2 justify-center outline-[1px]   outline-sky-500 rounded-full z-10 bg-gray-900 w-fit mx-auto"
             >
               <Image
                 className="rounded-full size-10"
@@ -215,7 +214,6 @@ function Home() {
         </section>
 
         <PoweredBySection />
-        {/* </Layout> */}
       </div>
     </HomeLayout>
   );

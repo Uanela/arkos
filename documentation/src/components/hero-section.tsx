@@ -57,7 +57,7 @@ export default function HeroSection(): ReactElement {
           </div>
           <div className="md:mt-4 mt-4 text-center cursor-pointer group w-fit mx-auto md:px-0 md:w-full">
             <div
-              className="rounded-md bg-sky-500/5 outline-none outline outline-sky-500 py-2 max-w-[370px] mx-auto relative group cursor-pointer hover:[box-shadow:0px_0px_20px_0px_#0ea5e9aa] create-arkos-cmd md:px-3 px-8"
+              className="rounded-md bg-sky-500/5  outline outline-sky-500 py-2 max-w-[370px] mx-auto relative group cursor-pointer hover:[box-shadow:0px_0px_20px_0px_#0ea5e9aa] create-arkos-cmd md:px-3 px-8"
               onClick={() => {
                 navigator.clipboard.writeText("npx create-arkos@latest");
                 setTooltip("Copied!");

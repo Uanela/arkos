@@ -6,7 +6,7 @@ export default function PoweredBySection(): ReactElement {
       <div className="relative flex flex-col items-center space-y-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 w-full max-w-6xl">
           <div></div>
-          <div className="flex items-center justify-center  rounded-lg flex-col p-2 md:p-4  outline-1 outline-none relative mx-auto w-full text-center">
+          <div className="flex items-center justify-center  rounded-lg flex-col p-2 md:p-4  outline-1   relative mx-auto w-full text-center">
             <div>
               <img
                 src="/img/arkos-js-logo-dark.svg"
@@ -20,7 +20,7 @@ export default function PoweredBySection(): ReactElement {
           </div>
           <div></div>
 
-          <div className="bg-[#0f1732] rounded-lg p-4 md:p-6 outline-zinc-400 outline-2 outline-offset-0 outline-none relative [box-shadow:0px_0px_15px_#a1a1aa]">
+          <div className="bg-[#0f1732] rounded-lg p-4 md:p-6 outline-zinc-400 outline-2 outline-offset-0   relative [box-shadow:0px_0px_15px_#a1a1aa]">
             <div>
               <img
                 src="/img/express-logo.webp"
@@ -36,7 +36,7 @@ export default function PoweredBySection(): ReactElement {
             </p>
           </div>
 
-          <div className="bg-[#0f1732] rounded-lg p-4 md:p-6 outline-[#36a394] outline-2 outline-none relative [box-shadow:0px_0px_15px_#307bb3]">
+          <div className="bg-[#0f1732] rounded-lg p-4 md:p-6 outline-[#36a394] outline-2   relative [box-shadow:0px_0px_15px_#307bb3]">
             <div>
               <img
                 src="/img/prisma-logo.webp"
@@ -54,7 +54,7 @@ export default function PoweredBySection(): ReactElement {
             <div className="w-[2px] h-[20px] absolute bg-gradient-to-t from-[#307bb3] bottom-[101%] right-1/2 hidden md:block"></div>
           </div>
 
-          <div className="bg-[#0f1732] rounded-lg p-4 md:p-6 outline-[#669c4f] outline-2 outline-offset-0 outline-none relative [box-shadow:0px_0px_15px_#669c4f]">
+          <div className="bg-[#0f1732] rounded-lg p-4 md:p-6 outline-[#669c4f] outline-2 outline-offset-0   relative [box-shadow:0px_0px_15px_#669c4f]">
             <div>
               <img
                 src="/img/node-js-logo.webp"
