@@ -18,7 +18,6 @@
 
   --color-fd-border: hsla(222, 50%, 40%, 0.2);
 
-  /* Primary blue tone */
   --color-fd-primary: hsl(199, 92%, 48%);
   --color-fd-primary-foreground: hsl(210, 20%, 98%);
 
@@ -46,13 +45,24 @@
   --color-fd-primary: hsl(199, 92%, 60%);
   --color-fd-primary-foreground: hsl(210, 20%, 9%);
 
-  /* --color-fd-secondary: hsl(199, 90%, 75%); */
-  /* --color-fd-secondary-foreground: hsl(210, 20%, 92%); */
-
   --color-fd-accent: hsla(199, 92%, 60%, 0.25);
   --color-fd-accent-foreground: hsl(210, 20%, 90%);
 
   --color-fd-ring: hsl(199, 92%, 65%);
+}
+
+#nd-sidebar {
+  border-right-color: var(--color-fd-border);
+}
+
+.prose a[target="_blank"] {
+  color: var(--color-fd-primary);
+  text-decoration: none;
+}
+
+.prose a[target="_blank"]:hover {
+  color: var(--color-fd-ring);
+  text-decoration: underline;
 }
 
 .outline-sky-500 {
