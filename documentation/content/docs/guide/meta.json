@@ -1,0 +1,11 @@
+{
+  "title": "Guide",
+  "pages": [
+    "sending-requests",
+    "request-query-parameters",
+    "service-hooks",
+    "adding-custom-routers",
+    "accessing-the-express-app",
+    "custom-prisma-query-options"
+  ]
+}
