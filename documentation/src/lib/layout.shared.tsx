@@ -35,27 +35,27 @@ export function baseOptions(): BaseLayoutProps {
       enabled: false,
       mode: "light-dark",
     },
-    // links: [
-    //   {
-    //     text: "Documentation",
-    //     url: "/docs/intro",
-    //     secondary: false,
-    //   },
-    //   {
-    //     text: "Blog",
-    //     url: "/blog",
-    //     secondary: false,
-    //   },
-    //   {
-    //     text: "Showcase",
-    //     url: "/showcase",
-    //     secondary: false,
-    //   },
-    //   {
-    //     text: "Sponsors",
-    //     url: "/sponsors",
-    //     secondary: false,
-    //   },
-    // ],
+    links: [
+      {
+        text: "Documentation",
+        url: "/docs/intro",
+        on: "nav",
+      },
+      {
+        text: "Blog",
+        url: "/blog",
+        on: "nav", 
+      },
+      {
+        text: "Showcase",
+        url: "/showcase",
+        on: "nav",
+      },
+      {
+        text: "Sponsors",
+        url: "/sponsors",
+        on: "nav", 
+      },
+    ],
   };
 }
