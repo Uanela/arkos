@@ -168,7 +168,9 @@
   "dependencies": {
     "chokidar": "^4.0.3",
     "commander": "^13.1.0",
-    "pluralize": "^8.0.0"
+    "pluralize": "^8.0.0",
+    "dotenv": "^16.4.7",
+    "dotenv-expand": "^12.0.3"
   },
   "peerDependencies": {
     "@prisma/client": "^6.19.2",
@@ -180,8 +182,6 @@
     "compression": "^1.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "dotenv-expand": "^12.0.3",
     "express": "^4.22.1",
     "express-rate-limit": "^7.5.0",
     "html-to-text": "^9.0.5",
