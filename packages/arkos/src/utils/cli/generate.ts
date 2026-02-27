@@ -75,6 +75,7 @@ const generateFile = async (
   if (config.customValidation) config.customValidation(modelName);
 
   const { path: customPath = "src/modules/{{module-name}}" } = options;
+  const targetPath = options.path || config.customPath || "src/modules/{{module-name}}";
 
   const names = {
     pascal: pascalCase(modelName),
@@ -82,24 +83,35 @@ const generateFile = async (
     kebab: kebabCase(modelName),
   };
 
-  const ext = config.ext || getUserFileExtension();
+   const ext = config.ext || getUserFileExtension();
 
-  const resolvedPath = (config.customPath || customPath).replaceAll(
-    "{{module-name}}",
-    names.kebab
-  );
+  // 2. Replace placeholder
+  const resolvedPath = targetPath.replaceAll("{{module-name}}", names.kebab);
 
-  const modulePath = path.join(process.cwd(), resolvedPath);
+  // 3. Check if the user is passing in a file path (with the extension .ts/.js) or just a directory.
+  const isExplicitFile = path.extname(resolvedPath) !== "";
+  
+  let filePath: string;
+  let modulePath: string;
 
-  function getSuffix() {
-    return config.fileSuffix ? `.${config.fileSuffix}` : "";
+  if (isExplicitFile) {
+    // If pass full path file: -p src/modules/order/create.dto.ts
+    filePath = path.resolve(process.cwd(), resolvedPath);
+    modulePath = path.dirname(filePath);
+  } else {
+    // If only pass folder or use default
+    modulePath = path.resolve(process.cwd(), resolvedPath);
+    
+    function getSuffix() {
+      return config.fileSuffix ? `.${config.fileSuffix}` : "";
+    }
+
+    const fileName = config.prefix
+      ? `${config.prefix}${names.kebab}${getSuffix()}.${ext}`
+      : `${names.kebab}${getSuffix()}.${ext}`;
+
+    filePath = path.join(modulePath, fileName);
   }
-
-  const fileName = config.prefix
-    ? `${config.prefix}${names.kebab}${getSuffix()}.${ext}`
-    : `${names.kebab}${getSuffix()}.${ext}`;
-
-  const filePath = path.join(modulePath, fileName);
 
   const humamReadableTemplateName =
     config.templateName.charAt(0).toUpperCase() +
