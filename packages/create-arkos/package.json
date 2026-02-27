@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "vitest --coverage",
-    "build": "rimraf dist && tsc",
+    "clean": "node -e \"const fs = require('fs'); if (fs.existsSync('dist')) fs.rmSync('dist', { recursive: true, force: true });\"",
+    "build": "pnpm run clean && pnpm exec tsc",
     "dev": "ts-node src/index.ts",
     "postbuia": "ts-node scripts/postbuild/index.ts",
     "postbuild": "npx tsx scripts/postbuild/fix-esm-imports.ts",
