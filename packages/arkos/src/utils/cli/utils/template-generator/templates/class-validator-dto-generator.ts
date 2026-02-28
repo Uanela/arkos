@@ -597,13 +597,13 @@ ${fields.join("\n\n")}
 
     const isOptional = field.isOptional || field.defaultValue !== undefined;
     if (isOptional) {
-      decorators.push("@IsOptional()");
-      validatorsUsed.add("IsOptional");
-    }
-
+    decorators.push("@IsOptional()");
+    validatorsUsed.add("IsOptional");
+  } 
+    else if (field.type === "String") {
     decorators.push("@IsNotEmpty()");
     validatorsUsed.add("IsNotEmpty");
-
+}
     if (field.isArray) {
       decorators.push("@IsArray()");
       validatorsUsed.add("IsArray");
@@ -642,10 +642,12 @@ ${fields.join("\n\n")}
     let type = this.mapPrismaTypeToTS(field.type);
 
     decorators.push("@IsOptional()");
-    decorators.push("@IsNotEmpty()");
-
     validatorsUsed.add("IsOptional");
+
+ if (field.type === "String") {
+    decorators.push("@IsNotEmpty()");
     validatorsUsed.add("IsNotEmpty");
+}
 
     if (field.isArray) {
       decorators.push("@IsArray()");
