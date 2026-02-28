@@ -138,4 +138,14 @@ export type ArkosRouterBaseUploadConfig = {
    * allowedFileTypes: /jpeg|jpg|png|gif/
    */
   allowedFileTypes?: string[] | RegExp;
+  /**
+   * Defines if this file field is required
+   *
+   * @default true
+   */
+  required?: boolean;
+  /**
+   * Open API field description
+   */
+  description?: string;
 };

@@ -1,0 +1,470 @@
+---
+title: Arkos Prisma Input (new)
+---
+import SmallTag from "@/components/small-tag"
+
+
+> Available from `v1.5.0-beta`
+
+A TypeScript utility type that simplifies Prisma relation operations by flattening nested `create`, `connect`, `update`, and `delete` operations into an intuitive array-based format with automatic operation detection.
+
+## Overview
+
+When working with Prisma relations, you typically need to write verbose nested objects:
+
+```typescript
+// Prisma's default way
+const user: Prisma.UserCreateInput = {
+  name: "John",
+  posts: {
+    create: [{ title: "Post 1" }],
+    connect: [{ id: 1 }],
+    update: [
+      { 
+        where: { id: 2 }, 
+        data: { title: "Updated" } 
+      }
+    ]
+  }
+};
+```
+
+`ArkosPrismaInput<T>` transforms this into a simpler, more intuitive format:
+
+```typescript
+import { ArkosPrismaInput } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
+
+// Arkos way - cleaner and more intuitive
+const user: ArkosPrismaInput<Prisma.UserCreateInput> = {
+  name: "John",
+  posts: [
+    { title: "Post 1" },              // auto-detects: create
+    { id: 1 },                         // auto-detects: connect
+    { id: 2, title: "Updated" },      // auto-detects: update
+    { id: 3, apiAction: "delete" }    // explicit: delete
+  ]
+};
+```
+
+## Import
+
+```typescript
+import { ArkosPrismaInput } from "arkos/prisma";
+```
+
+## Type Signature
+
+```typescript
+type ArkosPrismaInput<T> = FlattenRelations<T>;
+```
+
+Where `T` is any Prisma input type (e.g., `Prisma.UserCreateInput`, `Prisma.PostUpdateInput`).
+
+## How It Works
+
+### Automatic Operation Detection
+
+The utility type analyzes the fields present in each relation object to determine the operation:
+
+| Fields Present | Detected Operation | Example |
+|----------------|-------------------|---------|
+| Only create fields | `create` | `{ title: "New Post" }` |
+| Only unique identifiers | `connect` | `{ id: 1 }` |
+| Unique ID + data fields | `update` | `{ id: 1, title: "Updated" }` |
+| `apiAction: "delete"` | `delete` | `{ id: 1, apiAction: "delete" }` |
+
+### Explicit Operation Control
+
+For ambiguous cases, use the `apiAction` discriminator:
+
+```typescript
+const user: ArkosPrismaInput<Prisma.UserCreateInput> = {
+  posts: [
+    { id: 1 },                        // Ambiguous - could be connect or update
+    { id: 2, apiAction: "connect" },  // Explicit connect
+    { id: 3, apiAction: "update", title: "Updated" }  // Explicit update
+  ]
+};
+```
+
+## Supported Operations
+
+The type utility supports all Prisma relation operations:
+
+- **`create`** - Create new related records
+- **`connect`** - Link to existing records by unique identifier
+- **`update`** - Update existing related records
+- **`delete`** - Delete related records
+- **`disconnect`** - Remove relationship without deleting
+- **`deleteMany`** - Delete multiple related records
+
+## Usage Examples
+
+### One-to-Many Relations
+
+```typescript
+import { ArkosPrismaInput } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
+
+type CreateUserInput = ArkosPrismaInput<Prisma.UserCreateInput>;
+
+const newUser: CreateUserInput = {
+  name: "Alice",
+  email: "alice@example.com",
+  posts: [
+    // Create new posts
+    { title: "First Post", content: "Hello World" },
+    { title: "Second Post", content: "Learning Arkos" },
+    
+    // Connect existing posts
+    { id: 10 },
+    { id: 15 },
+    
+    // Update existing post
+    { id: 20, title: "Updated Title" }
+  ]
+};
+```
+
+### One-to-One Relations
+
+```typescript
+type UpdateUserInput = ArkosPrismaInput<Prisma.UserUpdateInput>;
+
+const userUpdate: UpdateUserInput = {
+  name: "Alice Updated",
+  profile: {
+    // For singular relations, can use either format
+    bio: "Software Developer",
+    avatar: "avatar.jpg"
+  }
+  // OR use apiAction for explicit control
+  profile: {
+    id: 1,
+    apiAction: "update",
+    bio: "Updated bio"
+  }
+};
+```
+
+### Nested Relations
+
+The type works recursively for deeply nested relations:
+
+```typescript
+type CreatePostInput = ArkosPrismaInput<Prisma.PostCreateInput>;
+
+const newPost: CreatePostInput = {
+  title: "My Post",
+  author: {
+    id: 1  // Connect to existing author
+  },
+  comments: [
+    {
+      content: "Great post!",
+      author: {
+        id: 2  // Nested relation - connect to commenter
+      }
+    },
+    {
+      content: "Thanks for sharing",
+      author: {
+        name: "Anonymous",  // Nested relation - create new user
+        email: "anon@example.com"
+      }
+    }
+  ]
+};
+```
+
+### Explicit Operations
+
+```typescript
+const userUpdate: ArkosPrismaInput<Prisma.UserUpdateInput> = {
+  posts: [
+    // Create
+    { title: "New Post", apiAction: "create" },
+    
+    // Connect
+    { id: 1, apiAction: "connect" },
+    
+    // Update
+    { id: 2, title: "Updated", apiAction: "update" },
+    
+    // Delete
+    { id: 3, apiAction: "delete" },
+    
+    // Disconnect (remove relation without deleting)
+    { id: 4, apiAction: "disconnect" },
+  ]
+};
+```
+
+## Integration with Arkos
+
+### With Interceptor Middlewares
+
+Perfect for type-safe request body manipulation:
+
+```typescript
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { Prisma } from "@prisma/client";
+import { ArkosPrismaInput } from "arkos/prisma";
+
+type CreateUserBody = ArkosPrismaInput<Prisma.UserCreateInput>;
+
+export const beforeCreateOne = [
+  async (
+    req: ArkosRequest<any, any, CreateUserBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    // Type-safe access to flattened relations
+    if (!req.body.profile) {
+      req.body.profile = {
+        bio: "New user",
+        isPublic: true
+      };
+    }
+    
+    // Ensure all posts are created with draft status
+    if (req.body.posts) {
+      req.body.posts = req.body.posts.map(post => ({
+        ...post,
+        status: "draft"
+      }));
+    }
+    
+    next();
+  }
+];
+```
+
+### With Validation Schemas
+
+Combine with Zod or class-validator for complete type safety:
+
+```typescript
+import z from "zod";
+import { ArkosPrismaInput } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
+
+// Define Zod schema
+const CreateUserSchema = z.object({
+  name: z.string(),
+  email: z.string().email(),
+  posts: z.array(z.object({
+    title: z.string(),
+    content: z.string(),
+    apiAction: z.enum(["create", "connect", "update"]).optional()
+  })).optional()
+});
+
+// Merge with Prisma types
+type CreateUserInput = z.infer<typeof CreateUserSchema> & 
+  ArkosPrismaInput<Prisma.UserCreateInput>;
+
+// Use in interceptor
+export const addDefaults = async (
+  req: ArkosRequest<any, any, CreateUserInput>,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  // Full type safety from both schema and Prisma
+  if (!req.body.posts) {
+    req.body.posts = [];
+  }
+  next();
+};
+```
+
+### With Custom Controllers
+
+```typescript
+import { ArkosRequest, ArkosResponse } from "arkos";
+import { Prisma } from "@prisma/client";
+import { ArkosPrismaInput } from "arkos/prisma";
+import userService from "./user.service";
+
+type CreateUserBody = ArkosPrismaInput<Prisma.UserCreateInput>;
+
+class UserController {
+  async createWithPosts(
+    req: ArkosRequest<any, any, CreateUserBody>,
+    res: ArkosResponse
+  ) {
+    const { name, email, posts } = req.body;
+    
+    // Type-safe body access
+    const user = await userService.createOne({
+      name,
+      email,
+      posts  // Arkos auto-handles the flattened format
+    });
+    
+    res.json(user);
+  }
+}
+```
+
+## Automatic Relation Handling
+
+This type utility pairs perfectly with Arkos's built-in relation handling that's been available since the beginning. When you use `ArkosPrismaInput` with Arkos services, the framework automatically converts the flattened format into proper Prisma operations.
+
+```typescript
+// In your controller or interceptor
+const userData: ArkosPrismaInput<Prisma.UserCreateInput> = {
+  name: "John",
+  posts: [
+    { title: "Post 1" },      // Arkos converts to: { create: { title: "Post 1" } }
+    { id: 1 }                  // Arkos converts to: { connect: { id: 1 } }
+  ]
+};
+
+// BaseService automatically handles the conversion
+await userService.createOne(userData);
+```
+
+For more details on how Arkos handles relations, see [Handling Prisma Relation Fields](/docs/advanced-guide/handling-prisma-relations).
+
+## Type Safety Features
+
+### Mutual Exclusivity for Singular Relations
+
+For one-to-one relations, the type enforces mutual exclusivity between flattened and Prisma formats:
+
+```typescript
+type UpdateUserInput = ArkosPrismaInput<Prisma.UserUpdateInput>;
+
+const update: UpdateUserInput = {
+  profile: {
+    bio: "New bio"  // ✅ Flattened format
+  }
+};
+
+// OR
+
+const update2: UpdateUserInput = {
+  profile: {
+    update: {       // ✅ Prisma format
+      where: { id: 1 },
+      data: { bio: "New bio" }
+    }
+  }
+};
+
+// But NOT mixed
+const invalid: UpdateUserInput = {
+  profile: {
+    bio: "New bio",  // ❌ Can't mix both formats
+    update: { ... }
+  }
+};
+```
+
+### Non-Relation Fields Preserved
+
+The type utility only affects relation fields - scalar fields remain unchanged:
+
+```typescript
+type CreateUserInput = ArkosPrismaInput<Prisma.UserCreateInput>;
+
+const user: CreateUserInput = {
+  // Scalar fields - unchanged
+  name: "John",
+  email: "john@example.com",
+  age: 30,
+  
+  // Relation fields - flattened
+  posts: [
+    { title: "Post 1" }
+  ]
+};
+```
+
+## Advanced Usage
+
+### Dynamic Operation Types
+
+Use TypeScript discriminated unions for runtime type narrowing:
+
+```typescript
+type PostOperation = 
+  | { action: "create"; title: string; content: string }
+  | { action: "connect"; id: number }
+  | { action: "update"; id: number; title?: string }
+  | { action: "delete"; id: number };
+
+const createUser = (operations: PostOperation[]) => {
+  const userData: ArkosPrismaInput<Prisma.UserCreateInput> = {
+    name: "User",
+    posts: operations.map(op => {
+      switch (op.action) {
+        case "create":
+          return { title: op.title, content: op.content };
+        case "connect":
+          return { id: op.id };
+        case "update":
+          return { id: op.id, title: op.title, apiAction: "update" };
+        case "delete":
+          return { id: op.id, apiAction: "delete" };
+      }
+    })
+  };
+  
+  return userService.createOne(userData);
+};
+```
+
+### Type Guards
+
+Create type guards for safer runtime checks:
+
+```typescript
+function isCreateOperation(rel: any): rel is { title: string } {
+  return 'title' in rel && !('id' in rel);
+}
+
+function isConnectOperation(rel: any): rel is { id: number } {
+  return 'id' in rel && !('title' in rel) && !('apiAction' in rel);
+}
+
+function isUpdateOperation(rel: any): rel is { id: number; title?: string; apiAction: "update" } {
+  return 'id' in rel && ('title' in rel || rel.apiAction === 'update');
+}
+
+// Use in your code
+const processRelation = (rel: any) => {
+  if (isCreateOperation(rel)) {
+    console.log("Creating:", rel.title);
+  } else if (isConnectOperation(rel)) {
+    console.log("Connecting:", rel.id);
+  } else if (isUpdateOperation(rel)) {
+    console.log("Updating:", rel.id);
+  }
+};
+```
+
+## Limitations
+
+1. **No Runtime Transformation**: This is a type-only utility. The actual runtime transformation is handled by Arkos's relation handling system when using [BaseService](/docs/api-reference/base-service) methods.
+
+2. **Requires Arkos Services**: For the flattened format to work, you must use Arkos's BaseService or custom services that extend it. Direct Prisma Client calls require traditional Prisma format.
+
+3. **Ambiguous Cases**: When an object could be either `connect` or `update`, explicitly use `apiAction` to disambiguate.
+
+## Best Practices
+
+1. **Use with Interceptors**: Combine with interceptor middlewares for type-safe request manipulation
+2. **Explicit Actions**: When in doubt, use `apiAction` for clarity
+3. **Validation Integration**: Pair with Zod/class-validator schemas for complete type safety
+4. **Leverage Auto-Detection**: Let the type utility auto-detect operations when possible
+5. **Document Complex Relations**: Add comments for complex nested relation operations
+
+## Related Documentation
+
+- **[Handling Prisma Relation Fields](/docs/advanced-guide/handling-prisma-relations)** - How Arkos handles relations at runtime
+- **[Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares)** - Using with request interceptors
+- **[BaseService Class](/docs/api-reference/base-service)** - Service layer integration
+- **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Combining with validation schemas

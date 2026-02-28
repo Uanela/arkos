@@ -6,6 +6,7 @@ import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { getVersion } from "./utils/cli.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
 import sheu from "../sheu";
+import watermarkStamper from "./utils/watermark-stamper";
 
 const BUILD_DIR = ".build";
 const MODULE_TYPES = ["cjs", "esm"] as const;
@@ -29,12 +30,16 @@ export function buildCommand(options: BuildOptions = {}) {
   const moduleType = validateModuleType(options.module);
 
   try {
-    console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-    console.info(
-      `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-        .replaceAll(`${process.cwd()}/`, "")
-        .replaceAll("/", "")}`
-    );
+    watermarkStamper.stamp({
+      envFiles,
+    });
+    // console.info("");
+    // console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
+    // console.info(
+    //   `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
+    //     .replaceAll(`${process.cwd()}/`, "")
+    //     .replaceAll("/", "")}`
+    // );
 
     console.info(`\n  Creating an optimized production build...`);
 

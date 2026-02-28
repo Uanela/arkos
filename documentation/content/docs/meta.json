@@ -1,0 +1,15 @@
+{
+  "title": "Docs",
+  "pages": [
+    "intro",
+    "getting-started",
+    "how-it-works",
+    "core-concepts",
+    "guide",
+    "advanced-guide",
+    "api-reference",
+    "cli",
+    "migrating-to-arkos",
+    "next"
+  ]
+}
