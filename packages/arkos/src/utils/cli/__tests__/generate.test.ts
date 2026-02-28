@@ -8,7 +8,11 @@ import sheu from "../../sheu";
 
 // Mock all dependencies
 jest.mock("fs");
-jest.mock("path");
+jest.mock("path", () => ({
+  ...jest.requireActual("path"),
+  join: jest.fn((...args) => args.join("/")),
+  resolve: jest.fn((...args) => args.join("/")),
+}));
 jest.mock("../utils/template-generators");
 jest.mock("../../sheu");
 jest.mock("../utils/cli.helpers");
@@ -57,8 +61,8 @@ describe("generateCommand", () => {
     jest.spyOn(sheu, "bold").mockImplementation((text: string) => text);
     // Setup default mocks
     jest.spyOn(process, "cwd").mockReturnValue(mockCwd);
-    mockedGenerateTemplate.mockReturnValue(mockTemplateContent);
     mockedPath.join.mockImplementation((...args) => args.join("/"));
+    mockedGenerateTemplate.mockReturnValue(mockTemplateContent);
     (fullCleanCwd as jest.Mock).mockImplementation((text: string) =>
       text.replace(mockCwd, "")
     );
