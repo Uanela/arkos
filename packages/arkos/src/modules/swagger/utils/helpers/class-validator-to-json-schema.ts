@@ -9,12 +9,6 @@ export default function classValidatorToJsonSchema(
     classValidatorMetadataStorage: getMetadataStorage(),
     classTransformerMetadataStorage: defaultMetadataStorage,
     refPointerPrefix: "#/components/schemas/",
-    additionalConverters: {
-      IsNotEmpty: {
-        // Returns an empty object so as not to overwrite the 'type' of IsNumber
-        // but still retains the 'required' property if needed
-      },
-    },
   });
 
   const targetSchema = jsonSchemas[decoratedClass.name];
