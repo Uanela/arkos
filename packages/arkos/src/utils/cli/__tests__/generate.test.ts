@@ -107,6 +107,40 @@ describe("generateCommand", () => {
       );
     });
 
+    it("should generate controller with custom path and with filename and without module-name", async () => {
+      const options = {
+        model: "product",
+        path: "custom/modules/controller.ts",
+      } as any;
+
+      await generateCommand.controller(options);
+
+      expect(mockedEnsureDirectoryExists).toHaveBeenCalledWith(
+        `${mockCwd}/custom/modules`
+      );
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        `${mockCwd}/custom/modules/controller.ts`,
+        mockTemplateContent
+      );
+    });
+
+    it("should generate controller with custom path and with filename", async () => {
+      const options = {
+        model: "product",
+        path: "custom/modules/{{module-name}}/controller.ts",
+      } as any;
+
+      await generateCommand.controller(options);
+
+      expect(mockedEnsureDirectoryExists).toHaveBeenCalledWith(
+        `${mockCwd}/custom/modules/product`
+      );
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        `${mockCwd}/custom/modules/product/controller.ts`,
+        mockTemplateContent
+      );
+    });
+
     it("should generate controller with custom path", async () => {
       const options = {
         model: "product",
