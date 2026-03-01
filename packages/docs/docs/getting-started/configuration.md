@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 3
 title: Configuration
@@ -57,9 +59,9 @@ arkos.init({
 });
 ```
 
-:::info Why the Split?
+<Callout type="info" title="Why the Split?">
 Static configurations are loaded once at startup and benefit from better type checking and validation. Runtime setup allows dynamic registration of routers and middlewares during initialization.
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -83,9 +85,9 @@ arkos.init({
 </TabItem>
 </Tabs>
 
-:::tip Full API Reference
+<Callout type="tip" title="Full API Reference">
 For detailed information on all configuration options, see the [Arkos Configuration API Reference](/docs/api-reference/arkos-configuration).
-:::
+</Callout>
 
 ## Configuration Categories
 
@@ -359,9 +361,9 @@ arkos.init({
 });
 ```
 
-:::info Middleware Registration
+<Callout type="info" title="Middleware Registration">
 Custom middlewares are now registered via the `use` array in `arkos.init()` rather than `middlewares.additional`. This provides a cleaner API aligned with Express conventions.
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -410,9 +412,9 @@ arkos.init({
 });
 ```
 
-:::info Router Registration
+<Callout type="info" title="Router Registration">
 Custom routers are now registered via the `use` array in `arkos.init()` rather than `routers.additional`. This provides better separation between static configuration and dynamic registration.
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">

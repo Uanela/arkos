@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 14
 title: Arkos CLI
@@ -49,10 +51,10 @@ arkos [command] [options]
 | `arkos generate model` | `arkos g m` | Generate Prisma model | 1.5.0 |
 | `arkos generate components` | `arkos g co` | Generate multiple components at once | 1.5.0 |
 
-:::info New in v1.4.0+
+<Callout type="info" title="New in v1.4.0+">
 - `arkos generate interceptors` is now the recommended command (replaces `middlewares`)
 - `--module` flag is now preferred over `--model` for consistency
-:::
+</Callout>
 
 ### Utilities Exportation Commands
 > Available from `v1.4.0-beta`
@@ -182,9 +184,9 @@ All generate commands support:
 - `-p, --path <path>` - Custom path (default: `src/modules`)
 - `-o, --overwrite` - Overwrite existing files
 
-:::info Module vs Model
+<Callout type="info" title="Module vs Model">
 Starting with v1.4.0+, use `--module` instead of `--model` for better consistency. Both work, but `--module` is the recommended flag going forward.
-:::
+</Callout>
 
 ### Controller Generation
 
@@ -231,9 +233,9 @@ arkos g s -m auth
 arkos g s -m file-upload
 ```
 
-:::warning
+<Callout type="warn">
 Not all components are available for `auth` and `file-upload` modules. The CLI will show an error if you try to generate unsupported components for these modules.
-:::
+</Callout>
 
 **Generated Template:**
 
@@ -460,9 +462,9 @@ Generates interceptor middleware files for request processing.
 
 **File Location:** `src/modules/user/user.interceptors.ts`
 
-:::info Replaces `generate middlewares` (v1.4.0+)
+<Callout type="info" title="Replaces `generate middlewares` (v1.4.0+)">
 The `interceptors` command is the new recommended way. The old `middlewares` command still works but shows deprecation warnings and will be removed in v1.6.0.
-:::
+</Callout>
 
 ### Service Hooks Generation
 

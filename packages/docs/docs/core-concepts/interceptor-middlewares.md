@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 3
 ---
@@ -160,7 +162,7 @@ my-arkos-project/
             └── [model-name].interceptors.ts  # Interceptor chains
 ```
 
-:::info File Naming Change
+<Callout type="info" title="File Naming Change">
 
 Starting from v1.4.0-beta, the recommended file naming convention has changed from `.middlewares.ts` to `.interceptors.ts`. This change provides better separation of concerns:
 
@@ -168,9 +170,9 @@ Starting from v1.4.0-beta, the recommended file naming convention has changed fr
 - **.middlewares.ts** - For reusable Express middleware functions used within interceptors
 
 This naming better reflects their purpose and aligns with the framework's architecture.
-:::
+</Callout>
 
-:::warning Deprecation Notice
+<Callout type="warn" title="Deprecation Notice">
 
 While `.middlewares.ts` files still work in v1.4.0-beta for backward compatibility, you'll see this warning:
 
@@ -184,7 +186,7 @@ Found deprecated post.middlewares.ts that will be removed from v1.6.0-beta, cons
 - **v1.5.0-beta**: `.middlewares.ts` still works with deprecation warnings
 - **v1.6.0-beta**: `.middlewares.ts` will be completely removed, only `.interceptors.ts` supported
 
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -202,9 +204,9 @@ my-arkos-project/
 </TabItem>
 </Tabs>
 
-:::tip Important
+<Callout type="tip" title="Important">
 It's important to follow the convention above because Arkos expects to find those files there as it auto-discovers them. Note also that the model name must be in **kebab-case** (e.g., `UserProfile` becomes `user-profile`).
-:::
+</Callout>
 
 ### Basic Example: Proper Separation
 
@@ -300,10 +302,10 @@ export const afterCreateOne = [notifySubscribers];
 </TabItem>
 </Tabs>
 
-:::tip No catchAsync Needed (v1.3.0+)
+<Callout type="tip" title="No catchAsync Needed (v1.3.0+)">
 
 Since v1.3.0-beta, you no longer need to wrap interceptor middlewares in `catchAsync` - Arkos handles this automatically. This applies to both ArkosRouter route handlers and interceptor middlewares.
-:::
+</Callout>
 
 ## Type-Safe Interceptors with Generics
 
@@ -672,9 +674,9 @@ export const beforeFindOne = [];
 export const beforeFindMany = [];
 ```
 
-:::tip
+<Callout type="tip">
 You can pass multiple functions into the interceptors in order to handle different aspects of your application and at the same time following the practice of letting a function be responsible for a single thing.
-:::
+</Callout>
 
 ### Practical Before Interceptor Example
 
@@ -776,9 +778,9 @@ After interceptors provide access to three key objects:
 - `req.responseStatus` - The HTTP status code that will be sent
 - `req.additionalData` - Extra data from the operation (usually null)
 
-:::tip
+<Callout type="tip">
 Prior to `v1.3.0-beta` only the legacy way was available. After it, the current way was added to be more aligned with Express Community Conventions.
-:::
+</Callout>
 
 ### Available After Interceptors
 

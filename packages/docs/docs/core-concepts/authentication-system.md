@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 2
 ---
@@ -100,9 +102,9 @@ JWT_COOKIE_SAME_SITE=none
 | `cookie.httpOnly` | Prevent JavaScript access to cookie                             | `JWT_COOKIE_HTTP_ONLY` | true                         |
 | `cookie.sameSite` | SameSite cookie attribute                                       | `JWT_COOKIE_SAME_SITE` | "lax" in dev, "none" in prod |
 
-:::warning Production Security
+<Callout type="warn" title="Production Security">
 Always set a strong `JWT_SECRET` in production. Arkos will throw an error on login attempts when no JWT Secret is set in production. Never commit secrets to version control.
-:::
+</Callout>
 
 ## User Model Setup - Static RBAC Foundation
 
@@ -200,9 +202,9 @@ arkos.init({
 </TabItem>
 </Tabs>
 
-:::warning Required Setup
+<Callout type="warn" title="Required Setup">
 Create at least one user with `isSuperUser: true` before activating authentication. By default, Arkos requires authentication for all endpoints and only allows super users until you configure access controls.
-:::
+</Callout>
 
 ### Login With Different Fields
 
@@ -483,7 +485,7 @@ router.post(
 export default router;
 ```
 
-:::tip Why Reference Auth Configs?
+<Callout type="tip" title="Why Reference Auth Configs?">
 Referencing auth configs instead of inline rules provides:
 
 - Consistency with [Fine-Grained Access Control](/docs/advanced-guide/fine-grained-access-control)
@@ -582,7 +584,7 @@ const router = ArkosRouter();
 export default router;
 ```
 
-:::tip Recommended Approach
+</Callout>tip Recommended Approach
 Using `RouterConfig` for authentication control is preferred over defining `authenticationControl` in `.auth.ts` files. It provides:
 
 - Explicit, visible configuration in one place
@@ -750,9 +752,9 @@ Request Processing (if authorized)
 - `/api/users/me` - User profile management
 - `/api/auth/update-password` - Password changes and auto re-authentication
 
-:::tip Re-authentication On Password Update
+<Callout type="tip" title="Re-authentication On Password Update">
 Starting with v1.5.0, Arkos automatically re-authenticates users after a successful password update, providing them with a fresh JWT token. This eliminates the need for users to manually log in again after changing their password, creating a seamless security workflow.
-:::
+</Callout>
 
 **Authentication Middleware**:
 
@@ -1191,9 +1193,9 @@ When upgrading from Static to Dynamic RBAC:
 5. **Update auth config files** to remove functional `roles` fields
 6. **Test thoroughly** as access control logic changes completely
 
-:::tip INFO
+<Callout type="tip" title="INFO">
 On next versions there is a plan on adding a migration script into the `cli` in order to easy authentication mode migrations.
-:::
+</Callout>
 
 ## Fine-Grained Access Control
 

@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 13
 title: Create Arkos CLI
@@ -38,9 +40,9 @@ pnpm create arkos@latest my-arkos-project
 </TabItem>
 </Tabs>
 
-:::tip
+<Callout type="tip">
 Make sure you have Node.js 20 or higher installed before running the command.
-:::
+</Callout>
 
 ## Interactive Setup Experience
 

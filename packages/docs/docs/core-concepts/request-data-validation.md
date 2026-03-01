@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 4
 ---
@@ -65,7 +67,7 @@ GET /api/products?category=electronics&minPrice=50&maxPrice=200&page=2
 - Validate enum values (sort direction, status filters)
 - Set safe limits on pagination to prevent performance issues
 
-:::warning Critical: Query Parameter Security
+<Callout type="warn" title="Critical: Query Parameter Security">
 Query parameters directly influence database queries. Without validation:
 
 - User could request `limit=999999` causing performance issues
@@ -74,7 +76,7 @@ Query parameters directly influence database queries. Without validation:
 - Type mismatches lead to unexpected query behavior
 
 **Always validate query parameters** that affect database operations!
-:::
+</Callout>
 
 ### 3. **Path Parameters (`req.params`)** - Resource Identifiers
 
@@ -97,7 +99,7 @@ GET /api/products/550e8400-e29b-41d4-a716-446655440000
 - Ensure type safety (convert string IDs to proper formats)
 - Catch routing errors early
 
-:::tip Type Safety Across All Three
+<Callout type="tip" title="Type Safety Across All Three">
 Use `ArkosRequest<Params, ResBody, ReqBody, Query>` generics in v1.4.0+ for full TypeScript type safety across all three validation targets:
 
 ```typescript
@@ -128,7 +130,7 @@ const handler = async (
 };
 ```
 
-:::
+</Callout>
 
 ## How Validation Works
 
@@ -198,9 +200,9 @@ arkos.init({
 | `resolver`          | Validation library: `"zod"` or `"class-validator"` |
 | `validationOptions` | Options passed to your chosen validator            |
 
-:::warning Important
+<Callout type="warn" title="Important">
 Validation is **disabled by default**. You must explicitly enable it in your configuration.
-:::
+</Callout>
 
 ## Accessing Validated Data
 
@@ -265,7 +267,7 @@ const myHandler = async (
 ArkosRequest<Params = any, ResBody = any, ReqBody = any, Query = any>
 ```
 
-:::tip Type Safety Benefits
+<Callout type="tip" title="Type Safety Benefits">
 Using `ArkosRequest<Params, ResBody, ReqBody, Query>` generics provides:
 
 - **Autocomplete**: IDE suggestions for all validated properties
@@ -338,7 +340,7 @@ src/modules/auth/
     └── update-password.dto.ts
 ```
 
-:::warning Convention Requirements
+</Callout>warning Convention Requirements
 
 - Model names must be in **kebab-case** for file names
 - Must use exact naming pattern: `create-[model].schema.ts` / `update-[model].schema.ts`
@@ -494,9 +496,9 @@ const router = ArkosRouter();
 export default router;
 ```
 
-:::tip New Capability
+<Callout type="tip" title="New Capability">
 **This is a major improvement in v1.4.0**: Previously, only request bodies could be validated for auto-generated endpoints through file-based DTOs/schemas. Now you can validate **query parameters and path parameters** using the declarative router configuration.
-:::
+</Callout>
 
 **Real-World Example: Why Query Validation Matters**
 
@@ -600,14 +602,14 @@ const router = ArkosRouter();
 export default router;
 ```
 
-:::warning Type Coercion is Essential
+<Callout type="warn" title="Type Coercion is Essential">
 Query parameters and path parameters arrive as **strings** from the URL. Always use:
 
 - **Zod**: `z.coerce.number()`, `z.coerce.boolean()`
 - **Class-Validator**: `@Type(() => Number)`, `@Type(() => Boolean)`
 
 Without coercion, `minPrice=50` remains the string `"50"` instead of number `50`!
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -785,9 +787,9 @@ export default class SignupDto {
 </TabItem>
 </Tabs>
 
-:::warning User Model Dependency
+<Callout type="warn" title="User Model Dependency">
 Your SignupDto fields must match the required fields in your Prisma User model. Arkos requires specific fields for authentication - see the [Authentication System Guide](/docs/core-concepts/authentication-system#user-model-setup---static-rbac-foundation).
-:::
+</Callout>
 
 ### Profile Update Body Validation
 
@@ -832,9 +834,9 @@ export default class UpdateMeDto {
 </TabItem>
 </Tabs>
 
-:::warning Password Security
+<Callout type="warn" title="Password Security">
 The `/api/users/me` endpoint automatically rejects requests containing a `password` field, even if defined in your DTO. Use the dedicated `/api/auth/update-password` endpoint for password changes.
-:::
+</Callout>
 
 ### Password Change Body Validation
 
@@ -1240,7 +1242,7 @@ export default router;
 </TabItem>
 </Tabs>
 
-:::tip Why Validate All Three Parts?
+<Callout type="tip" title="Why Validate All Three Parts?">
 Each part serves a different purpose and requires validation:
 
 - **`req.body`**: Prevents malformed data from entering your database
@@ -1248,7 +1250,7 @@ Each part serves a different purpose and requires validation:
 - **`req.params`**: Validates resource identifiers before database lookups
 
 Validating only `req.body` while ignoring `req.query` and `req.params` leaves security gaps!
-:::
+</Callout>
 
 ## File Upload Validation
 
@@ -1262,7 +1264,7 @@ When combining file uploads with request body validation, Arkos handles validati
 2. **Request body validation** happens second (validates text fields via Schema/DTO)
 3. **Merged result** is available in `req.body` with both validated data and file metadata according to your configuration
 
-:::warning Validation Separation
+<Callout type="warn" title="Validation Separation">
 Even though Arkos generates a unified `multipart/form-data` OpenAPI schema, **file fields and text fields are validated separately**. You must **not** include upload field names in your validation Schema/DTO.
 
 **Incorrect:**
@@ -1300,7 +1302,7 @@ router.post({
   }
 }, handler);
 ```
-:::
+</Callout>
 
 ### Accessing Validated Data
 
@@ -1456,9 +1458,9 @@ export const beforeCreateOne = [
 ];
 ```
 
-:::info File Naming Convention
+<Callout type="info" title="File Naming Convention">
 The `.interceptors.ts` extension is the recommended convention from `v1.4.0-beta` onwards. If you're on earlier versions, use `.middlewares.ts` instead.
-:::
+</Callout>
 
 ## Integration with API Documentation
 

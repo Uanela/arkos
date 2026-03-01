@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 6
 ---
@@ -44,9 +46,9 @@ Use dedicated upload endpoints (`/api/uploads/:fileType`) and manually reference
 - Manual file reference management
 - You handle cleanup logic
 
-:::tip Which Approach to Use?
+<Callout type="tip" title="Which Approach to Use?">
 If your files are related to a model (user avatars, post images, product galleries), use **ArkosRouter Configuration**. It's simpler and requires just one API call. Use the traditional approach only when you need standalone file operations or very custom logic.
-:::
+</Callout>
 
 ## Auto-Generated Routes with File Uploads
 
@@ -98,9 +100,9 @@ const userRouter = ArkosRouter();
 export default userRouter;
 ```
 
-:::tip Required Flag
+<Callout type="tip" title="Required Flag">
 Notice that the `required` flag defaults to true, if ommited the file will be required yet, so if you want to make it optional pass `required: false`. Is important to know that this feature of `required` flag was added at [v1.5.0+](/blog/1.5-beta).
-:::
+</Callout>
 
 **2. Client-side usage - Single API call:**
 
@@ -129,9 +131,9 @@ console.log(user.profilePhoto); // "/uploads/user-profiles/1234567890-photo.jpg"
 4. Prisma creates the user with the file path included
 5. If creation fails and `deleteOnError: true`, the uploaded file is cleaned up
 
-:::tip OpenAPI Documentation (v1.4.0)
+<Callout type="tip" title="OpenAPI Documentation (v1.4.0)">
 One of the greatest advantage of using `ArkosRouter` for file uploads is that it will automatically sync with your OpenAPI documentation, basically arkos will create an `requestBody` of type [`multipart/form-data`](https://swagger.io/docs/specification/v3_0/describing-request-body/multipart-requests/) so that you can easily test your api without the need to write it from scratch. Understand how it works by reading [OpenAPI Documentation File Upload Guide](/docs/core-concepts/open-api-documentation#arkosrouter-openapi-integration-with-file-uploads).
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 (Old Way)">
@@ -652,19 +654,19 @@ Where `:fileType` can be one of:
 - `files` - For any other file type
 
 
-:::tip 
+<Callout type="tip">
 Bear in mind the `/api/uploads` is the default `baseRoute` and you can customize it through your arkos configuration. See this at [File Upload Configuration](/docs/core-concepts/file-uploads#global-configuration).
-:::
+</Callout>
 
 ### Basic Operations
 
-:::info FormData Field Names
+<Callout type="info" title="FormData Field Names">
 When uploading to traditional endpoints, use these field names:
 - `/api/uploads/images` → use field name `images`
 - `/api/uploads/videos` → use field name `videos`
 - `/api/uploads/documents` → use field name `documents`
 - `/api/uploads/files` → use field name `files`
-:::
+</Callout>
 
 #### Uploading Files
 
@@ -681,9 +683,9 @@ fetch("http://localhost:8000/api/uploads/images", {
   .then((data) => console.log(data));
 ```
 
-:::info FormData Fields
+<Callout type="info" title="FormData Fields">
 Pay attention to the FormData field names. Even for a single image, use the field name `images` (plural). The same applies for other supported types (`videos`, `documents`) and overall `files`.
-:::
+</Callout>
 
 #### Updating/Replacing Files
 
@@ -794,9 +796,9 @@ The `experimental.uploads` configuration object supports the following options:
 | `deleteOnError`    | `boolean`                                | Delete uploaded files if request fails   | `false`                       |
 
 
-:::tip New Required Flag
+<Callout type="tip" title="New Required Flag">
 Notice that the `required` flag defaults to true, if ommited the file will be required yet, so if you want to make it optional pass `required: false`. Is important to know that this feature of `required` flag was added at [v1.5.0+](/blog/1.5-beta).
-:::
+</Callout>
 
 ### Global Configuration
 
@@ -928,11 +930,11 @@ export const beforeUpdateOne = [ async (
     } ];
 ```
 
-:::warning Naming Conventions Update
+<Callout type="warn" title="Naming Conventions Update">
 Noticed the path `src/modules/user.user.interceptors.ts`? on `v1.4.0-beta` we rename the old `.middlewares.ts` files to better mean what the file actually do which is provide a way to intercept the auto generated routes even though using middlewares.
 
 We did also to keep `.middlewares.ts` files as it as been used on express, to export dedicated middleware functions and not simply interceptors.
-:::
+</Callout>
 
 ## File Upload Interceptor Middlewares
 

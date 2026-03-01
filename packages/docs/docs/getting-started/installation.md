@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 1
 title: Installation 
@@ -143,9 +145,9 @@ npm install --save-dev prisma tsx-strict
 
 ### 3. Create Project Structure
 
-:::tip
+<Callout type="tip">
 In the following examples for file extensions, you will find examples like `src/app.js`. It's just a matter of changing to `src/app.ts` if you are using TypeScript.
-:::
+</Callout>
 
 After installing the required dependencies, you will need to set up the Arkos.js project structure:
 - Create `prisma/schema/schema.prisma`, which will be set up in [**Step 5**](#5-set-up-prisma-schema).
@@ -232,9 +234,9 @@ export default prisma
 
 Edit your `package.json` to include these scripts:
 
-:::info
+<Callout type="info">
 In the following `package.json`, we have `"type": "module"`. This is only required for JavaScript projects. If you are using TypeScript, you should not include this.
-:::
+</Callout>
 
 ```json
 {

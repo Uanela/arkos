@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 2
 ---
@@ -6,9 +8,9 @@ sidebar_position: 2
 
 Arkos.js follows a thoughtfully designed architecture that emphasizes simplicity, convention over configuration, and developer productivity. The structure is designed to scale from simple APIs to complex enterprise applications while maintaining clarity and organization.
 
-:::info
+<Callout type="info">
 Is worth mentioning that on this section you'll find some folders/files that are required for Arkos.js to be able to automatically find those folders/files and do it's jobs with it. You will also find some folders/files that are simply considered best practices around the Server-Side JavaScript Community, those that are required will be marked with `required`.
-:::
+</Callout>
 
 ## Architecture Philosophy
 
@@ -66,9 +68,9 @@ arkos.init({
 });
 ```
 
-:::info Configuration Changes
+<Callout type="info" title="Configuration Changes">
 In v1.4.0+, most configuration has moved to `arkos.config.ts`. The `arkos.init()` method now focuses on runtime setup - registering custom routers, configuring the Express app, and customizing the HTTP server.
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -153,9 +155,9 @@ src/modules/post/
 └── utils/                         # Module-specific utilities
 ```
 
-:::info File Naming Change
+<Callout type="info" title="File Naming Change">
 In v1.4.0+, `*.middlewares.ts` has been renamed to `*.interceptors.ts` to better reflect their purpose. The old naming still works for backward compatibility.
-:::
+</Callout>
 
 ### File Types Explained
 
@@ -202,9 +204,9 @@ const postService = new PostService("post");
 export default postService
 ```
 
-:::tip Type Inference
+<Callout type="tip" title="Type Inference">
 The kebab-case model name (`"post"`) enables automatic type inference after running `npx arkos prisma generate`. This command generates enhanced type definitions from your Prisma schema.
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -266,9 +268,9 @@ postRouter.post(
 export default postRouter;
 ```
 
-:::info No catchAsync Needed
+<Callout type="info" title="No catchAsync Needed">
 ArkosRouter automatically wraps handlers with error handling, so you don't need `catchAsync` anymore.
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -390,9 +392,9 @@ export const afterFindMany = [
 </TabItem>
 </Tabs>
 
-:::info Array Wrapping
+<Callout type="info" title="Array Wrapping">
 Since v1.3.0 is recommended that all interceptors and hooks must be exported as arrays. This allows you to compose multiple handlers for the same lifecycle event.
-:::
+</Callout>
 
 #### Authentication Configuration (`*.auth.ts`)
 
@@ -445,9 +447,9 @@ const postAuthConfigs: AuthConfigs = {
 export default postAuthConfigs;
 ```
 
-:::tip Permission Objects
+<Callout type="tip" title="Permission Objects">
 The permission object syntax allows for more granular control and better documentation of what each permission does. This is especially useful when integrating with permission management systems.
-:::
+</Callout>
 
 #### Prisma Query Options (`*.query.ts`)
 Define default query parameters for consistent data fetching:
@@ -625,9 +627,9 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig
 ```
 
-:::info Configuration Migration
+<Callout type="info" title="Configuration Migration">
 In v1.4.0+, most configuration has moved from `arkos.init()` to `arkos.config.ts`. This separation makes configuration more maintainable and enables usability of the config on CLI tools.
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">
@@ -685,9 +687,9 @@ Essential scripts for ArkosJS development:
 }
 ```
 
-:::tip Enhanced Type Generation
+<Callout type="tip" title="Enhanced Type Generation">
 The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitions that enable better type inference in `BaseService` and other framework components.
-:::
+</Callout>
 
 </TabItem>
 <TabItem value="v1.3" label="v1.3.0 and earlier">

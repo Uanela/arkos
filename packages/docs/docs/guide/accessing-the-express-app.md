@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 6
 ---
@@ -51,9 +53,9 @@ arkos.init({
 
 The `configureApp` function runs before any Arkos middleware is applied, giving you a chance to set up configurations that need to be in place early in the application lifecycle.
 
-:::warning
+<Callout type="warn">
 You do not need to call `app.listen` inside `configureApp` because this function gives you access to add custom configurations beyond **Arkos** features on the top-level of the middleware/configuration stack. When a port is specified, Arkos will create an HTTP server and call `server.listen` after all configurations are complete.
-:::
+</Callout>
 
 As mentioned in the warning above, it's not recommended to call `app.listen` inside `configureApp`. If you would like to customize the HTTP server or add websockets, see [Accessing The HTTP Server](#accessing-the-http-server) section.
 
@@ -77,9 +79,9 @@ app.use("/special-route", specialMiddleware);
 // App is already listening if port is configured in arkos.config.ts
 ```
 
-:::info Configuration Split
+<Callout type="info" title="Configuration Split">
 In v1.4.0+, most static configurations like `port` are defined in `arkos.config.ts`. The `arkos.init()` method is primarily for runtime setup.
-:::
+</Callout>
 
 If you want to control server creation yourself:
 
@@ -183,9 +185,9 @@ arkos.init({
 </TabItem>
 </Tabs>
 
-:::warning
+<Callout type="warn">
 The `configureServer` hook is only executed when a port is specified in the configuration. If `port` is undefined, the HTTP server is not created, and this hook will not be called.
-:::
+</Callout>
 
 ### Creating Your Own HTTP Server
 

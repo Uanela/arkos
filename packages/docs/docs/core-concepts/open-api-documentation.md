@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 5
 title: OpenAPI Documentation
@@ -335,9 +337,9 @@ Arkos automatically:
 - Marks required fields based on configuration
 - Adds file constraints (maxItems, format: binary) to documentation
 
-:::warning Validation Order
+<Callout type="warn" title="Validation Order">
 Even though arkos generates a unique `multipart/form-data` those aren't validated on the same time, so you must not write a Schema/DTO that will try to validate the upload fields because it will fail, the files are the first to be validated and then arkos validates the request body, after both validation occurs (separately) Arkos will merge uploads data into request body depending on your file upload configuration.
-:::
+</Callout>
 
 You can learn more about how Arkos handles the validation order when there it generates a unique `multipart/form-data` json-schema with file upload possibilities by reading [ArkosRouter File Uploads Validation](/).
 
@@ -383,13 +385,13 @@ router.post(
 );
 ```
 
-:::caution
+<Callout type="warn">
 When manually defining `requestBody`, Arkos validates that upload fields match your configuration. Startup fails with detailed errors if validation fails.
-:::
+</Callout>
 
-:::tip
+<Callout type="tip">
 Let Arkos auto-generate the schema. Only use manual definition when you need custom field descriptions or non-standard configurations.
-:::
+</Callout>
 
 ### Response Schema Shortcuts
 

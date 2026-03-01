@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 2
 title: Base Service
@@ -111,9 +113,9 @@ const userService = new UserService("user");
 export default userService;
 ```
 
-:::tip Upgrade Recommendation
+<Callout type="tip" title="Upgrade Recommendation">
 We highly recommend upgrading to v1.4.0-beta for enhanced TypeScript support. The improved type inference significantly reduces development time and prevents runtime errors.
-:::
+</Callout>
 
 </TabItem>
 </Tabs>
@@ -1151,6 +1153,6 @@ class UserService extends BaseService<"user"> {
 - Reduced type annotations needed
 - Better IDE support and developer experience
 
-:::tip
+<Callout type="tip">
 After upgrading to v1.4.0, run `npx arkos prisma generate` to generate the enhanced type definitions. This command should be run whenever you modify your Prisma schema.
-:::
+</Callout>

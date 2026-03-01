@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 3
 title: Base Controller
@@ -7,9 +9,9 @@ title: Base Controller
 
 The `BaseController` class provides standardized RESTful API endpoints for any given prisma model in your application. It follows a standard controller pattern that handles common CRUD operations through a consistent interface, reducing code duplication across the application.
 
-:::note
+<Callout type="info">
 By default it is an **Arkos** internal utility class for handling the auto generated api endpoints, but this is exposed through `arkos` so that you can customize the end handler of your CRUD operations.
-:::
+</Callout>
 
 As stated on the note above this is a class used internally by **Arkos** and also exposed for you if you want to override and customize the end handler. Hence the next texts is about how **Arkos** uses it behind the scenes to handle the auto generated endpoints.
 
@@ -224,9 +226,9 @@ const userController = new UserController();
 export default userController;
 ```
 
-:::danger caution
+<Callout type="error" title="caution">
 Be carreful when overriding the defaults controller handlers as shown above, just do it if you know what you are really doing. Because this way you lose some **Arkos** built-in features such as (depending on the overridden handler): `request query paramaters handling`, `auto relation fields handling`, `standardized responses it all endpoints`, `must create your swagger docs for the endpoints`, `intercepetor middlewares injections` and others.
-:::
+</Callout>
 
 When using `before` or `after` interceptor middlewares defined in the model's module file, they will be automatically loaded and executed after the corresponding operation but before sending the response even for `after` interceptor middlewares, there you can call `next()` and **Arkos** will send the responpse or you can send it youself using the `res` object.
 

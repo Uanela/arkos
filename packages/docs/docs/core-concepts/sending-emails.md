@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 8
 ---
@@ -73,9 +75,9 @@ arkos.init({
 </TabItem>
 </Tabs>
 
-:::info
+<Callout type="info">
 You can pass these values directly if you want, but the best community practice is to use environment variables.
-:::
+</Callout>
 
 The email configuration in **Arkos** allows you to set up email functionality through the `emailService`. Here's an explanation of each parameter:
 
@@ -140,13 +142,13 @@ export const afterSignup = [
 ];
 ```
 
-:::tip Interceptor Arrays
+<Callout type="tip" title="Interceptor Arrays">
 Remember that all interceptors allows being exported as arrays since v1.3.0. The example above shows the correct syntax.
-:::
+</Callout>
 
-:::warning Naming Convention
+<Callout type="warn" title="Naming Convention">
 If you are on a version prior to `v1.4.0-beta` use the extensions `.middlewares.ts`.
-:::
+</Callout>
 
 ### Email Options
 

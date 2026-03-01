@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 10
 ---
@@ -121,9 +123,9 @@ await prisma.authPermission.create({
 });
 ```
 
-:::info important
+<Callout type="info" title="important">
 You do not need to implement any of the above, because these are simple CRUD operations that are handled automatically by **Arkos** generated endpoints as `AuthPermission` is mere prisma models even though being used for authentication.
-:::
+</Callout>
 
 ### Auth Config for Public Routes
 
