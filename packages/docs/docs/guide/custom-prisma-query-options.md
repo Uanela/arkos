@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 # Custom Prisma Query Options
 
 Arkos automatically generates API endpoints based on your Prisma models while still giving you full control over the underlying database queries. The `PrismaQueryOptions` configuration allows you to define default query parameters for each operation type, ensuring consistent data access patterns while maintaining flexibility.
@@ -17,9 +19,9 @@ The `prismaQueryOptions` configuration lets you set default options for all Pris
 
 For it to work you must create a file `src/modules/model-name/model-name.query.ts` so that **Arkos** can find it and make usage of it.
 
-:::info Naming Convention Change
+<Callout type="info" title="Naming Convention Change">
 Since v1.2.0-beta, the recommended filename pattern is `model-name.query.ts`. The previous pattern `model-name.prisma-query-options.ts` is still supported for backward compatibility, but you cannot use both naming conventions for the same model in the same directory.
-:::
+</Callout>
 
 Arkos supports customizing options for all standard Prisma operations:
 
@@ -57,13 +59,13 @@ const authorPrismaQueryOptions: PrismaQueryOptions<typeof prisma.author> = {
 export default authorPrismaQueryOptions;
 ```
 
-:::danger Important
+<Callout type="error" title="Important">
 Follow the file name conventions and folder structure stated above for this to work. Read more about **Arkos** overall project structure [here](/docs/project-structure).
-:::
+</Callout>
 
 ## Generating Query Options Files
 
-:::tip CLI Generation
+<Callout type="tip" title="CLI Generation">
 Since v1.2.0-beta, you can quickly generate query options files using the built-in CLI:
 
 ```bash
@@ -73,7 +75,7 @@ npx arkos g q -m post
 ```
 
 This will create a properly structured file at `src/modules/post/post.query.{ts|js}` with all available options.
-:::
+</Callout>
 
 ## Available Query Options
 
@@ -140,9 +142,9 @@ Arkos follows a clear precedence order when applying query options:
 
 Options are intelligently merged at each level, with object properties being deep-merged rather than replaced.
 
-:::warning Important
+<Callout type="warn" title="Important">
 Request query parameters always take precedence over configured defaults, allowing API consumers to override your defaults when needed, as mentioned they are deep-merged rather than replaced.
-:::
+</Callout>
 
 You can read more about how **Arkos** allows developers to handle request query parameters [here](/docs/guide/request-query-parameters)
 

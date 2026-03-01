@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 5
 ---
@@ -8,9 +10,9 @@ One of the most powerful features of **Arkos** is its ability to automatically t
 
 When working with related entities in REST APIs or form submissions, the data structure you receive is typically flat or hierarchical JSON, not the nested operation structure Prisma expects. The `handleRelationFieldsInBody` utility bridges this gap by intelligently converting your API request data.
 
-:::note
+<Callout type="info">
 The `handleRelationFieldsInBody` is only used internally by **Arkos** and not exported to external usage, because let's be sincere you now how to handle this prisma stuff if not read about in [https://www.prisma.io/docs/orm/prisma-client/queries/relation-queries](https://www.prisma.io/docs/orm/prisma-client/queries/relation-queries).
-:::
+</Callout>
 
 ## Input And Output Example
 
@@ -73,13 +75,13 @@ The `handleRelationFieldsInBody` is only used internally by **Arkos** and not ex
 }
 ```
 
-:::tip
+<Callout type="tip">
 Even though **Arkos** have it's own helper function for hanlding relational fields data on request, you can write the it on your own as if your where sending a pure JSON for prisma adding connect, create, delete, update or ther features that prisma supports, and **Arkos** automatically notice and not try to apply nothing on it's own.
-:::
+</Callout>
 
-:::warning
+<Callout type="warn">
 Bear in mind that if you implement your own logic for prisma relation fields operations as stated on the tip above, **Arkos** will not handle the nested fields inside the nested field (deeply nested) that you handled by yourself on the first level.
-:::
+</Callout>
 
 ### ❌ Arkos Will Not Handle Deeply Nested Fields For subCategory Automatically
 
@@ -190,11 +192,11 @@ The utility `handleRelationFieldsInBody` function examines the structure of each
    - Result: `{ fieldName: { `disconnect`: { where: { id: 5 } } } }`
    - Note: Can use any @unique field with `"apiAction": "disconnect"`.
 
-:::warning important
+<Callout type="warn" title="important">
 Bear in mind that to connect you can use any field that is @unique under your model schema or otherwise **Arkos** will try to create by default.
 
 By default when you want to update nested relation fields **Arkos** will automatically look for an `id` on the nested data if not found then a @unique field will be searched if not found also **Arkos** will judge it as a data to be created.
-:::
+</Callout>
 
 ## Common JSON Patterns and Their Transformations
 
@@ -288,9 +290,9 @@ By default when you want to update nested relation fields **Arkos** will automat
 }
 ```
 
-:::note
+<Callout type="info">
 Note that this behavior is handled on the service layer of **Arkos** request handling pipeline for each prisma model, you can read more about the Request Handling Pipeline [clicking here](/docs/api-reference/request-handling-pipeline).
-:::
+</Callout>
 
 ## The `apiAction` Property
 
@@ -439,9 +441,9 @@ Learn more about the `ArkosPrismaInput` utility type in the [API Reference](/doc
 
 This utility is automatically integrated into Arkos' base services. If you're using the framework's default base services methods, the relation handling happens automatically:
 
-:::warning
+<Callout type="warn">
 The following code snippet is just a mere example of something done by **Arkos** behind the scenes on the auto generated api endpoints for your prisma models.
-:::
+</Callout>
 
 ```ts
 import { BaseService } from "arkos/services";

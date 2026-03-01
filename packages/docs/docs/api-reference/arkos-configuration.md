@@ -2,8 +2,8 @@
 sidebar_position: 7
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 
 # Arkos Configuration
 
@@ -20,8 +20,8 @@ The dedicated configuration file was introduced on `v1.4.0-beta` it was made for
 
 ### File Structure Changes
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 **Two-file setup:**
 
@@ -56,8 +56,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 **Single-file setup:**
 
@@ -83,7 +83,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Configuration Structure
@@ -133,8 +133,8 @@ interface ArkosConfig {
 
 ### Basic Application Settings
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -147,8 +147,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -159,7 +159,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `welcomeMessage`
@@ -182,8 +182,8 @@ arkos.init({
 
 ### Authentication Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -214,8 +214,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -231,7 +231,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `authentication.enabled`
@@ -271,8 +271,8 @@ arkos.init({
 
 ### Validation Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -289,8 +289,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -304,7 +304,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `validation.resolver`
@@ -326,8 +326,8 @@ arkos.init({
 
 ### File Upload Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -352,8 +352,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -370,7 +370,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `fileUpload.baseUploadDir`
@@ -397,8 +397,8 @@ arkos.init({
 
 ### Middleware Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -461,8 +461,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -499,7 +499,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### Middleware Options
@@ -515,8 +515,8 @@ arkos.init({
 
 ### Router Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -543,8 +543,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -562,7 +562,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `routers.strict`
@@ -578,8 +578,8 @@ arkos.init({
 
 ### Advanced Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/app.ts
@@ -599,8 +599,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -617,7 +617,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `use`
@@ -637,8 +637,8 @@ arkos.init({
 
 ### Email Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -658,8 +658,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -677,7 +677,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `email.host`
@@ -717,8 +717,8 @@ arkos.init({
 
 ### Swagger Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -749,8 +749,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -764,7 +764,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `swagger.enableAfterBuild`
@@ -793,8 +793,8 @@ arkos.init({
 
 ### Request Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -809,8 +809,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -823,7 +823,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### `request.parameters.allowDangerousPrismaQueryOptions`
@@ -881,8 +881,8 @@ Arkos.js supports the following environment variables:
 
 ## Complete Example
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -961,8 +961,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -1029,7 +1029,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Configuration Precedence

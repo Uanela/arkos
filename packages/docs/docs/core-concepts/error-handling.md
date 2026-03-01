@@ -1,9 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 7
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Error Handling
 
@@ -22,8 +24,8 @@ import TabItem from '@theme/TabItem';
 
 One of the biggest improvements in v1.5.0 is the **dramatically improved error message format**. Errors now tell you exactly what's wrong and where, without digging through nested objects.
 
-<Tabs groupId="version">
-<TabItem value="v1.5" label="Meaningful Messages (v1.5.0+)" default>
+<Tabs>
+<Tab value="v1.5" label="Meaningful Messages (v1.5.0+)">
 
 ```json
 {
@@ -41,8 +43,8 @@ One of the biggest improvements in v1.5.0 is the **dramatically improved error m
 }
 ```
 
-</TabItem>
-<TabItem value="v1.4" label="Generic Messages (before)" default>
+</Tab>
+<Tab value="v1.4" label="Generic Messages (before)">
 
 
 ```json
@@ -60,7 +62,7 @@ One of the biggest improvements in v1.5.0 is the **dramatically improved error m
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 **What changed:**
@@ -135,9 +137,9 @@ For non-operational errors (programming errors, not expected failures), a generi
 }
 ```
 
-:::tip Production vs Development
+<Callout type="tip" title="Production vs Development">
 Arkos does not determine the environment using the `NODE_ENV` environment variable, which can cause confusion for beginners, the production mode is setup automatically when you run `npx arkos build`. It's **not** based on `NODE_ENV` because this ensures your production builds always have sanitized errors, regardless of how you set `NODE_ENV` value.
-:::
+</Callout>
 
 ## Best Practices: Always Prefer [AppError](/docs/api-reference/app-error)
 
@@ -202,9 +204,9 @@ export const getUserById = async (req: ArkosRequest, res: ArkosResponse) => {
 - Better logging and debugging
 - Will be auto-documented in OpenAPI (future feature)
 
-:::tip No catchAsync Needed (v1.3.0+)
+<Callout type="tip" title="No catchAsync Needed (v1.3.0+)">
 You don't need to wrap your handlers in `catchAsync` when using ArkosRouter or interceptor middlewares - Arkos handles this automatically!
-:::
+</Callout>
 
 ## AppError API
 
@@ -379,9 +381,9 @@ export const onCreateOneError = [
 ];
 ```
 
-:::tip: Important
+<Callout type="tip" title=": Important">
 Error interceptors must have exactly **4 parameters** `(err, req, res, next)` - this is an Express requirement. Without all 4 parameters, Express won't recognize it as an error middleware. Learn more about [Writing Express Error Handlers](https://expressjs.com/en/guide/error-handling.html#writing-error-handlers). 
-:::
+</Callout>
 
 ### Practical Error Handling Example
 
@@ -474,9 +476,9 @@ export default {
 };
 ```
 
-:::tip
+<Callout type="tip">
 We strongly recommend keeping `forbidNonWhitelisted: true` (the default). It prevents common security issues like mass assignment vulnerabilities.
-:::
+</Callout>
 
 ## Integration with catchAsync (No Longer Needed)
 
@@ -508,9 +510,9 @@ export const getUser = async (req, res) => {
 };
 ```
 
-:::info When to Use catchAsync
+<Callout type="info" title="When to Use catchAsync">
 You only need `catchAsync` if you're using **standard Express routers** (not ArkosRouter) or writing **standalone middleware** outside of Arkos's automatic error handling.
-:::
+</Callout>
 
 ## Environment Configuration
 

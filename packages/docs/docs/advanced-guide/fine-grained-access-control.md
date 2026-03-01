@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 1
 title: Fine-Grained Access Control
@@ -177,9 +179,9 @@ const blogPostAuthConfigs: AuthConfigs = {
 export default blogPostAuthConfigs;
 ```
 
-:::tip IMPORTANT
+<Callout type="tip" title="IMPORTANT">
 Notice the `roles` fields in the `accessControl` actions - those are only required if you are using `Static Authentication` because in `Dynamic Authentication` roles and permissions are managed at the database level.
-:::
+</Callout>
 
 ### Resource Naming Conventions
 
@@ -191,7 +193,7 @@ Notice the `roles` fields in the `accessControl` actions - those are only requir
 
 The most common pattern is adding fine-grained permissions to Arkos's auto-generated CRUD endpoints using interceptor middlewares.
 
-:::info File Naming: .interceptors.ts
+<Callout type="info" title="File Naming: .interceptors.ts">
 Starting from **v1.4.0**, interceptor middleware files should use the `.interceptors.ts` extension instead of `.middlewares.ts`. This change provides better separation of concerns between interceptor functions (hooks into auto-generated endpoints) and regular Express middlewares.
 
 **Deprecation Timeline:**
@@ -201,7 +203,7 @@ Starting from **v1.4.0**, interceptor middleware files should use the `.intercep
 - **v1.6.0**: `.middlewares.ts` will be completely removed
 
 **Migration:** Simply rename your files from `module-name.middlewares.ts` to `module-name.interceptors.ts`. The code inside remains unchanged.
-:::
+</Callout>
 
 ### Simple Permission Check in Interceptors
 
@@ -570,9 +572,9 @@ router.patch(
 export default router;
 ```
 
-:::tip
+<Callout type="tip">
 As a best practice you can prefer to use `authService.handleAccessControl` instead, when adding authentication into custom routes. Check out more at [**Adding Authentication Into Custom Routers Section**](/docs/guide/adding-custom-routers#adding-authentication-in-custom-routers).
-:::
+</Callout>
 
 ## Advanced Implementation Patterns
 

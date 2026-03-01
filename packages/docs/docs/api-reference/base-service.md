@@ -1,3 +1,7 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 2
 title: Base Service
@@ -18,11 +22,9 @@ The `BaseService` class is a fundamental component that provides standardized CR
 
 ## TypeScript Integration
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ### Enhanced Type Safety
 
@@ -80,8 +82,8 @@ export default userService;
 - ✅ Compile-time validation of includes, selects, and where clauses
 - ✅ Return types automatically inferred based on your query options
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ### Basic TypeScript Support (v1.3.0)
 
@@ -111,11 +113,11 @@ const userService = new UserService("user");
 export default userService;
 ```
 
-:::tip Upgrade Recommendation
+<Callout type="tip" title="Upgrade Recommendation">
 We highly recommend upgrading to v1.4.0-beta for enhanced TypeScript support. The improved type inference significantly reduces development time and prevents runtime errors.
-:::
+</Callout>
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Constructor
@@ -1105,8 +1107,8 @@ class PostService extends BaseService<"post"> {
 
 ### Type Changes
 
-<Tabs groupId="version">
-<TabItem value="before" label="Before v1.3.0">
+<Tabs>
+<Tab value="before" label="Before v1.3.0">
 
 ```typescript
 import { BaseService } from "arkos/service";
@@ -1119,8 +1121,8 @@ class UserService extends BaseService<Prisma.UserDelegate> {
 }
 ```
 
-</TabItem>
-<TabItem value="after" label="After v1.4.0+ (Recommended)" default>
+</Tab>
+<Tab value="after" label="After v1.4.0+ (Recommended)">
 
 ```typescript
 import { BaseService } from "arkos/services";
@@ -1135,7 +1137,7 @@ class UserService extends BaseService<"user"> {
 // npx arkos prisma generate
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Key Changes
@@ -1151,6 +1153,6 @@ class UserService extends BaseService<"user"> {
 - Reduced type annotations needed
 - Better IDE support and developer experience
 
-:::tip
+<Callout type="tip">
 After upgrading to v1.4.0, run `npx arkos prisma generate` to generate the enhanced type definitions. This command should be run whenever you modify your Prisma schema.
-:::
+</Callout>

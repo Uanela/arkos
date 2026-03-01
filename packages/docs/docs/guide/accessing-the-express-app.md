@@ -1,9 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 6
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Accessing The Express App
 
@@ -51,9 +53,9 @@ arkos.init({
 
 The `configureApp` function runs before any Arkos middleware is applied, giving you a chance to set up configurations that need to be in place early in the application lifecycle.
 
-:::warning
+<Callout type="warn">
 You do not need to call `app.listen` inside `configureApp` because this function gives you access to add custom configurations beyond **Arkos** features on the top-level of the middleware/configuration stack. When a port is specified, Arkos will create an HTTP server and call `server.listen` after all configurations are complete.
-:::
+</Callout>
 
 As mentioned in the warning above, it's not recommended to call `app.listen` inside `configureApp`. If you would like to customize the HTTP server or add websockets, see [Accessing The HTTP Server](#accessing-the-http-server) section.
 
@@ -77,9 +79,9 @@ app.use("/special-route", specialMiddleware);
 // App is already listening if port is configured in arkos.config.ts
 ```
 
-:::info Configuration Split
+<Callout type="info" title="Configuration Split">
 In v1.4.0+, most static configurations like `port` are defined in `arkos.config.ts`. The `arkos.init()` method is primarily for runtime setup.
-:::
+</Callout>
 
 If you want to control server creation yourself:
 
@@ -117,8 +119,8 @@ This approach is useful when you need to perform configurations after Arkos has 
 
 Arkos provides a `configureServer` hook that gives you access to the HTTP server before it starts listening:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/app.ts
@@ -148,8 +150,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -180,19 +182,19 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
-:::warning
+<Callout type="warn">
 The `configureServer` hook is only executed when a port is specified in the configuration. If `port` is undefined, the HTTP server is not created, and this hook will not be called.
-:::
+</Callout>
 
 ### Creating Your Own HTTP Server
 
 When you need full control over the HTTP server creation and configuration:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -247,8 +249,8 @@ const startServer = async () => {
 startServer();
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -293,7 +295,7 @@ const startServer = async () => {
 startServer();
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Timing Considerations
@@ -488,8 +490,8 @@ arkos.init({
 
 You can combine direct Express app access with custom middleware configuration:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -524,8 +526,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -549,7 +551,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 See [Middleware Configuration](/docs/api-reference/arkos-configuration#middleware-configuration) for more details on configuring middlewares.

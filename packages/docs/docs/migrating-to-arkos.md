@@ -1,12 +1,14 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 15
 ---
 
 # Migrating To Arkos
 
-:::info
+<Callout type="info">
 Is possible to do, some apps from fastify and express as already been migrated to **Arkos**.
-:::
+</Callout>
 
 Soon there will be a full written and video tutorials, just stay tuned to our documenation and [Uanela Como YouTube Channel](https://youtube.com/@uanelacomo).
 

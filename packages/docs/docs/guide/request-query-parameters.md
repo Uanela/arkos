@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 2
 ---
@@ -176,7 +178,7 @@ const products = await prisma.product.findMany({
 });
 ```
 
-:::tip Security Tips
+<Callout type="tip" title="Security Tips">
 Query parameters directly influence your database queries. **Without validation**, users can:
 - Manipulate database queries in dangerous ways
 - Cause performance issues with unlimited pagination (`limit=999999`)
@@ -184,7 +186,7 @@ Query parameters directly influence your database queries. **Without validation*
 - Bypass business rules and access unauthorized data
 
 **Always validate query parameters that affect database operations!**
-:::
+</Callout>
 
 #### Limit Range
 
@@ -482,9 +484,9 @@ const users = await prisma.user.findMany({
 });
 ```
 
-:::danger Security Warning
+<Callout type="error" title="Security Warning">
 This is **disabled by default** for security reasons because it allows end users to make raw Prisma queries which can be dangerous to your application. **We strongly recommend NOT enabling this option**.
-:::
+</Callout>
 
 A better way to use this is through `prisma-query-options` files that will only use this parameter on your code level for you to customize the default behavior of your Prisma queries that are handled automatically by **Arkos**. You can [read more about this](/docs/guide/custom-prisma-query-options).
 
@@ -545,14 +547,14 @@ Arkos reads these parameters and converts them into:
 | Contains text         | `name[contains]=laptop` | `name__contains=laptop` |
 | Nested relation       | `author[age][gte]=25`   | `author__age__gte=25`   |
 
-:::info Mix and Match
+<Callout type="info" title="Mix and Match">
 You can use both syntaxes in the same request. Arkos processes them identically:
 
 ```
 GET /api/products?price[gte]=50&category__in=electronics,computers
 ```
 
-:::
+</Callout>
 
 ## Security and Performance Considerations
 

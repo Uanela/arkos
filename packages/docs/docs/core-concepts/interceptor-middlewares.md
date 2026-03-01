@@ -1,9 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 3
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 import SmallTag from "../components/small-tag"
 
 # Interceptor Middlewares
@@ -115,8 +117,8 @@ This is the **Express.js way** - and Arkos embraces it fully.
 
 Quickly scaffold interceptor files using the Arkos CLI:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```bash
 npx arkos generate interceptors --module user
@@ -128,8 +130,8 @@ npx arkos generate interceptors --module user
 npx arkos g i -m user
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```bash
 npx arkos generate middlewares --model user
@@ -141,13 +143,13 @@ npx arkos generate middlewares --model user
 npx arkos g m -m user
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### File Structure
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 Interceptor middlewares follow Arkos's convention-based structure with **two files**:
 
@@ -160,7 +162,7 @@ my-arkos-project/
             └── [model-name].interceptors.ts  # Interceptor chains
 ```
 
-:::info File Naming Change
+<Callout type="info" title="File Naming Change">
 
 Starting from v1.4.0-beta, the recommended file naming convention has changed from `.middlewares.ts` to `.interceptors.ts`. This change provides better separation of concerns:
 
@@ -168,9 +170,9 @@ Starting from v1.4.0-beta, the recommended file naming convention has changed fr
 - **.middlewares.ts** - For reusable Express middleware functions used within interceptors
 
 This naming better reflects their purpose and aligns with the framework's architecture.
-:::
+</Callout>
 
-:::warning Deprecation Notice
+<Callout type="warn" title="Deprecation Notice">
 
 While `.middlewares.ts` files still work in v1.4.0-beta for backward compatibility, you'll see this warning:
 
@@ -184,10 +186,10 @@ Found deprecated post.middlewares.ts that will be removed from v1.6.0-beta, cons
 - **v1.5.0-beta**: `.middlewares.ts` still works with deprecation warnings
 - **v1.6.0-beta**: `.middlewares.ts` will be completely removed, only `.interceptors.ts` supported
 
-:::
+</Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 Interceptor middlewares follow Arkos's convention-based structure:
 
@@ -199,19 +201,19 @@ my-arkos-project/
             └── [model-name].middlewares.ts
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
-:::tip Important
+<Callout type="tip" title="Important">
 It's important to follow the convention above because Arkos expects to find those files there as it auto-discovers them. Note also that the model name must be in **kebab-case** (e.g., `UserProfile` becomes `user-profile`).
-:::
+</Callout>
 
 ### Basic Example: Proper Separation
 
 **Step 1: Create reusable middleware functions**
 
 <Tabs>
-<TabItem value="ts" label="TypeScript" default>
+<Tab value="ts" label="TypeScript">
 
 ```typescript
 // src/modules/post/post.middlewares.ts
@@ -244,8 +246,8 @@ export const notifySubscribers = async (
 };
 ```
 
-</TabItem>
-<TabItem value="js" label="JavaScript">
+</Tab>
+<Tab value="js" label="JavaScript">
 
 ```javascript
 // src/modules/post/post.middlewares.js
@@ -268,13 +270,13 @@ export const notifySubscribers = async (req, res, next) => {
 };
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 **Step 2: Chain them in interceptors**
 
 <Tabs>
-<TabItem value="ts" label="TypeScript" default>
+<Tab value="ts" label="TypeScript">
 
 ```typescript
 // src/modules/post/post.interceptors.ts
@@ -285,8 +287,8 @@ export const beforeCreateOne = [generateSlug];
 export const afterCreateOne = [notifySubscribers];
 ```
 
-</TabItem>
-<TabItem value="js" label="JavaScript">
+</Tab>
+<Tab value="js" label="JavaScript">
 
 ```javascript
 // src/modules/post/post.interceptors.js
@@ -297,13 +299,13 @@ export const beforeCreateOne = [generateSlug];
 export const afterCreateOne = [notifySubscribers];
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
-:::tip No catchAsync Needed (v1.3.0+)
+<Callout type="tip" title="No catchAsync Needed (v1.3.0+)">
 
 Since v1.3.0-beta, you no longer need to wrap interceptor middlewares in `catchAsync` - Arkos handles this automatically. This applies to both ArkosRouter route handlers and interceptor middlewares.
-:::
+</Callout>
 
 ## Type-Safe Interceptors with Generics
 
@@ -355,7 +357,7 @@ The real power comes from **combining your validation schemas** (Zod/class-valid
 Let's see this in action:
 
 <Tabs>
-<TabItem value="zod" label="Zod + ArkosPrismaInput" default>
+<Tab value="zod" label="Zod + ArkosPrismaInput">
 
 **Step 1: Define your validation schema**
 
@@ -469,8 +471,8 @@ export const beforeCreateOne = [
 export const beforeUpdateOne = [validateEmailUniqueness, handleUserPosts];
 ```
 
-</TabItem>
-<TabItem value="dto" label="class-validator + ArkosPrismaInput">
+</Tab>
+<Tab value="dto" label="class-validator + ArkosPrismaInput">
 
 **Step 1: Define your validation DTO**
 
@@ -591,7 +593,7 @@ export const beforeCreateOne = [
 ];
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 **What you get:**
@@ -672,9 +674,9 @@ export const beforeFindOne = [];
 export const beforeFindMany = [];
 ```
 
-:::tip
+<Callout type="tip">
 You can pass multiple functions into the interceptors in order to handle different aspects of your application and at the same time following the practice of letting a function be responsible for a single thing.
-:::
+</Callout>
 
 ### Practical Before Interceptor Example
 
@@ -776,9 +778,9 @@ After interceptors provide access to three key objects:
 - `req.responseStatus` - The HTTP status code that will be sent
 - `req.additionalData` - Extra data from the operation (usually null)
 
-:::tip
+<Callout type="tip">
 Prior to `v1.3.0-beta` only the legacy way was available. After it, the current way was added to be more aligned with Express Community Conventions.
-:::
+</Callout>
 
 ### Available After Interceptors
 
@@ -996,8 +998,8 @@ Authentication interceptors work with these built-in routes:
 
 ### File Structure for Authentication Interceptors
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```
 src/modules/auth/
@@ -1005,15 +1007,15 @@ src/modules/auth/
 └── auth.interceptors.ts
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```
 src/modules/auth/
 └── auth.middlewares.ts
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Authentication Interceptor Examples
@@ -1272,8 +1274,8 @@ The execution order is:
 
 Use the CLI to scaffold authentication interceptor files:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```bash
 npx arkos generate interceptors --module auth
@@ -1287,8 +1289,8 @@ npx arkos g i -m auth
 
 This creates the `src/modules/auth/auth.interceptors.ts` file with empty interceptor exports ready for customization.
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```bash
 npx arkos generate middlewares --model auth
@@ -1302,7 +1304,7 @@ npx arkos g m -m auth
 
 This creates the `src/modules/auth/auth.middlewares.ts` file with empty interceptor exports ready for customization.
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Advanced Usage

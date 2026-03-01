@@ -1,3 +1,7 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 2
 ---
@@ -6,9 +10,9 @@ sidebar_position: 2
 
 Arkos.js follows a thoughtfully designed architecture that emphasizes simplicity, convention over configuration, and developer productivity. The structure is designed to scale from simple APIs to complex enterprise applications while maintaining clarity and organization.
 
-:::info
+<Callout type="info">
 Is worth mentioning that on this section you'll find some folders/files that are required for Arkos.js to be able to automatically find those folders/files and do it's jobs with it. You will also find some folders/files that are simply considered best practices around the Server-Side JavaScript Community, those that are required will be marked with `required`.
-:::
+</Callout>
 
 ## Architecture Philosophy
 
@@ -41,11 +45,9 @@ The source directory contains all your application logic, organized into distinc
 
 ### Application Entry Point
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 **`src/app.ts`** - Your application's main configuration file:
 
@@ -66,12 +68,12 @@ arkos.init({
 });
 ```
 
-:::info Configuration Changes
+<Callout type="info" title="Configuration Changes">
 In v1.4.0+, most configuration has moved to `arkos.config.ts`. The `arkos.init()` method now focuses on runtime setup - registering custom routers, configuring the Express app, and customizing the HTTP server.
-:::
+</Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 **`src/app.ts`** - Your application's main configuration file:
 
@@ -90,7 +92,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Utilities Directory
@@ -153,9 +155,9 @@ src/modules/post/
 └── utils/                         # Module-specific utilities
 ```
 
-:::info File Naming Change
+<Callout type="info" title="File Naming Change">
 In v1.4.0+, `*.middlewares.ts` has been renamed to `*.interceptors.ts` to better reflect their purpose. The old naming still works for backward compatibility.
-:::
+</Callout>
 
 ### File Types Explained
 
@@ -180,8 +182,8 @@ export default postController
 
 #### Service Files (`*.service.ts`)
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 Extend the base service with custom business logic. In v1.4.0+, `BaseService` uses kebab-case model names for better type inference:
 
@@ -202,12 +204,12 @@ const postService = new PostService("post");
 export default postService
 ```
 
-:::tip Type Inference
+<Callout type="tip" title="Type Inference">
 The kebab-case model name (`"post"`) enables automatic type inference after running `npx arkos prisma generate`. This command generates enhanced type definitions from your Prisma schema.
-:::
+</Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 import { BaseService } from "arkos/service";
@@ -227,13 +229,13 @@ const postService = new PostService("post");
 export default postService
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### Router Files (`*.router.ts`)
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 Define custom routes with declarative configuration. ArkosRouter automatically handles async errors:
 
@@ -266,12 +268,12 @@ postRouter.post(
 export default postRouter;
 ```
 
-:::info No catchAsync Needed
+<Callout type="info" title="No catchAsync Needed">
 ArkosRouter automatically wraps handlers with error handling, so you don't need `catchAsync` anymore.
-:::
+</Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 import { Router } from "express";
@@ -296,13 +298,13 @@ postRouter.post(
 export default postRouter;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 #### Interceptor Files (`*.interceptors.ts`)
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 Intercept requests to auto-generated endpoints. All interceptors must be wrapped in arrays:
 
@@ -348,8 +350,8 @@ export const afterFindMany = [
 
 
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.middlewares.ts
@@ -387,12 +389,12 @@ export const afterFindMany = [
 ];
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
-:::info Array Wrapping
+<Callout type="info" title="Array Wrapping">
 Since v1.3.0 is recommended that all interceptors and hooks must be exported as arrays. This allows you to compose multiple handlers for the same lifecycle event.
-:::
+</Callout>
 
 #### Authentication Configuration (`*.auth.ts`)
 
@@ -445,9 +447,9 @@ const postAuthConfigs: AuthConfigs = {
 export default postAuthConfigs;
 ```
 
-:::tip Permission Objects
+<Callout type="tip" title="Permission Objects">
 The permission object syntax allows for more granular control and better documentation of what each permission does. This is especially useful when integrating with permission management systems.
-:::
+</Callout>
 
 #### Prisma Query Options (`*.query.ts`)
 Define default query parameters for consistent data fetching:
@@ -598,8 +600,8 @@ uploads/
 
 ### Framework Configuration (v1.4.0+)
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 **`arkos.config.ts`** - Main framework configuration:
 
@@ -625,16 +627,16 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig
 ```
 
-:::info Configuration Migration
+<Callout type="info" title="Configuration Migration">
 In v1.4.0+, most configuration has moved from `arkos.init()` to `arkos.config.ts`. This separation makes configuration more maintainable and enables usability of the config on CLI tools.
-:::
+</Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 All configuration is done in `src/app.ts` through the `arkos.init()` method. There is no separate `arkos.config.ts` file.
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Environment Configuration
@@ -666,8 +668,8 @@ NODE_ENV=development
 
 Essential scripts for ArkosJS development:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```json
 {
@@ -685,12 +687,12 @@ Essential scripts for ArkosJS development:
 }
 ```
 
-:::tip Enhanced Type Generation
+<Callout type="tip" title="Enhanced Type Generation">
 The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitions that enable better type inference in `BaseService` and other framework components.
-:::
+</Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```json
 {
@@ -707,7 +709,7 @@ The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitio
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Best Practices
@@ -725,8 +727,8 @@ The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitio
 
 ### Development Workflow
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 1. **Define your Prisma schema** first
 2. **Generate enhanced types** with `npx arkos prisma generate`
@@ -734,8 +736,8 @@ The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitio
 4. **Add authentication configs** to control access (use permission objects for fine-grained control)
 5. **Implement custom logic** in controllers, interceptors and services as needed
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 1. **Define your Prisma schema** first
 2. **Generate Prisma client** with `npx prisma generate`
@@ -743,7 +745,7 @@ The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitio
 4. **Add authentication configs** to control access
 5. **Implement custom logic** in controllers, middlewares and services as needed
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Configuration Tips

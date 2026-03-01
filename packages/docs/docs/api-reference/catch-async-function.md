@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 4
 title: Catch Async
@@ -7,9 +9,9 @@ title: Catch Async
 
 The `catchAsync` function is a utility function in the **Arkos** that wraps asynchronous request handlers and middleware to automatically catch errors and forward them to Express's error handling mechanism. This eliminates the need for repetitive try-catch blocks in every route handler, creating cleaner code and ensuring consistent error handling.
 
-:::tip
+<Callout type="tip">
 You can use the function even to catch non async errors by simply letting the function throw it.
-:::
+</Callout>
 
 ## Purpose
 
@@ -128,9 +130,9 @@ export const protectRoute = catchAsync(
 );
 ```
 
-:::info
+<Callout type="info">
 Rember that many of the examples mentioned above are alreday handled my **Arkos** behind the scenes for these are basic errors, this way you can focus on what really matters.
-:::
+</Callout>
 
 ## Error Handling Flow
 

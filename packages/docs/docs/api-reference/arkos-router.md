@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 1
 title: Arkos Router
@@ -32,9 +34,9 @@ router.get(
 
 This declarative approach keeps your routes clean, self-documenting, and consistent across your application.
 
-:::tip
+<Callout type="tip">
 The `prefix` option in `ArkosRouter({ prefix: "/api/users" })` was able from [v1.5.0](/blog/1.5-beta) for DX improvements.
-:::
+</Callout>
 
 ## Configuration Object
 
@@ -112,11 +114,11 @@ router.post(
 | `action`   | `string`                            | The action being performed (e.g., "Create", "Update", "Delete")                                     |
 | `rule`     | `{ roles: string[] }` or `string[]` | Array of role names that can perform this action (This only works when using static authentication) |
 
-:::tip
+<Callout type="tip">
 The `rule` field is required for defining roles when you are using the [Static Authentication Mode](/docs/core-concepts/authentication-system#jwt-configuration--environment-setup). This field can be an object `{ roles: string[] }` and you can add many other descriptive fields to easy your frontend devs lives or it can be a simple array of string `string[]` which will be converted to an object under the hood.
 
 You can more about detailed access control rules at [Adding Auth Configs File Guide](/docs/core-concepts/authentication-system#auth-config-files---static-rbac).
-:::
+</Callout>
 
 **Example with Custom Actions:**
 
@@ -364,9 +366,9 @@ router.post(
 );
 ```
 
-:::tip New Required Flag
+<Callout type="tip" title="New Required Flag">
 Notice that the `required` flag defaults to true, if ommited the file will be required yet, so if you want to make it optional pass `required: false`. Is important to know that this feature of `required` flag was added at [v1.5.0+](/blog/1.5-beta).
-:::
+</Callout>
 
 **Result in `req.body`:**
 

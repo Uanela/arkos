@@ -1,10 +1,15 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+
 ---
+
 sidebar_position: 4
 title: Service Hooks
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+
 
 # Service Hooks
 
@@ -50,9 +55,9 @@ my-arkos-project/
             └── [model-name].middlewares.ts ← HTTP interceptors (v1.3.0 and earlier)
 ```
 
-:::warning Important
+<Callout type="warn" title="Important">
 Follow the naming convention exactly as Arkos auto-discovers these files. Model names must be in **kebab-case** (e.g., `UserProfile` becomes `user-profile`).
-:::
+</Callout>
 
 ### Creating Custom Services
 
@@ -70,8 +75,8 @@ npx arkos g s -m post
 
 This generates:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/post/post.service.ts
@@ -88,12 +93,12 @@ const postService = new PostService("post");
 export default postService;
 ```
 
-:::tip Type Inference
+<Callout type="tip" title="Type Inference">
 The `"post"` type enables automatic type inference after running `npx arkos prisma generate`. This command generates enhanced type definitions from your Prisma schema.
-:::
+</Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.service.ts
@@ -111,7 +116,7 @@ const postService = new PostService("post");
 export default postService;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Basic Hooks Example
@@ -505,9 +510,9 @@ npx arkos generate hooks --module post
 npx arkos g h -m post
 ```
 
-:::info
+<Callout type="info">
 Prior to `1.4.0-beta` instead of `--module` you must use `--model`.
-:::
+</Callout>
 
 This creates a template with all available hooks commented out, ready to customize:
 

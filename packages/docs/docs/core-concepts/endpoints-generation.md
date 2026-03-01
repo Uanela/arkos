@@ -1,9 +1,9 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 1
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Endpoints Generation
 
@@ -32,9 +32,9 @@ In the following steps we can see how Arkos generates these endpoints, for each 
 
 For each model, Arkos creates the following endpoints :
 
-:::tip
+<Callout type="tip">
 Arkos converts the model names to kebab-case and to plural e.g UserProfile to user-profiles, user to users. The pluralization of the model names happens only on the api endpoints.
-:::
+</Callout>
 
 | HTTP Method | Endpoint                 | Description                                       |
 | ----------- | ------------------------ | ------------------------------------------------- |
@@ -162,9 +162,9 @@ This allows us to dynamically filter, search, and paginate data while keeping ou
 
 By default **Arkos** exposes an `/api/available-routes` endpoint so that you can see all the available routes in your RESTful API even though without using the built-in documenation with swagger.
 
-:::danger
+<Callout type="error">
 This is only available for users with `isSuperUser` set to true or only under development.
-:::
+</Callout>
 
 ### Sending Request
 
@@ -192,9 +192,9 @@ GET /api/available-routes
 
 By default **Arkos** exposes also an `/api/available-resources` endpoint so that you can see all the available resources (prisma models) in your RESTful API even though without using the built-in documenation with swagger. It also includes image-upload, video-upload, document-upload, audio-upload and file-upload.
 
-:::danger
+<Callout type="error">
 This is only available for users with `isSuperUser` set to true or only under development.
-:::
+</Callout>
 
 ### Sending Request
 

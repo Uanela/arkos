@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 11
 ---
@@ -8,9 +10,9 @@ In **Arkos**, each incoming request goes through a **modular middleware pipeline
 
 This pipeline is automatically applied per route for every registered model and operation (e.g., `createOne`, `findMany`, `deleteMany`, etc.), ensuring that every request is authenticated (if desired), validated, processed, and responded to in a consistent and customizable way.
 
-:::note
+<Callout type="info">
 This is an explanation on how **Arkos** handles each prisma model request, this is not something you need to implement by yourself unless you want, but by doing this you would not being levarage **Arkos** and it's core features.
-:::
+</Callout>
 
 ## 1. Route Middleware Structure
 

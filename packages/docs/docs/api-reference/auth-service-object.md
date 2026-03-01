@@ -1,3 +1,5 @@
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 4
 ---
@@ -14,9 +16,9 @@ The `authService` is automatically available in your Arkos application and can b
 import { authService } from "arkos/services";
 ```
 
-:::warning
+<Callout type="warn">
 On the following section you will various examples on how you can use the authService, you ain't restricted to those but also in the same time bear in mind that **Arkos** handles many of auth relate scenarios, such as authentication, authorization, password hashing, password checks and many others.
-:::
+</Callout>
 
 Before proceed reading this guide is highly encouragend to read the guide about how **Arkos** uses this under the hood so that you do not miss anything and try to reivent the wheel yourself, [Arkos Authentication Flow Guide](/docs/core-concepts/request-data-validation#authentication-endpoint-validation).
 
@@ -446,9 +448,9 @@ export { tieredContentAccess };
 
 The `AccessAction` type can be extended beyond the basic CRUD operations ("Create", "Update", "Delete", "View") to include custom actions specific to your application needs. This works in both static and dynamic authentication modes.
 
-:::info
+<Callout type="info">
 When defining custom actions, note that the standard base actions ("Create", "Update", "Delete", "View") must use Pascal case (capital first letter). Your custom actions can use any naming convention, though we recommend maintaining consistency in your codebase.
-:::
+</Callout>
 
 **Example of custom actions:**
 
@@ -478,9 +480,9 @@ router.post(
 );
 ```
 
-:::tip
+<Callout type="tip">
 For more detailed information on implementing authentication in custom routers, see the guide on [Adding Authentication to Custom Routers](/docs/guide/adding-custom-routers#adding-authentication-to-custom-routers).
-:::
+</Callout>
 
 ## Type Reference
 

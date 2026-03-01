@@ -1,3 +1,7 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
 ---
 sidebar_position: 8
 ---
@@ -19,11 +23,9 @@ The `EmailService` is built on top of Node.js's `nodemailer` library, providing 
 
 ## Configuration
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 The `EmailService` uses the `email` configuration from `arkos.config.ts`:
 
@@ -48,8 +50,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 The `EmailService` uses the `email` configuration from `arkos.init()`:
 
@@ -70,12 +72,12 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
-:::info
+<Callout type="info">
 You can pass these values directly if you want, but the best community practice is to use environment variables.
-:::
+</Callout>
 
 The email configuration in **Arkos** allows you to set up email functionality through the `emailService`. Here's an explanation of each parameter:
 
@@ -140,13 +142,13 @@ export const afterSignup = [
 ];
 ```
 
-:::tip Interceptor Arrays
+<Callout type="tip" title="Interceptor Arrays">
 Remember that all interceptors allows being exported as arrays since v1.3.0. The example above shows the correct syntax.
-:::
+</Callout>
 
-:::warning Naming Convention
+<Callout type="warn" title="Naming Convention">
 If you are on a version prior to `v1.4.0-beta` use the extensions `.middlewares.ts`.
-:::
+</Callout>
 
 ### Email Options
 
