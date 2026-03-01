@@ -1,11 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
 sidebar_position: 7
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Error Handling
 
@@ -24,8 +24,8 @@ import TabItem from '@theme/TabItem';
 
 One of the biggest improvements in v1.5.0 is the **dramatically improved error message format**. Errors now tell you exactly what's wrong and where, without digging through nested objects.
 
-<Tabs groupId="version">
-<TabItem value="v1.5" label="Meaningful Messages (v1.5.0+)" default>
+<Tabs>
+<Tab value="v1.5" label="Meaningful Messages (v1.5.0+)">
 
 ```json
 {
@@ -43,8 +43,8 @@ One of the biggest improvements in v1.5.0 is the **dramatically improved error m
 }
 ```
 
-</TabItem>
-<TabItem value="v1.4" label="Generic Messages (before)" default>
+</Tab>
+<Tab value="v1.4" label="Generic Messages (before)">
 
 
 ```json
@@ -62,7 +62,7 @@ One of the biggest improvements in v1.5.0 is the **dramatically improved error m
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 **What changed:**

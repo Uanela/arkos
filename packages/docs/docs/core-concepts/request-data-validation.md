@@ -1,11 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
 sidebar_position: 4
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Request Data Validation
 
@@ -152,8 +152,8 @@ The validation system works seamlessly with:
 
 Enable validation in your application configuration:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```ts
 // arkos.config.ts
@@ -172,8 +172,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -190,7 +190,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 **Configuration Options:**
@@ -208,8 +208,8 @@ Validation is **disabled by default**. You must explicitly enable it in your con
 
 After validation passes, access the validated and type-safe data through standard Express request properties:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // In any controller or middleware
@@ -276,8 +276,8 @@ Using `ArkosRequest<Params, ResBody, ReqBody, Query>` generics provides:
 - **Refactoring safety**: Changes to schemas automatically update types
   :::
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // In any controller or middleware
@@ -300,7 +300,7 @@ const myHandler = async (
 
 **Note**: In v1.3, `ArkosRequest` doesn't support generic type parameters for type safety.
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Validating Request Body for Auto-Generated Endpoints
@@ -351,8 +351,8 @@ src/modules/auth/
 
 Define validation rules for request bodies on auto-generated endpoints using file-based discovery:
 
-<Tabs groupId="approach">
-<TabItem value="zod" label="Zod Schemas" default>
+<Tabs>
+<Tab value="zod" label="Zod Schemas">
 
 ```typescript
 // src/modules/product/schemas/create-product.schema.ts
@@ -382,8 +382,8 @@ const UpdateProductSchema = z.object({
 export default UpdateProductSchema;
 ```
 
-</TabItem>
-<TabItem value="class-validator" label="Class-Validator DTOs">
+</Tab>
+<Tab value="class-validator" label="Class-Validator DTOs">
 
 ```typescript
 // src/modules/product/dtos/create-product.dto.ts
@@ -430,7 +430,7 @@ export default class UpdateProductDto {
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 These files are automatically applied to validate `req.body` on:
@@ -442,8 +442,8 @@ These files are automatically applied to validate `req.body` on:
 
 ## Validating Query Parameters and Path Parameters
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (New Feature)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (New Feature)">
 
 **The new declarative approach allows you to validate query parameters and path parameters for auto-generated endpoints** - something that wasn't possible before v1.4.0:
 
@@ -611,8 +611,8 @@ Query parameters and path parameters arrive as **strings** from the URL. Always 
 Without coercion, `minPrice=50` remains the string `"50"` instead of number `50`!
 </Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 **Query and params validation for auto-generated endpoints was not supported in v1.3**. Only request body validation was possible through file-based DTOs/schemas.
 
@@ -648,7 +648,7 @@ router.get("/", async (req, res) => {
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Authentication Endpoint Validation
@@ -657,8 +657,8 @@ Authentication endpoints have special validation requirements and file naming co
 
 ### Login Body Validation
 
-<Tabs groupId="approach">
-<TabItem value="zod" label="Zod" default>
+<Tabs>
+<Tab value="zod" label="Zod">
 
 ```typescript
 // src/modules/auth/schemas/login.schema.ts
@@ -685,8 +685,8 @@ const LoginSchema = z.object({
 export default LoginSchema;
 ```
 
-</TabItem>
-<TabItem value="class-validator" label="Class-Validator">
+</Tab>
+<Tab value="class-validator" label="Class-Validator">
 
 ```typescript
 // src/modules/auth/dtos/login.dto.ts
@@ -719,13 +719,13 @@ export default class LoginDto {
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Signup Body Validation
 
-<Tabs groupId="approach">
-<TabItem value="zod" label="Zod" default>
+<Tabs>
+<Tab value="zod" label="Zod">
 
 ```typescript
 // src/modules/auth/schemas/signup.schema.ts
@@ -748,8 +748,8 @@ const SignupSchema = z.object({
 export default SignupSchema;
 ```
 
-</TabItem>
-<TabItem value="class-validator" label="Class-Validator">
+</Tab>
+<Tab value="class-validator" label="Class-Validator">
 
 ```typescript
 // src/modules/auth/dtos/signup.dto.ts
@@ -784,7 +784,7 @@ export default class SignupDto {
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="warn" title="User Model Dependency">
@@ -793,8 +793,8 @@ Your SignupDto fields must match the required fields in your Prisma User model. 
 
 ### Profile Update Body Validation
 
-<Tabs groupId="approach">
-<TabItem value="zod" label="Zod" default>
+<Tabs>
+<Tab value="zod" label="Zod">
 
 ```typescript
 // src/modules/auth/schemas/update-me.schema.ts
@@ -810,8 +810,8 @@ const UpdateMeSchema = z.object({
 export default UpdateMeSchema;
 ```
 
-</TabItem>
-<TabItem value="class-validator" label="Class-Validator">
+</Tab>
+<Tab value="class-validator" label="Class-Validator">
 
 ```typescript
 // src/modules/auth/dtos/update-me.dto.ts
@@ -831,7 +831,7 @@ export default class UpdateMeDto {
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="warn" title="Password Security">
@@ -840,8 +840,8 @@ The `/api/users/me` endpoint automatically rejects requests containing a `passwo
 
 ### Password Change Body Validation
 
-<Tabs groupId="approach">
-<TabItem value="zod" label="Zod" default>
+<Tabs>
+<Tab value="zod" label="Zod">
 
 ```typescript
 // src/modules/auth/schemas/update-password.schema.ts
@@ -861,8 +861,8 @@ const UpdatePasswordSchema = z.object({
 export default UpdatePasswordSchema;
 ```
 
-</TabItem>
-<TabItem value="class-validator" label="Class-Validator">
+</Tab>
+<Tab value="class-validator" label="Class-Validator">
 
 ```typescript
 // src/modules/auth/dtos/update-password.dto.ts
@@ -881,13 +881,13 @@ export default class UpdatePasswordDto {
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Advanced: Customizing Auth Endpoint Validation
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 You can override or enhance auth endpoint validation using router configuration:
 
@@ -927,8 +927,8 @@ const router = ArkosRouter();
 export default router;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 Auth endpoint customization required overriding the entire endpoint:
 
@@ -948,15 +948,15 @@ const router = Router();
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Validation for Custom Routes
 
 When creating custom routes with ArkosRouter, validation becomes declarative and powerful:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/routers/reports.router.ts
@@ -1207,8 +1207,8 @@ const getSummary = async (
 };
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/routers/reports.router.ts
@@ -1239,7 +1239,7 @@ router.get(
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="tip" title="Why Validate All Three Parts?">

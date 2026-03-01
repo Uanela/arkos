@@ -1,3 +1,5 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
@@ -6,8 +8,6 @@ title: OpenAPI Documentation
 ---
 
 import SmallTag from "../components/small-tag"
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # OpenAPI Documentation
 
@@ -17,8 +17,8 @@ Arkos.js provides comprehensive OpenAPI documentation generation that now integr
 
 ## Quick Start
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 Enable API documentation with ArkosRouter integration:
 
@@ -85,8 +85,8 @@ export default router;
 
 Start your server and visit `/api/docs` to see your interactive API documentation.
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 Enable API documentation with JSDoc approach:
 
@@ -144,7 +144,7 @@ router.get("/:id", userController.getUser);
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## ArkosRouter OpenAPI Integration
@@ -153,8 +153,8 @@ The ArkosRouter approach makes API documentation declarative and type-safe.
 
 ### Basic Route Documentation
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 import { ArkosRouter } from "arkos";
@@ -227,8 +227,8 @@ router.post(
 );
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 import { Router } from "express";
@@ -283,7 +283,7 @@ router.get("/api/health", healthController.check);
 router.post("/api/posts", postController.create);
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## ArkosRouter OpenAPI Integration With File Uploads
@@ -397,8 +397,8 @@ Let Arkos auto-generate the schema. Only use manual definition when you need cus
 
 One of the most powerful features is the ability to use schemas directly in responses:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 import { ArkosRouter } from "arkos";
@@ -457,8 +457,8 @@ router.post(
 );
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 /**
@@ -512,7 +512,7 @@ router.post(
 router.get("/api/users/:id", userController.getUser);
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Overriding Auto-Generated Documentation
@@ -521,8 +521,8 @@ Customize the documentation for auto-generated Prisma model endpoints:
 
 ### Configuring Model Endpoints
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/user/user.router.ts
@@ -624,8 +624,8 @@ router.post(
 export default router;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/user/user.router.ts
@@ -665,15 +665,15 @@ router.post("/:id/activate", userController.activate);
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Authentication Endpoints Documentation
 
 Document your authentication flows with proper security schemes:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/auth/auth.router.ts
@@ -752,8 +752,8 @@ const router = ArkosRouter();
 export default router;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/auth/auth.router.ts
@@ -818,7 +818,7 @@ const router = Router();
  */
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Schema Generation Modes
@@ -827,8 +827,8 @@ Arkos supports three approaches to generate OpenAPI schemas:
 
 ### Prisma Mode: Live Schema Reflection
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -876,8 +876,8 @@ export default userPrismaQueryOptions;
 
 The generated OpenAPI schema will show User responses with exactly these fields.
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -890,13 +890,13 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Integration with Validation Schemas
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 **Important**: Don't mix validation schemas and OpenAPI requestBody|params|query definitions:
 
@@ -958,8 +958,8 @@ router.get(
 );
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // JSDoc approach doesn't have this conflict
@@ -985,15 +985,15 @@ router.get(
 router.post("/api/users", userController.create);
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Custom Routers Documentation
 
 Easily add documentation to custom routers with the declarative approach:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/routers/analytics.router.ts
@@ -1087,8 +1087,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/routers/analytics.router.ts
@@ -1150,15 +1150,15 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Migration Guide
 
 ### From JSDoc to ArkosRouter OpenAPI
 
-<Tabs groupId="migration">
-<TabItem value="before" label="Before (JSDoc)">
+<Tabs>
+<Tab value="before" label="Before (JSDoc)">
 
 ```typescript
 /**
@@ -1186,8 +1186,8 @@ arkos.init({
 router.get("/api/users/:id", userController.getUser);
 ```
 
-</TabItem>
-<TabItem value="after" label="After (ArkosRouter)" default>
+</Tab>
+<Tab value="after" label="After (ArkosRouter)">
 
 ```typescript
 import { ArkosRouter } from "arkos";
@@ -1222,7 +1222,7 @@ router.get(
 );
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Benefits of the New Approach
@@ -1238,7 +1238,7 @@ router.get(
 ### Arkos Config
 
 <Tabs>
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -1280,8 +1280,8 @@ const arkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```ts
 // src/app.ts
@@ -1323,7 +1323,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Troubleshooting

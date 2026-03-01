@@ -1,3 +1,5 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
@@ -5,8 +7,6 @@ sidebar_position: 13
 title: Create Arkos CLI
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # create-arkos
 
@@ -17,27 +17,27 @@ The official scaffolding tool for Arkos.js projects, providing an interactive se
 Get started with a new Arkos.js project in seconds using your preferred package manager:
 
 <Tabs>
-<TabItem value="npm" label="npm" default>
+<Tab value="npm" label="npm">
 
 ```bash
 npm create arkos@latest my-arkos-project
 ```
 
-</TabItem>
-<TabItem value="yarn" label="Yarn">
+</Tab>
+<Tab value="yarn" label="Yarn">
 
 ```bash
 yarn create arkos@latest my-arkos-project
 ```
 
-</TabItem>
-<TabItem value="pnpm" label="pnpm">
+</Tab>
+<Tab value="pnpm" label="pnpm">
 
 ```bash
 pnpm create arkos@latest my-arkos-project
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="tip">
@@ -136,34 +136,34 @@ cd my-arkos-project
 Edit the `.env` file with your database connection string:
 
 <Tabs>
-<TabItem value="postgresql" label="PostgreSQL" default>
+<Tab value="postgresql" label="PostgreSQL">
 
 ```env
 DATABASE_URL="postgresql://username:password@localhost:5432/mydb"
 ```
 
-</TabItem>
-<TabItem value="mongodb" label="MongoDB">
+</Tab>
+<Tab value="mongodb" label="MongoDB">
 
 ```env
 DATABASE_URL="mongodb://localhost:27017/mydb"
 ```
 
-</TabItem>
-<TabItem value="mysql" label="MySQL">
+</Tab>
+<Tab value="mysql" label="MySQL">
 
 ```env
 DATABASE_URL="mysql://username:password@localhost:3306/mydb"
 ```
 
-</TabItem>
-<TabItem value="sqlite" label="SQLite">
+</Tab>
+<Tab value="sqlite" label="SQLite">
 
 ```env
 DATABASE_URL="file:./dev.db"
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### 3. Set Up Prisma

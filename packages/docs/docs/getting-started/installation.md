@@ -1,3 +1,5 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
@@ -5,8 +7,6 @@ sidebar_position: 1
 title: Installation 
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 import SmallTag from "../components/small-tag"
 
 # Installation 
@@ -26,20 +26,20 @@ The quickest way to create a new Arkos.js RESTful API is using [**create-arkos**
 
 ### 1. Run `create-arkos`
 <Tabs>
-<TabItem value="pnpm" label="pnpm" default>
+<Tab value="pnpm" label="pnpm">
 
 ```bash
 pnpm create arkos@latest
 ```
 
-</TabItem>
-<TabItem value="npm" label="npm">
+</Tab>
+<Tab value="npm" label="npm">
 
 ```bash
 npm create arkos@latest
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 On installation, you'll see the following prompts:
@@ -92,20 +92,20 @@ npx arkos prisma generate
 After following these 3/4 steps described above, you will be 100% ready to start developing and scaling your RESTful API easily using Arkos.js by running the dev command:
 
 <Tabs>
-<TabItem value="pnpm" label="pnpm" default>
+<Tab value="pnpm" label="pnpm">
 
 ```bash
 pnpm run dev
 ```
 
-</TabItem>
-<TabItem value="npm" label="npm">
+</Tab>
+<Tab value="npm" label="npm">
 
 ```bash
 npm run dev
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 By doing this you will have your application running on `http://localhost:8000/api` or on the `PORT` you set in your `.env` file.
@@ -125,22 +125,22 @@ npm init -y
 ### 2. Install Required Packages
 
 <Tabs>
-<TabItem value="typescript" label="TypeScript" default>
+<Tab value="typescript" label="TypeScript">
 
 ```bash
 npm install arkos express @prisma/client 
 npm install --save-dev typescript @types/node @types/express prisma tsx-strict
 ```
 
-</TabItem>
-<TabItem value="javascript" label="JavaScript">
+</Tab>
+<Tab value="javascript" label="JavaScript">
 
 ```bash
 npm install arkos express @prisma/client 
 npm install --save-dev prisma tsx-strict
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### 3. Create Project Structure
@@ -184,8 +184,8 @@ datasource db {
 
 Edit `src/app.js` (or `src/app.ts` for TypeScript):
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 import { ArkosConfig } from 'arkos';
@@ -201,8 +201,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```javascript
 import arkos from 'arkos';
@@ -213,7 +213,7 @@ arkos.init({
   }
 });
 ```
-</TabItem>
+</Tab>
 </Tabs>
 
 In the snippet above, we configured `CORS` so that we can run our application freely during development.
@@ -275,20 +275,20 @@ npx arkos prisma generate
 ### 11. Start Development Server
 
 <Tabs>
-<TabItem value="pnpm" label="pnpm" default>
+<Tab value="pnpm" label="pnpm">
 
 ```bash
 pnpm run dev
 ```
 
-</TabItem>
-<TabItem value="npm" label="npm">
+</Tab>
+<Tab value="npm" label="npm">
 
 ```bash
 npm run dev
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 You can then visit your API at `http://localhost:8000/api` and start developing and quickly scaling your API using Arkos.js.

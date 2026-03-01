@@ -1,3 +1,5 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
@@ -5,8 +7,6 @@ sidebar_position: 5
 title: Adding Custom Routers
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 import SmallTag from "../components/small-tag"
 
 # Adding Custom Routers
@@ -17,8 +17,8 @@ Arkos provides a flexible routing system that lets you create custom API endpoin
 
 ## Quick Start
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/routers/analytics.router.ts
@@ -52,8 +52,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/routers/analytics.router.ts
@@ -87,7 +87,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Understanding Your Options
@@ -133,8 +133,8 @@ Custom routers let you define entirely new API endpoints separate from your Pris
 
 ### Creating a Custom Router
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/routers/reports.router.ts
@@ -176,8 +176,8 @@ export default reportsRouter;
 Notice the configuration object as the first argument. This declarative approach gives you access to validation, authentication, rate limiting, and more. See [Arkos Router API Reference](/docs/api-reference/arkos-router) for all options.
 :::
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/routers/reports.router.ts
@@ -212,7 +212,7 @@ reportsRouter.post(
 export default reportsRouter;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="error" title="Path Prefix">
@@ -239,8 +239,8 @@ Notice that when using the CLI to generate custom routers they will be generated
 
 ### Registering Custom Routers
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 Add your router to the `use` array in your Arkos initialization:
 
@@ -259,8 +259,8 @@ arkos.init({
 Custom routers in the `use` array are added **after** all built-in Arkos routers. They will not overwrite any built-in routes.
 </Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 Add your router to the `routers.additional` array:
 
@@ -277,7 +277,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Adding Features to Routes
@@ -286,8 +286,8 @@ ArkosRouter supports declarative configuration for common needs:
 
 ### Authentication
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // Simple authentication
@@ -313,8 +313,8 @@ router.post(
 );
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 import { authService } from "arkos/services";
@@ -337,15 +337,15 @@ router.post(
 );
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 Learn more: [Authentication System](/docs/core-concepts/authentication-system)
 
 ### Validation
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 import z from "zod";
@@ -367,8 +367,8 @@ router.post(
 );
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 import { handleRequestBodyValidationAndTransformation } from "arkos/middlewares";
@@ -381,15 +381,15 @@ router.post(
 );
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 Learn more: [Request Data Validation](/docs/core-concepts/request-data-validation)
 
 ### Rate Limiting
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 router.post(
@@ -405,8 +405,8 @@ router.post(
 );
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 import rateLimit from "express-rate-limit";
@@ -420,13 +420,13 @@ const reportLimiter = rateLimit({
 router.post("/api/reports/generate", reportLimiter, controller.generateReport);
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### File Uploads
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 router.post(
@@ -441,8 +441,8 @@ router.post(
 );
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 import multer from "multer";
@@ -460,15 +460,15 @@ router.post(
 );
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 Learn more: [File Upload Guide](/docs/core-concepts/file-uploads)
 
 #### OpenAPI Documentation
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 router.post(
@@ -493,12 +493,12 @@ router.post(
 );
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 OpenAPI documentation requires manual configuration. See the [OpenAPI/Swagger Guide](/docs/core-concepts/open-api-documentation) for v1.3 setup.
 
-</TabItem>
+</Tab>
 </Tabs>
 
 Learn more: [OpenAPI/Swagger Guide](/docs/core-concepts/open-api-documentation)
@@ -534,8 +534,8 @@ This will automatically create an `src/modules/user/user.router.{ts|js}` file in
 
 To add custom endpoints to an existing model's API:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -586,8 +586,8 @@ router.get(
 export default router;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -623,7 +623,7 @@ router.get("/featured", postController.getFeaturedPosts);
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="tip" title="Path Resolution">
@@ -640,8 +640,8 @@ If these conventions aren't followed, Arkos won't recognize your customizations.
 
 ### Configuring Auto-Generated Endpoints
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 You can configure individual auto-generated endpoints with all ArkosRouter features:
 
@@ -691,18 +691,18 @@ const productRouter = ArkosRouter();
 export default productRouter;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 Configuration of auto-generated endpoints is not available in v1.3. You must override endpoints to add features. See [Overriding Endpoints](#overriding-auto-generated-endpoints).
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Disabling Auto-Generated Endpoints
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -729,8 +729,8 @@ export default ArkosRouter();
 While `disable: true` and `disable: { createMany: true }` still work for backward compatibility, we recommend the new syntax (`createMany: { disabled: true }`) for consistency.
 </Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -752,7 +752,7 @@ export const config: RouterConfig = {
 export default Router();
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 When all endpoints are disabled, Arkos will not generate:
@@ -770,8 +770,8 @@ When all endpoints are disabled, Arkos will not generate:
 
 To completely replace an auto-generated endpoint:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -811,8 +811,8 @@ router.get(
 export default router;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -834,7 +834,7 @@ router.get("/", postController.myOwnMethod);
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="warn" title="Important">

@@ -4,8 +4,6 @@ import { Callout } from 'fumadocs-ui/components/callout';
 sidebar_position: 14
 title: Arkos CLI
 ---
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 import SmallTag from "../components/small-tag"
 
 # Arkos CLI

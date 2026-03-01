@@ -1,11 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
 sidebar_position: 3
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 import SmallTag from "../components/small-tag"
 
 # Interceptor Middlewares
@@ -117,8 +117,8 @@ This is the **Express.js way** - and Arkos embraces it fully.
 
 Quickly scaffold interceptor files using the Arkos CLI:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```bash
 npx arkos generate interceptors --module user
@@ -130,8 +130,8 @@ npx arkos generate interceptors --module user
 npx arkos g i -m user
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```bash
 npx arkos generate middlewares --model user
@@ -143,13 +143,13 @@ npx arkos generate middlewares --model user
 npx arkos g m -m user
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### File Structure
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 Interceptor middlewares follow Arkos's convention-based structure with **two files**:
 
@@ -188,8 +188,8 @@ Found deprecated post.middlewares.ts that will be removed from v1.6.0-beta, cons
 
 </Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 Interceptor middlewares follow Arkos's convention-based structure:
 
@@ -201,7 +201,7 @@ my-arkos-project/
             └── [model-name].middlewares.ts
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="tip" title="Important">
@@ -213,7 +213,7 @@ It's important to follow the convention above because Arkos expects to find thos
 **Step 1: Create reusable middleware functions**
 
 <Tabs>
-<TabItem value="ts" label="TypeScript" default>
+<Tab value="ts" label="TypeScript">
 
 ```typescript
 // src/modules/post/post.middlewares.ts
@@ -246,8 +246,8 @@ export const notifySubscribers = async (
 };
 ```
 
-</TabItem>
-<TabItem value="js" label="JavaScript">
+</Tab>
+<Tab value="js" label="JavaScript">
 
 ```javascript
 // src/modules/post/post.middlewares.js
@@ -270,13 +270,13 @@ export const notifySubscribers = async (req, res, next) => {
 };
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 **Step 2: Chain them in interceptors**
 
 <Tabs>
-<TabItem value="ts" label="TypeScript" default>
+<Tab value="ts" label="TypeScript">
 
 ```typescript
 // src/modules/post/post.interceptors.ts
@@ -287,8 +287,8 @@ export const beforeCreateOne = [generateSlug];
 export const afterCreateOne = [notifySubscribers];
 ```
 
-</TabItem>
-<TabItem value="js" label="JavaScript">
+</Tab>
+<Tab value="js" label="JavaScript">
 
 ```javascript
 // src/modules/post/post.interceptors.js
@@ -299,7 +299,7 @@ export const beforeCreateOne = [generateSlug];
 export const afterCreateOne = [notifySubscribers];
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="tip" title="No catchAsync Needed (v1.3.0+)">
@@ -357,7 +357,7 @@ The real power comes from **combining your validation schemas** (Zod/class-valid
 Let's see this in action:
 
 <Tabs>
-<TabItem value="zod" label="Zod + ArkosPrismaInput" default>
+<Tab value="zod" label="Zod + ArkosPrismaInput">
 
 **Step 1: Define your validation schema**
 
@@ -471,8 +471,8 @@ export const beforeCreateOne = [
 export const beforeUpdateOne = [validateEmailUniqueness, handleUserPosts];
 ```
 
-</TabItem>
-<TabItem value="dto" label="class-validator + ArkosPrismaInput">
+</Tab>
+<Tab value="dto" label="class-validator + ArkosPrismaInput">
 
 **Step 1: Define your validation DTO**
 
@@ -593,7 +593,7 @@ export const beforeCreateOne = [
 ];
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 **What you get:**
@@ -998,8 +998,8 @@ Authentication interceptors work with these built-in routes:
 
 ### File Structure for Authentication Interceptors
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```
 src/modules/auth/
@@ -1007,15 +1007,15 @@ src/modules/auth/
 └── auth.interceptors.ts
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```
 src/modules/auth/
 └── auth.middlewares.ts
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Authentication Interceptor Examples
@@ -1274,8 +1274,8 @@ The execution order is:
 
 Use the CLI to scaffold authentication interceptor files:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```bash
 npx arkos generate interceptors --module auth
@@ -1289,8 +1289,8 @@ npx arkos g i -m auth
 
 This creates the `src/modules/auth/auth.interceptors.ts` file with empty interceptor exports ready for customization.
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```bash
 npx arkos generate middlewares --model auth
@@ -1304,7 +1304,7 @@ npx arkos g m -m auth
 
 This creates the `src/modules/auth/auth.middlewares.ts` file with empty interceptor exports ready for customization.
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Advanced Usage

@@ -4,8 +4,6 @@ import { Callout } from 'fumadocs-ui/components/callout';
 sidebar_position: 1
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Endpoints Generation
 

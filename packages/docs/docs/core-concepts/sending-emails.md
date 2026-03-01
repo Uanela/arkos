@@ -1,3 +1,5 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
@@ -21,11 +23,9 @@ The `EmailService` is built on top of Node.js's `nodemailer` library, providing 
 
 ## Configuration
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 The `EmailService` uses the `email` configuration from `arkos.config.ts`:
 
@@ -50,8 +50,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 The `EmailService` uses the `email` configuration from `arkos.init()`:
 
@@ -72,7 +72,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="info">

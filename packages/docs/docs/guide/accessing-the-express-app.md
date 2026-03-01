@@ -1,11 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
 sidebar_position: 6
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Accessing The Express App
 
@@ -119,8 +119,8 @@ This approach is useful when you need to perform configurations after Arkos has 
 
 Arkos provides a `configureServer` hook that gives you access to the HTTP server before it starts listening:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/app.ts
@@ -150,8 +150,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -182,7 +182,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="warn">
@@ -193,8 +193,8 @@ The `configureServer` hook is only executed when a port is specified in the conf
 
 When you need full control over the HTTP server creation and configuration:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -249,8 +249,8 @@ const startServer = async () => {
 startServer();
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -295,7 +295,7 @@ const startServer = async () => {
 startServer();
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Timing Considerations
@@ -490,8 +490,8 @@ arkos.init({
 
 You can combine direct Express app access with custom middleware configuration:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -526,8 +526,8 @@ arkos.init({
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -551,7 +551,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 See [Middleware Configuration](/docs/api-reference/arkos-configuration#middleware-configuration) for more details on configuring middlewares.

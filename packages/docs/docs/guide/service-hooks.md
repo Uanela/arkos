@@ -1,3 +1,5 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 
 ---
 
@@ -8,8 +10,6 @@ title: Service Hooks
 import { Callout } from 'fumadocs-ui/components/callout';
 
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Service Hooks
 
@@ -75,8 +75,8 @@ npx arkos g s -m post
 
 This generates:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/post/post.service.ts
@@ -97,8 +97,8 @@ export default postService;
 The `"post"` type enables automatic type inference after running `npx arkos prisma generate`. This command generates enhanced type definitions from your Prisma schema.
 </Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.service.ts
@@ -116,7 +116,7 @@ const postService = new PostService("post");
 export default postService;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Basic Hooks Example

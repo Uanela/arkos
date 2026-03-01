@@ -1,11 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
 sidebar_position: 2
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Authentication System
 
@@ -15,8 +15,8 @@ Arkos provides a comprehensive JWT-based authentication system with Role-Based A
 
 First, configure authentication in your Arkos application:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -46,8 +46,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -75,7 +75,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### JWT Configuration Options
@@ -168,8 +168,8 @@ model User {
 
 By default, users login with `username`. You can customize this:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -184,8 +184,8 @@ const arkosConfig: ArkosConfig = {
 };
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -199,7 +199,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 <Callout type="warn" title="Required Setup">
@@ -379,8 +379,8 @@ export const postAuthConfigs: AuthConfigs = {
 
 ## Adding Authentication in Custom Routers
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ArkosRouter provides declarative authentication configuration. You can add authentication inline or reference auth configs for consistency.
 
@@ -493,8 +493,8 @@ Referencing auth configs instead of inline rules provides:
 - Easier maintenance and updates
   :::
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/routers/reports.router.ts
@@ -530,13 +530,13 @@ router.post(
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Customizing Authentication for Auto-Generated Endpoints
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 Control authentication for auto-generated endpoints using `RouterConfig` - this is the new recommended approach:
 
@@ -598,8 +598,8 @@ Using `RouterConfig` for authentication control is preferred over defining `auth
 - Documentation via `/api/auth-actions` endpoint
 - Fine-grained access control references
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 Authentication control was handled entirely through `.auth.ts` files:
 
@@ -620,15 +620,15 @@ export const postAuthConfigs: AuthConfigs = {
 };
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Using Custom Actions in Routes
 
 Custom actions defined in auth configs can be used in custom routes:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -672,8 +672,8 @@ router.post(
 export default router;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -696,7 +696,7 @@ router.get(
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Authentication System Flow
@@ -901,8 +901,8 @@ const authActions = await fetch("/api/auth-actions", {
 
 ### Exporting Auth Actions for Frontend
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+">
 
 You can export auth actions to a file for static typing and easier frontend integration:
 
@@ -971,12 +971,12 @@ if (canUserPerformAction(user.role, 'post', 'Delete')) {
 }
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 The `export auth-action` command is not available in v1.3. You must manually fetch from `/api/auth-actions` or copy permissions from your auth config files.
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Upgrading To Dynamic RBAC
@@ -1057,8 +1057,8 @@ model UserRole {
 
 ### Update Application Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -1070,8 +1070,8 @@ const arkosConfig: ArkosConfig = {
 };
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -1083,7 +1083,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Auth Config Files in Dynamic Mode

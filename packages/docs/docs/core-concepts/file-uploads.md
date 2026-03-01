@@ -1,11 +1,11 @@
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
 sidebar_position: 6
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # File Uploads
 
@@ -56,8 +56,8 @@ The most common use case - adding file upload capabilities to your auto-generate
 
 ### Example 1: User Profile Photo
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 **1. Configure the upload in your model router:**
 
@@ -135,8 +135,8 @@ console.log(user.profilePhoto); // "/uploads/user-profiles/1234567890-photo.jpg"
 One of the greatest advantage of using `ArkosRouter` for file uploads is that it will automatically sync with your OpenAPI documentation, basically arkos will create an `requestBody` of type [`multipart/form-data`](https://swagger.io/docs/specification/v3_0/describing-request-body/multipart-requests/) so that you can easily test your api without the need to write it from scratch. Understand how it works by reading [OpenAPI Documentation File Upload Guide](/docs/core-concepts/open-api-documentation#arkosrouter-openapi-integration-with-file-uploads).
 </Callout>
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 (Old Way)">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 (Old Way)">
 
 **Old approach required separate API calls:**
 
@@ -174,13 +174,13 @@ if (!userResponse.ok) {
 }
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Example 2: Product with Multiple Images
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/product/product.router.ts
@@ -237,8 +237,8 @@ const product = await response.json();
 console.log(product.images); // ["/uploads/product-images/file1.jpg", "/uploads/product-images/file2.jpg", ...]
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // Required custom middleware and manual handling
@@ -261,13 +261,13 @@ router.post(
 );
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Example 3: Multiple File Types (Fields)
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/product/product.router.ts
@@ -330,20 +330,20 @@ const product = await response.json();
 // }
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 Required complex multer configuration with custom middleware.
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Nested Field Support
 
 ArkosRouter supports nested field notation using bracket syntax:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ Only" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ Only">
 
 ```typescript
 // src/modules/user/user.router.ts
@@ -390,12 +390,12 @@ const user = await response.json();
 // }
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="Not Available in v1.3.0">
+</Tab>
+<Tab value="v1.3" label="Not Available in v1.3.0">
 
 Nested field support is not available in v1.3.0. You would need to manually parse and structure the data.
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Custom Routes with File Uploads
@@ -404,8 +404,8 @@ For custom endpoints that aren't part of auto-generated CRUD operations, use Ark
 
 ### Example: Custom Share Endpoint with Attachment
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -500,8 +500,8 @@ const postController = new PostController('post')
 export default postController;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -528,13 +528,13 @@ router.post(
 export default router;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ### Example: Standalone Custom Router
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // src/routers/reports.router.ts
@@ -604,8 +604,8 @@ const response = await fetch("http://localhost:8000/api/reports/upload", {
 });
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/routers/reports.router.ts
@@ -631,7 +631,7 @@ reportsRouter.post(
 export default reportsRouter;
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Traditional Route Handler Approach
@@ -802,8 +802,8 @@ Notice that the `required` flag defaults to true, if ommited the file will be re
 
 ### Global Configuration
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -840,8 +840,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0">
+</Tab>
+<Tab value="v1.3" label="v1.3.0">
 
 ```typescript
 // src/app.ts
@@ -865,7 +865,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 ## Image Processing
@@ -1140,8 +1140,8 @@ By default, all other file types are supported with the following restrictions:
 
 You can override the default file upload settings through your Arkos configuration:
 
-<Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)">
 
 ```typescript
 // arkos.config.ts
@@ -1173,8 +1173,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
 // src/app.ts
@@ -1204,5 +1204,5 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
