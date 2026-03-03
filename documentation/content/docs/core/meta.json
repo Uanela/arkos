@@ -1,0 +1,5 @@
+{
+  "title": "Core Concepts",
+  "collapsible": false,
+  "pages": ["routing", "prisma-orm", "components"]
+}

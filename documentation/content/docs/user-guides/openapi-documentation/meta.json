@@ -1,0 +1,9 @@
+{
+  "title": "OpenAPI Documentation",
+  "pages": [
+    "setup",
+    "router-documentation",
+    "interceptor-documentation",
+    "scalar-integration"
+  ]
+}
