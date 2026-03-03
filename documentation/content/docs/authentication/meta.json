@@ -1,0 +1,5 @@
+{
+  "title": "Authentication",
+  "collapsible": false,
+  "pages": ["setup", "endpoints", "permissions", "customization"]
+}

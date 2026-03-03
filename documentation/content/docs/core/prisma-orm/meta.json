@@ -1,0 +1,4 @@
+{
+  "title": "Prisma ORM",
+  "pages": ["setup", "endpoints", "custom-queries", "handling-relations"]
+}
