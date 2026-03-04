@@ -9,17 +9,14 @@ import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
 import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/generate-system-json-schemas";
 import { generateOpenAPIFromApp } from "../../utils/arkos-router";
-import express from "express";
 import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-schema-paths";
 import { ArkosConfig, ArkosRequest, ArkosResponse } from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
+import { Arkos } from "../../types/arkos";
 
 const swaggerRouter = Router();
 
-export function getSwaggerRouter(
-  arkosConfig: ArkosConfig,
-  app: express.Express
-): Router {
+export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
   let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
   const defaultModelsPaths = generatePathsForModels(

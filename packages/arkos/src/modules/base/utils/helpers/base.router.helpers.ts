@@ -1,14 +1,11 @@
-import { Router } from "express";
 import pluralize from "pluralize";
 import { ArkosConfig, RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
-import { PrismaQueryOptions } from "../../../../types";
 import {
   AuthRouterEndpoint,
   FileUploadRouterEndpoint,
   RouterEndpoint,
 } from "../../../../types/router-config";
-import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import { BaseController } from "../../base.controller";
 import {
   addPrismaQueryOptionsToRequest,
@@ -18,256 +15,268 @@ import {
   createRouteConfig,
   processMiddleware,
 } from "../../../../utils/helpers/routers.helpers";
-import routerValidator from "../router-validator";
-import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
+import { ArkosLoadableRegistry } from "../../../../components/arkos-loadable-registry";
+import { interceptorReader } from "../../../../components/arkos-interceptor/reader";
 
-export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
+export function setupRouters(
+  router: IArkosRouter,
+  arkosConfig: ArkosConfig,
+  registry: ArkosLoadableRegistry
+) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
-    const modelModules = getModuleComponents(modelNameInKebab) || {};
 
-    const {
-      interceptors,
-      authConfigs,
-      prismaQueryOptions,
-      router: customRouterModule,
-      dtos,
-      schemas,
-    } = modelModules;
+    // FIXME
+    const authConfigs = {};
 
     const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);
 
-    const routerConfig: RouterConfig<any> = customRouterModule?.config || {};
+    const interceptor = registry.getInterceptor(modelNameInKebab);
 
-    const customRouter = customRouterModule?.default as Router;
-    const hasCustomImplementation = (path: string, method: string) => {
-      return customRouter?.stack?.some(
-        (layer) =>
-          (layer.path === `/api/${path}` ||
-            layer.path === `api/${path}` ||
-            layer.path === `api/${path}/` ||
-            layer.path === `/api/${path}/`) &&
-          layer.method.toLowerCase() === method.toLowerCase()
-      );
-    };
+    const op = (operation: string) =>
+      interceptor
+        ? interceptorReader.forOperation(interceptor, operation)
+        : {
+            before: [],
+            after: [],
+            onError: [],
+            prismaQuery: {},
+            routeConfig: {},
+          };
 
     const getValidationSchemaOrDto = (
-      key: "create" | "update" | "createMany" | "updateMany"
+      _key: "create" | "update" | "createMany" | "updateMany"
     ) => {
-      const validationConfigs = arkosConfig?.validation;
-      if (validationConfigs?.resolver === "class-validator") {
-        return (dtos as any)?.[key];
-      } else if (validationConfigs?.resolver === "zod") {
-        return (schemas as any)?.[key];
-      }
       return undefined;
     };
 
-    if (customRouter && customRouterModule) {
-      if (routerValidator.isExpressRouter(customRouter))
-        router.use(`/${routeName}`, customRouter);
-      else
-        throw Error(
-          `ValidationError: The exported router from ${modelNameInKebab}.router.${getUserFileExtension()} is not a valid express Router.`
-        );
-    }
-
     // CREATE ONE
-    if (!hasCustomImplementation(`/${routeName}`, "post")) {
+    {
+      const { before, after, onError, prismaQuery, routeConfig } =
+        op("createOne");
+
       router.post(
         createRouteConfig(
           arkosConfig,
           "createOne",
           routeName,
           "",
-          routerConfig,
+          { createOne: routeConfig },
           modelNameInKebab,
           authConfigs,
           getValidationSchemaOrDto("create")
         ),
         addPrismaQueryOptionsToRequest<any>(
-          prismaQueryOptions as PrismaQueryOptions<any>,
+          {
+            createOne: prismaQuery,
+          },
           "createOne"
         ),
-        ...processMiddleware(interceptors?.beforeCreateOne),
+        ...processMiddleware(before),
         controller.createOne,
-        ...processMiddleware(interceptors?.afterCreateOne),
+        ...processMiddleware(after),
         sendResponse,
-        ...processMiddleware(interceptors?.onCreateOneError, { type: "error" })
+        ...processMiddleware(onError, { type: "error" })
       );
     }
 
     // FIND MANY
-    if (!hasCustomImplementation(`/${routeName}`, "get")) {
+    {
+      const { before, after, onError, prismaQuery, routeConfig } =
+        op("findMany");
       router.get(
         createRouteConfig(
           arkosConfig,
           "findMany",
           routeName,
           "",
-          routerConfig,
+          { findMany: routeConfig },
           modelNameInKebab,
           authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
-          prismaQueryOptions as PrismaQueryOptions<any>,
+          {
+            findMany: prismaQuery,
+          },
           "findMany"
         ),
-        ...processMiddleware(interceptors?.beforeFindMany),
+        ...processMiddleware(before),
         controller.findMany,
-        ...processMiddleware(interceptors?.afterFindMany),
+        ...processMiddleware(after),
         sendResponse,
-        ...processMiddleware(interceptors?.onFindManyError, { type: "error" })
+        ...processMiddleware(onError, { type: "error" })
       );
     }
 
     // CREATE MANY
-    if (!hasCustomImplementation(`/${routeName}/many`, "post")) {
+    {
+      const { before, after, onError, prismaQuery, routeConfig } =
+        op("createMany");
       router.post(
         createRouteConfig(
           arkosConfig,
           "createMany",
           routeName,
           "/many",
-          routerConfig,
+          { createMany: routeConfig },
           modelNameInKebab,
           authConfigs,
           getValidationSchemaOrDto("createMany")
         ),
         addPrismaQueryOptionsToRequest<any>(
-          prismaQueryOptions as PrismaQueryOptions<any>,
+          {
+            createMany: prismaQuery,
+          },
           "createMany"
         ),
-        ...processMiddleware(interceptors?.beforeCreateMany),
+        ...processMiddleware(before),
         controller.createMany,
-        ...processMiddleware(interceptors?.afterCreateMany),
+        ...processMiddleware(after),
         sendResponse,
-        ...processMiddleware(interceptors?.onCreateManyError, { type: "error" })
+        ...processMiddleware(onError, { type: "error" })
       );
     }
 
     // UPDATE MANY
-    if (!hasCustomImplementation(`/${routeName}/many`, "patch")) {
+    {
+      const { before, after, onError, prismaQuery, routeConfig } =
+        op("updateMany");
       router.patch(
         createRouteConfig(
           arkosConfig,
           "updateMany",
           routeName,
           "/many",
-          routerConfig,
+          { updateMany: routeConfig },
           modelNameInKebab,
           authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
-          prismaQueryOptions as PrismaQueryOptions<any>,
+          {
+            updateMany: prismaQuery,
+          },
           "updateMany"
         ),
-        ...processMiddleware(interceptors?.beforeUpdateMany),
+        ...processMiddleware(before),
         controller.updateMany,
-        ...processMiddleware(interceptors?.afterUpdateMany),
+        ...processMiddleware(after),
         sendResponse,
-        ...processMiddleware(interceptors?.onUpdateManyError, { type: "error" })
+        ...processMiddleware(onError, { type: "error" })
       );
     }
 
     // DELETE MANY
-    if (!hasCustomImplementation(`/${routeName}/many`, "delete")) {
+    {
+      const { before, after, onError, prismaQuery, routeConfig } =
+        op("deleteMany");
       router.delete(
         createRouteConfig(
           arkosConfig,
           "deleteMany",
           routeName,
           "/many",
-          routerConfig,
+          { deleteMany: routeConfig },
           modelNameInKebab,
           authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
-          prismaQueryOptions as PrismaQueryOptions<any>,
+          {
+            deleteMany: prismaQuery,
+          },
           "deleteMany"
         ),
-        ...processMiddleware(interceptors?.beforeDeleteMany),
+        ...processMiddleware(before),
         controller.deleteMany,
-        ...processMiddleware(interceptors?.afterDeleteMany),
+        ...processMiddleware(after),
         sendResponse,
-        ...processMiddleware(interceptors?.onDeleteManyError, { type: "error" })
+        ...processMiddleware(onError, { type: "error" })
       );
     }
 
     // FIND ONE
-    if (!hasCustomImplementation(`/${routeName}/:id`, "get")) {
+    {
+      const { before, after, onError, prismaQuery, routeConfig } =
+        op("findOne");
       router.get(
         createRouteConfig(
           arkosConfig,
           "findOne",
           routeName,
           "/:id",
-          routerConfig,
+          { findOne: routeConfig },
           modelNameInKebab,
           authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
-          prismaQueryOptions as PrismaQueryOptions<any>,
+          {
+            findOne: prismaQuery,
+          },
           "findOne"
         ),
-        ...processMiddleware(interceptors?.beforeFindOne),
+        ...processMiddleware(before),
         controller.findOne,
-        ...processMiddleware(interceptors?.afterFindOne),
+        ...processMiddleware(after),
         sendResponse,
-        ...processMiddleware(interceptors?.onFindOneError, { type: "error" })
+        ...processMiddleware(onError, { type: "error" })
       );
     }
 
     // UPDATE ONE
-    if (!hasCustomImplementation(`/${routeName}/:id`, "patch")) {
-      router.patch(
-        createRouteConfig(
-          arkosConfig,
-          "updateOne",
-          routeName,
-          "/:id",
-          routerConfig,
-          modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("update")
-        ),
-        addPrismaQueryOptionsToRequest<any>(
-          prismaQueryOptions as PrismaQueryOptions<any>,
-          "updateOne"
-        ),
-        ...processMiddleware(interceptors?.beforeUpdateOne),
-        controller.updateOne,
-        ...processMiddleware(interceptors?.afterUpdateOne),
-        sendResponse,
-        ...processMiddleware(interceptors?.onUpdateOneError, { type: "error" })
-      );
-    }
+    const { before, after, onError, prismaQuery, routeConfig } =
+      op("updateOne");
+    router.patch(
+      createRouteConfig(
+        arkosConfig,
+        "updateOne",
+        routeName,
+        "/:id",
+        { updateOne: routeConfig },
+        modelNameInKebab,
+        authConfigs,
+        getValidationSchemaOrDto("update")
+      ),
+      addPrismaQueryOptionsToRequest<any>(
+        {
+          updateOne: prismaQuery,
+        },
+        "updateOne"
+      ),
+      ...processMiddleware(before),
+      controller.updateOne,
+      ...processMiddleware(after),
+      sendResponse,
+      ...processMiddleware(onError, { type: "error" })
+    );
 
     // DELETE ONE
-    if (!hasCustomImplementation(`/${routeName}/:id`, "delete")) {
+    {
+      const { before, after, onError, prismaQuery, routeConfig } =
+        op("deleteOne");
       router.delete(
         createRouteConfig(
           arkosConfig,
           "deleteOne",
           routeName,
           "/:id",
-          routerConfig,
+          { deleteOne: routeConfig },
           modelNameInKebab,
           authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
-          prismaQueryOptions as PrismaQueryOptions<any>,
+          {
+            deleteOne: prismaQuery,
+          },
           "deleteOne"
         ),
-        ...processMiddleware(interceptors?.beforeDeleteOne),
+        ...processMiddleware(before),
         controller.deleteOne,
-        ...processMiddleware(interceptors?.afterDeleteOne),
+        ...processMiddleware(after),
         sendResponse,
-        ...processMiddleware(interceptors?.onDeleteOneError, { type: "error" })
+        ...processMiddleware(onError, { type: "error" })
       );
     }
 
@@ -280,12 +289,9 @@ export function isEndpointDisabled(
   endpoint: RouterEndpoint | AuthRouterEndpoint | FileUploadRouterEndpoint
 ): boolean {
   if (!routerConfig?.disable) return false;
-
   if (routerConfig.disable === true) return true;
-
   if (typeof routerConfig.disable === "object")
     return routerConfig.disable[endpoint as never] === true;
-
   return false;
 }
 
@@ -294,10 +300,8 @@ export function isParentEndpointAllowed(
   endpoint: string
 ): boolean {
   if (!routerConfig?.parent) return false;
-
   const parentEndpoints = routerConfig.parent.endpoints;
   if (parentEndpoints === "*") return true;
   if (Array.isArray(parentEndpoints)) return parentEndpoints.includes(endpoint);
-
   return true;
 }

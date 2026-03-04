@@ -4,11 +4,15 @@ import authService from "../auth/auth.service";
 import { ArkosConfig } from "../../types/new-arkos-config";
 import { setupRouters } from "./utils/helpers/base.router.helpers";
 import { ArkosRouter } from "../../exports";
+import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
 
-export function getPrismaModelsRouter(arkosConfigs: ArkosConfig) {
+export function getPrismaModelsRouter(
+  arkosConfigs: ArkosConfig,
+  registry: ArkosLoadableRegistry
+) {
   const router = ArkosRouter();
 
-  setupRouters(router, arkosConfigs);
+  setupRouters(router, arkosConfigs, registry);
 
   return router;
 }

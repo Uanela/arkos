@@ -1,218 +1,54 @@
-import express, { IRouter, Router } from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import { getAuthRouter } from "./modules/auth/auth.router";
-import {
-  getPrismaModelsRouter,
-  getAvailableResourcesAndRoutesRouter,
-} from "./modules/base/base.router";
-import errorHandler from "./modules/error-handler/error-handler.controller";
-import { rateLimit } from "express-rate-limit";
-import compression from "compression";
-import { handleRequestLogs } from "./modules/base/base.middlewares";
-import { loadPrismaModule } from "./utils/helpers/prisma.helpers";
-import { getFileUploadRouter } from "./modules/file-upload/file-upload.router";
-import { queryParser } from "./utils/helpers/query-parser.helpers";
-import deepmerge from "./utils/helpers/deepmerge.helper";
-import { getSwaggerRouter } from "./modules/swagger/swagger.router";
-import { loadAllModuleComponents } from "./utils/dynamic-loader";
-import { AppError } from "./exports/error-handler";
-import debuggerService from "./modules/debugger/debugger.service";
-import { getArkosConfig } from "./exports";
-import { ArkosInitConfig } from "./types/arkos-config";
-import { isAuthenticationEnabled } from "./utils/helpers/arkos-config.helpers";
-export const app: express.Express = express();
-const knowModulesRouter = Router();
+import express from "express";
+import { bootstrap } from "./utils/bootstrap";
+import setupApp from "./utils/setup-app";
+import { Arkos, ArkosLoadable } from "./types/arkos";
+import initializeApp from "./utils/initialize-app";
+import { Express } from "express";
+import { logAppStartp } from "./server";
+import { ArkosLoadableRegistry } from "./components/arkos-loadable-registry";
 
-export async function bootstrap(
-  initConfig: ArkosInitConfig
-): Promise<express.Express> {
-  const arkosConfig = getArkosConfig();
+export function arkos(): Arkos {
+  const app = express() as any as Arkos;
 
-  await Promise.all([
-    loadPrismaModule(),
-    loadAllModuleComponents(arkosConfig),
-    initConfig?.configureApp && (await initConfig?.configureApp(app)),
-  ]);
+  setupApp(app);
 
-  const middlewaresConfig = arkosConfig?.middlewares;
+  const registry = new ArkosLoadableRegistry();
 
-  if (middlewaresConfig?.compression !== false) {
-    if (typeof middlewaresConfig?.compression === "function") {
-      app.use(middlewaresConfig.compression);
-    } else {
-      app.use(compression(middlewaresConfig?.compression || {}));
-    }
-  }
+  app.load = (...items: ArkosLoadable[]) => {
+    items.forEach((item) => registry.register(item));
+    return app;
+  };
 
-  if (middlewaresConfig?.rateLimit !== false) {
-    if (typeof middlewaresConfig?.rateLimit === "function") {
-      app.use(middlewaresConfig.rateLimit);
-    } else {
-      app.use(
-        rateLimit(
-          deepmerge(
-            {
-              windowMs: 60 * 1000,
-              limit: 300,
-              standardHeaders: "draft-7",
-              legacyHeaders: false,
-              handler: (_, res) => {
-                res.status(429).json({
-                  message: "Too many requests, please try again later",
-                });
-              },
-            },
-            middlewaresConfig?.rateLimit || {}
-          )
-        )
-      );
-    }
-  }
+  app.setup = function () {
+    return initializeApp(app, registry);
+  };
 
-  if (middlewaresConfig?.cors !== false) {
-    if (typeof middlewaresConfig?.cors === "function") {
-      app.use(middlewaresConfig.cors);
-    } else {
-      app.use(
-        cors(
-          middlewaresConfig?.cors?.customHandler
-            ? middlewaresConfig.cors.customHandler
-            : deepmerge(
-                {
-                  origin: (
-                    origin: string,
-                    cb: (err: Error | null, allow?: boolean) => void
-                  ) => {
-                    const allowed = (middlewaresConfig?.cors as any)
-                      ?.allowedOrigins;
+  const originalListen = app.listen.bind(app) as any as Express["listen"];
 
-                    if (allowed === "*") cb(null, true);
-                    else if (Array.isArray(allowed))
-                      cb(null, !origin || allowed?.includes?.(origin));
-                    else if (typeof allowed === "string")
-                      cb(null, !origin || allowed === origin);
-                    else cb(null, false);
-                  },
+  type userCb = (err?: Error) => void;
+  const defaultCb = (port: number | string, host: string, cb?: userCb) => {
+    logAppStartp(port, host);
+    return cb || function () {};
+  };
 
-                  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-                  allowedHeaders: [
-                    "Content-Type",
-                    "Authorization",
-                    "Connection",
-                  ],
-                  credentials: true,
-                },
-                middlewaresConfig?.cors?.options || {}
-              )
-        )
-      );
-    }
-  }
+  app.listen = function (cb?: userCb): Arkos {
+    app.setup();
 
-  if (middlewaresConfig?.expressJson !== false) {
-    if (typeof middlewaresConfig?.expressJson === "function") {
-      app.use(middlewaresConfig.expressJson);
-    } else {
-      app.use(express.json(middlewaresConfig?.expressJson || {}));
-    }
-  }
+    const port = Number(process.env.__PORT || process.env.PORT || "8000");
+    const host = process.env.__HOST! || process.env.HOST || "127.0.0.1";
 
-  if (middlewaresConfig?.cookieParser !== false) {
-    if (typeof middlewaresConfig?.cookieParser === "function") {
-      app.use(middlewaresConfig.cookieParser);
-    } else {
-      const params = Array.isArray(middlewaresConfig?.cookieParser)
-        ? middlewaresConfig.cookieParser
-        : [];
-      app.use(cookieParser(...(params as any))); // FIXME: check types correctly
-    }
-  }
+    originalListen(port, host, defaultCb(port, host, cb));
+    return app;
+  };
 
-  if (middlewaresConfig?.queryParser !== false) {
-    if (typeof middlewaresConfig?.queryParser === "function") {
-      app.use(middlewaresConfig.queryParser);
-    } else {
-      app.use(
-        queryParser(
-          deepmerge(
-            {
-              parseNull: true,
-              parseUndefined: true,
-              parseBoolean: true,
-              parseNumber: true,
-            },
-            middlewaresConfig?.queryParser || {}
-          )
-        )
-      );
-    }
-  }
+  app.getServerConfig = (cb?: userCb) => {
+    const port = Number(process.env.__PORT || process.env.PORT || "8000");
+    const host = process.env.__HOST! || process.env.HOST || "127.0.0.1";
 
-  if (middlewaresConfig?.requestLogger !== false) {
-    if (typeof middlewaresConfig?.requestLogger === "function") {
-      app.use(middlewaresConfig.requestLogger);
-    } else {
-      app.use(handleRequestLogs);
-    }
-  }
-
-  app.use(debuggerService.logRequestInfo);
-
-  const routersConfig = arkosConfig?.routers;
-
-  if (routersConfig?.welcomeRoute !== false) {
-    if (typeof routersConfig?.welcomeRoute === "function") {
-      app.get("/api", routersConfig.welcomeRoute);
-    } else {
-      app.get("/api", (_, res) => {
-        res.status(200).json({ message: arkosConfig.welcomeMessage });
-      });
-    }
-  }
-
-  if (initConfig?.use)
-    for (const mwOrRouter of initConfig.use) {
-      app.use(mwOrRouter as IRouter);
-    }
-
-  const fileUploadRouter = getFileUploadRouter(arkosConfig);
-  knowModulesRouter.use(fileUploadRouter);
-
-  if (isAuthenticationEnabled()) {
-    const authRouter = getAuthRouter(arkosConfig) as any;
-    knowModulesRouter.use("/api", authRouter);
-  }
-
-  const modelsRouter = getPrismaModelsRouter(arkosConfig);
-  knowModulesRouter.use("/api", modelsRouter as any);
-
-  app.use(knowModulesRouter);
-  app.use("/api", getAvailableResourcesAndRoutesRouter());
-
-  if (
-    arkosConfig.swagger &&
-    (process.env.ARKOS_BUILD !== "true" ||
-      arkosConfig.swagger.enableAfterBuild === true)
-  )
-    app.use("/api", await getSwaggerRouter(arkosConfig, app));
-
-  app.use("*", (req) => {
-    throw new AppError(
-      "Route not found",
-      404,
-      { route: req.originalUrl },
-      "RouteNotFound"
-    );
-  });
-
-  if (middlewaresConfig?.errorHandler !== false) {
-    if (typeof middlewaresConfig?.errorHandler === "function") {
-      app.use(middlewaresConfig.errorHandler);
-    } else {
-      app.use(errorHandler);
-    }
-  }
+    return [port, host, defaultCb(port, host, cb)];
+  };
 
   return app;
 }
+
+export { bootstrap };

@@ -9,6 +9,7 @@ import sheu from "../sheu";
 export let prismaInstance: any = null;
 
 export async function loadPrismaModule() {
+  return getArkosConfig().prisma.instance;
   if (!prismaInstance) {
     try {
       let prismaPath = `${crd()}/src/utils/prisma.${ext()}`;
@@ -86,6 +87,8 @@ export function handlePrismaGet(target: any, prop: string, receiver: any) {
 }
 
 export function getPrismaInstance() {
+  return new Proxy(getArkosConfig().prisma.instance, { get: handlePrismaGet });
+
   if (!prismaInstance) return null;
 
   return new Proxy(prismaInstance, {

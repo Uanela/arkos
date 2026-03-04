@@ -25,6 +25,7 @@ export interface PrismaField {
   attributes: string[];
 }
 
+export { PrismaClient }
 
 export declare type ModelsGetPayload<T extends Record<string, any>> = {
 ${prismaSchemaParser.models.map(
