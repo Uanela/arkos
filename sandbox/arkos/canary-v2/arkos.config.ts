@@ -1,7 +1,13 @@
-import { ArkosConfig } from "arkos";
+// import { defineConfig } from "arkos";
 import prisma from "./src/utils/prisma";
 
-const config: ArkosConfig = {
+// console.log(defineConfig);
+
+function defineConfig(a: any) {
+  return a;
+}
+
+const config = defineConfig({
   prisma: { instance: prisma },
   authentication: {
     mode: "static",
@@ -26,6 +32,6 @@ const config: ArkosConfig = {
         process.env.NODE_ENV !== "production" ? "*" : "your-production-url",
     },
   },
-};
+});
 
 export default config;

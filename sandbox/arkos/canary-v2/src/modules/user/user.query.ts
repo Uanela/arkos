@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 const userQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
   global: {
     omit: {
-      password: true,
+      password: false,
     },
   },
   find: {},
