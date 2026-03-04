@@ -20,15 +20,24 @@ app.listen();
 If you need access to the underlying HTTP server — for WebSockets, for example — use `createServer` from Arkos instead of Node's `http.createServer`. This ensures Arkos can finish its internal setup correctly:
 
 ```typescript title="src/app.ts"
-import arkos, { createServer } from "arkos";
+import arkos from "arkos";
+import http from "http";
 import { Server } from "socket.io";
+import arkosConfig from "#/arkos.config"
 
 const app = arkos();
-const server = createServer(app);
 
-const io = new Server(server);
+async function bootstrap(){
+  await app.init()
 
-server.listen();
+  const server = http.createServer(app);
+  const io = new Server(server);
+
+  const { port, host } = arkosConfig
+  server.listen(port, host);
+}
+
+bootstrap()
 ```
 
 <Callout type="info">

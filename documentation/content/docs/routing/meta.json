@@ -1,9 +1,0 @@
-{
-  "title": "Routing",
-  "pages": [
-    "setup",
-    "generated-endpoints",
-    "built-in-vs-custom",
-    "interceptors"
-  ]
-}
