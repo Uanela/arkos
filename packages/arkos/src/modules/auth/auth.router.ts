@@ -1,10 +1,9 @@
 import { authControllerFactory } from "./auth.controller";
-import rateLimit, { Options as RateLimitOptions } from "express-rate-limit";
+import { Options as RateLimitOptions } from "express-rate-limit";
 import {
   addPrismaQueryOptionsToRequest,
   sendResponse,
 } from "../base/base.middlewares";
-import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthPrismaQueryOptions } from "../../types";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import debuggerService from "../debugger/debugger.service";
@@ -197,8 +196,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   // GET /auth-actions - Find many auth actions
   {
-    const { before, after, onError, prismaQuery, routeConfig } =
-      op("findManyAuthAction");
+    const { before, after, onError, routeConfig } = op("findManyAuthAction");
 
     router.get(
       {
@@ -217,8 +215,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   // GET /auth-actions/:resourceName - Find one auth action
   {
-    const { before, after, onError, prismaQuery, routeConfig } =
-      op("findOneAuthAction");
+    const { before, after, onError, routeConfig } = op("findOneAuthAction");
 
     router.get(
       {
