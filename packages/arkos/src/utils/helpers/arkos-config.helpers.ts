@@ -16,6 +16,7 @@ try {
         timestamp: true,
       }
     );
+  else throw err;
 }
 
 export function isUsingAuthentication() {

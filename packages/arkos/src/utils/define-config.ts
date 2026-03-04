@@ -1,5 +1,5 @@
 import { ArkosConfig } from "../exports";
-import { PrismaClient } from "../types/global";
+// import { PrismaClient } from "../types/global";
 
 /**
  * Defines and validates the Arkos configuration, filling in defaults where needed.
@@ -28,11 +28,11 @@ export function defineConfig(config: ArkosConfig): ArkosConfig {
     );
   }
 
-  if (!(config.prisma.instance instanceof PrismaClient)) {
-    throw new Error(
-      "ArkosConfigError: prisma.instance must be a valid PrismaClient instance."
-    );
-  }
+  // if (!(config.prisma.instance instanceof PrismaClient)) {
+  //   throw new Error(
+  //     "ArkosConfigError: prisma.instance must be a valid PrismaClient instance."
+  //   );
+  // }
 
   return {
     ...config,
