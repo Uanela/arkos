@@ -61,15 +61,16 @@ export const defaultArkosConfig: Omit<ArkosConfig, "prisma"> & {
  * @returns {ArkosConfig}
  */
 export function getArkosConfig(): ArkosConfig {
-  const userConfig =
+  const { prisma, ...userConfig } =
     typeof definedArkosConfig === "string"
       ? {}
       : (definedArkosConfig as any)?.default || {};
-  let config = deepmerge(defaultArkosConfig, userConfig);
+  let config: ArkosConfig = deepmerge(defaultArkosConfig as any, userConfig);
 
   if (userConfig?.swagger?.mode) {
     config = {
       ...config,
+      prisma,
       swagger: {
         ...config.swagger,
         mode: userConfig?.swagger?.mode,
@@ -77,5 +78,5 @@ export function getArkosConfig(): ArkosConfig {
     };
   }
 
-  return config as any;
+  return config;
 }

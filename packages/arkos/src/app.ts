@@ -1,3 +1,4 @@
+import "./utils/helpers/arkos-config.helpers"; // just to trigger loading of arkos config
 import express from "express";
 import { bootstrap } from "./utils/bootstrap";
 import setupApp from "./utils/setup-app";
