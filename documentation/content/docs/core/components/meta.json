@@ -1,0 +1,10 @@
+{
+  "title": "Components",
+  "pages": [
+    "routers",
+    "controllers",
+    "services",
+    "interceptors",
+    "service-hooks"
+  ]
+}
