@@ -6,13 +6,10 @@ import { setupRouters } from "./utils/helpers/base.router.helpers";
 import { ArkosRouter } from "../../exports";
 import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
 
-export function getPrismaModelsRouter(
-  arkosConfigs: ArkosConfig,
-  registry: ArkosLoadableRegistry
-) {
+export function getPrismaModelsRouter(registry: ArkosLoadableRegistry) {
   const router = ArkosRouter();
 
-  setupRouters(router, arkosConfigs, registry);
+  setupRouters(router, registry);
 
   return router;
 }
