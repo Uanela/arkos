@@ -64,9 +64,10 @@ class ArkosInterceptorReader {
    * Returns only the lifecycle hooks (`before`, `after`, `onError`) for the given operation.
    */
   getHooks(
-    interceptor: ArkosLoadable,
+    interceptor: ArkosLoadable | null | undefined,
     operation: string
-  ): ArkosInterceptorHooks {
+  ): ArkosInterceptorHooks | undefined {
+    if (!interceptor) return;
     const config = this.getStore(interceptor)[operation];
     if (!config) return {};
 
@@ -118,7 +119,7 @@ class ArkosInterceptorReader {
       before = [],
       after = [],
       onError = [],
-    } = this.getHooks(interceptor, operation);
+    } = this.getHooks(interceptor, operation) || {};
     const prismaQuery = this.getPrismaQuery(interceptor, operation);
 
     const routeConfig = this.getRouteConfig(interceptor, operation) ?? {};
