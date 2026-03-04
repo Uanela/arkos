@@ -16,35 +16,31 @@ import deepmerge from "../../utils/helpers/deepmerge.helper";
 
 const swaggerRouter = Router();
 
-export async function getSwaggerRouter(
+export function getSwaggerRouter(
   arkosConfig: ArkosConfig,
   app: express.Express
-): Promise<Router> {
+): Router {
   let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
   const defaultModelsPaths = generatePathsForModels(
     arkosConfig,
     pathsFromCustomArkosRouters
   );
-
   const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(
     arkosConfig,
     pathsFromCustomArkosRouters
   );
-
   const missingJsonSchemas =
     missingJsonSchemaGenerator.generateMissingJsonSchemas(
       defaultModelsPaths,
       defaultJsonSchemas,
       arkosConfig
     );
-
   defaultJsonSchemas = {
     ...defaultJsonSchemas,
     ...missingJsonSchemas,
     ...generateSystemJsonSchemas(arkosConfig),
   };
-
   const swaggerConfigs = deepmerge(
     getSwaggerDefaultConfig(
       {
@@ -58,15 +54,10 @@ export async function getSwaggerRouter(
   ) as ArkosConfig["swagger"];
 
   const { definition, ...options } = swaggerConfigs?.options!;
-
   const swaggerSpecification = swaggerJsdoc({
     definition: definition as swaggerJsdoc.SwaggerDefinition,
     ...options,
   });
-
-  const scalar = await importEsmPreventingTsTransformation(
-    "@scalar/express-api-reference"
-  );
 
   const endpoint = swaggerConfigs!.endpoint!;
 
@@ -77,13 +68,26 @@ export async function getSwaggerRouter(
     }
   );
 
-  swaggerRouter.use(
-    endpoint,
-    scalar.apiReference({
-      content: swaggerSpecification,
-      ...swaggerConfigs?.scalarApiReferenceConfiguration,
-    })
-  );
+  // Lazy load scalar only on first hit
+  let scalarHandler: any = null;
+  let scalarLoading: Promise<void> | null = null;
+
+  swaggerRouter.use(endpoint, async (req, res, next) => {
+    if (!scalarHandler) {
+      if (!scalarLoading) {
+        scalarLoading = importEsmPreventingTsTransformation(
+          "@scalar/express-api-reference"
+        ).then((scalar) => {
+          scalarHandler = scalar.apiReference({
+            content: swaggerSpecification,
+            ...swaggerConfigs?.scalarApiReferenceConfiguration,
+          });
+        });
+      }
+      await scalarLoading;
+    }
+    return scalarHandler(req, res, next);
+  });
 
   return swaggerRouter;
 }
