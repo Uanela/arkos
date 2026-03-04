@@ -6,7 +6,7 @@ import {
   isAuthenticationEnabled,
 } from "./helpers/arkos-config.helpers";
 import { loadPrismaModule } from "./helpers/prisma.helpers";
-import express, { Express, IRouter, Router } from "express";
+import express, { Express, Router } from "express";
 import rateLimit from "express-rate-limit";
 import deepmerge from "./helpers/deepmerge.helper";
 import cors from "cors";
@@ -23,7 +23,6 @@ import {
 import { getSwaggerRouter } from "../modules/swagger/swagger.router";
 import { AppError } from "../exports/error-handler";
 import errorHandler from "../modules/error-handler/error-handler.controller";
-import { Arkos } from "../types/arkos";
 
 export const app: Express = express();
 const knowModulesRouter = Router();
@@ -182,11 +181,11 @@ export async function bootstrap(initConfig: ArkosInitConfig): Promise<Express> {
   knowModulesRouter.use(fileUploadRouter);
 
   if (isAuthenticationEnabled()) {
-    const authRouter = getAuthRouter(arkosConfig) as any;
+    const authRouter = getAuthRouter({} as any) as any;
     knowModulesRouter.use("/api", authRouter);
   }
 
-  const modelsRouter = getPrismaModelsRouter(arkosConfig, {} as any);
+  const modelsRouter = getPrismaModelsRouter({} as any);
   knowModulesRouter.use("/api", modelsRouter as any);
 
   app.use(knowModulesRouter);

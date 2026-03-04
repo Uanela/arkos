@@ -1,5 +1,5 @@
 import pluralize from "pluralize";
-import { ArkosConfig, RouterConfig } from "../../../../exports";
+import { RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import {
   AuthRouterEndpoint,
@@ -11,10 +11,7 @@ import {
   addPrismaQueryOptionsToRequest,
   sendResponse,
 } from "../../base.middlewares";
-import {
-  createRouteConfig,
-  processMiddleware,
-} from "../../../../utils/helpers/routers.helpers";
+import { processMiddleware } from "../../../../utils/helpers/routers.helpers";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
@@ -23,14 +20,10 @@ import { interceptorReader } from "../../../../components/arkos-interceptor/read
 
 export function setupRouters(
   router: IArkosRouter,
-  arkosConfig: ArkosConfig,
   registry: ArkosLoadableRegistry
 ) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
-
-    // FIXME
-    const authConfigs = {};
 
     const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);
@@ -48,28 +41,16 @@ export function setupRouters(
             routeConfig: {},
           };
 
-    const getValidationSchemaOrDto = (
-      _key: "create" | "update" | "createMany" | "updateMany"
-    ) => {
-      return undefined;
-    };
-
     // CREATE ONE
     {
       const { before, after, onError, prismaQuery, routeConfig } =
         op("createOne");
 
       router.post(
-        createRouteConfig(
-          arkosConfig,
-          "createOne",
-          routeName,
-          "",
-          { createOne: routeConfig },
-          modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("create")
-        ),
+        {
+          ...routeConfig,
+          path: `${routeName}`,
+        },
         addPrismaQueryOptionsToRequest<any>(
           {
             createOne: prismaQuery,
@@ -89,15 +70,10 @@ export function setupRouters(
       const { before, after, onError, prismaQuery, routeConfig } =
         op("findMany");
       router.get(
-        createRouteConfig(
-          arkosConfig,
-          "findMany",
-          routeName,
-          "",
-          { findMany: routeConfig },
-          modelNameInKebab,
-          authConfigs
-        ),
+        {
+          ...routeConfig,
+          path: `${routeName}`,
+        },
         addPrismaQueryOptionsToRequest<any>(
           {
             findMany: prismaQuery,
@@ -117,16 +93,10 @@ export function setupRouters(
       const { before, after, onError, prismaQuery, routeConfig } =
         op("createMany");
       router.post(
-        createRouteConfig(
-          arkosConfig,
-          "createMany",
-          routeName,
-          "/many",
-          { createMany: routeConfig },
-          modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("createMany")
-        ),
+        {
+          ...routeConfig,
+          path: `${routeName}/many`,
+        },
         addPrismaQueryOptionsToRequest<any>(
           {
             createMany: prismaQuery,
@@ -146,15 +116,10 @@ export function setupRouters(
       const { before, after, onError, prismaQuery, routeConfig } =
         op("updateMany");
       router.patch(
-        createRouteConfig(
-          arkosConfig,
-          "updateMany",
-          routeName,
-          "/many",
-          { updateMany: routeConfig },
-          modelNameInKebab,
-          authConfigs
-        ),
+        {
+          ...routeConfig,
+          path: `${routeName}/many`,
+        },
         addPrismaQueryOptionsToRequest<any>(
           {
             updateMany: prismaQuery,
@@ -174,15 +139,10 @@ export function setupRouters(
       const { before, after, onError, prismaQuery, routeConfig } =
         op("deleteMany");
       router.delete(
-        createRouteConfig(
-          arkosConfig,
-          "deleteMany",
-          routeName,
-          "/many",
-          { deleteMany: routeConfig },
-          modelNameInKebab,
-          authConfigs
-        ),
+        {
+          ...routeConfig,
+          path: `${routeName}/many`,
+        },
         addPrismaQueryOptionsToRequest<any>(
           {
             deleteMany: prismaQuery,
@@ -202,15 +162,10 @@ export function setupRouters(
       const { before, after, onError, prismaQuery, routeConfig } =
         op("findOne");
       router.get(
-        createRouteConfig(
-          arkosConfig,
-          "findOne",
-          routeName,
-          "/:id",
-          { findOne: routeConfig },
-          modelNameInKebab,
-          authConfigs
-        ),
+        {
+          ...routeConfig,
+          path: `${routeName}/:id`,
+        },
         addPrismaQueryOptionsToRequest<any>(
           {
             findOne: prismaQuery,
@@ -229,16 +184,10 @@ export function setupRouters(
     const { before, after, onError, prismaQuery, routeConfig } =
       op("updateOne");
     router.patch(
-      createRouteConfig(
-        arkosConfig,
-        "updateOne",
-        routeName,
-        "/:id",
-        { updateOne: routeConfig },
-        modelNameInKebab,
-        authConfigs,
-        getValidationSchemaOrDto("update")
-      ),
+      {
+        ...routeConfig,
+        path: `${routeName}/:id`,
+      },
       addPrismaQueryOptionsToRequest<any>(
         {
           updateOne: prismaQuery,
@@ -257,15 +206,10 @@ export function setupRouters(
       const { before, after, onError, prismaQuery, routeConfig } =
         op("deleteOne");
       router.delete(
-        createRouteConfig(
-          arkosConfig,
-          "deleteOne",
-          routeName,
-          "/:id",
-          { deleteOne: routeConfig },
-          modelNameInKebab,
-          authConfigs
-        ),
+        {
+          ...routeConfig,
+          path: `${routeName}/:id`,
+        },
         addPrismaQueryOptionsToRequest<any>(
           {
             deleteOne: prismaQuery,
