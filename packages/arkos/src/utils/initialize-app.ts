@@ -33,11 +33,11 @@ export default function initializeApp(
   app.use(fileUploadRouter);
 
   if (isAuthenticationEnabled()) {
-    const authRouter = getAuthRouter(config);
+    const authRouter = getAuthRouter(registry);
     app.use(globalPrefix, authRouter);
   }
 
-  const modelsRouter = getPrismaModelsRouter(config, registry);
+  const modelsRouter = getPrismaModelsRouter(registry);
   app.use(globalPrefix, modelsRouter);
 
   // app.use(knowModulesRouter);
