@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { getAvailableResources } from "./base.controller";
 import authService from "../auth/auth.service";
-import { ArkosConfig } from "../../types/new-arkos-config";
 import { setupRouters } from "./utils/helpers/base.router.helpers";
 import { ArkosRouter } from "../../exports";
 import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
