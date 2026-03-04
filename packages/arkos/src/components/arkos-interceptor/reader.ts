@@ -95,8 +95,8 @@ class ArkosInterceptorReader {
   getPrismaQuery(
     interceptor: ArkosLoadable,
     operation: string
-  ): Record<string, any> | null {
-    return this.getStore(interceptor)[operation]?.prismaQuery ?? null;
+  ): Record<string, any> | undefined {
+    return this.getStore(interceptor)[operation]?.prismaQuery;
   }
 
   /**
@@ -111,7 +111,7 @@ class ArkosInterceptorReader {
     before: ArkosRequestHandler[];
     after: ArkosRequestHandler[];
     onError: ArkosRequestHandler[];
-    prismaQuery: Record<string, any> | null;
+    prismaQuery?: Record<string, any>;
     routeConfig: Omit<ArkosRouteConfig, "path">;
   } {
     const {

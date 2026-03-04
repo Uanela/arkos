@@ -734,27 +734,6 @@ export type ArkosConfig = {
     scalarApiReferenceConfiguration?: Partial<ApiReferenceConfiguration>;
   };
   /**
-   * Defines Prisma-related configurations for Arkos to communicate with your database.
-   */
-  prisma: {
-    /**
-     * Your PrismaClient instance. Required for Arkos to communicate with your database.
-     *
-     * @example
-     * ```ts
-     * import { PrismaClient } from "@prisma/client";
-     *
-     * const prisma = new PrismaClient();
-     *
-     * export default defineConfig({
-     *   prisma: { instance: prisma },
-     * });
-     * ```
-     */
-    instance: PrismaClient;
-  };
-
-  /**
    * Helps in debugging some of the variables values that are used inside arkos from dynamic loaded components towhat is used into the generated api.
    *
    */
@@ -798,5 +777,25 @@ export type ArkosConfig = {
         components?: keyof ModuleComponents[];
       };
     };
+  };
+  /**
+   * Defines Prisma-related configurations for Arkos to communicate with your database.
+   */
+  prisma: {
+    /**
+     * Your PrismaClient instance. Required for Arkos to communicate with your database.
+     *
+     * @example
+     * ```ts
+     * import { PrismaClient } from "@prisma/client";
+     *
+     * const prisma = new PrismaClient();
+     *
+     * export default defineConfig({
+     *   prisma: { instance: prisma },
+     * });
+     * ```
+     */
+    instance: PrismaClient;
   };
 };
