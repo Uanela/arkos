@@ -12,6 +12,19 @@ const typeReplacements: TypeReplacement[] = [
     localImportPath: "@arkosjs/types/base.service",
     exportName: "BaseService",
   },
+  {
+    filePath: "dist/types/types/global.d.ts",
+    localImportPath: "@arkosjs/types/base.service",
+    exportName: "BaseService",
+  },
+];
+
+const codeReplacements = [
+  {
+    filePath: "dist/cjs/types/global.d.ts",
+    localImportPath: "@arkosjs/types/base.service",
+    exportName: "BaseService",
+  },
 ];
 
 export function replaceWholeBaseServiceDifinition(
@@ -24,6 +37,7 @@ export function replaceWholeBaseServiceDifinition(
 import { ${exportName} } from '${localImportPath}';
 
 export { ${exportName} };
+export * from '${localImportPath}';
 export type * from '${localImportPath}';
 `;
 

@@ -11,6 +11,8 @@ import {
   getNestedValue,
 } from "./utils/helpers/auth.controller.helpers";
 import authActionService from "./utils/services/auth-action.service";
+import { ArkosAuthInterceptorInstance } from "../../components/arkos-interceptor/types";
+import { interceptorReader } from "../../components/arkos-interceptor/reader";
 
 /**
  * Default fields to exclude from user object when returning to client
@@ -25,7 +27,9 @@ export const defaultExcludedUserFields = {
  * @param interceptors - Optional middleware functions to execute after controller actions
  * @returns An object containing all authentication controller methods
  */
-export const authControllerFactory = (interceptors: any = {}) => {
+export const authControllerFactory = (
+  interceptor: ArkosAuthInterceptorInstance | null
+) => {
   const userService = new BaseService("user");
 
   return {
@@ -47,7 +51,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
           if (user) delete user[key as keyof User];
         });
 
-        if (interceptors?.afterGetMe) {
+        if (interceptorReader.getHooks(interceptor, "getMe")?.after) {
           (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
@@ -74,7 +78,6 @@ export const authControllerFactory = (interceptors: any = {}) => {
           throw new AppError(
             "In order to update password use the update-password endpoint.",
             400,
-            {},
             "InvalidFieldPassword"
           );
 
@@ -88,7 +91,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
           if (user) delete user[key as keyof User];
         });
 
-        if (interceptors?.afterUpdateMe) {
+        if (interceptorReader.getHooks(interceptor, "updateMe")?.after) {
           (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
@@ -116,7 +119,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
           httpOnly: true,
         });
 
-        if (interceptors?.afterLogout) {
+        if (interceptorReader.getHooks(interceptor, "logout")?.after) {
           (res as any).originalData = null;
           req.responseData = null;
           res.locals.data = null;
@@ -215,7 +218,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
 
         req.accessToken = token;
 
-        if (interceptors?.afterLogin) {
+        if (interceptorReader.getHooks(interceptor, "login")?.after) {
           (res as any).originalData = req.responseData;
           req.additionalData = { user };
           res.locals.additional = { user };
@@ -254,7 +257,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
           req.prismaQueryOptions || {}
         )) as Record<string, any>;
 
-        if (interceptors?.afterSignup) {
+        if (interceptorReader.getHooks(interceptor, "signup")?.after) {
           (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
@@ -290,7 +293,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
           req.prismaQueryOptions || {}
         )) as Record<string, any>;
 
-        if (interceptors?.afterDeleteMe) {
+        if (interceptorReader.getHooks(interceptor, "deleteMe")?.after) {
           (res as any).originalData = { data: updatedUser };
           req.responseData = { data: updatedUser };
           res.locals.data = { data: updatedUser };
@@ -402,7 +405,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
 
         req.accessToken = token;
 
-        if (interceptors?.afterUpdatePassword) {
+        if (interceptorReader.getHooks(interceptor, "UpdatePassword")?.after) {
           (res as any).originalData = responseData;
           req.additionalData = { user };
           req.responseData = responseData;
