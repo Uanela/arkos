@@ -30,7 +30,7 @@ export function setModuleComponents(
 }
 
 export function getModuleComponents(modelName: string) {
-  return prismaModelsModules[pascalCase(modelName)];
+  return prismaModelsModules[pascalCase(modelName)] || {};
 }
 
 /**

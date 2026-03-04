@@ -62,8 +62,6 @@ async function initApp(
       host: process.env.__HOST! || process.env.HOST || "127.0.0.1",
     };
 
-    let networkHost = portAndHostAllocator.getFirstNonLocalIp();
-
     _app = await bootstrap(initConfig);
     const time = new Date().toTimeString().split(" ")[0];
     const cliCommand = process.env.CLI_COMMAND;
@@ -80,35 +78,7 @@ async function initApp(
       server.listen(
         Number(portAndHost?.port),
         portAndHost.host! === "localhost" ? "127.0.0.1" : portAndHost.host!,
-        () => {
-          const host = ["0.0.0.0", "127.0.0.1"].includes(portAndHost?.host)
-            ? "localhost"
-            : portAndHost?.host;
-
-          const message = `${sheu.gray(time)} {{server}} waiting on http://${host}:${portAndHost?.port}`;
-
-          sheu.ready(
-            message.replace(
-              "{{server}}",
-              `${process.env.ARKOS_BUILD === "true" ? "Production" : "Development"} server`
-            )
-          );
-          if (networkHost && portAndHost.host === "0.0.0.0")
-            sheu.ready(
-              message
-                .replace(host, networkHost)
-                .replace("{{server}}", `Network server`)
-            );
-          if (
-            arkosConfig?.swagger?.mode &&
-            ((arkosConfig?.swagger?.enableAfterBuild &&
-              process.env.ARKOS_BUILD === "true") ||
-              process.env.ARKOS_BUILD !== "true")
-          )
-            sheu.ready(
-              `${message.replace("{{server}}", "Documentation")}${arkosConfig?.swagger?.endpoint || "/api/docs"}`
-            );
-        }
+        () => logAppStartp(portAndHost?.port, portAndHost.host!)
       );
     } else if (!cliCommand) {
       sheu.warn(
@@ -157,6 +127,36 @@ export function terminateApplicationRunningProcessAndServer(): void {
 
 export function getExpressApp() {
   return _app;
+}
+
+export function logAppStartp(port: number | string, _host: string) {
+  let networkHost = portAndHostAllocator.getFirstNonLocalIp();
+  const config = getArkosConfig();
+
+  const host = ["0.0.0.0", "127.0.0.1"].includes(_host) ? "localhost" : _host;
+  const time = new Date().toTimeString().split(" ")[0];
+
+  const message = `${sheu.gray(time)} {{server}} waiting on http://${host}:${port}`;
+
+  sheu.ready(
+    message.replace(
+      "{{server}}",
+      `${process.env.ARKOS_BUILD === "true" ? "Production" : "Development"} server`
+    )
+  );
+  if (networkHost && _host === "0.0.0.0")
+    sheu.ready(
+      message.replace(host, networkHost).replace("{{server}}", `Network server`)
+    );
+  if (
+    config?.swagger?.mode &&
+    ((config?.swagger?.enableAfterBuild &&
+      process.env.ARKOS_BUILD === "true") ||
+      process.env.ARKOS_BUILD !== "true")
+  )
+    sheu.ready(
+      `${message.replace("{{server}}", "Documentation")}${config?.swagger?.endpoint || "/api/docs"}`
+    );
 }
 
 export { server, initApp };

@@ -11,11 +11,18 @@ import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" w
 import nodemailer from "nodemailer";
 import { ModuleComponents } from "../utils/dynamic-loader";
 import { ArkosRequestHandler } from ".";
+import { PrismaClient } from "./global";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
  */
 export type ArkosConfig = {
+  /**
+   * The global prefixer for the whole application
+   *
+   * @default "/api"
+   */
+  globalPrefix?: string;
   /**
    * Allows to configure request configs
    */
@@ -726,6 +733,27 @@ export type ArkosConfig = {
      */
     scalarApiReferenceConfiguration?: Partial<ApiReferenceConfiguration>;
   };
+  /**
+   * Defines Prisma-related configurations for Arkos to communicate with your database.
+   */
+  prisma: {
+    /**
+     * Your PrismaClient instance. Required for Arkos to communicate with your database.
+     *
+     * @example
+     * ```ts
+     * import { PrismaClient } from "@prisma/client";
+     *
+     * const prisma = new PrismaClient();
+     *
+     * export default defineConfig({
+     *   prisma: { instance: prisma },
+     * });
+     * ```
+     */
+    instance: PrismaClient;
+  };
+
   /**
    * Helps in debugging some of the variables values that are used inside arkos from dynamic loaded components towhat is used into the generated api.
    *

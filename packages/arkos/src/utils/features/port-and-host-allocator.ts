@@ -40,7 +40,7 @@ class PortAndHostAllocator {
    */
   getCorrectHostAndPortToUse(
     env: Record<string, any>,
-    config?: ArkosConfig
+    config?: Partial<ArkosConfig>
   ): { port: string; host: string } {
     const host =
       env?.CLI_HOST ||
@@ -61,7 +61,7 @@ class PortAndHostAllocator {
    */
   async getHostAndAvailablePort(
     env: Record<string, any>,
-    config?: ArkosConfig & { logWarning?: boolean; caller?: string }
+    config?: Partial<ArkosConfig> & { logWarning?: boolean; caller?: string }
   ): Promise<{ port: string; host: string }> {
     if (this.port && this.host) {
       if (config?.logWarning && this.prevWarnings.size > 0) {
