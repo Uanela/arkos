@@ -3,44 +3,24 @@ import { ArkosRequestHandler, ArkosRouteConfig } from "../../exports";
 import { ArkosLoadable } from "../../types/arkos";
 
 /**
- * Singleton registry for reading config from loaded `ArkosRouteHook` instances.
- * Populated by `app.load()` — not intended for direct user use.
+ * Reader for `ArkosRouteHook` instances.
+ * Reads config directly from the instance passed in — no internal registry.
  *
  * @example
  * ```ts
- * // registering (done internally by app.load())
- * routeHookReader.register(userRouteHook);
- *
- * // reading (done internally by Arkos route handlers)
- * routeHookReader.moduleName                          // "user"
  * routeHookReader.getHooks(userRouteHook, "findMany")        // { before, after, onError }
  * routeHookReader.getRouteConfig(userRouteHook, "findMany")  // ArkosRouteConfig minus path and hooks
- * routeHookReader.getPrismaArgs(userRouteHook, "findMany")  // prismaArgs for that operation
+ * routeHookReader.getPrismaArgs(userRouteHook, "findMany")   // prismaArgs for that operation
  * routeHookReader.getFullConfig(userRouteHook, "findMany")   // full raw config object
  * routeHookReader.hasOperation(userRouteHook, "findMany")    // true | false
+ * routeHookReader.forOperation(userRouteHook, "findMany")    // { before, after, onError, prismaArgs, routeConfig }
  * ```
  */
 class ArkosRouteHookReader {
-  private readonly registry: Map<
-    string,
-    Record<string, ArkosRouteHookMethodConfig>
-  > = new Map();
-
-  /**
-   * Registers an routeHook instance into the reader.
-   * Called internally by `app.load()`.
-   */
-  register(routeHook: ArkosLoadable): void {
-    const moduleName = (routeHook as any).moduleName;
-    const store = (routeHook as any)._store ?? {};
-    this.registry.set(moduleName, store);
-  }
-
   private getStore(
     routeHook: ArkosLoadable
   ): Record<string, ArkosRouteHookMethodConfig> {
-    const moduleName = (routeHook as any).moduleName;
-    return this.registry.get(moduleName) ?? {};
+    return (routeHook as any)._store ?? {};
   }
 
   /**
@@ -91,7 +71,7 @@ class ArkosRouteHookReader {
   }
 
   /**
-   * Returns the `prismaArgs` for the given operation, or `null` if not set.
+   * Returns the `prismaArgs` for the given operation, or `undefined` if not set.
    */
   getPrismaArgs(
     routeHook: ArkosLoadable,
@@ -102,8 +82,6 @@ class ArkosRouteHookReader {
 
   /**
    * Returns all extracted slices for a given operation in one call.
-   * The `prismaArgs` is wrapped in `{ [operation]: value }` to match
-   * the existing `PrismaArgs` shape.
    */
   forOperation(
     routeHook: ArkosLoadable,
@@ -121,7 +99,6 @@ class ArkosRouteHookReader {
       onError = [],
     } = this.getHooks(routeHook, operation) || {};
     const prismaArgs = this.getPrismaArgs(routeHook, operation);
-
     const routeConfig = this.getRouteConfig(routeHook, operation) ?? {};
 
     return { before, after, onError, prismaArgs, routeConfig };

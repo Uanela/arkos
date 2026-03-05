@@ -1,33 +1,47 @@
 import { ArkosLoadable } from "../../types/arkos";
-import { routeHookReader } from "../arkos-route-hook/reader";
+import { ArkosModuleType } from "../arkos-route-hook/types";
 
 /**
  * Registry for all items loaded via `app.load()`.
  * Instantiated once at app start and passed through the entire Arkos chain.
  */
 export class ArkosLoadableRegistry {
-  private readonly interceptors: Map<string, ArkosLoadable> = new Map();
+  private readonly items: Map<string, Map<string, ArkosLoadable>> = new Map();
 
   /**
    * Registers a loadable item into the registry.
    * Called internally by `app.load()`.
    */
   register(item: ArkosLoadable): void {
-    routeHookReader.register(item);
-    this.interceptors.set((item as any).moduleName, item);
+    // routeHookReader.register(item);
+
+    const type = (item as any).__type;
+    const moduleName = (item as any).moduleName;
+
+    if (!this.items.has(type)) {
+      this.items.set(type, new Map());
+    }
+
+    this.items.get(type)!.set(moduleName, item);
   }
 
   /**
    * Returns the interceptor for the given module name, or `null` if not registered.
    */
-  getInterceptor(moduleName: string): ArkosLoadable | null {
-    return this.interceptors.get(moduleName) ?? null;
+  getItem(
+    loadableType: "ArkosRouteHook" | "ArkosServiceHook",
+    moduleName: ArkosModuleType
+  ): ArkosLoadable | null {
+    return this.items.get(loadableType)?.get(moduleName) ?? null;
   }
 
   /**
    * Returns true if an interceptor is registered for the given module name.
    */
-  hasInterceptor(moduleName: string): boolean {
-    return this.interceptors.has(moduleName);
+  hasItem(
+    loadableType: "ArkosRouteHook" | "ArkosServiceHook",
+    moduleName: string
+  ): boolean {
+    return this.items.get(loadableType)?.has(moduleName) ?? false;
   }
 }
