@@ -37,23 +37,23 @@ export function setupRouters(
             before: [],
             after: [],
             onError: [],
-            prismaQuery: {},
+            prismaArgs: {},
             routeConfig: {},
           };
 
     // CREATE ONE
     {
-      const { before, after, onError, prismaQuery, routeConfig } =
+      const { before, after, onError, prismaArgs, routeConfig } =
         op("createOne");
 
       router.post(
         {
           ...routeConfig,
-          path: `${routeName}`,
+          path: `/${routeName}`,
         },
         addPrismaQueryOptionsToRequest<any>(
           {
-            createOne: prismaQuery,
+            createOne: prismaArgs,
           },
           "createOne"
         ),
@@ -67,16 +67,16 @@ export function setupRouters(
 
     // FIND MANY
     {
-      const { before, after, onError, prismaQuery, routeConfig } =
+      const { before, after, onError, prismaArgs, routeConfig } =
         op("findMany");
       router.get(
         {
           ...routeConfig,
-          path: `${routeName}`,
+          path: `/${routeName}`,
         },
         addPrismaQueryOptionsToRequest<any>(
           {
-            findMany: prismaQuery,
+            findMany: prismaArgs,
           },
           "findMany"
         ),
@@ -90,16 +90,16 @@ export function setupRouters(
 
     // CREATE MANY
     {
-      const { before, after, onError, prismaQuery, routeConfig } =
+      const { before, after, onError, prismaArgs, routeConfig } =
         op("createMany");
       router.post(
         {
           ...routeConfig,
-          path: `${routeName}/many`,
+          path: `/${routeName}/many`,
         },
         addPrismaQueryOptionsToRequest<any>(
           {
-            createMany: prismaQuery,
+            createMany: prismaArgs,
           },
           "createMany"
         ),
@@ -113,16 +113,16 @@ export function setupRouters(
 
     // UPDATE MANY
     {
-      const { before, after, onError, prismaQuery, routeConfig } =
+      const { before, after, onError, prismaArgs, routeConfig } =
         op("updateMany");
       router.patch(
         {
           ...routeConfig,
-          path: `${routeName}/many`,
+          path: `/${routeName}/many`,
         },
         addPrismaQueryOptionsToRequest<any>(
           {
-            updateMany: prismaQuery,
+            updateMany: prismaArgs,
           },
           "updateMany"
         ),
@@ -136,16 +136,16 @@ export function setupRouters(
 
     // DELETE MANY
     {
-      const { before, after, onError, prismaQuery, routeConfig } =
+      const { before, after, onError, prismaArgs, routeConfig } =
         op("deleteMany");
       router.delete(
         {
           ...routeConfig,
-          path: `${routeName}/many`,
+          path: `/${routeName}/many`,
         },
         addPrismaQueryOptionsToRequest<any>(
           {
-            deleteMany: prismaQuery,
+            deleteMany: prismaArgs,
           },
           "deleteMany"
         ),
@@ -159,16 +159,15 @@ export function setupRouters(
 
     // FIND ONE
     {
-      const { before, after, onError, prismaQuery, routeConfig } =
-        op("findOne");
+      const { before, after, onError, prismaArgs, routeConfig } = op("findOne");
       router.get(
         {
           ...routeConfig,
-          path: `${routeName}/:id`,
+          path: `/${routeName}/:id`,
         },
         addPrismaQueryOptionsToRequest<any>(
           {
-            findOne: prismaQuery,
+            findOne: prismaArgs,
           },
           "findOne"
         ),
@@ -181,16 +180,15 @@ export function setupRouters(
     }
 
     // UPDATE ONE
-    const { before, after, onError, prismaQuery, routeConfig } =
-      op("updateOne");
+    const { before, after, onError, prismaArgs, routeConfig } = op("updateOne");
     router.patch(
       {
         ...routeConfig,
-        path: `${routeName}/:id`,
+        path: `/${routeName}/:id`,
       },
       addPrismaQueryOptionsToRequest<any>(
         {
-          updateOne: prismaQuery,
+          updateOne: prismaArgs,
         },
         "updateOne"
       ),
@@ -203,16 +201,16 @@ export function setupRouters(
 
     // DELETE ONE
     {
-      const { before, after, onError, prismaQuery, routeConfig } =
+      const { before, after, onError, prismaArgs, routeConfig } =
         op("deleteOne");
       router.delete(
         {
           ...routeConfig,
-          path: `${routeName}/:id`,
+          path: `/${routeName}/:id`,
         },
         addPrismaQueryOptionsToRequest<any>(
           {
-            deleteOne: prismaQuery,
+            deleteOne: prismaArgs,
           },
           "deleteOne"
         ),

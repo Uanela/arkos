@@ -21,29 +21,14 @@ interface InterceptorStore {
  * ```ts
  * const userInterceptor = ArkosInterceptor("user");
  *
- * userInterceptor.findMany({
- *   validation: { query: QueryUserSchema },
- *   before: [authGuard]
- * });
- *
  * userInterceptor.createOne({
  *   validation: { body: CreateUserSchema },
  *   before: [sanitize],
  *   after: [notify]
  * });
- * ```
  *
- * @example
- *
- * ```ts
- * const authInterceptor = ArkosInterceptor("auth");
- * authInterceptor.login({ before: [rateLimiter] });
- * ```
- *
- * @example
  * app.load(userInterceptor);
- * app.load(authInterceptor)
- *
+ * ```
  * @see {@link https://www.arkosjs.com/docs/core-concepts/components/interceptors}
  */
 export function ArkosInterceptor<T extends ArkosModuleType>(

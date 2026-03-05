@@ -24,7 +24,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
           before: [],
           after: [],
           onError: [],
-          prismaQuery: {},
+          prismaArgs: {},
           routeConfig: {},
         };
 
@@ -34,7 +34,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   // GET /users/me - Get current user
   {
-    const { before, after, onError, prismaQuery, routeConfig } = op("getMe");
+    const { before, after, onError, prismaArgs, routeConfig } = op("getMe");
 
     router.get(
       {
@@ -42,7 +42,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
         path: "/users/me",
       },
       addPrismaQueryOptionsToRequest<any>(
-        { getMe: prismaQuery } as AuthPrismaQueryOptions<any>,
+        { getMe: prismaArgs } as AuthPrismaQueryOptions<any>,
         "getMe"
       ),
       ...processMiddleware(before),
@@ -55,7 +55,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   // PATCH /users/me - Update current user
   {
-    const { before, after, onError, prismaQuery, routeConfig } = op("updateMe");
+    const { before, after, onError, prismaArgs, routeConfig } = op("updateMe");
 
     router.patch(
       {
@@ -63,7 +63,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
         path: "/users/me",
       },
       addPrismaQueryOptionsToRequest<any>(
-        { updateMe: prismaQuery } as AuthPrismaQueryOptions<any>,
+        { updateMe: prismaArgs } as AuthPrismaQueryOptions<any>,
         "updateMe"
       ),
       ...processMiddleware(before),
@@ -76,7 +76,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   // DELETE /users/me - Delete current user
   {
-    const { before, after, onError, prismaQuery, routeConfig } = op("deleteMe");
+    const { before, after, onError, prismaArgs, routeConfig } = op("deleteMe");
 
     router.delete(
       {
@@ -84,7 +84,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
         path: "/users/me",
       },
       addPrismaQueryOptionsToRequest<any>(
-        { deleteMe: prismaQuery } as AuthPrismaQueryOptions<any>,
+        { deleteMe: prismaArgs } as AuthPrismaQueryOptions<any>,
         "deleteMe"
       ),
       ...processMiddleware(before),
@@ -109,7 +109,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   // POST /auth/login - Login
   {
-    const { before, after, onError, prismaQuery, routeConfig } = op("login");
+    const { before, after, onError, prismaArgs, routeConfig } = op("login");
 
     router.post(
       {
@@ -118,7 +118,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
         path: "/auth/login",
       },
       addPrismaQueryOptionsToRequest<any>(
-        { login: prismaQuery } as AuthPrismaQueryOptions<any>,
+        { login: prismaArgs } as AuthPrismaQueryOptions<any>,
         "login"
       ),
       ...processMiddleware(before),
@@ -149,7 +149,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   // POST /auth/signup - Signup
   {
-    const { before, after, onError, prismaQuery, routeConfig } = op("signup");
+    const { before, after, onError, prismaArgs, routeConfig } = op("signup");
 
     router.post(
       {
@@ -158,7 +158,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
         path: "/auth/signup",
       },
       addPrismaQueryOptionsToRequest<any>(
-        { signup: prismaQuery } as AuthPrismaQueryOptions<any>,
+        { signup: prismaArgs } as AuthPrismaQueryOptions<any>,
         "signup"
       ),
       ...processMiddleware(before),
@@ -171,7 +171,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   // POST /auth/update-password - Update password
   {
-    const { before, after, onError, prismaQuery, routeConfig } =
+    const { before, after, onError, prismaArgs, routeConfig } =
       op("updatePassword");
 
     router.post(
@@ -181,7 +181,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
         path: "/auth/update-password",
       },
       addPrismaQueryOptionsToRequest<any>(
-        { updatePassword: prismaQuery } as AuthPrismaQueryOptions<any>,
+        { updatePassword: prismaArgs } as AuthPrismaQueryOptions<any>,
         "updatePassword"
       ),
       ...processMiddleware(before),
