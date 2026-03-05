@@ -1,8 +1,8 @@
 import { ArkosRouteConfig } from "../../exports";
+import { PrismaModels } from "../../generated";
 import { ArkosRequestHandler } from "../../types";
-import { ModelsGetPayload } from "../../types/global";
 
-export type PrismaModels = keyof ModelsGetPayload<any>;
+export type Models = keyof PrismaModels<any>;
 
 export interface ArkosRouteHookHooks {
   before?: ArkosRequestHandler[];
@@ -17,9 +17,9 @@ export interface ArkosRouteHookHooks {
 type PrismaQueryFor<
   TModel extends string,
   TOp extends string,
-> = TModel extends keyof ModelsGetPayload<any>
-  ? TOp extends keyof ModelsGetPayload<any>[TModel]
-    ? Partial<ModelsGetPayload<any>[TModel][TOp]>
+> = TModel extends keyof PrismaModels<any>
+  ? TOp extends keyof PrismaModels<any>[TModel]
+    ? Partial<PrismaModels<any>[TModel][TOp]>
     : Record<string, any>
   : Record<string, any>;
 
@@ -45,13 +45,13 @@ export type ArkosRouteHookMethodConfig<
  * `string & {}` preserves autocomplete for "auth" and "file-upload"
  * while still accepting arbitrary model names.
  */
-export type ArkosModuleType = "auth" | "file-upload" | PrismaModels;
+export type ArkosModuleType = "auth" | "file-upload" | Models;
 
 /**
  * Route hook instance for standard CRUD model routes.
  * Each method's `prismaQuery` is typed against the model's actual Prisma args.
  */
-export interface ArkosRouteHookInstance<TModel extends string = string> {
+export interface ArkosRouteHookInstance<TModel extends Models> {
   readonly __type: "ArkosRouteHook";
   readonly moduleName: TModel;
 

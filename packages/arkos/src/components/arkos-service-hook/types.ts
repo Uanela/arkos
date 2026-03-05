@@ -451,7 +451,7 @@ export type ArkosServiceHookMethodConfigs<
   >;
 };
 
-export type ArkosServiceHookReturn<
+export type ArkosServiceHookInstance<
   TModelName extends keyof Models,
   Context = ServiceHookContext,
 > = {
@@ -465,7 +465,7 @@ export type ArkosServiceHookReturn<
       AfterCreateOneHookArgs<TModelName, Context>,
       OnCreateOneErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   createMany(
     config: ServiceHookOperationConfig<
@@ -473,7 +473,7 @@ export type ArkosServiceHookReturn<
       AfterCreateManyHookArgs<TModelName, Context>,
       OnCreateManyErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   count(
     config: ServiceHookOperationConfig<
@@ -481,7 +481,7 @@ export type ArkosServiceHookReturn<
       AfterCountHookArgs<TModelName, Context>,
       OnCountErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   findMany(
     config: ServiceHookOperationConfig<
@@ -489,7 +489,7 @@ export type ArkosServiceHookReturn<
       AfterFindManyHookArgs<TModelName, Context>,
       OnFindManyErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   findOne(
     config: ServiceHookOperationConfig<
@@ -497,7 +497,7 @@ export type ArkosServiceHookReturn<
       AfterFindOneHookArgs<TModelName, Context>,
       OnFindOneErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   updateOne(
     config: ServiceHookOperationConfig<
@@ -505,7 +505,7 @@ export type ArkosServiceHookReturn<
       AfterUpdateOneHookArgs<TModelName, Context>,
       OnUpdateOneErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   updateMany(
     config: ServiceHookOperationConfig<
@@ -513,7 +513,7 @@ export type ArkosServiceHookReturn<
       AfterUpdateManyHookArgs<TModelName, Context>,
       OnUpdateManyErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   deleteOne(
     config: ServiceHookOperationConfig<
@@ -521,7 +521,7 @@ export type ArkosServiceHookReturn<
       AfterDeleteOneHookArgs<TModelName, Context>,
       OnDeleteOneErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   deleteMany(
     config: ServiceHookOperationConfig<
@@ -529,7 +529,7 @@ export type ArkosServiceHookReturn<
       AfterDeleteManyHookArgs<TModelName, Context>,
       OnDeleteManyErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   findById(
     config: ServiceHookOperationConfig<
@@ -537,7 +537,7 @@ export type ArkosServiceHookReturn<
       AfterFindByIdHookArgs<TModelName, Context>,
       OnFindByIdErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   updateById(
     config: ServiceHookOperationConfig<
@@ -545,7 +545,7 @@ export type ArkosServiceHookReturn<
       AfterUpdateByIdHookArgs<TModelName, Context>,
       OnUpdateByIdErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 
   deleteById(
     config: ServiceHookOperationConfig<
@@ -553,5 +553,5 @@ export type ArkosServiceHookReturn<
       AfterDeleteByIdHookArgs<TModelName, Context>,
       OnDeleteByIdErrorHookArgs<TModelName, Context>
     >
-  ): ArkosServiceHookReturn<TModelName, Context>;
+  ): ArkosServiceHookInstance<TModelName, Context>;
 };
