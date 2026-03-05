@@ -28,7 +28,7 @@ export function setupRouters(
     const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);
 
-    const interceptor = registry.getInterceptor(modelNameInKebab);
+    const interceptor = registry.getItem("ArkosRouteHook", modelNameInKebab);
 
     const op = (operation: string) =>
       interceptor

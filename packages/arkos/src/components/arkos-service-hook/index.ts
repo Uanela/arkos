@@ -2,7 +2,7 @@ import { ServiceHookContext } from "../../exports/services";
 import { PrismaModels } from "../../generated";
 import {
   ArkosServiceHookMethodConfigs,
-  ArkosServiceHookReturn,
+  ArkosServiceHookInstance,
   ServiceHookOperationConfig,
 } from "./types";
 
@@ -46,7 +46,7 @@ type Models = PrismaModels<any>;
 export function ArkosServiceHook<
   TModelName extends keyof Models = keyof Models,
   Context = ServiceHookContext,
->(moduleName: TModelName): ArkosServiceHookReturn<TModelName, Context> {
+>(moduleName: TModelName): ArkosServiceHookInstance<TModelName, Context> {
   const store: Partial<ArkosServiceHookMethodConfigs<TModelName, Context>> = {};
 
   const makeMethod =
@@ -84,5 +84,5 @@ export function ArkosServiceHook<
   }
 
   const proxy = Object.assign(base, methods);
-  return proxy as unknown as ArkosServiceHookReturn<TModelName, Context>;
+  return proxy as unknown as ArkosServiceHookInstance<TModelName, Context>;
 }

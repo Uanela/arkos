@@ -1,4 +1,4 @@
-export type ServiceHook = (args: Record<string, any>) => Promise<void>;
+import { ServiceHookHandler } from "../../../components/arkos-service-hook/types";
 
 /**
  * Manages and handles service hooks implementation on the base service class
@@ -8,7 +8,7 @@ class ServiceHooksManager {
    * Handles single function or array of functions of service hook
    */
   async handleHook(
-    hooksReceived: ServiceHook | ServiceHook[],
+    hooksReceived: ServiceHookHandler<any> | ServiceHookHandler<any>[],
     hooksArgs: Record<string, any>
   ) {
     const hooks = Array.isArray(hooksReceived)
@@ -20,7 +20,7 @@ class ServiceHooksManager {
     }
   }
 
-  validateServiceHook(hook: ServiceHook) {
+  validateServiceHook(hook: ServiceHookHandler<any>) {
     if (typeof hook !== "function")
       throw new Error(
         `Validation Error: service hook must be of type function or array of functions but received value of type ${typeof hook}`

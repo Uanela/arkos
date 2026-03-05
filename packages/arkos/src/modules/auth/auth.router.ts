@@ -15,7 +15,7 @@ import { ArkosAuthRouteHookInstance } from "../../components/arkos-route-hook/ty
 const router = ArkosRouter();
 
 export function getAuthRouter(registry: ArkosLoadableRegistry) {
-  const interceptor = registry.getInterceptor("auth");
+  const interceptor = registry.getItem("ArkosRouteHook", "auth");
 
   const op = (operation: string) =>
     interceptor
