@@ -11,8 +11,8 @@ import {
   getNestedValue,
 } from "./utils/helpers/auth.controller.helpers";
 import authActionService from "./utils/services/auth-action.service";
-import { ArkosAuthInterceptorInstance } from "../../components/arkos-interceptor/types";
-import { interceptorReader } from "../../components/arkos-interceptor/reader";
+import { ArkosAuthRouteHookInstance } from "../../components/arkos-route-hook/types";
+import { routeHookReader } from "../../components/arkos-route-hook/reader";
 
 /**
  * Default fields to exclude from user object when returning to client
@@ -28,7 +28,7 @@ export const defaultExcludedUserFields = {
  * @returns An object containing all authentication controller methods
  */
 export const authControllerFactory = (
-  interceptor: ArkosAuthInterceptorInstance | null
+  interceptor: ArkosAuthRouteHookInstance | null
 ) => {
   const userService = new BaseService("user");
 
@@ -51,7 +51,7 @@ export const authControllerFactory = (
           if (user) delete user[key as keyof User];
         });
 
-        if (interceptorReader.getHooks(interceptor, "getMe")?.after) {
+        if (routeHookReader.getHooks(interceptor, "getMe")?.after) {
           (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
@@ -91,7 +91,7 @@ export const authControllerFactory = (
           if (user) delete user[key as keyof User];
         });
 
-        if (interceptorReader.getHooks(interceptor, "updateMe")?.after) {
+        if (routeHookReader.getHooks(interceptor, "updateMe")?.after) {
           (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
@@ -119,7 +119,7 @@ export const authControllerFactory = (
           httpOnly: true,
         });
 
-        if (interceptorReader.getHooks(interceptor, "logout")?.after) {
+        if (routeHookReader.getHooks(interceptor, "logout")?.after) {
           (res as any).originalData = null;
           req.responseData = null;
           res.locals.data = null;
@@ -218,7 +218,7 @@ export const authControllerFactory = (
 
         req.accessToken = token;
 
-        if (interceptorReader.getHooks(interceptor, "login")?.after) {
+        if (routeHookReader.getHooks(interceptor, "login")?.after) {
           (res as any).originalData = req.responseData;
           req.additionalData = { user };
           res.locals.additional = { user };
@@ -257,7 +257,7 @@ export const authControllerFactory = (
           req.prismaQueryOptions || {}
         )) as Record<string, any>;
 
-        if (interceptorReader.getHooks(interceptor, "signup")?.after) {
+        if (routeHookReader.getHooks(interceptor, "signup")?.after) {
           (res as any).originalData = { data: user };
           req.responseData = { data: user };
           res.locals.data = { data: user };
@@ -293,7 +293,7 @@ export const authControllerFactory = (
           req.prismaQueryOptions || {}
         )) as Record<string, any>;
 
-        if (interceptorReader.getHooks(interceptor, "deleteMe")?.after) {
+        if (routeHookReader.getHooks(interceptor, "deleteMe")?.after) {
           (res as any).originalData = { data: updatedUser };
           req.responseData = { data: updatedUser };
           res.locals.data = { data: updatedUser };
@@ -405,7 +405,7 @@ export const authControllerFactory = (
 
         req.accessToken = token;
 
-        if (interceptorReader.getHooks(interceptor, "UpdatePassword")?.after) {
+        if (routeHookReader.getHooks(interceptor, "UpdatePassword")?.after) {
           (res as any).originalData = responseData;
           req.additionalData = { user };
           req.responseData = responseData;

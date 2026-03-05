@@ -1,5 +1,5 @@
 import { ArkosLoadable } from "../../types/arkos";
-import { interceptorReader } from "../arkos-interceptor/reader";
+import { routeHookReader } from "../arkos-route-hook/reader";
 
 /**
  * Registry for all items loaded via `app.load()`.
@@ -13,7 +13,7 @@ export class ArkosLoadableRegistry {
    * Called internally by `app.load()`.
    */
   register(item: ArkosLoadable): void {
-    interceptorReader.register(item);
+    routeHookReader.register(item);
     this.interceptors.set((item as any).moduleName, item);
   }
 

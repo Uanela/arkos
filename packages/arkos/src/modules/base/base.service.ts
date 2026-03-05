@@ -44,6 +44,7 @@ import {
 } from "./types/base.service.types";
 import serviceHooksManager from "./utils/service-hooks-manager";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
+import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
 
 export interface ServiceOperationHooks {
   beforeOperation?: (params: any) => void | Promise<void>;
@@ -92,6 +93,7 @@ interface ServiceOperationConfig {
  *
  */
 export class BaseService<T extends ModelDelegate = any> {
+  private static registry: ArkosLoadableRegistry;
   modelName: string;
   relationFields: ModelGroupRelationFields;
   prisma: any;
@@ -108,6 +110,10 @@ export class BaseService<T extends ModelDelegate = any> {
         modelFields?.filter((field) => field.isRelation && field.isArray) || [],
     };
     this.prisma = getPrismaInstance();
+  }
+
+  static configure(registry: ArkosLoadableRegistry) {
+    BaseService.registry = registry;
   }
 
   private executeOperation = (config: ServiceOperationConfig) => {

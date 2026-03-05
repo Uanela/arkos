@@ -14,7 +14,7 @@ import { ArkosConfig } from "../types/new-arkos-config";
 import { ArkosInitConfig } from "../types/arkos-config";
 import { loadEnvironmentVariables } from "../utils/dotenv.helpers";
 import { arkos } from "../app";
-import { ArkosInterceptor } from "../components/arkos-interceptor";
+import { ArkosRouteHook } from "../components/arkos-route-hook";
 import { defineConfig } from "../utils/define-config";
 
 export {
@@ -31,7 +31,7 @@ export {
   loadEnvironmentVariables,
   getArkosConfig,
   initApp,
-  ArkosInterceptor,
+  ArkosRouteHook,
   /**
    * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
    *

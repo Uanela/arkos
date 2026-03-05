@@ -1,4 +1,4 @@
-import arkos, { ArkosInterceptor } from "arkos";
+import arkos, { ArkosRouteHook } from "arkos";
 import { createServer } from "http";
 
 const app = arkos();
@@ -10,16 +10,17 @@ const mw = (msg?: any) => (req: any, res: any, next: any) => {
 
 app.use(mw("test"));
 
-const userInterceptor = ArkosInterceptor("user");
+const userRouteHook = ArkosRouteHook("user");
 
-userInterceptor.findMany({
+userRouteHook.findMany({
   before: [mw("hello bro")],
-  prismaQuery: {},
+  after: [mw("hello from after")],
+  prismaArgs: {},
 });
 
-app.load(userInterceptor);
+app.load(userRouteHook);
 
-app.setup();
+app.build();
 
 const server = createServer(app as any);
 
