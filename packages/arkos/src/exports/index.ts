@@ -16,11 +16,9 @@ import { loadEnvironmentVariables } from "../utils/dotenv.helpers";
 import { arkos } from "../app";
 import { ArkosRouteHook } from "../components/arkos-route-hook";
 import { ArkosServiceHook } from "../components/arkos-service-hook";
-import { defineConfig } from "../utils/define-config";
 import { ArkosRouteHookInstance } from "../components/arkos-route-hook/types";
 
 export {
-  defineConfig,
   ArkosRequest,
   ArkosResponse,
   ArkosNextFunction,
@@ -40,9 +38,4 @@ export {
   ArkosRouteHookInstance,
 };
 
-/**
- * Main entry point for the Arkos module.
- *
- * @module arkos
- */
 export default arkos;

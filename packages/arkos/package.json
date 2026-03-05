@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "2.0.0-canary.5",
+  "version": "2.0.0-canary.6",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -56,6 +56,11 @@
       "import": "./dist/esm/exports/utils/index.js",
       "require": "./dist/cjs/exports/utils/index.js"
     },
+    "./config": {
+      "types": "./dist/types/exports/config.d.ts",
+      "import": "./dist/esm/exports/config.js",
+      "require": "./dist/cjs/exports/config.js"
+    },
     "./cli": {
       "import": "./dist/esm/utils/cli/index.js",
       "require": "./dist/cjs/utils/cli/index.js"
@@ -78,7 +83,8 @@
       "prisma": ["./dist/types/exports/prisma/index.d.ts"],
       "auth": ["./dist/types/exports/auth/index.d.ts"],
       "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
-      "utils": ["./dist/types/exports/utils/index.d.ts"]
+      "utils": ["./dist/types/exports/utils/index.d.ts"],
+      "config": ["./dist/types/exports/config.d.ts"]
     }
   },
   "scripts": {
