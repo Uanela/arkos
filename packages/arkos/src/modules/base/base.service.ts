@@ -3,7 +3,6 @@ import {
   kebabCase,
   pascalCase,
 } from "../../utils/helpers/change-case.helpers";
-import { getModuleComponents } from "../../utils/dynamic-loader";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import {
   handleRelationFieldsInBody,
@@ -37,7 +36,11 @@ import {
 import serviceHooksManager from "./utils/service-hooks-manager";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
-import { ServiceHookContext } from "../../components/arkos-service-hook/types";
+import {
+  ArkosServiceHookInstance,
+  ServiceHookContext,
+} from "../../components/arkos-service-hook/types";
+import { serviceHookReader } from "../../components/arkos-service-hook/reader";
 
 export interface ServiceOperationHooks {
   beforeOperation?: (params: any) => void | Promise<void>;
@@ -85,6 +88,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
   modelName: TModelName;
   relationFields: ModelGroupRelationFields;
   prisma: PrismaClient;
+  private serviceHook: ArkosServiceHookInstance<TModelName> | null;
 
   constructor(modelName: TModelName) {
     this.modelName = camelCase(modelName as string) as TModelName;
@@ -100,6 +104,11 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
         modelFields?.filter((field) => field.isRelation && field.isArray) || [],
     };
     this.prisma = getPrismaInstance();
+    this.serviceHook =
+      (BaseService.registry.getItem(
+        "ArkosServiceHook",
+        kebabCase(modelName)
+      ) as ArkosServiceHookInstance<TModelName>) || null;
   }
 
   static configure(registry: ArkosLoadableRegistry) {
@@ -253,8 +262,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     params: any,
     context?: ServiceHookContext
   ): Promise<void> {
-    const serviceHooks = getModuleComponents(this.modelName as string)?.hooks;
-    if (!serviceHooks) return;
+    if (!this.serviceHook) return;
 
     const skipCondition =
       context?.skip === hookType ||
@@ -263,10 +271,18 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
 
     if (skipCondition) return;
 
-    const hookName = `${hookType === "error" ? "on" : hookType}${operationType.charAt(0).toUpperCase()}${operationType.slice(1)}${hookType === "error" ? "Error" : ""}`;
-    const hook = serviceHooks[hookName as keyof typeof serviceHooks];
+    const hooks = serviceHookReader.getHooks(this.serviceHook, operationType);
+    if (!hooks) return;
 
-    if (hook) await serviceHooksManager.handleHook(hook, params);
+    const handlers =
+      hookType === "before"
+        ? hooks.before
+        : hookType === "after"
+          ? hooks.after
+          : hooks.onError;
+
+    if (handlers?.length)
+      await serviceHooksManager.handleHook(handlers, params);
   }
 
   private buildHookParams(args: any[], config: ServiceOperationConfig): any {
