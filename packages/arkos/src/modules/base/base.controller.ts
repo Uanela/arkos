@@ -9,6 +9,10 @@ import sheu from "../../utils/sheu";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import { APIFeatures } from "../../exports/utils";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
+import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
+import { ArkosLoadable } from "../../types/arkos";
+import { ArkosInterceptorInstance } from "../../components/arkos-interceptor/types";
+import { interceptorReader } from "../../components/arkos-interceptor/reader";
 
 export interface OperationHooks {
   beforeQuery?: (req: ArkosRequest) => void | Promise<void>;
@@ -65,6 +69,7 @@ interface OperationConfig {
  * @see {@link https://www.arkosjs.com/docs/guide/adding-custom-routers}
  */
 export class BaseController {
+  private static registry: ArkosLoadableRegistry;
   /**
    * Service instance to handle business logic operations
    * @private
@@ -78,21 +83,24 @@ export class BaseController {
   private modelName: string;
 
   /**
-   * Model-specific interceptors loaded from model modules
-   * @private
+   * Model specific interceptor load by `app.load()`
    */
-  private interceptors: any;
+  private interceptor: ArkosInterceptorInstance;
 
   /**
    * Creates a new BaseController instance
    * @param {string} modelName - The name of the model for which this controller will handle operations
    */
   constructor(modelName: string) {
-    const components = getModuleComponents(modelName);
-
-    this.modelName = modelName;
+    this.modelName = kebabCase(modelName);
     this.service = new BaseService(modelName);
-    this.interceptors = components?.interceptors || {};
+    this.interceptor = BaseController.registry.getInterceptor(
+      kebabCase(modelName)
+    ) as ArkosInterceptorInstance;
+  }
+
+  static configure(registry: ArkosLoadableRegistry) {
+    BaseController.registry = registry;
   }
 
   private executeOperation = (config: OperationConfig) => {
@@ -114,7 +122,6 @@ export class BaseController {
               new AppError(
                 `Filter criteria not provided for bulk ${config.operationType.replace(/Many$/, "")}.`,
                 400,
-                {},
                 "MissingRequestQueryParameters"
               )
             );
@@ -207,7 +214,9 @@ export class BaseController {
 
         const interceptorName = `after${config.operationType.charAt(0).toUpperCase()}${config.operationType.slice(1)}`;
 
-        if (this.interceptors[interceptorName]) {
+        if (
+          interceptorReader.getHooks(this.interceptor, config.operationType)
+        ) {
           this.setResponseData(req, res, responseData, config.successStatus);
           next();
           return;

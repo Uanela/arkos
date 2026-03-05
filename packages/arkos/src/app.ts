@@ -7,6 +7,8 @@ import initializeApp from "./utils/initialize-app";
 import { Express } from "express";
 import { logAppStartp } from "./server";
 import { ArkosLoadableRegistry } from "./components/arkos-loadable-registry";
+import { BaseController } from "./modules/base/base.controller";
+import { BaseService } from "./modules/base/base.service";
 
 export function arkos(): Arkos {
   const app = express() as any as Arkos;
@@ -21,6 +23,8 @@ export function arkos(): Arkos {
   };
 
   app.build = function () {
+    BaseController.configure(registry);
+    BaseService.configure(registry);
     return initializeApp(app, registry);
   };
 
