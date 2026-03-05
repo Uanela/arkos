@@ -37,7 +37,7 @@ export type ArkosInterceptorMethodConfig<
      * Prisma options merged into this operation's query.
      * Typed against the model's actual Prisma args for this operation.
      */
-    prismaQuery?: PrismaQueryFor<TModel, TOp>;
+    prismaArgs?: PrismaQueryFor<TModel, TOp>;
   };
 
 /**

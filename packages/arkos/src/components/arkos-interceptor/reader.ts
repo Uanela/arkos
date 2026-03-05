@@ -15,7 +15,7 @@ import { ArkosLoadable } from "../../types/arkos";
  * interceptorReader.moduleName                          // "user"
  * interceptorReader.getHooks(userInterceptor, "findMany")        // { before, after, onError }
  * interceptorReader.getRouteConfig(userInterceptor, "findMany")  // ArkosRouteConfig minus path and hooks
- * interceptorReader.getPrismaQuery(userInterceptor, "findMany")  // prismaQuery for that operation
+ * interceptorReader.getPrismaArgs(userInterceptor, "findMany")  // prismaArgs for that operation
  * interceptorReader.getFullConfig(userInterceptor, "findMany")   // full raw config object
  * interceptorReader.hasOperation(userInterceptor, "findMany")    // true | false
  * ```
@@ -76,7 +76,7 @@ class ArkosInterceptorReader {
   }
 
   /**
-   * Returns the `ArkosRouteConfig` portion of the config (excludes `path`, hooks, and `prismaQuery`)
+   * Returns the `ArkosRouteConfig` portion of the config (excludes `path`, hooks, and `prismaArgs`)
    * for the given operation.
    */
   getRouteConfig(
@@ -86,24 +86,24 @@ class ArkosInterceptorReader {
     const config = this.getStore(interceptor)[operation];
     if (!config) return null;
 
-    const { before, after, onError, prismaQuery, ...routeConfig } = config;
+    const { before, after, onError, prismaArgs, ...routeConfig } = config;
     return routeConfig;
   }
 
   /**
-   * Returns the `prismaQuery` for the given operation, or `null` if not set.
+   * Returns the `prismaArgs` for the given operation, or `null` if not set.
    */
-  getPrismaQuery(
+  getPrismaArgs(
     interceptor: ArkosLoadable,
     operation: string
   ): Record<string, any> | undefined {
-    return this.getStore(interceptor)[operation]?.prismaQuery;
+    return this.getStore(interceptor)[operation]?.prismaArgs;
   }
 
   /**
    * Returns all extracted slices for a given operation in one call.
-   * The `prismaQuery` is wrapped in `{ [operation]: value }` to match
-   * the existing `PrismaQueryOptions` shape.
+   * The `prismaArgs` is wrapped in `{ [operation]: value }` to match
+   * the existing `PrismaArgs` shape.
    */
   forOperation(
     interceptor: ArkosLoadable,
@@ -112,7 +112,7 @@ class ArkosInterceptorReader {
     before: ArkosRequestHandler[];
     after: ArkosRequestHandler[];
     onError: ArkosRequestHandler[];
-    prismaQuery?: Record<string, any>;
+    prismaArgs?: Record<string, any>;
     routeConfig: Omit<ArkosRouteConfig, "path">;
   } {
     const {
@@ -120,11 +120,11 @@ class ArkosInterceptorReader {
       after = [],
       onError = [],
     } = this.getHooks(interceptor, operation) || {};
-    const prismaQuery = this.getPrismaQuery(interceptor, operation);
+    const prismaArgs = this.getPrismaArgs(interceptor, operation);
 
     const routeConfig = this.getRouteConfig(interceptor, operation) ?? {};
 
-    return { before, after, onError, prismaQuery, routeConfig };
+    return { before, after, onError, prismaArgs, routeConfig };
   }
 }
 
