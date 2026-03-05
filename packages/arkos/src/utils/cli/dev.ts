@@ -39,7 +39,7 @@ export async function devCommand(options: DevOptions = {}) {
 
     const baseServiceTypesPath = path.resolve(
       process.cwd(),
-      `node_modules/@arkosjs/types/base.service.d.ts`
+      `node_modules/@arkosjs/generated/cjs/index.js`
     );
     if (fileExt === "ts" && !fs.existsSync(baseServiceTypesPath)) {
       const answer = await new Promise<boolean>((resolve) => {
