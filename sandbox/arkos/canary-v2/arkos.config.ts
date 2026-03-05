@@ -1,11 +1,5 @@
-// import { defineConfig } from "arkos";
+import { defineConfig } from "arkos/config";
 import prisma from "./src/utils/prisma";
-
-// console.log(defineConfig);
-
-function defineConfig(a: any) {
-  return a;
-}
 
 const config = defineConfig({
   prisma: { instance: prisma },

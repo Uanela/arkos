@@ -1,5 +1,7 @@
-import arkos, { ArkosRouteHook } from "arkos";
-import { createServer } from "http";
+import arkos, { ArkosRouteHook, ArkosServiceHook } from "arkos";
+import { BaseService } from "arkos/services";
+import http from "http";
+import z from "zod";
 
 const app = arkos();
 
@@ -15,13 +17,35 @@ const userRouteHook = ArkosRouteHook("user");
 userRouteHook.findMany({
   before: [mw("hello bro")],
   after: [mw("hello from after")],
-  prismaArgs: {},
+  validation: { body: z.object({ the: z.string() }) },
+  prismaArgs: {
+    omit: {
+      id: true,
+    },
+  },
 });
 
+// const userService = new BaseService("user");
+
+// const users = userService.findMany();
+
+const userServiceHook = ArkosServiceHook("user");
+
+userServiceHook.findMany({
+  before: [
+    ({ filters }) => {
+      console.log("thebig2", filters);
+
+      // next?.();
+    },
+  ],
+});
+
+app.load(userServiceHook);
 app.load(userRouteHook);
 
 app.build();
 
-const server = createServer(app as any);
+const server = http.createServer(app as any);
 
 server.listen(...app.getServerConfig());
