@@ -20,7 +20,7 @@ export function arkos(): Arkos {
     return app;
   };
 
-  app.setup = function () {
+  app.build = function () {
     return initializeApp(app, registry);
   };
 
@@ -33,7 +33,7 @@ export function arkos(): Arkos {
   };
 
   app.listen = function (cb?: userCb): Arkos {
-    app.setup();
+    app.build();
 
     const port = Number(process.env.__PORT || process.env.PORT || "8000");
     const host = process.env.__HOST! || process.env.HOST || "127.0.0.1";
