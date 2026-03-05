@@ -1,96 +1,60 @@
 import { ArkosLoadable } from "../../types/arkos";
 import {
   ArkosServiceHookMethodConfigs,
-  ServiceHookHandler,
   ServiceHookOperationConfig,
-} from "./index";
-import { ModelDelegate, ServiceBaseContext } from "../base/types/service.types";
+} from "./types";
 
 /**
- * Singleton registry for reading config from loaded `ArkosServiceHook` instances.
- * Populated by `app.load()` — not intended for direct user use.
+ * Reader for `ArkosServiceHook` instances.
+ * Reads config directly from the instance passed in — no internal registry.
  *
  * @example
  * ```ts
- * // registering (done internally by app.load())
- * serviceHookReader.register(userServiceHook);
- *
- * // reading (done internally by BaseService)
- * serviceHookReader.getHooks(userServiceHook, "createOne", "before") // ServiceHookHandler[]
- * serviceHookReader.getOperation(userServiceHook, "createOne")          // { before, after, onError }
- * serviceHookReader.hasOperation(userServiceHook, "createOne")          // true | false
+ * serviceHookReader.getHooks(userServiceHook, "createOne")          // { before, after, onError }
+ * serviceHookReader.getHooks(userServiceHook, "createOne").before   // ServiceHookHandler[]
+ * serviceHookReader.getHooks(userServiceHook, "createOne").after    // ServiceHookHandler[]
+ * serviceHookReader.getHooks(userServiceHook, "createOne").onError  // ServiceHookHandler[]
+ * serviceHookReader.hasOperation(userServiceHook, "createOne")      // true | false
+ * serviceHookReader.getFullConfig(userServiceHook, "createOne")     // { before, after, onError } | null
  * ```
  */
 class ArkosServiceHookReader {
-  private readonly registry: Map<
-    string,
-    Partial<ArkosServiceHookMethodConfigs<any, any>>
-  > = new Map();
-
-  /**
-   * Registers a serviceHook instance into the reader.
-   * Called internally by `app.load()`.
-   */
-  register(serviceHook: ArkosLoadable): void {
-    const moduleName = (serviceHook as any).moduleName;
-    const store = (serviceHook as any)._store ?? {};
-    this.registry.set(moduleName, store);
-  }
-
   private getStore(
-    moduleName: string
+    serviceHook: ArkosLoadable
   ): Partial<ArkosServiceHookMethodConfigs<any, any>> {
-    return this.registry.get(moduleName) ?? {};
+    return (serviceHook as any)._store ?? {};
   }
 
   /**
    * Returns true if the serviceHook has a config registered for the given operation.
    */
-  hasOperation(moduleName: string, operation: string): boolean {
-    return operation in this.getStore(moduleName);
+  hasOperation(serviceHook: ArkosLoadable, operation: string): boolean {
+    return operation in this.getStore(serviceHook);
   }
 
   /**
-   * Returns the full operation config `{ before, after, onError }` or `null` if not registered.
+   * Returns the full raw config for the given operation, or `null` if not registered.
    */
-  getOperation<T extends ModelDelegate = any, Context = ServiceBaseContext>(
-    moduleName: string,
+  getFullConfig(
+    serviceHook: ArkosLoadable,
     operation: string
   ): ServiceHookOperationConfig<any, any, any> | null {
-    return (this.getStore(moduleName) as any)[operation] ?? null;
+    return (this.getStore(serviceHook) as any)[operation] ?? null;
   }
 
   /**
-   * Returns the handler array for a specific slot (`before`, `after`, `onError`)
-   * of a given operation. Returns an empty array if not registered.
+   * Returns only the lifecycle hooks (`before`, `after`, `onError`) for the given operation.
    */
   getHooks(
-    moduleName: string,
-    operation: string,
-    slot: "before" | "after" | "onError"
-  ): ServiceHookHandler<any>[] {
-    const op = this.getOperation(moduleName, operation);
-    return op?.[slot] ?? [];
-  }
-
-  /**
-   * Returns all three handler arrays for a given operation in one call.
-   * Always returns arrays — empty if not registered.
-   */
-  forOperation(
-    moduleName: string,
+    serviceHook: ArkosLoadable | null | undefined,
     operation: string
-  ): {
-    before: ServiceHookHandler<any>[];
-    after: ServiceHookHandler<any>[];
-    onError: ServiceHookHandler<any>[];
-  } {
-    const op = this.getOperation(moduleName, operation);
-    return {
-      before: op?.before ?? [],
-      after: op?.after ?? [],
-      onError: op?.onError ?? [],
-    };
+  ): ServiceHookOperationConfig<any, any, any> | undefined {
+    if (!serviceHook) return;
+    const config = (this.getStore(serviceHook) as any)[operation];
+    if (!config) return {};
+
+    const { before, after, onError } = config;
+    return { before, after, onError };
   }
 }
 
