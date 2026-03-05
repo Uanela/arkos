@@ -1,434 +1,75 @@
-import { User } from "../../../types";
+import {
+  ExtractPrismaData,
+  ExtractPrismaFilters,
+  ExtractPrismaQueryOptions,
+  PrismaModels,
+} from "../../../generated";
 
-export type ModelDelegate = Record<string, any>;
-export type ModelGetPayload<G, T = any> = G extends {
-  $args: (arg: T) => infer R;
-}
-  ? R
-  : never;
+export type Models = PrismaModels<any>;
 
-// Create Operations
-export type CreateOneData<T extends ModelDelegate> = Parameters<
-  T["create"]
->[0] extends { data: infer D; [x: string]: any }
-  ? D
-  : any;
+export type Delegate<TModelName extends keyof Models> =
+  Models[TModelName]["Delegate"];
 
-export type CreateOneOptions<T extends ModelDelegate> = Omit<
-  Parameters<T["create"]>[0],
-  "data"
+export type CreateData<TModelName extends keyof Models> = ExtractPrismaData<
+  Models[TModelName]["CreateArgs"]
 >;
+export type CreateOptions<TModelName extends keyof Models> =
+  ExtractPrismaQueryOptions<Models[TModelName]["CreateArgs"], "data">;
+export type CreateResult<TModelName extends keyof Models> =
+  Models[TModelName]["GetPayload"];
 
-export type CreateOneResult<T extends ModelDelegate> =
-  T["create"] extends (args: { data: any }) => infer R ? R : any;
-
-export type CreateManyData<T extends ModelDelegate> = Parameters<
-  T["createMany"]
->[0] extends { data: infer D; [x: string]: any }
-  ? D
-  : any;
-
-export type CreateManyOptions<T extends ModelDelegate> = Omit<
-  Parameters<T["createMany"]>[0],
-  "data"
+export type CreateManyData<TModelName extends keyof Models> = ExtractPrismaData<
+  Models[TModelName]["CreateManyArgs"]
 >;
+export type CreateManyOptions<TModelName extends keyof Models> =
+  ExtractPrismaQueryOptions<Models[TModelName]["CreateManyArgs"], "data">;
+export type CreateManyResult<TModelName extends keyof Models> =
+  Models[TModelName]["GetPayload"][];
 
-export type CreateManyResult<T extends ModelDelegate> =
-  T["createMany"] extends (args: { data: any }) => infer R ? R : any;
+export type CountFilters<TModelName extends keyof Models> =
+  ExtractPrismaFilters<Models[TModelName]["CountArgs"]>;
 
-// Read Operations
-export type CountFilters<T extends ModelDelegate> = Parameters<
-  T["count"]
->[0] extends { where?: infer W; [x: string]: any }
-  ? W
-  : any;
+export type FindManyFilters<TModelName extends keyof Models> =
+  ExtractPrismaFilters<Models[TModelName]["FindManyArgs"]>;
+export type FindManyOptions<TModelName extends keyof Models> =
+  ExtractPrismaQueryOptions<Models[TModelName]["FindManyArgs"], "where">;
+export type FindManyResult<TModelName extends keyof Models> =
+  Models[TModelName]["GetPayload"][];
 
-export type FindManyFilters<T extends ModelDelegate> = Parameters<
-  T["findMany"]
->[0] extends { where?: infer W; [x: string]: any }
-  ? W
-  : any;
+export type FindOneFilters<TModelName extends keyof Models> =
+  ExtractPrismaFilters<Models[TModelName]["FindFirstArgs"]>;
+export type FindOneOptions<TModelName extends keyof Models> =
+  ExtractPrismaQueryOptions<Models[TModelName]["FindFirstArgs"], "where">;
+export type FindOneResult<TModelName extends keyof Models> =
+  | Models[TModelName]["GetPayload"]
+  | null;
 
-export type FindManyOptions<T extends ModelDelegate> = Omit<
-  Parameters<T["findMany"]>[0],
-  "where"
+export type UpdateOneFilters<TModelName extends keyof Models> =
+  ExtractPrismaFilters<Models[TModelName]["UpdateArgs"]>;
+export type UpdateOneData<TModelName extends keyof Models> = ExtractPrismaData<
+  Models[TModelName]["UpdateArgs"]
 >;
+export type UpdateOneOptions<TModelName extends keyof Models> =
+  ExtractPrismaQueryOptions<Models[TModelName]["UpdateArgs"], "where" | "data">;
+export type UpdateOneResult<TModelName extends keyof Models> =
+  Models[TModelName]["GetPayload"];
 
-export type FindManyResult<
-  T extends ModelDelegate,
-  TOptions = any,
-> = T["findMany"] extends (args: { where: any } & TOptions) => infer R
-  ? R
-  : any;
-
-export type FindByIdOptions<T extends ModelDelegate> = Omit<
-  Parameters<T["findUnique"]>[0],
-  "where"
+export type UpdateManyFilters<TModelName extends keyof Models> =
+  ExtractPrismaFilters<Models[TModelName]["UpdateManyArgs"]>;
+export type UpdateManyData<TModelName extends keyof Models> = ExtractPrismaData<
+  Models[TModelName]["UpdateManyArgs"]
 >;
+export type UpdateManyOptions<TModelName extends keyof Models> =
+  ExtractPrismaQueryOptions<
+    Models[TModelName]["UpdateManyArgs"],
+    "where" | "data"
+  >;
 
-export type FindByIdResult<T extends ModelDelegate> =
-  T["findUnique"] extends (args: { where: any }) => infer R ? R : any;
+export type DeleteOneFilters<TModelName extends keyof Models> =
+  ExtractPrismaFilters<Models[TModelName]["DeleteArgs"]>;
 
-export type FindOneFilters<T extends ModelDelegate> = Parameters<
-  T["findFirst"]
->[0] extends { where?: infer W; [x: string]: any }
-  ? W
-  : any;
+export type DeleteManyFilters<TModelName extends keyof Models> =
+  ExtractPrismaFilters<Models[TModelName]["DeleteManyArgs"]>;
 
-export type FindOneOptions<T extends ModelDelegate> =
-  | Omit<Parameters<T["findFirst"]>[0], "where">
-  | Omit<Parameters<T["findUnique"]>[0], "where">;
-
-export type FindOneResult<T extends ModelDelegate> =
-  T["findFirst"] extends (args: { where: any }) => infer R
-    ? R
-    : T["findUnique"] extends (args: { where: any }) => infer R2
-      ? R2
-      : any;
-
-// Update Operations
-export type UpdateOneFilters<T extends ModelDelegate> = Parameters<
-  T["update"]
->[0] extends { where?: infer W; [x: string]: any }
-  ? W
-  : any;
-
-export type UpdateOneData<T extends ModelDelegate> = Parameters<
-  T["update"]
->[0] extends { data: infer D; [x: string]: any }
-  ? D
-  : any;
-
-export type UpdateOneOptions<T extends ModelDelegate> = Omit<
-  Parameters<T["update"]>[0],
-  "where" | "data"
->;
-
-export type UpdateOneResult<T extends ModelDelegate> =
-  T["update"] extends (args: { where: any; data: any }) => infer R ? R : any;
-
-export type UpdateManyFilters<T extends ModelDelegate> = Parameters<
-  T["updateMany"]
->[0] extends { where?: infer W; [x: string]: any }
-  ? W
-  : any;
-
-export type UpdateManyData<T extends ModelDelegate> = Parameters<
-  T["updateMany"]
->[0] extends { data: infer D; [x: string]: any }
-  ? D
-  : any;
-
-export type UpdateManyOptions<T extends ModelDelegate> = Omit<
-  Parameters<T["updateMany"]>[0],
-  "where" | "data"
->;
-
-export type UpdateManyResult<T extends ModelDelegate> =
-  T["updateMany"] extends (args: { where: any; data: any }) => infer R
-    ? R
-    : any;
-
-// Delete Operations
-export type DeleteOneFilters<T extends ModelDelegate> = Parameters<
-  T["delete"]
->[0] extends { where?: infer W; [x: string]: any }
-  ? W
-  : any;
-
-export type DeleteOneResult<T extends ModelDelegate> = ReturnType<T["delete"]>;
-
-export type DeleteManyFilters<T extends ModelDelegate> = Parameters<
-  T["deleteMany"]
->[0] extends { where?: infer W; [x: string]: any }
-  ? W
-  : Record<string, any>;
-
-export type DeleteManyResult<T extends ModelDelegate> = ReturnType<
-  T["deleteMany"]
->;
-
-// Service Hooks types
-export interface ServiceBaseContext {
-  /**
-   * The authenticated user making the request
-   */
-  user?: User;
-
-  /**
-   * The access token from the request for authorization
-   */
-  accessToken?: string;
-
-  /**
-   * Array of hook types to skip for this operation.
-   * - "before": Skip the before hook (e.g., beforeCreateOne)
-   * - "after": Skip the after hook (e.g., afterCreateOne)
-   * - "error": Skip the error hook (e.g., onCreateOneError)
-   *
-   * @example
-   * ```typescript
-   * // Skip before and error hooks
-   * { skip: ["before", "error"] }
-   *
-   * // Skip all hooks
-   * { skip: ["before", "after", "error"] }
-   * ```
-   */
-  skip?:
-    | ("before" | "after" | "error")[]
-    | "before"
-    | "after"
-    | "error"
-    | "all";
-
-  /**
-   * Whether to re-throw errors after error hooks have been executed.
-   * - `true` (default): Error hooks run, then error is re-thrown
-   * - `false`: Error hooks run, then method returns fallback value instead of throwing
-   * @default true
-   * ```
-   */
-  throwOnError?: boolean;
-}
-
-export interface BeforeCreateOneHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  data: CreateOneData<T>;
-  queryOptions?: CreateOneOptions<T>;
-  context?: Context;
-}
-
-export interface AfterCreateOneHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: Awaited<CreateOneResult<T>>;
-  data: CreateOneData<T>;
-  queryOptions?: CreateOneOptions<T>;
-  context?: Context;
-}
-
-export interface BeforeCreateManyHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  data: CreateManyData<T>;
-  queryOptions?: CreateManyOptions<T>;
-  context?: Context;
-}
-
-export interface AfterCreateManyHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: Awaited<CreateManyResult<T>>;
-  queryOptions?: CreateManyOptions<T>;
-  context?: Context;
-}
-
-export interface BeforeCountHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  filters?: CountFilters<T>;
-  context?: Context;
-}
-
-export interface AfterCountHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: number;
-  filters?: CountFilters<T>;
-  context?: Context;
-}
-
-export interface BeforeFindManyHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  filters?: FindManyFilters<T>;
-  queryOptions?: FindManyOptions<T>;
-  context?: Context;
-}
-
-export interface AfterFindManyHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: Awaited<FindManyResult<T>>;
-  filters?: FindManyFilters<T>;
-  queryOptions?: FindManyOptions<T>;
-  context?: Context;
-}
-
-export interface BeforeFindOneHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  filters: FindOneFilters<T>;
-  queryOptions?: FindOneOptions<T>;
-  context?: Context;
-}
-
-export interface AfterFindOneHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: Awaited<FindOneResult<T>>;
-  filters: FindOneFilters<T>;
-  queryOptions?: FindOneOptions<T>;
-  context?: Context;
-}
-
-export interface BeforeUpdateOneHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  filters: UpdateOneFilters<T>;
-  data: UpdateOneData<T>;
-  queryOptions?: UpdateOneOptions<T>;
-  context?: Context;
-}
-
-export interface AfterUpdateOneHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: Awaited<UpdateOneResult<T>>;
-  filters: UpdateOneFilters<T>;
-  data: UpdateOneData<T>;
-  queryOptions?: UpdateOneOptions<T>;
-  context?: Context;
-}
-
-export interface BeforeUpdateManyHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  filters: UpdateManyFilters<T>;
-  data: UpdateManyData<T>;
-  queryOptions?: UpdateManyOptions<T>;
-  context?: Context;
-}
-
-export interface AfterUpdateManyHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: Awaited<UpdateManyResult<T>>;
-  filters: UpdateManyFilters<T>;
-  data: UpdateManyData<T>;
-  queryOptions?: UpdateManyOptions<T>;
-  context?: Context;
-}
-
-export interface BeforeDeleteOneHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  filters: DeleteOneFilters<T>;
-  context?: Context;
-}
-
-export interface AfterDeleteOneHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: Awaited<DeleteOneResult<T>>;
-  filters: DeleteOneFilters<T>;
-  context?: Context;
-}
-
-export interface BeforeDeleteManyHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  filters: DeleteManyFilters<T>;
-  context?: Context;
-}
-
-export interface AfterDeleteManyHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  result: Awaited<DeleteManyResult<T>>;
-  filters: DeleteManyFilters<T>;
-  context?: Context;
-}
-
-export interface OnCreateOneErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeCreateOneHookArgs<T, Context> {
-  error: any;
-}
-
-export interface OnCreateManyErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeCreateManyHookArgs<T, Context> {
-  error: any;
-}
-
-export interface OnCountErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeCountHookArgs<T, Context> {
-  error: any;
-}
-
-export interface OnFindManyErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeFindManyHookArgs<T, Context> {
-  error: any;
-}
-
-export interface OnFindByIdErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> {
-  error: any;
-  id: string | number;
-  queryOptions?: FindByIdOptions<T>;
-  context?: Context;
-}
-
-export interface OnFindOneErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeFindOneHookArgs<T, Context> {
-  error: any;
-}
-
-export interface OnUpdateOneErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeUpdateOneHookArgs<T, Context> {
-  error: any;
-}
-
-export interface OnUpdateManyErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeUpdateManyHookArgs<T, Context> {
-  error: any;
-}
-
-export interface OnDeleteOneErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeDeleteOneHookArgs<T, Context> {
-  error: any;
-}
-
-export interface OnDeleteManyErrorHookArgs<
-  T extends ModelDelegate,
-  Context = ServiceBaseContext,
-> extends BeforeDeleteManyHookArgs<T, Context> {
-  error: any;
-}
+export type GetPayload<TModelName extends keyof Models> =
+  Models[TModelName]["GetPayload"];

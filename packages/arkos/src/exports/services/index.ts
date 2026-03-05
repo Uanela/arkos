@@ -8,7 +8,7 @@ import emailService, { EmailService } from "../../modules/email/email.service";
 import { BaseService } from "../../modules/base/base.service";
 import authActionService from "../../modules/auth/utils/services/auth-action.service";
 import {
-  ServiceBaseContext,
+  ServiceHookContext,
   BeforeCreateOneHookArgs,
   AfterCreateOneHookArgs,
   BeforeCreateManyHookArgs,
@@ -37,7 +37,7 @@ import {
   OnUpdateManyErrorHookArgs,
   OnDeleteOneErrorHookArgs,
   OnDeleteManyErrorHookArgs,
-} from "../../modules/base/types/base.service.types";
+} from "../../components/arkos-service-hook/types";
 
 /**
  * Authentication service.
@@ -49,7 +49,7 @@ export { authService, AuthService, authActionService };
  */
 export {
   BaseService,
-  ServiceBaseContext,
+  ServiceHookContext,
   BeforeCreateOneHookArgs,
   AfterCreateOneHookArgs,
   BeforeCreateManyHookArgs,
