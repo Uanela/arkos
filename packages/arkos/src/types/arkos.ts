@@ -21,11 +21,11 @@ export interface Arkos extends Omit<Express, "listen"> {
    * This ensures that Arkos internals always run after user middleware/routes.
    * Automatically called before listen() if not called manually.
    */
-  setup(): this;
+  build(): this;
 
   /**
    * Starts the server using Arkos-managed port and host configuration.
-   * Automatically calls setup() if not called manually.
+   * Automatically calls build() if not called manually.
    *
    * @param callback Optional callback invoked once server starts
    */
