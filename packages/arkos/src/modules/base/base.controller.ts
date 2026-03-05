@@ -82,20 +82,24 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
   private modelName: string;
 
   /**
-   * Model specific interceptor load by `app.load()`
-   */
-  private routeHook: ArkosRouteHookInstance<TModuleName>;
-
-  /**
    * Creates a new BaseController instance
    * @param {string} modelName - The name of the model for which this controller will handle operations
    */
   constructor(modelName: TModuleName) {
     this.modelName = kebabCase(modelName);
     this.service = new BaseService(modelName);
-    this.routeHook = BaseController.registry.getItem(
+  }
+
+  private getRouteHook() {
+    const registry = BaseController.registry;
+    if (!registry)
+      throw Error(
+        `Trying to use BaseController built-in methods without calling app.load() or app.listen() is not supported, see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
+      );
+
+    return registry.getItem(
       "ArkosRouteHook",
-      kebabCase(modelName)
+      kebabCase(kebabCase(this.modelName))
     ) as ArkosRouteHookInstance<TModuleName>;
   }
 
@@ -208,12 +212,14 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
               config.operationType
             );
 
-        if (config.hooks?.beforeResponse) {
+        if (config.hooks?.beforeResponse)
           responseData = await config.hooks.beforeResponse(responseData, req);
-        }
+
+        const routeHook = this.getRouteHook();
 
         if (
-          routeHookReader.getHooks(this.routeHook, config.operationType)?.after
+          routeHook &&
+          routeHookReader.getHooks(routeHook, config.operationType)?.after
         ) {
           this.setResponseData(req, res, responseData, config.successStatus);
           next();

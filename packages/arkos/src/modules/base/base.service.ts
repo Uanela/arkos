@@ -41,6 +41,7 @@ import {
   ServiceHookContext,
 } from "../../components/arkos-service-hook/types";
 import { serviceHookReader } from "../../components/arkos-service-hook/reader";
+import AppError from "../error-handler/utils/app-error";
 
 export interface ServiceOperationHooks {
   beforeOperation?: (params: any) => void | Promise<void>;
@@ -88,7 +89,6 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
   modelName: TModelName;
   relationFields: ModelGroupRelationFields;
   prisma: PrismaClient;
-  private serviceHook: ArkosServiceHookInstance<TModelName> | null;
 
   constructor(modelName: TModelName) {
     this.modelName = camelCase(modelName as string) as TModelName;
@@ -104,11 +104,19 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
         modelFields?.filter((field) => field.isRelation && field.isArray) || [],
     };
     this.prisma = getPrismaInstance();
-    this.serviceHook =
-      (BaseService.registry.getItem(
-        "ArkosServiceHook",
-        kebabCase(modelName)
-      ) as ArkosServiceHookInstance<TModelName>) || null;
+  }
+
+  private getServiceHook() {
+    const registry = BaseService.registry;
+    if (!registry)
+      throw Error(
+        `Trying to use BaseService built-in methods before calling app.load() or app.listen() is not supported, see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
+      );
+
+    return registry.getItem(
+      "ArkosServiceHook",
+      kebabCase(this.modelName)
+    ) as ArkosServiceHookInstance<TModelName>;
   }
 
   static configure(registry: ArkosLoadableRegistry) {
@@ -262,7 +270,8 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     params: any,
     context?: ServiceHookContext
   ): Promise<void> {
-    if (!this.serviceHook) return;
+    const serviceHook = this.getServiceHook();
+    if (!serviceHook) return;
 
     const skipCondition =
       context?.skip === hookType ||
@@ -271,7 +280,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
 
     if (skipCondition) return;
 
-    const hooks = serviceHookReader.getHooks(this.serviceHook, operationType);
+    const hooks = serviceHookReader.getHooks(serviceHook, operationType);
     if (!hooks) return;
 
     const handlers =
