@@ -50,12 +50,8 @@ export interface PrismaField {
   attributes: string[];
 }
 
-<<<<<<< HEAD
-export { PrismaClient }
-=======
 export type PrismaModels<T extends Record<string, any>> = {${modelEntries}
 };
->>>>>>> bd5f68536e0998d2bcf19d2b0357664b64885345
 
 export type ExtractPrismaFilters<T> = T extends { where?: infer W; [x: string]: any } ? W : any;
 export type ExtractPrismaData<T> = T extends { data: infer D; [x: string]: any } ? D : any;
