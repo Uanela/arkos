@@ -1,11 +1,11 @@
 import {
   ArkosModuleType,
-  ArkosInterceptorReturn,
-  ArkosInterceptorMethodConfig,
+  ArkosRouteHookReturn,
+  ArkosRouteHookMethodConfig,
 } from "./types";
 
 interface InterceptorStore {
-  [methodName: string]: ArkosInterceptorMethodConfig;
+  [methodName: string]: ArkosRouteHookMethodConfig;
 }
 
 /**
@@ -19,7 +19,7 @@ interface InterceptorStore {
  *
  * @example
  * ```ts
- * const userInterceptor = ArkosInterceptor("user");
+ * const userInterceptor = ArkosRouteHook("user");
  *
  * userInterceptor.createOne({
  *   validation: { body: CreateUserSchema },
@@ -31,26 +31,26 @@ interface InterceptorStore {
  * ```
  * @see {@link https://www.arkosjs.com/docs/core-concepts/components/interceptors}
  */
-export function ArkosInterceptor<T extends ArkosModuleType>(
+export function ArkosRouteHook<T extends ArkosModuleType>(
   moduleName: T
-): ArkosInterceptorReturn<T> {
+): ArkosRouteHookReturn<T> {
   const store: InterceptorStore = {};
 
   const makeMethod =
-    (name: string) => (config: ArkosInterceptorMethodConfig) => {
+    (name: string) => (config: ArkosRouteHookMethodConfig) => {
       store[name] = config;
       return proxy;
     };
 
   const base = {
-    __type: "ArkosInterceptor" as const,
+    __type: "ArkosRouteHook" as const,
     moduleName,
     _store: store,
   };
 
   const methods: Record<
     string,
-    (config: ArkosInterceptorMethodConfig) => unknown
+    (config: ArkosRouteHookMethodConfig) => unknown
   > = {};
 
   if (moduleName === "auth") {
@@ -85,5 +85,5 @@ export function ArkosInterceptor<T extends ArkosModuleType>(
 
   const proxy = Object.assign(base, methods);
 
-  return proxy as unknown as ArkosInterceptorReturn<T>;
+  return proxy as unknown as ArkosRouteHookReturn<T>;
 }

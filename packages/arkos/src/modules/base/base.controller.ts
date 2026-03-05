@@ -3,16 +3,14 @@ import catchAsync from "../error-handler/utils/catch-async";
 import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
-import { getModuleComponents } from "../../utils/dynamic-loader";
 import pluralize from "pluralize";
 import sheu from "../../utils/sheu";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import { APIFeatures } from "../../exports/utils";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
-import { ArkosLoadable } from "../../types/arkos";
-import { ArkosInterceptorInstance } from "../../components/arkos-interceptor/types";
-import { interceptorReader } from "../../components/arkos-interceptor/reader";
+import { ArkosRouteHookInstance } from "../../components/arkos-route-hook/types";
+import { routeHookReader } from "../../components/arkos-route-hook/reader";
 
 export interface OperationHooks {
   beforeQuery?: (req: ArkosRequest) => void | Promise<void>;
@@ -85,7 +83,7 @@ export class BaseController {
   /**
    * Model specific interceptor load by `app.load()`
    */
-  private interceptor: ArkosInterceptorInstance;
+  private interceptor: ArkosRouteHookInstance;
 
   /**
    * Creates a new BaseController instance
@@ -96,7 +94,7 @@ export class BaseController {
     this.service = new BaseService(modelName);
     this.interceptor = BaseController.registry.getInterceptor(
       kebabCase(modelName)
-    ) as ArkosInterceptorInstance;
+    ) as ArkosRouteHookInstance;
   }
 
   static configure(registry: ArkosLoadableRegistry) {
@@ -215,7 +213,7 @@ export class BaseController {
         const interceptorName = `after${config.operationType.charAt(0).toUpperCase()}${config.operationType.slice(1)}`;
 
         if (
-          interceptorReader.getHooks(this.interceptor, config.operationType)
+          routeHookReader.getHooks(this.interceptor, config.operationType)
         ) {
           this.setResponseData(req, res, responseData, config.successStatus);
           next();

@@ -9,8 +9,8 @@ import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import debuggerService from "../debugger/debugger.service";
 import ArkosRouter from "../../utils/arkos-router";
 import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
-import { interceptorReader } from "../../components/arkos-interceptor/reader";
-import { ArkosAuthInterceptorInstance } from "../../components/arkos-interceptor/types";
+import { routeHookReader } from "../../components/arkos-route-hook/reader";
+import { ArkosAuthRouteHookInstance } from "../../components/arkos-route-hook/types";
 
 const router = ArkosRouter();
 
@@ -19,7 +19,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
 
   const op = (operation: string) =>
     interceptor
-      ? interceptorReader.forOperation(interceptor, operation)
+      ? routeHookReader.forOperation(interceptor, operation)
       : {
           before: [],
           after: [],
@@ -29,7 +29,7 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
         };
 
   const authController = authControllerFactory(
-    interceptor as ArkosAuthInterceptorInstance
+    interceptor as ArkosAuthRouteHookInstance
   );
 
   // GET /users/me - Get current user

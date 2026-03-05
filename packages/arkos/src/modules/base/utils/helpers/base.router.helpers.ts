@@ -16,7 +16,7 @@ import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
 import { ArkosLoadableRegistry } from "../../../../components/arkos-loadable-registry";
-import { interceptorReader } from "../../../../components/arkos-interceptor/reader";
+import { routeHookReader } from "../../../../components/arkos-route-hook/reader";
 
 export function setupRouters(
   router: IArkosRouter,
@@ -32,7 +32,7 @@ export function setupRouters(
 
     const op = (operation: string) =>
       interceptor
-        ? interceptorReader.forOperation(interceptor, operation)
+        ? routeHookReader.forOperation(interceptor, operation)
         : {
             before: [],
             after: [],

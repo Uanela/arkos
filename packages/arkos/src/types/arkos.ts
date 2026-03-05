@@ -1,10 +1,10 @@
 import { Express } from "express";
 import { ArkosRouteConfig } from "../exports";
 import {
-  ArkosAuthInterceptorInstance,
-  ArkosFileUploadInterceptorInstance,
-  ArkosInterceptorInstance,
-} from "../components/arkos-interceptor/types";
+  ArkosAuthRouteHookInstance,
+  ArkosFileUploadRouteHookInstance,
+  ArkosRouteHookInstance,
+} from "../components/arkos-route-hook/types";
 
 export interface Arkos extends Omit<Express, "listen"> {
   /**
@@ -45,12 +45,12 @@ export interface Arkos extends Omit<Express, "listen"> {
  * Grows as new Arkos-specific loadable types are introduced.
  */
 export type ArkosLoadable =
-  | ArkosInterceptorInstance
-  | ArkosAuthInterceptorInstance
-  | ArkosFileUploadInterceptorInstance;
+  | ArkosRouteHookInstance
+  | ArkosAuthRouteHookInstance
+  | ArkosFileUploadRouteHookInstance;
 
-export interface IArkosInterceptor {
-  readonly __type: "ArkosInterceptor";
+export interface IArkosRouteHook {
+  readonly __type: "ArkosRouteHook";
   readonly moduleName: string;
   beforeCreateOne(config: Omit<ArkosRouteConfig, "path">): this;
   afterCreateOne(config: Omit<ArkosRouteConfig, "path">): this;
