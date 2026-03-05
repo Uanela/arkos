@@ -11,6 +11,7 @@ import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
 import { ArkosRouteHookInstance } from "../../components/arkos-route-hook/types";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
+import { PrismaModels } from "../../generated";
 
 export interface OperationHooks {
   beforeQuery?: (req: ArkosRequest) => void | Promise<void>;
@@ -66,13 +67,13 @@ interface OperationConfig {
  * **See about how Arkos handles routers**
  * @see {@link https://www.arkosjs.com/docs/guide/adding-custom-routers}
  */
-export class BaseController {
+export class BaseController<TModuleName extends keyof PrismaModels<any>> {
   private static registry: ArkosLoadableRegistry;
   /**
    * Service instance to handle business logic operations
-   * @private
+   * @public
    */
-  private service: BaseService<any>;
+  service: BaseService<TModuleName>;
 
   /**
    * Name of the model this controller handles
@@ -83,18 +84,19 @@ export class BaseController {
   /**
    * Model specific interceptor load by `app.load()`
    */
-  private interceptor: ArkosRouteHookInstance;
+  private routeHook: ArkosRouteHookInstance<TModuleName>;
 
   /**
    * Creates a new BaseController instance
    * @param {string} modelName - The name of the model for which this controller will handle operations
    */
-  constructor(modelName: string) {
+  constructor(modelName: TModuleName) {
     this.modelName = kebabCase(modelName);
     this.service = new BaseService(modelName);
-    this.interceptor = BaseController.registry.getInterceptor(
+    this.routeHook = BaseController.registry.getItem(
+      "ArkosRouteHook",
       kebabCase(modelName)
-    ) as ArkosRouteHookInstance;
+    ) as ArkosRouteHookInstance<TModuleName>;
   }
 
   static configure(registry: ArkosLoadableRegistry) {
@@ -210,10 +212,8 @@ export class BaseController {
           responseData = await config.hooks.beforeResponse(responseData, req);
         }
 
-        const interceptorName = `after${config.operationType.charAt(0).toUpperCase()}${config.operationType.slice(1)}`;
-
         if (
-          routeHookReader.getHooks(this.interceptor, config.operationType)
+          routeHookReader.getHooks(this.routeHook, config.operationType)?.after
         ) {
           this.setResponseData(req, res, responseData, config.successStatus);
           next();
