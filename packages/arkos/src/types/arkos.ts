@@ -5,6 +5,7 @@ import {
   ArkosFileUploadRouteHookInstance,
   ArkosRouteHookInstance,
 } from "../components/arkos-route-hook/types";
+import { ArkosServiceHookInstance } from "../components/arkos-service-hook/types";
 
 export interface Arkos extends Omit<Express, "listen"> {
   /**
@@ -45,15 +46,7 @@ export interface Arkos extends Omit<Express, "listen"> {
  * Grows as new Arkos-specific loadable types are introduced.
  */
 export type ArkosLoadable =
-  | ArkosRouteHookInstance
+  | ArkosRouteHookInstance<any>
   | ArkosAuthRouteHookInstance
-  | ArkosFileUploadRouteHookInstance;
-
-export interface IArkosRouteHook {
-  readonly __type: "ArkosRouteHook";
-  readonly moduleName: string;
-  beforeCreateOne(config: Omit<ArkosRouteConfig, "path">): this;
-  afterCreateOne(config: Omit<ArkosRouteConfig, "path">): this;
-  beforeFindMany(config: Omit<ArkosRouteConfig, "path">): this;
-  // ... etc
-}
+  | ArkosFileUploadRouteHookInstance
+  | ArkosServiceHookInstance<any, any>;

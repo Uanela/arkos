@@ -15,7 +15,7 @@ import { importModule } from "./helpers/global.helpers";
 import prismaSchemaParser from "./prisma/prisma-schema-parser";
 import debuggerService from "../modules/debugger/debugger.service";
 import { PrismaQueryOptions } from "../types";
-import { ServiceHook } from "../modules/base/utils/service-hooks-manager";
+import { ArkosServiceHookInstance } from "../components/arkos-service-hook/types";
 
 type AppModuleComponent = Awaited<ReturnType<typeof importModuleComponents>>;
 
@@ -175,7 +175,10 @@ export type ModuleComponents = Omit<
 >;
 
 type ImportModuleComponentsReturnType = {
-  hooks?: Record<string, ServiceHook | ServiceHook[]>;
+  hooks?: Record<
+    string,
+    ArkosServiceHookInstance<any> | ArkosServiceHookInstance<any>[]
+  >;
   interceptors?: Record<string, Function | Function[]>;
   authConfigs?: AuthConfigs;
   interceptorsOld?: any;

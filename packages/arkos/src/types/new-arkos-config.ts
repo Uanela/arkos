@@ -11,7 +11,7 @@ import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" w
 import nodemailer from "nodemailer";
 import { ModuleComponents } from "../utils/dynamic-loader";
 import { ArkosRequestHandler } from ".";
-import { PrismaClient } from "./global";
+import { PrismaClient } from "../generated";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
