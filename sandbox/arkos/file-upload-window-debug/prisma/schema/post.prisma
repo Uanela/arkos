@@ -2,6 +2,7 @@ model Post {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  views     Int
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   userId2   String

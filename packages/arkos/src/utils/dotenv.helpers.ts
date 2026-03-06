@@ -1,8 +1,8 @@
 import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
-import dotenvExpand from "dotenv-expand";
 import sheu from "./sheu";
+import { expandEnv } from "./expand-env";
 
 /**
  * Loads and expands environment variables in a prioritized order
@@ -44,7 +44,7 @@ export function loadEnvironmentVariables() {
     }
   });
 
-  const expanded = dotenvExpand.expand({
+  const expanded = expandEnv({
     parsed: mergedParsed,
     processEnv: mergedParsed,
   });

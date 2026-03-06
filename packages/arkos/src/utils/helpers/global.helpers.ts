@@ -29,10 +29,10 @@ export async function importModule(
   options: { fixExtension: boolean } = { fixExtension: true }
 ) {
   if (!options.fixExtension || modulePath.endsWith(".ts") || !isEsm())
-    return await import(modulePath);
+    return await import(pathToFileURL(modulePath).href);
 
   const resolved = userRequire.resolve(modulePath);
-  return await import(pathToFileURL(resolved) as any);
+  return await import(pathToFileURL(resolved).href);
 }
 
 /**
