@@ -748,7 +748,11 @@ Request Processing (if authorized)
 - `/api/auth/signup` - User registration
 - `/api/auth/logout` - Session termination
 - `/api/users/me` - User profile management
-- `/api/auth/update-password` - Password changes
+- `/api/auth/update-password` - Password changes and auto re-authentication
+
+:::tip Re-authentication On Password Update
+Starting with v1.5.0, Arkos automatically re-authenticates users after a successful password update, providing them with a fresh JWT token. This eliminates the need for users to manually log in again after changing their password, creating a seamless security workflow.
+:::
 
 **Authentication Middleware**:
 

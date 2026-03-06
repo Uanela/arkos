@@ -19,7 +19,7 @@ import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.help
 import { ArkosRouteConfig } from "../../utils/arkos-router/types";
 import { capitalize } from "../../utils/helpers/text.helpers";
 import { isClass, isZodSchema } from "../../utils/dynamic-loader";
-import { pascalCase } from "../../exports/utils";
+import errorPrettifier from "./utils/error-prettifier";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -226,6 +226,7 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
           deepmerge(
             {
               whitelist: true,
+              forbidNonWhitelisted: true,
               ...classValidatorValidationOptions,
             },
             validationConfigs?.validationOptions || {}
@@ -354,13 +355,19 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
               arkosConfig.validation?.validationOptions
             );
           } catch (err: any) {
+            const resolver = validationConfig?.resolver;
+            const isZod = validationConfig?.resolver === "zod";
+
+            const prettifiedError = errorPrettifier.prettify(
+              resolver as any,
+              err
+            );
+            const error = prettifiedError[0];
             throw new AppError(
-              `Invalid request ${key}`,
+              error.message,
               400,
-              `InvalidRequest${pascalCase(key)}`,
-              (err &&
-                (validationConfig?.resolver === "zod" ? err.format() : err)) ||
-                {}
+              error.code,
+              isZod ? err.format() : err
             );
           }
       }

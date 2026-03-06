@@ -18,6 +18,11 @@ export const config: RouterConfig = {
       },
     },
   },
+  updateOne: {
+    experimental: {
+      uploads: { field: "photo", type: "single" },
+    },
+  },
   createOne: {
     validation: {
       // body: z.object({ the: z.string() }),

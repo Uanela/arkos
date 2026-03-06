@@ -1,4 +1,4 @@
-import { z, ZodTypeAny } from "zod";
+import { ZodTypeAny } from "zod";
 import path from "path";
 import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
@@ -74,7 +74,7 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
           update: `update-${kebabModelName}.dto.${ext}`,
           updateOne: `update-${kebabModelName}.dto.${ext}`, // same as createOne
           updateMany: ``,
-          query: `query-${kebabModelName}.dto.${ext}`,
+          query: ``,
           // looking for some better naming convetion
           findOne: ``,
           findMany: ``,
@@ -95,7 +95,7 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
           update: `update-${kebabModelName}.schema.${ext}`,
           updateOne: `update-${kebabModelName}.schema.${ext}`, // same as createOne
           updateMany: ``,
-          query: `query-${kebabModelName}.schema.${ext}`,
+          query: ``,
           // looking for some better naming convetion
           findOne: ``,
           findMany: ``,

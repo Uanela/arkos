@@ -39,7 +39,7 @@ export async function devCommand(options: DevOptions = {}) {
 
     const baseServiceTypesPath = path.resolve(
       process.cwd(),
-      `node_modules/@arkosjs/types/base.service.d.ts`
+      `node_modules/@arkosjs/generated/cjs/index.js`
     );
     if (fileExt === "ts" && !fs.existsSync(baseServiceTypesPath)) {
       const answer = await new Promise<boolean>((resolve) => {
@@ -62,7 +62,7 @@ export async function devCommand(options: DevOptions = {}) {
         execSync(`npx arkos prisma generate`);
       } else
         throw Error(
-          'Missing BaseService types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client, see more at https://www.arkosjs.com/docs/cli/built-in-cli#typescript-types-generation.'
+          'Missing BaseService types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client, see more at https://www.arkosjs.com/docs/cli/arkos-cli#typescript-types-generation.'
         );
     }
 

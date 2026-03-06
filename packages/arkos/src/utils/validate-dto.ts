@@ -1,5 +1,7 @@
 import { ClassConstructor, plainToInstance } from "class-transformer";
 import { validate, ValidatorOptions } from "class-validator";
+import { getArkosConfig } from "./helpers/arkos-config.helpers";
+import deepmerge from "./helpers/deepmerge.helper";
 
 /**
  * Used to easy validate your data with class validator by passing the validator class and the data to validate, and if whished some validation options
@@ -37,8 +39,15 @@ export default async function validateDto<T extends object>(
   data: Record<string, any>,
   validationOptions?: ValidatorOptions
 ): Promise<T> {
+  const arkosConfig = getArkosConfig();
   const dataDto = plainToInstance(DtoClass, data);
-  const errors = await validate(dataDto, validationOptions);
+  const errors = await validate(
+    dataDto,
+    deepmerge(
+      arkosConfig?.validation?.validationOptions || {},
+      validationOptions || {}
+    )
+  );
 
   if (errors.length > 0) throw errors;
 

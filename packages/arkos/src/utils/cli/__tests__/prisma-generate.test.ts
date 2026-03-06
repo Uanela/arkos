@@ -1,12 +1,11 @@
 import prismaGenerateCommand from "../prisma-generate";
-import prismaSchemaParser from "../../prisma/prisma-schema-parser";
-import { kebabCase } from "../../helpers/change-case.helpers";
 import fs from "fs";
 import { execSync } from "child_process";
-import sheu from "../../sheu";
 import path from "path";
+import prismaSchemaParser from "../../prisma/prisma-schema-parser";
+import { kebabCase } from "../../helpers/change-case.helpers";
+import sheu from "../../sheu";
 
-// Mock dependencies
 jest.mock("../../prisma/prisma-schema-parser");
 jest.mock("../../helpers/change-case.helpers");
 jest.mock("fs");
@@ -14,11 +13,13 @@ jest.mock("child_process");
 jest.mock("../../sheu");
 jest.mock("path");
 
+const GENERATED_PACKAGE_NAME = "@arkosjs/generated";
+const MOCK_PKG_DIR = `/project/node_modules/${GENERATED_PACKAGE_NAME}`;
+
 describe("prismaGenerateCommand", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Setup default mocks
     (prismaSchemaParser.models as any) = [
       { name: "User" },
       { name: "Post" },
@@ -26,202 +27,104 @@ describe("prismaGenerateCommand", () => {
     ];
 
     (kebabCase as jest.Mock).mockImplementation((str) => str.toLowerCase());
-    (path.resolve as jest.Mock).mockReturnValue(
-      "/project/types/modules/base/base.service.d.ts"
-    );
+    (path.resolve as jest.Mock).mockReturnValue(MOCK_PKG_DIR);
+    (path.join as jest.Mock).mockImplementation((...args) => args.join("/"));
     (sheu.done as jest.Mock) = jest.fn();
   });
 
-  it("should generate prisma types and write base service file", () => {
+  it("should run prisma generate and write all output files", () => {
     prismaGenerateCommand();
 
     expect(execSync).toHaveBeenCalledWith("npx prisma generate", {
       stdio: "inherit",
     });
 
-    // The function calls path.resolve twice - once for the types directory, once for package.json
     expect(path.resolve).toHaveBeenCalledWith(
       process.cwd(),
-      "node_modules/@arkosjs/types/"
-    );
-    expect(path.resolve).toHaveBeenCalledWith(
-      process.cwd(),
-      "node_modules/@arkosjs/types/package.json"
+      `node_modules/${GENERATED_PACKAGE_NAME}`
     );
 
-    expect(fs.mkdirSync).toHaveBeenCalled();
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(2); // Once for base.service.d.ts, once for package.json
+    expect(fs.mkdirSync).toHaveBeenCalledWith(`${MOCK_PKG_DIR}/cjs`, {
+      recursive: true,
+    });
+    expect(fs.mkdirSync).toHaveBeenCalledWith(`${MOCK_PKG_DIR}/esm`, {
+      recursive: true,
+    });
+
+    // index.d.ts, cjs/index.js, esm/index.js, package.json
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(4);
+
     expect(sheu.done).toHaveBeenCalledWith(
-      "Types for @prisma/client and base service generated successfully!"
+      `Types and values for ${GENERATED_PACKAGE_NAME} and @prisma/client generated successfully!`
     );
   });
 
-  it("should generate proper BaseService class structure", () => {
-    prismaGenerateCommand();
-
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
-
-    expect(fileContent).toContain("export declare class BaseService<");
-    expect(fileContent).toContain(
-      "TModelName extends keyof ModelsGetPayload<any>"
-    );
-    expect(fileContent).toContain("modelName: TModelName");
-    expect(fileContent).toContain("relationFields: {");
-    expect(fileContent).toContain("singular: PrismaField[] | undefined;");
-    expect(fileContent).toContain("list: PrismaField[] | undefined;");
-    expect(fileContent).toContain("prisma: PrismaClient");
-    expect(fileContent).toContain("constructor(modelName: TModelName)");
-  });
-
-  it("should generate correct type definitions for models", () => {
-    prismaGenerateCommand();
-
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
-
-    expect(fileContent).toContain(
-      "export declare type ModelsGetPayload<T extends Record<string, any>> = {"
-    );
-    expect(fileContent).toContain('"user": {');
-    expect(fileContent).toContain('"post": {');
-    expect(fileContent).toContain('"category": {');
-    expect(fileContent).toContain("Delegate: Prisma.UserDelegate");
-    expect(fileContent).toContain("GetPayload: Prisma.UserGetPayload<T>");
-    expect(fileContent).toContain("FindManyArgs: Prisma.UserFindManyArgs");
-  });
-
-  it("should handle kebab case conversion for model names", () => {
-    (kebabCase as jest.Mock).mockImplementation(
-      (str) => `kebab-${str.toLowerCase()}`
-    );
-
-    prismaGenerateCommand();
-
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
-
-    expect(fileContent).toContain('"kebab-user": {');
-    expect(fileContent).toContain('"kebab-post": {');
-    expect(kebabCase).toHaveBeenCalledWith("User");
-    expect(kebabCase).toHaveBeenCalledWith("Post");
-    expect(kebabCase).toHaveBeenCalledWith("Category");
-  });
-
-  it("should generate all BaseService method signatures", () => {
-    prismaGenerateCommand();
-
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
-
-    expect(fileContent).toContain(
-      "createOne<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['CreateArgs'], 'data'>>"
-    );
-    expect(fileContent).toContain(
-      "createMany<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['CreateManyArgs'], 'data'>>"
-    );
-    expect(fileContent).toContain(
-      "count<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['CountArgs'], 'where'>>"
-    );
-    expect(fileContent).toContain(
-      "findMany<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['FindManyArgs'], 'where'>>"
-    );
-    expect(fileContent).toContain(
-      "findById<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['FindFirstArgs'], 'where'>>"
-    );
-    expect(fileContent).toContain(
-      "findOne<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['FindFirstArgs'], 'where'>>"
-    );
-    expect(fileContent).toContain(
-      "updateOne<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['UpdateArgs'], 'where' | 'data'>>"
-    );
-    expect(fileContent).toContain(
-      "updateMany<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['UpdateManyArgs'], 'where' | 'data'>>"
-    );
-    expect(fileContent).toContain(
-      "deleteOne<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['DeleteArgs'], 'where'>>"
-    );
-    expect(fileContent).toContain(
-      "deleteMany<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['DeleteManyArgs'], 'where'>>"
-    );
-  });
-
-  it("should include utility types in generated file", () => {
-    prismaGenerateCommand();
-
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
-
-    expect(fileContent).toContain(
-      "export type ExtractFilters<T> = T extends { where?: infer W; [x: string]: any } ? W : any;"
-    );
-    expect(fileContent).toContain(
-      "export type ExtractQueryOptions<T, K extends keyof T = never> = Omit<T, K>;"
-    );
-    expect(fileContent).toContain(
-      "export type ExtractData<T> = T extends { data: infer D; [x: string]: any } ? D : any;"
-    );
-  });
-
-  it("should write file with correct encoding and path", () => {
+  it("should write index.d.ts with correct path and encoding", () => {
     prismaGenerateCommand();
 
     expect(fs.writeFileSync).toHaveBeenCalledWith(
-      "/project/types/modules/base/base.service.d.ts",
+      `${MOCK_PKG_DIR}/index.d.ts`,
       expect.any(String),
       { encoding: "utf8" }
     );
   });
 
-  it("should handle empty models array", () => {
-    (prismaSchemaParser.models as any) = [];
-
+  it("should write cjs/index.js with correct path and encoding", () => {
     prismaGenerateCommand();
 
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
-
-    expect(fileContent).toContain(
-      "export declare type ModelsGetPayload<T extends Record<string, any>> = {"
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      `${MOCK_PKG_DIR}/cjs/index.js`,
+      expect.any(String),
+      { encoding: "utf8" }
     );
-    expect(fileContent).not.toContain('"user": {');
   });
 
-  it("should handle single model", () => {
-    (prismaSchemaParser.models as any) = [{ name: "User" }];
-
+  it("should write esm/index.js with correct path and encoding", () => {
     prismaGenerateCommand();
 
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
-
-    expect(fileContent).toContain('"user": {');
-    expect(fileContent).not.toContain('"post": {');
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      `${MOCK_PKG_DIR}/esm/index.js`,
+      expect.any(String),
+      { encoding: "utf8" }
+    );
   });
 
-  it("should handle models with special characters in names", () => {
-    (prismaSchemaParser.models as any) = [
-      { name: "UserProfile" },
-      { name: "OrderItem" },
-    ];
-
-    (kebabCase as jest.Mock).mockImplementation((str) =>
-      str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()
-    );
-
+  it("should write package.json with correct path and encoding", () => {
     prismaGenerateCommand();
 
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      `${MOCK_PKG_DIR}/package.json`,
+      expect.any(String),
+      { encoding: "utf8" }
+    );
+  });
 
-    expect(kebabCase).toHaveBeenCalledWith("UserProfile");
-    expect(kebabCase).toHaveBeenCalledWith("OrderItem");
+  it("should generate correct type definitions for models", () => {
+    prismaGenerateCommand();
+
+    const dtsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("index.d.ts")
+    );
+    const content = dtsCall[1];
+
+    expect(content).toContain(
+      "export type PrismaModels<T extends Record<string, any>> = {"
+    );
+    expect(content).toContain('"user": {');
+    expect(content).toContain('"post": {');
+    expect(content).toContain('"category": {');
+    expect(content).toContain("Delegate: Prisma.UserDelegate;");
+    expect(content).toContain("GetPayload: Prisma.UserGetPayload<T>;");
+    expect(content).toContain("FindManyArgs: Prisma.UserFindManyArgs;");
   });
 
   it("should include all Prisma operation types for each model", () => {
     prismaGenerateCommand();
 
-    const writeFileCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
-    const fileContent = writeFileCall[1];
+    const dtsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("index.d.ts")
+    );
+    const content = dtsCall[1];
 
     const expectedOperations = [
       "Delegate",
@@ -237,8 +140,125 @@ describe("prismaGenerateCommand", () => {
       "CountArgs",
     ];
 
-    expectedOperations.forEach((operation) => {
-      expect(fileContent).toContain(`${operation}: Prisma.User${operation}`);
+    expectedOperations.forEach((op) => {
+      expect(content).toContain(`${op}: Prisma.User${op}`);
     });
+  });
+
+  it("should include utility types in index.d.ts", () => {
+    prismaGenerateCommand();
+
+    const dtsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("index.d.ts")
+    );
+    const content = dtsCall[1];
+
+    expect(content).toContain(
+      "export type ExtractPrismaFilters<T> = T extends { where?: infer W; [x: string]: any } ? W : any;"
+    );
+    expect(content).toContain(
+      "export type ExtractPrismaData<T> = T extends { data: infer D; [x: string]: any } ? D : any;"
+    );
+    expect(content).toContain(
+      "export type ExtractPrismaQueryOptions<T, K extends keyof T = never> = Omit<T, K>;"
+    );
+    expect(content).toContain("export { PrismaClient };");
+  });
+
+  it("should include PrismaField interface in index.d.ts", () => {
+    prismaGenerateCommand();
+
+    const dtsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("index.d.ts")
+    );
+    const content = dtsCall[1];
+
+    expect(content).toContain("export interface PrismaField {");
+    expect(content).toContain("name: string;");
+    expect(content).toContain("type: string;");
+    expect(content).toContain("isRelation: boolean;");
+  });
+
+  it("should generate valid CJS content", () => {
+    prismaGenerateCommand();
+
+    const cjsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("cjs/index.js")
+    );
+    const content = cjsCall[1];
+
+    expect(content).toContain('"use strict"');
+    expect(content).toContain("exports.PrismaClient");
+    expect(content).toContain('require("@prisma/client")');
+  });
+
+  it("should generate valid ESM content", () => {
+    prismaGenerateCommand();
+
+    const esmCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("esm/index.js")
+    );
+    const content = esmCall[1];
+
+    expect(content).toContain('export { PrismaClient } from "@prisma/client"');
+  });
+
+  it("should generate valid package.json with correct exports", () => {
+    prismaGenerateCommand();
+
+    const pkgCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("package.json")
+    );
+    const parsed = JSON.parse(pkgCall[1]);
+
+    expect(parsed.name).toBe(GENERATED_PACKAGE_NAME);
+    expect(parsed.types).toBe("./index.d.ts");
+    expect(parsed.main).toBe("./cjs/index.js");
+    expect(parsed.module).toBe("./esm/index.js");
+    expect(parsed.exports["."].require).toBe("./cjs/index.js");
+    expect(parsed.exports["."].import).toBe("./esm/index.js");
+    expect(parsed.exports["."].types).toBe("./index.d.ts");
+  });
+
+  it("should handle kebab case conversion for model names", () => {
+    (kebabCase as jest.Mock).mockImplementation((str) =>
+      str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()
+    );
+
+    prismaGenerateCommand();
+
+    expect(kebabCase).toHaveBeenCalledWith("User");
+    expect(kebabCase).toHaveBeenCalledWith("Post");
+    expect(kebabCase).toHaveBeenCalledWith("Category");
+  });
+
+  it("should handle empty models array", () => {
+    (prismaSchemaParser.models as any) = [];
+
+    prismaGenerateCommand();
+
+    const dtsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("index.d.ts")
+    );
+    const content = dtsCall[1];
+
+    expect(content).toContain(
+      "export type PrismaModels<T extends Record<string, any>> = {"
+    );
+    expect(content).not.toContain('"user": {');
+  });
+
+  it("should handle single model", () => {
+    (prismaSchemaParser.models as any) = [{ name: "User" }];
+
+    prismaGenerateCommand();
+
+    const dtsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
+      c[0].endsWith("index.d.ts")
+    );
+    const content = dtsCall[1];
+
+    expect(content).toContain('"user": {');
+    expect(content).not.toContain('"post": {');
   });
 });

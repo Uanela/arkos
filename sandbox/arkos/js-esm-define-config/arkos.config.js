@@ -11,9 +11,10 @@ const config = {
     login: {
       allowedUsernames: ["username"],
     },
+    enabled: false,
   },
   routers: {
-    strict: true,
+    strict: false,
   },
   validation: {
     resolver: "zod",
