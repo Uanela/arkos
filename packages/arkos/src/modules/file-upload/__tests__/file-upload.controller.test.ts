@@ -135,7 +135,7 @@ describe("FileUploadController", () => {
       callHandleUploadError(controller, multerErr, next);
 
       const receivedError = next.mock.calls[0][0];
-      expect(receivedError.code).toBe("LIMIT_FILE_COUNT");
+      expect(receivedError.code).toBe("LimitFileCount");
     });
 
     it("should fall back to 'FileUploadError' as the code when MulterError.code is falsy", () => {
@@ -447,7 +447,7 @@ describe("FileUploadController", () => {
         );
 
         const receivedError = next.mock.calls[0][0];
-        expect(receivedError.code).toBe("LIMIT_UNEXPECTED_FILE");
+        expect(receivedError.code).toBe("LimitUnexpectedFile");
       });
 
       it("should fall back to 'FileUploadError' as AppError code on upload when MulterError.code is falsy", async () => {
@@ -818,7 +818,7 @@ describe("FileUploadController", () => {
         );
 
         const receivedError = next.mock.calls[0][0];
-        expect(receivedError.code).toBe("LIMIT_FIELD_COUNT");
+        expect(receivedError.code).toBe("LimitFieldCount");
       });
 
       it("should fall back to 'FileUploadError' as AppError code on update when MulterError.code is falsy", async () => {

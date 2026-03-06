@@ -75,11 +75,7 @@ ${sheu.bold("Ending:")} ${moduleName}\n`);
       });
   }
 
-  logRequestInfo(
-    req: ArkosRequest,
-    _: ArkosResponse,
-    next: ArkosNextFunction
-  ): void {
+  logRequestInfo(req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) {
     const config = getArkosConfig();
     const debugLevel = config.debugging?.requests?.level || 0;
     const filter = config.debugging?.requests?.filter;
