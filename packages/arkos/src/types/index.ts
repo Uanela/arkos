@@ -230,7 +230,7 @@ export interface ArkosRequest<
   /**
    * Uploaded files, populated when using `multer.array()` or `multer.fields()`.
    */
-  files?: Express.Multer.File[];
+  files?: Express.Multer.File[] | Record<string, Express.Multer.File[]>;
 
   /**
    * Fields to include in relational queries
