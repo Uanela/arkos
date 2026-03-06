@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap");
+@import "tailwindcss";
+@import "fumadocs-ui/css/shadcn";
+@import "fumadocs-ui/css/preset.css";
+
+@theme {
+  --color-fd-background: hsl(222, 50%, 7%);
+  --color-fd-foreground: hsl(210, 20%, 98%);
+
+  --color-fd-muted: hsl(222, 50%, 12.9%);
+  --color-fd-muted-foreground: hsla(210, 20%, 70%, 0.8);
+
+  --color-fd-popover: hsl(222, 50%, 11.6%);
+  --color-fd-popover-foreground: hsl(210, 20%, 86.9%);
+
+  --color-fd-card: hsl(222, 50%, 9.8%);
+  --color-fd-card-foreground: hsl(210, 20%, 98%);
+
+  --color-fd-border: hsla(222, 50%, 40%, 0.2);
+
+  --color-fd-primary: hsl(199, 92%, 48%);
+  --color-fd-primary-foreground: hsl(210, 20%, 98%);
+
+  --color-fd-accent: hsla(199, 92%, 48%, 0.3);
+  --color-fd-accent-foreground: hsl(210, 20%, 90%);
+
+  --color-fd-ring: hsl(199, 92%, 60%);
+}
+
+.dark {
+  --color-fd-background: hsl(222, 50%, 7%);
+  --color-fd-foreground: hsl(210, 20%, 92%);
+
+  --color-fd-muted: hsl(222, 50%, 12.9%);
+  --color-fd-muted-foreground: hsla(210, 20%, 70%, 0.8);
+
+  --color-fd-popover: hsl(222, 50%, 11.6%);
+  --color-fd-popover-foreground: hsl(210, 20%, 86.9%);
+
+  --color-fd-card: hsl(222, 50%, 9.8%);
+  --color-fd-card-foreground: hsl(210, 20%, 98%);
+
+  --color-fd-border: hsla(199, 92%, 40%, 0.2);
+
+  --color-fd-primary: hsl(199, 92%, 60%);
+  --color-fd-primary-foreground: hsl(210, 20%, 9%);
+
+  --color-fd-accent: hsla(199, 92%, 60%, 0.25);
+  --color-fd-accent-foreground: hsl(210, 20%, 90%);
+
+  --color-fd-ring: hsl(199, 92%, 65%);
+}
+
+#nd-sidebar {
+  border-right-color: var(--color-fd-border);
+}
+
+.prose a[target="_blank"] {
+  color: var(--color-fd-primary);
+  text-decoration: none;
+}
+
+.prose a[target="_blank"]:hover {
+  color: var(--color-fd-ring);
+  text-decoration: underline;
+}
+
+.outline-sky-500 {
+  outline-color: rgba(14, 165, 233, 0.4); /* sky-500 with 40% opacity */
+}
+
+.outline-green-500 {
+  outline-color: rgba(34, 197, 94, 0.4); /* green-500 with 40% opacity */
+}
+
+.outline-yellow-500 {
+  outline-color: rgba(234, 179, 8, 0.4); /* yellow-500 with 40% opacity */
+}
+
+.outline-purple-500 {
+  outline-color: rgba(168, 85, 247, 0.4); /* purple-500 with 40% opacity */
+}
+
+.outline-indigo-500 {
+  outline-color: rgba(99, 102, 241, 0.4); /* indigo-500 with 40% opacity */
+}
+
+.outline-red-500 {
+  outline-color: rgba(239, 68, 68, 0.4); /* red-500 with 40% opacity */
+}
+
+.outline-teal-500 {
+  outline-color: rgba(20, 184, 166, 0.4); /* teal-500 with 40% opacity */
+}
+
+.outline-pink-500 {
+  outline-color: rgba(236, 72, 153, 0.4); /* pink-500 with 40% opacity */
+}
+
+.outline-orange-500 {
+  outline-color: rgba(249, 115, 22, 0.4); /* orange-500 with 40% opacity */
+}

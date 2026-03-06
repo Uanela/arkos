@@ -1,0 +1,1333 @@
+---
+title: OpenAPI Documentation
+---
+
+import SmallTag from "@/components/small-tag"
+import { Tabs, Tab } from "fumadocs-ui/components/tabs"
+ 
+
+
+> Available from `v1.3.0-beta`
+
+Arkos.js provides comprehensive OpenAPI documentation generation that now integrates seamlessly with ArkosRouter's declarative configuration. The new approach allows you to document your APIs directly through route configuration, making documentation maintenance easier and more type-safe.
+
+## Quick Start
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+Enable API documentation with ArkosRouter integration:
+
+```typescript
+// arkos.config.ts
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  swagger: {
+    mode: "prisma", // or "class-validator" or "zod"
+    options: {
+      definition: {
+        info: {
+          title: "My API",
+          version: "1.0.0",
+          description: "API documentation with ArkosRouter integration",
+        },
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+
+Document your routes declaratively:
+
+```typescript
+// src/modules/user/user.router.ts
+import { ArkosRouter } from "arkos";
+import z from "zod";
+
+const router = ArkosRouter();
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+});
+
+router.get(
+  {
+    path: "/:id",
+    experimental: {
+      openapi: {
+        summary: "Get user by ID",
+        description: "Retrieve a specific user by their unique identifier",
+        tags: ["Users"],
+        responses: {
+          200: UserSchema, // Direct schema reference!
+          404: {
+            content: z.object({ message: z.string() }),
+            description: "User not found",
+          },
+        },
+      },
+    },
+  },
+  userController.getUser
+);
+
+export default router;
+```
+
+Start your server and visit `/api/docs` to see your interactive API documentation.
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+Enable API documentation with JSDoc approach:
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+
+arkos.init({
+  swagger: {
+    mode: "prisma",
+    options: {
+      definition: {
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+      },
+    },
+  },
+});
+```
+
+Document routes with JSDoc comments:
+
+```typescript
+// src/modules/user/user.router.ts
+import { Router } from "express";
+
+const router = Router();
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get("/:id", userController.getUser);
+
+export default router;
+```
+
+</TabItem>
+</Tabs>
+
+## ArkosRouter OpenAPI Integration
+
+The ArkosRouter approach makes API documentation declarative and type-safe.
+
+### Basic Route Documentation
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+import { ArkosRouter } from "arkos";
+import z from "zod";
+
+const router = ArkosRouter();
+
+// Simple endpoint documentation
+router.get(
+  {
+    path: "/api/health",
+    experimental: {
+      openapi: {
+        summary: "Health check",
+        description: "Check if the API is running",
+        tags: ["System"],
+        responses: {
+          200: {
+            content: z.object({
+              status: z.string(),
+              timestamp: z.string(),
+            }),
+            description: "API is healthy",
+          },
+        },
+      },
+    },
+  },
+  healthController.check
+);
+
+// With authentication and validation
+const CreatePostSchema = z.object({
+  title: z.string().min(5),
+  content: z.string(),
+});
+
+router.post(
+  {
+    path: "/api/posts",
+    authentication: {
+      resource: "post",
+      action: "Create",
+      rule: ["Admin", "Editor"],
+    },
+    validation: {
+      body: CreatePostSchema,
+    },
+    experimental: {
+      openapi: {
+        summary: "Create a new post",
+        tags: ["Posts"],
+        responses: {
+          201: {
+            content: z.object({
+              id: z.string(),
+              title: z.string(),
+            }),
+            description: "Post created successfully",
+          },
+          401: {
+            content: z.object({ message: z.string() }),
+            description: "Authentication required",
+          },
+        },
+      },
+    },
+  },
+  postController.create
+);
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+import { Router } from "express";
+
+const router = Router();
+
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Health check
+ *     tags: [System]
+ *     responses:
+ *       200:
+ *         description: API is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                 timestamp:
+ *                   type: string
+ */
+router.get("/api/health", healthController.check);
+
+/**
+ * @swagger
+ * /api/posts:
+ *   post:
+ *     summary: Create a new post
+ *     tags: [Posts]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreatePost'
+ *     responses:
+ *       201:
+ *         description: Post created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Post'
+ *       401:
+ *         description: Authentication required
+ */
+router.post("/api/posts", postController.create);
+```
+
+</TabItem>
+</Tabs>
+
+## ArkosRouter OpenAPI Integration With File Uploads
+
+> Available from `v1.4.0-beta`
+
+When you define file uploads in `ArkosRouter`, Arkos automatically generates proper `multipart/form-data` OpenAPI documentation - no manual specification needed.
+
+### Automatic Generation
+
+```typescript
+import { ArkosRouter } from "arkos";
+
+const router = ArkosRouter();
+
+router.post(
+  {
+    path: "/api/products",
+    validation: {
+      body: z.object({
+        name: z.string(),
+        price: z.number(),
+      }),
+    },
+    experimental: {
+      uploads: {
+        type: "fields",
+        fields: [
+          { name: "thumbnail", maxCount: 1 },
+          { name: "gallery", maxCount: 5 },
+        ],
+        required: true,
+      },
+      openapi: {
+        summary: "Create product with images",
+        responses: {
+          201: ProductSchema,
+        },
+      },
+    },
+  },
+  productController.create
+);
+```
+
+Arkos automatically:
+
+- Merges validation schema with upload fields
+- Generates both `application/json` and `multipart/form-data` content types
+- Flattens nested fields to bracket notation (`user[name]`, `tags[0]`)
+- Marks required fields based on configuration
+- Adds file constraints (maxItems, format: binary) to documentation
+
+:::warning Validation Order
+Even though arkos generates a unique `multipart/form-data` those aren't validated on the same time, so you must not write a Schema/DTO that will try to validate the upload fields because it will fail, the files are the first to be validated and then arkos validates the request body, after both validation occurs (separately) Arkos will merge uploads data into request body depending on your file upload configuration.
+:::
+
+You can learn more about how Arkos handles the validation order when there it generates a unique `multipart/form-data` json-schema with file upload possibilities by reading [ArkosRouter File Uploads Validation](/).
+
+### Manual Definition (Optional)
+
+For full control, define the schema manually:
+
+```typescript
+router.post(
+  {
+    path: "/api/products",
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "image",
+        required: true,
+      },
+      openapi: {
+        requestBody: {
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["image", "name"],
+                properties: {
+                  name: { type: "string" },
+                  image: {
+                    type: "string",
+                    format: "binary",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: ProductSchema,
+        },
+      },
+    },
+  },
+  productController.create
+);
+```
+
+:::caution
+When manually defining `requestBody`, Arkos validates that upload fields match your configuration. Startup fails with detailed errors if validation fails.
+:::
+
+:::tip
+Let Arkos auto-generate the schema. Only use manual definition when you need custom field descriptions or non-standard configurations.
+:::
+
+### Response Schema Shortcuts
+
+One of the most powerful features is the ability to use schemas directly in responses:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+import { ArkosRouter } from "arkos";
+import z from "zod";
+
+const router = ArkosRouter();
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+});
+
+const ErrorSchema = z.object({
+  error: z.string(),
+  code: z.number(),
+});
+
+// Shortcut: Direct schema reference
+router.get(
+  {
+    path: "/api/users/:id",
+    experimental: {
+      openapi: {
+        responses: {
+          200: UserSchema, // Auto-converted to OpenAPI schema!
+          404: ErrorSchema,
+          500: ErrorSchema,
+        },
+      },
+    },
+  },
+  userController.getUser
+);
+
+// Medium: Schema with description
+router.post(
+  {
+    path: "/api/users",
+    experimental: {
+      openapi: {
+        responses: {
+          201: {
+            content: UserSchema,
+            description: "User created successfully",
+          },
+          400: {
+            content: ErrorSchema,
+            description: "Invalid input data",
+          },
+        },
+      },
+    },
+  },
+  userController.create
+);
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *           format: email
+ *     Error:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *         code:
+ *           type: number
+ */
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get("/api/users/:id", userController.getUser);
+```
+
+</TabItem>
+</Tabs>
+
+## Overriding Auto-Generated Documentation
+
+Customize the documentation for auto-generated Prisma model endpoints:
+
+### Configuring Model Endpoints
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// src/modules/user/user.router.ts
+import { ArkosRouter } from "arkos";
+import { RouterConfig } from "arkos";
+import z from "zod";
+
+const UserResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  profile: z.object({
+    bio: z.string().optional(),
+    avatar: z.string().url().optional(),
+  }),
+});
+
+const ErrorSchema = z.object({
+  message: z.string(),
+  code: z.string(),
+});
+
+// Configure auto-generated endpoints
+export const config: RouterConfig = {
+  findMany: {
+    experimental: {
+      openapi: {
+        summary: "List users with pagination",
+        description: "Get a paginated list of users with their profiles",
+        tags: ["Users"],
+        responses: {
+          200: {
+            content: z.array(UserResponseSchema),
+            description: "Users retrieved successfully",
+          },
+        },
+      },
+    },
+  },
+
+  findOne: {
+    experimental: {
+      openapi: {
+        summary: "Get user details",
+        description: "Retrieve detailed information about a specific user",
+        tags: ["Users"],
+        responses: {
+          200: UserResponseSchema,
+          404: {
+            content: ErrorSchema,
+            description: "User not found",
+          },
+        },
+      },
+    },
+  },
+
+  createOne: {
+    experimental: {
+      openapi: {
+        summary: "Create new user",
+        description: "Create a new user account with profile information",
+        tags: ["Users"],
+        responses: {
+          201: UserResponseSchema,
+          409: {
+            content: ErrorSchema,
+            description: "Email already exists",
+          },
+        },
+      },
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+// Add custom endpoints to the same router
+router.post(
+  {
+    path: "/:id/activate",
+    experimental: {
+      openapi: {
+        summary: "Activate user account",
+        tags: ["Users"],
+        responses: {
+          200: UserResponseSchema,
+          404: {
+            content: ErrorSchema,
+            description: "User not found",
+          },
+        },
+      },
+    },
+  },
+  userController.activate
+);
+
+export default router;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/modules/user/user.router.ts
+import { Router } from "express";
+import { RouterConfig } from "arkos";
+
+export const config: RouterConfig = {
+  // Configuration options for auto-generated endpoints
+};
+
+const router = Router();
+
+/**
+ * @swagger
+ * /api/users/{id}/activate:
+ *   post:
+ *     summary: Activate user account
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User activated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.post("/:id/activate", userController.activate);
+
+export default router;
+```
+
+</TabItem>
+</Tabs>
+
+## Authentication Endpoints Documentation
+
+Document your authentication flows with proper security schemes:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// src/modules/auth/auth.router.ts
+import { ArkosRouter, RouterConfig } from "arkos";
+import z from "zod";
+
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+const LoginResponseSchema = z.object({
+  token: z.string(),
+  user: z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string().email(),
+    role: z.string(),
+  }),
+});
+
+const ErrorSchema = z.object({
+  message: z.string(),
+  code: z.string(),
+});
+
+export const config: RouterConfig<"auth"> = {
+  login: {
+    validation: {
+      body: LoginSchema, // Or define login.schema.ts file to auto load
+    },
+    experimental: {
+      openapi: {
+        summary: "User login",
+        description: "Authenticate user and return JWT token",
+        responses: {
+          200: LoginResponseSchema,
+          401: {
+            content: ErrorSchema,
+            description: "Invalid credentials",
+          },
+          400: {
+            content: ErrorSchema,
+            description: "Validation error",
+          },
+        },
+      },
+    },
+  },
+  signup: {
+    validation: {
+      body: z.object({
+        name: z.string().min(2),
+        email: z.string().email(),
+        password: z.string().min(6),
+      }),
+    },
+    experimental: {
+      uploads: { type: "single", field: "photo" },
+      openapi: {
+        summary: "User Signup",
+        responses: {
+          201: LoginResponseSchema,
+          409: {
+            content: ErrorSchema,
+            description: "Email already registered",
+          },
+        },
+      },
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/modules/auth/auth.router.ts
+import { Router } from "express";
+
+const router = Router();
+
+// See that no methods were added this will only serve for documentation
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: User login
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid credentials
+ */
+
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   get:
+ *     summary: Get current user profile
+ *     tags: [Authentication]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Authentication required
+ */
+```
+
+</TabItem>
+</Tabs>
+
+## Schema Generation Modes
+
+Arkos supports three approaches to generate OpenAPI schemas:
+
+### Prisma Mode: Live Schema Reflection
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+const arkosConfig = {
+  swagger: {
+    mode: "prisma",
+    options: {
+      definition: {
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+
+Prisma mode automatically generates schemas from your Prisma models and syncs with Custom Prisma Query Options:
+
+```typescript
+// src/modules/user/user.query.ts
+import { PrismaQueryOptions } from "arkos/prisma";
+
+const userPrismaQueryOptions: PrismaQueryOptions<UserDelegate> = {
+  findMany: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      posts: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+    },
+  },
+};
+
+export default userPrismaQueryOptions;
+```
+
+The generated OpenAPI schema will show User responses with exactly these fields.
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/app.ts
+import arkos from "arkos";
+
+arkos.init({
+  swagger: {
+    mode: "prisma",
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+### Integration with Validation Schemas
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+**Important**: Don't mix validation schemas and OpenAPI requestBody|params|query definitions:
+
+```typescript
+// ✅ CORRECT: Use validation.body for input schemas
+router.post(
+  {
+    path: "/api/users",
+    validation: {
+      body: CreateUserSchema, // This auto-generates OpenAPI requestBody
+    },
+    experimental: {
+      openapi: {
+        summary: "Create user",
+        responses: {
+          201: UserResponseSchema, // Document responses here
+        },
+      },
+    },
+  },
+  userController.create
+);
+
+// ❌ INCORRECT: Redefining requestBody in openapi
+router.post(
+  {
+    path: "/api/users",
+    validation: {
+      body: CreateUserSchema,
+    },
+    experimental: {
+      openapi: {
+        requestBody: {
+          // ← This will cause startup error!
+          content: CreateUserSchema,
+        },
+        responses: {
+          201: UserResponseSchema,
+        },
+      },
+    },
+  },
+  userController.create
+);
+
+// ✅ CORRECT: For endpoints without validation
+router.get(
+  {
+    path: "/api/health",
+    experimental: {
+      openapi: {
+        responses: {
+          200: HealthSchema, // Only responses needed
+        },
+      },
+    },
+  },
+  healthController.check
+);
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// JSDoc approach doesn't have this conflict
+/**
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Create user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateUser'
+ *     responses:
+ *       201:
+ *         description: User created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ */
+router.post("/api/users", userController.create);
+```
+
+</TabItem>
+</Tabs>
+
+## Custom Routers Documentation
+
+Easily add documentation to custom routers with the declarative approach:
+
+<Tabs groupId="version">
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// src/routers/analytics.router.ts
+import { ArkosRouter } from "arkos";
+import z from "zod";
+
+const router = ArkosRouter();
+
+const AnalyticsSchema = z.object({
+  totalUsers: z.number(),
+  activeUsers: z.number(),
+  growthRate: z.number(),
+  topPosts: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      views: z.number(),
+    })
+  ),
+});
+
+router.get(
+  {
+    path: "/api/analytics/dashboard",
+    authentication: {
+      resource: "analytics",
+      action: "View",
+      rule: ["Admin", "Manager"],
+    },
+    experimental: {
+      openapi: {
+        summary: "Get analytics dashboard",
+        description: "Retrieve comprehensive analytics data",
+        tags: ["Analytics"],
+        responses: {
+          200: AnalyticsSchema,
+          403: {
+            content: z.object({ message: z.string() }),
+            description: "Insufficient permissions",
+          },
+        },
+      },
+    },
+  },
+  analyticsController.getDashboard
+);
+
+// Complex endpoint with query parameters
+router.get(
+  {
+    path: "/api/analytics/reports",
+    validation: {
+      query: z.object({
+        startDate: z.string().datetime(),
+        endDate: z.string().datetime(),
+        metric: z.enum(["users", "posts", "revenue"]),
+      }),
+    },
+    experimental: {
+      openapi: {
+        summary: "Generate analytics report",
+        tags: ["Analytics"],
+        responses: {
+          200: z.object({
+            report: z.any(), // Use z.any() for complex dynamic objects
+            generatedAt: z.string().datetime(),
+          }),
+          400: {
+            content: z.object({ message: z.string() }),
+            description: "Invalid query parameters",
+          },
+        },
+      },
+    },
+  },
+  analyticsController.generateReport
+);
+
+export default router;
+```
+
+Register the custom router:
+
+```typescript
+// app.ts
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
+
+arkos.init({
+  use: [analyticsRouter],
+});
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0 and earlier">
+
+```typescript
+// src/routers/analytics.router.ts
+import { Router } from "express";
+
+const router = Router();
+
+/**
+ * @swagger
+ * /api/analytics/dashboard:
+ *   get:
+ *     summary: Get analytics dashboard
+ *     tags: [Analytics]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Analytics data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalUsers:
+ *                   type: number
+ *                 activeUsers:
+ *                   type: number
+ *                 growthRate:
+ *                   type: number
+ *                 topPosts:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       title:
+ *                         type: string
+ *                       views:
+ *                         type: number
+ *       403:
+ *         description: Insufficient permissions
+ */
+router.get("/api/analytics/dashboard", analyticsController.getDashboard);
+
+export default router;
+```
+
+Register in app configuration:
+
+```typescript
+// src/app.ts
+import analyticsRouter from "./routers/analytics.router";
+
+arkos.init({
+  routers: {
+    additional: [analyticsRouter],
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+## Migration Guide
+
+### From JSDoc to ArkosRouter OpenAPI
+
+<Tabs groupId="migration">
+<TabItem value="before" label="Before (JSDoc)">
+
+```typescript
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get("/api/users/:id", userController.getUser);
+```
+
+</TabItem>
+<TabItem value="after" label="After (ArkosRouter)" default>
+
+```typescript
+import { ArkosRouter } from "arkos";
+import z from "zod";
+
+const router = ArkosRouter();
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+});
+
+router.get(
+  {
+    path: "/api/users/:id",
+    experimental: {
+      openapi: {
+        summary: "Get user by ID",
+        tags: ["Users"],
+        responses: {
+          200: UserSchema, // Direct schema reference!
+          404: {
+            content: z.object({ message: z.string() }),
+            description: "User not found",
+          },
+        },
+      },
+    },
+  },
+  userController.getUser
+);
+```
+
+</TabItem>
+</Tabs>
+
+### Benefits of the New Approach
+
+1. **Type Safety**: Zod schemas provide compile-time validation
+2. **Single Source of Truth**: Schemas used for validation and documentation
+3. **Better IDE Support**: Auto-completion and type checking
+4. **Easier Refactoring**: Change schemas in one place
+5. **Cleaner Code**: No more large JSDoc blocks
+
+## Configuration Reference
+
+### Arkos Config
+
+<Tabs>
+<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+
+```typescript
+// arkos.config.ts
+const arkosConfig = {
+  swagger: {
+    mode: "prisma", // "prisma" | "class-validator" | "zod"
+    endpoint: "/api/docs", // Documentation URL
+    options: {
+      definition: {
+        openapi: "3.0.0",
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+        servers: [
+          {
+            url: "http://localhost:8000",
+            description: "Development",
+          },
+        ],
+        components: {
+          securitySchemes: {
+            BearerAuth: {
+              type: "http",
+              scheme: "bearer",
+              bearerFormat: "JWT",
+            },
+          },
+        },
+      },
+    },
+    scalarApiReferenceConfiguration: {
+      theme: "deepSpace",
+      darkMode: true,
+    },
+  },
+};
+
+export default arkosConfig;
+```
+
+</TabItem>
+<TabItem value="v1.3" label="v1.3.0">
+
+```ts
+// src/app.ts
+import arkos from "arkos";
+
+arkos.init({
+  swagger: {
+    mode: "prisma", // "prisma" | "class-validator" | "zod"
+    endpoint: "/api/docs", // Documentation URL
+    options: {
+      definition: {
+        openapi: "3.0.0",
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+        servers: [
+          {
+            url: "http://localhost:8000",
+            description: "Development",
+          },
+        ],
+        components: {
+          securitySchemes: {
+            BearerAuth: {
+              type: "http",
+              scheme: "bearer",
+              bearerFormat: "JWT",
+            },
+          },
+        },
+      },
+    },
+    scalarApiReferenceConfiguration: {
+      theme: "deepSpace",
+      darkMode: true,
+    },
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Startup Errors**: Caused by redefining requestBody|params|query in openapi when using validation.body|query|params
+2. **Missing Documentation**: Ensure `experimental.openapi` is properly configured
+3. **Schema Conflicts**: Use different schemas for input (validation) and output (responses)
+
+The new ArkosRouter OpenAPI integration provides a more maintainable, type-safe approach to API documentation that seamlessly integrates with your existing validation and authentication setup.
