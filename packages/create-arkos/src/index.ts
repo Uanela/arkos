@@ -47,10 +47,9 @@ export async function main() {
   console.info(chalk.bold("\nInstalling dependencies..."));
   console.info(`Using ${packageManager}.\n`);
 
-  execSync(
-    `${packageManager} install${packageManager === "npm" ? " --legacy-peer-deps --force" : ""}`,
-    { stdio: "inherit" }
-  );
+  const installCmd = `${packageManager} install`;
+  execSync(installCmd, { stdio: "inherit", cwd: projectPath });
+  execSync(installCmd, { stdio: "pipe", cwd: projectPath });
 
   process.chdir(projectPath);
 
