@@ -125,12 +125,8 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).toContain(
           "@IsNotEmpty()\n  @IsString()\n  title!: string;"
         );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsDate()\n  createdAt!: Date;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsDate()\n  updatedAt!: Date;"
-        );
+        expect(result).toContain("@IsDate()\n  createdAt!: Date;");
+        expect(result).toContain("@IsDate()\n  updatedAt!: Date;");
       });
 
       it("should handle optional fields correctly", () => {
@@ -249,24 +245,12 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).toContain(
           "@IsNotEmpty()\n  @IsString()\n  name!: string;"
         );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsNumber()\n  age!: number;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsNumber()\n  score!: number;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsBoolean()\n  active!: boolean;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsDate()\n  birthDate!: Date;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsObject()\n  metadata!: any;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsNumber()\n  bigNum!: bigint;"
-        );
+        expect(result).toContain("@IsNumber()\n  age!: number;");
+        expect(result).toContain("@IsNumber()\n  score!: number;");
+        expect(result).toContain("@IsBoolean()\n  active!: boolean;");
+        expect(result).toContain("@IsDate()\n  birthDate!: Date;");
+        expect(result).toContain("@IsObject()\n  metadata!: any;");
+        expect(result).toContain("@IsNumber()\n  bigNum!: bigint;");
       });
     });
 
@@ -529,9 +513,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain('import { Role } from "@prisma/client"');
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsEnum(Role)\n  role!: Role;"
-        );
+        expect(result).toContain("@IsEnum(Role)\n  role!: Role;");
       });
     });
 
@@ -1446,10 +1428,10 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page?: number;"
+          "@IsOptional()\n  @IsNumber()\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  page?: number;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  @Max(100)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit?: number;"
+          "@IsOptional()\n  @IsNumber()\n  @Max(100)\n  @Transform(({ value }) => (value ? Number(value) : undefined))\n  limit?: number;"
         );
         expect(result).toContain(
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  @Type(() => String)\n  sort?: string;"
@@ -1591,13 +1573,13 @@ describe("ClassValidatorDtoGenerator", () => {
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  name?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  price?: number;"
+          "@IsOptional()\n  @IsNumber()\n  price?: number;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsBoolean()\n  inStock?: boolean;"
+          "@IsOptional()\n  @IsBoolean()\n  inStock?: boolean;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsDate()\n  releaseDate?: Date;"
+          "@IsOptional()\n  @IsDate()\n  releaseDate?: Date;"
         );
         expect(result).not.toContain("id:");
       });
@@ -1724,14 +1706,12 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  size?: bigint;"
+          "@IsOptional()\n  @IsNumber()\n  size?: bigint;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsObject()\n  metadata?: any;"
+          "@IsOptional()\n  @IsObject()\n  metadata?: any;"
         );
-        expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  data?: Buffer;"
-        );
+        expect(result).toContain("@IsOptional()\n  data?: Buffer;");
       });
     });
 
@@ -1904,10 +1884,10 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsArray()\n  @IsString({ each: true })\n  tags?: string[];"
+          "@IsOptional()\n  @IsNotEmpty({ each: true })\n  @IsArray()\n  @IsString({ each: true })\n  tags?: string[];"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
+          "@IsOptional()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
         );
       });
     });
@@ -1955,10 +1935,10 @@ describe("ClassValidatorDtoGenerator", () => {
           'import { Role, Status } from "@prisma/client"'
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsEnum(Role)\n  role?: Role;"
+          "@IsOptional()\n  @IsEnum(Role)\n  role?: Role;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsEnum(Status)\n  status?: Status;"
+          "@IsOptional()\n  @IsEnum(Status)\n  status?: Status;"
         );
       });
 
@@ -1995,7 +1975,7 @@ describe("ClassValidatorDtoGenerator", () => {
 
         expect(result).toContain('import { Tag } from "@prisma/client"');
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsArray()\n  @IsEnum(Tag, { each: true })\n  tags?: Tag[];"
+          "@IsOptional()\n  @IsArray()\n  @IsEnum(Tag, { each: true })\n  tags?: Tag[];"
         );
       });
 
@@ -2096,7 +2076,7 @@ describe("ClassValidatorDtoGenerator", () => {
         );
         // Should be optional even though it was required in create
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @ValidateNested()\n  @Type(() => CategoryForUpdatePostDto)\n  category?: CategoryForUpdatePostDto;"
+          "@IsOptional()\n  @ValidateNested()\n  @Type(() => CategoryForUpdatePostDto)\n  category?: CategoryForUpdatePostDto;"
         );
       });
 
@@ -2224,9 +2204,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class ProductForUpdateOrderDto {");
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsNumber()\n  code!: number;"
-        );
+        expect(result).toContain("@IsNumber()\n  code!: number;");
       });
 
       it("should handle already optional relations (still optional)", () => {
@@ -2279,7 +2257,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @ValidateNested()\n  @Type(() => CategoryForUpdatePostDto)\n  category?: CategoryForUpdatePostDto;"
+          "@IsOptional()\n  @ValidateNested()\n  @Type(() => CategoryForUpdatePostDto)\n  category?: CategoryForUpdatePostDto;"
         );
       });
 
@@ -2759,7 +2737,7 @@ describe("ClassValidatorDtoGenerator", () => {
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  slug?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsBoolean()\n  published?: boolean;"
+          "@IsOptional()\n  @IsBoolean()\n  published?: boolean;"
         );
 
         // Should not have any required fields (!)
@@ -2819,7 +2797,7 @@ describe("ClassValidatorDtoGenerator", () => {
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  name?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsNumber()\n  price?: number;"
+          "@IsOptional()\n  @IsNumber()\n  price?: number;"
         );
         expect(result).toContain(
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  description?: string;"
@@ -2921,15 +2899,9 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).toContain(
           "@IsNotEmpty()\n  @IsString()\n  name!: string;"
         );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsNumber()\n  price!: number;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsBoolean()\n  inStock!: boolean;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsDate()\n  releaseDate!: Date;"
-        );
+        expect(result).toContain("@IsNumber()\n  price!: number;");
+        expect(result).toContain("@IsBoolean()\n  inStock!: boolean;");
+        expect(result).toContain("@IsDate()\n  releaseDate!: Date;");
         expect(result).not.toContain("id:");
       });
 
@@ -3052,13 +3024,9 @@ describe("ClassValidatorDtoGenerator", () => {
           modelName: { pascal: "File", camel: "file", kebab: "file" },
         });
 
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsNumber()\n  size!: bigint;"
-        );
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsObject()\n  metadata!: any;"
-        );
-        expect(result).toContain("@IsNotEmpty()\n  data!: Buffer;");
+        expect(result).toContain("@IsNumber()\n  size!: bigint;");
+        expect(result).toContain("@IsObject()\n  metadata!: any;");
+        expect(result).toContain("data!: Buffer;");
         expect(result).not.toContain("@IsBuffer");
       });
     });
@@ -3232,10 +3200,10 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsNotEmpty()\n  @IsArray()\n  @IsString({ each: true })\n  tags!: string[];"
+          "@IsArray()\n  @IsString({ each: true })\n  tags!: string[];"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
+          "@IsOptional()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
         );
       });
     });
@@ -3282,11 +3250,9 @@ describe("ClassValidatorDtoGenerator", () => {
         expect(result).toContain(
           'import { Role, Status } from "@prisma/client"'
         );
+        expect(result).toContain("@IsEnum(Role)\n  role!: Role;");
         expect(result).toContain(
-          "@IsNotEmpty()\n  @IsEnum(Role)\n  role!: Role;"
-        );
-        expect(result).toContain(
-          "@IsOptional()\n  @IsNotEmpty()\n  @IsEnum(Status)\n  status?: Status;"
+          "@IsOptional()\n  @IsEnum(Status)\n  status?: Status;"
         );
       });
 
@@ -3323,7 +3289,7 @@ describe("ClassValidatorDtoGenerator", () => {
 
         expect(result).toContain('import { Tag } from "@prisma/client"');
         expect(result).toContain(
-          "@IsNotEmpty()\n  @IsArray()\n  @IsEnum(Tag, { each: true })\n  tags!: Tag[];"
+          "@IsArray()\n  @IsEnum(Tag, { each: true })\n  tags!: Tag[];"
         );
       });
 
@@ -3552,9 +3518,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain("class ProductForCreateOrderDto {");
-        expect(result).toContain(
-          "@IsNotEmpty()\n  @IsNumber()\n  code!: number;"
-        );
+        expect(result).toContain("@IsNumber()\n  code!: number;");
       });
 
       it("should handle optional relations", () => {

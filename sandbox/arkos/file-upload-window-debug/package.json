@@ -30,8 +30,11 @@
     "@scalar/express-api-reference": "^0.8.13",
     "@swc/core": "^1.15.8",
     "arkos": "file:../../../packages/arkos",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "express": "^4.21.2",
     "glob": "^13.0.0",
+    "reflect-metadata": "^0.2.2",
     "swagger-jsdoc": "^6.2.8",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.6"

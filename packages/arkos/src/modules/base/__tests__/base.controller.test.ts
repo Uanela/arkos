@@ -99,7 +99,7 @@ describe("BaseController", () => {
     });
 
     it("should initialize with empty interceptors when model modules return null", () => {
-      (getModuleComponents as jest.Mock).mockReturnValue(null);
+      (getModuleComponents as jest.Mock).mockReturnValue(null as any);
       new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
     });
@@ -156,7 +156,7 @@ describe("BaseController", () => {
       const mockBody = [{ title: "Post 1" }, { title: "Post 2" }];
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.createMany.mockResolvedValue(mockResult);
+      mockBaseService.createMany.mockResolvedValue(mockResult as any);
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
@@ -179,7 +179,7 @@ describe("BaseController", () => {
       const mockBody: any[] = [];
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.createMany.mockResolvedValue(mockResult);
+      mockBaseService.createMany.mockResolvedValue(mockResult as any);
       try {
         await baseController.createMany(mockRequest, mockResponse, mockNext);
       } catch (err: any) {
@@ -204,7 +204,7 @@ describe("BaseController", () => {
     it("should call next with error if createMany returns null", async () => {
       const mockBody = [{ title: "Post 1" }];
       mockRequest.body = mockBody;
-      mockBaseService.createMany.mockResolvedValue(null);
+      mockBaseService.createMany.mockResolvedValue(null as any);
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
@@ -221,7 +221,7 @@ describe("BaseController", () => {
       const mockBody = [{ title: "Post 1" }];
       const mockResult = { count: 1 };
       mockRequest.body = mockBody;
-      mockBaseService.createMany.mockResolvedValue(mockResult);
+      mockBaseService.createMany.mockResolvedValue(mockResult as any);
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
@@ -373,7 +373,7 @@ describe("BaseController", () => {
     it("should call next with error if record not found with single id param", async () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(null);
+      mockBaseService.findOne.mockResolvedValue(null as any);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
@@ -384,7 +384,7 @@ describe("BaseController", () => {
     it("should call next with error if record not found with multiple params", async () => {
       const mockParams = { slug: "test-post", category: "tech" };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(null);
+      mockBaseService.findOne.mockResolvedValue(null as any);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
@@ -395,7 +395,7 @@ describe("BaseController", () => {
     it("should not return error if id param is 'me'", async () => {
       const mockParams = { id: "me" };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(null);
+      mockBaseService.findOne.mockResolvedValue(null as any);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
@@ -475,7 +475,7 @@ describe("BaseController", () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
       mockRequest.body = { title: "Updated Post" };
-      mockBaseService.updateOne.mockResolvedValue(null);
+      mockBaseService.updateOne.mockResolvedValue(null as any);
 
       await baseController.updateOne(mockRequest, mockResponse, mockNext);
 
@@ -487,7 +487,7 @@ describe("BaseController", () => {
       const mockParams = { slug: "test-post", category: "tech" };
       mockRequest.params = mockParams;
       mockRequest.body = { title: "Updated Post" };
-      mockBaseService.updateOne.mockResolvedValue(null);
+      mockBaseService.updateOne.mockResolvedValue(null as any);
 
       await baseController.updateOne(mockRequest, mockResponse, mockNext);
 
@@ -539,7 +539,7 @@ describe("BaseController", () => {
       const mockBody = { published: true };
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.updateMany.mockResolvedValue(mockResult);
+      mockBaseService.updateMany.mockResolvedValue(mockResult as any);
       // const baseControllerExecuteOperationSpy = jest.spyOn(
       //   baseController,
       //   "executeOperation" as any
@@ -567,7 +567,7 @@ describe("BaseController", () => {
       const mockBody = { published: true };
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.updateMany.mockResolvedValue(mockResult);
+      mockBaseService.updateMany.mockResolvedValue(mockResult as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -579,7 +579,7 @@ describe("BaseController", () => {
       mockRequest.query = { title: "Test" };
       const mockResult = { count: 0 };
       mockRequest.body = { published: true };
-      mockBaseService.updateMany.mockResolvedValue(mockResult);
+      mockBaseService.updateMany.mockResolvedValue(mockResult as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -590,7 +590,7 @@ describe("BaseController", () => {
     it("should call next with error if updateMany returns null", async () => {
       mockRequest.query = { title: "Test" };
       mockRequest.body = { published: true };
-      mockBaseService.updateMany.mockResolvedValue(null);
+      mockBaseService.updateMany.mockResolvedValue(null as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -608,7 +608,7 @@ describe("BaseController", () => {
       const mockBody = { published: true };
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.updateMany.mockResolvedValue(mockResult);
+      mockBaseService.updateMany.mockResolvedValue(mockResult as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -660,7 +660,7 @@ describe("BaseController", () => {
     it("should call next with error if record not found with single id param", async () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
-      mockBaseService.deleteOne.mockResolvedValue(null);
+      mockBaseService.deleteOne.mockResolvedValue(null as any);
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
@@ -671,7 +671,7 @@ describe("BaseController", () => {
     it("should call next with error if record not found with multiple params", async () => {
       const mockParams = { slug: "test-post", category: "tech" };
       mockRequest.params = mockParams;
-      mockBaseService.deleteOne.mockResolvedValue(null);
+      mockBaseService.deleteOne.mockResolvedValue(null as any);
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
@@ -719,7 +719,7 @@ describe("BaseController", () => {
     it("should delete multiple records and return 200 status", async () => {
       mockRequest.query = { title: "Test" }; // Add filter criteria
       const mockResult = { count: 2 };
-      mockBaseService.deleteMany.mockResolvedValue(mockResult);
+      mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
@@ -734,7 +734,7 @@ describe("BaseController", () => {
     it("should throw an error when trying to use OR as filterMode", async () => {
       mockRequest.query = { title: "Test", filterMode: "OR" };
       const mockResult = { count: 2 };
-      mockBaseService.deleteMany.mockResolvedValue(mockResult);
+      mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
       expect(mockNext).toHaveBeenCalled(); // Means that req.query.filterMode OR was rejected
@@ -743,7 +743,7 @@ describe("BaseController", () => {
     it("should call next with error if no records deleted", async () => {
       mockRequest.query = { title: "Test" };
       const mockResult = { count: 0 };
-      mockBaseService.deleteMany.mockResolvedValue(mockResult);
+      mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
@@ -753,7 +753,7 @@ describe("BaseController", () => {
 
     it("should call next with error if deleteMany returns null", async () => {
       mockRequest.query = { title: "Test" };
-      mockBaseService.deleteMany.mockResolvedValue(null);
+      mockBaseService.deleteMany.mockResolvedValue(null as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
@@ -769,7 +769,7 @@ describe("BaseController", () => {
 
       mockRequest.query = { title: "Test" };
       const mockResult = { count: 2 };
-      mockBaseService.deleteMany.mockResolvedValue(mockResult);
+      mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
@@ -794,7 +794,7 @@ describe("BaseController", () => {
         { id: 2, title: "Updated Post 2" },
       ];
       mockRequest.body = mockBody;
-      mockBaseService.batchUpdate.mockResolvedValue(mockResult);
+      mockBaseService.batchUpdate.mockResolvedValue(mockResult as any);
 
       await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
 
@@ -842,7 +842,7 @@ describe("BaseController", () => {
       const mockBody = [{ id: "1", title: "Updated Post 1" }];
       const mockResult = [{ id: 1, title: "Updated Post 1" }];
       mockRequest.body = mockBody;
-      mockBaseService.batchUpdate.mockResolvedValue(mockResult);
+      mockBaseService.batchUpdate.mockResolvedValue(mockResult as any);
 
       await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
 
@@ -861,7 +861,7 @@ describe("BaseController", () => {
       const mockBody = [{ id: "1" }, { id: "2" }];
       const mockResult = [{ id: 1 }, { id: 2 }];
       mockRequest.body = mockBody;
-      mockBaseService.batchDelete.mockResolvedValue(mockResult);
+      mockBaseService.batchDelete.mockResolvedValue(mockResult as any);
 
       await baseController.batchDelete(mockRequest, mockResponse, mockNext);
 
@@ -905,7 +905,7 @@ describe("BaseController", () => {
       const mockBody = [{ id: "1" }, { id: "2" }];
       const mockResult = [{ id: 1 }, { id: 2 }];
       mockRequest.body = mockBody;
-      mockBaseService.batchDelete.mockResolvedValue(mockResult);
+      mockBaseService.batchDelete.mockResolvedValue(mockResult as any);
 
       await baseController.batchDelete(mockRequest, mockResponse, mockNext);
 

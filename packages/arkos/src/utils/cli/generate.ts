@@ -74,7 +74,8 @@ const generateFile = async (
 
   if (config.customValidation) config.customValidation(modelName);
 
-  const { path: customPath = "src/modules/{{module-name}}" } = options;
+  const targetPath =
+    options.path || config.customPath || "src/modules/{{module-name}}";
 
   const names = {
     pascal: pascalCase(modelName),
@@ -84,22 +85,29 @@ const generateFile = async (
 
   const ext = config.ext || getUserFileExtension();
 
-  const resolvedPath = (config.customPath || customPath).replaceAll(
-    "{{module-name}}",
-    names.kebab
-  );
+  const resolvedPath = targetPath.replaceAll("{{module-name}}", names.kebab);
 
-  const modulePath = path.join(process.cwd(), resolvedPath);
+  const isExplicitFile = path.extname(resolvedPath) !== "";
 
-  function getSuffix() {
-    return config.fileSuffix ? `.${config.fileSuffix}` : "";
+  let filePath: string;
+  let modulePath: string;
+
+  if (isExplicitFile) {
+    filePath = path.resolve(process.cwd(), resolvedPath);
+    modulePath = path.dirname(filePath);
+  } else {
+    modulePath = path.resolve(process.cwd(), resolvedPath);
+
+    function getSuffix() {
+      return config.fileSuffix ? `.${config.fileSuffix}` : "";
+    }
+
+    const fileName = config.prefix
+      ? `${config.prefix}${names.kebab}${getSuffix()}.${ext}`
+      : `${names.kebab}${getSuffix()}.${ext}`;
+
+    filePath = path.join(modulePath, fileName);
   }
-
-  const fileName = config.prefix
-    ? `${config.prefix}${names.kebab}${getSuffix()}.${ext}`
-    : `${names.kebab}${getSuffix()}.${ext}`;
-
-  const filePath = path.join(modulePath, fileName);
 
   const humamReadableTemplateName =
     config.templateName.charAt(0).toUpperCase() +

@@ -1,0 +1,9 @@
+{
+  "title": "Getting Started",
+  "pages": [
+    "installation",
+    "project-structure",
+    "configuration",
+    "deployment"
+  ]
+}
