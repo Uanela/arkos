@@ -48,7 +48,7 @@ export async function main() {
   console.info(`Using ${packageManager}.\n`);
 
   execSync(
-    `${packageManager} install${packageManager === "npm" ? " --legacy-peer-deps" : ""}`,
+    `${packageManager} install${packageManager === "npm" ? " --legacy-peer-deps --force" : ""}`,
     { stdio: "inherit" }
   );
 
