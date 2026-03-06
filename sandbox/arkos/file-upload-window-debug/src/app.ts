@@ -1,13 +1,13 @@
-import arkos from "arkos";
+import arkos, { ArkosRequest } from "arkos";
 import userRouter, { r } from "./modules/user/user.router";
+import { Request } from "express";
 
 // console.log(process.env.MY_VAR);
 arkos.init({
   // a,
   configureApp: async (app) => {
-    app.use((req, res, next) => {
+    app.use((req: Request, res, next) => {
       // req.headers["x-forwarded-proto"] = "https";
-      console.log(req.originalUrl);
       next();
     });
     return app;
