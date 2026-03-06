@@ -1,6 +1,6 @@
 import fs, { realpathSync } from "fs";
 
-function getFolderPathFromArgs() {
+export function getFolderPathFromArgs() {
   const args = process.argv.slice(2);
   let folderPath = "";
   let pathCount = 0;
@@ -42,9 +42,4 @@ export function removeDir(folderPath: string) {
 
 export function isEntryPoint(): boolean {
   return realpathSync(process.argv[1]) === realpathSync(__filename);
-}
-
-if (isEntryPoint()) {
-  const folderPath = getFolderPathFromArgs();
-  removeDir(folderPath);
 }
