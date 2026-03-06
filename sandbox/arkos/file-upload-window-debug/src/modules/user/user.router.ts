@@ -10,7 +10,7 @@ export const config: RouterConfig = {
   findMany: {
     validation: {
       // params: z.object({ sheu: z.string() }),
-      query: UserQuerySchema,
+      // query: UserQuerySchema,
     },
     experimental: {
       openapi: {
@@ -20,11 +20,12 @@ export const config: RouterConfig = {
   },
   updateOne: {
     experimental: {
-      uploads: { field: "photo", type: "single", required: true },
+      uploads: { field: "photo", type: "single" },
     },
   },
   createOne: {
     validation: {
+      // body: z.object({ the: z.string() }),
       // params: z.object({ sheu: z.string() }),
     },
     experimental: {
@@ -82,12 +83,7 @@ function nextCall() {
 
 userRouter
   .route("/the-user")
-  .get(
-    { authentication: false, validation: { query: UserQuerySchema } },
-    nextCall(),
-    [nextCall()],
-    [gen("answer")]
-  )
+  .get({ authentication: false }, nextCall(), [nextCall()], [gen("answer")])
   .post({ authentication: false }, nextCall(), [nextCall()], [gen("answer")]);
 
 export const r = Router();

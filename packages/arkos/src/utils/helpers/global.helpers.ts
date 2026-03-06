@@ -28,11 +28,20 @@ export async function importModule(
   modulePath: string,
   options: { fixExtension: boolean } = { fixExtension: true }
 ) {
-  if (!options.fixExtension || modulePath.endsWith(".ts") || !isEsm())
-    return await import(modulePath);
+  if (!options.fixExtension || modulePath.endsWith(".ts") || !isEsm()) {
+    let imported;
+    try {
+      imported = await import(pathToFileURL(modulePath).href);
+    } catch (err: any) {
+      if (err?.message?.includes("file://"))
+        imported = await import(modulePath);
+      else throw err;
+    }
+    return imported;
+  }
 
   const resolved = userRequire.resolve(modulePath);
-  return await import(pathToFileURL(resolved) as any);
+  return await import(pathToFileURL(resolved).href);
 }
 
 /**

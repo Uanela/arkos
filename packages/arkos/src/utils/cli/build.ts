@@ -1,12 +1,12 @@
 import path from "path";
 import fs from "fs";
 import { execSync } from "child_process";
-import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
+import { getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
-import { getVersion } from "./utils/cli.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
 import sheu from "../sheu";
 import watermarkStamper from "./utils/watermark-stamper";
+import { removeDir } from "../remove-dir";
 
 const BUILD_DIR = ".build";
 const MODULE_TYPES = ["cjs", "esm"] as const;
@@ -128,7 +128,8 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
   fs.writeFileSync(tempTsconfigPath, JSON.stringify(tempTsconfig, null, 2));
 
   try {
-    execSync(`npx trash ${BUILD_DIR} && npx tsc -p ${tempTsconfigPath}`, {
+    removeDir(BUILD_DIR);
+    execSync(`npx tsc -p ${tempTsconfigPath}`, {
       stdio: "inherit",
       cwd: process.cwd(),
     });

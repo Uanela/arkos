@@ -9,7 +9,6 @@ jest.mock("../fs.helpers", () => ({
 }));
 
 const mockFs = fs as jest.Mocked<typeof fs>;
-import { getUserFileExtension } from "../fs.helpers";
 
 describe("getPackageJson", () => {
   beforeEach(() => {
