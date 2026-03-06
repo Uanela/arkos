@@ -1,3 +1,7 @@
+import {
+  kebabCase,
+  pascalCase,
+} from "../../../utils/helpers/change-case.helpers";
 import AppError from "./app-error";
 
 export interface PrismaError {
@@ -64,7 +68,13 @@ export function handleRecordNotFoundError(_: AppError) {
 export function handleUniqueConstraintError(err: AppError) {
   const field = err?.meta?.target || "unknown field";
   const message = `Duplicate value detected for the unique field(s): ${field}. Please use a different value.`;
-  return new AppError(message, 409);
+  return new AppError(
+    message,
+    409,
+    (err.meta?.modelName &&
+      `${pascalCase(err.meta?.modelName)}${pascalCase(err.meta?.target?.[0])}UniqueConstraint`) ||
+      "Unknown"
+  );
 }
 
 export function handleForeignKeyConstraintError(_: AppError) {
@@ -210,15 +220,35 @@ export function handleNonExistingRecord(err: {
 }) {
   const message =
     err?.meta?.cause ||
-    `Operation could not be completed as the required record was not found`;
-  return new AppError(message, 404, err.meta || {}, "RecordNotFound");
+    `Operation could not be completed as some required record was not found`;
+
+  const model = err?.meta?.cause
+    ? err?.meta?.cause?.split("No '")?.[1]?.split?.("'")?.[0]
+    : "";
+
+  return new AppError(
+    message,
+    model ? 400 : 404,
+    `${model ? "Inline" : ""}${pascalCase(model || "")}RecordNotFound`
+  );
 }
 
 export function handlePrismaClientInitializationError(_: any) {
   return new AppError(
     "Service temporarily unavailable",
     503,
-    {},
-    "DatabaseNotAvailable"
+    "ServiceUnavailable"
+  );
+}
+
+export function handleRequiredRelationViolationError(err: AppError) {
+  const modelA = err?.meta?.model_a_name || "Record";
+  const modelB = err?.meta?.model_b_name || "another record";
+  const message = `This operation violates a required relationship between ${kebabCase(modelA).replaceAll("-", " ")} and ${kebabCase(modelB).replaceAll("-", " ")}.`;
+
+  return new AppError(
+    message,
+    400,
+    `${pascalCase(modelA || "")}RelationViolation`
   );
 }

@@ -1,0 +1,8 @@
+{
+  "title": "Advanced Guide",
+  "pages": [
+    "fine-grained-access-control",
+    "handling-prisma-relations",
+    "file-uploads-authentication"
+  ]
+}

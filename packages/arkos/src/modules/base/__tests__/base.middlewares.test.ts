@@ -1078,6 +1078,7 @@ describe("Express Middleware Functions", () => {
 
         expect(validateDto).toHaveBeenCalledWith(mockDtoClass, null, {
           whitelist: true,
+          forbidNonWhitelisted: true,
         });
         expect(mockRequest.body).toBeNull();
         expect(nextFunction).toHaveBeenCalledTimes(1);
@@ -1712,7 +1713,9 @@ describe("Express Middleware Functions", () => {
         error.format = () => error;
 
         mockRequest.body = { name: 123 }; // Invalid type
-        const validationError: any = { issues: [error] };
+        const validationError: any = {
+          issues: [{ ...error, message: error.message, path: ["name"] }],
+        };
         validationError.format = () => error;
         (validateSchema as jest.Mock).mockRejectedValue(validationError);
 
@@ -1726,7 +1729,7 @@ describe("Express Middleware Functions", () => {
             mockResponse as ArkosResponse,
             nextFunction
           )
-        ).rejects.toThrow("Invalid request body");
+        ).rejects.toThrow("'name' Validation error");
 
         expect(nextFunction).not.toHaveBeenCalled();
       });

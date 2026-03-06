@@ -1,49 +1,83 @@
 {{#if typescript}}
-import { AuthConfigs } from "arkos/auth"
-
-const fileUplaodAuthConfigs: AuthConfigs = {
-{{else}}
-/** @type {import('arkos/auth').AuthConfigs} */
-const fileUplaodAuthConfigs = {
+import { AuthConfigs } from "arkos/auth";
 {{/if}}
-  authenticationControl: {
-    Create: true,
-    Update: true,
-    Delete: true,
-    View: true,
-  },
-  {{#if (eq authentication.type "static")}}
-  accessControl: {
-    Create: {
+import { authService } from "arkos/services";
+
+export const fileUploadAccessControl = {
+  Create: {
     {{#if (eq authentication.type "static")}}
-      roles: [],
+    roles: [],
     {{/if}}
-      name: "Upload File",
-      description: "Permission to upload file"
-    },
-    Update: {
-    {{#if (eq authentication.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Update File",
-      description: "Permission to update file"
-    },
-    Delete: {
-    {{#if (eq authen.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "Delete File",
-      description: "Permission to delete file"
-    },
-    View: {
-    {{#if (eq authen.type "static")}}
-      roles: [],
-    {{/if}}
-      name: "View File",
-      description: "Permission to view file"
-    },
+    name: "Upload File",
+    description: "Permission to upload file"
   },
-  {{/if}}
+  Update: {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Update File",
+    description: "Permission to update file"
+  },
+  Delete: {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Delete File",
+    description: "Permission to delete file"
+  },
+  View: {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "View File",
+    description: "Permission to view file"
+  },
+}{{#if typescript}} as const satisfies AuthConfigs["accessControl"]{{/if}};
+
+{{#if advanced}}
+{{#if typescript}}
+type FileUploadPermissionName = `can${keyof typeof fileUploadAccessControl & string}`;
+
+{{/if}}
+export const fileUploadPermissions = Object.keys(fileUploadAccessControl).reduce(
+  (acc, key) => {
+    acc[`can${key}`{{#if typescript}} as FileUploadPermissionName{{/if}}] = authService.permission(
+      key,
+      "file-upload",
+      fileUploadAccessControl
+    );
+    return acc;
+  },
+  {}{{#if typescript}} as Record<FileUploadPermissionName, ReturnType<typeof authService.permission>>{{/if}}
+){{#if typescript}} as {
+  [K in keyof typeof fileUploadAccessControl as `can${K & string}`]: ReturnType<
+    typeof authService.permission
+  >;
+}{{/if}};
+{{else}}
+export const fileUploadPermissions = {
+  canCreate: authService.permission("Create", "file-upload"),
+  canUpdate: authService.permission("Update", "file-upload"),
+  canDelete: authService.permission("Delete", "file-upload"),
+  canView: authService.permission("View", "file-upload"),
+};
+{{/if}}
+
+export const fileUploadAuthenticationControl = {
+  Create: true,
+  Update: true,
+  Delete: true,
+  View: true,
 };
 
-export default fileUplaodAuthConfigs;
+{{#if typescript}}
+const fileUploadAuthConfigs: AuthConfigs = {
+{{else}}
+/** @type {import('arkos/auth').AuthConfigs} */
+const fileUploadAuthConfigs = {
+{{/if}}
+  authenticationControl: fileUploadAuthenticationControl,
+  accessControl: fileUploadAccessControl,
+};
+
+export default fileUploadAuthConfigs;

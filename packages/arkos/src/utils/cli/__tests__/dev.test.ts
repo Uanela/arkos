@@ -389,7 +389,7 @@ describe("Dev Command", () => {
       beforeEach(() => {
         // Mock existsSync to return false for base.service.d.ts
         (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
-          if (path.includes("base.service.d.ts")) {
+          if (path.includes("@arkosjs/generated")) {
             return false;
           }
           return true; // app.ts exists
@@ -511,7 +511,7 @@ describe("Dev Command", () => {
         expect(mockConsoleError).toHaveBeenCalledWith(
           expect.objectContaining({
             message: expect.stringContaining(
-              "https://www.arkosjs.com/docs/cli/built-in-cli#typescript-types-generation"
+              "https://www.arkosjs.com/docs/cli/arkos-cli#typescript-types-generation"
             ),
           })
         );
@@ -688,7 +688,7 @@ describe("Dev Command", () => {
       it("should check correct path for base.service.d.ts file", async () => {
         const expectedPath = path.resolve(
           process.cwd(),
-          "node_modules/@arkosjs/types/base.service.d.ts"
+          "node_modules/@arkosjs/generated/cjs/index.js"
         );
 
         (fs.existsSync as jest.Mock).mockImplementation((checkPath: string) => {

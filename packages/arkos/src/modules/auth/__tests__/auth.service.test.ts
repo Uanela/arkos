@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import authService from "../auth.service";
+import authServiceImport from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { getArkosConfig } from "../../../server";
 import {
@@ -9,6 +9,8 @@ import {
 } from "../../../utils/helpers/arkos-config.helpers";
 import AppError from "../../error-handler/utils/app-error";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
+
+const authService: any = authServiceImport;
 
 // Mock dependencies
 jest.mock("jsonwebtoken");
@@ -679,19 +681,15 @@ describe("AuthService", () => {
         await authService.getAuthenticatedUser(mockReq);
       } catch (err: any) {
         expect(err?.message).toBe(
-          "ValidationError: Trying to call getAuthenticatedUser without setting up authentication"
+          "ValidationError: Trying to call AuthService.getAuthenticatedUser without setting up authentication"
         );
       }
-      // Verify
     });
 
-    it("should throw an error if no token is found", async () => {
-      // Setup - No token in request
+    it("should return null no token is found", async () => {
       mockReq = {};
 
-      await expect(
-        authService.getAuthenticatedUser(mockReq)
-      ).rejects.toBeInstanceOf(AppError);
+      expect(await authService.getAuthenticatedUser(mockReq)).toBe(null);
     });
 
     it("should use cookies even if authorization starts with Bearer but there is no token", async () => {
@@ -1186,6 +1184,44 @@ describe("AuthService", () => {
 
       // Verify
       expect(result).toBe(true);
+    });
+
+    it("should return true when the roles check is * for all", () => {
+      // Setup
+      const user = { id: "user-123", role: "admin", roles: null } as any;
+      const action = "create";
+      const accessControl = { create: { roles: "*" } };
+
+      // Execute
+      const result1 = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        accessControl
+      );
+
+      const result2 = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        { create: "*" }
+      );
+
+      const result3 = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        "*"
+      );
+
+      const result4 = (authService as any).checkStaticAccessControl(
+        user,
+        action,
+        { create: { roles: ["*"] } }
+      );
+
+      // Verify
+      expect(result1).toBe(true);
+      expect(result2).toBe(true);
+      expect(result3).toBe(true);
+      expect(result4).toBe(true);
     });
 
     it("should return true when user role (single role) matches authorized roles using descriptive object instead of simple array ", () => {

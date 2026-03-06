@@ -680,4 +680,593 @@ describe("UploadManager", () => {
       expect(mockNext).toHaveBeenCalled();
     });
   });
+
+  describe("validateRequiredFiles", () => {
+    describe("Single file upload validation", () => {
+      it("should pass when single file is present and required", () => {
+        const config = {
+          type: "single" as const,
+          field: "avatar",
+          required: true,
+        };
+        mockReq.file = { path: "/uploads/avatar.jpg" };
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should pass when single file is missing and not required", () => {
+        const config = {
+          type: "single" as const,
+          field: "avatar",
+          required: false,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should throw error when required single file is missing", () => {
+        const config = {
+          type: "single" as const,
+          field: "avatar",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toBe("Required upload field 'avatar' is missing");
+        expect(error.statusCode).toBe(400);
+        expect(error.code).toBe("MissingAvatarFileField");
+        expect(error.meta.errors).toEqual([
+          "Required upload field 'avatar' is missing",
+        ]);
+      });
+
+      it("should handle nested field names with brackets", () => {
+        const config = {
+          type: "single" as const,
+          field: "user[profile][avatar]",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingUserProfileAvatarFileField");
+      });
+
+      it("should handle snake_case field names", () => {
+        const config = {
+          type: "single" as const,
+          field: "profile_photo",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingProfilePhotoFileField");
+      });
+    });
+
+    describe("Array file upload validation", () => {
+      it("should pass when array files are present and required", () => {
+        const config = {
+          type: "array" as const,
+          field: "photos",
+          required: true,
+        };
+        mockReq.files = [
+          { path: "/uploads/photo1.jpg" },
+          { path: "/uploads/photo2.jpg" },
+        ];
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should pass when array files are missing and not required", () => {
+        const config = {
+          type: "array" as const,
+          field: "photos",
+          required: false,
+        };
+        mockReq.files = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should throw error when required array files are missing", () => {
+        const config = {
+          type: "array" as const,
+          field: "photos",
+          required: true,
+        };
+        mockReq.files = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toBe(
+          "Required upload field 'photos' is missing or empty"
+        );
+        expect(error.code).toBe("MissingPhotosFileField");
+      });
+
+      it("should throw error when required array files is not an array", () => {
+        const config = {
+          type: "array" as const,
+          field: "photos",
+          required: true,
+        };
+        mockReq.files = { photos: [] } as any;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toBe(
+          "Required upload field 'photos' is missing or empty"
+        );
+      });
+
+      it("should throw error when required array files is empty", () => {
+        const config = {
+          type: "array" as const,
+          field: "attachments",
+          required: true,
+        };
+        mockReq.files = [];
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toBe(
+          "Required upload field 'attachments' is missing or empty"
+        );
+        expect(error.code).toBe("MissingAttachmentsFileField");
+      });
+    });
+
+    describe("Multiple fields upload validation", () => {
+      it("should pass when all required fields are present", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "avatar", maxCount: 1 },
+            { name: "resume", maxCount: 1 },
+          ],
+          required: true,
+        };
+        mockReq.files = {
+          avatar: [{ path: "/uploads/avatar.jpg" }],
+          resume: [{ path: "/uploads/resume.pdf" }],
+        };
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should pass when fields are missing and not required", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "avatar", maxCount: 1 },
+            { name: "resume", maxCount: 1 },
+          ],
+          required: false,
+        };
+        mockReq.files = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should throw error when req.files is undefined", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "avatar", maxCount: 1 },
+            { name: "resume", maxCount: 1 },
+          ],
+          required: true,
+        };
+        mockReq.files = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toBe(
+          "Required upload fields are missing. Expected an object with fields: avatar, resume"
+        );
+        expect(error.code).toBe("MissingAvatarFileField");
+        expect(error.meta.errors).toEqual([
+          "Required upload fields are missing. Expected an object with fields: avatar, resume",
+        ]);
+      });
+
+      it("should throw error when req.files is an array instead of object", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "avatar", maxCount: 1 },
+            { name: "resume", maxCount: 1 },
+          ],
+          required: true,
+        };
+        mockReq.files = [];
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toContain("Required upload fields are missing");
+      });
+
+      it("should throw error when one field is missing", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "avatar", maxCount: 1 },
+            { name: "resume", maxCount: 1 },
+          ],
+          required: true,
+        };
+        mockReq.files = {
+          avatar: [{ path: "/uploads/avatar.jpg" }],
+        };
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toBe(
+          "Required upload field 'resume' is missing or empty"
+        );
+        expect(error.code).toBe("MissingResumeFileField");
+        expect(error.meta.errors).toEqual([
+          "Required upload field 'resume' is missing or empty",
+        ]);
+      });
+
+      it("should throw error when field is empty array", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "avatar", maxCount: 1 },
+            { name: "resume", maxCount: 1 },
+          ],
+          required: true,
+        };
+        mockReq.files = {
+          avatar: [{ path: "/uploads/avatar.jpg" }],
+          resume: [],
+        };
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toBe(
+          "Required upload field 'resume' is missing or empty"
+        );
+      });
+
+      it("should throw error when field is not an array", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "avatar", maxCount: 1 },
+            { name: "resume", maxCount: 1 },
+          ],
+          required: true,
+        };
+        mockReq.files = {
+          avatar: [{ path: "/uploads/avatar.jpg" }],
+          resume: "not-an-array" as any,
+        };
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.message).toBe(
+          "Required upload field 'resume' is missing or empty"
+        );
+      });
+
+      it("should collect multiple missing fields", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "avatar", maxCount: 1 },
+            { name: "resume", maxCount: 1 },
+            { name: "cover_letter", maxCount: 1 },
+          ],
+          required: true,
+        };
+        mockReq.files = {
+          avatar: [{ path: "/uploads/avatar.jpg" }],
+        };
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.meta.errors).toHaveLength(2);
+        expect(error.meta.errors).toContain(
+          "Required upload field 'resume' is missing or empty"
+        );
+        expect(error.meta.errors).toContain(
+          "Required upload field 'cover_letter' is missing or empty"
+        );
+        expect(error.code).toBe("MissingResumeFileField");
+      });
+
+      it("should handle snake_case field names in fields", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [{ name: "id_front", maxCount: 1 }],
+          required: true,
+        };
+        mockReq.files = {};
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingIdFrontFileField");
+      });
+    });
+
+    describe("Error code generation", () => {
+      it("should generate proper PascalCase error code from single word", () => {
+        const config = {
+          type: "single" as const,
+          field: "avatar",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingAvatarFileField");
+      });
+
+      it("should generate proper PascalCase error code from snake_case", () => {
+        const config = {
+          type: "single" as const,
+          field: "profile_photo",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingProfilePhotoFileField");
+      });
+
+      it("should generate proper PascalCase error code from kebab-case", () => {
+        const config = {
+          type: "single" as const,
+          field: "profile-photo",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingProfilePhotoFileField");
+      });
+
+      it("should handle brackets in field names", () => {
+        const config = {
+          type: "single" as const,
+          field: "user[profile][photo]",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingUserProfilePhotoFileField");
+      });
+
+      it("should handle array notation in field names", () => {
+        const config = {
+          type: "single" as const,
+          field: "items[0][file]",
+          // required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingItems0FileFileField");
+      });
+
+      it("should use first missing field for error code when multiple fields missing", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [
+            { name: "resume", maxCount: 1 },
+            { name: "cover_letter", maxCount: 1 },
+            { name: "portfolio", maxCount: 1 },
+          ],
+          required: true,
+        };
+        mockReq.files = {};
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toBe("MissingResumeFileField");
+      });
+    });
+
+    describe("Edge cases", () => {
+      it("should handle undefined required flag (defaults to true)", () => {
+        const config = {
+          type: "single" as const,
+          field: "avatar",
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).not.toHaveBeenCalledWith();
+      });
+
+      it("should handle empty field name", () => {
+        const config = {
+          type: "single" as const,
+          field: "",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      });
+
+      it("should handle fields with only special characters", () => {
+        const config = {
+          type: "single" as const,
+          field: "___",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+        const error = mockNext.mock.calls[0][0];
+        expect(error.code).toContain("Missing");
+        expect(error.code).toContain("FileField");
+      });
+
+      it("should handle empty fields array", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [],
+          required: true,
+        };
+        mockReq.files = {};
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should handle single field with maxCount > 1", () => {
+        const config = {
+          type: "fields" as const,
+          fields: [{ name: "photos", maxCount: 5 }],
+          required: true,
+        };
+        mockReq.files = {
+          photos: [
+            { path: "/uploads/photo1.jpg" },
+            { path: "/uploads/photo2.jpg" },
+            { path: "/uploads/photo3.jpg" },
+          ],
+        };
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+    });
+
+    describe("Integration with catchAsync", () => {
+      it("should work with catchAsync wrapper", () => {
+        const config = {
+          type: "single" as const,
+          field: "avatar",
+          required: true,
+        };
+        mockReq.file = { path: "/uploads/avatar.jpg" };
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should pass errors through catchAsync", () => {
+        const config = {
+          type: "single" as const,
+          field: "avatar",
+          required: true,
+        };
+        mockReq.file = undefined;
+
+        const middleware = uploadManager.validateRequiredFiles(config);
+        middleware(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      });
+    });
+  });
 });
