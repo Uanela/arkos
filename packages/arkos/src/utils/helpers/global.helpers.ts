@@ -32,8 +32,10 @@ export async function importModule(
     let imported;
     try {
       imported = await import(pathToFileURL(modulePath).href);
-    } catch {
-      imported = await import(modulePath);
+    } catch (err: any) {
+      if (err?.message?.includes("file://"))
+        imported = await import(modulePath);
+      else throw err;
     }
     return imported;
   }
