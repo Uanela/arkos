@@ -3,9 +3,8 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import sheu from "../sheu";
-import dotenvExpand from "dotenv-expand";
+import { expandEnv } from "../expand-env";
 
-// jest.mock("dotenv-expand");
 jest.mock("fs");
 jest.mock("../sheu");
 jest.mock("dotenv", () => ({
@@ -16,9 +15,8 @@ jest.mock("path", () => ({
   ...jest.requireActual("path"),
   resolve: jest.fn((cwd, fileName) => `${cwd}/${fileName}`),
 }));
-jest.mock("dotenv-expand", () => ({
-  ...jest.requireActual("dotenv-expand"),
-  expand: jest.fn(jest.requireActual("dotenv-expand").expand),
+jest.mock("../expand-env", () => ({
+  expandEnv: jest.fn(jest.requireActual("../expand-env").expandEnv),
 }));
 
 describe("loadEnvironmentVariables", () => {
@@ -156,7 +154,7 @@ describe("loadEnvironmentVariables", () => {
       return {};
     });
 
-    (dotenvExpand.expand as jest.Mock).mockImplementation(({ parsed }) => ({
+    (expandEnv as jest.Mock).mockImplementationOnce(({ parsed }) => ({
       parsed: {
         ...parsed,
         URL: "http://localhost:3000",
@@ -167,7 +165,7 @@ describe("loadEnvironmentVariables", () => {
 
     loadEnvironmentVariables();
 
-    expect(dotenvExpand.expand).toHaveBeenCalledWith({
+    expect(expandEnv).toHaveBeenCalledWith({
       parsed: expect.objectContaining({
         PORT: "3000",
         HOST: "localhost",
@@ -181,5 +179,133 @@ describe("loadEnvironmentVariables", () => {
     });
 
     expect(process.env.URL).toBe("http://localhost:3000");
+  });
+  test("should expand variable references across env files", () => {
+    (fs.existsSync as jest.Mock).mockImplementation(
+      (p) => p === `${mockCwd}/.env` || p === `${mockCwd}/.env.local`
+    );
+    (fs.readFileSync as jest.Mock).mockImplementation((p) => {
+      if (p === `${mockCwd}/.env`)
+        return Buffer.from("BASE_URL=http://localhost");
+      if (p === `${mockCwd}/.env.local`)
+        return Buffer.from("API_URL=${BASE_URL}/api");
+      return Buffer.from("");
+    });
+    (dotenv.parse as jest.Mock).mockImplementation((buf) => {
+      const content = buf.toString();
+      if (content.includes("BASE_URL="))
+        return { BASE_URL: "http://localhost" };
+      if (content.includes("API_URL=")) return { API_URL: "${BASE_URL}/api" };
+      return {};
+    });
+
+    loadEnvironmentVariables();
+
+    expect(process.env.API_URL).toBe("http://localhost/api");
+  });
+
+  test("should expand unbraced variable references", () => {
+    (fs.existsSync as jest.Mock).mockImplementation(
+      (p) => p === `${mockCwd}/.env`
+    );
+    (fs.readFileSync as jest.Mock).mockReturnValue(
+      Buffer.from(
+        "HOST=localhost\nPORT=5432\nDB=postgres\nDATABASE_URL=postgres://$HOST:$PORT/$DB"
+      )
+    );
+    (dotenv.parse as jest.Mock).mockReturnValue({
+      HOST: "localhost",
+      PORT: "5432",
+      DB: "postgres",
+      DATABASE_URL: "postgres://$HOST:$PORT/$DB",
+    });
+
+    loadEnvironmentVariables();
+
+    expect(process.env.DATABASE_URL).toBe("postgres://localhost:5432/postgres");
+  });
+
+  test("should use default value when variable is not set", () => {
+    (fs.existsSync as jest.Mock).mockImplementation(
+      (p) => p === `${mockCwd}/.env`
+    );
+    (fs.readFileSync as jest.Mock).mockReturnValue(
+      Buffer.from("DATABASE_URL=${DB_URL:-postgres://fallback:5432/mydb}")
+    );
+    (dotenv.parse as jest.Mock).mockReturnValue({
+      DATABASE_URL: "${DB_URL:-postgres://fallback:5432/mydb}",
+    });
+
+    loadEnvironmentVariables();
+
+    expect(process.env.DATABASE_URL).toBe("postgres://fallback:5432/mydb");
+  });
+
+  test("should use variable value over default when variable is set", () => {
+    (fs.existsSync as jest.Mock).mockImplementation(
+      (p) => p === `${mockCwd}/.env` || p === `${mockCwd}/.env.local`
+    );
+    (fs.readFileSync as jest.Mock).mockImplementation((p) => {
+      if (p === `${mockCwd}/.env`)
+        return Buffer.from("DB_URL=postgres://real:5432/realdb");
+      if (p === `${mockCwd}/.env.local`)
+        return Buffer.from(
+          "DATABASE_URL=${DB_URL:-postgres://fallback:5432/mydb}"
+        );
+      return Buffer.from("");
+    });
+    (dotenv.parse as jest.Mock).mockImplementation((buf) => {
+      const content = buf.toString();
+      if (content.includes("DB_URL="))
+        return { DB_URL: "postgres://real:5432/realdb" };
+      if (content.includes("DATABASE_URL="))
+        return { DATABASE_URL: "${DB_URL:-postgres://fallback:5432/mydb}" };
+      return {};
+    });
+
+    loadEnvironmentVariables();
+
+    expect(process.env.DATABASE_URL).toBe("postgres://real:5432/realdb");
+  });
+
+  test("later env files should override earlier ones before expansion", () => {
+    (fs.existsSync as jest.Mock).mockImplementation(
+      (p) => p === `${mockCwd}/.env` || p === `${mockCwd}/.env.local`
+    );
+    (fs.readFileSync as jest.Mock).mockImplementation((p) => {
+      if (p === `${mockCwd}/.env`)
+        return Buffer.from("PORT=3000\nAPP_URL=http://localhost:${PORT}");
+      if (p === `${mockCwd}/.env.local`) return Buffer.from("PORT=4000");
+      return Buffer.from("");
+    });
+    (dotenv.parse as jest.Mock).mockImplementation((buf) => {
+      const content = buf.toString();
+      if (content.includes("APP_URL"))
+        return { PORT: "3000", APP_URL: "http://localhost:${PORT}" };
+      if (content.includes("4000")) return { PORT: "4000" };
+      return {};
+    });
+
+    loadEnvironmentVariables();
+
+    expect(process.env.APP_URL).toBe("http://localhost:4000");
+  });
+
+  test("should resolve escaped dollar signs without expanding them", () => {
+    (fs.existsSync as jest.Mock).mockImplementation(
+      (p) => p === `${mockCwd}/.env`
+    );
+    (fs.readFileSync as jest.Mock).mockReturnValue(
+      Buffer.from("DATABASE_URL=postgres://user:\\$PASSWORD@localhost/db")
+    );
+    (dotenv.parse as jest.Mock).mockReturnValue({
+      DATABASE_URL: "postgres://user:\\$PASSWORD@localhost/db",
+    });
+
+    loadEnvironmentVariables();
+
+    expect(process.env.DATABASE_URL).toBe(
+      "postgres://user:$PASSWORD@localhost/db"
+    );
   });
 });

@@ -189,10 +189,8 @@ describe("APIFeatures", () => {
           name: true,
           email: true,
         },
-        omit: {
-          password: true,
-        },
       });
+      expect(apiFeatures.filters?.omit?.password).toBeUndefined();
     });
 
     test("should handle native include syntax", () => {
@@ -222,10 +220,9 @@ describe("APIFeatures", () => {
           name: true,
           email: true,
         },
-        omit: {
-          password: true,
-        },
       });
+
+      expect(apiFeatures.filters?.omit?.password).toBeUndefined();
     });
 
     test("should handle native omit syntax", () => {
@@ -258,10 +255,9 @@ describe("APIFeatures", () => {
           createdAt: true,
           posts: true,
         },
-        omit: {
-          password: true,
-        },
       });
+
+      expect(apiFeatures.filters?.omit?.password).toBeUndefined();
     });
 
     // test("should throw error when trying to expose user password via select", () => {
@@ -415,11 +411,12 @@ describe("APIFeatures", () => {
       expect(apiFeatures.filters).toEqual({
         where: { OR: [{ email: "arkos@the-beast.com" }] },
         select: { name: true, email: true, posts: true },
-        omit: { password: true },
         orderBy: [{ createdAt: "desc" }],
         skip: 10,
         take: 10,
       });
+
+      expect(apiFeatures.filters?.omit?.password).toBeUndefined();
     });
   });
 
@@ -443,7 +440,6 @@ describe("APIFeatures", () => {
 
       expect(apiFeatures.filters).toEqual({
         where: {},
-        omit: { password: true },
         select: {
           id: true,
           name: true,
@@ -453,6 +449,8 @@ describe("APIFeatures", () => {
         skip: 0,
         take: 30,
       });
+
+      expect(apiFeatures.filters?.omit?.password).toBeUndefined();
     });
 
     test("should handle empty query", () => {
