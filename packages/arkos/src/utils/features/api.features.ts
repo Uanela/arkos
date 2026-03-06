@@ -236,13 +236,11 @@ export default class APIFeatures {
       delete this.searchParams.include;
     }
 
-    // this._validateNoPasswordExposure(finalSelect, finalInclude, finalOmit);
-
-    // ALWAYS protect password field in finalOmit
-    // if (finalOmit.password === false)
-    //   throw new AppError("Cannot disable password omission protection", 400);
-
-    if (this.modelName?.toLowerCase?.() === "user") finalOmit.password = true;
+    if (
+      this.modelName?.toLowerCase?.() === "user" &&
+      Object.keys(finalSelect || {}).length === 0
+    )
+      finalOmit.password = true;
 
     if (Object.keys(finalSelect).length > 0) this.filters.select = finalSelect;
 
@@ -259,56 +257,6 @@ export default class APIFeatures {
     }
 
     return this;
-  }
-
-  private _validateNoPasswordExposure(
-    select: Record<string, any>,
-    include: Record<string, any>,
-    omit: Record<string, any>
-  ) {
-    const checkForPassword = (
-      obj: Record<string, any>,
-      prismaKey: string,
-      path: string[] = []
-    ) => {
-      for (const [key, value] of Object.entries(obj)) {
-        const currentPath = [...path, key];
-
-        if (
-          key === "password" &&
-          (this.modelName?.toLowerCase() === "user" ||
-            currentPath.at(-3)?.toLowerCase?.() === "user")
-        ) {
-          if (value === false && prismaKey === "omit")
-            throw new AppError(
-              "Cannot disable password omission protection",
-              400,
-              { ...obj },
-              "CannotExposeUserPassword"
-            );
-
-          if (value === true && ["include", "select"].includes(prismaKey))
-            throw new AppError(
-              "User password exposure detected",
-              403,
-              {},
-              "UserPasswordExposureDetected"
-            );
-        }
-
-        if (
-          typeof value === "object" &&
-          value !== null &&
-          !Array.isArray(value)
-        ) {
-          checkForPassword(value, prismaKey, currentPath);
-        }
-      }
-    };
-
-    checkForPassword(select, "select");
-    checkForPassword(include, "include");
-    checkForPassword(omit, "omit");
   }
 
   paginate(): APIFeatures {
