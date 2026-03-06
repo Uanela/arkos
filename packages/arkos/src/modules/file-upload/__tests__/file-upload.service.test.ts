@@ -561,7 +561,6 @@ describe("FileUploadService", () => {
       expect(AppError).toHaveBeenCalledWith(
         "No file or files were attached on field images on the request body as form data.",
         400,
-        {},
         "NoFileOrFilesAttached"
       );
     });
