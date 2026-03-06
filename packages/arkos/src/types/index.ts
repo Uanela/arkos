@@ -223,6 +223,14 @@ export interface ArkosRequest<
    * Authenticated user with additional fields
    */
   user?: User & Record<string, any>;
+  /**
+   * Single uploaded file, populated when using `multer.single()`
+   */
+  file?: Express.Multer.File;
+  /**
+   * Uploaded files, populated when using `multer.array()` or `multer.fields()`.
+   */
+  files?: Express.Multer.File[];
 
   /**
    * Fields to include in relational queries
