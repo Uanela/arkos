@@ -1,0 +1,25 @@
+import { IsNumber, IsOptional, ValidateNested, IsString } from "class-validator";
+import { Type } from "class-transformer";
+
+class UserForCreatePostDto {
+  @IsString()
+  id!: string;
+}
+
+class UserForCreatePostDto {
+  @IsString()
+  id!: string;
+}
+
+export default class CreatePostDto {
+  @IsNumber()
+  views!: number;
+
+  @ValidateNested()
+  @Type(() => UserForCreatePostDto)
+  user!: UserForCreatePostDto;
+
+  @ValidateNested()
+  @Type(() => UserForCreatePostDto)
+  user2!: UserForCreatePostDto;
+}
