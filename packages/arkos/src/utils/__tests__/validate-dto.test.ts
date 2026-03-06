@@ -1,10 +1,9 @@
 import validateDto from "../validate-dto";
-import AppError from "../../modules/error-handler/utils/app-error";
 import { validate } from "class-validator";
 
 // Mock dependencies
 jest.mock("class-transformer", () => ({
-  plainToInstance: jest.fn((cls, data) => data),
+  plainToInstance: jest.fn((_, data) => data),
 }));
 
 jest.mock("class-validator", () => ({
@@ -87,6 +86,6 @@ describe("validateDto", () => {
     await validateDto(TestUserDto, mockData);
 
     // Assert
-    expect(validate).toHaveBeenCalledWith(mockData, undefined);
+    expect(validate).toHaveBeenCalledWith(mockData, {});
   });
 });

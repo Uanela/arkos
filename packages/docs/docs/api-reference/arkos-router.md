@@ -1,11 +1,9 @@
 ---
 sidebar_position: 1
-title: Arkos Router (new)
+title: Arkos Router
 ---
 
-import SmallTag from "../components/small-tag"
-
-# Arkos Router Guide <SmallTag>New</SmallTag>
+# Arkos Router Guide
 
 > Available from `v1.4.0-beta`
 
@@ -18,11 +16,11 @@ ArkosRouter extends Express Router with a configuration-first approach. Instead 
 ```typescript
 import { ArkosRouter } from "arkos";
 
-const router = ArkosRouter();
+const router = ArkosRouter({ prefix: "/api/users" });
 
 router.get(
   {
-    path: "/api/users/:id",
+    path: "/:id",
     authentication: true,
     validation: {
       params: z.object({ id: z.string() }),
@@ -33,6 +31,10 @@ router.get(
 ```
 
 This declarative approach keeps your routes clean, self-documenting, and consistent across your application.
+
+:::tip
+The `prefix` option in `ArkosRouter({ prefix: "/api/users" })` was able from [v1.5.0](/blog/1.5-beta) for DX improvements.
+:::
 
 ## Configuration Object
 
@@ -286,6 +288,7 @@ router.post(
         field: "avatar",
         maxSize: 1024 * 1024 * 5, // 5MB
         uploadDir: "avatars",
+        required: true, // (Defaults) added in v1.5.0
       },
     },
   },
@@ -307,6 +310,7 @@ router.post(
         maxCount: 10,
         uploadDir: "gallery",
         allowedFileTypes: [".jpg", ".png", ".webp"],
+        required: true, // (Defaults) added in v1.5.0
       },
     },
   },
@@ -330,6 +334,7 @@ router.post(
           { name: "documents", maxCount: 3 },
         ],
         uploadDir: "products",
+        required: false, // Optinal files, added in v1.5.0
       },
     },
   },
@@ -351,12 +356,17 @@ router.post(
         type: "single",
         field: "profile[photo]", // Nested field notation
         uploadDir: "users-profile",
+        required: false, // Optinal user photo, added in v1.5.0
       },
     },
   },
   handler
 );
 ```
+
+:::tip New Required Flag
+Notice that the `required` flag defaults to true, if ommited the file will be required yet, so if you want to make it optional pass `required: false`. Is important to know that this feature of `required` flag was added at [v1.5.0+](/blog/1.5-beta).
+:::
 
 **Result in `req.body`:**
 
@@ -463,6 +473,7 @@ router.post(
 | `field`            | `string`                                 | Form field name (single/array)         | -                          |
 | `fields`           | `Array<{name, maxCount}>`                | Multiple field config (fields type)    | -                          |
 | `uploadDir`        | `string`                                 | Storage directory                      | Auto-detected by MIME type |
+| `required`         | `boolean` (from 1.5.0+)                  | Require or not                         | true                       |
 | `maxSize`          | `number`                                 | Max file size in bytes                 | From global config         |
 | `maxCount`         | `number`                                 | Max files (array type)                 | -                          |
 | `allowedFileTypes` | `string[] \| RegExp`                     | Allowed file extensions/patterns       | From global config         |
@@ -652,7 +663,7 @@ router.get(
 - Documenting responses
 - Endpoints without validation
 
-For complete OpenAPI setup and configuration, see the [Swagger API Documentation Guide](/docs/core-concepts/swagger-api-documentation).
+For complete OpenAPI setup and configuration, see the [Swagger API Documentation Guide](/docs/core-concepts/open-api-documentation).
 
 ## Query Parsing
 
@@ -1030,5 +1041,5 @@ export default router;
 - **[Authentication System](/docs/core-concepts/authentication-system)** - Complete authentication setup
 - **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Validation with Zod and class-validator
 - **[File Upload Guide](/docs/core-concepts/file-uploads)** - File upload configuration
-- **[Swagger API Documentation](/docs/core-concepts/swagger-api-documentation)** - OpenAPI documentation setup
+- **[Swagger API Documentation](/docs/core-concepts/open-api-documentation)** - OpenAPI documentation setup
 - **[Request Query Parameters](/docs/guide/request-query-parameters)** - Advanced filtering and querying
