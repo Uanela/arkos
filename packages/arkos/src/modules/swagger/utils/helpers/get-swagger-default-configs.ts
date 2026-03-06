@@ -17,7 +17,7 @@ export default function getSwaggerDefaultConfig(
     strict: false,
     options: {
       definition: {
-        openapi: "3.0.0",
+        openapi: "3.1.0",
         info: {
           title: "Powered By Arkos.js",
           version: "1.0.0",

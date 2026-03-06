@@ -1,7 +1,8 @@
-import arkos from "arkos";
 import { getHandlerErrors, initializeASTs } from "./utils/ast-handler";
 import { AppError } from "arkos/error-handler";
+import arkos, { ArkosRequest } from "arkos";
 import userRouter, { r } from "./modules/user/user.router";
+import { Request } from "express";
 
 (async () => {
   console.time("ast");

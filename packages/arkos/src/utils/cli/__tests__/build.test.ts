@@ -227,7 +227,7 @@ describe("buildCommand", () => {
 
       // Verify TypeScript compilation command
       expect(execSync).toHaveBeenCalledWith(
-        "npx trash .build && npx tsc -p /mock/project/tsconfig.arkos-build.json",
+        "npx tsc -p /mock/project/tsconfig.arkos-build.json",
         expect.any(Object)
       );
 

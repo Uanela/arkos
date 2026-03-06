@@ -65,7 +65,7 @@ export class ClassValidatorDtoGenerator {
 
           if (isOptional) validatorsUsed.add("IsOptional");
 
-          validatorsUsed.add("IsNotEmpty");
+          if (field.type === "String") validatorsUsed.add("IsNotEmpty");
           validatorsUsed.add("ValidateNested");
           transformersUsed.add("Type");
 
@@ -165,7 +165,7 @@ ${dtoFields.join("\n\n")}
         if (referencedModel) {
           validatorsUsed.add("IsOptional");
           validatorsUsed.add("ValidateNested");
-          validatorsUsed.add("IsNotEmpty");
+          if (field.type === "String") validatorsUsed.add("IsNotEmpty");
           transformersUsed.add("Type");
 
           const relationDtoName = `${referencedModel.name}ForUpdate${modelName!.pascal}Dto`;
@@ -184,7 +184,7 @@ ${dtoFields.join("\n\n")}
 
           const typeModifier = isTypeScript ? "?" : "";
           dtoFields.push(
-            `  @IsOptional()\n  @IsNotEmpty()\n  @ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`
+            `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`
           );
         }
         continue;
@@ -601,8 +601,11 @@ ${fields.join("\n\n")}
       validatorsUsed.add("IsOptional");
     }
 
-    decorators.push("@IsNotEmpty()");
-    validatorsUsed.add("IsNotEmpty");
+    if (field.type === "String") {
+      if (field.isArray) decorators.push("@IsNotEmpty({ each: true })");
+      else decorators.push("@IsNotEmpty()");
+      validatorsUsed.add("IsNotEmpty");
+    }
 
     if (field.isArray) {
       decorators.push("@IsArray()");
@@ -642,10 +645,13 @@ ${fields.join("\n\n")}
     let type = this.mapPrismaTypeToTS(field.type);
 
     decorators.push("@IsOptional()");
-    decorators.push("@IsNotEmpty()");
-
     validatorsUsed.add("IsOptional");
-    validatorsUsed.add("IsNotEmpty");
+
+    if (field.type === "String") {
+      if (field.isArray) decorators.push("@IsNotEmpty({ each: true })");
+      else decorators.push("@IsNotEmpty()");
+      validatorsUsed.add("IsNotEmpty");
+    }
 
     if (field.isArray) {
       decorators.push("@IsArray()");
