@@ -5,10 +5,36 @@ import { execSync } from "child_process";
 import sheu from "../sheu";
 import path from "path";
 
-export default function prismaGenerateCommand() {
-    const content = `
+const GENERATED_PACKAGE_NAME = "@arkosjs/generated";
+
+function getGeneratedPackageDir(): string {
+  return path.resolve(process.cwd(), `node_modules/${GENERATED_PACKAGE_NAME}`);
+}
+
+function buildTypesContent(): string {
+  const modelEntries = prismaSchemaParser.models
+    .map(
+      (model) => `
+  "${kebabCase(model.name)}": {
+    Delegate: Prisma.${model.name}Delegate;
+    GetPayload: Prisma.${model.name}GetPayload<T>;
+    FindManyArgs: Prisma.${model.name}FindManyArgs;
+    FindFirstArgs: Prisma.${model.name}FindFirstArgs;
+    CreateArgs: Prisma.${model.name}CreateArgs;
+    CreateManyArgs: Prisma.${model.name}CreateManyArgs;
+    UpdateArgs: Prisma.${model.name}UpdateArgs;
+    UpdateManyArgs: Prisma.${model.name}UpdateManyArgs;
+    DeleteArgs: Prisma.${model.name}DeleteArgs;
+    DeleteManyArgs: Prisma.${model.name}DeleteManyArgs;
+    CountArgs: Prisma.${model.name}CountArgs;
+  };`
+    )
+    .join("");
+
+  return `
+import { Prisma, PrismaClient } from "@prisma/client";
 import { ServiceBaseContext } from "arkos/services";
-import { Prisma, PrismaClient } from "@prisma/client"
+import { ArkosPrismaInput } from "arkos/prisma";
 
 export interface PrismaField {
   name: string;
@@ -24,135 +50,79 @@ export interface PrismaField {
   attributes: string[];
 }
 
+export type PrismaModels<T extends Record<string, any>> = {${modelEntries}
+};
 
-export declare type ModelsGetPayload<T extends Record<string, any>> = {
-${prismaSchemaParser.models.map(
-    (model) =>
-        `
-    "${kebabCase(model.name)}": {
-        Delegate: Prisma.${model.name}Delegate,
-        GetPayload: Prisma.${model.name}GetPayload<T>,
-        FindManyArgs: Prisma.${model.name}FindManyArgs,
-        FindFirstArgs: Prisma.${model.name}FindFirstArgs,
-        CreateArgs: Prisma.${model.name}CreateArgs,
-        CreateManyArgs: Prisma.${model.name}CreateManyArgs,
-        UpdateArgs: Prisma.${model.name}UpdateArgs,
-        UpdateManyArgs: Prisma.${model.name}UpdateManyArgs,
-        DeleteArgs: Prisma.${model.name}DeleteArgs,
-        DeleteManyArgs: Prisma.${model.name}DeleteManyArgs,
-        CountArgs: Prisma.${model.name}CountArgs
-    }
-`
-)}
-}
+export type ExtractPrismaFilters<T> = T extends { where?: infer W; [x: string]: any } ? W : any;
+export type ExtractPrismaData<T> = T extends { data: infer D; [x: string]: any } ? D : any;
+export type ExtractPrismaQueryOptions<T, K extends keyof T = never> = Omit<T, K>;
 
-export type ExtractFilters<T> = T extends { where?: infer W; [x: string]: any } ? W : any;
-export type ExtractQueryOptions<T, K extends keyof T = never> = Omit<T, K>;
-export type ExtractData<T> = T extends { data: infer D; [x: string]: any } ? D : any;
-
-export declare class BaseService<
-    TModelName extends keyof ModelsGetPayload<any>
-> {
-    modelName: TModelName;
-    relationFields: {
-        singular: PrismaField[] | undefined;
-        list: PrismaField[] | undefined;
-    };
-    prisma: PrismaClient;
-    
-    constructor(modelName: TModelName);
-    
-    createOne<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['CreateArgs'], 'data'>>(
-        data: ExtractData<ModelsGetPayload<any>[TModelName]['CreateArgs']>, 
-        queryOptions?: TOptions, 
-        context?: ServiceBaseContext
-    ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload']>;
-    
-    createMany<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['CreateManyArgs'], 'data'>>(
-        data: ExtractData<ModelsGetPayload<any>[TModelName]['CreateManyArgs']>, 
-        queryOptions?: TOptions, 
-        context?: ServiceBaseContext
-    ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload'][]>;
-    
-    count<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['CountArgs'], 'where'>>(
-        filters?: ExtractFilters<ModelsGetPayload<any>[TModelName]['CountArgs']>, 
-        queryOptions?: TOptions,
-        context?: ServiceBaseContext
-    ): Promise<number>;
-    
-    findMany<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['FindManyArgs'], 'where'>>(
-        filters?: ExtractFilters<ModelsGetPayload<any>[TModelName]['FindManyArgs']>, 
-        queryOptions?: TOptions, 
-        context?: ServiceBaseContext
-    ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload'][]>;
-    
-    findById<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['FindFirstArgs'], 'where'>>(
-        id: string | number, 
-        queryOptions?: TOptions, 
-        context?: ServiceBaseContext
-    ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload'] | null>;
-    
-    findOne<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['FindFirstArgs'], 'where'>>(
-        filters: ExtractFilters<ModelsGetPayload<any>[TModelName]['FindManyArgs']>, 
-        queryOptions?: TOptions, 
-        context?: ServiceBaseContext
-    ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload'] | null>;
-    
-    updateOne<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['UpdateArgs'], 'where' | 'data'>>(
-        filters: ExtractFilters<ModelsGetPayload<any>[TModelName]['UpdateArgs']>, 
-        data: ExtractData<ModelsGetPayload<any>[TModelName]['UpdateArgs']>, 
-        queryOptions?: TOptions, 
-        context?: ServiceBaseContext
-    ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload']>;
-    
-    updateMany<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['UpdateManyArgs'], 'where' | 'data'>>(
-        filters: ExtractFilters<ModelsGetPayload<any>[TModelName]['UpdateManyArgs']>, 
-        data: ExtractData<ModelsGetPayload<any>[TModelName]['UpdateManyArgs']>, 
-        queryOptions?: TOptions, 
-        context?: ServiceBaseContext
-    ): Promise<{ count: number }>;
-    
-    deleteOne<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['DeleteArgs'], 'where'>>(
-        filters: ExtractFilters<ModelsGetPayload<any>[TModelName]['DeleteArgs']>, 
-        queryOptions?: TOptions,
-        context?: ServiceBaseContext
-    ): Promise<ModelsGetPayload<TOptions>[TModelName]['GetPayload']>;
-    
-    deleteMany<TOptions extends ExtractQueryOptions<ModelsGetPayload<any>[TModelName]['DeleteManyArgs'], 'where'>>(
-        filters: ExtractFilters<ModelsGetPayload<any>[TModelName]['DeleteManyArgs']>, 
-        queryOptions?: TOptions,
-        context?: ServiceBaseContext
-    ): Promise<{ count: number }>;
-}
+export { PrismaClient };
 `;
-    execSync("npx prisma generate", { stdio: "inherit" });
+}
 
-    const filePath = path.resolve(
-        process.cwd(),
-        `node_modules/@arkosjs/types/`
-    );
-    fs.mkdirSync(filePath, { recursive: true });
-    fs.writeFileSync(filePath + "/base.service.d.ts", content, {
-        encoding: "utf8",
-    });
+function buildCjsContent(): string {
+  return `
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PrismaClient = void 0;
+const client_1 = require("@prisma/client");
+exports.PrismaClient = client_1.PrismaClient;
+`;
+}
 
-    const pkgPath = path.resolve(
-        process.cwd(),
-        `node_modules/@arkosjs/types/package.json`
-    );
-    const pkgJsonContent = `{
-      "name": "@arkosjs/types",
-      "version": "1.0.0",
-      "types": "./base.service.d.ts",
-      "exports": {
-        "./base.service": "./base.service.d.ts"
-      }
-    }`;
-    fs.writeFileSync(pkgPath, pkgJsonContent, {
-        encoding: "utf8",
-    });
+function buildEsmContent(): string {
+  return `
+export { PrismaClient } from "@prisma/client";
+`;
+}
 
-    sheu.done(
-        "Types for @prisma/client and base service generated successfully!"
-    );
+function buildPackageJson(): string {
+  return JSON.stringify(
+    {
+      name: GENERATED_PACKAGE_NAME,
+      version: "1.0.0",
+      types: "./index.d.ts",
+      main: "./cjs/index.js",
+      module: "./esm/index.js",
+      exports: {
+        ".": {
+          require: "./cjs/index.js",
+          import: "./esm/index.js",
+          types: "./index.d.ts",
+        },
+      },
+    },
+    null,
+    2
+  );
+}
+
+export default function prismaGenerateCommand() {
+  execSync("npx prisma generate", { stdio: "inherit" });
+
+  const pkgDir = getGeneratedPackageDir();
+
+  fs.mkdirSync(path.join(pkgDir, "cjs"), { recursive: true });
+  fs.mkdirSync(path.join(pkgDir, "esm"), { recursive: true });
+
+  fs.writeFileSync(path.join(pkgDir, "index.d.ts"), buildTypesContent(), {
+    encoding: "utf8",
+  });
+
+  fs.writeFileSync(path.join(pkgDir, "cjs", "index.js"), buildCjsContent(), {
+    encoding: "utf8",
+  });
+
+  fs.writeFileSync(path.join(pkgDir, "esm", "index.js"), buildEsmContent(), {
+    encoding: "utf8",
+  });
+
+  fs.writeFileSync(path.join(pkgDir, "package.json"), buildPackageJson(), {
+    encoding: "utf8",
+  });
+
+  sheu.done(
+    `Types and values for ${GENERATED_PACKAGE_NAME} and @prisma/client generated successfully!`
+  );
 }

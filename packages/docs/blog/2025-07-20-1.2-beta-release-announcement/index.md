@@ -330,7 +330,7 @@ export default postAuthConfigs;
 
 This CLI dramatically reduces the time needed to scaffold new features in your Arkos.js application, allowing you to focus on implementing your business logic rather than writing boilerplate code.
 
-You can a more in depth understanding this new `built-in cli` by reading it's dedicated guide [Clicking Here](/docs/arkos-cli/then-built-in-cli).
+You can a more in depth understanding this new `built-in cli` by reading it's dedicated guide [Clicking Here](/docs/arkos-cli/arkos-cli).
 
 ### 2. New File Watcher For Hot Reload
 

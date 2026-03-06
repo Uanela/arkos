@@ -146,7 +146,7 @@ export type ArkosConfig = {
      * - `JWT_COOKIE_HTTP_ONLY`: Whether the cookie is HTTP-only. Default: `true`.
      * - `JWT_COOKIE_SAME_SITE`: Can be "lax", "strict", or "none". Defaults to "lax" in dev, "none" in prod.
      *
-     * ⚠️ Values passed here take precedence over environment variables.
+     *@see Values passed here take precedence over environment variables.
      */
     jwt?: {
       /** Secret key used for signing and verifying JWT tokens */
@@ -232,6 +232,7 @@ export type ArkosConfig = {
          * ```ts
          * {
          *  whitelist: true
+         *  forbidNonWhitelisted: true
          * }
          * ```
          */
@@ -239,7 +240,14 @@ export type ArkosConfig = {
       }
     | {
         resolver: "zod";
-        validationOptions?: Record<string, any>;
+        validationOptions?: {
+          /**
+           * Throws an error for know whitelisted fields
+           *
+           * @default true
+           */
+          forbidNonWhitelisted?: boolean;
+        };
       }
   );
   /**
@@ -541,7 +549,7 @@ export type ArkosConfig = {
    *  }
    * })
    * ```
-   * @see {@link https://www.arkosjs.com/docs/core-concepts/swagger-api-documentation}
+   * @see {@link https://www.arkosjs.com/docs/core-concepts/open-api-documentation}
    */
   swagger?: {
     /**

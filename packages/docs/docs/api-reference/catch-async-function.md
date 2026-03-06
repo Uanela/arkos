@@ -1,5 +1,6 @@
 ---
 sidebar_position: 4
+title: Catch Async
 ---
 
 # Catch Async Function
@@ -20,7 +21,7 @@ The `catchAsync` function serves several important purposes:
 4. **Centralized Error Handling**: Works with `AppError` to create a cohesive error management system, [read more about AppError](/docs/api-reference/the-app-error-class).
 5. **Developer Experience**: Reduces boilerplate code and potential for human error
 
-As you are reading about the `catchAsync` maybe you may want to also read about the **Arkos Global Error Handler** [clicking here](/docs/core-concepts/global-error-handler).
+As you are reading about the `catchAsync` maybe you may want to also read about the **Arkos Global Error Handler** [clicking here](/docs/core-concepts/error-handling).
 
 ## Function Signature
 
@@ -71,7 +72,7 @@ export const getAllUsers = catchAsync(async (req, res, next) => {
 });
 ```
 
-As shown below you do not need a try-catch block when using catchAsync, neither forwarding the error to global handler nor even about throwing errors sometimes (Just if you would like a specific message), why??? because **Arkos** handles it for you by providing a set of meaningfull error messages and status code. [read more about](/docs/core-concepts/global-error-handler.md)
+As shown below you do not need a try-catch block when using catchAsync, neither forwarding the error to global handler nor even about throwing errors sometimes (Just if you would like a specific message), why??? because **Arkos** handles it for you by providing a set of meaningfull error messages and status code. [read more about](/docs/core-concepts/error-handling.md)
 
 ### With Custom Error Throwing
 

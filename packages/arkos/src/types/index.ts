@@ -1,10 +1,11 @@
 import {
   ErrorRequestHandler,
   NextFunction,
-  Request,
   RequestHandler,
   Response,
+  Request,
 } from "express";
+import { PrismaModels } from "../generated";
 
 export type PrismaOperations = "findMany";
 
@@ -204,7 +205,7 @@ export interface AuthPermission {
   role: AuthRole;
 }
 
-export interface User extends Record<string, any> {
+export interface BaseUser extends Record<string, any> {
   id: string;
   isSuperUser: boolean;
   password: string;
@@ -213,6 +214,15 @@ export interface User extends Record<string, any> {
   isActive: boolean;
 }
 
+type UserModelPayload =
+  PrismaModels<{}> extends { user: infer U }
+    ? U extends { GetPayload: infer P }
+      ? P
+      : never
+    : never;
+
+export type User = UserModelPayload extends never ? BaseUser : UserModelPayload;
+
 export interface ArkosRequest<
   P extends Record<string, any> = any,
   ResBody = any,
@@ -220,9 +230,9 @@ export interface ArkosRequest<
   Query extends Record<string, any> = any,
 > extends Request<P, ResBody, ReqBody, Query> {
   /**
-   * Authenticated user with additional fields
+   * Authenticated user
    */
-  user?: User & Record<string, any>;
+  user?: User;
   /**
    * Single uploaded file, populated when using `multer.single()`
    */

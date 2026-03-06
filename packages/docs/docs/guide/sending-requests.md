@@ -268,7 +268,7 @@ DELETE /api/posts/many?authorId=123&published=false
 }
 ```
 
-You read about other errors that can occur during this operatorions under the [global error handler section](/docs/core-concepts/global-error-handler)
+You read about other errors that can occur during this operatorions under the [global error handler section](/docs/core-concepts/error-handling)
 
 ## Request Data Validation
 
