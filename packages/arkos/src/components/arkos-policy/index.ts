@@ -1,5 +1,11 @@
 import { User } from "../../types";
-import { ArkosPolicyRule, IArkosPolicy, PolicyWithActions } from "./types";
+import {
+  ArkosPolicyRule,
+  IArkosPolicy,
+  PolicyAuthEntry,
+  PolicyChecker,
+  PolicyWithActions,
+} from "./types";
 import authService from "../../modules/auth/auth.service";
 
 /**
@@ -51,21 +57,22 @@ function buildPolicy<TResource extends string, TActions extends string>(
 
   const actionEntries = Object.fromEntries(
     Object.entries(store).flatMap(([action, config]) => {
-      const permission = Object.assign(
-        (user?: User): Promise<boolean> =>
-          authService.permission(action, resource, { [action]: config })(user),
-        {
-          resource,
-          action,
-          rule: config,
-        }
-      );
+      const authEntry: PolicyAuthEntry<TResource, typeof action> = {
+        resource,
+        action,
+        rule: config,
+      };
+
+      const checker: PolicyChecker = (user?: User): Promise<boolean> =>
+        authService.permission(action, resource, { [action]: config || {} })(
+          user
+        );
 
       const canKey = `can${action.charAt(0).toUpperCase()}${action.slice(1)}`;
 
       return [
-        [action, permission],
-        [canKey, permission],
+        [action, authEntry],
+        [canKey, checker],
       ];
     })
   );

@@ -3,13 +3,16 @@ import { DetailedAccessControlRule } from "../../types/auth";
 
 export type ArkosPolicyRule = string[] | DetailedAccessControlRule | "*";
 
-export type PolicyEntry<TResource extends string, TAction extends string> = ((
-  user?: User
-) => boolean) & {
+export type PolicyAuthEntry<
+  TResource extends string,
+  TAction extends string,
+> = {
   readonly resource: TResource;
   readonly action: TAction;
   readonly rule: ArkosPolicyRule;
 };
+
+export type PolicyChecker = (user?: User) => Promise<boolean>;
 
 type CanKey<TAction extends string> = `can${Capitalize<TAction>}`;
 
@@ -17,12 +20,9 @@ export type PolicyWithActions<
   TResource extends string,
   TActions extends string,
 > = IArkosPolicy<TResource, TActions> & {
-  [K in CanKey<TActions>]: PolicyEntry<
-    TResource,
-    K extends `can${infer A}` ? Uncapitalize<A> : never
-  >;
+  [K in TActions]: PolicyAuthEntry<TResource, K>;
 } & {
-  [K in TActions]: PolicyEntry<TResource, K>;
+  [K in CanKey<TActions>]: PolicyChecker;
 };
 
 export interface IArkosPolicy<
@@ -34,6 +34,6 @@ export interface IArkosPolicy<
 
   rule<TAction extends string>(
     action: TAction,
-    config: ArkosPolicyRule
+    config?: ArkosPolicyRule
   ): PolicyWithActions<TResource, TActions | TAction>;
 }
