@@ -1,14 +1,14 @@
 import { User } from "../../types";
 import { DetailedAccessControlRule } from "../../types/auth";
 
-export type AccessControlConfig = string[] | DetailedAccessControlRule | "*";
+export type ArkosPolicyRule = string[] | DetailedAccessControlRule | "*";
 
 export type PolicyEntry<TResource extends string, TAction extends string> = ((
   user?: User
 ) => boolean) & {
   readonly resource: TResource;
   readonly action: TAction;
-  readonly rule: AccessControlConfig;
+  readonly rule: ArkosPolicyRule;
 };
 
 type CanKey<TAction extends string> = `can${Capitalize<TAction>}`;
@@ -34,6 +34,6 @@ export interface IArkosPolicy<
 
   rule<TAction extends string>(
     action: TAction,
-    config: AccessControlConfig
+    config: ArkosPolicyRule
   ): PolicyWithActions<TResource, TActions | TAction>;
 }
