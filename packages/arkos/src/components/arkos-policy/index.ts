@@ -1,5 +1,10 @@
 import { User } from "../../types";
-import { AccessControlConfig, IArkosPolicy, PolicyWithActions } from "./types";
+import {
+  AccessControlConfig,
+  ArkosPolicyRule,
+  IArkosPolicy,
+  PolicyWithActions,
+} from "./types";
 import authService from "../../modules/auth/auth.service";
 
 /**
@@ -43,7 +48,7 @@ function buildPolicy<TResource extends string, TActions extends string>(
 ): PolicyWithActions<TResource, TActions> {
   const rule = <TAction extends string>(
     action: TAction,
-    config: AccessControlConfig
+    config: ArkosPolicyRule
   ): PolicyWithActions<TResource, TActions | TAction> => {
     const newStore = { ...store, [action]: config };
     return buildPolicy<TResource, TActions | TAction>(resource, newStore);
