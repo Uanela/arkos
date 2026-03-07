@@ -3,3 +3,4 @@ import "./fix-esm-imports.ts";
 import "./add-cjs-or-esm-package-json.ts";
 import "./handle-arkos-loading.ts";
 import "./generate-post-build-types.ts";
+import "./fix-types.ts";
