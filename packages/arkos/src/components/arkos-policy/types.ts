@@ -1,7 +1,7 @@
 import { User } from "../../types";
-import { AccessControlRules } from "../../types/auth";
+import { DetailedAccessControlRule } from "../../types/auth";
 
-export type AccessControlConfig = string[] | Partial<AccessControlRules> | "*";
+export type AccessControlConfig = string[] | DetailedAccessControlRule | "*";
 
 export type PolicyEntry<TResource extends string, TAction extends string> = ((
   user?: User
