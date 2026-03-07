@@ -1,10 +1,5 @@
 import { User } from "../../types";
-import {
-  AccessControlConfig,
-  ArkosPolicyRule,
-  IArkosPolicy,
-  PolicyWithActions,
-} from "./types";
+import { ArkosPolicyRule, IArkosPolicy, PolicyWithActions } from "./types";
 import authService from "../../modules/auth/auth.service";
 
 /**
@@ -44,7 +39,7 @@ export function ArkosPolicy<TResource extends string>(
 
 function buildPolicy<TResource extends string, TActions extends string>(
   resource: TResource,
-  store: Record<string, AccessControlConfig>
+  store: Record<string, ArkosPolicyRule>
 ): PolicyWithActions<TResource, TActions> {
   const rule = <TAction extends string>(
     action: TAction,
@@ -58,7 +53,7 @@ function buildPolicy<TResource extends string, TActions extends string>(
     Object.entries(store).flatMap(([action, config]) => {
       const permission = Object.assign(
         (user?: User): Promise<boolean> =>
-          authService.permission(action, resource, config)(user),
+          authService.permission(action, resource, { [action]: config })(user),
         {
           resource,
           action,
