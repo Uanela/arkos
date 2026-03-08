@@ -1,6 +1,6 @@
 import { Router } from "express";
 import pluralize from "pluralize";
-import { ArkosConfig, RouterConfig } from "../../../../exports";
+import { RouterConfig } from "../../../../exports";
 import { kebabCase } from "../../../../exports/utils";
 import { PrismaQueryOptions } from "../../../../types";
 import {
@@ -23,8 +23,12 @@ import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
+import { UserArkosConfig } from "../../../../utils/define-config";
 
-export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
+export function setupRouters(
+  router: IArkosRouter,
+  arkosConfig: UserArkosConfig
+) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
     const modelModules = getModuleComponents(modelNameInKebab) || {};

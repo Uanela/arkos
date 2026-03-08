@@ -16,6 +16,7 @@ import prismaSchemaParser from "./prisma/prisma-schema-parser";
 import debuggerService from "../modules/debugger/debugger.service";
 import { PrismaQueryOptions } from "../types";
 import { ServiceHook } from "../modules/base/utils/service-hooks-manager";
+import { UserArkosConfig } from "./define-config";
 
 type AppModuleComponent = Awaited<ReturnType<typeof importModuleComponents>>;
 
@@ -168,18 +169,13 @@ export async function processSubdir(
   return result;
 }
 
-export type ModuleComponents = Omit<
-  ImportModuleComponentsReturnType,
-  "authConfigsNew" | "prismaQueryOptionsNew"
->;
+export type ModuleComponents = ImportModuleComponentsReturnType;
 
 type ImportModuleComponentsReturnType = {
   hooks?: Record<string, ServiceHook | ServiceHook[]>;
   interceptors?: Record<string, Function | Function[]>;
   authConfigs?: AuthConfigs;
-  authConfigsNew?: AuthConfigs;
   prismaQueryOptions?: PrismaQueryOptions<any>;
-  prismaQueryOptionsNew?: PrismaQueryOptions<any>;
   router?: { config?: RouterConfig<any>; default: RouterConfig };
   dtos?: {
     create?: any;
@@ -207,11 +203,19 @@ type ImportModuleComponentsReturnType = {
  */
 export function assignModuleToResult(
   appModule: string,
-  key: string,
+  key: keyof ModuleComponents,
   module: any,
   result: ImportModuleComponentsReturnType,
-  arkosConfig: ArkosConfig
+  arkosConfig: UserArkosConfig
 ): void {
+  const ext = getUserFileExtension();
+
+  if (key === "authConfigs") {
+    sheu.warn(
+      `${appModule}.auth.${ext} detected, it still works but is recommended move to ArkosPolicy see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
+    );
+  }
+
   if (key === "interceptors") result.interceptors = module;
   else if (key === "router") {
     result[key] = {
@@ -240,7 +244,7 @@ export function assignModuleToResult(
  */
 export async function importModuleComponents(
   modelName: string,
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   moduleDirExists?: boolean
 ): Promise<ImportModuleComponentsReturnType> {
   const result: ImportModuleComponentsReturnType = {
@@ -302,7 +306,13 @@ export async function importModuleComponents(
 
         if (module) {
           (result as any)[key] = module;
-          assignModuleToResult(modelName, key, module, result, arkosConfig);
+          assignModuleToResult(
+            modelName,
+            key as any,
+            module,
+            result,
+            arkosConfig
+          );
         }
       } catch (err: any) {
         if (err.message?.includes("Cannot use both")) throw err;
@@ -334,7 +344,7 @@ export const appModules = Array.from(
 /**
  * Allows to asynchronously load all app modules components at once to speed up app start time.
  */
-export async function loadAllModuleComponents(arkosConfig: ArkosConfig) {
+export async function loadAllModuleComponents(arkosConfig: UserArkosConfig) {
   const moduleDirExists: string[] = [];
   await Promise.all(
     appModules.map(async (appModule) => {

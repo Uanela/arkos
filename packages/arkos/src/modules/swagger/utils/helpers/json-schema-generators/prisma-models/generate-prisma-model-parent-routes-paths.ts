@@ -6,13 +6,14 @@ import {
   kebabToHuman,
   localValidatorFileExists,
 } from "../../swagger.router.helpers";
-import { ArkosConfig, RouterConfig } from "../../../../../../exports";
+import { RouterConfig } from "../../../../../../exports";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
+import { UserArkosConfig } from "../../../../../../utils/define-config";
 
 export default function generatePrismaModelParentRoutesPaths(
   model: string,
   paths: OpenAPIV3.PathsObject,
-  arkosConfig: ArkosConfig
+  arkosConfig: UserArkosConfig
 ) {
   const modelName = kebabCase(model);
   const routeName = pluralize.plural(modelName);

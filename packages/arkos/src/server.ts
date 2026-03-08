@@ -5,17 +5,17 @@ import { bootstrap } from "./app";
 import http from "http";
 import sheu from "./utils/sheu";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";
-import { ArkosConfig } from "./types/new-arkos-config";
 import { ArkosInitConfig } from "./types/arkos-config";
 import { getArkosConfig as getArkosConfigHelper } from "./utils/helpers/arkos-config.helpers";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
+import { UserArkosConfig } from "./utils/define-config";
 
 /**
  * Gives access to the underlying current configurations being used by **Arkos** by default and also loaded through `arkos.config.{ts|js}`
  *
  * @returns {ArkosConfig}
  */
-export function getArkosConfig(): ArkosConfig {
+export function getArkosConfig(): UserArkosConfig {
   // This was kept only not to require many changes on the given time
   return getArkosConfigHelper();
 }

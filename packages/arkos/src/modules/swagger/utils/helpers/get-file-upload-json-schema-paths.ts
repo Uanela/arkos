@@ -1,12 +1,13 @@
 import { OpenAPIV3 } from "openapi-types";
-import { ArkosConfig, RouterConfig } from "../../../../exports";
+import { RouterConfig } from "../../../../exports";
 import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.helpers";
 import deepmerge from "../../../../utils/helpers/deepmerge.helper";
 import { fileUploadDefaultRestrictions } from "../../../file-upload/file-upload.service";
+import { UserArkosConfig } from "../../../../utils/define-config";
 
 export default function getFileUploadJsonSchemaPaths(
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   existingPaths: OpenAPIV3.PathsObject
 ) {
   const paths: OpenAPIV3.PathsObject = { ...existingPaths };

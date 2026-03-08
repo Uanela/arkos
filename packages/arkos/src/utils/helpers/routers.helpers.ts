@@ -12,7 +12,7 @@ import {
 import { isEndpointDisabled } from "../../modules/base/utils/helpers/base.router.helpers";
 import deepmerge from "./deepmerge.helper";
 import { ArkosRouteConfig } from "../arkos-router/types";
-import { ArkosConfig } from "../../exports";
+import { UserArkosConfig } from "../define-config";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
   if (middleware && typeof middleware !== "function")
@@ -103,7 +103,7 @@ export function getAuthenticationConfig(
  * @returns Route configuration object
  */
 export function createRouteConfig(
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   endpoint: RouterEndpoint | AuthRouterEndpoint,
   routeName: string,
   path: string,
