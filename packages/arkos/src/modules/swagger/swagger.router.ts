@@ -9,42 +9,38 @@ import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
 import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/generate-system-json-schemas";
 import { generateOpenAPIFromApp } from "../../utils/arkos-router";
-import express from "express";
 import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-schema-paths";
 import { ArkosConfig, ArkosRequest, ArkosResponse } from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
+import { Express } from "express";
 
 const swaggerRouter = Router();
 
-export async function getSwaggerRouter(
+export function getSwaggerRouter(
   arkosConfig: ArkosConfig,
-  app: express.Express
-): Promise<Router> {
+  app: Express
+): Router {
   let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
   const defaultModelsPaths = generatePathsForModels(
     arkosConfig,
     pathsFromCustomArkosRouters
   );
-
   const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(
     arkosConfig,
     pathsFromCustomArkosRouters
   );
-
   const missingJsonSchemas =
     missingJsonSchemaGenerator.generateMissingJsonSchemas(
       defaultModelsPaths,
       defaultJsonSchemas,
       arkosConfig
     );
-
   defaultJsonSchemas = {
     ...defaultJsonSchemas,
     ...missingJsonSchemas,
     ...generateSystemJsonSchemas(arkosConfig),
   };
-
   const swaggerConfigs = deepmerge(
     getSwaggerDefaultConfig(
       {
@@ -58,15 +54,10 @@ export async function getSwaggerRouter(
   ) as ArkosConfig["swagger"];
 
   const { definition, ...options } = swaggerConfigs?.options!;
-
   const swaggerSpecification = swaggerJsdoc({
     definition: definition as swaggerJsdoc.SwaggerDefinition,
     ...options,
   });
-
-  const scalar = await importEsmPreventingTsTransformation(
-    "@scalar/express-api-reference"
-  );
 
   const endpoint = swaggerConfigs!.endpoint!;
 
@@ -77,13 +68,25 @@ export async function getSwaggerRouter(
     }
   );
 
-  swaggerRouter.use(
-    endpoint,
-    scalar.apiReference({
-      content: swaggerSpecification,
-      ...swaggerConfigs?.scalarApiReferenceConfiguration,
-    })
-  );
+  let scalarHandler: any = null;
+  let scalarLoading: Promise<void> | null = null;
+
+  swaggerRouter.use(endpoint, async (req, res, next) => {
+    if (!scalarHandler) {
+      if (!scalarLoading) {
+        scalarLoading = importEsmPreventingTsTransformation(
+          "@scalar/express-api-reference"
+        ).then((scalar) => {
+          scalarHandler = scalar.apiReference({
+            content: swaggerSpecification,
+            ...swaggerConfigs?.scalarApiReferenceConfiguration,
+          });
+        });
+      }
+      await scalarLoading;
+    }
+    return scalarHandler(req, res, next);
+  });
 
   return swaggerRouter;
 }
