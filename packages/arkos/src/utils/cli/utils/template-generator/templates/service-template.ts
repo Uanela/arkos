@@ -1,4 +1,5 @@
 import { getUserFileExtension } from "../../../../helpers/fs.helpers";
+import { kebabPrismaModels } from "../../../generate";
 import { TemplateOptions } from "../../template-generators";
 
 export function generateServiceTemplate(options: TemplateOptions): string {
@@ -9,6 +10,22 @@ export function generateServiceTemplate(options: TemplateOptions): string {
   if (!modelName)
     throw new Error("Module name is required for service template");
 
+  const isNormalModule = [
+    ...kebabPrismaModels,
+    "file-upload",
+    "auth",
+    "email",
+  ].includes(modelName.kebab);
+
+  if (!isNormalModule) {
+    return `export class ${modelName.pascal}Service {}
+
+const ${modelName.camel}Service = new ${modelName.pascal}Service();
+
+export default ${modelName.camel}Service;
+`;
+  }
+
   let serviceType = ["auth", "fileUpload", "email"].includes(modelName.camel)
     ? modelName.camel
     : "base";
@@ -18,7 +35,6 @@ export function generateServiceTemplate(options: TemplateOptions): string {
     imports?.[`${serviceType}Service`] || "arkos/services";
 
   const serviceClassImport = `import { ${serviceName.startsWith("Arkos") ? `${serviceName.replace("Arkos", "")} as ${serviceName}` : serviceName} } from "${serviceImport}";`;
-
   const typeParameter =
     isTypeScript && serviceType === "base" ? `<"${modelName.kebab}">` : "";
 
