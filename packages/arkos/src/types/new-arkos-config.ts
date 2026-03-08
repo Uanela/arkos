@@ -17,6 +17,12 @@ import { ArkosRequestHandler } from ".";
  */
 export type ArkosConfig = {
   /**
+   * The global prefixer for the whole application
+   *
+   * @default "/api"
+   */
+  globalPrefix?: string;
+  /**
    * Allows to configure request configs
    */
   request?: {
