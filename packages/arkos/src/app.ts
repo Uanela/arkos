@@ -28,6 +28,7 @@ export async function bootstrap(
   initConfig: ArkosInitConfig
 ): Promise<express.Express> {
   const arkosConfig = getArkosConfig();
+  const globalPrefix = arkosConfig.globalPrefix || "/api";
 
   await Promise.all([
     loadPrismaModule(),
@@ -163,9 +164,9 @@ export async function bootstrap(
 
   if (routersConfig?.welcomeRoute !== false) {
     if (typeof routersConfig?.welcomeRoute === "function") {
-      app.get("/api", routersConfig.welcomeRoute);
+      app.get(globalPrefix, routersConfig.welcomeRoute);
     } else {
-      app.get("/api", (_, res) => {
+      app.get(globalPrefix, (_, res) => {
         res.status(200).json({ message: arkosConfig.welcomeMessage });
       });
     }
@@ -181,21 +182,21 @@ export async function bootstrap(
 
   if (isAuthenticationEnabled()) {
     const authRouter = getAuthRouter(arkosConfig) as any;
-    knowModulesRouter.use("/api", authRouter);
+    knowModulesRouter.use(globalPrefix, authRouter);
   }
 
   const modelsRouter = getPrismaModelsRouter(arkosConfig);
-  knowModulesRouter.use("/api", modelsRouter as any);
+  knowModulesRouter.use(globalPrefix, modelsRouter as any);
 
   app.use(knowModulesRouter);
-  app.use("/api", getAvailableResourcesAndRoutesRouter());
+  app.use(globalPrefix, getAvailableResourcesAndRoutesRouter());
 
   if (
     arkosConfig.swagger &&
     (process.env.ARKOS_BUILD !== "true" ||
       arkosConfig.swagger.enableAfterBuild === true)
   )
-    app.use("/api", await getSwaggerRouter(arkosConfig, app));
+    app.use(globalPrefix, getSwaggerRouter(arkosConfig, app));
 
   app.use("*", (req) => {
     throw new AppError(
