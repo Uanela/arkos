@@ -17,7 +17,7 @@ const mockPrismaJsonSchemaGenerator = PrismaJsonSchemaGenerator as jest.Mocked<
 >;
 
 describe("generatePrismaJsonSchemas", () => {
-  let arkosConfig: ArkosConfig;
+  let arkosConfig: any;
   const originalConsoleError = console.error;
   let mockConsoleError: jest.Mock;
 
@@ -342,7 +342,7 @@ describe("generatePrismaJsonSchemas", () => {
 
   describe("Edge Case: ArkosConfig variations", () => {
     it("should handle minimal arkosConfig", async () => {
-      const minimalConfig: ArkosConfig = {};
+      const minimalConfig: any = {};
       mockGetModels.mockReturnValue(["User"]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockReturnValue({
         CreateUserModelSchema: { type: "object" },
@@ -360,7 +360,7 @@ describe("generatePrismaJsonSchemas", () => {
     });
 
     it("should handle complex arkosConfig", async () => {
-      const complexConfig: ArkosConfig = {
+      const complexConfig: any = {
         swagger: {
           mode: "zod",
           strict: true,

@@ -212,7 +212,7 @@ export function assignModuleToResult(
 
   if (key === "authConfigs") {
     sheu.warn(
-      `${appModule}.auth.${ext} detected, it still works but is recommended move to ArkosPolicy see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
+      `${appModule}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
     );
   }
 

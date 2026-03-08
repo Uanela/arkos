@@ -292,16 +292,3 @@ export function isEndpointDisabled(
 
   return false;
 }
-
-export function isParentEndpointAllowed(
-  routerConfig: any,
-  endpoint: string
-): boolean {
-  if (!routerConfig?.parent) return false;
-
-  const parentEndpoints = routerConfig.parent.endpoints;
-  if (parentEndpoints === "*") return true;
-  if (Array.isArray(parentEndpoints)) return parentEndpoints.includes(endpoint);
-
-  return true;
-}

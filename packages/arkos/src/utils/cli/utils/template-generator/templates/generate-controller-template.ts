@@ -36,7 +36,7 @@ export function generateControllerTemplate(options: TemplateOptions): string {
     ["email", "auth"].includes(camelName) ||
     !kebabPrismaModels.includes(modelName.kebab)
   )
-    return `class ${modelName.pascal}Controller {}
+    return `export class ${modelName.pascal}Controller {}
 
 const ${modelName.camel}Controller = new ${modelName.pascal}Controller(${controllerType === "base" ? `"${modelName.kebab}"` : ""});
 

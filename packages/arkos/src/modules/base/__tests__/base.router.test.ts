@@ -48,7 +48,7 @@ describe("Base Router", () => {
       ]);
 
       // Call the function
-      const result = getPrismaModelsRouter({});
+      const result = getPrismaModelsRouter({} as any);
 
       expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
       // expect(routerHelpers.setupRouters).toHaveBeenCalledWith(mockRouter, {});

@@ -12,7 +12,7 @@ export function generateAuthConfigsTemplate(
   const isTypeScript = ext === "ts";
 
   sheu.warn(
-    `The file ${modelName.kebab}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy, see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
+    `The file .auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy, see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
   );
 
   if (!modelName)

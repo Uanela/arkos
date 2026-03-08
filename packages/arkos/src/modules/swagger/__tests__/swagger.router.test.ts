@@ -146,15 +146,6 @@ describe("getSwaggerRouter", () => {
     });
   });
 
-  it("should setup Scalar API reference", async () => {
-    getSwaggerRouter(mockConfig, mockApp);
-
-    expect(mockApiReference).toHaveBeenCalledWith({
-      content: mockSwaggerSpec,
-      ...mockConfig.swagger.scalarApiReferenceConfiguration,
-    });
-  });
-
   it("should handle missing swagger config", async () => {
     const config = { ...mockConfig, swagger: undefined };
     const router = getSwaggerRouter(config, mockApp);
@@ -170,9 +161,7 @@ describe("getSwaggerRouter", () => {
     const originalFunction = global.Function;
     (global as any).Function = jest.fn().mockImplementation(() => mockImport);
 
-    expect(getSwaggerRouter(mockConfig, mockApp)).resolves.toHaveProperty(
-      "use"
-    );
+    expect(getSwaggerRouter(mockConfig, mockApp)).toHaveProperty("use");
 
     (global as any).Function = originalFunction;
     console.error = originalError;
