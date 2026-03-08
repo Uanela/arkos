@@ -1,4 +1,3 @@
-import { ArkosConfig } from "../../../../../exports";
 import getAuthenticationJsonSchemaPaths, {
   getSchemaMode,
 } from "../get-authentication-json-schema-paths";
@@ -17,7 +16,7 @@ jest.mock("../swagger.router.helpers", () => ({
 jest.mock("fs");
 
 describe("getAuthenticationJsonSchemaPaths", () => {
-  const mockConfig: ArkosConfig = {
+  const mockConfig: any = {
     swagger: {
       mode: "zod",
       strict: false,
@@ -163,7 +162,7 @@ describe("getAuthenticationJsonSchemaPaths", () => {
 });
 
 describe("getSchemaMode", () => {
-  const mockConfig: ArkosConfig = {
+  const mockConfig: any = {
     swagger: {
       mode: "zod",
       strict: false,
@@ -176,7 +175,7 @@ describe("getSchemaMode", () => {
   });
 
   it("should return prisma mode when no swagger config exists", async () => {
-    const result = getSchemaMode("login", {});
+    const result = getSchemaMode("login", {} as any);
     expect(result).toBe("prisma");
   });
 
@@ -184,7 +183,7 @@ describe("getSchemaMode", () => {
     const config = {
       ...mockConfig,
       swagger: { ...mockConfig.swagger, strict: true },
-    } as ArkosConfig;
+    };
 
     const result = getSchemaMode("login", config);
     expect(result).toBe("zod");

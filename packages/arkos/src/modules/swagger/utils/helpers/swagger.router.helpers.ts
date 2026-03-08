@@ -6,7 +6,6 @@ import generateZodJsonSchemas from "./json-schema-generators/generate-zod-json-s
 import { generateClassValidatorJsonSchemas } from "./json-schema-generators/generate-class-validator-json-schemas";
 import { generatePrismaJsonSchemas } from "./json-schema-generators/generate-prisma-json-schemas";
 import { generatePrismaModelMainRoutesPaths } from "./json-schema-generators/prisma-models/generate-prisma-model-main-routes-paths";
-import generatePrismaModelParentRoutePaths from "./json-schema-generators/prisma-models/generate-prisma-model-parent-routes-paths";
 import sheu from "../../../../utils/sheu";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import {
@@ -118,7 +117,6 @@ export function generatePathsForModels(
 
   for (const model of models) {
     generatePrismaModelMainRoutesPaths(model, paths, arkosConfig);
-    generatePrismaModelParentRoutePaths(model, paths, arkosConfig);
   }
 
   paths = {
