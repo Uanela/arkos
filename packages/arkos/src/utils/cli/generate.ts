@@ -180,10 +180,6 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "router",
       fileSuffix: "router",
-      customImports: (names) => ({
-        baseRouter: "arkos",
-        controller: `./${names.kebab}.controller`,
-      }),
       allowedModules: "*",
     });
   },
