@@ -13,11 +13,12 @@ import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-s
 import { ArkosConfig, ArkosRequest, ArkosResponse } from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { Express } from "express";
+import { UserArkosConfig } from "../../utils/define-config";
 
 const swaggerRouter = Router();
 
 export function getSwaggerRouter(
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   app: Express
 ): Router {
   let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);

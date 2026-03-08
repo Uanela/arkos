@@ -1,4 +1,3 @@
-import { ArkosConfig } from "../../../../exports";
 import { camelCase, pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
@@ -15,11 +14,14 @@ import {
   ValidationFileMappingKey,
 } from "../../../../utils/dynamic-loader";
 import { isAuthenticationEnabled } from "../../../../utils/helpers/arkos-config.helpers";
+import { UserArkosConfig } from "../../../../utils/define-config";
 
 /**
  * Helps choosing the right json schemas according to swagger configurations
  */
-export function getOpenAPIJsonSchemasByConfigMode(arkosConfig: ArkosConfig) {
+export function getOpenAPIJsonSchemasByConfigMode(
+  arkosConfig: UserArkosConfig
+) {
   switch (arkosConfig?.swagger!.mode) {
     case "prisma":
       return generatePrismaJsonSchemas(arkosConfig);
@@ -104,7 +106,7 @@ export function getSchemaRef(
 }
 
 export function generatePathsForModels(
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   existingPaths: OpenAPIV3.PathsObject = {}
 ): OpenAPIV3.PathsObject {
   const swaggerConfig = arkosConfig?.swagger;
@@ -144,7 +146,7 @@ export function generatePathsForModels(
 export function localValidatorFileExists(
   action: ValidationFileMappingKey,
   modelName: string,
-  arkosConfig: ArkosConfig
+  arkosConfig: UserArkosConfig
 ) {
   if (arkosConfig?.swagger?.mode === "prisma") return false;
   const moduleComponents = getModuleComponents(modelName) as any;

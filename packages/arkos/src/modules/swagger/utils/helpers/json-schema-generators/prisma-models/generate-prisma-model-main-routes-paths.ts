@@ -6,10 +6,11 @@ import {
 } from "../../swagger.router.helpers";
 import pluralize from "pluralize";
 import { isEndpointDisabled } from "../../../../../base/utils/helpers/base.router.helpers";
-import { ArkosConfig, RouterConfig } from "../../../../../../exports";
+import { RouterConfig } from "../../../../../../exports";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
 import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
 import { isAuthenticationEnabled } from "../../../../../../utils/helpers/arkos-config.helpers";
+import { UserArkosConfig } from "../../../../../../utils/define-config";
 
 function getAuthErrorResponses(): Record<string, any> {
   if (!isAuthenticationEnabled()) return {};
@@ -23,7 +24,7 @@ function getAuthErrorResponses(): Record<string, any> {
 export function generatePrismaModelMainRoutesPaths(
   model: string,
   paths: OpenAPIV3.PathsObject = {},
-  arkosConfig: ArkosConfig
+  arkosConfig: UserArkosConfig
 ) {
   const modelName = kebabCase(model);
   const routeName = pluralize.plural(modelName);

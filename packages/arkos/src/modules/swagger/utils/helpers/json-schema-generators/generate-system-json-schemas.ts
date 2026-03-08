@@ -1,6 +1,8 @@
-import { ArkosConfig } from "../../../../../exports";
+import { UserArkosConfig } from "../../../../../utils/define-config";
 
-export default function generateSystemJsonSchemas(arkosConfig: ArkosConfig): {
+export default function generateSystemJsonSchemas(
+  arkosConfig: UserArkosConfig
+): {
   FindManyAuthActionSystemSchema: any;
 } {
   const isDynamicMode = arkosConfig?.authentication?.mode === "dynamic";
