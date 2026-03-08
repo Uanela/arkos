@@ -298,7 +298,6 @@ class UploadManager {
 
           (file as any).url = url;
           (file as any).pathname = normalizePath(file.path);
-
           if (config.attachToBody === false) return undefined;
           if (config.attachToBody === "pathname" || !config.attachToBody)
             return (

@@ -5,7 +5,6 @@ import {
   getSchemaRef,
   generatePathsForModels,
 } from "../swagger.router.helpers";
-import { ArkosConfig } from "../../../../../exports";
 import sheu from "../../../../../utils/sheu";
 import { generatePrismaJsonSchemas } from "../json-schema-generators/generate-prisma-json-schemas";
 import { generateClassValidatorJsonSchemas } from "../json-schema-generators/generate-class-validator-json-schemas";
@@ -26,13 +25,10 @@ jest.mock("../json-schema-generators/generate-prisma-json-schemas");
 jest.mock(
   "../json-schema-generators/prisma-models/generate-prisma-model-main-routes-paths"
 );
-jest.mock(
-  "../json-schema-generators/prisma-models/generate-prisma-model-parent-routes-paths"
-);
 jest.mock("fs");
 
 describe("Swagger Utility Functions", () => {
-  const mockConfig: ArkosConfig = {
+  const mockConfig: any = {
     swagger: {
       mode: "prisma",
       strict: false,

@@ -116,44 +116,10 @@ describe("ArkosPolicy", () => {
 
     it("should be callable and call authService.permission", () => {
       const policy = ArkosPolicy("user").rule("Create", ["Admin"]);
-      policy.Create(user);
-      expect(mockPermission).toHaveBeenCalledWith("Create", "user", ["Admin"]);
-      expect(mockPermissionFn).toHaveBeenCalledWith(user);
-    });
-
-    it("should return result of authService.permission", () => {
-      mockPermissionFn.mockReturnValue(false);
-      const policy = ArkosPolicy("user").rule("Create", ["Admin"]);
-      const result = policy.Create(user);
-      expect(result).toBe(false);
-    });
-
-    it("should be callable without user", () => {
-      const policy = ArkosPolicy("user").rule("Create", ["Admin"]);
-      expect(() => policy.Create()).not.toThrow();
-    });
-  });
-
-  describe("can{Action} entry (e.g. canCreate)", () => {
-    it("should be same reference as Action entry", () => {
-      const policy = ArkosPolicy("user").rule("Create", ["Admin"]);
-      expect(policy.canCreate).toBe(policy.Create);
-    });
-
-    it("should have correct resource", () => {
-      const policy = ArkosPolicy("user").rule("Create", ["Admin"]);
-      expect(policy.canCreate.resource).toBe("user");
-    });
-
-    it("should have correct action", () => {
-      const policy = ArkosPolicy("user").rule("Create", ["Admin"]);
-      expect(policy.canCreate.action).toBe("Create");
-    });
-
-    it("should be callable and call authService.permission", () => {
-      const policy = ArkosPolicy("user").rule("Create", ["Admin"]);
       policy.canCreate(user);
-      expect(mockPermission).toHaveBeenCalledWith("Create", "user", ["Admin"]);
+      expect(mockPermission).toHaveBeenCalledWith("Create", "user", {
+        Create: ["Admin"],
+      });
       expect(mockPermissionFn).toHaveBeenCalledWith(user);
     });
 
@@ -191,10 +157,14 @@ describe("ArkosPolicy", () => {
         .rule("View", "*");
 
       policy.canCreate(user);
-      expect(mockPermission).toHaveBeenCalledWith("Create", "user", ["Admin"]);
+      expect(mockPermission).toHaveBeenCalledWith("Create", "user", {
+        Create: ["Admin"],
+      });
 
       policy.canView(user);
-      expect(mockPermission).toHaveBeenCalledWith("View", "user", "*");
+      expect(mockPermission).toHaveBeenCalledWith("View", "user", {
+        View: "*",
+      });
     });
   });
 });

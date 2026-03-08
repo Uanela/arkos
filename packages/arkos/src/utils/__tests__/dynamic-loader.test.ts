@@ -124,7 +124,6 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(result.core).toEqual({
         hooks: "user.hooks.ts",
         interceptors: "user.interceptors.ts",
-        interceptorsOld: "user.middlewares.ts",
         authConfigs: "user.auth.ts",
         prismaQueryOptions: "user.query.ts",
         router: "user.router.ts",
@@ -255,25 +254,9 @@ describe("Dynamic Prisma Model Loader", () => {
     });
   });
 
-  describe("validateNamingConventions", () => {
-    it("should warn about deprecated .middlewares.js", () => {
-      const result = {};
-
-      dynamicLoader.validateNamingConventions(
-        "interceptorsOld",
-        "user.middlewares.js",
-        result
-      );
-
-      expect(sheu.warn).toHaveBeenCalledWith(
-        "Found deprecated user.middlewares.js that will removed from v1.6.0-beta, consider switching to user.interceptors.js"
-      );
-    });
-  });
-
   describe("assignModuleToResult", () => {
     let result: any;
-    const arkosConfig = { routers: { strict: true } };
+    const arkosConfig: any = { routers: { strict: true } };
 
     beforeEach(() => {
       result = { dtos: {}, schemas: {} };
@@ -305,20 +288,6 @@ describe("Dynamic Prisma Model Loader", () => {
       );
 
       expect(result.prismaQueryOptions).toEqual({ query: "options" });
-    });
-
-    it("should assign interceptorsOld", () => {
-      const module = { beforeCreateOne: jest.fn() };
-
-      dynamicLoader.assignModuleToResult(
-        "User",
-        "interceptorsOld",
-        module,
-        result,
-        arkosConfig
-      );
-
-      expect(result.interceptors).toEqual(module);
     });
 
     it("should assign authConfigs", () => {
@@ -462,10 +431,10 @@ describe("Dynamic Prisma Model Loader", () => {
   });
 
   describe("importModuleComponents", () => {
-    const baseArkosConfig = { validation: { resolver: "zod" as const } };
+    const baseArkosConfig: any = { validation: { resolver: "zod" as const } };
 
     it("should return early when no module directory exists and not using strict routing", async () => {
-      const arkosConfig = { validation: { resolver: "zod" as const } };
+      const arkosConfig: any = { validation: { resolver: "zod" as const } };
 
       const result = await dynamicLoader.importModuleComponents(
         "User",
@@ -517,7 +486,7 @@ describe("Dynamic Prisma Model Loader", () => {
     });
 
     it("should process modules with dto validation", async () => {
-      const arkosConfig = { validation: { resolver: "zod" as const } };
+      const arkosConfig: any = { validation: { resolver: "zod" as const } };
       (pathExists as jest.Mock).mockResolvedValue(true);
       (importModule as jest.Mock).mockResolvedValueOnce({
         default: { test: "data" },
@@ -533,7 +502,7 @@ describe("Dynamic Prisma Model Loader", () => {
     });
 
     it("should handle router with strict routing when file doesn't exist", async () => {
-      const arkosConfig = {
+      const arkosConfig: any = {
         routers: { strict: true },
         validation: { resolver: "zod" as const },
       };
@@ -558,7 +527,7 @@ describe("Dynamic Prisma Model Loader", () => {
       expect(passedArray.every((item: any) => item instanceof Promise)).toBe(
         true
       );
-      expect(importModule).toHaveBeenCalledTimes(11);
+      expect(importModule).toHaveBeenCalledTimes(10);
       expect(result.router).toEqual({
         config: {
           disable: {
@@ -600,7 +569,7 @@ describe("Dynamic Prisma Model Loader", () => {
     });
 
     it("should skip router when not using strict routing and file doesn't exist", async () => {
-      const arkosConfig = { validation: { resolver: "zod" as const } };
+      const arkosConfig: any = { validation: { resolver: "zod" as const } };
       (pathExists as jest.Mock).mockImplementation((filePath) => {
         return !filePath.includes("router");
       });
@@ -651,7 +620,7 @@ describe("Dynamic Prisma Model Loader", () => {
 
   describe("edge cases and error handling", () => {
     it("should handle empty module structure gracefully", async () => {
-      const arkosConfig = {};
+      const arkosConfig: any = {};
       (pathExists as jest.Mock).mockResolvedValue(false);
 
       const result = await dynamicLoader.importModuleComponents(

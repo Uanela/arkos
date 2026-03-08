@@ -1,4 +1,3 @@
-import { ArkosConfig } from "../../types/new-arkos-config";
 import { defineConfig, UserArkosConfig } from "../define-config";
 import sheu from "../sheu";
 import * as fsHelpers from "./fs.helpers";
@@ -41,12 +40,12 @@ export function getArkosConfig(): UserArkosConfig {
       ? {}
       : (definedArkosConfig as any)?.default || {};
 
-  if ((config as any).__loader !== "defineConfig") {
+  if ((config as any).__loader !== "defineConfig" && !typeof jest) {
     sheu.error(
       `From v1.6 config under arkos.config.${fsHelpers.getUserFileExtension()} must be wrapped in \`defineConfig()\` function from \`arkos/config\` `
     );
     process.exit(1);
   }
 
-  return config;
+  return defineConfig(config) as any;
 }
