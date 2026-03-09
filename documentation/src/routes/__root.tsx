@@ -70,7 +70,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="flex flex-col min-h-screen">
         <RootProvider>
-          <AnnoucementBanner />
+          {/* <AnnoucementBanner /> */}
           {children}
         </RootProvider>
         <Scripts />
