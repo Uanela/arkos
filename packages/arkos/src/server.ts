@@ -1,8 +1,10 @@
+import { IncomingMessage, Server, ServerResponse } from "http";
 import AppError from "./modules/error-handler/utils/app-error";
 import sheu from "./utils/sheu";
 import portAndHostAllocator from "./utils/features/port-and-host-allocator";
 import { getArkosConfig as getArkosConfigHelper } from "./utils/helpers/arkos-config.helpers";
 import { UserArkosConfig } from "./utils/define-config";
+import { getAppServer } from "./app";
 
 /**
  * Gives access to the underlying current configurations being used by **Arkos** by default and also loaded through `arkos.config.{ts|js}`
@@ -29,8 +31,6 @@ process.on("uncaughtException", (err) => {
   }, 0);
 });
 
-let server: any = {};
-
 process.on("unhandledRejection", (err: AppError) => {
   if (process.env.NO_CLI === "true")
     sheu.error("UNHANDLED REJECTION! SHUTTING DOWN...\n", {
@@ -38,6 +38,8 @@ process.on("unhandledRejection", (err: AppError) => {
       bold: true,
     });
   console.error(err);
+
+  const server = getAppServer();
 
   if (server?.close)
     server?.close(() => {
@@ -79,4 +81,4 @@ export function logAppStartp(port: number | string, _host: string) {
     );
 }
 
-export { server };
+// export { server };

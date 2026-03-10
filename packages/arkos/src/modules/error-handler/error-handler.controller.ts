@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import AppError from "./utils/app-error";
 import * as errorControllerHelper from "./utils/error-handler.helpers";
-import { server } from "../../server";
+import { getAppServer } from "../../app";
 
 /**
  * Error handling middleware for Express.
@@ -213,10 +213,16 @@ process.on("SIGTERM", () => {
     process.exit();
   } else {
     console.error("SIGTERM RECEIVED in Production. Shutting down gracefully!");
+    const server = getAppServer();
 
-    server.close(() => {
-      console.error("Process terminated!!!");
-      process.exit();
-    });
+    if (server?.close)
+      server.close(() => {
+        console.error("Process terminated!!!");
+        process.exit();
+      });
+    else
+      setTimeout(() => {
+        process.exit(1);
+      }, 0);
   }
 });
