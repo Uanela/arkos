@@ -8,7 +8,9 @@ import { logAppStartp } from "./server";
 import { loadPrismaModule } from "./utils/helpers/prisma.helpers";
 import { loadAllModuleComponents } from "./utils/dynamic-loader";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
-import { Server } from "http";
+import { IncomingMessage, Server, ServerResponse } from "http";
+
+let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
 
 /**
  * Creates and configures an Arkos application instance.
@@ -104,9 +106,9 @@ export function arkos(): Arkos {
 
     if (process.env.CLI_COMMAND) runtimeCliCommander.handle();
 
-    const server = originalListen(port, host, defaultCb(port, host, cb));
+    appServer = originalListen(port, host, defaultCb(port, host, cb));
 
-    return server;
+    return appServer;
   };
 
   app.getServerConfig = (cb?: userCb) => {
@@ -116,4 +118,8 @@ export function arkos(): Arkos {
   };
 
   return app;
+}
+
+export function getAppServer() {
+  return appServer;
 }
