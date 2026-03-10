@@ -1,6 +1,6 @@
 import { RouterConfig } from "../types/router-config";
 import { BaseController } from "./../modules/base/base.controller";
-import { initApp, getArkosConfig } from "../server";
+import { getArkosConfig } from "../server";
 import ArkosRouter from "../utils/arkos-router";
 import { IArkosRouter } from "../utils/arkos-router/types";
 import { ArkosRouteConfig } from "../utils/arkos-router/types";
@@ -15,16 +15,7 @@ import { ArkosInitConfig } from "../types/arkos-config";
 import { loadEnvironmentVariables } from "../utils/dotenv.helpers";
 import { ArkosPolicy } from "../components/arkos-policy";
 import { IArkosPolicy } from "../components/arkos-policy/types";
-
-/**
- * Initializes the Arkos application.
- *
- * @module arkos
- * @property {Function} init - Function to initialize the app.
- */
-const arkos = {
-  init: initApp,
-};
+import { arkos } from "../app";
 
 export {
   ArkosRequest,
