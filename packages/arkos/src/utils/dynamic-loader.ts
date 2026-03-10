@@ -2,7 +2,7 @@ import { ZodTypeAny } from "zod";
 import path from "path";
 import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
-import { ArkosConfig, RouterConfig } from "../exports";
+import { ArkosConfig, getArkosConfig, RouterConfig } from "../exports";
 import sheu from "./sheu";
 import {
   applyStrictRoutingRules,
@@ -344,7 +344,9 @@ export const appModules = Array.from(
 /**
  * Allows to asynchronously load all app modules components at once to speed up app start time.
  */
-export async function loadAllModuleComponents(arkosConfig: UserArkosConfig) {
+export async function loadAllModuleComponents() {
+  const arkosConfig = getArkosConfig();
+
   const moduleDirExists: string[] = [];
   await Promise.all(
     appModules.map(async (appModule) => {
