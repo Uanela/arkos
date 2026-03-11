@@ -7,9 +7,7 @@ import { logAppStartup } from "./server";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
 import { IncomingMessage, Server, ServerResponse } from "http";
 import ExitError from "./utils/helpers/exit-error";
-import { ArkosLoadableRegistry } from "./components/arkos-loadable-registry";
-import { BaseController } from "./modules/base/base.controller";
-import { BaseService } from "./modules/base/base.service";
+import loadableRegistry from "./components/arkos-loadable-registry";
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
 const docsLink =
@@ -65,8 +63,6 @@ export function arkos(): Arkos {
   setupApp(app);
   instanciated = true;
 
-  const registry = new ArkosLoadableRegistry();
-
   type AppState = "idle" | "building" | "built" | "listening";
   let state: AppState = "idle";
 
@@ -76,16 +72,13 @@ export function arkos(): Arkos {
         `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`
       );
 
-    items.forEach((item) => registry.register(item));
+    items.forEach((item) => loadableRegistry.register(item));
     return app;
   };
 
-  async function loadApp() {
-    BaseController.configure(registry);
-    BaseService.configure(registry);
-
-    const _app = initializeApp(app, registry);
-    if (process.env.CLI_COMMAND) await runtimeCliCommander.handle();
+  function loadApp() {
+    const _app = initializeApp(app);
+    if (process.env.CLI_COMMAND) runtimeCliCommander.handle();
     return _app;
   }
 

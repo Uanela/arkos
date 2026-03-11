@@ -35,7 +35,9 @@ import {
 } from "./types/base.service.types";
 import serviceHooksManager from "./utils/service-hooks-manager";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
-import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
+import loadableRegistry, {
+  ArkosLoadableRegistry,
+} from "../../components/arkos-loadable-registry";
 import {
   ArkosServiceHookInstance,
   ServiceHookContext,
@@ -84,7 +86,6 @@ interface ServiceOperationConfig {
  * @see {@link https://www.arkosjs.com/docs/guide/accessing-request-context-in-services}
  */
 export class BaseService<TModelName extends keyof Models = keyof Models> {
-  private static registry: ArkosLoadableRegistry;
   modelName: TModelName;
   relationFields: ModelGroupRelationFields;
   prisma: PrismaClient;
@@ -106,20 +107,10 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
   }
 
   private getServiceHook() {
-    const registry = BaseService.registry;
-    if (!registry)
-      throw Error(
-        `Trying to use BaseService built-in methods before calling app.load() or app.listen() is not supported, see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
-      );
-
-    return registry.getItem(
+    return loadableRegistry.getItem(
       "ArkosServiceHook",
       kebabCase(this.modelName)
     ) as ArkosServiceHookInstance<TModelName>;
-  }
-
-  static configure(registry: ArkosLoadableRegistry) {
-    BaseService.registry = registry;
   }
 
   private executeOperation = (config: ServiceOperationConfig) => {

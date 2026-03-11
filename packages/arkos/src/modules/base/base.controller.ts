@@ -8,7 +8,7 @@ import sheu from "../../utils/sheu";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import { APIFeatures } from "../../exports/utils";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
+import loadableRegistry from "../../components/arkos-loadable-registry";
 import { ArkosRouteHookInstance } from "../../components/arkos-route-hook/types";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
 import { PrismaModels } from "../../generated";
@@ -68,7 +68,6 @@ interface OperationConfig {
  * @see {@link https://www.arkosjs.com/docs/guide/adding-custom-routers}
  */
 export class BaseController<TModuleName extends keyof PrismaModels<any>> {
-  private static registry: ArkosLoadableRegistry;
   /**
    * Service instance to handle business logic operations
    * @public
@@ -91,20 +90,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
   }
 
   private getRouteHook() {
-    const registry = BaseController.registry;
-    if (!registry)
-      throw Error(
-        `Trying to use BaseController built-in methods without calling app.load() or app.listen() is not supported, see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
-      );
-
-    return registry.getItem(
+    return loadableRegistry.getItem(
       "ArkosRouteHook",
       kebabCase(kebabCase(this.modelName))
     ) as ArkosRouteHookInstance<TModuleName>;
-  }
-
-  static configure(registry: ArkosLoadableRegistry) {
-    BaseController.registry = registry;
   }
 
   private executeOperation = (config: OperationConfig) => {

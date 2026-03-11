@@ -9,7 +9,6 @@ import catchAsync from "../error-handler/utils/catch-async";
 import { getArkosConfig } from "../../server";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
-import { getModuleComponents } from "../../utils/dynamic-loader";
 import { MulterError } from "multer";
 import { pascalCase } from "../../exports/utils";
 
@@ -45,8 +44,7 @@ export class FileUploadController {
    */
   uploadFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors =
-        getModuleComponents("file-upload")?.interceptors || {};
+      this.interceptors = {};
 
       const { fileType } = req.params;
       const { format, width, height, resizeTo } = req.query;
@@ -155,8 +153,7 @@ export class FileUploadController {
    */
   deleteFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors =
-        getModuleComponents("file-upload")?.interceptors || {};
+      this.interceptors = {};
 
       const { fileType, fileName } = req.params;
 
@@ -230,8 +227,7 @@ export class FileUploadController {
    */
   updateFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors =
-        getModuleComponents("file-upload")?.interceptors || {};
+      this.interceptors = {};
 
       const { fileType, fileName } = req.params;
       const { format, width, height, resizeTo } = req.query;

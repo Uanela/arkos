@@ -1,5 +1,5 @@
 import { ArkosRouter, BaseController } from "../../exports";
-import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
+import loadableRegistry from "../../components/arkos-loadable-registry";
 import { prismaSchemaParser } from "../../exports/prisma";
 import { kebabCase } from "../../exports/utils";
 import pluralize from "pluralize";
@@ -10,7 +10,7 @@ import {
 } from "./base.middlewares";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 
-export function getPrismaModelsRouter(registry: ArkosLoadableRegistry) {
+export function getPrismaModelsRouter() {
   const router = ArkosRouter();
 
   prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
@@ -19,7 +19,10 @@ export function getPrismaModelsRouter(registry: ArkosLoadableRegistry) {
     const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);
 
-    const interceptor = registry.getItem("ArkosRouteHook", modelNameInKebab);
+    const interceptor = loadableRegistry.getItem(
+      "ArkosRouteHook",
+      modelNameInKebab
+    );
 
     const op = (operation: string) =>
       interceptor

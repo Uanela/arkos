@@ -7,12 +7,8 @@ import errorHandler from "../modules/error-handler/error-handler.controller";
 import { getArkosConfig } from "../server";
 import { isAuthenticationEnabled } from "./helpers/arkos-config.helpers";
 import { getSwaggerRouter } from "../modules/swagger/swagger.router";
-import { ArkosLoadableRegistry } from "../components/arkos-loadable-registry";
 
-export default function initializeApp(
-  app: Arkos,
-  registry: ArkosLoadableRegistry
-) {
+export default function initializeApp(app: Arkos) {
   const config = getArkosConfig();
   const globalPrefix = config.globalPrefix || "/api";
 
@@ -33,11 +29,11 @@ export default function initializeApp(
   app.use(fileUploadRouter);
 
   if (isAuthenticationEnabled()) {
-    const authRouter = getAuthRouter(registry);
+    const authRouter = getAuthRouter();
     app.use(globalPrefix, authRouter);
   }
 
-  const modelsRouter = getPrismaModelsRouter(registry);
+  const modelsRouter = getPrismaModelsRouter();
   app.use(globalPrefix, modelsRouter);
 
   if (
