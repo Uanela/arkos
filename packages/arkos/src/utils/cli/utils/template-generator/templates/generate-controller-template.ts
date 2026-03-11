@@ -1,3 +1,4 @@
+import { kebabPrismaModels } from "../../../generate";
 import { TemplateOptions } from "../../template-generators";
 
 export function generateControllerTemplate(options: TemplateOptions): string {
@@ -31,8 +32,11 @@ export function generateControllerTemplate(options: TemplateOptions): string {
 
   const controllerClassImport = `import { ${controllerName} } from "${controllerImport}";`;
 
-  if (["email", "auth"].includes(camelName))
-    return `class ${modelName.pascal}Controller {}
+  if (
+    ["email", "auth"].includes(camelName) ||
+    !kebabPrismaModels.includes(modelName.kebab)
+  )
+    return `export class ${modelName.pascal}Controller {}
 
 const ${modelName.camel}Controller = new ${modelName.pascal}Controller(${controllerType === "base" ? `"${modelName.kebab}"` : ""});
 

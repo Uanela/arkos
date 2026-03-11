@@ -1,4 +1,3 @@
-import { ArkosConfig } from "../../../../../exports";
 import getFileUploadJsonSchemaPaths from "../get-file-upload-json-schema-paths";
 
 jest.mock("fs");
@@ -32,7 +31,7 @@ jest.mock("../../../../file-upload/file-upload.service", () => ({
 }));
 
 describe("getFileUploadJsonSchemaPaths", () => {
-  const mockConfig: ArkosConfig = {
+  const mockConfig: any = {
     fileUpload: {
       baseRoute: "/api/uploads/",
       baseUploadDir: "uploads",
@@ -45,7 +44,7 @@ describe("getFileUploadJsonSchemaPaths", () => {
   });
 
   it("should return empty paths when fileUpload is not configured", async () => {
-    const config = { ...mockConfig, fileUpload: undefined };
+    const config = { ...mockConfig, fileUpload: undefined } as any;
     const result = getFileUploadJsonSchemaPaths(config, mockPaths);
     expect(result).toEqual({});
   });

@@ -4,19 +4,12 @@ import catchAsync, {
 } from "../../modules/error-handler/utils/catch-async";
 import { AccessAction, AuthConfigs } from "../../types/auth";
 import { kebabCase } from "./change-case.helpers";
-import {
-  AuthRouterEndpoint,
-  RouterConfig,
-  RouterEndpoint,
-} from "../../types/router-config";
-import { isEndpointDisabled } from "../../modules/base/utils/helpers/base.router.helpers";
-import deepmerge from "./deepmerge.helper";
-import { ArkosRouteConfig } from "../arkos-router/types";
-import { ArkosConfig } from "../../exports";
+import { AuthRouterEndpoint, RouterEndpoint } from "../../types/router-config";
+import ExitError from "./exit-error";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
   if (middleware && typeof middleware !== "function")
-    throw Error(
+    throw ExitError(
       `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
     );
 }
@@ -26,7 +19,7 @@ export const safeCatchAsync = (
   options: { type: "error" | "normal" } = { type: "normal" }
 ) => {
   if (middleware && typeof middleware !== "function")
-    throw Error(
+    throw ExitError(
       `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
     );
 

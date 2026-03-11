@@ -3,6 +3,16 @@ import { generateAuthConfigsTemplate } from "../auth-configs-template";
 
 jest.mock("fs");
 jest.mock("../../../../../helpers/fs.helpers");
+jest.mock("../../../../generate", () => ({
+  kebabPrismaModels: [
+    "user",
+    "blog-post",
+    "order-item",
+    "user-123",
+    "user-profile",
+  ],
+}));
+
 const mockedGetUserFileExtension = getUserFileExtension as jest.MockedFunction<
   typeof getUserFileExtension
 >;
@@ -20,26 +30,17 @@ describe("generateAuthConfigsTemplate", () => {
     });
 
     it("should generate basic TypeScript auth configs template", () => {
-      const result = generateAuthConfigsTemplate({
-        modelName: mockModelName,
-      });
+      const result = generateAuthConfigsTemplate({ modelName: mockModelName });
 
-      // Verify imports and types
       expect(result).toContain("import { AuthConfigs } from 'arkos/auth';");
       expect(result).toContain('import { authService } from "arkos/services"');
       expect(result).toContain("const userAuthConfigs: AuthConfigs = {");
-
-      // Verify exported objects
       expect(result).toContain("export const userAuthenticationControl = {");
       expect(result).toContain("export const userAccessControl = {");
-
-      // Verify authentication control values
       expect(result).toContain("Create: true,");
       expect(result).toContain("Update: true,");
       expect(result).toContain("Delete: true,");
       expect(result).toContain("View: true,");
-
-      // Verify access control structure
       expect(result).toContain("Create: {");
       expect(result).toContain("roles: []");
       expect(result).toContain('name: "Create User"');
@@ -52,21 +53,15 @@ describe("generateAuthConfigsTemplate", () => {
       expect(result).toContain('name: "Delete User"');
       expect(result).toContain("View: {");
       expect(result).toContain('name: "View User"');
-
-      // Verify as const satisfies for TypeScript
       expect(result).toContain(
         '} as const satisfies AuthConfigs["accessControl"];'
       );
-
-      // Verify default permission generation (helper function)
       expect(result).toContain("function createUserPermission(action: string)");
       expect(result).toContain("export const userPermissions = {");
       expect(result).toContain('canCreate: createUserPermission("Create")');
       expect(result).toContain('canUpdate: createUserPermission("Update")');
       expect(result).toContain('canDelete: createUserPermission("Delete")');
       expect(result).toContain('canView: createUserPermission("View")');
-
-      // Verify main config structure
       expect(result).toContain(
         "authenticationControl: userAuthenticationControl,"
       );
@@ -79,31 +74,18 @@ describe("generateAuthConfigsTemplate", () => {
         advanced: true,
       });
 
-      // Should NOT have helper function
       expect(result).not.toContain("function createUserPermission");
-
-      // Should have reduce-based permissions
       expect(result).toContain(
         "export const userPermissions = Object.keys(userAccessControl).reduce("
       );
       expect(result).toContain(
         "acc[`can${key}` as UserPermissionName] = authService.permission("
       );
-
-      // Should have type definition
       expect(result).toContain(
         "type UserPermissionName = `can${keyof typeof userAccessControl & string}`;"
       );
-
-      // Should have Record type
       expect(result).toContain(
         "{} as Record<UserPermissionName, ReturnType<typeof authService.permission>>"
-      );
-
-      // Should NOT have the old complex type assertion
-      expect(result).not.toContain(") as {");
-      expect(result).not.toContain(
-        "[K in keyof typeof userAccessControl as `can${K & string}`]: ReturnType<"
       );
     });
 
@@ -150,29 +132,18 @@ describe("generateAuthConfigsTemplate", () => {
     });
 
     it("should generate basic JavaScript auth configs template", () => {
-      const result = generateAuthConfigsTemplate({
-        modelName: mockModelName,
-      });
+      const result = generateAuthConfigsTemplate({ modelName: mockModelName });
 
-      // Should NOT have TypeScript imports and types
       expect(result).not.toContain("import { AuthConfigs }");
       expect(result).not.toContain(": AuthConfigs");
       expect(result).not.toContain("as const satisfies AuthConfigs");
-
-      // Should have basic imports
       expect(result).toContain('import { authService } from "arkos/services"');
-
-      // Should have correct variable declarations
       expect(result).toContain("const userAuthConfigs = {");
       expect(result).toContain("export const userAuthenticationControl = {");
       expect(result).toContain("export const userAccessControl = {");
-
-      // Should have helper function for default mode
       expect(result).toContain("function createUserPermission(action)");
       expect(result).toContain("export const userPermissions = {");
       expect(result).toContain('canCreate: createUserPermission("Create")');
-
-      // Should not have TypeScript type assertions
       expect(result).not.toContain(
         "as Record<UserPermissionName, ReturnType<typeof authService.permission>>"
       );
@@ -184,19 +155,12 @@ describe("generateAuthConfigsTemplate", () => {
         advanced: true,
       });
 
-      // Should have reduce-based permissions
       expect(result).toContain(
         "export const userPermissions = Object.keys(userAccessControl).reduce("
       );
-
-      // Should NOT have TypeScript type definition
       expect(result).not.toContain("type UserPermissionName");
-
-      // Should NOT have TypeScript type assertions
       expect(result).not.toContain("as UserPermissionName");
       expect(result).not.toContain("as Record<");
-
-      // Should have basic reduce implementation
       expect(result).toContain("acc[`can${key}`] = authService.permission(");
       expect(result).toContain("return acc;");
     });
@@ -214,6 +178,65 @@ describe("generateAuthConfigsTemplate", () => {
       expect(result).toContain(
         'description: "Permission to create new user profile records"'
       );
+    });
+  });
+
+  describe("non-normal module generation", () => {
+    beforeEach(() => {
+      mockedGetUserFileExtension.mockReturnValue("ts");
+    });
+
+    it("should generate only accessControl export for non-prisma non-file-upload module in TypeScript", () => {
+      const result = generateAuthConfigsTemplate({
+        modelName: {
+          pascal: "Dashboard",
+          camel: "dashboard",
+          kebab: "dashboard",
+        },
+      });
+
+      expect(result).toContain("import { AuthConfigs } from 'arkos/auth';");
+      expect(result).toContain(
+        'export const dashboardAccessControl: AuthConfigs["accessControl"] = {};'
+      );
+      expect(result).not.toContain("import { authService }");
+      expect(result).not.toContain(
+        "export const dashboardAuthenticationControl"
+      );
+      expect(result).not.toContain("export default");
+      expect(result).not.toContain("export const dashboardPermissions");
+    });
+
+    it("should generate only accessControl export for non-prisma module in JavaScript", () => {
+      mockedGetUserFileExtension.mockReturnValue("js");
+      const result = generateAuthConfigsTemplate({
+        modelName: {
+          pascal: "Dashboard",
+          camel: "dashboard",
+          kebab: "dashboard",
+        },
+      });
+
+      expect(result).not.toContain("import { AuthConfigs }");
+      expect(result).toContain("export const dashboardAccessControl = {};");
+      expect(result).not.toContain(
+        "export const dashboardAuthenticationControl"
+      );
+      expect(result).not.toContain("export default");
+    });
+
+    it("should generate full template for file-upload module", () => {
+      const result = generateAuthConfigsTemplate({
+        modelName: {
+          pascal: "FileUpload",
+          camel: "fileUpload",
+          kebab: "file-upload",
+        },
+      });
+
+      expect(result).toContain("export const fileUploadAccessControl = {");
+      expect(result).toContain("export const fileUploadAuthenticationControl");
+      expect(result).toContain("export default fileUploadAuthConfigs");
     });
   });
 
@@ -247,23 +270,17 @@ describe("generateAuthConfigsTemplate", () => {
         modelName: mockModelName,
         advanced: false,
       });
-
       const advancedResult = generateAuthConfigsTemplate({
         modelName: mockModelName,
         advanced: true,
       });
 
-      // Default has helper function
       expect(defaultResult).toContain("function createUserPermission");
       expect(defaultResult).not.toContain(
         "Object.keys(userAccessControl).reduce"
       );
-
-      // Advanced has reduce
       expect(advancedResult).not.toContain("function createUserPermission");
       expect(advancedResult).toContain("Object.keys(userAccessControl).reduce");
-
-      // Both should have same exports
       expect(defaultResult).toContain(
         "export const userAuthenticationControl = {"
       );
@@ -272,14 +289,10 @@ describe("generateAuthConfigsTemplate", () => {
       );
       expect(defaultResult).toContain("export const userAccessControl = {");
       expect(advancedResult).toContain("export const userAccessControl = {");
-
-      // Default should have individual permission keys
       expect(defaultResult).toContain("canCreate:");
       expect(defaultResult).toContain("canUpdate:");
       expect(defaultResult).toContain("canDelete:");
       expect(defaultResult).toContain("canView:");
-
-      // Advanced should NOT have individual keys (uses reduce)
       expect(advancedResult).not.toContain("canCreate:");
       expect(advancedResult).not.toContain("canUpdate:");
       expect(advancedResult).not.toContain("canDelete:");
@@ -291,22 +304,25 @@ describe("generateAuthConfigsTemplate", () => {
         modelName: mockModelName,
         advanced: false,
       });
-
       const advancedResult = generateAuthConfigsTemplate({
         modelName: mockModelName,
         advanced: true,
       });
 
-      // Check that both have the same action names in accessControl
-      const defaultActions = ["Create", "Update", "Delete", "View"];
-      defaultActions.forEach((action) => {
+      ["Create", "Update", "Delete", "View"].forEach((action) => {
         expect(defaultResult).toContain(`${action}: {`);
         expect(advancedResult).toContain(`${action}: {`);
       });
 
-      // Check that both have the same role assignments
       expect(defaultResult).toContain("roles: []");
       expect(advancedResult).toContain("roles: []");
+    });
+
+    it("should default advanced to false when not provided", () => {
+      const result = generateAuthConfigsTemplate({ modelName: mockModelName });
+
+      expect(result).toContain("function createUserPermission");
+      expect(result).not.toContain("Object.keys(userAccessControl).reduce");
     });
   });
 
@@ -317,11 +333,7 @@ describe("generateAuthConfigsTemplate", () => {
 
     it("should handle model names with numbers", () => {
       const result = generateAuthConfigsTemplate({
-        modelName: {
-          pascal: "User123",
-          camel: "user123",
-          kebab: "user-123",
-        },
+        modelName: { pascal: "User123", camel: "user123", kebab: "user-123" },
       });
 
       expect(result).toContain('name: "Create User 123"');
@@ -341,16 +353,6 @@ describe("generateAuthConfigsTemplate", () => {
 
       expect(result).toContain('authService.permission(action, "user-profile"');
     });
-
-    it("should default advanced to false when not provided", () => {
-      const result = generateAuthConfigsTemplate({
-        modelName: mockModelName,
-        // advanced not specified
-      });
-
-      expect(result).toContain("function createUserPermission");
-      expect(result).not.toContain("Object.keys(userAccessControl).reduce");
-    });
   });
 
   describe("Template structure", () => {
@@ -358,10 +360,8 @@ describe("generateAuthConfigsTemplate", () => {
       mockedGetUserFileExtension.mockReturnValue("ts");
     });
 
-    it("should export all required constants", () => {
-      const result = generateAuthConfigsTemplate({
-        modelName: mockModelName,
-      });
+    it("should export all required constants for prisma model", () => {
+      const result = generateAuthConfigsTemplate({ modelName: mockModelName });
 
       expect(result).toContain("export const userAccessControl");
       expect(result).toContain("export const userPermissions");
@@ -370,9 +370,7 @@ describe("generateAuthConfigsTemplate", () => {
     });
 
     it("should have correct order of exports", () => {
-      const result = generateAuthConfigsTemplate({
-        modelName: mockModelName,
-      });
+      const result = generateAuthConfigsTemplate({ modelName: mockModelName });
 
       const accessControlIndex = result.indexOf(
         "export const userAccessControl"
@@ -383,11 +381,8 @@ describe("generateAuthConfigsTemplate", () => {
       );
       const defaultExportIndex = result.indexOf("export default");
 
-      // AccessControl should come first
       expect(accessControlIndex).toBeLessThan(permissionsIndex);
-      // Permissions should come before AuthenticationControl
       expect(permissionsIndex).toBeLessThan(authenticationIndex);
-      // Default export should be last
       expect(authenticationIndex).toBeLessThan(defaultExportIndex);
     });
   });

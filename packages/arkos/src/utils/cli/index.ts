@@ -200,6 +200,15 @@ generate
   });
 
 generate
+  .command("policy")
+  .alias("p")
+  .description("Generate a new policy")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.policy({ ...generateOptions, ...options });
+  });
+
+generate
   .command("components")
   .alias("co")
   .description("Generate multiple components for a module")

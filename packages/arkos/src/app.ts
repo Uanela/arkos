@@ -1,21 +1,27 @@
-import "./utils/helpers/arkos-config.helpers"; // just to trigger loading of arkos config
-import express from "express";
-import { bootstrap } from "./utils/bootstrap";
+import "./utils/helpers/arkos-config.helpers";
+import express, { Express } from "express";
 import setupApp from "./utils/setup-app";
 import { Arkos, ArkosLoadable } from "./types/arkos";
 import initializeApp from "./utils/initialize-app";
-import { Express } from "express";
-import { logAppStartp } from "./server";
+import { logAppStartup } from "./server";
+import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
+import { IncomingMessage, Server, ServerResponse } from "http";
+import ExitError from "./utils/helpers/exit-error";
 import { ArkosLoadableRegistry } from "./components/arkos-loadable-registry";
 import { BaseController } from "./modules/base/base.controller";
 import { BaseService } from "./modules/base/base.service";
+
+let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
+const docsLink =
+  "https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app";
+let instanciated = false;
 
 /**
  * Creates and configures an Arkos application instance.
  *
  * Arkos extends Express with a small set of methods for registering routers,
  * loading route/service hooks, and booting the application. All Arkos-specific
- * setup (`app.load()`, `app.build()`) must happen before the app starts
+ * setup (`app.build()`) must happen before the app starts
  * accepting requests.
  *
  * @example
@@ -26,7 +32,6 @@ import { BaseService } from "./modules/base/base.service";
  * const app = arkos();
  *
  * app.use(reportsRouter);
- * app.load(userRouteHook, userServiceHook);
  *
  * app.listen();
  * ```
@@ -40,79 +45,111 @@ import { BaseService } from "./modules/base/base.service";
  * const app = arkos();
  *
  * app.use(reportsRouter);
- * app.load(userRouteHook);
  *
- * app.build();
+ * async function start() {
+ *  await app.build();
  *
- * const server = http.createServer(app);
- * server.listen(...app.getServerConfig());
+ *  const server = http.createServer(app);
+ *  app.listen(server)
+ * }
+ * main()
  * ```
  *
  * @see {@link https://www.arkosjs.com/docs/core-concepts/routing/setup}
  */
 export function arkos(): Arkos {
+  if (instanciated)
+    throw ExitError(`arkos() must be called only once, see ${docsLink}`);
+
   const app = express() as any as Arkos;
   setupApp(app);
+  instanciated = true;
 
   const registry = new ArkosLoadableRegistry();
 
-  let builtBy: "listen" | "build" | null = null;
+  type AppState = "idle" | "building" | "built" | "listening";
+  let state: AppState = "idle";
 
   app.load = (...items: ArkosLoadable[]) => {
-    if (builtBy) {
-      throw new Error(`app.load() must be called before app.${builtBy}().`);
-    }
+    if (state !== "idle")
+      throw ExitError(
+        `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`
+      );
+
     items.forEach((item) => registry.register(item));
     return app;
   };
 
-  app.build = function () {
-    if (builtBy)
-      throw Error(
-        builtBy === "listen"
-          ? `app.build() must not be called after app.listen(), see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
-          : `app.build() must only be called once, see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
-      );
-
-    builtBy = "build";
+  async function loadApp() {
     BaseController.configure(registry);
     BaseService.configure(registry);
-    return initializeApp(app, registry);
+
+    const _app = initializeApp(app, registry);
+    if (process.env.CLI_COMMAND) await runtimeCliCommander.handle();
+    return _app;
+  }
+
+  app.build = function () {
+    if (state === "built" || state === "building")
+      throw ExitError(`app.build() must only be called once, see ${docsLink}`);
+    if (state === "listening")
+      throw ExitError(
+        `app.build() must be called before app.listen(), see ${docsLink}`
+      );
+
+    state = "building";
+    const _app = loadApp();
+    state = "built";
+    return _app;
   };
 
   const originalListen = app.listen.bind(app) as any as Express["listen"];
-  type userCb = (err?: Error) => void;
+  type UserCallback = (err?: Error) => void;
 
-  const defaultCb = (port: number | string, host: string, cb?: userCb) => {
-    logAppStartp(port, host);
+  const defaultCb = (
+    port: number | string,
+    host: string,
+    cb?: UserCallback
+  ) => {
+    logAppStartup(port, host);
     return cb || function () {};
   };
 
-  app.listen = function (cb?: userCb): Arkos {
-    if (builtBy)
-      throw Error(
-        builtBy === "build"
-          ? `app.listen() must not be called after app.build(), see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
-          : `app.listen() must only be called once, see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
+  app.listen = async function (...args): Promise<Server> {
+    if (state === "listening")
+      throw ExitError(`app.listen() must only be called once, see ${docsLink}`);
+    if (state === "building")
+      throw ExitError(
+        `app.build() must be awaited before calling app.listen(), see ${docsLink}`
       );
 
-    builtBy = "listen";
-    BaseController.configure(registry);
-    BaseService.configure(registry);
-    initializeApp(app, registry);
-    const port = Number(process.env.__PORT || process.env.PORT || "8000");
-    const host = process.env.__HOST! || process.env.HOST || "127.0.0.1";
-    originalListen(port, host, defaultCb(port, host, cb));
-    return app;
-  };
+    if (state === "idle") {
+      state = "listening";
+      loadApp();
+    }
 
-  app.getServerConfig = (cb?: userCb) => {
     const port = Number(process.env.__PORT || process.env.PORT || "8000");
-    const host = process.env.__HOST! || process.env.HOST || "127.0.0.1";
-    return [port, host, defaultCb(port, host, cb)];
+    const host = process.env.__HOST! || process.env.HOST || "0.0.0.0";
+
+    if ((args as any)?.length === 0 || typeof args[0] === "function")
+      appServer = originalListen(
+        port,
+        host,
+        defaultCb(port, host, args[0] as UserCallback)
+      );
+    else if (args[0] instanceof Server || typeof args[0] === "object")
+      appServer = args[0].listen(
+        port,
+        host,
+        defaultCb(port, host, args[1] as UserCallback)
+      );
+
+    return appServer;
   };
 
   return app;
 }
 
-export { bootstrap };
+export function getAppServer() {
+  return appServer;
+}

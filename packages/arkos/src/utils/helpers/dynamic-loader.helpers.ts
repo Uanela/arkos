@@ -1,12 +1,13 @@
-import { ArkosConfig, RouterConfig } from "../../exports";
+import { RouterConfig } from "../../exports";
 import fs from "fs";
+import { UserArkosConfig } from "../define-config";
 
 /**
  * Applies strict routing rules to module configuration
  */
 export function applyStrictRoutingRules<T extends string>(
   appModule: T,
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   moduleConfig?: RouterConfig<T>
 ): RouterConfig<T> {
   const strictMode = arkosConfig?.routers?.strict || false;

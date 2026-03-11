@@ -404,7 +404,6 @@ export class AuthService {
           const notEnoughPermissionsError = new AppError(
             "You do not have permission to perfom this action",
             403,
-            {},
             "NotEnoughPermissions"
           );
 

@@ -401,7 +401,7 @@ describe("Auth Router", () => {
       prismaQueryOptions: mockPrismaQueryOptions,
     });
 
-    getAuthRouter({ authentication: { mode: "static" } });
+    getAuthRouter({ authentication: { mode: "static" } } as any);
 
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
@@ -507,7 +507,7 @@ describe("Auth Router", () => {
       },
       prismaQueryOptions: mockPrismaQueryOptions,
     });
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
@@ -620,7 +620,7 @@ describe("Auth Router", () => {
       },
       prismaQueryOptions: mockPrismaQueryOptions,
     });
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(
@@ -753,7 +753,7 @@ describe("Auth Router", () => {
       },
       prismaQueryOptions: mockPrismaQueryOptions,
     });
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
     // GET /users/me
     expect(mockRouter.get).toHaveBeenCalledWith(

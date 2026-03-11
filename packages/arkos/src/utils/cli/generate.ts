@@ -16,11 +16,11 @@ import generateMultipleComponents, {
   MultipleComponentsGenerateOptions,
 } from "./utils/template-generator/templates/generate-multiple-components";
 
-const models = prismaSchemaParser
+export const kebabPrismaModels = prismaSchemaParser
   .getModelsAsArrayOfStrings()
   .map((val) => kebabCase(val));
 
-const knownModules = [...models, "file-upload", "auth"];
+export const knownModules = [...kebabPrismaModels, "file-upload", "auth"];
 
 export type GenerateOptions = {
   path?: string;
@@ -161,7 +161,7 @@ export const generateCommand = {
       customImports: () => ({
         baseController: "arkos/controllers",
       }),
-      allowedModules: knownModules,
+      allowedModules: "*",
     });
   },
 
@@ -172,7 +172,7 @@ export const generateCommand = {
       customImports: () => ({
         baseService: "arkos/services",
       }),
-      allowedModules: [...knownModules, "email"],
+      allowedModules: "*",
     });
   },
 
@@ -180,11 +180,7 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "router",
       fileSuffix: "router",
-      customImports: (names) => ({
-        baseRouter: "arkos",
-        controller: `./${names.kebab}.controller`,
-      }),
-      allowedModules: knownModules,
+      allowedModules: "*",
     });
   },
 
@@ -200,7 +196,7 @@ export const generateCommand = {
     await generateFile(options, {
       templateName: "auth-configs",
       fileSuffix: "auth",
-      allowedModules: knownModules,
+      allowedModules: "*",
     });
   },
 
@@ -212,13 +208,21 @@ export const generateCommand = {
     });
   },
 
+  policy: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "policy",
+      fileSuffix: "policy",
+      allowedModules: "*",
+    });
+  },
+
   createSchema: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "create-schema",
       fileSuffix: "schema",
       customPath: "src/modules/{{module-name}}/schemas",
       prefix: "create-",
-      allowedModules: models,
+      allowedModules: kebabPrismaModels,
     });
   },
 
@@ -228,7 +232,7 @@ export const generateCommand = {
       fileSuffix: "schema",
       customPath: "src/modules/{{module-name}}/schemas",
       prefix: "update-",
-      allowedModules: models,
+      allowedModules: kebabPrismaModels,
     });
   },
 
@@ -238,7 +242,7 @@ export const generateCommand = {
       fileSuffix: "schema",
       customPath: "src/modules/{{module-name}}/schemas",
       prefix: "",
-      allowedModules: models,
+      allowedModules: kebabPrismaModels,
     });
   },
 
@@ -248,7 +252,7 @@ export const generateCommand = {
       fileSuffix: "schema",
       customPath: "src/modules/{{module-name}}/schemas",
       prefix: "query-",
-      allowedModules: models,
+      allowedModules: kebabPrismaModels,
     });
   },
 
@@ -258,7 +262,7 @@ export const generateCommand = {
       fileSuffix: "dto",
       customPath: "src/modules/{{module-name}}/dtos",
       prefix: "create-",
-      allowedModules: models,
+      allowedModules: kebabPrismaModels,
     });
   },
 
@@ -268,7 +272,7 @@ export const generateCommand = {
       fileSuffix: "dto",
       customPath: "src/modules/{{module-name}}/dtos",
       prefix: "update-",
-      allowedModules: models,
+      allowedModules: kebabPrismaModels,
     });
   },
 
@@ -278,7 +282,7 @@ export const generateCommand = {
       fileSuffix: "dto",
       customPath: "src/modules/{{module-name}}/dtos",
       prefix: "",
-      allowedModules: models,
+      allowedModules: kebabPrismaModels,
     });
   },
 
@@ -288,7 +292,7 @@ export const generateCommand = {
       fileSuffix: "dto",
       customPath: "src/modules/{{module-name}}/dtos",
       prefix: "query-",
-      allowedModules: models,
+      allowedModules: kebabPrismaModels,
     });
   },
 
