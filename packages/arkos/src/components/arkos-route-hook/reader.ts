@@ -1,56 +1,81 @@
-import { ArkosRouteHookHooks, ArkosRouteHookMethodConfig } from "./types";
+import loadableRegistry from "../../components/arkos-loadable-registry";
+import {
+  ArkosModuleType,
+  ArkosRouteHookHooks,
+  ArkosRouteHookMethodConfig,
+  ArkosRouteHookInstance,
+  ArkosAuthRouteHookInstance,
+  ArkosFileUploadRouteHookInstance,
+} from "./types";
 import { ArkosRequestHandler, ArkosRouteConfig } from "../../exports";
-import { ArkosLoadable } from "../../types/arkos";
+import { kebabCase } from "../../exports/utils";
+
+type PrismaOperations = keyof Omit<
+  ArkosRouteHookInstance<any>,
+  "__type" | "moduleName"
+>;
+
+type OperationByModule<TModule extends ArkosModuleType> =
+  TModule extends "file-upload"
+    ? keyof Omit<ArkosFileUploadRouteHookInstance, "__type" | "moduleName">
+    : TModule extends "auth"
+      ? keyof Omit<ArkosAuthRouteHookInstance, "__type" | "moduleName">
+      : PrismaOperations;
 
 /**
  * Reader for `ArkosRouteHook` instances.
- * Reads config directly from the instance passed in — no internal registry.
+ * Reads config from the global loadable registry by module name.
  *
  * @example
  * ```ts
- * routeHookReader.getHooks(userRouteHook, "findMany")        // { before, after, onError }
- * routeHookReader.getRouteConfig(userRouteHook, "findMany")  // ArkosRouteConfig minus path and hooks
- * routeHookReader.getPrismaArgs(userRouteHook, "findMany")   // prismaArgs for that operation
- * routeHookReader.getFullConfig(userRouteHook, "findMany")   // full raw config object
- * routeHookReader.hasOperation(userRouteHook, "findMany")    // true | false
- * routeHookReader.forOperation(userRouteHook, "findMany")    // { before, after, onError, prismaArgs, routeConfig }
+ * routeHookReader.getHooks("user", "findMany")        // { before, after, onError }
+ * routeHookReader.getRouteConfig("user", "findMany")  // ArkosRouteConfig minus path and hooks
+ * routeHookReader.getPrismaArgs("user", "findMany")   // prismaArgs for that operation
+ * routeHookReader.getFullConfig("user", "findMany")   // full raw config object
+ * routeHookReader.hasOperation("user", "findMany")    // true | false
+ * routeHookReader.forOperation("user", "findMany")    // { before, after, onError, prismaArgs, routeConfig }
  * ```
  */
 class ArkosRouteHookReader {
+  private getRouteHook(moduleName: ArkosModuleType) {
+    return loadableRegistry.getItem("ArkosRouteHook", kebabCase(moduleName));
+  }
+
   private getStore(
-    routeHook: ArkosLoadable
+    moduleName: ArkosModuleType
   ): Record<string, ArkosRouteHookMethodConfig> {
-    return (routeHook as any)._store ?? {};
+    return (this.getRouteHook(moduleName) as any)?._store ?? {};
   }
 
   /**
    * Returns true if the routeHook has a config registered for the given operation.
    */
-  hasOperation(routeHook: ArkosLoadable, operation: string): boolean {
-    return operation in this.getStore(routeHook);
+  hasOperation<TModule extends ArkosModuleType>(
+    moduleName: TModule,
+    operation: OperationByModule<TModule>
+  ): boolean {
+    return operation in this.getStore(moduleName);
   }
 
   /**
    * Returns the full raw config for the given operation, or `null` if not registered.
    */
-  getFullConfig(
-    routeHook: ArkosLoadable,
-    operation: string
+  getFullConfig<TModule extends ArkosModuleType>(
+    moduleName: TModule,
+    operation: OperationByModule<TModule>
   ): ArkosRouteHookMethodConfig | null {
-    return this.getStore(routeHook)[operation] ?? null;
+    return this.getStore(moduleName)[operation as string] ?? null;
   }
 
   /**
    * Returns only the lifecycle hooks (`before`, `after`, `onError`) for the given operation.
    */
-  getHooks(
-    routeHook: ArkosLoadable | null | undefined,
-    operation: string
+  getHooks<TModule extends ArkosModuleType>(
+    moduleName: TModule,
+    operation: OperationByModule<TModule>
   ): ArkosRouteHookHooks | undefined {
-    if (!routeHook) return;
-    const config = this.getStore(routeHook)[operation];
+    const config = this.getStore(moduleName)[operation as string];
     if (!config) return {};
-
     const { before, after, onError } = config;
     return { before, after, onError };
   }
@@ -59,13 +84,12 @@ class ArkosRouteHookReader {
    * Returns the `ArkosRouteConfig` portion of the config (excludes `path`, hooks, and `prismaArgs`)
    * for the given operation.
    */
-  getRouteConfig(
-    routeHook: ArkosLoadable,
-    operation: string
+  getRouteConfig<TModule extends ArkosModuleType>(
+    moduleName: TModule,
+    operation: OperationByModule<TModule>
   ): Omit<ArkosRouteConfig, "path"> | null {
-    const config = this.getStore(routeHook)[operation];
+    const config = this.getStore(moduleName)[operation as string];
     if (!config) return null;
-
     const { before, after, onError, prismaArgs, ...routeConfig } = config;
     return routeConfig;
   }
@@ -73,19 +97,19 @@ class ArkosRouteHookReader {
   /**
    * Returns the `prismaArgs` for the given operation, or `undefined` if not set.
    */
-  getPrismaArgs(
-    routeHook: ArkosLoadable,
-    operation: string
+  getPrismaArgs<TModule extends ArkosModuleType>(
+    moduleName: TModule,
+    operation: OperationByModule<TModule>
   ): Record<string, any> | undefined {
-    return this.getStore(routeHook)[operation]?.prismaArgs;
+    return this.getStore(moduleName)[operation as string]?.prismaArgs;
   }
 
   /**
    * Returns all extracted slices for a given operation in one call.
    */
-  forOperation(
-    routeHook: ArkosLoadable,
-    operation: string
+  forOperation<TModule extends ArkosModuleType>(
+    moduleName: TModule,
+    operation: OperationByModule<TModule>
   ): {
     before: ArkosRequestHandler[];
     after: ArkosRequestHandler[];
@@ -97,10 +121,9 @@ class ArkosRouteHookReader {
       before = [],
       after = [],
       onError = [],
-    } = this.getHooks(routeHook, operation) || {};
-    const prismaArgs = this.getPrismaArgs(routeHook, operation);
-    const routeConfig = this.getRouteConfig(routeHook, operation) ?? {};
-
+    } = this.getHooks(moduleName, operation) || {};
+    const prismaArgs = this.getPrismaArgs(moduleName, operation);
+    const routeConfig = this.getRouteConfig(moduleName, operation) ?? {};
     return { before, after, onError, prismaArgs, routeConfig };
   }
 }
