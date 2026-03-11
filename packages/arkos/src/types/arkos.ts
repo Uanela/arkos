@@ -1,7 +1,8 @@
 import { Express } from "express";
-import { Server } from "http";
+import { IncomingMessage, Server, ServerResponse } from "http";
 
 export interface Arkos extends Omit<Express, "listen"> {
+  (req: IncomingMessage, res: ServerResponse): void;
   /**
    * Applies all loaded items to the app by adding them as middleware,
    * routers, or handlers at the end of the stack.
@@ -25,12 +26,4 @@ export interface Arkos extends Omit<Express, "listen"> {
    * @param callback Optional callback invoked once server starts
    */
   listen(server: Server, callback?: (error?: Error) => void): Promise<Server>;
-
-  /**
-   * Returns the server configuration [port, host, callback?]
-   * Can be used with http.createServer(app).listen(...args)
-   */
-  getServerConfig(
-    cb?: (err?: Error) => void
-  ): [number, string, ((err?: Error) => void)?];
 }
