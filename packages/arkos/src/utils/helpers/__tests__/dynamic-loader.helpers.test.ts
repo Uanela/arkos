@@ -4,7 +4,6 @@ import {
   validateRouterConfigConsistency,
 } from "../dynamic-loader.helpers";
 import { ArkosConfig, RouterConfig } from "../../../exports";
-import bodyParser from "body-parser";
 
 // Mock the dynamic-loader helpers
 jest.mock("../../dynamic-loader", () => ({
@@ -12,7 +11,7 @@ jest.mock("../../dynamic-loader", () => ({
 }));
 
 describe("applyStrictRoutingRules", () => {
-  const mockArkosConfig: ArkosConfig = {
+  const mockArkosConfig: any = {
     routers: {
       strict: false,
     },
@@ -37,7 +36,7 @@ describe("applyStrictRoutingRules", () => {
   });
 
   describe("when strictMode is true", () => {
-    const strictArkosConfig: ArkosConfig = {
+    const strictArkosConfig: any = {
       routers: {
         strict: true,
       },
@@ -272,7 +271,7 @@ describe("applyStrictRoutingRules", () => {
   });
 
   describe("when strictMode is no-bulk", () => {
-    const noBulkArkosConfig: ArkosConfig = {
+    const noBulkArkosConfig: any = {
       routers: {
         strict: "no-bulk",
       },
@@ -371,7 +370,7 @@ describe("applyStrictRoutingRules", () => {
 
   describe("edge cases", () => {
     it("should handle undefined arkosConfig.routers", () => {
-      const arkosConfig: ArkosConfig = {};
+      const arkosConfig: any = {};
 
       const result = applyStrictRoutingRules("auth", arkosConfig);
 
@@ -379,7 +378,7 @@ describe("applyStrictRoutingRules", () => {
     });
 
     it("should handle undefined arkosConfig.routers.strict", () => {
-      const arkosConfig: ArkosConfig = {
+      const arkosConfig: any = {
         routers: {},
       };
 

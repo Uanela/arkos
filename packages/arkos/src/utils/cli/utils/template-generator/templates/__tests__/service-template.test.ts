@@ -3,38 +3,45 @@ import { TemplateOptions } from "../../../template-generators";
 import * as fsHelpers from "../../../../../helpers/fs.helpers";
 
 jest.mock("../../../../../helpers/fs.helpers");
+jest.mock("../../../../generate", () => ({
+  kebabPrismaModels: [
+    "post",
+    "user",
+    "blog-post",
+    "category",
+    "order-item",
+    "product",
+    "a",
+    "very-long-model-name-with-many-words",
+    "post-2023",
+  ],
+}));
+
+const mockGetUserFileExtension =
+  fsHelpers.getUserFileExtension as jest.MockedFunction<
+    typeof fsHelpers.getUserFileExtension
+  >;
 
 describe("generateServiceTemplate", () => {
-  const mockGetUserFileExtension =
-    fsHelpers.getUserFileExtension as jest.MockedFunction<
-      typeof fsHelpers.getUserFileExtension
-    >;
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe("Error Handling", () => {
     it("should throw error when modelName is not provided", () => {
-      const options = {} as TemplateOptions;
-
-      expect(() => generateServiceTemplate(options)).toThrow(
+      expect(() => generateServiceTemplate({} as TemplateOptions)).toThrow(
         "Module name is required for service template"
       );
     });
 
     it("should throw error when modelName is undefined", () => {
-      const options = { modelName: undefined } as any;
-
-      expect(() => generateServiceTemplate(options)).toThrow(
-        "Module name is required for service template"
-      );
+      expect(() =>
+        generateServiceTemplate({ modelName: undefined } as any)
+      ).toThrow("Module name is required for service template");
     });
 
     it("should throw error when modelName is null", () => {
-      const options = { modelName: null } as any;
-
-      expect(() => generateServiceTemplate(options)).toThrow(
+      expect(() => generateServiceTemplate({ modelName: null } as any)).toThrow(
         "Module name is required for service template"
       );
     });
@@ -47,11 +54,7 @@ describe("generateServiceTemplate", () => {
 
     it("should generate base service template with type parameter for standard models", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Post",
-          camel: "post",
-          kebab: "post",
-        },
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
       };
 
       const result = generateServiceTemplate(options);
@@ -66,14 +69,8 @@ describe("generateServiceTemplate", () => {
 
     it("should use custom import path when provided", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "User",
-          camel: "user",
-          kebab: "user",
-        },
-        imports: {
-          baseService: "../../core/services",
-        },
+        modelName: { pascal: "User", camel: "user", kebab: "user" },
+        imports: { baseService: "../../core/services" },
       };
 
       const result = generateServiceTemplate(options);
@@ -115,11 +112,7 @@ describe("generateServiceTemplate", () => {
 
     it("should generate base service template without type parameter for JS", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Post",
-          camel: "post",
-          kebab: "post",
-        },
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
       };
 
       const result = generateServiceTemplate(options);
@@ -133,14 +126,8 @@ describe("generateServiceTemplate", () => {
 
     it("should use custom import path when provided in JS", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Category",
-          camel: "category",
-          kebab: "category",
-        },
-        imports: {
-          baseService: "@lib/services",
-        },
+        modelName: { pascal: "Category", camel: "category", kebab: "category" },
+        imports: { baseService: "@lib/services" },
       };
 
       const result = generateServiceTemplate(options);
@@ -204,9 +191,7 @@ describe("generateServiceTemplate", () => {
           camel: "fileUpload",
           kebab: "file-upload",
         },
-        imports: {
-          fileUploadService: "@custom/services",
-        },
+        imports: { fileUploadService: "@custom/services" },
       };
 
       const result = generateServiceTemplate(options);
@@ -224,11 +209,7 @@ describe("generateServiceTemplate", () => {
 
     it("should generate AuthService for auth model", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Auth",
-          camel: "auth",
-          kebab: "auth",
-        },
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
       };
 
       const result = generateServiceTemplate(options);
@@ -244,11 +225,7 @@ describe("generateServiceTemplate", () => {
 
     it("should not include type parameter for AuthService in TypeScript", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Auth",
-          camel: "auth",
-          kebab: "auth",
-        },
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
       };
 
       const result = generateServiceTemplate(options);
@@ -258,14 +235,8 @@ describe("generateServiceTemplate", () => {
 
     it("should use custom import path for AuthService", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Auth",
-          camel: "auth",
-          kebab: "auth",
-        },
-        imports: {
-          authService: "../../auth/services",
-        },
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+        imports: { authService: "../../auth/services" },
       };
 
       const result = generateServiceTemplate(options);
@@ -283,11 +254,7 @@ describe("generateServiceTemplate", () => {
 
     it("should generate EmailService for email model", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Email",
-          camel: "email",
-          kebab: "email",
-        },
+        modelName: { pascal: "Email", camel: "email", kebab: "email" },
       };
 
       const result = generateServiceTemplate(options);
@@ -305,11 +272,7 @@ describe("generateServiceTemplate", () => {
 
     it("should not include type parameter for EmailService in TypeScript", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Email",
-          camel: "email",
-          kebab: "email",
-        },
+        modelName: { pascal: "Email", camel: "email", kebab: "email" },
       };
 
       const result = generateServiceTemplate(options);
@@ -319,14 +282,8 @@ describe("generateServiceTemplate", () => {
 
     it("should use custom import path for EmailService", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Email",
-          camel: "email",
-          kebab: "email",
-        },
-        imports: {
-          emailService: "@lib/email",
-        },
+        modelName: { pascal: "Email", camel: "email", kebab: "email" },
+        imports: { emailService: "@lib/email" },
       };
 
       const result = generateServiceTemplate(options);
@@ -337,6 +294,60 @@ describe("generateServiceTemplate", () => {
     });
   });
 
+  describe("Non-normal module generation", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+    });
+
+    it("should generate empty service class for non-prisma non-special module", () => {
+      const options: TemplateOptions = {
+        modelName: {
+          pascal: "Dashboard",
+          camel: "dashboard",
+          kebab: "dashboard",
+        },
+      };
+
+      const result = generateServiceTemplate(options);
+
+      expect(result).not.toContain("import {");
+      expect(result).toContain("class DashboardService {}");
+      expect(result).toContain(
+        "const dashboardService = new DashboardService();"
+      );
+      expect(result).toContain("export default dashboardService;");
+    });
+
+    it("should not extend any base class for non-normal module", () => {
+      const options: TemplateOptions = {
+        modelName: {
+          pascal: "Analytics",
+          camel: "analytics",
+          kebab: "analytics",
+        },
+      };
+
+      const result = generateServiceTemplate(options);
+
+      expect(result).not.toContain("extends");
+      expect(result).not.toContain("import {");
+    });
+
+    it("should not include type parameter for non-normal module", () => {
+      const options: TemplateOptions = {
+        modelName: {
+          pascal: "Dashboard",
+          camel: "dashboard",
+          kebab: "dashboard",
+        },
+      };
+
+      const result = generateServiceTemplate(options);
+
+      expect(result).not.toContain("<");
+    });
+  });
+
   describe("Template Formatting", () => {
     beforeEach(() => {
       mockGetUserFileExtension.mockReturnValue("ts");
@@ -344,11 +355,7 @@ describe("generateServiceTemplate", () => {
 
     it("should maintain consistent spacing and indentation", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Product",
-          camel: "product",
-          kebab: "product",
-        },
+        modelName: { pascal: "Product", camel: "product", kebab: "product" },
       };
 
       const result = generateServiceTemplate(options);
@@ -360,11 +367,7 @@ describe("generateServiceTemplate", () => {
 
     it("should generate valid TypeScript syntax", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Category",
-          camel: "category",
-          kebab: "category",
-        },
+        modelName: { pascal: "Category", camel: "category", kebab: "category" },
       };
 
       const result = generateServiceTemplate(options);
@@ -385,11 +388,7 @@ describe("generateServiceTemplate", () => {
 
     it("should handle single character model names", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "A",
-          camel: "a",
-          kebab: "a",
-        },
+        modelName: { pascal: "A", camel: "a", kebab: "a" },
       };
 
       const result = generateServiceTemplate(options);
@@ -444,11 +443,7 @@ describe("generateServiceTemplate", () => {
 
     it("should handle all import overrides together", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Post",
-          camel: "post",
-          kebab: "post",
-        },
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
         imports: {
           baseService: "@custom/base",
           authService: "@custom/auth",
@@ -467,14 +462,8 @@ describe("generateServiceTemplate", () => {
 
     it("should use default import when imports object is provided but specific service is not", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "User",
-          camel: "user",
-          kebab: "user",
-        },
-        imports: {
-          authService: "@custom/auth",
-        },
+        modelName: { pascal: "User", camel: "user", kebab: "user" },
+        imports: { authService: "@custom/auth" },
       };
 
       const result = generateServiceTemplate(options);
@@ -488,7 +477,7 @@ describe("generateServiceTemplate", () => {
       mockGetUserFileExtension.mockReturnValue("ts");
     });
 
-    it("should correctly detect FileUpload service (case-insensitive camel check)", () => {
+    it("should correctly detect FileUpload service", () => {
       const options: TemplateOptions = {
         modelName: {
           pascal: "FileUpload",
@@ -507,13 +496,9 @@ describe("generateServiceTemplate", () => {
       expect(result).not.toContain("<");
     });
 
-    it("should correctly detect Auth service (exact lowercase match)", () => {
+    it("should correctly detect Auth service", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Auth",
-          camel: "auth",
-          kebab: "auth",
-        },
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
       };
 
       const result = generateServiceTemplate(options);
@@ -524,13 +509,9 @@ describe("generateServiceTemplate", () => {
       expect(result).not.toContain("<");
     });
 
-    it("should correctly detect Email service (exact lowercase match)", () => {
+    it("should correctly detect Email service", () => {
       const options: TemplateOptions = {
-        modelName: {
-          pascal: "Email",
-          camel: "email",
-          kebab: "email",
-        },
+        modelName: { pascal: "Email", camel: "email", kebab: "email" },
       };
 
       const result = generateServiceTemplate(options);
@@ -541,7 +522,7 @@ describe("generateServiceTemplate", () => {
       expect(result).not.toContain("<");
     });
 
-    it("should use BaseService for all other models", () => {
+    it("should use BaseService for all other prisma models", () => {
       const testCases = [
         { pascal: "User", camel: "user", kebab: "user" },
         { pascal: "Post", camel: "post", kebab: "post" },
@@ -550,11 +531,9 @@ describe("generateServiceTemplate", () => {
       ];
 
       testCases.forEach(({ pascal, camel, kebab }) => {
-        const options: TemplateOptions = {
+        const result = generateServiceTemplate({
           modelName: { pascal, camel, kebab },
-        };
-
-        const result = generateServiceTemplate(options);
+        });
 
         expect(result).toContain("BaseService");
         expect(result).toContain(`new ${pascal}Service("${kebab}")`);
@@ -567,15 +546,9 @@ describe("generateServiceTemplate", () => {
     it("should include type parameter for base service in TypeScript", () => {
       mockGetUserFileExtension.mockReturnValue("ts");
 
-      const options: TemplateOptions = {
-        modelName: {
-          pascal: "Post",
-          camel: "post",
-          kebab: "post",
-        },
-      };
-
-      const result = generateServiceTemplate(options);
+      const result = generateServiceTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
 
       expect(result).toContain('extends BaseService<"post">');
     });
@@ -583,15 +556,9 @@ describe("generateServiceTemplate", () => {
     it("should not include type parameter for base service in JavaScript", () => {
       mockGetUserFileExtension.mockReturnValue("js");
 
-      const options: TemplateOptions = {
-        modelName: {
-          pascal: "Post",
-          camel: "post",
-          kebab: "post",
-        },
-      };
-
-      const result = generateServiceTemplate(options);
+      const result = generateServiceTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
 
       expect(result).toContain("extends BaseService {}");
       expect(result).not.toContain("<");
@@ -607,13 +574,11 @@ describe("generateServiceTemplate", () => {
       ];
 
       specialServices.forEach(({ pascal, camel, kebab }) => {
-        const options: TemplateOptions = {
+        const result = generateServiceTemplate({
           modelName: { pascal, camel, kebab },
-        };
+        });
 
-        const result = generateServiceTemplate(options);
         expect(result).not.toContain("<");
-
         if (pascal === "FileUpload")
           expect(result).toContain(`("/uploads", 10 * 1024 * 1024, /.*/, 10)`);
       });

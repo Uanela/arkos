@@ -1,4 +1,4 @@
-import { ArkosConfig, RouterConfig } from "../../exports";
+import { RouterConfig } from "../../exports";
 import { AuthPrismaQueryOptions, PrismaQueryOptions } from "../../types";
 import deepmerge from "../helpers/deepmerge.helper";
 import {
@@ -13,10 +13,11 @@ import {
   JsonSchemaProperty,
 } from "./types";
 import { localValidatorFileExists } from "../../modules/swagger/utils/helpers/swagger.router.helpers";
+import { UserArkosConfig } from "../define-config";
 
 export interface SchemaGenerationConfig {
   modelName: string;
-  arkosConfig: ArkosConfig;
+  arkosConfig: UserArkosConfig;
   schemasToGenerate?: ValidationFileMappingKey[];
 }
 
@@ -103,7 +104,7 @@ export class PrismaJsonSchemaGenerator {
   private generateAuthSchemas(
     model: PrismaModel,
     schemas: { [key: string]: JsonSchema },
-    arkosConfig: ArkosConfig,
+    arkosConfig: UserArkosConfig,
     schemasToGenerate: ValidationFileMappingKey[],
     queryOptions?: AuthPrismaQueryOptions<any>,
     routerConfig?: RouterConfig
@@ -177,7 +178,7 @@ export class PrismaJsonSchemaGenerator {
   private generateCrudSchemas(
     model: PrismaModel,
     schemas: { [key: string]: JsonSchema },
-    arkosConfig: ArkosConfig,
+    arkosConfig: UserArkosConfig,
     schemasToGenerate: ValidationFileMappingKey[],
     queryOptions?: PrismaQueryOptions<any>,
     routerConfig?: RouterConfig<any>
@@ -564,7 +565,7 @@ export class PrismaJsonSchemaGenerator {
   /**
    * Auth-specific schema generators
    */
-  private generateLoginSchema(arkosConfig?: ArkosConfig): JsonSchema {
+  private generateLoginSchema(arkosConfig?: UserArkosConfig): JsonSchema {
     const userNameFields =
       arkosConfig?.authentication?.login?.allowedUsernames || [];
 

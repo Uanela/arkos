@@ -1,4 +1,3 @@
-import { ArkosConfig } from "../../../../exports";
 import { camelCase, pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
@@ -7,7 +6,6 @@ import generateZodJsonSchemas from "./json-schema-generators/generate-zod-json-s
 import { generateClassValidatorJsonSchemas } from "./json-schema-generators/generate-class-validator-json-schemas";
 import { generatePrismaJsonSchemas } from "./json-schema-generators/generate-prisma-json-schemas";
 import { generatePrismaModelMainRoutesPaths } from "./json-schema-generators/prisma-models/generate-prisma-model-main-routes-paths";
-import generatePrismaModelParentRoutePaths from "./json-schema-generators/prisma-models/generate-prisma-model-parent-routes-paths";
 import sheu from "../../../../utils/sheu";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import {
@@ -15,11 +13,14 @@ import {
   ValidationFileMappingKey,
 } from "../../../../utils/dynamic-loader";
 import { isAuthenticationEnabled } from "../../../../utils/helpers/arkos-config.helpers";
+import { UserArkosConfig } from "../../../../utils/define-config";
 
 /**
  * Helps choosing the right json schemas according to swagger configurations
  */
-export function getOpenAPIJsonSchemasByConfigMode(arkosConfig: ArkosConfig) {
+export function getOpenAPIJsonSchemasByConfigMode(
+  arkosConfig: UserArkosConfig
+) {
   switch (arkosConfig?.swagger!.mode) {
     case "prisma":
       return generatePrismaJsonSchemas(arkosConfig);
@@ -104,7 +105,7 @@ export function getSchemaRef(
 }
 
 export function generatePathsForModels(
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   existingPaths: OpenAPIV3.PathsObject = {}
 ): OpenAPIV3.PathsObject {
   const swaggerConfig = arkosConfig?.swagger;
@@ -116,7 +117,6 @@ export function generatePathsForModels(
 
   for (const model of models) {
     generatePrismaModelMainRoutesPaths(model, paths, arkosConfig);
-    generatePrismaModelParentRoutePaths(model, paths, arkosConfig);
   }
 
   paths = {
@@ -144,7 +144,7 @@ export function generatePathsForModels(
 export function localValidatorFileExists(
   action: ValidationFileMappingKey,
   modelName: string,
-  arkosConfig: ArkosConfig
+  arkosConfig: UserArkosConfig
 ) {
   if (arkosConfig?.swagger?.mode === "prisma") return false;
   const moduleComponents = getModuleComponents(modelName) as any;

@@ -27,15 +27,7 @@ export type FileUploadRouterEndpoint =
   | "updateFile"
   | "deleteFile";
 
-interface PrismaBaseRouterConfig {
-  parent?: {
-    model?: string;
-    foreignKeyField?: string;
-    endpoints?: "*" | RouterEndpoint[];
-  };
-}
-
-type BaseRouterConfig = PrismaBaseRouterConfig & {
+type BaseRouterConfig = {
   /**
    * Backward compatibility (prior 1.4.0-beta) - disables/enables endpoints
    *

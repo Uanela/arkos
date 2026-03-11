@@ -3,13 +3,14 @@ import {
   getSchemaRef,
   localValidatorFileExists,
 } from "./swagger.router.helpers";
-import { ArkosConfig, RouterConfig } from "../../../../exports";
+import { RouterConfig } from "../../../../exports";
 import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.helpers";
+import { UserArkosConfig } from "../../../../utils/define-config";
 
 export const getSchemaMode = (
   action: string,
-  arkosConfig: ArkosConfig
+  arkosConfig: UserArkosConfig
 ): "prisma" | "zod" | "class-validator" => {
   const swaggerMode = arkosConfig.swagger?.mode;
   const isStrict = arkosConfig.swagger?.strict;
@@ -29,7 +30,7 @@ export const getSchemaMode = (
 };
 
 export default function getAuthenticationJsonSchemaPaths(
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   existingPaths: OpenAPIV3.PathsObject
 ) {
   const paths: OpenAPIV3.PathsObject = { ...existingPaths };

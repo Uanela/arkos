@@ -2,7 +2,7 @@ import { ZodTypeAny } from "zod";
 import path from "path";
 import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
-import { ArkosConfig, RouterConfig } from "../exports";
+import { getArkosConfig, RouterConfig } from "../exports";
 import sheu from "./sheu";
 import {
   applyStrictRoutingRules,
@@ -16,6 +16,7 @@ import prismaSchemaParser from "./prisma/prisma-schema-parser";
 import debuggerService from "../modules/debugger/debugger.service";
 import { PrismaQueryOptions } from "../types";
 import { ArkosServiceHookInstance } from "../components/arkos-service-hook/types";
+import { UserArkosConfig } from "./define-config";
 
 type AppModuleComponent = Awaited<ReturnType<typeof importModuleComponents>>;
 
@@ -53,7 +54,6 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
     core: {
       hooks: `${kebabModelName}.hooks.${ext}`,
       interceptors: `${kebabModelName}.interceptors.${ext}`,
-      interceptorsOld: `${kebabModelName}.middlewares.${ext}`,
       authConfigs: `${kebabModelName}.auth.${ext}`,
       prismaQueryOptions: `${kebabModelName}.query.${ext}`,
       router: `${kebabModelName}.router.${ext}`,
@@ -169,10 +169,7 @@ export async function processSubdir(
   return result;
 }
 
-export type ModuleComponents = Omit<
-  ImportModuleComponentsReturnType,
-  "authConfigsNew" | "prismaQueryOptionsNew"
->;
+export type ModuleComponents = ImportModuleComponentsReturnType;
 
 type ImportModuleComponentsReturnType = {
   hooks?: Record<
@@ -181,10 +178,7 @@ type ImportModuleComponentsReturnType = {
   >;
   interceptors?: Record<string, Function | Function[]>;
   authConfigs?: AuthConfigs;
-  interceptorsOld?: any;
-  authConfigsNew?: AuthConfigs;
   prismaQueryOptions?: PrismaQueryOptions<any>;
-  prismaQueryOptionsNew?: PrismaQueryOptions<any>;
   router?: { config?: RouterConfig<any>; default: RouterConfig };
   dtos?: {
     create?: any;
@@ -204,88 +198,6 @@ type ImportModuleComponentsReturnType = {
   };
 };
 
-const availableInterceptors = {
-  auth: [
-    "beforeGetMe",
-    "afterGetMe",
-    "onGetMeError",
-    "beforeUpdateMe",
-    "afterUpdateMe",
-    "onUpdateMeError",
-    "beforeLogin",
-    "afterLogin",
-    "onLoginError",
-    "beforeLogout",
-    "afterLogout",
-    "onLogoutError",
-    "beforeSignup",
-    "afterSignup",
-    "onSignupError",
-    "beforeUpdatePassword",
-    "afterUpdatePassword",
-    "onUpdatePasswordError",
-  ],
-  "file-upload": [
-    "beforeFindFile",
-    "onFindFileError",
-    "beforeUploadFile",
-    "afterUploadFile",
-    "onUploadFileError",
-    "beforeUpdateFile",
-    "afterUpdateFile",
-    "onUpdateFileError",
-    "beforeDeleteFile",
-    "afterDeleteFile",
-    "onDeleteFileError",
-  ],
-  prisma: [
-    "beforeCreateOne",
-    "afterCreateOne",
-    "onCreateOneError",
-    "beforeFindOne",
-    "afterFindOne",
-    "onFindOneError",
-    "beforeFindMany",
-    "afterFindMany",
-    "onFindManyError",
-    "beforeUpdateOne",
-    "afterUpdateOne",
-    "onUpdateOneError",
-    "beforeDeleteOne",
-    "afterDeleteOne",
-    "onDeleteOneError",
-    "beforeCreateMany",
-    "afterCreateMany",
-    "onCreateManyError",
-    "beforeUpdateMany",
-    "afterUpdateMany",
-    "onUpdateManyError",
-    "beforeDeleteMany",
-    "afterDeleteMany",
-    "onDeleteManyError",
-  ],
-};
-
-/**
- * Validates naming convention conflicts for prismaQueryOptions and authConfigs
- * @param {string} key - The current file key being processed
- * @param {string} fileName - The filename being imported
- * @param {ImportModuleComponentsReturnType} result - The current result object
- * @throws {Error} When conflicting naming conventions are detected
- */
-export function validateNamingConventions(
-  key: string,
-  fileName: string,
-  result: ImportModuleComponentsReturnType
-): void {
-  if (key === "interceptorsOld") {
-    if (!result.interceptors)
-      sheu.warn(
-        `Found deprecated ${fileName} that will removed from v1.6.0-beta, consider switching to ${fileName.replace("middlewares", "interceptors")}`
-      );
-  }
-}
-
 /**
  * Processes and assigns module to the result object based on the key
  * @param {string} key - The file key being processed
@@ -294,37 +206,21 @@ export function validateNamingConventions(
  */
 export function assignModuleToResult(
   appModule: string,
-  key: string,
+  key: keyof ModuleComponents,
   module: any,
   result: ImportModuleComponentsReturnType,
-  arkosConfig: ArkosConfig
+  arkosConfig: UserArkosConfig
 ): void {
-  if (key === "interceptors") result.interceptors = module;
-  else if (key === "interceptorsOld") {
-    const kebabCaseAppModule = kebabCase(appModule);
-    const moduleName =
-      kebabCaseAppModule === "auth"
-        ? "auth"
-        : kebabCaseAppModule === "file-upload"
-          ? "file-upload"
-          : "prisma";
+  const ext = getUserFileExtension();
 
-    if (
-      result.interceptors &&
-      Object.keys(module).some((interceptorName) =>
-        availableInterceptors[moduleName].includes(interceptorName)
-      )
-    ) {
-      const exportedInterceptors = Object.keys(module).filter(
-        (interceptorName) =>
-          availableInterceptors[moduleName].includes(interceptorName)
-      );
-      const ext = getUserFileExtension();
-      sheu.warn(
-        `Found ${kebabCaseAppModule}.middlewares.${ext} exporting ${exportedInterceptors.join(", ")}. Which by convention should go at ${kebabCaseAppModule}.interceptors.${ext} This is simply a warning that will stop from v1.5.0-beta`
-      );
-    } else if (!result.interceptors) result.interceptors = module;
-  } else if (key === "router") {
+  if (key === "authConfigs") {
+    sheu.warn(
+      `${kebabCase(appModule)}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
+    );
+  }
+
+  if (key === "interceptors") result.interceptors = module;
+  else if (key === "router") {
     result[key] = {
       ...module,
       config: applyStrictRoutingRules(
@@ -351,7 +247,7 @@ export function assignModuleToResult(
  */
 export async function importModuleComponents(
   modelName: string,
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   moduleDirExists?: boolean
 ): Promise<ImportModuleComponentsReturnType> {
   const result: ImportModuleComponentsReturnType = {
@@ -413,8 +309,13 @@ export async function importModuleComponents(
 
         if (module) {
           (result as any)[key] = module;
-          validateNamingConventions(key, fileName, result);
-          assignModuleToResult(modelName, key, module, result, arkosConfig);
+          assignModuleToResult(
+            modelName,
+            key as any,
+            module,
+            result,
+            arkosConfig
+          );
         }
       } catch (err: any) {
         if (err.message?.includes("Cannot use both")) throw err;
@@ -446,7 +347,9 @@ export const appModules = Array.from(
 /**
  * Allows to asynchronously load all app modules components at once to speed up app start time.
  */
-export async function loadAllModuleComponents(arkosConfig: ArkosConfig) {
+export async function loadAllModuleComponents() {
+  const arkosConfig = getArkosConfig();
+
   const moduleDirExists: string[] = [];
   await Promise.all(
     appModules.map(async (appModule) => {

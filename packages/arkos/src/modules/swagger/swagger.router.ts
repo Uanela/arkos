@@ -10,13 +10,22 @@ import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.
 import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/generate-system-json-schemas";
 import { generateOpenAPIFromApp } from "../../utils/arkos-router";
 import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-schema-paths";
-import { ArkosConfig, ArkosRequest, ArkosResponse } from "../../exports";
+import {
+  ArkosConfig,
+  ArkosNextFunction,
+  ArkosRequest,
+  ArkosResponse,
+} from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { Arkos } from "../../types/arkos";
+import { UserArkosConfig } from "../../utils/define-config";
 
 const swaggerRouter = Router();
 
-export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
+export function getSwaggerRouter(
+  arkosConfig: UserArkosConfig,
+  app: Arkos
+): Router {
   let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
   const defaultModelsPaths = generatePathsForModels(
@@ -65,11 +74,28 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
     }
   );
 
-  // Lazy load scalar only on first hit
   let scalarHandler: any = null;
+
+  swaggerRouter.use(
+    endpoint,
+    scalarMiddleware(scalarHandler, swaggerSpecification, swaggerConfigs)
+  );
+
+  return swaggerRouter;
+}
+
+export function scalarMiddleware(
+  scalarHandler: any,
+  swaggerSpecification: object,
+  swaggerConfigs: any
+) {
   let scalarLoading: Promise<void> | null = null;
 
-  swaggerRouter.use(endpoint, async (req, res, next) => {
+  return async (
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
     if (!scalarHandler) {
       if (!scalarLoading) {
         scalarLoading = importEsmPreventingTsTransformation(
@@ -84,7 +110,5 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
       await scalarLoading;
     }
     return scalarHandler(req, res, next);
-  });
-
-  return swaggerRouter;
+  };
 }

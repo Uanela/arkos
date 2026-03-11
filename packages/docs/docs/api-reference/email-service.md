@@ -1,15 +1,9 @@
 ---
-<<<<<<<< HEAD:packages/docs/docs/api-reference/email-service.md
 sidebar_position: 9
 title: Email Service
 ---
 
 # Email Service Guide
-========
-title: Email Service
----
-
->>>>>>>> 9e59f3202fcedbf686461ffa6eebe7f376c35d5f:documentation/content/docs/api-reference/email-service.mdx
 
 This guide provides a detailed API reference for the `EmailService` class inside **Arkos**, which handles all email functionality in the system. Notice that this is a class used by **Arkos** under the hood and unless you really need to create your own instance and know what you doing you can create your own instance.
 

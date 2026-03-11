@@ -8,6 +8,7 @@ import generateHooksTemplate from "./template-generator/templates/hooks-template
 import classValidatorDtoGenerator from "./template-generator/templates/class-validator-dto-generator";
 import zodSchemaGenerator from "./template-generator/templates/zod-schema-generator";
 import prismaSchemaParser from "../../prisma/prisma-schema-parser";
+import { generatePolicyTemplate } from "./template-generator/templates/policy-template";
 
 interface ModelName {
   pascal: string;
@@ -46,6 +47,8 @@ export function generateTemplate(
       return generateMiddlewaresTemplate(options);
     case "hooks":
       return generateHooksTemplate(options);
+    case "policy":
+      return generatePolicyTemplate(options);
 
     case "create-schema":
       return zodSchemaGenerator.generateCreateSchema(options);

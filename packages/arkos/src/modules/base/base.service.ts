@@ -41,7 +41,6 @@ import {
   ServiceHookContext,
 } from "../../components/arkos-service-hook/types";
 import { serviceHookReader } from "../../components/arkos-service-hook/reader";
-import AppError from "../error-handler/utils/app-error";
 
 export interface ServiceOperationHooks {
   beforeOperation?: (params: any) => void | Promise<void>;
@@ -572,7 +571,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     data: CreateData<TModelName>,
     queryOptions?: TOptions,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>> {
+  ): Promise<GetPayload<TModelName, TOptions>> {
     return this.executeOperation({
       operationType: "createOne",
       prismaMethod: "create",
@@ -601,7 +600,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     data: CreateManyData<TModelName>,
     queryOptions?: TOptions,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>[]> {
+  ): Promise<GetPayload<TModelName, TOptions>[]> {
     return this.executeOperation({
       operationType: "createMany",
       prismaMethod: "createMany",
@@ -653,7 +652,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     filters?: FindManyFilters<TModelName>,
     queryOptions?: TOptions,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>[]> {
+  ): Promise<GetPayload<TModelName, TOptions>[]> {
     return this.executeOperation({
       operationType: "findMany",
       prismaMethod: "findMany",
@@ -677,7 +676,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     id: string | number,
     queryOptions?: TOptions,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName> | null> {
+  ): Promise<GetPayload<TModelName, TOptions> | null> {
     return this.executeOperation({
       operationType: "findById",
       prismaMethod: "findUnique",
@@ -701,7 +700,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     filters: FindOneFilters<TModelName>,
     queryOptions?: TOptions,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName> | null> {
+  ): Promise<GetPayload<TModelName, TOptions> | null> {
     return this.executeOperation({
       operationType: "findOne",
       prismaMethod: "findFirst",
@@ -748,7 +747,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     data: UpdateOneData<TModelName>,
     queryOptions?: TOptions,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>> {
+  ): Promise<GetPayload<TModelName, TOptions>> {
     return this.executeOperation({
       operationType: "updateOne",
       prismaMethod: "update",
@@ -776,7 +775,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     data: UpdateOneData<TModelName>,
     queryOptions?: TOptions,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>> {
+  ): Promise<GetPayload<TModelName, TOptions>> {
     return this.executeOperation({
       operationType: "updateOne",
       prismaMethod: "update",
@@ -831,7 +830,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
   async deleteById(
     id: string | number,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>> {
+  ): Promise<GetPayload<TModelName, any>> {
     return this.executeOperation({
       operationType: "deleteOne",
       prismaMethod: "delete",
@@ -853,7 +852,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
   async deleteOne(
     filters: DeleteOneFilters<TModelName>,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>> {
+  ): Promise<GetPayload<TModelName, any>> {
     return this.executeOperation({
       operationType: "deleteOne",
       prismaMethod: "delete",
@@ -902,7 +901,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
     dataArray: UpdateOneData<TModelName>[],
     queryOptions?: TOptions,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>[]> {
+  ): Promise<GetPayload<TModelName, TOptions>[]> {
     return this.executeTransactionOperation({
       operationType: "batchUpdate",
       prismaMethod: "update",
@@ -929,7 +928,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
   async batchDelete(
     batchFilters: Array<DeleteOneFilters<TModelName>>,
     context?: ServiceHookContext
-  ): Promise<GetPayload<TModelName>[]> {
+  ): Promise<GetPayload<TModelName, any>[]> {
     return this.executeTransactionOperation({
       operationType: "batchDelete",
       prismaMethod: "delete",

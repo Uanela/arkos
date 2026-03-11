@@ -170,14 +170,16 @@ describe("Server Module", () => {
     });
 
     it("should not start server when port is undefined in config", async () => {
-      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValueOnce({
-        port: undefined,
-        host: "0.0.0.0",
-        welcomeMessage: "Test",
-        fileUpload: { baseUploadDir: "uploads", baseRoute: "/api/uploads" },
-        routers: { strict: false },
-        debugging: { requests: { level: 1 } },
-      });
+      jest
+        .spyOn(arkosConfigHelpers as any, "getArkosConfig")
+        .mockReturnValueOnce({
+          port: undefined,
+          host: "0.0.0.0",
+          welcomeMessage: "Test",
+          fileUpload: { baseUploadDir: "uploads", baseRoute: "/api/uploads" },
+          routers: { strict: false },
+          debugging: { requests: { level: 1 } },
+        });
 
       await initApp();
 
@@ -325,7 +327,7 @@ describe("Server Module", () => {
 
   describe("initApp - Swagger Documentation Messages", () => {
     it("should display swagger documentation message when swagger mode is enabled", async () => {
-      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+      jest.spyOn(arkosConfigHelpers as any, "getArkosConfig").mockReturnValue({
         port: 8000,
         host: "0.0.0.0",
         welcomeMessage: "Test",
@@ -348,7 +350,7 @@ describe("Server Module", () => {
     });
 
     it("should use default swagger endpoint when not specified", async () => {
-      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+      jest.spyOn(arkosConfigHelpers as any, "getArkosConfig").mockReturnValue({
         port: 8000,
         host: "0.0.0.0",
         welcomeMessage: "Test",
@@ -369,7 +371,7 @@ describe("Server Module", () => {
 
     it("should not display swagger message when ARKOS_BUILD is true and enableAfterBuild is false", async () => {
       process.env.ARKOS_BUILD = "true";
-      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+      jest.spyOn(arkosConfigHelpers as any, "getArkosConfig").mockReturnValue({
         port: 8000,
         host: "0.0.0.0",
         welcomeMessage: "Test",
@@ -394,7 +396,7 @@ describe("Server Module", () => {
 
     it("should display swagger message when ARKOS_BUILD is true and enableAfterBuild is true", async () => {
       process.env.ARKOS_BUILD = "true";
-      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+      jest.spyOn(arkosConfigHelpers as any, "getArkosConfig").mockReturnValue({
         port: 8000,
         host: "0.0.0.0",
         welcomeMessage: "Test",
@@ -635,7 +637,7 @@ describe("Server Module", () => {
     });
 
     it("should handle initialization with swagger and authentication", async () => {
-      jest.spyOn(arkosConfigHelpers, "getArkosConfig").mockReturnValue({
+      jest.spyOn(arkosConfigHelpers as any, "getArkosConfig").mockReturnValue({
         port: 8000,
         host: "0.0.0.0",
         welcomeMessage: "Test",

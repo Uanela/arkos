@@ -1,6 +1,6 @@
 import { RouterConfig } from "../types/router-config";
 import { BaseController } from "./../modules/base/base.controller";
-import { initApp, getArkosConfig } from "../server";
+import { getArkosConfig } from "../server";
 import ArkosRouter from "../utils/arkos-router";
 import { IArkosRouter } from "../utils/arkos-router/types";
 import { ArkosRouteConfig } from "../utils/arkos-router/types";
@@ -17,6 +17,8 @@ import { arkos } from "../app";
 import { ArkosRouteHook } from "../components/arkos-route-hook";
 import { ArkosServiceHook } from "../components/arkos-service-hook";
 import { ArkosRouteHookInstance } from "../components/arkos-route-hook/types";
+import { ArkosPolicy } from "../components/arkos-policy";
+import { IArkosPolicy } from "../components/arkos-policy/types";
 
 export {
   ArkosRequest,
@@ -30,12 +32,13 @@ export {
   RouterConfig,
   loadEnvironmentVariables,
   getArkosConfig,
-  initApp,
   ArkosRouteHook,
   ArkosServiceHook,
   ArkosRouter,
   ArkosRouteConfig,
   ArkosRouteHookInstance,
+  ArkosPolicy,
+  IArkosPolicy,
 };
 
 export default arkos;

@@ -1,5 +1,5 @@
 import { Express } from "express";
-import { ArkosRouteConfig } from "../exports";
+import { IncomingMessage, Server, ServerResponse } from "http";
 import {
   ArkosAuthRouteHookInstance,
   ArkosFileUploadRouteHookInstance,
@@ -7,7 +7,50 @@ import {
 } from "../components/arkos-route-hook/types";
 import { ArkosServiceHookInstance } from "../components/arkos-service-hook/types";
 
+/**
+ * Creates and configures an Arkos application instance.
+ *
+ * Arkos extends Express with a small set of methods for registering routers,
+ * loading route/service hooks, and booting the application. All Arkos-specific
+ * setup (`app.build()`) must happen before the app starts
+ * accepting requests.
+ *
+ * @example
+ * ```ts
+ * // Simple setup
+ * import arkos from "arkos";
+ *
+ * const app = arkos();
+ *
+ * app.use(reportsRouter);
+ *
+ * app.listen();
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Custom HTTP server (e.g. for WebSockets)
+ * import arkos from "arkos";
+ * import http from "http";
+ *
+ * const app = arkos();
+ *
+ * app.use(reportsRouter);
+ *
+ * async function start() {
+ *  await app.build();
+ *
+ *  const server = http.createServer(app);
+ *  app.listen(server)
+ * }
+ * main()
+ * ```
+ *
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/routing/setup}
+ */
 export interface Arkos extends Omit<Express, "listen"> {
+  (req: IncomingMessage, res: ServerResponse): void;
+
   /**
    * Loads Arkos-specific instances into the app for internal usage.
    * Unlike use(), load() has no order — it simply makes the loaded
@@ -30,15 +73,16 @@ export interface Arkos extends Omit<Express, "listen"> {
    *
    * @param callback Optional callback invoked once server starts
    */
-  listen(callback?: (error?: Error) => void): this;
+  listen(callback?: (error?: Error) => void): Promise<Server>;
 
   /**
-   * Returns the server configuration [port, host, callback?]
-   * Can be used with http.createServer(app).listen(...args)
+   * Starts the server using Arkos-managed port and host configuration.
+   * app.build() must be called before this.
+   *
+   * @param server {Server} - Optional HTTP server to listen on
+   * @param callback Optional callback invoked once server starts
    */
-  getServerConfig(
-    cb?: (err?: Error) => void
-  ): [number, string, ((err?: Error) => void)?];
+  listen(server: Server, callback?: (error?: Error) => void): Promise<Server>;
 }
 
 /**

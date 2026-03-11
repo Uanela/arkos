@@ -38,9 +38,6 @@ describe("LoadedComponentsLogger", () => {
       expect(componentsToPath.interceptors).toBe(
         "{{module-name}}.interceptors.ts"
       );
-      expect(componentsToPath.interceptorsOld).toBe(
-        "{{module-name}}.middlewares.ts"
-      );
       expect(componentsToPath.router).toBe("{{module-name}}.router.ts");
       expect(componentsToPath.hooks).toBe("{{module-name}}.hooks.ts");
       expect(componentsToPath.dtos!.create).toBe(

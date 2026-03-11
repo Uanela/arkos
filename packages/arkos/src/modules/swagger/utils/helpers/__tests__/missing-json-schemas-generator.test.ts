@@ -1,6 +1,5 @@
 import missingJsonSchemaGenerator from "../missing-json-schemas-generator";
 import { OpenAPIV3 } from "openapi-types";
-import { ArkosConfig } from "../../../../../exports";
 import PrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
 
 // Mock the enhanced generator
@@ -512,7 +511,7 @@ describe("MissingJsonSchemasGenerator", () => {
   });
 
   describe("generateMissingJsonSchemas", () => {
-    const mockArkosConfig: ArkosConfig = {
+    const mockArkosConfig: any = {
       swagger: { mode: "prisma", strict: false },
     } as any;
 

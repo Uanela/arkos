@@ -255,10 +255,6 @@ describe("generateCommand", () => {
           camel: "order",
           kebab: "order",
         },
-        imports: {
-          baseRouter: "arkos",
-          controller: "./order.controller",
-        },
       });
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
         `${mockCwd}/src/modules/order/order.router.ts`,
@@ -469,10 +465,6 @@ describe("generateCommand", () => {
           pascal: "VeryLongModelNameWithManyParts",
           camel: "veryLongModelNameWithManyParts",
           kebab: longModelName,
-        },
-        imports: {
-          baseRouter: "arkos",
-          controller: `./${longModelName}.controller`,
         },
       });
     });

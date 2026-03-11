@@ -12,12 +12,12 @@ import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
-import { ArkosConfig } from "../../exports";
 import path from "path";
+import { UserArkosConfig } from "../../utils/define-config";
 
 const router: Router = Router();
 
-export function getFileUploadRouter(arkosConfig: ArkosConfig) {
+export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
   const { fileUpload } = arkosConfig;
 
   const moduleComponents = getModuleComponents("file-upload");

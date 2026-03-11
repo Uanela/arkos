@@ -40,9 +40,6 @@ export default function initializeApp(
   const modelsRouter = getPrismaModelsRouter(registry);
   app.use(globalPrefix, modelsRouter);
 
-  // app.use(knowModulesRouter);
-  // app.use(globalPrefix, getAvailableResourcesAndRoutesRouter());
-
   if (
     config.swagger &&
     (process.env.ARKOS_BUILD !== "true" ||

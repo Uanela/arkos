@@ -85,7 +85,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    const router = await getFileUploadRouter(mockArkosConfig);
+    const router = getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(Router).toHaveBeenCalled();
@@ -162,7 +162,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(mockRouter.post).toHaveBeenCalledWith(
@@ -188,7 +188,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(mockRouter.post).toHaveBeenCalledWith(
@@ -218,7 +218,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(mockRouter.post).toHaveBeenCalledWith(
@@ -250,7 +250,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(mockRouter.patch).toHaveBeenCalledWith(
@@ -282,7 +282,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(mockRouter.delete).toHaveBeenCalledWith(
@@ -310,7 +310,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(mockRouter.get).toHaveBeenCalledWith(
@@ -343,7 +343,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     // Check static file route
@@ -407,7 +407,7 @@ describe("File Upload Router", () => {
       jest.clearAllMocks();
 
       // Set up config for this test case
-      const config = {
+      const config: any = {
         fileUpload: {
           ...mockArkosConfig.fileUpload,
           baseRoute: testCase.baseRoute,
@@ -415,7 +415,7 @@ describe("File Upload Router", () => {
       };
 
       // Act
-      await getFileUploadRouter(config);
+      getFileUploadRouter(config);
 
       // Assert
       expect(mockRouter.get).toHaveBeenCalledWith(
@@ -459,14 +459,14 @@ describe("File Upload Router", () => {
       authConfigs: {},
     });
 
-    const configWithoutBaseRoute = {
+    const configWithoutBaseRoute: any = {
       fileUpload: {
         baseUploadDir: "uploads",
       },
     };
 
     // Act
-    await getFileUploadRouter(configWithoutBaseRoute);
+    getFileUploadRouter(configWithoutBaseRoute);
 
     // Assert
     expect(mockRouter.get).toHaveBeenCalledWith(
@@ -485,14 +485,14 @@ describe("File Upload Router", () => {
       authConfigs: {},
     });
 
-    const configWithoutBaseUploadDir = {
+    const configWithoutBaseUploadDir: any = {
       fileUpload: {
         baseRoute: "/api/uploads/",
       },
     };
 
     // Act
-    await getFileUploadRouter(configWithoutBaseUploadDir);
+    getFileUploadRouter(configWithoutBaseUploadDir);
 
     // Assert
     expect(path.resolve).toHaveBeenCalledWith(process.cwd() + "/uploads");
@@ -516,7 +516,7 @@ describe("File Upload Router", () => {
     });
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
@@ -557,7 +557,7 @@ describe("File Upload Router", () => {
     (getModuleComponents as jest.Mock).mockResolvedValue(null);
 
     // Act
-    await getFileUploadRouter(mockArkosConfig);
+    getFileUploadRouter(mockArkosConfig);
 
     // Assert
     expect(authService.handleAuthenticationControl).toHaveBeenCalledWith(
@@ -591,7 +591,7 @@ describe("File Upload Router", () => {
       index: true,
     };
 
-    const configWithCustomStaticOptions = {
+    const configWithCustomStaticOptions: any = {
       fileUpload: {
         ...mockArkosConfig.fileUpload,
         expressStatic: customStaticOptions,
@@ -599,7 +599,7 @@ describe("File Upload Router", () => {
     };
 
     // Act
-    await getFileUploadRouter(configWithCustomStaticOptions);
+    getFileUploadRouter(configWithCustomStaticOptions);
 
     // Assert
     expect(deepmerge).toHaveBeenCalledWith(
