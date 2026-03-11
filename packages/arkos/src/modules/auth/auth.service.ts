@@ -22,8 +22,6 @@ import {
   DetailedAccessControlRule,
 } from "../../types/auth";
 import { MsDuration, toMs } from "./utils/helpers/auth.controller.helpers";
-import { appModules, getModuleComponents } from "../../utils/dynamic-loader";
-import { kebabCase } from "../../exports/utils";
 import {
   invaliAuthTokenError,
   loginRequiredError,
@@ -380,14 +378,6 @@ export class AuthService {
     resource: string,
     accessControl?: AccessControlConfig
   ): ArkosRequestHandler {
-    if (
-      !accessControl &&
-      appModules.some(
-        (appModule) => kebabCase(appModule) === kebabCase(resource)
-      )
-    )
-      accessControl = getModuleComponents(resource)?.authConfigs?.accessControl;
-
     authActionService.add(action, resource, accessControl);
 
     return catchAsync(
@@ -592,10 +582,6 @@ export class AuthService {
       if (configs?.authentication?.mode === "dynamic") {
         return await this.checkDynamicAccessControl(user?.id, action, resource);
       } else if (configs?.authentication?.mode === "static") {
-        if (!accessControl && appModules.includes(kebabCase(resource)))
-          accessControl = getModuleComponents(kebabCase(resource))?.authConfigs
-            ?.accessControl;
-
         return (
           !!accessControl &&
           this.checkStaticAccessControl(user as any, action, accessControl)
