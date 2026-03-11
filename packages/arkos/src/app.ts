@@ -76,14 +76,12 @@ export function arkos(): Arkos {
   }
 
   app.build = async function () {
-    if (state === "built")
+    if (state === "built" || state === "building")
       throw ExitError(`app.build() must only be called once, see ${docsLink}`);
     if (state === "listening")
       throw ExitError(
         `app.build() must be called before app.listen(), see ${docsLink}`
       );
-    if (state === "building")
-      throw ExitError(`app.build() must only be called once, see ${docsLink}`);
 
     state = "building";
     const _app = await loadApp();
@@ -112,11 +110,9 @@ export function arkos(): Arkos {
       );
 
     if (state === "idle") {
-      state = "building";
+      state = "listening";
       await loadApp();
     }
-
-    state = "listening";
 
     const port = Number(process.env.__PORT || process.env.PORT || "8000");
     const host = process.env.__HOST! || process.env.HOST || "0.0.0.0";
