@@ -7,6 +7,7 @@ import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
 import sheu from "../sheu";
 import watermarkStamper from "./utils/watermark-stamper";
 import { removeDir } from "../remove-dir";
+import { fixImports } from "../fix-esm-imports";
 
 const BUILD_DIR = ".build";
 const MODULE_TYPES = ["cjs", "esm"] as const;
@@ -135,6 +136,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
     });
 
     copyAllNonSourceFiles(moduleType, [".ts", ".tsx"]);
+    fixImports(BUILD_DIR);
 
     // Clean up temp config
     cleanupTempConfig(tempTsconfigPath);
@@ -181,6 +183,7 @@ function buildJavaScriptProject(_: BuildOptions, moduleType: ModuleType) {
     ]);
 
     // Create appropriate package.json in the build directory
+    fixImports(BUILD_DIR);
     createModulePackageJson(moduleType);
   } catch (error) {
     console.error("❌ Error building JavaScript project:", error);
