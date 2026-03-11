@@ -9,8 +9,12 @@ import { loadPrismaModule } from "./utils/helpers/prisma.helpers";
 import { loadAllModuleComponents } from "./utils/dynamic-loader";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
 import { IncomingMessage, Server, ServerResponse } from "http";
+import ExitError from "./utils/helpers/exit-error";
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
+const docsLink =
+  "https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app";
+let instanciated = false;
 
 /**
  * Creates and configures an Arkos application instance.
@@ -46,7 +50,7 @@ let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
  *  await app.build();
  *
  *  const server = http.createServer(app);
- *  server.listen(...app.getServerConfig());
+ *  app.listen(server)
  * }
  * main()
  * ```
@@ -54,67 +58,83 @@ let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
  * @see {@link https://www.arkosjs.com/docs/core-concepts/routing/setup}
  */
 export function arkos(): Arkos {
+  if (instanciated)
+    throw ExitError(`arkos() must be called only once, see ${docsLink}`);
+
   const app = express() as any as Arkos;
   setupApp(app);
+  instanciated = true;
 
-  let builtBy: "listen" | "build" | null = null;
+  type AppState = "idle" | "building" | "built" | "listening";
+  let state: AppState = "idle";
+
+  async function loadApp() {
+    await Promise.all([loadPrismaModule(), loadAllModuleComponents()]);
+    const _app = initializeApp(app);
+    if (process.env.CLI_COMMAND) await runtimeCliCommander.handle();
+    return _app;
+  }
 
   app.build = async function () {
-    if (builtBy)
-      throw Error(
-        builtBy === "listen"
-          ? `app.build() must not be called after app.listen(), see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
-          : `app.build() must only be called once, see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
+    if (state === "built")
+      throw ExitError(`app.build() must only be called once, see ${docsLink}`);
+    if (state === "listening")
+      throw ExitError(
+        `app.build() must be called before app.listen(), see ${docsLink}`
       );
+    if (state === "building")
+      throw ExitError(`app.build() must only be called once, see ${docsLink}`);
 
-    builtBy = "build";
-
-    await Promise.all([loadPrismaModule(), loadAllModuleComponents()]);
-
-    const _app = initializeApp(app);
-
-    const cliCommand = process.env.CLI_COMMAND;
-
-    if (cliCommand) await runtimeCliCommander.handle();
-
+    state = "building";
+    const _app = await loadApp();
+    state = "built";
     return _app;
   };
 
   const originalListen = app.listen.bind(app) as any as Express["listen"];
-  type userCb = (err?: Error) => void;
+  type UserCallback = (err?: Error) => void;
 
-  const defaultCb = (port: number | string, host: string, cb?: userCb) => {
+  const defaultCb = (
+    port: number | string,
+    host: string,
+    cb?: UserCallback
+  ) => {
     logAppStartp(port, host);
     return cb || function () {};
   };
 
-  app.listen = async function (cb?: userCb): Promise<Server> {
-    if (builtBy)
-      throw Error(
-        builtBy === "build"
-          ? `app.listen() must not be called after app.build(), see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
-          : `app.listen() must only be called once, see https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app`
+  app.listen = async function (...args): Promise<Server> {
+    if (state === "listening")
+      throw ExitError(`app.listen() must only be called once, see ${docsLink}`);
+    if (state === "building")
+      throw ExitError(
+        `app.build() must be awaited before calling app.listen(), see ${docsLink}`
       );
 
-    builtBy = "listen";
+    if (state === "idle") {
+      state = "building";
+      await loadApp();
+    }
 
-    await Promise.all([loadPrismaModule(), loadAllModuleComponents()]);
+    state = "listening";
 
-    initializeApp(app);
     const port = Number(process.env.__PORT || process.env.PORT || "8000");
-    const host = process.env.__HOST! || process.env.HOST || "127.0.0.1";
+    const host = process.env.__HOST! || process.env.HOST || "0.0.0.0";
 
-    if (process.env.CLI_COMMAND) runtimeCliCommander.handle();
-
-    appServer = originalListen(port, host, defaultCb(port, host, cb));
+    if ((args as any)?.length === 0 || typeof args[0] === "function")
+      appServer = originalListen(
+        port,
+        host,
+        defaultCb(port, host, args[0] as UserCallback)
+      );
+    else if (args[0] instanceof Server || typeof args[0] === "object")
+      appServer = args[0].listen(
+        port,
+        host,
+        defaultCb(port, host, args[1] as UserCallback)
+      );
 
     return appServer;
-  };
-
-  app.getServerConfig = (cb?: userCb) => {
-    const port = Number(process.env.__PORT || process.env.PORT || "8000");
-    const host = process.env.__HOST! || process.env.HOST || "127.0.0.1";
-    return [port, host, defaultCb(port, host, cb)];
   };
 
   return app;
