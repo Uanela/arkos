@@ -71,5 +71,7 @@ export type DeleteOneFilters<TModelName extends keyof Models> =
 export type DeleteManyFilters<TModelName extends keyof Models> =
   ExtractPrismaFilters<Models[TModelName]["DeleteManyArgs"]>;
 
-export type GetPayload<TModelName extends keyof Models> =
-  Models[TModelName]["GetPayload"];
+export type GetPayload<
+  TModelName extends keyof Models,
+  TOptions extends Record<string, any>,
+> = PrismaModels<TOptions>[TModelName]["GetPayload"];
