@@ -9,7 +9,6 @@ import { MsDuration } from "../modules/auth/utils/helpers/auth.controller.helper
 import { OpenAPIV3 } from "openapi-types";
 import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with { "resolution-mode": "import" };
 import nodemailer from "nodemailer";
-import { ModuleComponents } from "../utils/dynamic-loader";
 import { ArkosRequestHandler } from ".";
 import { PrismaClient } from "../generated";
 
@@ -751,31 +750,6 @@ export type ArkosConfig = {
         | "ServiceArgs"
         | "PrismaFinalQueryArgs"
       )[];
-    };
-    /**
-     * Controls debugging over the dynamic loaded modules and it's components on app starting
-     */
-    dynamicLoader?: {
-      /**
-       * Adjusts logging details
-       *
-       * 1 - Loaded modules and list of it's components files
-       * 2 - All from 1 and detailed inspection per module component
-       * 3 - All from 1 and 2, plus the final router component after merged with autho generated router.
-       */
-      level?: 0 | 1 | 2 | 3;
-      filters?: {
-        /**
-         * Allows filtering by specific modules.
-         *
-         * Supports only searching for the starting parts of the module name, e.g: If there is`user-profile`, `user`, `posts`, passing `["user"]` will match both `user-profile` and `user`.
-         */
-        modules?: string[];
-        /**
-         * Allows filtering by component's names
-         */
-        components?: keyof ModuleComponents[];
-      };
     };
   };
   /**
