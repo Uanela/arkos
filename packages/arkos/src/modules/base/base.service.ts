@@ -35,9 +35,7 @@ import {
 } from "./types/base.service.types";
 import serviceHooksManager from "./utils/service-hooks-manager";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
-import loadableRegistry, {
-  ArkosLoadableRegistry,
-} from "../../components/arkos-loadable-registry";
+import loadableRegistry from "../../components/arkos-loadable-registry";
 import {
   ArkosServiceHookInstance,
   ServiceHookContext,
