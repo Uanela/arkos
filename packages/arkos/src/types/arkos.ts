@@ -10,7 +10,6 @@ export interface Arkos extends Omit<Express, "listen"> {
    * Automatically called before listen() if not called manually.
    */
   build(): Promise<this>;
-
   /**
    * Starts the server using Arkos-managed port and host configuration.
    * Automatically calls build() if not called manually.
@@ -18,6 +17,14 @@ export interface Arkos extends Omit<Express, "listen"> {
    * @param callback Optional callback invoked once server starts
    */
   listen(callback?: (error?: Error) => void): Promise<Server>;
+  /**
+   * Starts the server using Arkos-managed port and host configuration.
+   * app.build() must be called before this.
+   *
+   * @param server {Server} - Optional callback invoked once server starts
+   * @param callback Optional callback invoked once server starts
+   */
+  listen(server: Server, callback?: (error?: Error) => void): Promise<Server>;
 
   /**
    * Returns the server configuration [port, host, callback?]
