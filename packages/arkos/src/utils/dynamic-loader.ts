@@ -2,7 +2,7 @@ import { ZodTypeAny } from "zod";
 import path from "path";
 import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
-import { ArkosConfig, getArkosConfig, RouterConfig } from "../exports";
+import { getArkosConfig, RouterConfig } from "../exports";
 import sheu from "./sheu";
 import {
   applyStrictRoutingRules,
