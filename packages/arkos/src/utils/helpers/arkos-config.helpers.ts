@@ -39,10 +39,21 @@ export function getArkosConfig(): UserArkosConfig {
     typeof definedArkosConfig === "string"
       ? {}
       : (definedArkosConfig as any)?.default || {};
+  const configFile = `arkos.config.${fsHelpers.getUserFileExtension()}`;
 
-  if ((config as any).__loader !== "defineConfig" && !typeof jest) {
+  if (
+    (config as any).__loader !== "defineConfig" &&
+    typeof jest == "undefined"
+  ) {
     sheu.error(
-      `From v1.6 config under arkos.config.${fsHelpers.getUserFileExtension()} must be wrapped in \`defineConfig()\` function from \`arkos/config\` `
+      `From v1.6 config under ${configFile} must be wrapped in \`defineConfig()\` function from \`arkos/config\`. You can do the following under your ${configFile}:
+
+import { defineConfig } from "arkos/config"
+
+const config = defineConfig({ ... })
+
+export default config
+`
     );
     process.exit(1);
   }
