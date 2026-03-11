@@ -123,7 +123,7 @@ export function generatePrismaModelMainRoutesPaths(
           (parameter: any) => parameter?.in === "path"
         )) ||
       !currentPath?.parameters ||
-      (!currentPath?.parameters?.length || 0) === 0
+      (currentPath?.parameters?.length || 0) === 0
         ? [
             {
               name: "page",
@@ -136,6 +136,12 @@ export function generatePrismaModelMainRoutesPaths(
               in: "query",
               description: "Number of items per page",
               schema: { type: "integer", minimum: 1, maximum: 100 },
+            },
+            {
+              name: "search",
+              in: "query",
+              description: "Searches in string fields of model",
+              schema: { type: "string" },
             },
             {
               name: "fields",
@@ -287,29 +293,6 @@ export function generatePrismaModelMainRoutesPaths(
     const updateManyMode = getSchemaMode("updateMany");
     const currentPath = paths[pathname]!.patch;
 
-    const defaultParameters: OpenAPIV3.ParameterObject[] = [
-      {
-        name: "filters",
-        in: "query",
-        description: "Filter criteria in JSON format (required)",
-        required: true,
-        schema: { type: "string" },
-      },
-    ];
-
-    const existingParams =
-      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
-    const existingParamKeys = new Set(
-      existingParams.map((p) => `${p.in}-${p.name}`)
-    );
-
-    const mergedParameters = [
-      ...existingParams,
-      ...defaultParameters.filter(
-        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
-      ),
-    ];
-
     const defaultSpec = {
       tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
         (tag) => tag !== "Defaults"
@@ -320,7 +303,6 @@ export function generatePrismaModelMainRoutesPaths(
           : currentPath?.summary,
       description: `Updates multiple ${humanReadableNamePlural} records that match the specified filter criteria`,
       operationId: `updateMany${pascalModelName}`,
-      parameters: mergedParameters,
       requestBody: currentPath?.requestBody || {
         description: `Partial ${humanReadableName} data to update`,
         required: true,
@@ -370,29 +352,6 @@ export function generatePrismaModelMainRoutesPaths(
     if (!paths[pathname]) paths[pathname] = {};
     const currentPath = paths[pathname]!.delete;
 
-    const defaultParameters: OpenAPIV3.ParameterObject[] = [
-      {
-        name: "filters",
-        in: "query",
-        description: "Filter criteria in JSON format (required)",
-        required: true,
-        schema: { type: "string" },
-      },
-    ];
-
-    const existingParams =
-      (currentPath?.parameters as OpenAPIV3.ParameterObject[]) || [];
-    const existingParamKeys = new Set(
-      existingParams.map((p) => `${p.in}-${p.name}`)
-    );
-
-    const mergedParameters = [
-      ...existingParams,
-      ...defaultParameters.filter(
-        (p) => !existingParamKeys.has(`${p.in}-${p.name}`)
-      ),
-    ];
-
     const defaultSpec = {
       tags: [humanReadableNamePlural, ...(currentPath?.tags || [])].filter(
         (tag) => tag !== "Defaults"
@@ -403,7 +362,6 @@ export function generatePrismaModelMainRoutesPaths(
           : currentPath?.summary,
       description: `Deletes multiple ${humanReadableNamePlural} records that match the specified filter criteria`,
       operationId: `deleteMany${pascalModelName}`,
-      parameters: mergedParameters,
       responses: {
         ...(currentPath?.responses || {}),
         "200": currentPath?.responses?.["200"] || {
