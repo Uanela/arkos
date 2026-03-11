@@ -23,7 +23,7 @@ jest.mock("../utils/initialize-app", () => ({
   __esModule: true,
   default: jest.fn((app: any) => app),
 }));
-jest.mock("../server", () => ({ logAppStartp: jest.fn() }));
+jest.mock("../server", () => ({ logAppStartup: jest.fn() }));
 jest.mock("../utils/helpers/prisma.helpers", () => ({
   loadPrismaModule: jest.fn().mockResolvedValue(undefined),
 }));
@@ -247,7 +247,7 @@ describe("arkos()", () => {
     it("should log app startup", async () => {
       const app = arkos();
       await app.listen();
-      expect(serverModule.logAppStartp).toHaveBeenCalledWith(8000, "0.0.0.0");
+      expect(serverModule.logAppStartup).toHaveBeenCalledWith(8000, "0.0.0.0");
     });
   });
 

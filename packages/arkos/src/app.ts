@@ -4,7 +4,7 @@ import setupApp from "./utils/setup-app";
 import { Arkos } from "./types/arkos";
 import initializeApp from "./utils/initialize-app";
 import { Express } from "express";
-import { logAppStartp } from "./server";
+import { logAppStartup } from "./server";
 import { loadPrismaModule } from "./utils/helpers/prisma.helpers";
 import { loadAllModuleComponents } from "./utils/dynamic-loader";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
@@ -99,7 +99,7 @@ export function arkos(): Arkos {
     host: string,
     cb?: UserCallback
   ) => {
-    logAppStartp(port, host);
+    logAppStartup(port, host);
     return cb || function () {};
   };
 

@@ -50,7 +50,7 @@ process.on("unhandledRejection", (err: AppError) => {
     }, 0);
 });
 
-export function logAppStartp(port: number | string, _host: string) {
+export function logAppStartup(port: number | string, _host: string) {
   let networkHost = portAndHostAllocator.getFirstNonLocalIp();
   const config = getArkosConfig();
 
@@ -79,5 +79,3 @@ export function logAppStartp(port: number | string, _host: string) {
       `${message.replace("{{server}}", "Documentation")}${config?.swagger?.endpoint || "/api/docs"}`
     );
 }
-
-// export { server };
