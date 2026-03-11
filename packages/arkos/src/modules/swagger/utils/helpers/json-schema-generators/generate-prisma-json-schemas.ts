@@ -1,4 +1,3 @@
-import { ArkosConfig } from "../../../../../exports";
 import { UserArkosConfig } from "../../../../../utils/define-config";
 import prismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
