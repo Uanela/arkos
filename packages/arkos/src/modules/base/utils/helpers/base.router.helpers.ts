@@ -24,6 +24,7 @@ import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
 import { UserArkosConfig } from "../../../../utils/define-config";
+import ExitError from "../../../../utils/helpers/exit-error";
 
 export function setupRouters(
   router: IArkosRouter,
@@ -75,7 +76,7 @@ export function setupRouters(
       if (routerValidator.isExpressRouter(customRouter))
         router.use(`/${routeName}`, customRouter);
       else
-        throw Error(
+        throw ExitError(
           `ValidationError: The exported router from ${modelNameInKebab}.router.${getUserFileExtension()} is not a valid express Router.`
         );
     }
