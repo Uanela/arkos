@@ -16,7 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2021"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/remove-dir-cli.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": [
     "node_modules",
     "dist",
