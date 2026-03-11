@@ -13,8 +13,6 @@ export class ArkosLoadableRegistry {
    * Called internally by `app.load()`.
    */
   register(item: ArkosLoadable): void {
-    // routeHookReader.register(item);
-
     const type = (item as any).__type;
     const moduleName = (item as any).moduleName;
 
@@ -45,3 +43,7 @@ export class ArkosLoadableRegistry {
     return this.items.get(loadableType)?.has(moduleName) ?? false;
   }
 }
+
+const loadableRegistry = new ArkosLoadableRegistry();
+
+export default loadableRegistry;

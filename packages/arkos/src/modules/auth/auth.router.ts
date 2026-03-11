@@ -6,16 +6,15 @@ import {
 } from "../base/base.middlewares";
 import { AuthPrismaQueryOptions } from "../../types";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
-import debuggerService from "../debugger/debugger.service";
 import ArkosRouter from "../../utils/arkos-router";
-import { ArkosLoadableRegistry } from "../../components/arkos-loadable-registry";
+import loadableRegistry from "../../components/arkos-loadable-registry";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
 import { ArkosAuthRouteHookInstance } from "../../components/arkos-route-hook/types";
 
 const router = ArkosRouter();
 
-export function getAuthRouter(registry: ArkosLoadableRegistry) {
-  const interceptor = registry.getItem("ArkosRouteHook", "auth");
+export function getAuthRouter() {
+  const interceptor = loadableRegistry.getItem("ArkosRouteHook", "auth");
 
   const op = (operation: string) =>
     interceptor
@@ -232,6 +231,5 @@ export function getAuthRouter(registry: ArkosLoadableRegistry) {
     );
   }
 
-  debuggerService.logModuleFinalRouter("auth", router as any);
   return router;
 }

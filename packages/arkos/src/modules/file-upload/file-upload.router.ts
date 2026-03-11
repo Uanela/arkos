@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { getModuleComponents } from "../../utils/dynamic-loader";
 import authService from "../auth/auth.service";
 import fileUploadController from "./file-upload.controller";
 import express from "express";
@@ -9,7 +8,6 @@ import { sendResponse } from "../base/base.middlewares";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import { adjustRequestUrl } from "./utils/helpers/file-upload.helpers";
 import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
-import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import path from "path";
@@ -20,7 +18,7 @@ const router: Router = Router();
 export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
   const { fileUpload } = arkosConfig;
 
-  const moduleComponents = getModuleComponents("file-upload");
+  const moduleComponents = {} as any;
   let {
     interceptors = {} as any,
     authConfigs = {} as AuthConfigs,
@@ -150,6 +148,5 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
     );
   }
 
-  debuggerService.logModuleFinalRouter("file-upload", router);
   return router;
 }

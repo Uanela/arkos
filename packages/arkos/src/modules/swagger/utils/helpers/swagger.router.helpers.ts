@@ -8,10 +8,6 @@ import { generatePrismaJsonSchemas } from "./json-schema-generators/generate-pri
 import { generatePrismaModelMainRoutesPaths } from "./json-schema-generators/prisma-models/generate-prisma-model-main-routes-paths";
 import sheu from "../../../../utils/sheu";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
-import {
-  getModuleComponents,
-  ValidationFileMappingKey,
-} from "../../../../utils/dynamic-loader";
 import { isAuthenticationEnabled } from "../../../../utils/helpers/arkos-config.helpers";
 import { UserArkosConfig } from "../../../../utils/define-config";
 
@@ -142,14 +138,16 @@ export function generatePathsForModels(
  * @returns boolean
  */
 export function localValidatorFileExists(
-  action: ValidationFileMappingKey,
+  action: any,
   modelName: string,
   arkosConfig: UserArkosConfig
 ) {
-  if (arkosConfig?.swagger?.mode === "prisma") return false;
-  const moduleComponents = getModuleComponents(modelName) as any;
+  // FIXME(#203)
+  return false;
+  // if (arkosConfig?.swagger?.mode === "prisma") return false;
+  // const moduleComponents = getModuleComponents(modelName) as any;
 
-  return !!moduleComponents?.[
-    arkosConfig.validation?.resolver === "zod" ? "schemas" : "dtos"
-  ]?.[camelCase(action)];
+  // return !!moduleComponents?.[
+  //   arkosConfig.validation?.resolver === "zod" ? "schemas" : "dtos"
+  // ]?.[camelCase(action)];
 }

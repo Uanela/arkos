@@ -1,10 +1,7 @@
 import { RouterConfig } from "../../exports";
 import { AuthPrismaQueryOptions, PrismaQueryOptions } from "../../types";
 import deepmerge from "../helpers/deepmerge.helper";
-import {
-  getModuleComponents,
-  ValidationFileMappingKey,
-} from "../dynamic-loader";
+import { ValidationFileMappingKey } from "../dynamic-loader";
 import prismaSchemaParser from "./prisma-schema-parser";
 import {
   PrismaModel,
