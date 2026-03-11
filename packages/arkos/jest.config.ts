@@ -4,7 +4,7 @@ import type { Config } from "jest";
 const config: Config = {
   preset: "ts-jest",
   testEnvironment: "node",
-  roots: ["<rootDir>/src"],
+  roots: ["<rootDir>/src", "<rootDir>/scripts"],
   testMatch: ["**/__tests__/**/*.ts?(x)", "**/?(*.)+(spec|test).ts?(x)"],
   transformIgnorePatterns: [
     // Allow Jest to transform ESM dependencies
