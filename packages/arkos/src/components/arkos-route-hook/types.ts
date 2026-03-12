@@ -84,7 +84,10 @@ export interface ArkosAuthRouteHookInstance {
   logout(config: ArkosRouteHookMethodConfig): this;
   signup(config: ArkosRouteHookMethodConfig): this;
   updateMe(config: ArkosRouteHookMethodConfig): this;
+  deleteMe(config: ArkosRouteHookMethodConfig): this;
   updatePassword(config: ArkosRouteHookMethodConfig): this;
+  findOneAuthAction(config: ArkosRouteHookMethodConfig): this;
+  findManyAuthAction(config: ArkosRouteHookMethodConfig): this;
 }
 
 /**

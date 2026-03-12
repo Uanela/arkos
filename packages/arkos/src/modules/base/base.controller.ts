@@ -4,8 +4,6 @@ import { BaseService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
 import pluralize from "pluralize";
-import sheu from "../../utils/sheu";
-import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import { APIFeatures } from "../../exports/utils";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import loadableRegistry from "../../components/arkos-loadable-registry";
@@ -25,7 +23,10 @@ export interface OperationHooks {
 }
 
 interface OperationConfig {
-  operationType: string;
+  operationType:
+    | keyof Omit<ArkosRouteHookInstance<any>, "__type" | "moduleName">
+    | "batchUpdate"
+    | "batchDelete";
   serviceMethod: string;
   successStatus: number;
   queryFeatures: ("filter" | "sort" | "limitFields" | "paginate")[];
@@ -208,7 +209,8 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
 
         if (
           routeHook &&
-          routeHookReader.getHooks(routeHook, config.operationType)?.after
+          routeHookReader.getHooks(this.modelName, config.operationType as any)
+            ?.after
         ) {
           this.setResponseData(req, res, responseData, config.successStatus);
           next();
@@ -527,30 +529,3 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
     usesRequestBody: true,
   });
 }
-
-/**
- * Returns a list of all available resource endpoints based on the application's models
- *
- * Will soon be removed
- *
- * @param {ArkosRequest} req - Express request object
- * @param {ArkosResponse} res - Express response object
- * @param {ArkosNextFunction} next - Express next function
- * @returns {Promise<void>}
- */
-export const getAvailableResources = catchAsync(
-  async (_: any, res: ArkosResponse) => {
-    sheu.warn(
-      "This route `/api/available-resources` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead."
-    );
-
-    res.status(200).json({
-      data: [
-        ...prismaSchemaParser
-          .getModelsAsArrayOfStrings()
-          .map((model) => kebabCase(model)),
-        "file-upload",
-      ],
-    });
-  }
-);

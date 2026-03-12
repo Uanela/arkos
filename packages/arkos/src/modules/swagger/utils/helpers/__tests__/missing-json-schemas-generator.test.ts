@@ -2,7 +2,6 @@ import missingJsonSchemaGenerator from "../missing-json-schemas-generator";
 import { OpenAPIV3 } from "openapi-types";
 import PrismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
 
-// Mock the enhanced generator
 jest.mock("../../../../../utils/prisma/prisma-json-schema-generator", () => ({
   generateModelSchemas: jest.fn(),
 }));
@@ -161,14 +160,8 @@ describe("MissingJsonSchemasGenerator", () => {
         missingJsonSchemaGenerator["extractActionFromOperationId"]("login")
       ).toBe("login");
       expect(
-        missingJsonSchemaGenerator["extractActionFromOperationId"]("login")
-      ).toBe("login");
-      expect(
         missingJsonSchemaGenerator["extractActionFromOperationId"]("signup")
       ).toBe("signup");
-      // expect(
-      //   missingJsonSchemaGenerator["extractActionFromOperationId"]("userSignup")
-      // ).toBe("signup");
       expect(
         missingJsonSchemaGenerator["extractActionFromOperationId"]("getMe")
       ).toBe("getMe");
@@ -331,11 +324,7 @@ describe("MissingJsonSchemasGenerator", () => {
             },
           },
         },
-        parameters: [
-          {
-            schema: { $ref: "#/components/schemas/QuerySchema" },
-          },
-        ],
+        parameters: [{ schema: { $ref: "#/components/schemas/QuerySchema" } }],
       };
 
       const refs =
@@ -437,10 +426,7 @@ describe("MissingJsonSchemasGenerator", () => {
 
     test("should handle paths with null or undefined values", () => {
       const paths: OpenAPIV3.PathsObject = {
-        "/users": {
-          post: undefined,
-          get: null,
-        } as any,
+        "/users": { post: undefined, get: null } as any,
         "/posts": null as any,
         "/valid": {
           get: {
@@ -511,10 +497,6 @@ describe("MissingJsonSchemasGenerator", () => {
   });
 
   describe("generateMissingJsonSchemas", () => {
-    const mockArkosConfig: any = {
-      swagger: { mode: "prisma", strict: false },
-    } as any;
-
     beforeEach(() => {
       mockEnhancedGenerator.generateModelSchemas.mockReturnValue({
         CreateUserModelSchema: {
@@ -528,7 +510,7 @@ describe("MissingJsonSchemasGenerator", () => {
       });
     });
 
-    test("should generate missing schemas for valid paths", async () => {
+    test("should generate missing schemas for valid paths", () => {
       const paths: any = {
         "/users": {
           post: {
@@ -561,17 +543,13 @@ describe("MissingJsonSchemasGenerator", () => {
         },
       };
 
-      const currentJsonSchemas = {};
-
       const result = missingJsonSchemaGenerator.generateMissingJsonSchemas(
         paths,
-        currentJsonSchemas,
-        mockArkosConfig
+        {}
       );
 
       expect(mockEnhancedGenerator.generateModelSchemas).toHaveBeenCalledWith({
         modelName: "User",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: expect.arrayContaining(["createOne", "findMany"]),
       });
 
@@ -587,7 +565,7 @@ describe("MissingJsonSchemasGenerator", () => {
       });
     });
 
-    test("should skip existing schemas", async () => {
+    test("should skip existing schemas", () => {
       const paths: any = {
         "/users": {
           post: {
@@ -614,15 +592,14 @@ describe("MissingJsonSchemasGenerator", () => {
 
       const result = missingJsonSchemaGenerator.generateMissingJsonSchemas(
         paths,
-        currentJsonSchemas,
-        mockArkosConfig
+        currentJsonSchemas
       );
 
       expect(mockEnhancedGenerator.generateModelSchemas).not.toHaveBeenCalled();
       expect(result).toEqual({});
     });
 
-    test("should handle auth schemas correctly", async () => {
+    test("should handle auth schemas correctly", () => {
       mockEnhancedGenerator.generateModelSchemas.mockReturnValue({
         LoginSchema: {
           type: "object",
@@ -663,8 +640,7 @@ describe("MissingJsonSchemasGenerator", () => {
 
       const result = missingJsonSchemaGenerator.generateMissingJsonSchemas(
         paths,
-        {},
-        mockArkosConfig
+        {}
       );
 
       expect(result).toEqual({
@@ -679,40 +655,7 @@ describe("MissingJsonSchemasGenerator", () => {
       });
     });
 
-    // test("should handle generation errors gracefully", async () => {
-    //   mockEnhancedGenerator.generateModelSchemas.mockRejectedValue(
-    //     new Error("Generation failed")
-    //   );
-
-    //   const paths: any = {
-    //     "/users": {
-    //       post: {
-    //         operationId: "createUser",
-    //         requestBody: {
-    //           content: {
-    //             "application/json": {
-    //               schema: {
-    //                 $ref: "#/components/schemas/CreateUserModelSchema",
-    //               },
-    //             },
-    //           },
-    //         },
-    //       },
-    //     },
-    //   };
-
-    //   // Should not throw
-    //   const result =
-    //     await missingJsonSchemaGenerator.generateMissingJsonSchemas(
-    //       paths,
-    //       {},
-    //       mockArkosConfig
-    //     );
-
-    //   expect(result).toEqual({});
-    // });
-
-    test("should handle refs without proper ModelSchema format", async () => {
+    test("should handle refs without proper ModelSchema format", () => {
       const paths: OpenAPIV3.PathsObject = {
         "/test": {
           get: {
@@ -733,19 +676,17 @@ describe("MissingJsonSchemasGenerator", () => {
 
       const result = missingJsonSchemaGenerator.generateMissingJsonSchemas(
         paths,
-        {},
-        mockArkosConfig
+        {}
       );
 
       expect(mockEnhancedGenerator.generateModelSchemas).not.toHaveBeenCalled();
       expect(result).toEqual({});
     });
 
-    test("should handle undefined operationId gracefully", async () => {
+    test("should handle undefined operationId gracefully", () => {
       const paths: OpenAPIV3.PathsObject = {
         "/users": {
           post: {
-            // No operationId
             requestBody: {
               content: {
                 "application/json": {
@@ -763,21 +704,15 @@ describe("MissingJsonSchemasGenerator", () => {
         CreateUserModelSchema: { type: "object" },
       });
 
-      missingJsonSchemaGenerator.generateMissingJsonSchemas(
-        paths,
-        {},
-        mockArkosConfig
-      );
+      missingJsonSchemaGenerator.generateMissingJsonSchemas(paths, {});
 
-      // Should still work by falling back to schema ref analysis
       expect(mockEnhancedGenerator.generateModelSchemas).toHaveBeenCalled();
     });
 
-    test("should handle empty paths gracefully", async () => {
+    test("should handle empty paths gracefully", () => {
       const result = missingJsonSchemaGenerator.generateMissingJsonSchemas(
         {},
-        {},
-        mockArkosConfig
+        {}
       );
 
       expect(result).toEqual({});
@@ -804,20 +739,14 @@ describe("MissingJsonSchemasGenerator", () => {
         },
       };
 
-      const currentJsonSchemas = {
+      const result = missingJsonSchemaGenerator.analyzeMissingSchemas(paths, {
         ExistingSchema: { type: "object" },
-      };
-
-      const result = missingJsonSchemaGenerator.analyzeMissingSchemas(
-        paths,
-        currentJsonSchemas
-      );
+      });
 
       expect(result.allRefs).toHaveLength(1);
       expect(result.missingRefs).toHaveLength(1);
       expect(result.existingRefs).toHaveLength(0);
       expect(result.modelActions).toHaveLength(1);
-
       expect(result.modelActions[0]).toEqual({
         model: "User",
         action: "createOne",
@@ -857,14 +786,9 @@ describe("MissingJsonSchemasGenerator", () => {
         },
       };
 
-      const currentJsonSchemas = {
+      const result = missingJsonSchemaGenerator.analyzeMissingSchemas(paths, {
         ExistingUserSchema: { type: "object" },
-      };
-
-      const result = missingJsonSchemaGenerator.analyzeMissingSchemas(
-        paths,
-        currentJsonSchemas
-      );
+      });
 
       expect(result.allRefs).toHaveLength(2);
       expect(result.missingRefs).toHaveLength(1);
@@ -973,17 +897,6 @@ describe("MissingJsonSchemasGenerator", () => {
   });
 
   describe("Edge Cases and Error Handling", () => {
-    // test("should handle circular references without infinite loops", () => {
-    //   const circular: any = { operationId: "test" };
-    //   circular.self = circular;
-    //   circular.schema = { $ref: "#/components/schemas/TestSchema" };
-
-    //   const refs =
-    //     missingJsonSchemaGenerator["extractSchemaRefsWithContext"](circular);
-    //   expect(refs.size).toBe(1);
-    //   expect(refs.has("#/components/schemas/TestSchema")).toBe(true);
-    // });
-
     test("should handle very deeply nested objects", () => {
       let deep: any = { operationId: "test" };
       for (let i = 0; i < 100; i++) {

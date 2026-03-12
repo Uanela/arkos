@@ -1,16 +1,13 @@
 import { OpenAPIV3 } from "openapi-types";
-import {
-  getSchemaRef,
-  kebabToHuman,
-  localValidatorFileExists,
-} from "../../swagger.router.helpers";
+import { getSchemaRef, kebabToHuman } from "../../swagger.router.helpers";
 import pluralize from "pluralize";
-import { isEndpointDisabled } from "../../../../../base/utils/helpers/base.router.helpers";
-import { RouterConfig } from "../../../../../../exports";
 import { kebabCase, pascalCase } from "../../../../../../exports/utils";
-import { getModuleComponents } from "../../../../../../utils/dynamic-loader";
 import { isAuthenticationEnabled } from "../../../../../../utils/helpers/arkos-config.helpers";
-import { UserArkosConfig } from "../../../../../../utils/define-config";
+import {
+  OperationByModule,
+  routeHookReader,
+} from "../../../../../../components/arkos-route-hook/reader";
+import { getInputSchemaMode } from "../../get-authentication-json-schema-paths";
 
 function getAuthErrorResponses(): Record<string, any> {
   if (!isAuthenticationEnabled()) return {};
@@ -23,8 +20,7 @@ function getAuthErrorResponses(): Record<string, any> {
 
 export function generatePrismaModelMainRoutesPaths(
   model: string,
-  paths: OpenAPIV3.PathsObject = {},
-  arkosConfig: UserArkosConfig
+  paths: OpenAPIV3.PathsObject = {}
 ) {
   const modelName = kebabCase(model);
   const routeName = pluralize.plural(modelName);
@@ -32,38 +28,15 @@ export function generatePrismaModelMainRoutesPaths(
   const humanReadableName = kebabToHuman(modelName);
   const humanReadableNamePlural = pluralize.plural(humanReadableName);
 
-  const moduleComponents = getModuleComponents(model);
-  const routerConfig = moduleComponents?.router
-    ?.config as RouterConfig<"prisma">;
-
-  if (routerConfig?.disable === true) return paths;
-
-  const getSchemaMode = (
-    action: string
-  ): "prisma" | "zod" | "class-validator" => {
-    const swaggerMode = arkosConfig.swagger?.mode;
-    const isStrict = arkosConfig.swagger?.strict;
-
-    if (isStrict) return swaggerMode || "prisma";
-
-    const actionKey = action as any;
-
-    const localFileExists = localValidatorFileExists(
-      actionKey,
-      model,
-      arkosConfig
-    );
-
-    if (!localFileExists) return "prisma";
-
-    return swaggerMode || "prisma";
+  const isEndpointDisabled = (endpoint: OperationByModule<"">): boolean => {
+    return !!routeHookReader.getRouteConfig("", endpoint)?.disabled;
   };
 
   // Create One
-  if (!isEndpointDisabled(routerConfig, "createOne")) {
+  if (!isEndpointDisabled("createOne")) {
     const pathname = `/api/${routeName}`;
     if (!paths[pathname]) paths[pathname] = {};
-    const createMode = getSchemaMode("create");
+    const createMode = getInputSchemaMode("", "createOne");
     const currentPath = paths[pathname]!.post;
 
     const defaultSpec = {
@@ -111,10 +84,10 @@ export function generatePrismaModelMainRoutesPaths(
   }
 
   // Find Many
-  if (!isEndpointDisabled(routerConfig, "findMany")) {
+  if (!isEndpointDisabled("findMany")) {
     const pathname = `/api/${routeName}`;
     if (!paths[pathname]) paths[pathname] = {};
-    const findManyMode = getSchemaMode("findMany");
+    const findManyMode = getInputSchemaMode("", "findMany");
     const currentPath = paths[pathname]!.get;
 
     const defaultParameters: OpenAPIV3.ParameterObject[] =
@@ -224,10 +197,10 @@ export function generatePrismaModelMainRoutesPaths(
   }
 
   // Create Many
-  if (!isEndpointDisabled(routerConfig, "createMany")) {
+  if (!isEndpointDisabled("createMany")) {
     const pathname = `/api/${routeName}/many`;
     if (!paths[pathname]) paths[pathname] = {};
-    const createManyMode = getSchemaMode("createMany");
+    const createManyMode = getInputSchemaMode("", "createMany");
     const currentPath = paths[pathname]!.post;
 
     const defaultSpec = {
@@ -287,10 +260,10 @@ export function generatePrismaModelMainRoutesPaths(
   }
 
   // Update Many
-  if (!isEndpointDisabled(routerConfig, "updateMany")) {
+  if (!isEndpointDisabled("updateMany")) {
     const pathname = `/api/${routeName}/many`;
     if (!paths[pathname]) paths[pathname] = {};
-    const updateManyMode = getSchemaMode("updateMany");
+    const updateManyMode = getInputSchemaMode("", "updateMany");
     const currentPath = paths[pathname]!.patch;
 
     const defaultSpec = {
@@ -347,7 +320,7 @@ export function generatePrismaModelMainRoutesPaths(
   }
 
   // Delete Many
-  if (!isEndpointDisabled(routerConfig, "deleteMany")) {
+  if (!isEndpointDisabled("deleteMany")) {
     const pathname = `/api/${routeName}/many`;
     if (!paths[pathname]) paths[pathname] = {};
     const currentPath = paths[pathname]!.delete;
@@ -392,10 +365,10 @@ export function generatePrismaModelMainRoutesPaths(
   }
 
   // Find One
-  if (!isEndpointDisabled(routerConfig, "findOne")) {
+  if (!isEndpointDisabled("findOne")) {
     const pathname = `/api/${routeName}/{id}`;
     if (!paths[pathname]) paths[pathname] = {};
-    const findOneMode = getSchemaMode("findOne");
+    const findOneMode = getInputSchemaMode("", "findOne");
     const currentPath = paths[pathname]!.get;
 
     const defaultParameters: OpenAPIV3.ParameterObject[] = [
@@ -456,10 +429,10 @@ export function generatePrismaModelMainRoutesPaths(
   }
 
   // Update One
-  if (!isEndpointDisabled(routerConfig, "updateOne")) {
+  if (!isEndpointDisabled("updateOne")) {
     const pathname = `/api/${routeName}/{id}`;
     if (!paths[pathname]) paths[pathname] = {};
-    const updateMode = getSchemaMode("update");
+    const updateMode = getInputSchemaMode("", "updateOne");
     const currentPath = paths[pathname]!.patch;
 
     const defaultParameters: OpenAPIV3.ParameterObject[] = [
@@ -534,7 +507,7 @@ export function generatePrismaModelMainRoutesPaths(
   }
 
   // Delete One
-  if (!isEndpointDisabled(routerConfig, "deleteOne")) {
+  if (!isEndpointDisabled("deleteOne")) {
     const pathname = `/api/${routeName}/{id}`;
     if (!paths[pathname]) paths[pathname] = {};
     const currentPath = paths[pathname]!.delete;

@@ -9,8 +9,7 @@ export default class RouteConfigValidator {
   }
 
   static validate(config: ArkosRouteConfig) {
-    const arkosConfig = getArkosConfig();
-    const swaggerMode = arkosConfig?.swagger?.mode;
+    const swaggerMode = getArkosConfig()?.validation?.resolver;
 
     if (config.validation) {
       const validators = [

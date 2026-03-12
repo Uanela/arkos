@@ -1,14 +1,17 @@
 import { ArkosRouter, BaseController } from "../../exports";
 import loadableRegistry from "../../components/arkos-loadable-registry";
-import { prismaSchemaParser } from "../../exports/prisma";
 import { kebabCase } from "../../exports/utils";
 import pluralize from "pluralize";
-import { routeHookReader } from "../../components/arkos-route-hook/reader";
+import {
+  OperationByModule,
+  routeHookReader,
+} from "../../components/arkos-route-hook/reader";
 import {
   addPrismaQueryOptionsToRequest,
   sendResponse,
 } from "./base.middlewares";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
+import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 
 export function getPrismaModelsRouter() {
   const router = ArkosRouter();
@@ -24,9 +27,9 @@ export function getPrismaModelsRouter() {
       modelNameInKebab
     );
 
-    const op = (operation: string) =>
+    const op = (operation: OperationByModule<"">) =>
       interceptor
-        ? routeHookReader.forOperation(interceptor, operation)
+        ? routeHookReader.forOperation(modelNameInKebab, operation)
         : {
             before: [],
             after: [],

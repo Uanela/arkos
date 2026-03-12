@@ -2,27 +2,40 @@ import { BaseController } from "../base.controller";
 import { BaseService } from "../base.service";
 import AppError from "../../error-handler/utils/app-error";
 import APIFeatures from "../../../utils/features/api.features";
-import { getModuleComponents } from "../../../utils/dynamic-loader";
-import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
+import loadableRegistry from "../../../components/arkos-loadable-registry";
+import { routeHookReader } from "../../../components/arkos-route-hook/reader";
 
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
   readFileSync: jest.fn(),
 }));
-jest.mock("../base.service");
+jest.mock("../../base/base.service", () => ({
+  __esModule: true,
+  getBaseServices: jest.fn(),
+  BaseService: jest.fn(),
+}));
 jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/features/api.features");
 jest.mock("../../../server");
-jest.mock("../../../utils/dynamic-loader");
+jest.mock("../../../components/arkos-loadable-registry", () => ({
+  __esModule: true,
+  default: { getItem: jest.fn(), register: jest.fn() },
+}));
+jest.mock("../../../components/arkos-route-hook/reader", () => ({
+  routeHookReader: { getHooks: jest.fn() },
+}));
 jest.mock("../../../utils/sheu");
 jest.mock("../../../utils/prisma/prisma-schema-parser", () => ({
   parse: jest.fn(),
   getModelsAsArrayOfStrings: jest.fn(() => []),
 }));
 
+const mockGetItem = loadableRegistry.getItem as jest.Mock;
+const mockGetHooks = routeHookReader.getHooks as jest.Mock;
+
 describe("BaseController", () => {
-  let baseController: BaseController;
+  let baseController: BaseController<any>;
   let mockRequest: any;
   let mockResponse: any;
   let mockNext: jest.Mock;
@@ -31,18 +44,26 @@ describe("BaseController", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Setup mock service
-    mockBaseService = new BaseService("Post") as jest.Mocked<BaseService<any>>;
+    mockBaseService = {
+      createOne: jest.fn(),
+      createMany: jest.fn(),
+      findOne: jest.fn(),
+      findMany: jest.fn(),
+      updateOne: jest.fn(),
+      updateMany: jest.fn(),
+      deleteOne: jest.fn(),
+      deleteMany: jest.fn(),
+      batchUpdate: jest.fn(),
+      batchDelete: jest.fn(),
+      count: jest.fn(),
+      relationFields: { singular: [], list: [] },
+    } as any;
+    (BaseService as jest.Mock).mockImplementation(() => mockBaseService);
     (BaseService as jest.Mock).mockImplementation(() => mockBaseService);
 
-    // Setup mocked model modules
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: {
-        // Empty object for most tests, will be populated when testing middleware flows
-      },
-    });
+    mockGetItem.mockReturnValue(null);
+    mockGetHooks.mockReturnValue(null);
 
-    // Setup mock for API features
     (APIFeatures as jest.Mock).mockImplementation(function (
       req: any,
       _: string
@@ -71,7 +92,6 @@ describe("BaseController", () => {
       };
     });
 
-    // Setup mock request, response, and next
     mockRequest = {
       body: {},
       params: {},
@@ -88,24 +108,22 @@ describe("BaseController", () => {
     };
     mockNext = jest.fn();
 
-    // Create instance for testing
     baseController = new BaseController("Post");
   });
 
   describe("constructor", () => {
     it("should initialize controller with correct model name and service", () => {
       expect(BaseService).toHaveBeenCalledWith("Post");
-      expect(getModuleComponents).toHaveBeenCalledWith("Post");
     });
 
-    it("should initialize with empty interceptors when model modules return null", () => {
-      (getModuleComponents as jest.Mock).mockReturnValue(null as any);
+    it("should initialize with empty interceptors when registry returns null", () => {
+      mockGetItem.mockReturnValue(null);
       new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
     });
 
-    it("should initialize with empty interceptors when model modules return undefined interceptors", () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({});
+    it("should initialize when registry returns undefined", () => {
+      mockGetItem.mockReturnValue(undefined);
       new BaseController("User");
       expect(BaseService).toHaveBeenCalledWith("User");
     });
@@ -132,10 +150,11 @@ describe("BaseController", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({ data: mockData });
     });
 
-    it("should call next with responseData if afterCreateOne middleware exists", async () => {
-      // Set up the middleware
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterCreateOne: true },
+    it("should call next with responseData if afterCreateOne hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterCreateOne: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "createOne") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -212,9 +231,11 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
-    it("should call next with responseData if afterCreateMany middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterCreateMany: true },
+    it("should call next with responseData if afterCreateMany hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterCreateMany: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "createMany") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -287,9 +308,11 @@ describe("BaseController", () => {
       });
     });
 
-    it("should call next with responseData if afterFindMany middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterFindMany: true },
+    it("should call next with responseData if afterFindMany hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterFindMany: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "findMany") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -403,9 +426,11 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
-    it("should call next with responseData if afterFindOne middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterFindOne: true },
+    it("should call next with responseData if afterFindOne hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterFindOne: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "findOne") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -495,9 +520,11 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
-    it("should call next with responseData if afterUpdateOne middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterUpdateOne: true },
+    it("should call next with responseData if afterUpdateOne hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterUpdateOne: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "updateOne") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -535,15 +562,11 @@ describe("BaseController", () => {
     });
 
     it("should update multiple records and return 200 status", async () => {
-      mockRequest.query = { title: "Test" }; // Add filter criteria
+      mockRequest.query = { title: "Test" };
       const mockBody = { published: true };
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
       mockBaseService.updateMany.mockResolvedValue(mockResult as any);
-      // const baseControllerExecuteOperationSpy = jest.spyOn(
-      //   baseController,
-      //   "executeOperation" as any
-      // );
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -598,9 +621,11 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
-    it("should call next with responseData if afterUpdateMany middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterUpdateMany: true },
+    it("should call next with responseData if afterUpdateMany hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterUpdateMany: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "updateMany") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -679,9 +704,11 @@ describe("BaseController", () => {
       expect(mockResponse.send).not.toHaveBeenCalled();
     });
 
-    it("should call next with additionalData if afterDeleteOne middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterDeleteOne: true },
+    it("should call next with additionalData if afterDeleteOne hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterDeleteOne: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "deleteOne") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -717,7 +744,7 @@ describe("BaseController", () => {
     });
 
     it("should delete multiple records and return 200 status", async () => {
-      mockRequest.query = { title: "Test" }; // Add filter criteria
+      mockRequest.query = { title: "Test" };
       const mockResult = { count: 2 };
       mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
 
@@ -737,7 +764,7 @@ describe("BaseController", () => {
       mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
-      expect(mockNext).toHaveBeenCalled(); // Means that req.query.filterMode OR was rejected
+      expect(mockNext).toHaveBeenCalled();
     });
 
     it("should call next with error if no records deleted", async () => {
@@ -761,9 +788,11 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
-    it("should call next with responseData if afterDeleteMany middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterDeleteMany: true },
+    it("should call next with responseData if afterDeleteMany hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterDeleteMany: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "deleteMany") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -833,9 +862,11 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
-    it("should call next with responseData if afterBatchUpdate middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterBatchUpdate: true },
+    it("should call next with responseData if afterBatchUpdate hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterBatchUpdate: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "batchUpdate") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -896,9 +927,11 @@ describe("BaseController", () => {
       expect(mockResponse.json).not.toHaveBeenCalled();
     });
 
-    it("should call next with responseData if afterBatchDelete middleware exists", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        interceptors: { afterBatchDelete: true },
+    it("should call next with responseData if afterBatchDelete hook exists", async () => {
+      mockGetItem.mockReturnValue({ afterBatchDelete: jest.fn() });
+      mockGetHooks.mockImplementation((_: string, op: string) => {
+        if (op === "batchDelete") return { after: jest.fn() };
+        return null;
       });
       baseController = new BaseController("Post");
 
@@ -916,26 +949,6 @@ describe("BaseController", () => {
       expect(mockRequest.responseStatus).toBe(200);
       expect(mockNext).toHaveBeenCalled();
       expect(mockResponse.json).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("getAvailableResources", () => {
-    it("should return available resources", async () => {
-      const { getAvailableResources } = require("../base.controller");
-      const mockModels = ["Post", "User", "Comment", "AuthRole"];
-      jest
-        .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
-        .mockReturnValue(mockModels);
-
-      await getAvailableResources(mockRequest, mockResponse, mockNext);
-
-      expect(
-        jest.spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
-      ).toHaveBeenCalled();
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        data: ["post", "user", "comment", "auth-role", "file-upload"],
-      });
     });
   });
 });

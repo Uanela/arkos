@@ -1,7 +1,4 @@
-import { RouterConfig } from "../../exports";
-import { AuthPrismaQueryOptions, PrismaQueryOptions } from "../../types";
-import deepmerge from "../helpers/deepmerge.helper";
-import { ValidationFileMappingKey } from "../dynamic-loader";
+import { getArkosConfig } from "../../exports";
 import prismaSchemaParser from "./prisma-schema-parser";
 import {
   PrismaModel,
@@ -11,11 +8,17 @@ import {
 } from "./types";
 import { localValidatorFileExists } from "../../modules/swagger/utils/helpers/swagger.router.helpers";
 import { UserArkosConfig } from "../define-config";
+import {
+  OperationByModule,
+  routeHookReader,
+} from "../../components/arkos-route-hook/reader";
+import { ArkosModuleType } from "../../components/arkos-route-hook/types";
+import { isAuthenticationEnabled } from "../helpers/arkos-config.helpers";
+import { kebabCase } from "../helpers/change-case.helpers";
 
-export interface SchemaGenerationConfig {
-  modelName: string;
-  arkosConfig: UserArkosConfig;
-  schemasToGenerate?: ValidationFileMappingKey[];
+export interface SchemaGenerationConfig<T extends ArkosModuleType> {
+  modelName: T;
+  schemasToGenerate?: OperationByModule<T>[];
 }
 
 export interface GeneratedSchemas {
@@ -31,39 +34,17 @@ export class PrismaJsonSchemaGenerator {
   /**
    * Main method to generate all schemas for a model
    */
-  generateModelSchemas(config: SchemaGenerationConfig): GeneratedSchemas {
-    const {
-      modelName,
-      arkosConfig,
-      schemasToGenerate = [
-        "model",
-        "login",
-        "signup",
-        "getMe",
-        "updateMe",
-        "updatePassword",
-        "create",
-        "createOne",
-        "createMany",
-        "update",
-        "updateOne",
-        "updateMany",
-        "query",
-        "findOne",
-        "findMany",
-      ],
-    } = config;
+  generateModelSchemas<T extends ArkosModuleType>(
+    config: SchemaGenerationConfig<T>
+  ): GeneratedSchemas {
+    const arkosConfig = getArkosConfig();
+    const { modelName, schemasToGenerate } = config;
 
-    const moduleComponents = getModuleComponents(modelName);
-    const routerConfig = moduleComponents?.router?.config || {};
-    const prismaQueryOptions = moduleComponents?.prismaQueryOptions || {};
     const authModuleModel = ["auth", "me", "password", "signup", "login"];
     const isAuthModule = authModuleModel.includes(modelName.toLowerCase());
 
-    if (arkosConfig?.swagger?.strict && arkosConfig.swagger.mode !== "prisma")
+    if (arkosConfig?.swagger?.strict && arkosConfig.validation?.resolver)
       return {};
-
-    if (routerConfig?.disable === true) return {};
 
     const model = this.schema.models.find(
       (m) => m.name.toLowerCase() === modelName.toLowerCase()
@@ -76,19 +57,30 @@ export class PrismaJsonSchemaGenerator {
       this.generateAuthSchemas(
         this.schema.models.find((m) => m.name.toLowerCase() === "user")!,
         schemas,
-        arkosConfig,
-        schemasToGenerate,
-        prismaQueryOptions as AuthPrismaQueryOptions<any>
+        (schemasToGenerate as OperationByModule<"auth">[]) || [
+          "login",
+          "signup",
+          "getMe",
+          "updateMe",
+          "updatePassword",
+        ]
       );
     } else {
       if (model)
         this.generateCrudSchemas(
           model,
           schemas,
-          arkosConfig,
-          schemasToGenerate,
-          prismaQueryOptions as PrismaQueryOptions<any>,
-          routerConfig
+          (schemasToGenerate as OperationByModule<"">[]) || [
+            "create",
+            "createOne",
+            "createMany",
+            "update",
+            "updateOne",
+            "updateMany",
+            "query",
+            "findOne",
+            "findMany",
+          ]
         );
     }
 
@@ -101,20 +93,17 @@ export class PrismaJsonSchemaGenerator {
   private generateAuthSchemas(
     model: PrismaModel,
     schemas: { [key: string]: JsonSchema },
-    arkosConfig: UserArkosConfig,
-    schemasToGenerate: ValidationFileMappingKey[],
-    queryOptions?: AuthPrismaQueryOptions<any>,
-    routerConfig?: RouterConfig
+    schemasToGenerate: OperationByModule<"auth">[]
   ) {
     const modelName = "Auth";
+    const arkosConfig = getArkosConfig();
 
-    // if no auth activated forget those json schemas
-    if (!arkosConfig?.authentication) return schemas;
+    if (!isAuthenticationEnabled()) return schemas;
 
     // Login schema (input)
     if (
       schemasToGenerate.includes("login") &&
-      !this.isEndpointDisabled("login", routerConfig) &&
+      !this.isEndpointDisabled("auth", "login") &&
       !localValidatorFileExists("login", modelName, arkosConfig)
     ) {
       schemas[`LoginSchema`] = this.generateLoginSchema(arkosConfig);
@@ -123,48 +112,41 @@ export class PrismaJsonSchemaGenerator {
     // Signup schema (input)
     if (
       schemasToGenerate.includes("signup") &&
-      !this.isEndpointDisabled("signup", routerConfig) &&
+      !this.isEndpointDisabled("auth", "signup") &&
       !localValidatorFileExists("signup", modelName, arkosConfig)
     ) {
-      schemas[`SignupSchema`] = this.generateSignupSchema(
-        model,
-        queryOptions?.signup
-      );
+      schemas[`SignupSchema`] = this.generateSignupSchema(model);
     }
 
     // UpdateMe schema (input)
     if (
       schemasToGenerate.includes("updateMe") &&
-      !this.isEndpointDisabled("updateMe", routerConfig) &&
+      !this.isEndpointDisabled("auth", "updateMe") &&
       !localValidatorFileExists("updateMe", modelName, arkosConfig)
     ) {
-      schemas[`UpdateMeSchema`] = this.generateUpdateMeSchema(
-        model,
-        queryOptions?.updateMe
-      );
+      schemas[`UpdateMeSchema`] = this.generateUpdateMeSchema(model);
     }
 
     // UpdatePassword schema (input)
     if (
       schemasToGenerate.includes("updatePassword") &&
-      !this.isEndpointDisabled("updatePassword", routerConfig) &&
+      !this.isEndpointDisabled("auth", "updatePassword") &&
       !localValidatorFileExists("updatePassword", modelName, arkosConfig)
     ) {
       schemas[`UpdatePasswordSchema`] = this.generateUpdatePasswordSchema(
         model,
-        queryOptions?.updatePassword
+        routeHookReader.getPrismaArgs("auth", "updatePassword")
       );
     }
 
     if (
       schemasToGenerate.includes("getMe") &&
-      !this.isEndpointDisabled("getMe", routerConfig) &&
+      !this.isEndpointDisabled("auth", "getMe") &&
       !localValidatorFileExists("getMe", modelName, arkosConfig)
     ) {
       schemas[`GetMeSchema`] = this.generateResponseSchema(
         model,
-        queryOptions?.getMe || {},
-        "findOne"
+        routeHookReader.getPrismaArgs("auth", "getMe") || {}
       );
     }
   }
@@ -175,12 +157,10 @@ export class PrismaJsonSchemaGenerator {
   private generateCrudSchemas(
     model: PrismaModel,
     schemas: { [key: string]: JsonSchema },
-    arkosConfig: UserArkosConfig,
-    schemasToGenerate: ValidationFileMappingKey[],
-    queryOptions?: PrismaQueryOptions<any>,
-    routerConfig?: RouterConfig<any>
+    schemasToGenerate: OperationByModule<"">[]
   ) {
     const modelName = model.name;
+    const arkosConfig = getArkosConfig();
 
     const ensureBaseSchemaReference = (
       operation: string,
@@ -202,15 +182,9 @@ export class PrismaJsonSchemaGenerator {
 
         if (!schemas[modelSchemaKey]) {
           if (operation === "Create") {
-            schemas[modelSchemaKey] = this.generateCreateSchema(
-              model,
-              this.resolvePrismaQueryOptions(queryOptions, "createOne")
-            );
+            schemas[modelSchemaKey] = this.generateCreateSchema(model);
           } else if (operation === "Update") {
-            schemas[modelSchemaKey] = this.generateUpdateSchema(
-              model,
-              this.resolvePrismaQueryOptions(queryOptions, "updateOne")
-            );
+            schemas[modelSchemaKey] = this.generateUpdateSchema(model);
           }
         }
 
@@ -220,18 +194,16 @@ export class PrismaJsonSchemaGenerator {
 
     if (
       schemasToGenerate.includes("createOne") &&
-      !this.isEndpointDisabled("createOne", routerConfig) &&
+      !this.isEndpointDisabled(modelName, "createOne") &&
       !localValidatorFileExists("createOne", modelName, arkosConfig)
     ) {
-      schemas[`Create${modelName}ModelSchema`] = this.generateCreateSchema(
-        model,
-        this.resolvePrismaQueryOptions(queryOptions, "createOne")
-      );
+      schemas[`Create${modelName}ModelSchema`] =
+        this.generateCreateSchema(model);
     }
 
     if (
       schemasToGenerate.includes("createMany") &&
-      !this.isEndpointDisabled("createMany", routerConfig) &&
+      !this.isEndpointDisabled(modelName, "createMany") &&
       !localValidatorFileExists("createMany", modelName, arkosConfig)
     ) {
       const baseSchemaKey = ensureBaseSchemaReference("Create", modelName);
@@ -243,48 +215,42 @@ export class PrismaJsonSchemaGenerator {
 
     if (
       schemasToGenerate.includes("updateOne") &&
-      !this.isEndpointDisabled("updateOne", routerConfig) &&
+      !this.isEndpointDisabled(modelName, "updateOne") &&
       !localValidatorFileExists("updateOne", modelName, arkosConfig)
     ) {
-      schemas[`Update${modelName}ModelSchema`] = this.generateUpdateSchema(
-        model,
-        this.resolvePrismaQueryOptions(queryOptions, "updateOne")
-      );
+      schemas[`Update${modelName}ModelSchema`] =
+        this.generateUpdateSchema(model);
     }
 
     if (
       schemasToGenerate.includes("updateMany") &&
-      !this.isEndpointDisabled("updateMany", routerConfig) &&
+      !this.isEndpointDisabled(modelName, "updateMany") &&
       !localValidatorFileExists("updateMany", modelName, arkosConfig)
     ) {
-      schemas[`UpdateMany${modelName}ModelSchema`] = this.generateUpdateSchema(
-        model,
-        this.resolvePrismaQueryOptions(queryOptions, "updateOne")
-      );
+      schemas[`UpdateMany${modelName}ModelSchema`] =
+        this.generateUpdateSchema(model);
     }
     if (
       schemasToGenerate.includes("findOne") &&
-      !this.isEndpointDisabled("findOne", routerConfig) &&
+      !this.isEndpointDisabled(modelName, "findOne") &&
       !localValidatorFileExists("findOne", modelName, arkosConfig)
     ) {
       schemas[`FindOne${modelName}ModelSchema`] = this.generateResponseSchema(
         model,
-        this.resolvePrismaQueryOptions(queryOptions, "findOne"),
-        "findOne"
+        routeHookReader.getPrismaArgs(modelName, "findOne")
       );
     }
 
     if (
       schemasToGenerate.includes("findMany") &&
-      !this.isEndpointDisabled("findMany", routerConfig) &&
+      !this.isEndpointDisabled(modelName, "findMany") &&
       !localValidatorFileExists("findMany", modelName, arkosConfig)
     ) {
       schemas[`FindMany${modelName}ModelSchema`] = {
         type: "array",
         items: this.generateResponseSchema(
           model,
-          this.resolvePrismaQueryOptions(queryOptions, "findMany"),
-          "findMany"
+          routeHookReader.getPrismaArgs(modelName, "findMany")
         ),
       };
     }
@@ -293,10 +259,7 @@ export class PrismaJsonSchemaGenerator {
   /**
    * Generate create schema (excludes ID, includes relation IDs only)
    */
-  private generateCreateSchema(
-    model: PrismaModel,
-    _: Record<string, any>
-  ): JsonSchema {
+  private generateCreateSchema(model: PrismaModel): JsonSchema {
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const required: string[] = [];
     const restrictedFields = ["createdAt", "updatedAt", "deletedAt", "id"];
@@ -368,10 +331,7 @@ export class PrismaJsonSchemaGenerator {
   /**
    * Generate update schema (all fields optional, includes relation IDs only)
    */
-  private generateUpdateSchema(
-    model: PrismaModel,
-    _: Record<string, any>
-  ): JsonSchema {
+  private generateUpdateSchema(model: PrismaModel): JsonSchema {
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const autoFillFields = ["createdAt", "updatedAt", "deletedAt", "id"];
 
@@ -421,8 +381,7 @@ export class PrismaJsonSchemaGenerator {
    */
   private generateResponseSchema(
     model: PrismaModel,
-    options: Record<string, any>,
-    _: "findOne" | "findMany"
+    options: Record<string, any> = {}
   ): JsonSchema {
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const required: string[] = [];
@@ -608,12 +567,9 @@ export class PrismaJsonSchemaGenerator {
 
     return baseSchema;
   }
-  private generateSignupSchema(
-    model: PrismaModel,
-    options?: Record<string, any>
-  ): JsonSchema {
+  private generateSignupSchema(model: PrismaModel): JsonSchema {
     // Similar to create but might have specific required fields
-    const singupSchema = this.generateCreateSchema(model, options || {});
+    const singupSchema = this.generateCreateSchema(model);
 
     const restrictedFields = [
       "roles",
@@ -632,12 +588,9 @@ export class PrismaJsonSchemaGenerator {
     return singupSchema;
   }
 
-  private generateUpdateMeSchema(
-    model: PrismaModel,
-    options?: Record<string, any>
-  ): JsonSchema {
+  private generateUpdateMeSchema(model: PrismaModel): JsonSchema {
     // Similar to update but might exclude certain fields like role, etc.
-    const updateSchema = this.generateUpdateSchema(model, options || {});
+    const updateSchema = this.generateUpdateSchema(model);
 
     // Remove sensitive fields that users shouldn't update themselves
     const restrictedFields = [
@@ -672,78 +625,14 @@ export class PrismaJsonSchemaGenerator {
     };
   }
 
-  /**
-   * Utility methods
-   */
-  private resolvePrismaQueryOptions(
-    prismaQueryOptions?: PrismaQueryOptions<any> | AuthPrismaQueryOptions<any>,
-    action?: ValidationFileMappingKey
-  ): Record<string, any> {
-    if (!prismaQueryOptions || !action) {
-      return {};
-    }
-
-    const options = prismaQueryOptions as any;
-    const actionOptions = options[action] || {};
-
-    // Start with deprecated queryOptions (for backward compatibility)
-    let mergedOptions = options.queryOptions || {};
-
-    // Apply global options (replaces queryOptions)
-    if (options.global)
-      mergedOptions = deepmerge(mergedOptions, options.global);
-
-    // Apply general operation options based on action type
-    const generalOptions = this.getGeneralOptionsForAction(options, action);
-    if (generalOptions)
-      mergedOptions = deepmerge(mergedOptions, generalOptions);
-
-    // Finally apply specific action options (highest priority)
-    if (actionOptions) mergedOptions = deepmerge(mergedOptions, actionOptions);
-
-    return mergedOptions;
-  }
-
-  /**
-   * Helps in remmaping those prisma query options that combines many operations for example find, save...
-   */
-  private getGeneralOptionsForAction(
-    options: any,
-    action: ValidationFileMappingKey
-  ): Record<string, any> | null {
-    const actionMap: { [key: string]: string[] } = {
-      find: ["findOne", "findMany"],
-      create: ["createOne", "createMany"],
-      update: ["updateOne", "updateMany"],
-      delete: ["deleteOne", "deleteMany"],
-      save: ["createOne", "createMany", "updateOne", "updateMany"],
-      saveOne: ["createOne", "updateOne"],
-      saveMany: ["createMany", "updateMany"],
-    };
-
-    for (const [optionKey, actions] of Object.entries(actionMap)) {
-      if (actions.includes(action) && options[optionKey]) {
-        return options[optionKey];
-      }
-    }
-
-    return null;
-  }
-
-  private isEndpointDisabled(
-    endpoint: string,
-    routerConfig?: RouterConfig<any>
+  private isEndpointDisabled<T extends ArkosModuleType>(
+    moduleName: T,
+    endpoint: OperationByModule<T>
   ): boolean {
-    if (!routerConfig?.disable) return false;
-
-    if (typeof routerConfig.disable === "boolean") {
-      return routerConfig.disable;
-    }
-
-    return (
-      routerConfig.disable[endpoint as keyof typeof routerConfig.disable] ||
-      false
-    );
+    return !!routeHookReader.getRouteConfig(
+      kebabCase(moduleName) as T,
+      endpoint
+    )?.disabled;
   }
 
   private isModelRelation(typeName: string): boolean {

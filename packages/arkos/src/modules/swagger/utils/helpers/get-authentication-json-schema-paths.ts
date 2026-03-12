@@ -1,57 +1,49 @@
 import { OpenAPIV3 } from "openapi-types";
+import { getSchemaRef } from "./swagger.router.helpers";
 import {
-  getSchemaRef,
-  localValidatorFileExists,
-} from "./swagger.router.helpers";
-import { RouterConfig } from "../../../../exports";
-import { getModuleComponents } from "../../../../utils/dynamic-loader";
-import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.helpers";
-import { UserArkosConfig } from "../../../../utils/define-config";
+  OperationByModule,
+  routeHookReader,
+} from "../../../../components/arkos-route-hook/reader";
+import { getArkosConfig } from "../../../../server";
+import { ArkosModuleType } from "../../../../components/arkos-route-hook/types";
 
-export const getSchemaMode = (
-  action: string,
-  arkosConfig: UserArkosConfig
-): "prisma" | "zod" | "class-validator" => {
-  const swaggerMode = arkosConfig.swagger?.mode;
+export function getInputSchemaMode<M extends ArkosModuleType>(
+  moduleName: M,
+  action: OperationByModule<M>
+): "prisma" | "zod" | "class-validator" {
+  const arkosConfig = getArkosConfig();
+  const swaggerMode = arkosConfig?.validation?.resolver || "prisma";
   const isStrict = arkosConfig.swagger?.strict;
 
-  if (!swaggerMode) return "prisma";
   if (isStrict) return swaggerMode;
 
-  const actionKey = action as any;
-  const localFileExists = localValidatorFileExists(
-    actionKey,
-    "auth",
-    arkosConfig
-  );
+  const routeValidation = routeHookReader.getRouteConfig(
+    moduleName,
+    action
+  )?.validation;
+  const hasValidator =
+    routeValidation === false ? false : !!routeValidation?.body;
 
-  if (!localFileExists) return "prisma";
+  if (!hasValidator) return "prisma";
   return swaggerMode;
-};
+}
 
 export default function getAuthenticationJsonSchemaPaths(
-  arkosConfig: UserArkosConfig,
   existingPaths: OpenAPIV3.PathsObject
 ) {
   const paths: OpenAPIV3.PathsObject = { ...existingPaths };
 
-  if (!arkosConfig.swagger?.mode) return paths;
-
-  const AuthModuleComponents = getModuleComponents("auth");
-  const routerConfig = AuthModuleComponents?.router
-    ?.config as RouterConfig<"auth">;
-
-  if (routerConfig?.disable === true) return paths;
-
-  const isAuthEndpointDisabled = (endpoint: string): boolean => {
-    return isEndpointDisabled(routerConfig, endpoint as any);
+  const isAuthEndpointDisabled = (
+    endpoint: OperationByModule<"auth">
+  ): boolean => {
+    return !!routeHookReader.getRouteConfig("auth", endpoint)?.disabled;
   };
 
   // Login
   if (!isAuthEndpointDisabled("login")) {
     const pathname = "/api/auth/login";
     if (!paths[pathname]) paths[pathname] = {};
-    const loginMode = getSchemaMode("login", arkosConfig);
+    const loginMode = getInputSchemaMode("auth", "login");
     const currentPath = paths[pathname]!.post;
 
     const defaultSpec = {
@@ -147,8 +139,9 @@ export default function getAuthenticationJsonSchemaPaths(
   if (!isAuthEndpointDisabled("signup")) {
     const pathname = "/api/auth/signup";
     if (!paths[pathname]) paths[pathname] = {};
-    const signupMode = getSchemaMode("signup", arkosConfig);
-    const userMode = getSchemaMode("user", arkosConfig);
+    const signupMode = getInputSchemaMode("auth", "signup");
+    //FIXME
+    const userMode = getInputSchemaMode("auth", "signup");
     const currentPath = paths[pathname]!.post;
 
     const defaultSpec = {
@@ -202,7 +195,7 @@ export default function getAuthenticationJsonSchemaPaths(
   if (!isAuthEndpointDisabled("updatePassword")) {
     const pathname = "/api/auth/update-password";
     if (!paths[pathname]) paths[pathname] = {};
-    const updatePasswordMode = getSchemaMode("updatePassword", arkosConfig);
+    const updatePasswordMode = getInputSchemaMode("auth", "updatePassword");
     const currentPath = paths[pathname]!.post;
 
     const defaultSpec = {
@@ -269,7 +262,7 @@ export default function getAuthenticationJsonSchemaPaths(
   if (!isAuthEndpointDisabled("getMe")) {
     const pathname = "/api/users/me";
     if (!paths[pathname]) paths[pathname] = {};
-    const findMeMode = getSchemaMode("getMe", arkosConfig);
+    const findMeMode = getInputSchemaMode("auth", "getMe");
     const currentPath = paths[pathname]!.get;
 
     const defaultSpec = {
@@ -312,8 +305,9 @@ export default function getAuthenticationJsonSchemaPaths(
   if (!isAuthEndpointDisabled("updateMe")) {
     const pathname = "/api/users/me";
     if (!paths[pathname]) paths[pathname] = {};
-    const updateMeMode = getSchemaMode("updateMe", arkosConfig);
-    const userMode = getSchemaMode("user", arkosConfig);
+    const updateMeMode = getInputSchemaMode("auth", "updateMe");
+    // FIXME
+    const userMode = getInputSchemaMode("auth", "updateMe");
     const currentPath = paths[pathname]!.patch;
 
     const defaultSpec = {

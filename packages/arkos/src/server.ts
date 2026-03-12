@@ -70,7 +70,7 @@ export function logAppStartup(port: number | string, _host: string) {
       message.replace(host, networkHost).replace("{{server}}", `Network server`)
     );
   if (
-    config?.swagger?.mode &&
+    config?.swagger &&
     ((config?.swagger?.enableAfterBuild &&
       process.env.ARKOS_BUILD === "true") ||
       process.env.ARKOS_BUILD !== "true")

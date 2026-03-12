@@ -1,8 +1,7 @@
-import { UserArkosConfig } from "../../../../../utils/define-config";
 import prismaJsonSchemaGenerator from "../../../../../utils/prisma/prisma-json-schema-generator";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 
-export function generatePrismaJsonSchemas(arkosConfig: UserArkosConfig) {
+export function generatePrismaJsonSchemas() {
   const requiredAppModules = [
     ...prismaSchemaParser.getModelsAsArrayOfStrings(),
     "auth",
@@ -12,7 +11,6 @@ export function generatePrismaJsonSchemas(arkosConfig: UserArkosConfig) {
     const modelSchemasArray = requiredAppModules.map((modelName) => {
       const modelSchemas = prismaJsonSchemaGenerator.generateModelSchemas({
         modelName,
-        arkosConfig,
       });
       return modelSchemas;
     });

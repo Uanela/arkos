@@ -1,14 +1,11 @@
 import debuggerService from "../debugger.service";
 import sheu from "../../../utils/sheu";
 import { getArkosConfig } from "../../../server";
-import loadedComponentsLogger from "../utils/loaded-components-logger";
 import { crd } from "../../../utils/helpers/fs.helpers";
-import util from "util";
 
 // Mock dependencies
 jest.mock("../../../utils/sheu");
 jest.mock("../../../server");
-jest.mock("../utils/loaded-components-logger");
 jest.mock("../../../utils/helpers/fs.helpers");
 jest.mock("util");
 jest.mock("fs");
@@ -17,11 +14,6 @@ const mockSheu = {
   debug: jest.fn(),
   bold: jest.fn((text) => `**${text}**`),
   print: jest.fn(),
-};
-
-const mockLoadedComponentsLogger = {
-  getComponentsNameList: jest.fn(),
-  getLogText: jest.fn(),
 };
 
 const mockCrd = jest.fn();
@@ -34,7 +26,6 @@ describe("DebuggerService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (sheu as any) = mockSheu;
-    (loadedComponentsLogger as any) = mockLoadedComponentsLogger;
     (crd as any) = mockCrd.mockReturnValue("/root/project");
 
     mockReq = {
@@ -45,186 +36,6 @@ describe("DebuggerService", () => {
     };
     mockRes = {};
     mockNext = jest.fn();
-  });
-
-  describe("logModuleFinalRouter", () => {
-    it("should not log when debug level is less than 3", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: { dynamicLoader: { level: 2 } },
-      });
-
-      const mockRouter = { stack: [] };
-      debuggerService.logModuleFinalRouter("users", mockRouter as any);
-
-      expect(sheu.debug).not.toHaveBeenCalled();
-      expect(sheu.print).not.toHaveBeenCalled();
-    });
-
-    it("should not log when module name does not match filter", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: {
-          dynamicLoader: {
-            level: 3,
-            filters: { modules: ["auth", "payment"] },
-          },
-        },
-      });
-
-      const mockRouter = { stack: [] };
-      debuggerService.logModuleFinalRouter("users", mockRouter as any);
-
-      expect(sheu.debug).not.toHaveBeenCalled();
-      expect(sheu.print).not.toHaveBeenCalled();
-    });
-
-    it("should log when debug level is 3 and module matches filter", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: {
-          dynamicLoader: {
-            level: 3,
-            filters: { modules: ["users"] },
-          },
-        },
-      });
-
-      (util.inspect as unknown as jest.Mock).mockReturnValue(
-        "router structure"
-      );
-      const mockRouter = { stack: [] };
-
-      debuggerService.logModuleFinalRouter("users", mockRouter as any);
-
-      expect(sheu.debug).toHaveBeenCalledWith("**Final Router Module:** users");
-      expect(sheu.print).toHaveBeenCalledWith("router structure");
-      expect(util.inspect).toHaveBeenCalledWith(mockRouter, {
-        depth: 2,
-        colors: true,
-      });
-    });
-
-    it("should log when no module filters are provided", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: { dynamicLoader: { level: 3, filters: {} } },
-      });
-
-      (util.inspect as unknown as jest.Mock).mockReturnValue(
-        "router structure"
-      );
-      const mockRouter = { stack: [] };
-
-      debuggerService.logModuleFinalRouter("users", mockRouter as any);
-
-      expect(sheu.debug).toHaveBeenCalledWith("**Final Router Module:** users");
-      expect(sheu.print).toHaveBeenCalledWith("router structure");
-    });
-  });
-
-  describe("logDynamicLoadedModulesComponents", () => {
-    const mockAppModules: any = [
-      {
-        moduleName: "users",
-        moduleDir: "/root/project/src/modules/users",
-        components: { router: "router data" },
-      },
-      {
-        moduleName: "auth",
-        moduleDir: "/root/project/src/modules/auth",
-        components: { authConfigs: "auth data" },
-      },
-    ];
-
-    beforeEach(() => {
-      mockLoadedComponentsLogger.getComponentsNameList.mockReturnValue([
-        "users.router.ts",
-      ]);
-      mockLoadedComponentsLogger.getLogText.mockReturnValue(
-        "detailed log text"
-      );
-    });
-
-    it("should not log when debug level is less than 1", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: { dynamicLoader: { level: 0 } },
-      });
-
-      debuggerService.logDynamicLoadedModulesComponents(mockAppModules);
-
-      expect(sheu.debug).not.toHaveBeenCalled();
-      expect(sheu.print).not.toHaveBeenCalled();
-    });
-
-    it("should log basic info when debug level is 1", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: { dynamicLoader: { level: 1, filters: {} } },
-      });
-
-      debuggerService.logDynamicLoadedModulesComponents(mockAppModules);
-
-      expect(sheu.debug).toHaveBeenCalledWith("**Dynamic Loader Components**", {
-        timestamp: true,
-      });
-      expect(sheu.print).toHaveBeenCalledTimes(2);
-      expect(mockLoadedComponentsLogger.getLogText).not.toHaveBeenCalled();
-    });
-
-    it("should log detailed info when debug level is 2 or higher", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: { dynamicLoader: { level: 2, filters: {} } },
-      });
-
-      debuggerService.logDynamicLoadedModulesComponents(mockAppModules);
-
-      expect(sheu.debug).toHaveBeenCalledWith("**Dynamic Loader Components**", {
-        timestamp: true,
-      });
-      expect(sheu.print).toHaveBeenCalledTimes(2);
-      expect(mockLoadedComponentsLogger.getLogText).toHaveBeenCalledTimes(2);
-    });
-
-    it("should filter modules based on module name filter", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: {
-          dynamicLoader: {
-            level: 1,
-            filters: { modules: ["users"] },
-          },
-        },
-      });
-
-      debuggerService.logDynamicLoadedModulesComponents(mockAppModules);
-
-      expect(sheu.print).toHaveBeenCalledTimes(1);
-      expect(sheu.print).toHaveBeenCalledWith(
-        expect.stringContaining("**Module:** users")
-      );
-    });
-
-    it("should handle empty module name filter", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: {
-          dynamicLoader: {
-            level: 1,
-            filters: { modules: [""] },
-          },
-        },
-      });
-
-      debuggerService.logDynamicLoadedModulesComponents(mockAppModules);
-
-      expect(sheu.print).toHaveBeenCalledTimes(2);
-    });
-
-    it("should format module path correctly", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        debugging: { dynamicLoader: { level: 1, filters: {} } },
-      });
-
-      debuggerService.logDynamicLoadedModulesComponents([mockAppModules[0]]);
-
-      expect(sheu.print).toHaveBeenCalledWith(
-        expect.stringContaining("/src/modules/users")
-      );
-    });
   });
 
   describe("handleTransformedQueryLog", () => {

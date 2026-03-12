@@ -1,13 +1,13 @@
 import { generatePrismaJsonSchemas } from "../generate-prisma-json-schemas";
 import prismaSchemaParser from "../../../../../../utils/prisma/prisma-schema-parser";
-import { ArkosConfig } from "../../../../../../exports";
 import PrismaJsonSchemaGenerator from "../../../../../../utils/prisma/prisma-json-schema-generator";
-
-// Mock the dependencies
 jest.mock("../../../../../../utils/dynamic-loader");
 jest.mock("../../../../../../utils/prisma/prisma-json-schema-generator");
 jest.mock("fs");
 
+jest.mock("../../../../../base/base.service", () => ({
+  BaseService: jest.fn(),
+}));
 const mockGetModels = jest.spyOn(
   prismaSchemaParser,
   "getModelsAsArrayOfStrings"
@@ -17,20 +17,11 @@ const mockPrismaJsonSchemaGenerator = PrismaJsonSchemaGenerator as jest.Mocked<
 >;
 
 describe("generatePrismaJsonSchemas", () => {
-  let arkosConfig: any;
   const originalConsoleError = console.error;
   let mockConsoleError: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    arkosConfig = {
-      swagger: {
-        mode: "prisma",
-        strict: false,
-      },
-    };
-
     mockConsoleError = jest.fn();
     console.error = mockConsoleError;
   });
@@ -40,7 +31,7 @@ describe("generatePrismaJsonSchemas", () => {
   });
 
   describe("Edge Case: Empty models list", () => {
-    it("should handle empty models list and only process auth", async () => {
+    it("should handle empty models list and only process auth", () => {
       mockGetModels.mockReturnValue([]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockReturnValue({
         AuthLoginSchema: {
@@ -52,7 +43,7 @@ describe("generatePrismaJsonSchemas", () => {
         },
       });
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
       expect(mockGetModels).toHaveBeenCalledTimes(1);
       expect(
@@ -60,10 +51,7 @@ describe("generatePrismaJsonSchemas", () => {
       ).toHaveBeenCalledTimes(1);
       expect(
         mockPrismaJsonSchemaGenerator.generateModelSchemas
-      ).toHaveBeenCalledWith({
-        modelName: "auth",
-        arkosConfig,
-      });
+      ).toHaveBeenCalledWith({ modelName: "auth" });
       expect(result).toEqual({
         AuthLoginSchema: {
           type: "object",
@@ -75,18 +63,18 @@ describe("generatePrismaJsonSchemas", () => {
       });
     });
 
-    it("should return empty object when no models and auth returns empty", async () => {
+    it("should return empty object when no models and auth returns empty", () => {
       mockGetModels.mockReturnValue([]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockReturnValue({});
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
       expect(result).toEqual({});
     });
   });
 
   describe("Edge Case: Single model scenarios", () => {
-    it("should handle single model with multiple schemas", async () => {
+    it("should handle single model with multiple schemas", () => {
       mockGetModels.mockReturnValue(["User"]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         ({ modelName }): any => {
@@ -108,14 +96,12 @@ describe("generatePrismaJsonSchemas", () => {
               },
             };
           }
-          if (modelName === "auth") {
-            return {};
-          }
+          if (modelName === "auth") return {};
           return {};
         }
       );
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
       expect(
         mockPrismaJsonSchemaGenerator.generateModelSchemas
@@ -132,28 +118,24 @@ describe("generatePrismaJsonSchemas", () => {
       });
     });
 
-    it("should handle model returning null/undefined schemas", async () => {
+    it("should handle model returning null/undefined schemas", () => {
       mockGetModels.mockReturnValue(["User"]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         ({ modelName }) => {
-          if (modelName === "User") {
-            return null as any;
-          }
-          if (modelName === "auth") {
-            return undefined as any;
-          }
+          if (modelName === "User") return null as any;
+          if (modelName === "auth") return undefined as any;
           return {};
         }
       );
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
       expect(result).toEqual({});
     });
   });
 
   describe("Edge Case: Multiple models with mixed results", () => {
-    it("should handle multiple models with various schema results", async () => {
+    it("should handle multiple models with various schema results", () => {
       mockGetModels.mockReturnValue(["User", "Post", "Comment"]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         ({ modelName }): any => {
@@ -177,7 +159,7 @@ describe("generatePrismaJsonSchemas", () => {
                 },
               };
             case "Comment":
-              return {}; // Empty schemas
+              return {};
             case "auth":
               return {
                 AuthLoginSchema: {
@@ -191,7 +173,7 @@ describe("generatePrismaJsonSchemas", () => {
         }
       );
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
       expect(
         mockPrismaJsonSchemaGenerator.generateModelSchemas
@@ -203,7 +185,7 @@ describe("generatePrismaJsonSchemas", () => {
       expect(result.AuthLoginSchema).toBeDefined();
     });
 
-    it("should properly merge schemas with overlapping property names", async () => {
+    it("should properly merge schemas with overlapping keys (last write wins)", () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         ({ modelName }): any => {
@@ -224,7 +206,7 @@ describe("generatePrismaJsonSchemas", () => {
                 CreateSchema: {
                   type: "object",
                   properties: { title: { type: "string" } },
-                }, // Same key name
+                },
                 DeleteSchema: {
                   type: "object",
                   properties: { id: { type: "string" } },
@@ -238,9 +220,9 @@ describe("generatePrismaJsonSchemas", () => {
         }
       );
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
-      // Later schemas should overwrite earlier ones with same keys
+      // Post's CreateSchema overwrites User's
       expect(result.CreateSchema).toEqual({
         type: "object",
         properties: { title: { type: "string" } },
@@ -250,144 +232,58 @@ describe("generatePrismaJsonSchemas", () => {
     });
   });
 
-  // describe("Edge Case: Error handling scenarios", () => {
-  //   // it("should handle single model throwing an error", async () => {
-  //   //   mockGetModels.mockReturnValue(["User"]);
-  //   //   mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
-  //   //     ({ modelName }): any => {
-  //   //       if (modelName === "User") {
-  //   //         throw new Error("Failed to generate User schemas");
-  //   //       }
-  //   //       if (modelName === "auth") {
-  //   //         return { AuthLoginSchema: { type: "object" } };
-  //   //       }
-  //   //       return {};
-  //   //     }
-  //   //   );
-
-  //   //   expect(generatePrismaJsonSchemas(arkosConfig)).rejects.toThrow(
-  //   //     "Failed to generate User schemas"
-  //   //   );
-  //   //   expect(mockConsoleError).toHaveBeenCalledWith(expect.any(Error));
-  //   // });
-
-  //   it("should handle multiple models with one throwing error", async () => {
-  //     mockGetModels.mockReturnValue(["User", "Post"]);
-  //     mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
-  //       ({ modelName }): any => {
-  //         if (modelName === "User") {
-  //           return { CreateUserModelSchema: { type: "object" } };
-  //         }
-  //         if (modelName === "Post") {
-  //           throw new Error("Post schema generation failed");
-  //         }
-  //         if (modelName === "auth") {
-  //           return {};
-  //         }
-  //         return {};
-  //       }
-  //     );
-
-  //     expect(generatePrismaJsonSchemas(arkosConfig)).rejects.toThrow(
-  //       "Post schema generation failed"
-  //     );
-  //     expect(mockConsoleError).toHaveBeenCalledWith(expect.any(Error));
-  //   });
-
-  //   // it("should handle auth model throwing error", async () => {
-  //   //   mockGetModels.mockReturnValue(["User"]);
-  //   //   mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
-  //   //     ({ modelName }): any => {
-  //   //       if (modelName === "User") {
-  //   //         return { CreateUserModelSchema: { type: "object" } };
-  //   //       }
-  //   //       if (modelName === "auth") {
-  //   //         throw new Error("Auth schema generation failed");
-  //   //       }
-  //   //       return {};
-  //   //     }
-  //   //   );
-
-  //   //   expect(generatePrismaJsonSchemas(arkosConfig)).rejects.toThrow(
-  //   //     "Auth schema generation failed"
-  //   //   );
-  //   //   expect(mockConsoleError).toHaveBeenCalledWith(expect.any(Error));
-  //   // });
-
-  //   it("should handle Promise.all rejection properly", async () => {
-  //     mockGetModels.mockReturnValue(["User", "Post"]);
-  //     mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
-  //       ({ modelName }): any => {
-  //         if (modelName === "User") {
-  //           return { UserSchema: { type: "object" } };
-  //         }
-  //         if (modelName === "Post") {
-  //           return new Promise((_, reject) =>
-  //             setTimeout(() => reject(new Error("Async error")), 5)
-  //           );
-  //         }
-  //         if (modelName === "auth") {
-  //           return {};
-  //         }
-  //         return {};
-  //       }
-  //     );
-
-  //     expect(generatePrismaJsonSchemas(arkosConfig)).rejects.toThrow(
-  //       "Async error"
-  //     );
-  //     expect(mockConsoleError).toHaveBeenCalledWith(expect.any(Error));
-  //   });
-  // });
-
-  describe("Edge Case: ArkosConfig variations", () => {
-    it("should handle minimal arkosConfig", async () => {
-      const minimalConfig: any = {};
+  describe("Edge Case: Error handling scenarios", () => {
+    it("should log error and rethrow when generateModelSchemas throws", () => {
       mockGetModels.mockReturnValue(["User"]);
-      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockReturnValue({
-        CreateUserModelSchema: { type: "object" },
-      });
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+        ({ modelName }) => {
+          if (modelName === "User")
+            throw new Error("Failed to generate User schemas");
+          return {};
+        }
+      );
 
-      const result = generatePrismaJsonSchemas(minimalConfig);
-
-      expect(
-        mockPrismaJsonSchemaGenerator.generateModelSchemas
-      ).toHaveBeenCalledWith({
-        modelName: "User",
-        arkosConfig: minimalConfig,
-      });
-      expect(result).toEqual({ CreateUserModelSchema: { type: "object" } });
+      expect(() => generatePrismaJsonSchemas()).toThrow(
+        "Failed to generate User schemas"
+      );
+      expect(mockConsoleError).toHaveBeenCalledWith(expect.any(Error));
     });
 
-    it("should handle complex arkosConfig", async () => {
-      const complexConfig: any = {
-        swagger: {
-          mode: "zod",
-          strict: true,
-        },
-        authentication: {
-          mode: "static",
-        },
-      };
+    it("should log error and rethrow when auth model throws", () => {
+      mockGetModels.mockReturnValue([]);
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+        ({ modelName }) => {
+          if (modelName === "auth")
+            throw new Error("Auth schema generation failed");
+          return {};
+        }
+      );
 
-      mockGetModels.mockReturnValue(["User"]);
-      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockReturnValue({
-        CreateUserModelSchema: { type: "object" },
-      });
+      expect(() => generatePrismaJsonSchemas()).toThrow(
+        "Auth schema generation failed"
+      );
+      expect(mockConsoleError).toHaveBeenCalledWith(expect.any(Error));
+    });
 
-      generatePrismaJsonSchemas(complexConfig);
+    it("should log error and rethrow when one of multiple models throws", () => {
+      mockGetModels.mockReturnValue(["User", "Post"]);
+      mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
+        ({ modelName }) => {
+          if (modelName === "Post")
+            throw new Error("Post schema generation failed");
+          return {};
+        }
+      );
 
-      expect(
-        mockPrismaJsonSchemaGenerator.generateModelSchemas
-      ).toHaveBeenCalledWith({
-        modelName: "User",
-        arkosConfig: complexConfig,
-      });
+      expect(() => generatePrismaJsonSchemas()).toThrow(
+        "Post schema generation failed"
+      );
+      expect(mockConsoleError).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
   describe("Edge Case: Auth model special handling", () => {
-    it("should always include auth model even when not in getModels result", async () => {
+    it("should always include auth model even when not in getModels result", () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
 
       const mockCalls: string[] = [];
@@ -398,7 +294,7 @@ describe("generatePrismaJsonSchemas", () => {
         }
       );
 
-      generatePrismaJsonSchemas(arkosConfig);
+      generatePrismaJsonSchemas();
 
       expect(mockCalls).toContain("auth");
       expect(mockCalls).toContain("User");
@@ -406,7 +302,7 @@ describe("generatePrismaJsonSchemas", () => {
       expect(mockCalls).toHaveLength(3);
     });
 
-    it("should not duplicate auth model if it's already in getModels result", async () => {
+    it("should not duplicate auth model", () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
 
       const mockCalls: string[] = [];
@@ -417,35 +313,28 @@ describe("generatePrismaJsonSchemas", () => {
         }
       );
 
-      generatePrismaJsonSchemas(arkosConfig);
+      generatePrismaJsonSchemas();
 
-      // Should have auth only once
       const authCalls = mockCalls.filter((call) => call === "auth");
       expect(authCalls).toHaveLength(1);
-      expect(mockCalls).toHaveLength(3); // User, auth, Post
+      expect(mockCalls).toHaveLength(3); // User, Post, auth
     });
   });
 
-  describe("Edge Case: Large datasets and performance", () => {
-    it("should handle many models efficiently with Promise.all", async () => {
+  describe("Edge Case: Large datasets", () => {
+    it("should handle many models and include all schemas in result", () => {
       const manyModels = Array.from({ length: 50 }, (_, i) => `Model${i}`);
       mockGetModels.mockReturnValue(manyModels);
-
-      const startTime = Date.now();
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
-        ({ modelName }) => {
-          return { [`${modelName}Schema`]: { type: "object" } };
-        }
+        ({ modelName }) => ({
+          [`${modelName}Schema`]: { type: "object" },
+        })
       );
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // Should complete in reasonable time (parallel processing)
-      expect(duration).toBeLessThan(1000); // Less than 1 second
-      expect(Object.keys(result)).toHaveLength(51); // 50 models + auth
+      // 50 models + auth
+      expect(Object.keys(result)).toHaveLength(51);
       expect(
         mockPrismaJsonSchemaGenerator.generateModelSchemas
       ).toHaveBeenCalledTimes(51);
@@ -453,10 +342,10 @@ describe("generatePrismaJsonSchemas", () => {
   });
 
   describe("Edge Case: Schema merging edge cases", () => {
-    it("should handle schemas with nested objects and arrays", async () => {
+    it("should handle schemas with nested objects and arrays", () => {
       mockGetModels.mockReturnValue(["User"]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
-        ({ modelName }: any): any => {
+        ({ modelName }): any => {
           if (modelName === "User") {
             return {
               CreateUserModelSchema: {
@@ -466,10 +355,7 @@ describe("generatePrismaJsonSchemas", () => {
                     type: "object",
                     properties: {
                       bio: { type: "string" },
-                      tags: {
-                        type: "array",
-                        items: { type: "string" },
-                      },
+                      tags: { type: "array", items: { type: "string" } },
                     },
                   },
                 },
@@ -487,10 +373,7 @@ describe("generatePrismaJsonSchemas", () => {
                       type: "object",
                       properties: {
                         resource: { type: "string" },
-                        actions: {
-                          type: "array",
-                          items: { type: "string" },
-                        },
+                        actions: { type: "array", items: { type: "string" } },
                       },
                     },
                   },
@@ -502,7 +385,7 @@ describe("generatePrismaJsonSchemas", () => {
         }
       );
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
       expect(result.CreateUserModelSchema.properties?.profile.type).toBe(
         "object"
@@ -515,7 +398,7 @@ describe("generatePrismaJsonSchemas", () => {
       );
     });
 
-    it("should handle empty and null schema values in merge", async () => {
+    it("should handle null and undefined values in merged schemas", () => {
       mockGetModels.mockReturnValue(["User", "Post"]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         ({ modelName }) => {
@@ -527,9 +410,7 @@ describe("generatePrismaJsonSchemas", () => {
                 UndefinedSchema: undefined,
               } as any;
             case "Post":
-              return {
-                AnotherValidSchema: { type: "object" },
-              };
+              return { AnotherValidSchema: { type: "object" } };
             case "auth":
               return {};
             default:
@@ -538,7 +419,7 @@ describe("generatePrismaJsonSchemas", () => {
         }
       );
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
       expect(result.ValidSchema).toBeDefined();
       expect(result.AnotherValidSchema).toBeDefined();
@@ -548,33 +429,10 @@ describe("generatePrismaJsonSchemas", () => {
   });
 
   describe("Integration scenarios", () => {
-    it("should handle a realistic multi-model scenario", async () => {
+    it("should handle a realistic multi-model scenario", () => {
       mockGetModels.mockReturnValue(["User", "Post", "Comment"]);
       mockPrismaJsonSchemaGenerator.generateModelSchemas.mockImplementation(
         ({ modelName }) => {
-          const baseSchemas = {
-            [`Create${modelName}ModelSchema`]: {
-              type: "object",
-              properties: {
-                [`${modelName.toLowerCase()}Id`]: { type: "string" },
-              },
-              required: [`${modelName.toLowerCase()}Id`],
-            },
-            [`${modelName}UpdateSchema`]: {
-              type: "object",
-              properties: {
-                [`${modelName.toLowerCase()}Id`]: { type: "string" },
-              },
-            },
-            [`${modelName}FindManySchema`]: {
-              type: "object",
-              properties: {
-                page: { type: "integer", minimum: 1 },
-                limit: { type: "integer", minimum: 1, maximum: 100 },
-              },
-            },
-          };
-
           if (modelName === "auth") {
             return {
               AuthLoginSchema: {
@@ -597,23 +455,40 @@ describe("generatePrismaJsonSchemas", () => {
             };
           }
 
-          return baseSchemas;
+          return {
+            [`Create${modelName}ModelSchema`]: {
+              type: "object",
+              properties: {
+                [`${modelName.toLowerCase()}Id`]: { type: "string" },
+              },
+              required: [`${modelName.toLowerCase()}Id`],
+            },
+            [`${modelName}UpdateSchema`]: {
+              type: "object",
+              properties: {
+                [`${modelName.toLowerCase()}Id`]: { type: "string" },
+              },
+            },
+            [`${modelName}FindManySchema`]: {
+              type: "object",
+              properties: {
+                page: { type: "integer", minimum: 1 },
+                limit: { type: "integer", minimum: 1, maximum: 100 },
+              },
+            },
+          };
         }
       );
 
-      const result = generatePrismaJsonSchemas(arkosConfig);
+      const result = generatePrismaJsonSchemas();
 
-      // Should have 3 models × 3 schemas each + 2 auth schemas = 11 total
+      // 3 models × 3 schemas + 2 auth schemas = 11
       expect(Object.keys(result)).toHaveLength(11);
-
-      // Verify specific schemas exist
       expect(result.CreateUserModelSchema).toBeDefined();
       expect(result.PostUpdateSchema).toBeDefined();
       expect(result.CommentFindManySchema).toBeDefined();
       expect(result.AuthLoginSchema).toBeDefined();
       expect(result.AuthRegisterSchema).toBeDefined();
-
-      // Verify schema structure
       expect(result.AuthLoginSchema.required).toEqual(["email", "password"]);
       expect(result.UserFindManySchema.properties?.limit.maximum).toBe(100);
     });
