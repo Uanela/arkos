@@ -1,0 +1,91 @@
+import { ArkosRouteHook } from 'arkos';
+{{#if authentication}}
+import userPolicy from '@/src/modules/user/user.policy';
+{{/if}}
+{{#if validation.type}}
+import CreateUserDto from '@/src/modules/user/dtos/create-user.dto';
+import UpdateUserDto from '@/src/modules/user/dtos/update-user.dto';
+{{/if}}
+{{#if typescript}}
+import { Prisma } from "@prisma/client";
+{{/if}}
+
+const userRouteHook = ArkosRouteHook("user");
+
+userRouteHook.createOne({
+  {{#if validation.type}}validation: { body: CreateUserDto },{{/if}}
+  {{#if authentication}}authentication: userPolicy.Create,{{/if}}
+  prismaArgs: {
+    omit: { password: true },
+  },
+});
+
+userRouteHook.findOne({
+  {{#if authentication}}authentication: userPolicy.View,{{/if}}
+  prismaArgs: {
+    omit: { password: true },
+    {{#if (eq authentication.type "dynamic")}}
+    include: {
+      {{#if authentication.multipleRoles}}
+      roles: {
+        include: {
+          role: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
+      },
+      {{else}}
+      role: {
+        include: {
+          role: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
+      },
+      {{/if}}
+    },
+    {{/if}}
+  },
+});
+
+userRouteHook.findMany({
+  {{#if authentication}}authentication: userPolicy.View,{{/if}}
+  prismaArgs: {
+    omit: { password: true },
+    {{#if (eq authentication.type "dynamic")}}
+    include: {
+      {{#if authentication.multipleRoles}}
+      roles: {
+        include: {
+          role: true,
+        },
+      },
+      {{else}}
+      role: {
+        include: {
+          role: true,
+        },
+      },
+      {{/if}}
+    },
+    {{/if}}
+  },
+});
+
+userRouteHook.updateOne({
+  {{#if validation.type}}validation: { body: UpdateUserDto },{{/if}}
+  {{#if authentication}}authentication: userPolicy.Update,{{/if}}
+  prismaArgs: {
+    omit: { password: true },
+  },
+});
+
+userRouteHook.deleteOne({
+  {{#if authentication}}authentication: userPolicy.Delete,{{/if}}
+});
+
+export default userRouteHook;

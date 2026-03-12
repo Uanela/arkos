@@ -1,0 +1,66 @@
+import { ArkosRouteHook } from 'arkos';
+{{#if validation.type}}
+import LoginDto from '@/src/modules/auth/dtos/login.dto';
+import SignupDto from '@/src/modules/auth/dtos/signup.dto';
+import UpdateMeDto from '@/src/modules/auth/dtos/update-me.dto';
+import UpdatePasswordDto from '@/src/modules/auth/dtos/update-password.dto';
+{{/if}}
+
+const authRouteHook = ArkosRouteHook("auth");
+
+authRouteHook.login({
+  {{#if validation.type}}validation: { body: LoginDto },{{/if}}
+});
+
+authRouteHook.signup({
+  {{#if validation.type}}validation: { body: SignupDto },{{/if}}
+  prismaArgs: {
+    omit: { password: true },
+  },
+});
+
+authRouteHook.getMe({
+  prismaArgs: {
+    omit: { password: true },
+    {{#if (eq authentication.type "dynamic")}}
+    include: {
+      {{#if authentication.multipleRoles}}
+      roles: {
+        include: {
+          role: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
+      },
+      {{else}}
+      role: {
+        include: {
+          role: {
+            include: {
+              permissions: true,
+            },
+          },
+        },
+      },
+      {{/if}}
+    },
+    {{/if}}
+  },
+});
+
+authRouteHook.updateMe({
+  {{#if validation.type}}validation: { body: UpdateMeDto },{{/if}}
+  prismaArgs: {
+    omit: { password: true },
+  },
+});
+
+authRouteHook.updatePassword({
+  {{#if validation.type}}validation: { body: UpdatePasswordDto },{{/if}}
+});
+
+authRouteHook.logout({});
+
+export default authRouteHook;

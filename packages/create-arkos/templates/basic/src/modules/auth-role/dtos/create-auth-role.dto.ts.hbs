@@ -1,26 +1,36 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
-import 'reflect-metadata'
-{{#if (eq prisma.provider "sqlite")}}
+{{#if (eq validation.type "zod")}}
+import { z } from 'zod';
 
-export enum AuthPermissionAction {
-  View = 'View',
-  Create = 'Create',
-  Update = 'Update',
-  Delete = 'Delete'
-}
-{{else}}
-import { AuthPermissionAction } from "@prisma/client"
+const CreatePermissionForRoleDto = z.object({
+  resource: z.string().min(1, 'Resource is required'),
+  action: z.string().default('View'),
+  description: z.string().optional(),
+});
+
+const CreateAuthRoleDto = z.object({
+  name: z.string().min(1, 'Role name is required'),
+  description: z.string().optional(),
+  permissions: z.array(CreatePermissionForRoleDto).optional().default([]),
+});
+
+export default CreateAuthRoleDto;
+{{#if typescript}}
+export type CreateAuthRoleDtoType = z.infer<typeof CreateAuthRoleDto>;
 {{/if}}
+{{/if}}
+{{#if (eq validation.type "class-validator")}}
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import 'reflect-metadata';
 
 class CreatePermissionForRoleDto {
   @IsString()
   @IsNotEmpty({ message: 'Resource is required' })
   resource!: string;
 
-  @IsEnum(AuthPermissionAction)
-  @Transform(({ value }) => value || AuthPermissionAction.View)
-  action: AuthPermissionAction = AuthPermissionAction.View;
+  @IsString()
+  @Transform(({ value }) => value || 'View')
+  action: string = 'View';
 
   @IsOptional()
   @IsString()
@@ -44,3 +54,4 @@ export default class CreateAuthRoleDto {
   @Transform(({ value }) => value || [])
   permissions: CreatePermissionForRoleDto[] = [];
 }
+{{/if}}
