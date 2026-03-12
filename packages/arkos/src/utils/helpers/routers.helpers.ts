@@ -6,6 +6,7 @@ import { AccessAction, AuthConfigs } from "../../types/auth";
 import { kebabCase } from "./change-case.helpers";
 import {
   AuthRouterEndpoint,
+  FileUploadRouterEndpoint,
   RouterConfig,
   RouterEndpoint,
 } from "../../types/router-config";
@@ -52,7 +53,7 @@ export const processMiddleware = (
 };
 
 export function getAuthenticationConfig(
-  endpoint: RouterEndpoint | AuthRouterEndpoint,
+  endpoint: RouterEndpoint | AuthRouterEndpoint | FileUploadRouterEndpoint,
   modelName: string,
   authConfigs?: AuthConfigs
 ) {
@@ -104,7 +105,7 @@ export function getAuthenticationConfig(
  */
 export function createRouteConfig(
   arkosConfig: ArkosConfig,
-  endpoint: RouterEndpoint | AuthRouterEndpoint,
+  endpoint: RouterEndpoint | AuthRouterEndpoint | FileUploadRouterEndpoint,
   routeName: string,
   path: string,
   routerConfig: RouterConfig<any>,
