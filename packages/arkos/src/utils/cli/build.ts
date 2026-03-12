@@ -7,8 +7,7 @@ import { getVersion } from "./utils/cli.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
 import sheu from "../sheu";
 import { removeDir } from "../remove-dir";
-import { fixImports } from "../fix-esm-imports";
-import { Bundler } from "../bundler";
+import { bundler } from "../bundler";
 
 const BUILD_DIR = ".build";
 const MODULE_TYPES = ["cjs", "esm"] as const;
@@ -133,12 +132,12 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
     });
 
     copyAllNonSourceFiles(moduleType, [".ts", ".tsx"]);
-    new Bundler({
+    bundler.bundle({
       ext: ".js",
       outDir: path.join(process.cwd(), BUILD_DIR),
       rootDir: process.cwd(),
       configPath: tempTsconfigPath,
-    }).bundle();
+    });
 
     // Clean up temp config
     cleanupTempConfig(tempTsconfigPath);
@@ -184,11 +183,11 @@ function buildJavaScriptProject(_: BuildOptions, moduleType: ModuleType) {
       ".tsx",
     ]);
 
-    new Bundler({
+    bundler.bundle({
       ext: ".js",
       outDir: path.join(process.cwd(), BUILD_DIR),
       rootDir: process.cwd(),
-    }).bundle();
+    });
     createModulePackageJson(moduleType);
   } catch (error) {
     console.error("❌ Error building JavaScript project:", error);
