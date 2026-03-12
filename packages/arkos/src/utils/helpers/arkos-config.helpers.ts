@@ -43,7 +43,8 @@ export function getArkosConfig(): UserArkosConfig {
 
   if (
     (config as any).__loader !== "defineConfig" &&
-    typeof jest == "undefined"
+    typeof jest == "undefined" &&
+    typeof definedArkosConfig === "object"
   ) {
     sheu.error(
       `From v1.6 config under ${configFile} must be wrapped in \`defineConfig()\` function from \`arkos/config\`. You can do the following under your ${configFile}:
