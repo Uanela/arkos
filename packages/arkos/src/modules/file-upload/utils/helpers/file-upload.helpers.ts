@@ -62,10 +62,7 @@ export function generateRelativePath(filePath: string, uploadDir: string) {
 /**
  * Handles basic file processing for non-image files
  */
-export const processFile = async (
-  req: ArkosRequest,
-  filePath: string
-): Promise<string> => {
+export const processFile = (req: ArkosRequest, filePath: string): string => {
   const { baseURL, baseRoute } = extractRequestInfo(req);
 
   const relativePath = generateRelativePath(

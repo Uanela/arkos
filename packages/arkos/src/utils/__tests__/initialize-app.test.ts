@@ -3,10 +3,7 @@ import { getArkosConfig } from "../../server";
 import { isAuthenticationEnabled } from "../helpers/arkos-config.helpers";
 import { getFileUploadRouter } from "../../modules/file-upload/file-upload.router";
 import { getAuthRouter } from "../../modules/auth/auth.router";
-import {
-  getAvailableResourcesAndRoutesRouter,
-  getPrismaModelsRouter,
-} from "../../modules/base/base.router";
+import { getPrismaModelsRouter } from "../../modules/base/base.router";
 import { getSwaggerRouter } from "../../modules/swagger/swagger.router";
 import errorHandler from "../../modules/error-handler/error-handler.controller";
 import { AppError } from "../../exports/error-handler";
@@ -155,7 +152,7 @@ describe("initializeApp", () => {
       mockIsAuthenticationEnabled.mockReturnValue(true);
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(getAuthRouter).toHaveBeenCalledWith(expect.any(Object));
+      expect(getAuthRouter).toHaveBeenCalledWith();
       expect(app.use).toHaveBeenCalledWith("/api", "authRouter");
     });
 
@@ -172,15 +169,8 @@ describe("initializeApp", () => {
     it("should always mount modelsRouter under globalPrefix", () => {
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(getPrismaModelsRouter).toHaveBeenCalledWith(expect.any(Object));
+      expect(getPrismaModelsRouter).toHaveBeenCalledWith();
       expect(app.use).toHaveBeenCalledWith("/api", "modelsRouter");
-    });
-
-    it("should always mount availableResourcesRouter under globalPrefix", () => {
-      const app = makeMockApp();
-      initializeApp(app as any);
-      expect(getAvailableResourcesAndRoutesRouter).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledWith("/api", "availableResourcesRouter");
     });
   });
 
