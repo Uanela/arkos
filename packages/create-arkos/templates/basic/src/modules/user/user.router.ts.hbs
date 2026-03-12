@@ -1,14 +1,11 @@
 import { ArkosRouter{{#if typescript}}, RouterConfig{{/if}} } from "arkos";
+{{#if authentication}}
 import userPolicy from "@/src/modules/user/user.policy";
+{{/if}}
 
-export const config{{#if typescript}}: RouterConfig{{/if}} = {
-  createOne: { authentication: userPolicy.Create },
-  findMany: { authentication: userPolicy.View },
-  findOne: { authentication: userPolicy.View },
-  updateOne: { authentication: userPolicy.Update },
-  deleteOne: { authentication: userPolicy.Delete },
-};
-
-const userRouter = ArkosRouter({ openapi: { tags: ["Users"] } });
+const userRouter = ArkosRouter({ 
+    prefix: "/users",
+    openapi: { tags: ["Users"] }
+  });
 
 export default userRouter;

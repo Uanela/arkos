@@ -1,0 +1,24 @@
+import { ArkosRouter } from "arkos";
+import fileUploadRouter from "@/src/modules/file-upload/file-upload.router";
+{{#if authentication.type}}
+import authRouter from "@/src/modules/auth/auth.router";
+import userRouter from "@/src/modules/user/user.router";
+{{/if}}
+{{#if (eq authentication.type "dynamic")}}
+import authRoleRouter from "@/src/modules/auth-role/auth-role.router";
+import authPermissionRouter from "@/src/modules/auth-permission/auth-permission.router";
+{{/if}}
+
+const router = ArkosRouter();
+
+router.use(fileUploadRouter);
+{{#if authentication.type}}
+router.use(userRouter);
+router.use(authRouter);
+{{/if}}
+{{#if (eq authentication.type "dynamic")}}
+router.use(authRoleRouter);
+router.use(authPermissionRouter);
+{{/if}}
+
+export default router;

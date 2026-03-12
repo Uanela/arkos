@@ -1,10 +1,12 @@
 import arkos from "arkos";
-import appRouter from "@/src/app.router"
+import router from "@/src/router"
+import loadables from "@/src/loadables"
 
-export const app = arkos()
+const app = arkos()
 
 app.set("trust proxy", 1)
 
-app.use(appRouter)
+app.load(loadables)
+app.use(router)
 
 app.listen()

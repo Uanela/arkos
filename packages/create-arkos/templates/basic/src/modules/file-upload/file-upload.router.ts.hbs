@@ -1,15 +1,11 @@
 import { ArkosRouter } from "arkos";
+{{#if authentication}}
 import fileUploadPolicy from "@/src/modules/file-upload/file-upload.policy";
-
-export const config{{#if typescript}}: RouterConfig<"file-upload">{{/if}} = {
-  findFile: { authentication: fileUploadPolicy.View },
-  uploadFile: { authentication: fileUploadPolicy.Create },
-  updateFile: { authentication: fileUploadPolicy.Update },
-  deleteFile: { authentication: fileUploadPolicy.Delete },
-};
+{{/if}}
+import config from "@/arkos.config"
 
 const fileUploadRouter = ArkosRouter({ 
-    prefix: arkosConfig.fileUpload.baseRoute,
+    prefix: config.fileUpload.baseRoute,
     openapi: { tags: ["File Uploads"] } 
   });
 

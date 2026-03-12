@@ -1,13 +1,26 @@
-import { IsString, MinLength, Matches } from 'class-validator'
-import "reflect-metadata"
+{{#if (eq validation.type "zod")}}
+import { z } from "zod";
+
+const LoginDto = z.object({
+  {{authentication.usernameField}}: z.string(),
+  password: z.string().min(1, "Password must be at least 1 characters long"),
+});
+
+export default LoginDto;
+{{#if typescript}}
+export type LoginDtoType = z.infer<typeof LoginDto>;
+{{/if}}
+{{/if}}
+{{#if (eq validation.type "class-validator")}}
+import { IsString, MinLength } from 'class-validator';
+import "reflect-metadata";
 
 export default class LoginDto {
   @IsString()
-  {{authentication.usernameField}}!: string
+  {{authentication.usernameField}}!: string;
 
   @IsString()
-  @MinLength(8, { message: 'Password must be at least 8 characters long' })
-  @Matches(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
-  @Matches(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
-  password!: string
+  @MinLength(1, { message: 'Password must be at least 1 characters long' })
+  password!: string;
 }
+{{/if}}

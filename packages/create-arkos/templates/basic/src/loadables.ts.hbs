@@ -1,0 +1,39 @@
+{{#if typescript}}
+import { ArkosLoadable } from "arkos";
+
+{{else}}
+/** @type import("arkos").ArkosLoadable */
+{{/if}}
+const loadables{{#if typescript}}: ArkosLoadable[]{{/if}} = []
+
+export default loadables
+
+{{#if typescript}}
+import { ArkosLoadable } from "arkos";
+{{/if}}
+import fileUploadRouteHook from "@/src/modules/file-upload/file-upload.route-hook";
+{{#if authentication.type}}
+import userRouteHook from "@/src/modules/user/user.route-hook";
+import authRouteHook from "@/src/modules/auth/auth.route-hook";
+{{/if}}
+{{#if (eq authentication.type "dynamic")}}
+import authRoleRouteHook from "@/src/modules/auth-role/auth-role.route-hook";
+import authPermissionRouteHook from "@/src/modules/auth-permission/auth-permission.route-hook";
+{{/if}}
+
+{{#if typescript}}
+{{else}}
+/** @type import("arkos").ArkosLoadable */
+{{/if}}
+const loadables{{#if typescript}}: ArkosLoadable[]{{/if}} = [
+  fileUploadRouteHook,
+{{#if authentication.type}}
+  userRouteHook,
+  authRouteHook,
+{{/if}}
+{{#if (eq authentication.type "dynamic")}}
+  authRoleRouteHook,
+  authPermissionRouteHook,
+{{/if}}
+]
+export default loadables;
