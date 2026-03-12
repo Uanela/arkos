@@ -98,7 +98,7 @@ export interface ArkosFileUploadRouteHookInstance {
   readonly __type: "ArkosRouteHook";
   readonly moduleName: "file-upload";
 
-  findFile(config: ArkosRouteHookMethodConfig): this;
+  findFile(config: Omit<ArkosRouteHookMethodConfig, "after">): this;
   uploadFile(config: ArkosRouteHookMethodConfig): this;
   updateFile(config: ArkosRouteHookMethodConfig): this;
   deleteFile(config: ArkosRouteHookMethodConfig): this;

@@ -25,7 +25,7 @@ export default function initializeApp(app: Arkos) {
     }
   }
 
-  const fileUploadRouter = getFileUploadRouter(config);
+  const fileUploadRouter = getFileUploadRouter();
   app.use(fileUploadRouter);
 
   if (isAuthenticationEnabled()) {
