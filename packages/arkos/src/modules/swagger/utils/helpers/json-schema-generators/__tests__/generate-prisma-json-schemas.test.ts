@@ -1,6 +1,5 @@
 import { generatePrismaJsonSchemas } from "../generate-prisma-json-schemas";
 import prismaSchemaParser from "../../../../../../utils/prisma/prisma-schema-parser";
-import { ArkosConfig } from "../../../../../../exports";
 import PrismaJsonSchemaGenerator from "../../../../../../utils/prisma/prisma-json-schema-generator";
 
 // Mock the dependencies
