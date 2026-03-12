@@ -26,6 +26,12 @@ export default async function generateMultipleComponents(
     controller: generateCommand.controller,
     r: generateCommand.router,
     router: generateCommand.router,
+    rh: generateCommand.routeHook,
+    routeHook: generateCommand.routeHook,
+    sh: generateCommand.serviceHook,
+    serviceHook: generateCommand.serviceHook,
+    p: generateCommand.policy,
+    policy: generateCommand.policy,
     sc: generateCommand.baseSchema,
     schema: generateCommand.baseSchema,
     cs: generateCommand.createSchema,
@@ -44,14 +50,6 @@ export default async function generateMultipleComponents(
     "query-dto": generateCommand.queryDto,
     m: generateCommand.prismaModel,
     model: generateCommand.prismaModel,
-    a: generateCommand.authConfigs,
-    "auth-configs": generateCommand.authConfigs,
-    q: generateCommand.queryOptions,
-    "query-options": generateCommand.queryOptions,
-    i: generateCommand.interceptors,
-    interceptors: generateCommand.interceptors,
-    h: generateCommand.hooks,
-    hooks: generateCommand.hooks,
   };
 
   const allComponents = [

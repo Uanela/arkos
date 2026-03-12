@@ -1,10 +1,6 @@
 import { generateControllerTemplate } from "./template-generator/templates/generate-controller-template";
-import { generateAuthConfigsTemplate } from "./template-generator/templates/auth-configs-template";
-import { generateMiddlewaresTemplate } from "./template-generator/templates/middlewares-template";
-import { generateQueryOptionsTemplate } from "./template-generator/templates/query-options-template";
 import { generateRouterTemplate } from "./template-generator/templates/router-template";
 import { generateServiceTemplate } from "./template-generator/templates/service-template";
-import generateHooksTemplate from "./template-generator/templates/hooks-template";
 import classValidatorDtoGenerator from "./template-generator/templates/class-validator-dto-generator";
 import zodSchemaGenerator from "./template-generator/templates/zod-schema-generator";
 import prismaSchemaParser from "../../prisma/prisma-schema-parser";
@@ -41,14 +37,6 @@ export function generateTemplate(
       return generateServiceTemplate(options);
     case "router":
       return generateRouterTemplate(options);
-    case "auth-configs":
-      return generateAuthConfigsTemplate(options);
-    case "query-options":
-      return generateQueryOptionsTemplate(options);
-    case "interceptors":
-      return generateMiddlewaresTemplate(options);
-    case "hooks":
-      return generateHooksTemplate(options);
     case "policy":
       return generatePolicyTemplate(options);
     case "route-hook":

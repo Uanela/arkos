@@ -72,44 +72,6 @@ generate
   });
 
 generate
-  .command("auth-configs")
-  .alias("a")
-  .description("Generate auth configuration")
-  .option("-a, --advanced", "Advanced code structure")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.authConfigs({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("query-options")
-  .alias("q")
-  .description("Generate prisma query options")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.queryOptions({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("interceptors")
-  .alias("i")
-  .description("Generate a new interceptors file")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.interceptors({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("hooks")
-  .alias("h")
-  .description("Generate a new service hooks file")
-
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.hooks({ ...generateOptions, ...options });
-  });
-
-generate
   .command("create-schema")
   .alias("cs")
   .description("Generate a new zod create schema file for a prisma model")
