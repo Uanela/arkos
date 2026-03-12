@@ -462,5 +462,242 @@ describe("Bundler", () => {
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).not.toContain(`from "@root"`);
     });
+
+    describe("alias resolution with @/* -> ./* (root mapping)", () => {
+      const ROOT_TSCONFIG = JSON.stringify({
+        compilerOptions: {
+          baseUrl: ".",
+          paths: {
+            "@/*": ["./*"],
+          },
+        },
+      });
+
+      it("should resolve @/src/... to relative path when file is under src/", () => {
+        mockFs.existsSync.mockImplementation((p) =>
+          String(p).endsWith("tsconfig.json")
+        );
+        mockFs.readFileSync.mockImplementation((p) => {
+          if (String(p).endsWith("tsconfig.json")) return ROOT_TSCONFIG;
+          return `import fileUploadPolicy from "@/src/modules/file-upload/file-upload.policy";`;
+        });
+        mockFs.readdirSync.mockReturnValue([
+          makeDirent("file-upload.router.js", false),
+        ] as any);
+
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "/project/dist/src/modules/file-upload",
+          rootDir: "/project",
+          configPath: "/project/tsconfig.json",
+        });
+
+        const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+        expect(written).not.toContain(
+          `"@/src/modules/file-upload/file-upload.policy"`
+        );
+        expect(written).not.toContain(
+          `"./src/modules/file-upload/file-upload.policy`
+        );
+        expect(written).toContain(`"./file-upload.policy.js"`);
+      });
+
+      it("should resolve @/src/utils/... correctly from a deeply nested file", () => {
+        mockFs.existsSync.mockImplementation((p) =>
+          String(p).endsWith("tsconfig.json")
+        );
+        mockFs.readFileSync.mockImplementation((p) => {
+          if (String(p).endsWith("tsconfig.json")) return ROOT_TSCONFIG;
+          return `import { helper } from "@/src/utils/helpers";`;
+        });
+        mockFs.readdirSync.mockReturnValue([
+          makeDirent("some.service.js", false),
+        ] as any);
+
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "/project/dist/src/modules/auth",
+          rootDir: "/project",
+          configPath: "/project/tsconfig.json",
+        });
+
+        const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+        expect(written).not.toContain(`"@/src/utils/helpers"`);
+        expect(written).not.toContain(`"./src/utils/helpers`);
+        expect(written).toContain(`"../../utils/helpers.js"`);
+      });
+
+      it("should resolve @/src/... from a file at src root level", () => {
+        mockFs.existsSync.mockImplementation((p) =>
+          String(p).endsWith("tsconfig.json")
+        );
+        mockFs.readFileSync.mockImplementation((p) => {
+          if (String(p).endsWith("tsconfig.json")) return ROOT_TSCONFIG;
+          return `import { something } from "@/src/modules/base/base.controller";`;
+        });
+        mockFs.readdirSync.mockReturnValue([
+          makeDirent("server.js", false),
+        ] as any);
+
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "/project/dist/src",
+          rootDir: "/project",
+          configPath: "/project/tsconfig.json",
+        });
+
+        const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+        expect(written).not.toContain(`"@/src/modules/base/base.controller"`);
+        expect(written).toContain(`"./modules/base/base.controller.js"`);
+      });
+    });
+
+    describe("alias resolution with @src/* -> src/* mapping", () => {
+      const ATSRC_TSCONFIG = JSON.stringify({
+        compilerOptions: {
+          baseUrl: ".",
+          paths: {
+            "@src/*": ["src/*"],
+          },
+        },
+      });
+
+      it("should resolve @src/utils/... to relative path", () => {
+        mockFs.existsSync.mockImplementation((p) =>
+          String(p).endsWith("tsconfig.json")
+        );
+        mockFs.readFileSync.mockImplementation((p) => {
+          if (String(p).endsWith("tsconfig.json")) return ATSRC_TSCONFIG;
+          return `import { helper } from "@src/utils/helpers";`;
+        });
+        mockFs.readdirSync.mockReturnValue([
+          makeDirent("index.js", false),
+        ] as any);
+
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "/project/dist/src/modules/auth",
+          rootDir: "/project",
+          configPath: "/project/tsconfig.json",
+        });
+
+        const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+        expect(written).not.toContain(`"@src/utils/helpers"`);
+        expect(written).toContain(`"../../utils/helpers.js"`);
+      });
+    });
+
+    describe("alias resolution edge cases", () => {
+      it("should handle multiple aliases in the same file", () => {
+        mockFs.existsSync.mockImplementation((p) =>
+          String(p).endsWith("tsconfig.json")
+        );
+        mockFs.readFileSync.mockImplementation((p) => {
+          if (String(p).endsWith("tsconfig.json")) return TSCONFIG;
+          return `
+        import { foo } from "@/helpers/foo";
+        import { bar } from "@utils/bar";
+        import baz from "./baz";
+      `;
+        });
+        mockFs.readdirSync.mockReturnValue([
+          makeDirent("index.js", false),
+        ] as any);
+
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "/project/dist",
+          rootDir: "/project",
+          configPath: "/project/tsconfig.json",
+        });
+
+        const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+        expect(written).not.toContain(`"@/helpers/foo"`);
+        expect(written).not.toContain(`"@utils/bar"`);
+        expect(written).toContain(".js");
+      });
+
+      it("should handle alias in dynamic import", () => {
+        const ROOT_TSCONFIG = JSON.stringify({
+          compilerOptions: { baseUrl: ".", paths: { "@/*": ["./*"] } },
+        });
+
+        mockFs.existsSync.mockImplementation((p) =>
+          String(p).endsWith("tsconfig.json")
+        );
+        mockFs.readFileSync.mockImplementation((p) => {
+          if (String(p).endsWith("tsconfig.json")) return ROOT_TSCONFIG;
+          return `const m = import("@/src/modules/some.module");`;
+        });
+        mockFs.readdirSync.mockReturnValue([
+          makeDirent("index.js", false),
+        ] as any);
+
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "/project/dist/src",
+          rootDir: "/project",
+          configPath: "/project/tsconfig.json",
+        });
+
+        const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+        expect(written).not.toContain(`"@/src/modules/some.module"`);
+        expect(written).toContain(".js");
+      });
+
+      it("should handle alias in re-export", () => {
+        const ROOT_TSCONFIG = JSON.stringify({
+          compilerOptions: { baseUrl: ".", paths: { "@/*": ["./*"] } },
+        });
+
+        mockFs.existsSync.mockImplementation((p) =>
+          String(p).endsWith("tsconfig.json")
+        );
+        mockFs.readFileSync.mockImplementation((p) => {
+          if (String(p).endsWith("tsconfig.json")) return ROOT_TSCONFIG;
+          return `export { foo } from "@/src/utils/foo";`;
+        });
+        mockFs.readdirSync.mockReturnValue([
+          makeDirent("index.js", false),
+        ] as any);
+
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "/project/dist/src/modules/file-upload",
+          rootDir: "/project",
+          configPath: "/project/tsconfig.json",
+        });
+
+        const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+        expect(written).not.toContain(`"@/src/utils/foo"`);
+        expect(written).toContain(`"../../utils/foo.js"`);
+      });
+
+      it("should not rewrite alias that matches a node_modules package", () => {
+        const ROOT_TSCONFIG = JSON.stringify({
+          compilerOptions: { baseUrl: ".", paths: { "@/*": ["./*"] } },
+        });
+
+        mockFs.existsSync.mockImplementation((p) =>
+          String(p).endsWith("tsconfig.json")
+        );
+        mockFs.readFileSync.mockImplementation((p) => {
+          if (String(p).endsWith("tsconfig.json")) return ROOT_TSCONFIG;
+          return `import { PrismaClient } from "@prisma/client";`;
+        });
+        mockFs.readdirSync.mockReturnValue([
+          makeDirent("index.js", false),
+        ] as any);
+
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "/project/dist/src",
+          rootDir: "/project",
+          configPath: "/project/tsconfig.json",
+        });
+
+        expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+      });
+    });
   });
 });
