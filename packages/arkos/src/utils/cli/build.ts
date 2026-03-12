@@ -264,44 +264,6 @@ function copyAllNonSourceFiles(_: ModuleType, skipExtensions: string[]) {
 }
 
 /**
- * Create appropriate package.json in the build directory
- */
-// function createModulePackageJson(moduleType: ModuleType) {
-//   const packageJsonPath = path.join(process.cwd(), "package.json");
-
-//   if (!fs.existsSync(packageJsonPath)) {
-//     return;
-//   }
-
-//   try {
-//     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-//     const buildPackageJson: any = {
-//       name: packageJson.name,
-//       version: packageJson.version,
-//       description: packageJson.description,
-//       main: "index.js",
-//       dependencies: packageJson.dependencies,
-//     };
-
-//     // Set appropriate type field for ESM
-//     if (moduleType === "esm") {
-//       buildPackageJson.type = "module";
-//     }
-
-//     const targetDir = path.join(BUILD_DIR, moduleType);
-//     fs.writeFileSync(
-//       path.join(targetDir, "package.json"),
-//       JSON.stringify(buildPackageJson, null, 2)
-//     );
-//   } catch (error) {
-//     console.warn(
-//       "Warning: Failed to create module-specific package.json",
-//       error
-//     );
-//   }
-// }
-
-/**
  * Clean up temporary tsconfig
  */
 function cleanupTempConfig(configPath: string) {
