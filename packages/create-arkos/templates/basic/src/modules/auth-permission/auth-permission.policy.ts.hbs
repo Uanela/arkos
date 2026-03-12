@@ -1,0 +1,33 @@
+import { ArkosPolicy } from "arkos";
+
+const authPermissionPolicy = ArkosPolicy("auth-permission")
+  .rule("Create", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Create Auth Permission",
+    description: "Permission to create new auth permission records",
+  })
+  .rule("View", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "View Auth Permission",
+    description: "Permission to view auth permission records",
+  })
+  .rule("Update", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Update Auth Permission",
+    description: "Permission to update existing auth permission records",
+  })
+  .rule("Delete", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Delete Auth Permission",
+    description: "Permission to delete auth permission records",
+  });
+
+export default authPermissionPolicy;
