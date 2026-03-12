@@ -2,7 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import AppError from "../utils/app-error";
 import errorHandler from "../error-handler.controller";
 import * as errorControllerHelper from "../utils/error-handler.helpers";
-import { server } from "../../../server";
+import { getAppServer } from "../../../app";
+
+jest.mock("../../../app", () => ({
+  getAppServer: jest.fn(() => ({
+    close: jest.fn(),
+  })),
+}));
 
 // Mock the error helper functions
 jest.mock("../utils/error-handler.helpers", () => {
@@ -419,7 +425,7 @@ describe("Error Handler Middleware", () => {
       (sigTermHandler as any)();
 
       expect(mockProcessExit).toHaveBeenCalled();
-      expect(server.close).not.toHaveBeenCalled();
+      expect(getAppServer().close).not.toHaveBeenCalled();
     });
 
     it("should gracefully shut down in production mode", () => {
@@ -431,7 +437,7 @@ describe("Error Handler Middleware", () => {
       (sigTermHandler as any)();
 
       expect(mockProcessExit).toHaveBeenCalled();
-      expect(server.close).toHaveBeenCalled();
+      expect(getAppServer().close).toHaveBeenCalled();
     });
   });
 });
