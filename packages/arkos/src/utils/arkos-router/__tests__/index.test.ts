@@ -32,6 +32,33 @@ describe("ArkosRouter", () => {
     RouteConfigRegistry.get = jest.fn();
   });
 
+  describe("ArkosRouter OpenAPI tag merging", () => {
+    it("should merge router-level and route-level openapi tags", () => {
+      const router = ArkosRouter({ openapi: { tags: ["Users"] } }) as any;
+      const handler = jest.fn();
+
+      router.get(
+        {
+          path: "/merge-test",
+          experimental: {
+            openapi: {
+              tags: ["Admin"],
+            },
+          },
+        },
+        handler
+      );
+
+      const registeredConfig = (RouteConfigRegistry.register as jest.Mock).mock
+        .calls[0][1];
+
+      expect(registeredConfig.experimental.openapi.tags).toEqual([
+        "Users",
+        "Admin",
+      ]);
+    });
+  });
+
   it("should throw an error when path is passed", () => {
     const router = Router();
     const proxied = ArkosRouter() as any;
