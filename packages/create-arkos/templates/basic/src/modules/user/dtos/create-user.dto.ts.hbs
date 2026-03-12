@@ -1,71 +1,117 @@
-import 'reflect-metadata'
-import { 
-  IsString, 
-  MinLength, 
-  Matches, 
-  IsNotEmpty, 
-  IsBoolean, 
-  IsOptional,
-  IsArray,
-  ValidateNested,
-} from 'class-validator'
-import { Type } from "class-transformer";
+{{#if (eq validation.type "zod")}}
+import { z } from "zod";
 {{#if (eq authentication.type "static")}}
 {{#if (neq prisma.provider "sqlite")}}
-import { UserRole } from "@prisma/client"
+import { UserRole } from "@prisma/client";
 {{/if}}
 {{/if}}
 
+const CreateUserDto = z.object({
+  {{authentication.usernameField}}: z.string().min(1, "{{authentication.usernameField}} is required"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters long")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter"),
+  isSuperUser: z.boolean().optional().default(false),
+  isStaff: z.boolean().optional().default(false),
+  isActive: z.boolean().optional().default(true),
+  {{#if (eq authentication.type "static")}}
+  {{#if (eq prisma.provider "sqlite")}}
+  role: z.string(),
+  {{else}}
+  {{#if authentication.multipleRoles}}
+  roles: z.array(z.nativeEnum(UserRole)),
+  {{else}}
+  role: z.nativeEnum(UserRole),
+  {{/if}}
+  {{/if}}
+  {{else}}
+  {{#if authentication.multipleRoles}}
+  roles: z.array(z.object({
+    role: z.object({ id: z.string() }),
+  })).optional(),
+  {{else}}
+  role: z.object({
+    role: z.object({ id: z.string() }),
+  }).optional(),
+  {{/if}}
+  {{/if}}
+});
+
+export default CreateUserDto;
+{{#if typescript}}
+export type CreateUserDtoType = z.infer<typeof CreateUserDto>;
+{{/if}}
+{{/if}}
+{{#if (eq validation.type "class-validator")}}
+import 'reflect-metadata';
+import {
+  IsString,
+  MinLength,
+  Matches,
+  IsNotEmpty,
+  IsBoolean,
+  IsOptional,
+  IsArray,
+  IsEnum,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from "class-transformer";
+{{#if (eq authentication.type "static")}}
+{{#if (neq prisma.provider "sqlite")}}
+import { UserRole } from "@prisma/client";
+{{/if}}
+{{/if}}
 {{#if (eq authentication.type "dynamic")}}
 class RoleConnectDto {
   @IsString()
   @IsNotEmpty()
-  id!: string
+  id!: string;
 }
 
 class RoleConnectionDto {
   @ValidateNested()
   @Type(() => RoleConnectDto)
-  role!: RoleConnectDto
+  role!: RoleConnectDto;
 }
 {{/if}}
 
 export default class CreateUserDto {
   @IsString()
   @IsNotEmpty({ message: '{{authentication.usernameField}} is required' })
-  {{authentication.usernameField}}!: string
+  {{authentication.usernameField}}!: string;
 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   @Matches(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
   @Matches(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
-  password!: string
+  password!: string;
 
   @IsBoolean()
   @IsOptional()
-  isSuperUser?: boolean = false
+  isSuperUser?: boolean = false;
 
   @IsBoolean()
   @IsOptional()
-  isStaff?: boolean = false
+  isStaff?: boolean = false;
 
   @IsBoolean()
   @IsOptional()
-  isActive?: boolean = true
+  isActive?: boolean = true;
 
   {{#if (eq authentication.type "static")}}
   {{#if (eq prisma.provider "sqlite")}}
   @IsString()
   @IsNotEmpty()
-  role!: string
+  role!: string;
   {{else}}
   {{#if authentication.multipleRoles}}
   @IsArray()
   @IsEnum(UserRole, { each: true })
-  roles?: UserRole[]
+  roles?: UserRole[];
   {{else}}
   @IsEnum(UserRole)
-  role!: UserRole
+  role!: UserRole;
   {{/if}}
   {{/if}}
   {{else}}
@@ -74,12 +120,13 @@ export default class CreateUserDto {
   @ValidateNested({ each: true })
   @Type(() => RoleConnectionDto)
   @IsOptional()
-  roles?: RoleConnectionDto[]
+  roles?: RoleConnectionDto[];
   {{else}}
   @ValidateNested()
   @Type(() => RoleConnectionDto)
   @IsOptional()
-  role?: RoleConnectionDto
+  role?: RoleConnectionDto;
   {{/if}}
   {{/if}}
 }
+{{/if}}

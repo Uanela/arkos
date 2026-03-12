@@ -1,9 +1,23 @@
-import 'reflect-metadata'
+{{#if (eq validation.type "zod")}}
+import { z } from "zod";
+
+const UpdateMeDto = z.object({
+  {{authentication.usernameField}}: z.string().optional(),
+});
+
+export default UpdateMeDto;
+{{#if typescript}}
+export type UpdateMeDtoType = z.infer<typeof UpdateMeDto>;
+{{/if}}
+{{/if}}
+{{#if (eq validation.type "class-validator")}}
+import 'reflect-metadata';
 import { IsString, IsNotEmpty, IsOptional } from "class-validator";
 
 export default class UpdateMeDto {
   @IsString()
   @IsNotEmpty({ message: '{{authentication.usernameField}} is required' })
   @IsOptional()
-  {{authentication.usernameField}}!: string
+  {{authentication.usernameField}}?: string;
 }
+{{/if}}
