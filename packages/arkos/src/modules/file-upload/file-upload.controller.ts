@@ -10,10 +10,12 @@ import { getArkosConfig } from "../../server";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 import { MulterError } from "multer";
-import { pascalCase } from "../../exports/utils";
+import { pascalCase, kebabCase } from "../../exports/utils";
+import loadableRegistry from "../../components/arkos-loadable-registry";
+import { routeHookReader } from "../../components/arkos-route-hook/reader";
 
 /**
- * Handles files uploads and allow to be extended
+ * Handles file uploads and allows to be extended via route hooks.
  */
 export class FileUploadController {
   private handleUploadError(err: any, next: ArkosNextFunction) {
@@ -28,24 +30,27 @@ export class FileUploadController {
     else return next(err);
   }
 
-  /**
-   * Model-specific interceptors loaded from model modules
-   * @private
-   */
-  private interceptors: any;
+  private getRouteHook() {
+    return loadableRegistry.getItem("ArkosRouteHook", "file-upload");
+  }
+
+  private getAfterHook(operation: string) {
+    const hook = this.getRouteHook();
+    if (!hook) return null;
+    return (
+      routeHookReader.getHooks("file-upload", operation as any)?.after ?? null
+    );
+  }
 
   /**
-   * Handles file upload requests, processes images if needed, and returns URLs
+   * Handles file upload requests, processes images if needed, and returns URLs.
    *
-   * Supports paths outside of the project directory with '../' prefix
    * @param {ArkosRequest} req - Arkos request object
    * @param {ArkosResponse} res - Arkos response object
    * @param {ArkosNextFunction} next - Arkos next middleware function
    */
   uploadFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors = {};
-
       const { fileType } = req.params;
       const { format, width, height, resizeTo } = req.query;
       const options = { format, width, height, resizeTo };
@@ -63,7 +68,7 @@ export class FileUploadController {
       const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
       try {
         await fs.promises.access(uploadPath);
-      } catch (err) {
+      } catch {
         await fs.promises.mkdir(uploadPath, { recursive: true });
       }
 
@@ -99,16 +104,14 @@ export class FileUploadController {
               )
             );
           } else {
-            data = await Promise.all(
-              req.files.map((file) => processFile(req, file.path))
-            );
+            data = req.files.map((file) => processFile(req, file.path));
           }
           data = data.filter((url) => url !== null);
         } else if (req.file) {
           if (fileType === "images") {
             data = await processImage(req, next, req.file.path, options);
           } else {
-            data = await processFile(req, req.file.path);
+            data = processFile(req, req.file.path);
           }
         } else {
           return next(
@@ -128,7 +131,8 @@ export class FileUploadController {
             : "File uploaded successfully",
         };
 
-        if (this.interceptors?.afterUploadFile) {
+        const afterHook = this.getAfterHook("uploadFile");
+        if (afterHook) {
           (res as any).originalData = jsonContent;
           req.responseData = jsonContent;
           res.locals.data = jsonContent;
@@ -144,17 +148,14 @@ export class FileUploadController {
   );
 
   /**
-   * Handles file deletion requests
+   * Handles file deletion requests.
    *
-   * Supports paths outside of the project directory with '../' prefix
    * @param {ArkosRequest} req - Arkos request object
    * @param {ArkosResponse} res - Arkos response object
    * @param {ArkosNextFunction} next - Arkos next middleware function
    */
   deleteFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors = {};
-
       const { fileType, fileName } = req.params;
 
       const {
@@ -195,17 +196,14 @@ export class FileUploadController {
         const isExpectedUrlPattern = urlPattern.test(req.originalUrl);
 
         if (isExpectedUrlPattern) {
-          // Build the expected URL for this request
-          const fullUrl = `${req.protocol}://${req.get("host")}${
-            req.originalUrl
-          }`;
-
+          const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
           await uploader.deleteFileByUrl(fullUrl);
         } else {
           await uploader.deleteFileByName(fileName, fileType);
         }
 
-        if (this.interceptors.afterDeleteFile) {
+        const afterHook = this.getAfterHook("deleteFile");
+        if (afterHook) {
           req.responseStatus = 204;
           return next();
         }
@@ -213,22 +211,20 @@ export class FileUploadController {
         res.status(204).json();
       } catch (error) {
         if (error instanceof AppError) return next(error);
-
         return next(new AppError("File not found", 404, "FileNotFound"));
       }
     }
   );
 
   /**
-   * Handles file update requests by deleting the old file and uploading a new one
+   * Handles file update requests by deleting the old file and uploading a new one.
+   *
    * @param {ArkosRequest} req - Arkos request object
    * @param {ArkosResponse} res - Arkos response object
    * @param {ArkosNextFunction} next - Arkos next middleware function
    */
   updateFile = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      this.interceptors = {};
-
       const { fileType, fileName } = req.params;
       const { format, width, height, resizeTo } = req.query;
       const options = { format, width, height, resizeTo };
@@ -246,7 +242,7 @@ export class FileUploadController {
       const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
       try {
         await fs.promises.access(uploadPath);
-      } catch (err) {
+      } catch {
         await fs.promises.mkdir(uploadPath, { recursive: true });
       }
 
@@ -284,17 +280,13 @@ export class FileUploadController {
         if (fileName && fileName.trim() !== "") {
           try {
             const baseUploadRoute = fileUpload?.baseRoute || "/api/uploads";
-
             const urlPattern = new RegExp(
               `${baseUploadRoute}/${fileType}/${fileName}`
             );
-
             const isExpectedUrlPattern = urlPattern.test(req.originalUrl);
 
             if (isExpectedUrlPattern) {
-              const oldFileUrl = `${req.protocol}://${req.get("host")}${
-                req.originalUrl
-              }`;
+              const oldFileUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
               await uploader.deleteFileByUrl(oldFileUrl);
             } else {
               await uploader.deleteFileByName(fileName, fileType);
@@ -313,16 +305,14 @@ export class FileUploadController {
               )
             );
           } else {
-            data = await Promise.all(
-              req.files.map((file) => processFile(req, file.path))
-            );
+            data = req.files.map((file) => processFile(req, file.path));
           }
           data = data.filter((url) => url !== null);
         } else if (req.file) {
           if (fileType === "images") {
             data = await processImage(req, next, req.file.path, options);
           } else {
-            data = await processFile(req, req.file.path);
+            data = processFile(req, req.file.path);
           }
         }
 
@@ -338,7 +328,8 @@ export class FileUploadController {
               : "File uploaded successfully",
         };
 
-        if (this.interceptors.afterUpdateFile) {
+        const afterHook = this.getAfterHook("updateFile");
+        if (afterHook) {
           (res as any).originalData = jsonContent;
           req.responseData = jsonContent;
           res.locals.data = jsonContent;
@@ -352,70 +343,11 @@ export class FileUploadController {
       });
     }
   );
-
-  /**
-   * Not implemented yet
-   *
-   * @deprecated
-   */
-  // streamFile = catchAsync(
-  //   async (req: ArkosRequest, res: ArkosResponse, _: ArkosNextFunction) => {
-  //     const { fileName, fileType } = req.params;
-
-  //     const filePath = path.join(".", "uploads", fileType, fileName);
-  //     try {
-  //       await fs.promises.access(filePath);
-  //     } catch (err) {
-  //       throw new AppError("File not found", 404);
-  //     }
-
-  //     const fileStat = await fs.promises.stat(filePath);
-  //     const fileSize = fileStat.size;
-  //     const range = req.headers.range;
-
-  //     if (range) {
-  //       const [partialStart, partialEnd] = range
-  //         .replace(/bytes=/, "")
-  //         .split("-");
-  //       const start = parseInt(partialStart, 10) || 0;
-  //       const end = partialEnd ? parseInt(partialEnd, 10) : fileSize - 1;
-
-  //       if (start >= fileSize || end >= fileSize) {
-  //         res.status(416).json({ error: "Range Not Satisfiable" });
-  //         return;
-  //       }
-
-  //       res.writeHead(206, {
-  //         "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-  //         "Accept-Ranges": "bytes",
-  //         "Content-Length": end - start + 1,
-  //         "Content-Type": "application/octet-stream",
-  //         "Content-Disposition": `inline; filename="${fileName}"`,
-  //       });
-
-  //       fs.createReadStream(filePath, { start, end }).pipe(res);
-  //     } else {
-  //       res.writeHead(200, {
-  //         "Content-Length": fileSize,
-  //         "Content-Type": "application/octet-stream",
-  //         "Content-Disposition": `inline; filename="${fileName}"`,
-  //       });
-  //       fs.createReadStream(filePath).pipe(res);
-  //     }
-  //   }
-  // );
 }
 
 /**
  * Controller instance responsible for handling file upload operations.
- * Manages the processing and routing of file upload requests.
  *
- * @remarks
- * This controller handles various file upload operations including validation,
- * storage, and response management.
- *
- * @instance
- * @constant
  * @see {@link https://www.arkosjs.com/docs/api-reference/file-upload-controller-object}
  */
 const fileUploadController = new FileUploadController();

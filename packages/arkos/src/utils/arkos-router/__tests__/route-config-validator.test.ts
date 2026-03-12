@@ -17,7 +17,9 @@ describe("RouteConfigValidator", () => {
   });
 
   it("should not throw when validation matches swagger mode for zod", () => {
-    (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      validation: { resolzer: "zod" },
+    });
     const config = {
       path: "/test",
       validation: { query: z.object({ name: z.string() }) },
@@ -27,7 +29,7 @@ describe("RouteConfigValidator", () => {
 
   it("should not throw when validation matches swagger mode for class-validator", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({
-      swagger: { mode: "class-validator" },
+      validation: { resolzer: "class-validator" },
     });
     const config = {
       path: "/test",
@@ -38,7 +40,7 @@ describe("RouteConfigValidator", () => {
 
   it("should throw when zod schema used but swagger mode is not zod", () => {
     (getArkosConfig as jest.Mock).mockReturnValue({
-      swagger: { mode: "class-validator" },
+      validation: { resolzer: "class-validator" },
     });
     const config = {
       path: "/test",
@@ -50,7 +52,9 @@ describe("RouteConfigValidator", () => {
   });
 
   it("should throw when class used but swagger mode is not class-validator", () => {
-    (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      validation: { resolzer: "zod" },
+    });
     const config = {
       path: "/test",
       validation: { body: mockClass },
@@ -61,7 +65,9 @@ describe("RouteConfigValidator", () => {
   });
 
   it("should throw on duplicate query definitions", () => {
-    (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      validation: { resolzer: "zod" },
+    });
     const config = {
       path: "/test",
       validation: { query: z.object({}) },
@@ -75,7 +81,9 @@ describe("RouteConfigValidator", () => {
   });
 
   it("should throw on duplicate path parameter definitions", () => {
-    (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      validation: { resolzer: "zod" },
+    });
     const config = {
       path: "/test",
       validation: { params: z.object({}) },
@@ -89,7 +97,9 @@ describe("RouteConfigValidator", () => {
   });
 
   it("should throw on duplicate request body definitions", () => {
-    (getArkosConfig as jest.Mock).mockReturnValue({ swagger: { mode: "zod" } });
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      validation: { resolzer: "zod" },
+    });
     const config = {
       path: "/test",
       validation: { body: z.object({}) },
