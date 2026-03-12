@@ -23,6 +23,7 @@ import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-
 import uploadManager from "./utils/helpers/upload-manager";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
+import deepmerge from "../helpers/deepmerge.helper";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -51,6 +52,7 @@ import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 export default function ArkosRouter(
   options?: RouterOptions & {
     prefix?: string | RegExp | Array<string | RegExp>;
+    openapi?: { tags?: string[] };
   }
 ): IArkosRouter {
   const router = Router(options);
@@ -82,6 +84,13 @@ export default function ArkosRouter(
             ) {
               const fullConfig: ArkosRouteConfig = {
                 ...config,
+                ...(options?.openapi
+                  ? {
+                      experimental: {
+                        openapi: options.openapi,
+                      },
+                    }
+                  : {}),
                 path,
               };
 
@@ -109,7 +118,21 @@ export default function ArkosRouter(
 
           const path = applyPrefix(options?.prefix, config.path);
 
-          config = { ...config, path };
+          config = {
+            ...config,
+            ...(options?.openapi
+              ? {
+                  experimental: {
+                    ...config?.experimental,
+                    openapi: deepmerge(
+                      options.openapi || {},
+                      config?.experimental?.openapi || {}
+                    ),
+                  },
+                }
+              : {}),
+            path,
+          };
 
           if ([null, undefined].includes(path as any))
             throw Error(
