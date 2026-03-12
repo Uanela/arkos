@@ -1,10 +1,6 @@
-import pluralize from "pluralize";
 import catchAsync, {
   CatchAsyncReturnType,
 } from "../../modules/error-handler/utils/catch-async";
-import { AccessAction, AuthConfigs } from "../../types/auth";
-import { kebabCase } from "./change-case.helpers";
-import { AuthRouterEndpoint, RouterEndpoint } from "../../types/router-config";
 import ExitError from "./exit-error";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
@@ -43,43 +39,3 @@ export const processMiddleware = (
     return [safeCatchAsync(middleware, options)] as CatchAsyncReturnType[];
   }
 };
-
-export function getAuthenticationConfig(
-  endpoint: RouterEndpoint | AuthRouterEndpoint,
-  modelName: string,
-  authConfigs?: AuthConfigs
-) {
-  const actionMap: Record<any, AccessAction> = {
-    createOne: "Create",
-    findOneAuthAction: "View",
-    findManyAuthAction: "View",
-    findMany: "View",
-    createMany: "Create",
-    updateMany: "Update",
-    deleteMany: "Delete",
-    findOne: "View",
-    updateOne: "Update",
-    deleteOne: "Delete",
-  };
-
-  const action = actionMap[endpoint];
-  const authenticationControl = authConfigs?.authenticationControl;
-
-  if (authenticationControl === true) return true;
-  else if (
-    (authenticationControl &&
-      typeof authenticationControl === "object" &&
-      (authenticationControl[action] === true ||
-        authenticationControl[action] !== false)) ||
-    (!authenticationControl && authenticationControl !== false)
-  ) {
-    const rule: any = authConfigs?.accessControl;
-    return {
-      resource: kebabCase(pluralize.singular(modelName)),
-      action: action,
-      rule: rule && (action in rule ? rule[action] : rule),
-    };
-  }
-
-  return false;
-}
