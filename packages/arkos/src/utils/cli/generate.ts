@@ -184,30 +184,6 @@ export const generateCommand = {
     });
   },
 
-  interceptors: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "interceptors",
-      fileSuffix: "interceptors",
-      allowedModules: knownModules,
-    });
-  },
-
-  authConfigs: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "auth-configs",
-      fileSuffix: "auth",
-      allowedModules: "*",
-    });
-  },
-
-  hooks: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "hooks",
-      fileSuffix: "hooks",
-      allowedModules: knownModules,
-    });
-  },
-
   policy: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "policy",
@@ -307,14 +283,6 @@ export const generateCommand = {
       customPath: "src/modules/{{module-name}}/dtos",
       prefix: "query-",
       allowedModules: kebabPrismaModels,
-    });
-  },
-
-  queryOptions: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "query-options",
-      fileSuffix: "query",
-      allowedModules: knownModules,
     });
   },
 
