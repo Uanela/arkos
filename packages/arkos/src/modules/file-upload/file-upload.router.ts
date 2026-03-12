@@ -1,23 +1,25 @@
 import { Router } from "express";
 import { getModuleComponents } from "../../utils/dynamic-loader";
-import authService from "../auth/auth.service";
 import fileUploadController from "./file-upload.controller";
 import express from "express";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthConfigs } from "../../types/auth";
 import { sendResponse } from "../base/base.middlewares";
-import { processMiddleware } from "../../utils/helpers/routers.helpers";
+import {
+  createRouteConfig,
+  processMiddleware,
+} from "../../utils/helpers/routers.helpers";
 import { adjustRequestUrl } from "./utils/helpers/file-upload.helpers";
 import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import path from "path";
+import ArkosRouter from "../../utils/arkos-router";
 import { UserArkosConfig } from "../../utils/define-config";
 
-const router: Router = Router();
-
 export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
+  const router = ArkosRouter();
   const { fileUpload } = arkosConfig;
 
   const moduleComponents = getModuleComponents("file-upload");
@@ -59,15 +61,14 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
         .replaceAll("//", "/")
     );
     router.get(
-      `${basePathname}*`,
-      authService.handleAuthenticationControl(
-        "View",
-        authConfigs.authenticationControl
-      ),
-      authService.handleAccessControl(
-        "View",
+      createRouteConfig(
+        arkosConfig,
+        "findFile",
         "file-upload",
-        authConfigs.accessControl
+        `${basePathname}*`,
+        routerConfig,
+        "file-upload",
+        authConfigs
       ),
       ...processMiddleware(interceptors?.beforeFindFile),
       adjustRequestUrl,
@@ -92,15 +93,14 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
 
   if (!isEndpointDisabled(routerConfig, "uploadFile")) {
     router.post(
-      `${basePathname}:fileType`,
-      authService.handleAuthenticationControl(
-        "Create",
-        authConfigs.authenticationControl
-      ),
-      authService.handleAccessControl(
-        "Create",
+      createRouteConfig(
+        arkosConfig,
+        "uploadFile",
         "file-upload",
-        authConfigs.accessControl
+        `${basePathname}:fileType`,
+        routerConfig,
+        "file-upload",
+        authConfigs
       ),
       ...processMiddleware(interceptors?.beforeUploadFile),
       fileUploadController.uploadFile,
@@ -112,15 +112,14 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
 
   if (!isEndpointDisabled(routerConfig, "updateFile")) {
     router.patch(
-      `${basePathname}:fileType/:fileName`,
-      authService.handleAuthenticationControl(
-        "Update",
-        authConfigs.authenticationControl
-      ),
-      authService.handleAccessControl(
-        "Update",
+      createRouteConfig(
+        arkosConfig,
+        "updateFile",
         "file-upload",
-        authConfigs.accessControl
+        `${basePathname}:fileType/:fileName`,
+        routerConfig,
+        "file-upload",
+        authConfigs
       ),
       ...processMiddleware(interceptors?.beforeUpdateFile),
       fileUploadController.updateFile,
@@ -132,15 +131,14 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
 
   if (!isEndpointDisabled(routerConfig, "deleteFile")) {
     router.delete(
-      `${basePathname}:fileType/:fileName`,
-      authService.handleAuthenticationControl(
-        "Delete",
-        authConfigs.authenticationControl
-      ),
-      authService.handleAccessControl(
-        "Delete",
+      createRouteConfig(
+        arkosConfig,
+        "deleteFile",
         "file-upload",
-        authConfigs.accessControl
+        `${basePathname}:fileType/:fileName`,
+        routerConfig,
+        "file-upload",
+        authConfigs
       ),
       ...processMiddleware(interceptors?.beforeDeleteFile),
       fileUploadController.deleteFile,
