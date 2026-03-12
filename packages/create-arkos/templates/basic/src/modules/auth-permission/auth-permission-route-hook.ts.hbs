@@ -1,0 +1,35 @@
+import { ArkosRouteHook } from 'arkos';
+{{#if authentication}}
+import authPermissionPolicy from '@/src/modules/auth-permission/auth-permission.policy';
+{{/if}}
+{{#if validation.type}}
+import CreateAuthPermissionDto from '@/src/modules/auth-permission/dtos/create-auth-permission.dto';
+import UpdateAuthPermissionDto from '@/src/modules/auth-permission/dtos/update-auth-permission.dto';
+import QueryAuthPermissionDto from '@/src/modules/auth-permission/dtos/query-auth-permission.dto';
+{{/if}}
+const authPermissionRouteHook = ArkosRouteHook("auth-permission");
+
+authPermissionRouteHook.createOne({
+  {{#if validation.type}}validation: { body: CreateAuthPermissionDto },{{/if}}
+  {{#if authentication}}authentication: authPermissionPolicy.Create,{{/if}}
+});
+
+authPermissionRouteHook.findOne({
+  {{#if authentication}}authentication: authPermissionPolicy.View,{{/if}}
+});
+
+authPermissionRouteHook.findMany({
+  {{#if validation.type}}validation: { query: QueryAuthPermissionDto },{{/if}}
+  {{#if authentication}}authentication: authPermissionPolicy.View,{{/if}}
+});
+
+authPermissionRouteHook.updateOne({
+  {{#if validation.type}}validation: { body: UpdateAuthPermissionDto },{{/if}}
+  {{#if authentication}}authentication: authPermissionPolicy.Update,{{/if}}
+});
+
+authPermissionRouteHook.deleteOne({
+  {{#if authentication}}authentication: authPermissionPolicy.Delete,{{/if}}
+});
+
+export default authPermissionRouteHook;

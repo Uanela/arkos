@@ -1,0 +1,35 @@
+import { ArkosRouteHook } from 'arkos';
+{{#if authentication}}
+import authRolePolicy from '@/src/modules/auth-role/auth-role.policy';
+{{/if}}
+{{#if validation.type}}
+import CreateAuthRoleDto from '@/src/modules/auth-role/dtos/create-auth-role.dto';
+import UpdateAuthRoleDto from '@/src/modules/auth-role/dtos/update-auth-role.dto';
+import QueryAuthRoleDto from '@/src/modules/auth-role/dtos/query-auth-role.dto';
+{{/if}}
+const authRoleRouteHook = ArkosRouteHook("auth-role");
+
+authRoleRouteHook.createOne({
+  {{#if validation.type}}validation: { body: CreateAuthRoleDto },{{/if}}
+  {{#if authentication}}authentication: authRolePolicy.Create,{{/if}}
+});
+
+authRoleRouteHook.findOne({
+  {{#if authentication}}authentication: authRolePolicy.View,{{/if}}
+});
+
+authRoleRouteHook.findMany({
+  {{#if validation.type}}validation: { query: QueryAuthRoleDto },{{/if}}
+  {{#if authentication}}authentication: authRolePolicy.View,{{/if}}
+});
+
+authRoleRouteHook.updateOne({
+  {{#if validation.type}}validation: { body: UpdateAuthRoleDto },{{/if}}
+  {{#if authentication}}authentication: authRolePolicy.Update,{{/if}}
+});
+
+authRoleRouteHook.deleteOne({
+  {{#if authentication}}authentication: authRolePolicy.Delete,{{/if}}
+});
+
+export default authRoleRouteHook;

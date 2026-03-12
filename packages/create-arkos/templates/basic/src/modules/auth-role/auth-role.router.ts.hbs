@@ -1,14 +1,11 @@
-import { ArkosRouter{{#if typescript}}, RouterConfig{{/if}} } from "arkos";
+import { ArkosRouter } from "arkos";
+{{#if authentication}}
 import authRolePolicy from "@/src/modules/auth-role/auth-role.policy";
+{{/if}}
 
-export const config{{#if typescript}}: RouterConfig{{/if}} = {
-  createOne: { authentication: authRolePolicy.Create },
-  findMany: { authentication: authRolePolicy.View },
-  findOne: { authentication: authRolePolicy.View },
-  updateOne: { authentication: authRolePolicy.Update },
-  deleteOne: { authentication: authRolePolicy.Delete },
-};
-
-const authRoleRouter = ArkosRouter({ openapi: { tags: ["Auth Roles"] } });
+const authRoleRouter = ArkosRouter({
+    prefix: "/auth-roles",
+    openapi: { tags: ["Auth Roles"] } 
+  });
 
 export default authRoleRouter;

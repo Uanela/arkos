@@ -1,14 +1,11 @@
 import { ArkosRouter{{#if typescript}}, RouterConfig{{/if}} } from "arkos";
+{{#if authentication}}
 import authPermissionPolicy from "@/src/modules/auth-permission/auth-permission.policy";
+{{/if}}
 
-export const config{{#if typescript}}: RouterConfig{{/if}} = {
-  createOne: { authentication: authPermissionPolicy.Create },
-  findMany: { authentication: authPermissionPolicy.View },
-  findOne: { authentication: authPermissionPolicy.View },
-  updateOne: { authentication: authPermissionPolicy.Update },
-  deleteOne: { authentication: authPermissionPolicy.Delete },
-};
-
-const authPermissionRouter = ArkosRouter({ openapi: { tags: ["Auth Permissions"] } });
+const authPermissionRouter = ArkosRouter({ 
+    path: "/auth-permissions",
+    openapi: { tags: ["Auth Permissions"] } 
+  });
 
 export default authPermissionRouter;
