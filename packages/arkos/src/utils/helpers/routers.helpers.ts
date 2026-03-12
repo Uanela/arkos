@@ -14,10 +14,11 @@ import { isEndpointDisabled } from "../../modules/base/utils/helpers/base.router
 import deepmerge from "./deepmerge.helper";
 import { ArkosRouteConfig } from "../arkos-router/types";
 import { UserArkosConfig } from "../define-config";
+import ExitError from "./exit-error";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
   if (middleware && typeof middleware !== "function")
-    throw Error(
+    throw ExitError(
       `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
     );
 }
@@ -27,7 +28,7 @@ export const safeCatchAsync = (
   options: { type: "error" | "normal" } = { type: "normal" }
 ) => {
   if (middleware && typeof middleware !== "function")
-    throw Error(
+    throw ExitError(
       `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
     );
 

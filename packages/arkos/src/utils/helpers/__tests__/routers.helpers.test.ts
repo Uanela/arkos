@@ -1,7 +1,10 @@
 import catchAsync from "../../../modules/error-handler/utils/catch-async";
 import { safeCatchAsync, processMiddleware } from "../routers.helpers";
+import sheu from "../../sheu";
 
-// Mock the catchAsync function
+jest.mock("../../sheu", () => ({
+  error: jest.fn(),
+}));
 jest.mock("../../../modules/error-handler/utils/catch-async", () => ({
   __esModule: true,
   default: jest.fn(),
@@ -9,6 +12,7 @@ jest.mock("../../../modules/error-handler/utils/catch-async", () => ({
 jest.mock("fs");
 
 const mockedCatchAsync = catchAsync as jest.MockedFunction<typeof catchAsync>;
+jest.spyOn(process, "exit").mockImplementation(jest.fn() as any);
 
 describe("Middleware Utils", () => {
   beforeEach(() => {
@@ -67,8 +71,8 @@ describe("Middleware Utils", () => {
 
     it("should throw error for non-function truthy values", () => {
       const truthyValue = "some-string";
-
-      expect(() => safeCatchAsync(truthyValue)).toThrow(
+      expect(() => safeCatchAsync(truthyValue)).toThrow(undefined);
+      expect(sheu.error).toHaveBeenCalledWith(
         "Validation Error: Invalid interceptor of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
       );
 
@@ -130,8 +134,9 @@ describe("Middleware Utils", () => {
 
       it("should throw error for non-function truthy middleware", () => {
         const middleware = "middleware-string";
+        expect(() => processMiddleware(middleware)).toThrow(undefined);
 
-        expect(() => processMiddleware(middleware)).toThrow(
+        expect(sheu.error).toHaveBeenCalledWith(
           "Validation Error: Invalid interceptor of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
         );
 
@@ -298,7 +303,8 @@ describe("Middleware Utils", () => {
       it("should throw error for array-like objects", () => {
         const arrayLike = { 0: jest.fn(), 1: jest.fn(), length: 2 };
 
-        expect(() => processMiddleware(arrayLike)).toThrow(
+        expect(() => processMiddleware(arrayLike)).toThrow(undefined);
+        expect(sheu.error).toHaveBeenCalledWith(
           "Validation Error: Invalid interceptor of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
         );
 
@@ -307,8 +313,8 @@ describe("Middleware Utils", () => {
 
       it("should throw error for objects as single middleware", () => {
         const objMiddleware = { handler: jest.fn() };
-
-        expect(() => processMiddleware(objMiddleware)).toThrow(
+        expect(() => processMiddleware(objMiddleware)).toThrow(undefined);
+        expect(sheu.error).toHaveBeenCalledWith(
           "Validation Error: Invalid interceptor of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
         );
 
@@ -340,7 +346,6 @@ describe("Middleware Utils", () => {
         });
 
         const middleware = jest.fn();
-
         expect(() => processMiddleware(middleware)).toThrow(
           "catchAsync failed"
         );
