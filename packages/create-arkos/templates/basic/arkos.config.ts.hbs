@@ -1,10 +1,6 @@
-{{#if typescript}}
-import { ArkosConfig } from 'arkos'
+import { defineConfig } from "arkos/config"
 
-const config: ArkosConfig = {
-{{else}}
-/** @type {import('arkos').ArkosConfig} */
-const config = {
+const arkosConfig = defineConfig({
 {{/if}}
   {{#if authentication.type}}
   authentication: {
@@ -39,6 +35,6 @@ const config = {
       allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
     },
   }
-}
+})
 
-export default config
+export default arkosConfig

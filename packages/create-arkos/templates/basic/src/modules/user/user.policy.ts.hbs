@@ -1,0 +1,33 @@
+import { ArkosPolicy } from "arkos";
+
+const userPolicy = ArkosPolicy("user")
+  .rule("Create", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Create User",
+    description: "Permission to create new user records",
+  })
+  .rule("View", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "View User",
+    description: "Permission to view user records",
+  })
+  .rule("Update", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Update User",
+    description: "Permission to update existing user records",
+  })
+  .rule("Delete", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Delete User",
+    description: "Permission to delete user records",
+  });
+
+export default userPolicy;
