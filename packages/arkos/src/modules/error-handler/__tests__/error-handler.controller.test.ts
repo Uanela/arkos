@@ -4,9 +4,11 @@ import errorHandler from "../error-handler.controller";
 import * as errorControllerHelper from "../utils/error-handler.helpers";
 import { getAppServer } from "../../../app";
 
+const mockServerClose = jest.fn((fn) => fn());
+
 jest.mock("../../../app", () => ({
   getAppServer: jest.fn(() => ({
-    close: jest.fn(),
+    close: mockServerClose,
   })),
 }));
 
@@ -416,6 +418,17 @@ describe("Error Handler Middleware", () => {
   });
 
   describe("Process Signal Handling", () => {
+    it("should gracefully shut down in production mode", () => {
+      process.env.ARKOS_BUILD = "true";
+
+      // Manually trigger the SIGTERM handler
+      const sigTermListeners = process.listeners("SIGTERM");
+      const sigTermHandler = sigTermListeners[sigTermListeners.length - 1];
+      (sigTermHandler as any)();
+
+      expect(mockProcessExit).toHaveBeenCalled();
+      expect(mockServerClose).toHaveBeenCalled();
+    });
     it("should exit immediately in development mode", () => {
       process.env.ARKOS_BUILD = "false";
 
@@ -426,18 +439,6 @@ describe("Error Handler Middleware", () => {
 
       expect(mockProcessExit).toHaveBeenCalled();
       expect(getAppServer().close).not.toHaveBeenCalled();
-    });
-
-    it("should gracefully shut down in production mode", () => {
-      process.env.ARKOS_BUILD = "true";
-
-      // Manually trigger the SIGTERM handler
-      const sigTermListeners = process.listeners("SIGTERM");
-      const sigTermHandler = sigTermListeners[sigTermListeners.length - 1];
-      (sigTermHandler as any)();
-
-      expect(mockProcessExit).toHaveBeenCalled();
-      expect(getAppServer().close).toHaveBeenCalled();
     });
   });
 });
