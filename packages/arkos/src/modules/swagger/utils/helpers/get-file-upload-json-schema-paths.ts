@@ -1,6 +1,4 @@
 import { OpenAPIV3 } from "openapi-types";
-import { RouterConfig } from "../../../../exports";
-import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.helpers";
 import deepmerge from "../../../../utils/helpers/deepmerge.helper";
 import { fileUploadDefaultRestrictions } from "../../../file-upload/file-upload.service";
 import { UserArkosConfig } from "../../../../utils/define-config";
@@ -302,7 +300,7 @@ export default function getFileUploadJsonSchemaPaths(
           description:
             "Invalid file type, size limit exceeded, or no file uploaded",
         },
-        ...(shouldIncludeSecurity("findFile") && {
+        ...(shouldIncludeSecurity("uploadFile") && {
           "401": currentPath?.responses?.["401"] || {
             description: "Authentication required",
           },
