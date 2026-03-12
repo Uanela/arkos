@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 /**
- * Options for configuring the Bundler instance.
+ * Options for configuring a bundle run.
  */
 interface BundlerOptions {
   /** Output file extension: ".js" | ".cjs" | ".mjs" */
@@ -51,23 +51,17 @@ interface CompiledAlias {
  *
  * @example
  * ```ts
- * const bundler = new Bundler({
+ * const bundler = new Bundler();
+ *
+ * bundler.bundle({
  *   ext: ".js",
  *   outDir: "./dist",
  *   rootDir: "./",
  *   configPath: "./tsconfig.json",
  * });
- *
- * bundler.bundle();
  * ```
  */
 export class Bundler {
-  private ext: string;
-  private outDir: string;
-  private rootDir: string;
-  private resolvedPaths: ResolvedPaths;
-  private compiledAliases: CompiledAlias[];
-
   /**
    * Regexes for matching all import/export/require statement forms.
    * Defined as static to avoid recreation per file processed.
@@ -80,53 +74,38 @@ export class Bundler {
   ];
 
   /**
-   * Creates a new Bundler instance and eagerly loads and compiles
-   * alias configuration from tsconfig/jsconfig.
-   *
-   * @param options - Configuration options for the bundler
+   * Pre-compiles path alias patterns into a lookup-friendly structure
+   * so alias matching during processing is O(n) over aliases rather than
+   * re-parsing patterns per import.
    */
-  constructor(options: BundlerOptions) {
-    this.ext = options.ext;
-    this.outDir = path.resolve(options.outDir);
-    this.rootDir = path.resolve(options.rootDir || process.cwd());
-    this.resolvedPaths = this.loadConfig(options.configPath);
-    this.compiledAliases = this.compileAliases();
-  }
-
-  /**
-   * Pre-compiles path alias patterns into a lookup-friendly structure.
-   * Called once in the constructor so alias matching during `bundle()` is O(n)
-   * over aliases rather than re-parsing patterns per import.
-   */
-  private compileAliases(): CompiledAlias[] {
-    return Object.entries(this.resolvedPaths.paths).map(
-      ([pattern, targets]) => {
-        const isWildcard = pattern.endsWith("/*");
-        return {
-          prefix: isWildcard ? pattern.slice(0, -2) : pattern,
-          isWildcard,
-          targets,
-        };
-      }
-    );
+  private compileAliases(resolvedPaths: ResolvedPaths): CompiledAlias[] {
+    return Object.entries(resolvedPaths.paths).map(([pattern, targets]) => {
+      const isWildcard = pattern.endsWith("/*");
+      return {
+        prefix: isWildcard ? pattern.slice(0, -2) : pattern,
+        isWildcard,
+        targets,
+      };
+    });
   }
 
   /**
    * Loads and parses the tsconfig/jsconfig file, resolving any `extends` chain.
    * Falls back to `{ baseUrl: rootDir, paths: {} }` if no config is found.
    *
+   * @param rootDir - Absolute root directory
    * @param configPath - Explicit config path, or undefined to auto-detect
    */
-  private loadConfig(configPath?: string): ResolvedPaths {
+  private loadConfig(rootDir: string, configPath?: string): ResolvedPaths {
     const resolved = configPath
       ? path.resolve(configPath)
-      : this.findConfig(this.rootDir);
+      : this.findConfig(rootDir);
 
     if (!resolved || !fs.existsSync(resolved)) {
-      return { baseUrl: this.rootDir, paths: {} };
+      return { baseUrl: rootDir, paths: {} };
     }
 
-    return this.parseConfig(resolved);
+    return this.parseConfig(resolved, rootDir);
   }
 
   /**
@@ -149,21 +128,22 @@ export class Bundler {
    * and merging `paths` with child config taking precedence over parent.
    *
    * @param configPath - Absolute path to the config file to parse
+   * @param rootDir - Absolute root directory used as fallback baseUrl
    */
-  private parseConfig(configPath: string): ResolvedPaths {
+  private parseConfig(configPath: string, rootDir: string): ResolvedPaths {
     const configDir = path.dirname(configPath);
     const raw = this.readJsonWithComments(configPath);
 
-    let base: ResolvedPaths = { baseUrl: this.rootDir, paths: {} };
+    let base: ResolvedPaths = { baseUrl: rootDir, paths: {} };
 
     if (raw.extends) {
       const isPackage = !raw.extends.startsWith(".");
       const parentPath = isPackage
-        ? this.resolveNodeModulesConfig(raw.extends)
+        ? this.resolveNodeModulesConfig(raw.extends, rootDir)
         : path.resolve(configDir, raw.extends);
 
       if (parentPath && fs.existsSync(parentPath)) {
-        base = this.parseConfig(parentPath);
+        base = this.parseConfig(parentPath, rootDir);
       }
     }
 
@@ -183,11 +163,15 @@ export class Bundler {
    * e.g. `"@tsconfig/node18/tsconfig.json"`.
    *
    * @param extendsValue - The raw extends string from tsconfig
+   * @param rootDir - Root directory to resolve from
    * @returns Absolute path to the resolved config file, or null if not found
    */
-  private resolveNodeModulesConfig(extendsValue: string): string | null {
+  private resolveNodeModulesConfig(
+    extendsValue: string,
+    rootDir: string
+  ): string | null {
     try {
-      return require.resolve(extendsValue, { paths: [this.rootDir] });
+      return require.resolve(extendsValue, { paths: [rootDir] });
     } catch {
       return null;
     }
@@ -223,33 +207,57 @@ export class Bundler {
    *
    * @param importPath - The raw import string from source code
    * @param fileDir - Absolute directory of the file containing the import
-   * @returns The rewritten import path
+   * @param ext - The output file extension
+   * @param resolvedPaths - Resolved baseUrl and paths from tsconfig
+   * @param compiledAliases - Pre-compiled alias entries
    */
-  private resolveImport(importPath: string, fileDir: string): string {
+  private resolveImport(
+    importPath: string,
+    fileDir: string,
+    ext: string,
+    resolvedPaths: ResolvedPaths,
+    compiledAliases: CompiledAlias[]
+  ): string {
     if (importPath.startsWith(".") || importPath.startsWith("/")) {
-      return this.addExtension(importPath, fileDir);
+      return this.addExtension(importPath, fileDir, ext);
     }
 
-    for (const alias of this.compiledAliases) {
+    for (const alias of compiledAliases) {
       if (alias.isWildcard) {
         if (!importPath.startsWith(alias.prefix + "/")) continue;
         const remainder = importPath.slice(alias.prefix.length + 1);
 
         for (const target of alias.targets) {
           const resolved = path.resolve(
-            this.resolvedPaths.baseUrl,
+            resolvedPaths.baseUrl,
             target.replace("*", remainder)
           );
-          const outPath = this.sourceToOut(resolved);
-          return this.addExtension(this.toRelative(fileDir, outPath), fileDir);
+          const outPath = this.sourceToOut(
+            resolved,
+            resolvedPaths.baseUrl,
+            fileDir
+          );
+          return this.addExtension(
+            this.toRelative(fileDir, outPath),
+            fileDir,
+            ext
+          );
         }
       } else {
         if (importPath !== alias.prefix) continue;
 
         for (const target of alias.targets) {
-          const resolved = path.resolve(this.resolvedPaths.baseUrl, target);
-          const outPath = this.sourceToOut(resolved);
-          return this.addExtension(this.toRelative(fileDir, outPath), fileDir);
+          const resolved = path.resolve(resolvedPaths.baseUrl, target);
+          const outPath = this.sourceToOut(
+            resolved,
+            resolvedPaths.baseUrl,
+            fileDir
+          );
+          return this.addExtension(
+            this.toRelative(fileDir, outPath),
+            fileDir,
+            ext
+          );
         }
       }
     }
@@ -264,17 +272,21 @@ export class Bundler {
    *
    * @param importPath - The relative import path to fix
    * @param fileDir - Absolute directory of the file containing the import
-   * @returns The import path with the correct extension
+   * @param ext - The output file extension
    */
-  private addExtension(importPath: string, fileDir: string): string {
-    if (importPath.endsWith(this.ext)) return importPath;
+  private addExtension(
+    importPath: string,
+    fileDir: string,
+    ext: string
+  ): string {
+    if (importPath.endsWith(ext)) return importPath;
 
     const absolute = path.resolve(fileDir, importPath);
-    if (fs.existsSync(absolute + "/index" + this.ext)) {
-      return importPath + "/index" + this.ext;
+    if (fs.existsSync(absolute + "/index" + ext)) {
+      return importPath + "/index" + ext;
     }
 
-    return importPath + this.ext;
+    return importPath + ext;
   }
 
   /**
@@ -282,11 +294,16 @@ export class Bundler {
    * Paths outside rootDir are returned unchanged.
    *
    * @param sourcePath - Absolute path in the source tree
-   * @returns Absolute path in the output tree
+   * @param rootDir - Absolute root directory
+   * @param outDir - Absolute output directory
    */
-  private sourceToOut(sourcePath: string): string {
-    return sourcePath.startsWith(this.rootDir)
-      ? path.join(this.outDir, sourcePath.slice(this.rootDir.length))
+  private sourceToOut(
+    sourcePath: string,
+    rootDir: string,
+    outDir: string
+  ): string {
+    return sourcePath.startsWith(rootDir)
+      ? path.join(outDir, sourcePath.slice(rootDir.length))
       : sourcePath;
   }
 
@@ -309,13 +326,27 @@ export class Bundler {
    *
    * @param content - Raw file content to process
    * @param fileDir - Absolute directory of the file being processed
-   * @returns The file content with all imports rewritten
+   * @param ext - The output file extension
+   * @param resolvedPaths - Resolved baseUrl and paths from tsconfig
+   * @param compiledAliases - Pre-compiled alias entries
    */
-  private rewriteImports(content: string, fileDir: string): string {
+  private rewriteImports(
+    content: string,
+    fileDir: string,
+    ext: string,
+    resolvedPaths: ResolvedPaths,
+    compiledAliases: CompiledAlias[]
+  ): string {
     for (const regex of Bundler.IMPORT_REGEXES) {
       regex.lastIndex = 0;
       content = content.replace(regex, (match, p) => {
-        const fixed = this.resolveImport(p, fileDir);
+        const fixed = this.resolveImport(
+          p,
+          fileDir,
+          ext,
+          resolvedPaths,
+          compiledAliases
+        );
         return fixed === p ? match : match.replace(p, fixed);
       });
     }
@@ -327,19 +358,59 @@ export class Bundler {
    * directory, rewriting imports in-place. Files whose content is unchanged
    * are not written back to disk.
    *
-   * @param dir - Directory to process. Defaults to `outDir`.
+   * @param options - Configuration options for this bundle run
    */
-  bundle(dir: string = this.outDir): void {
+  bundle(options: BundlerOptions): void {
+    const rootDir = path.resolve(options.rootDir || process.cwd());
+    const outDir = path.resolve(options.outDir);
+    const resolvedPaths = this.loadConfig(rootDir, options.configPath);
+    const compiledAliases = this.compileAliases(resolvedPaths);
+
+    this._bundleDir(
+      options.ext,
+      outDir,
+      rootDir,
+      resolvedPaths,
+      compiledAliases,
+      outDir
+    );
+  }
+
+  /**
+   * Internal recursive directory walker, separated so that `bundle()` only
+   * resolves config once at the top level rather than on every recursion.
+   */
+  private _bundleDir(
+    ext: string,
+    outDir: string,
+    rootDir: string,
+    resolvedPaths: ResolvedPaths,
+    compiledAliases: CompiledAlias[],
+    dir: string
+  ): void {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
 
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        this.bundle(fullPath);
+        this._bundleDir(
+          ext,
+          outDir,
+          rootDir,
+          resolvedPaths,
+          compiledAliases,
+          fullPath
+        );
       } else if (/\.(js|cjs|mjs)$/.test(entry.name)) {
         const content = fs.readFileSync(fullPath, "utf8");
-        const updated = this.rewriteImports(content, path.dirname(fullPath));
+        const updated = this.rewriteImports(
+          content,
+          path.dirname(fullPath),
+          ext,
+          resolvedPaths,
+          compiledAliases
+        );
         if (updated !== content) fs.writeFileSync(fullPath, updated);
       }
     }
