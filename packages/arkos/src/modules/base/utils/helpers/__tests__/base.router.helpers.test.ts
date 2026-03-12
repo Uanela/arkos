@@ -9,6 +9,10 @@ import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser
 import { getArkosConfig } from "../../../../../server";
 import z from "zod";
 
+jest.mock("../../../../../utils/helpers/exit-error", () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
 jest.mock("../../../../error-handler/utils/catch-async");
 jest.mock("../../../../../server");
 jest.mock("fs");

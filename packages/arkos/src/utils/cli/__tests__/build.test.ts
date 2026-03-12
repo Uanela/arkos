@@ -1,458 +1,466 @@
+import { Bundler } from "../../bundler";
 import fs from "fs";
-import { execSync } from "child_process";
-import { buildCommand } from "../build";
-import { getUserFileExtension } from "../../helpers/fs.helpers";
-import { loadEnvironmentVariables } from "../../dotenv.helpers";
-import sheu from "../../sheu";
 
-// Mock dependencies
-jest.mock("child_process", () => ({
-  execSync: jest.fn(),
-  spawn: jest.fn(() => ({
-    kill: jest.fn(),
-  })),
-}));
-jest.mock("../../sheu");
-jest.mock("fs", () => ({
-  ...jest.requireActual("fs"),
-  existsSync: jest.fn(),
-  mkdirSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  readFileSync: jest.fn(),
-  unlinkSync: jest.fn(),
-  statSync: jest.fn(() => ({
-    isDirectory: () => false,
-    isFile: () => true,
-  })),
-  readdirSync: jest.fn(() => []),
-  copyFileSync: jest.fn(),
-}));
+jest.mock("fs");
+jest.mock("path", () => {
+  const actual = jest.requireActual("path");
+  return { ...actual };
+});
 
-jest.mock("path", () => ({
-  ...jest.requireActual("path"),
-  join: jest.fn((...args) => args.join("/")),
-  extname: jest.fn((filename) => {
-    const parts = filename.split(".");
-    return parts.length > 1 ? `.${parts[parts.length - 1]}` : "";
-  }),
-  dirname: jest.fn((p) => p.substring(0, p.lastIndexOf("/"))),
-}));
+const mockFs = fs as jest.Mocked<typeof fs>;
 
-jest.mock("../../helpers/fs.helpers", () => ({
-  getUserFileExtension: jest.fn(),
-  fullCleanCwd: jest.fn((path) => path),
-}));
+function makeDirent(name: string, isDir: boolean): fs.Dirent {
+  return {
+    name,
+    isDirectory: () => isDir,
+    isFile: () => !isDir,
+    isBlockDevice: () => false,
+    isCharacterDevice: () => false,
+    isSymbolicLink: () => false,
+    isFIFO: () => false,
+    isSocket: () => false,
+  } as fs.Dirent;
+}
 
-jest.mock("../../dotenv.helpers", () => ({
-  loadEnvironmentVariables: jest.fn(() => [".env"]),
-}));
+const TSCONFIG = JSON.stringify({
+  compilerOptions: {
+    baseUrl: ".",
+    paths: {
+      "@/*": ["src/*"],
+      "@utils/*": ["src/utils/*"],
+    },
+  },
+});
 
-describe("buildCommand", () => {
-  // Store original console methods
-  const originalConsole = {
-    info: console.info,
-    error: console.error,
-    warn: console.warn,
-  };
-
-  // Mock process.exit
-  const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
-    console.error(`Process.exit called with code ${code}`);
-    return "" as never;
-  });
-
+describe("Bundler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-
-    // Mock console methods
-    console.info = jest.fn();
-    console.error = jest.fn();
-    console.warn = jest.fn();
-
-    // Mock process.cwd()
-    jest.spyOn(process, "cwd").mockReturnValue("/mock/project");
-
-    // Default fs.existsSync behavior
-    (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
-      if (path.includes("tsconfig.json")) return true;
-      if (path.includes(".build")) return false;
-      return true;
-    });
-
-    // Default fs.readFileSync behavior
-    (fs.readFileSync as jest.Mock).mockImplementation((path: string) => {
-      if (path.includes("tsconfig.json")) {
-        return JSON.stringify({ compilerOptions: { target: "es2020" } });
-      }
-      if (path.includes("package.json")) {
-        return JSON.stringify({
-          name: "test-project",
-          version: "1.0.0",
-          description: "Test project",
-          dependencies: { test: "^1.0.0" },
-        });
-      }
-      return "";
-    });
+    mockFs.existsSync.mockReturnValue(false);
+    mockFs.readdirSync.mockReturnValue([]);
+    mockFs.readFileSync.mockReturnValue("");
+    mockFs.writeFileSync.mockImplementation(() => {});
   });
 
-  afterEach(() => {
-    // Restore console methods
-    console.info = originalConsole.info;
-    console.error = originalConsole.error;
-    console.warn = originalConsole.warn;
-  });
-
-  afterAll(() => {
-    mockExit.mockRestore();
-  });
-
-  describe("Module type validation", () => {
-    it("should default to 'cjs' when no module type is specified", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-
-      buildCommand({});
-
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        "/mock/project/tsconfig.arkos-build.json",
-        expect.any(String)
+  describe("config loading", () => {
+    it("should auto-detect tsconfig.json when no configPath provided", () => {
+      mockFs.existsSync.mockImplementation((p) =>
+        String(p).endsWith("tsconfig.json")
       );
+      mockFs.readFileSync.mockReturnValue(TSCONFIG);
+
+      expect(() =>
+        new Bundler().bundle({ ext: ".js", outDir: "./dist", rootDir: "./" })
+      ).not.toThrow();
     });
 
-    it("should correctly handle 'esm' module type", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-
-      buildCommand({ module: "esm" });
-
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        "/mock/project/tsconfig.arkos-build.json",
-        expect.any(String)
+    it("should fall back to jsconfig.json when tsconfig.json not found", () => {
+      mockFs.existsSync.mockImplementation((p) =>
+        String(p).endsWith("jsconfig.json")
       );
+      mockFs.readFileSync.mockReturnValue(TSCONFIG);
+
+      expect(() =>
+        new Bundler().bundle({ ext: ".js", outDir: "./dist", rootDir: "./" })
+      ).not.toThrow();
     });
 
-    it("should recognize all ESM module aliases", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+    it("should use empty paths when no config found", () => {
+      mockFs.existsSync.mockReturnValue(false);
 
-      const esmAliases = ["esm", "es", "es2020", "esnext", "module"];
-
-      for (const alias of esmAliases) {
-        jest.clearAllMocks();
-        buildCommand({ module: alias });
-
-        expect(fs.writeFileSync).toHaveBeenCalledWith(
-          "/mock/project/tsconfig.arkos-build.json",
-          expect.any(String)
-        );
-      }
+      expect(() =>
+        new Bundler().bundle({ ext: ".js", outDir: "./dist", rootDir: "./" })
+      ).not.toThrow();
     });
 
-    it("should recognize all CommonJS module aliases", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-
-      const cjsAliases = ["cjs", "commonjs"];
-
-      for (const alias of cjsAliases) {
-        jest.clearAllMocks();
-        buildCommand({ module: alias });
-
-        expect(fs.writeFileSync).toHaveBeenCalledWith(
-          "/mock/project/tsconfig.arkos-build.json",
-          expect.any(String)
-        );
-      }
-    });
-
-    it("should default to 'cjs' for unrecognized module types with a warning", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-
-      buildCommand({ module: "invalid" });
-
-      expect(sheu.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Unrecognized module type "invalid"')
+    it("should use explicit configPath when provided", () => {
+      mockFs.existsSync.mockImplementation((p) =>
+        String(p).endsWith("custom.tsconfig.json")
       );
+      mockFs.readFileSync.mockReturnValue(TSCONFIG);
 
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        "/mock/project/tsconfig.arkos-build.json",
-        expect.any(String)
-      );
-    });
-  });
-
-  describe("Build directory setup", () => {
-    it("should create build directory if it doesn't exist", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-
-      buildCommand({});
-
-      expect(fs.mkdirSync).toHaveBeenCalledWith(".build", { recursive: true });
+      expect(() =>
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "./dist",
+          rootDir: "./",
+          configPath: "./custom.tsconfig.json",
+        })
+      ).not.toThrow();
     });
 
-    it("should create module-specific subdirectories", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-
-      buildCommand({});
-
-      expect(fs.mkdirSync).toHaveBeenCalledWith(".build/cjs", {
-        recursive: true,
-      });
-      expect(fs.mkdirSync).toHaveBeenCalledWith(".build/esm", {
-        recursive: true,
-      });
-    });
-  });
-
-  describe("TypeScript projects", () => {
-    beforeEach(() => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-    });
-
-    it("should correctly build a TypeScript project with default settings", () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-      buildCommand({});
-
-      // Verify tsconfig creation
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        "/mock/project/tsconfig.arkos-build.json",
-        expect.stringContaining('"outDir": "./.build"')
-      );
-
-      (execSync as jest.Mock).mockImplementation(() => {
-        return "";
+    it("should handle tsconfig with extends", () => {
+      const parentConfig = JSON.stringify({
+        compilerOptions: {
+          baseUrl: ".",
+          paths: { "@base/*": ["base/*"] },
+        },
       });
 
-      // (fs.existsSync as jest.Mock).mockReturnValue(true);
+      const childConfig = JSON.stringify({
+        extends: "./tsconfig.base.json",
+        compilerOptions: {
+          paths: { "@child/*": ["child/*"] },
+        },
+      });
 
-      expect(console.error).not.toHaveBeenCalled();
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockImplementation((p) => {
+        if (String(p).includes("base")) return parentConfig;
+        return childConfig;
+      });
 
-      // Verify TypeScript compilation command
-      expect(execSync).toHaveBeenCalledWith(
-        "npx tsc -p /mock/project/tsconfig.arkos-build.json",
-        expect.any(Object)
-      );
-
-      // Verify temp config cleanup
-      expect(fs.unlinkSync).toHaveBeenCalledWith(
-        "/mock/project/tsconfig.arkos-build.json"
-      );
+      expect(() =>
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "./dist",
+          rootDir: "./",
+          configPath: "./tsconfig.json",
+        })
+      ).not.toThrow();
     });
 
-    it("should handle custom tsconfig path", () => {
-      buildCommand({ config: "custom-tsconfig.json" });
-
-      expect(fs.readFileSync).toHaveBeenCalledWith(
-        "/mock/project/custom-tsconfig.json",
-        "utf8"
-      );
-    });
-
-    it("should handle tsconfig read errors gracefully", () => {
-      (fs.readFileSync as jest.Mock).mockImplementation((path) => {
-        if (path.includes("tsconfig.json")) {
-          throw new Error("Failed to read tsconfig");
+    it("should handle tsconfig with comments and trailing commas", () => {
+      const configWithComments = `{
+        // this is a comment
+        "compilerOptions": {
+          "target": "ES6",
+          // Uanela
+          "module": "es2020",
+          "moduleResolution": "bundler",
+          "rootDir": ".",
+          "baseUrl": ".",
+          "esModuleInterop": true,
+          "isolatedModules": true,
+          "skipLibCheck": true,
+          "forceConsistentCasingInFileNames": true,
+          "strict": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "lib": ["es6", "dom"],
+          "noImplicitAny": false,
+          "paths": {
+          "@src/*": ["./src/*"]
         }
-        return "";
-      });
+        },
+        "include": ["src/**/*.ts", "packages/**/*.ts", "arkos.config.ts"],
+        "exclude": [
+          "node_modules",
+          ".build",
+          "build",
+          "generated-schemas.ts",
+          "uml",
+          "uploads"
+        ]
+      }`;
 
-      buildCommand({});
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(configWithComments);
 
-      expect(console.error).toHaveBeenCalledWith(
-        "❌ Error reading tsconfig.json:",
-        expect.any(Error)
-      );
-
-      // Should still create a default config
-      expect(fs.writeFileSync).toHaveBeenCalled();
-    });
-
-    it("should handle TypeScript compilation errors", () => {
-      (execSync as jest.Mock).mockImplementation(() => {
-        throw new Error("TypeScript compilation failed");
-      });
-
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-      buildCommand({});
-
-      expect(sheu.error).toHaveBeenCalledWith(
-        expect.stringContaining("Build failed:")
-      );
-      expect(console.error).toHaveBeenCalledWith(expect.any(Error));
-
-      expect(fs.unlinkSync).toHaveBeenCalled();
-    });
-
-    it("should handle temp config cleanup errors gracefully", () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-      (fs.unlinkSync as jest.Mock).mockImplementation(() => {
-        throw new Error("Failed to delete temp config");
-      });
-
-      buildCommand({});
-
-      expect(console.warn).toHaveBeenCalledWith(
-        "Warning: Error cleaning up temporary config:",
-        expect.any(Error)
-      );
+      expect(() =>
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "./dist",
+          rootDir: "./",
+          configPath: "./tsconfig.json",
+        })
+      ).not.toThrow();
     });
   });
 
-  describe("JavaScript projects", () => {
-    beforeEach(() => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("js");
-    });
-
-    it("should correctly build a JavaScript project with CommonJS format", () => {
-      buildCommand({ module: "cjs" });
-
-      // Should copy all JS file types for CJS build
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining("src/**/*.js"),
-        expect.any(Object)
-      );
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining("src/**/*.jsx"),
-        expect.any(Object)
-      );
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining("src/**/*.cjs"),
-        expect.any(Object)
-      );
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining("src/**/*.mjs"),
-        expect.any(Object)
-      );
-    });
-
-    it("should correctly build a JavaScript project with ESM format", () => {
-      (execSync as jest.Mock).mockImplementation(() => {
-        return "";
-      });
-
-      buildCommand({ module: "esm" });
-
-      (getUserFileExtension as jest.Mock).mockReturnValue("js");
-
-      // Should skip .cjs files for ESM build
-      const copyCommand = (execSync as jest.Mock).mock.calls[0][0];
-      expect(copyCommand).toContain("src/**/*.js");
-      expect(copyCommand).toContain("src/**/*.jsx");
-      expect(copyCommand).toContain("src/**/*.mjs");
-      expect(copyCommand).not.toContain("src/**/*.cjs");
-
-      expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Note: .cjs files are skipped in ESM build")
-      );
-    });
-
-    it("should copy non-source files during build", () => {
-      // Setup mock for readdirSync to return some files
-      (fs.readdirSync as jest.Mock).mockReturnValue(["file.jpg", "file.txt"]);
-      (fs.statSync as jest.Mock).mockImplementation(() => ({
-        isDirectory: () => false,
-        isFile: () => true,
-      }));
-
-      buildCommand({});
-
-      // Should have called copyFileSync for non-source files
-      expect(fs.copyFileSync).toHaveBeenCalled();
-    });
-
-    it("should create appropriate package.json in the build directory", () => {
-      buildCommand({ module: "esm" });
-
-      // For ESM, should include type:module
-      expect(fs.writeFileSync).toHaveBeenCalledWith(
-        ".build/esm/package.json",
-        expect.stringContaining('"type": "module"')
-      );
-
-      // Reset and test CJS
-      jest.clearAllMocks();
-      buildCommand({ module: "cjs" });
-
-      // For CJS, should not include type:module
-      const packageJsonCalls = (
-        fs.writeFileSync as jest.Mock
-      ).mock.calls.filter((call) => call[0].includes("package.json"));
-
-      expect(packageJsonCalls.length).toBe(1);
-      expect(packageJsonCalls[0][1]).not.toContain('"type":"module"');
-    });
-
-    it("should handle package.json errors gracefully", () => {
-      (fs.readFileSync as jest.Mock).mockImplementation((path) => {
-        if (
-          path.includes("package.json") &&
-          !path.includes("../../../../../package.json")
-        ) {
-          throw new Error("Failed to read package.json");
+  describe("bundle", () => {
+    it("should recursively process directories", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockImplementation((dir) => {
+        if (String(dir).endsWith("dist")) {
+          return [
+            makeDirent("sub", true),
+            makeDirent("index.js", false),
+          ] as any;
         }
-        return "";
+        if (String(dir).endsWith("sub")) {
+          return [makeDirent("helper.js", false)] as any;
+        }
+        return [] as any;
       });
+      mockFs.readFileSync.mockReturnValue(`import { foo } from "./foo";`);
 
-      buildCommand({});
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
-      // Should still complete without creating a package.json in build dir
-      expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Build complete")
-      );
+      expect(mockFs.writeFileSync).toHaveBeenCalledTimes(2);
+    });
+
+    it("should skip non-js files", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.ts", false),
+        makeDirent("styles.css", false),
+        makeDirent("readme.md", false),
+      ] as any);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it("should process .cjs files", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.cjs", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`const x = require("./foo");`);
+
+      new Bundler().bundle({ ext: ".cjs", outDir: "./dist" });
+
+      expect(mockFs.writeFileSync).toHaveBeenCalledTimes(1);
+    });
+
+    it("should process .mjs files", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.mjs", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`import foo from "./foo";`);
+
+      new Bundler().bundle({ ext: ".mjs", outDir: "./dist" });
+
+      expect(mockFs.writeFileSync).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe("Error handling", () => {
-    it("should handle build failures and exit with code 1", () => {
-      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-      (execSync as jest.Mock).mockImplementation(() => {
-        throw new Error("Build failed");
-      });
+  describe("bare specifier detection", () => {
+    it("should not rewrite node_modules imports", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
 
-      buildCommand({});
+      const content = `
+        import express from "express";
+        import { PrismaClient } from "@prisma/client";
+        import merge from "lodash/merge";
+        import zod from "zod";
+      `;
+      mockFs.readFileSync.mockReturnValue(content);
 
-      expect(console.error).toHaveBeenCalledWith(
-        "Process.exit called with code 1"
-      );
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
-      expect(sheu.error).toHaveBeenCalledWith(
-        expect.stringContaining("Build failed:")
-      );
-      expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+      // Content is unchanged so writeFileSync should not be called
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
 
-    it("should handle file copy errors gracefully", () => {
-      (execSync as jest.Mock).mockImplementation(() => {
-        return "";
-      });
-      (getUserFileExtension as jest.Mock).mockReturnValue("js");
-      (fs.copyFileSync as jest.Mock).mockImplementation(() => {
-        throw new Error("Copy failed");
-      });
-      (fs.readdirSync as jest.Mock).mockReturnValue(["file.txt"]);
+    it("should rewrite relative imports", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`import { foo } from "./utils";`);
 
-      buildCommand({});
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
-      expect(console.warn).toHaveBeenCalledWith(
-        "Warning: Error copying project files:",
-        expect.any(Error)
-      );
-
-      // Should still complete
-      expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Build complete")
-      );
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`from "./utils.js"`);
     });
   });
 
-  describe("Environment loading", () => {
-    it("should load environment variables", () => {
-      buildCommand({});
+  describe("extension handling", () => {
+    it("should add extension to relative imports without one", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`import { a } from "./helpers";`);
 
-      expect(loadEnvironmentVariables).toHaveBeenCalled();
-      expect(console.info).toHaveBeenCalledWith(
-        expect.stringContaining("Environments")
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`"./helpers.js"`);
+    });
+
+    it("should use /index.js when import resolves to a directory", () => {
+      mockFs.existsSync.mockImplementation((p) =>
+        String(p).endsWith("/index.js")
       );
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`import { a } from "./helpers";`);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`"./helpers/index.js"`);
+    });
+
+    it("should not double-add extension when already present", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`import { a } from "./helpers.js";`);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      // Content is unchanged so writeFileSync should not be called
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("import statement types", () => {
+    it("should rewrite named imports", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`import { foo } from "./foo";`);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`from "./foo.js"`);
+    });
+
+    it("should rewrite default imports", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`import foo from "./foo";`);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`from "./foo.js"`);
+    });
+
+    it("should rewrite side-effect imports", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`import "./setup";`);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`import "./setup.js"`);
+    });
+
+    it("should rewrite dynamic imports", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`const m = import("./module");`);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`import("./module.js")`);
+    });
+
+    it("should rewrite require calls", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`const x = require("./config");`);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`require("./config.js")`);
+    });
+
+    it("should rewrite re-exports", () => {
+      mockFs.existsSync.mockReturnValue(false);
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+      mockFs.readFileSync.mockReturnValue(`export { foo } from "./foo";`);
+
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).toContain(`from "./foo.js"`);
+    });
+  });
+
+  describe("alias resolution", () => {
+    it("should resolve wildcard alias to relative path", () => {
+      mockFs.existsSync.mockImplementation((p) =>
+        String(p).endsWith("tsconfig.json")
+      );
+      mockFs.readFileSync.mockImplementation((p) => {
+        if (String(p).endsWith("tsconfig.json")) return TSCONFIG;
+        return `import { helper } from "@/helpers/utils";`;
+      });
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+
+      new Bundler().bundle({
+        ext: ".js",
+        outDir: "/project/dist",
+        rootDir: "/project",
+        configPath: "/project/tsconfig.json",
+      });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).not.toContain(`"@/helpers/utils"`);
+      expect(written).toContain(".js");
+    });
+
+    it("should not rewrite aliased imports that match node_modules packages", () => {
+      mockFs.existsSync.mockImplementation((p) =>
+        String(p).endsWith("tsconfig.json")
+      );
+      mockFs.readFileSync.mockImplementation((p) => {
+        if (String(p).endsWith("tsconfig.json")) return TSCONFIG;
+        return `import { PrismaClient } from "@prisma/client";`;
+      });
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+
+      new Bundler().bundle({
+        ext: ".js",
+        outDir: "/project/dist",
+        rootDir: "/project",
+        configPath: "/project/tsconfig.json",
+      });
+
+      // Content is unchanged so writeFileSync should not be called
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it("should resolve exact alias (non-wildcard)", () => {
+      const config = JSON.stringify({
+        compilerOptions: {
+          baseUrl: ".",
+          paths: { "@root": ["src/index"] },
+        },
+      });
+
+      mockFs.existsSync.mockImplementation((p) =>
+        String(p).endsWith("tsconfig.json")
+      );
+      mockFs.readFileSync.mockImplementation((p) => {
+        if (String(p).endsWith("tsconfig.json")) return config;
+        return `import root from "@root";`;
+      });
+      mockFs.readdirSync.mockReturnValue([
+        makeDirent("index.js", false),
+      ] as any);
+
+      new Bundler().bundle({
+        ext: ".js",
+        outDir: "/project/dist",
+        rootDir: "/project",
+        configPath: "/project/tsconfig.json",
+      });
+
+      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
+      expect(written).not.toContain(`from "@root"`);
     });
   });
 });
