@@ -416,3 +416,5 @@ export class Bundler {
     }
   }
 }
+
+export const bundler = new Bundler();
