@@ -209,6 +209,24 @@ generate
   });
 
 generate
+  .command("route-hook")
+  .alias("rh")
+  .description("Generate a new route hook")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.policy({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("service-hook")
+  .alias("sh")
+  .description("Generate a new service hook")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.policy({ ...generateOptions, ...options });
+  });
+
+generate
   .command("components")
   .alias("co")
   .description("Generate multiple components for a module")

@@ -7,9 +7,13 @@ import * as dynamicLoaderHelpers from "../helpers/dynamic-loader.helpers";
 import { killServerChildProcess } from "../cli/utils/cli.helpers";
 import sheu from "../sheu";
 import z from "zod";
+import { warnDeprecatedModuleComponents } from "../dynamic-loader";
+import * as fsHelpers from "../helpers/fs.helpers";
 
 export const prismaModelsUniqueFields: Record<string, any[]> = [] as any;
-
+jest.mock("../helpers/fs.helpers", () => ({
+  getUserFileExtension: jest.fn(() => "ts"),
+}));
 jest.mock("../../modules/debugger/debugger.service");
 jest.mock("path");
 jest.mock("fs", () => ({
@@ -30,6 +34,7 @@ jest.mock("../sheu", () => ({
   warn: jest.fn(),
 }));
 
+const mockWarn = sheu.warn as jest.Mock;
 // Mock Error class to prevent actual throws during testing
 const originalError = global.Error;
 const mockError = jest.fn().mockImplementation((message) => {
@@ -661,6 +666,243 @@ describe("Dynamic Prisma Model Loader", () => {
     it("should not contain duplicates", () => {
       const unique = new Set(dynamicLoader.appModules);
       expect(unique.size).toBe(dynamicLoader.appModules.length);
+    });
+  });
+
+  describe("warnDeprecatedModuleComponents", () => {
+    let consoleSpy;
+    beforeEach(() => {
+      jest.clearAllMocks();
+      consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+    });
+
+    it("should not warn when no deprecated patterns found", () => {
+      warnDeprecatedModuleComponents([
+        { moduleName: "post", components: { dtos: {}, schemas: {} } },
+      ]);
+      expect(mockWarn).not.toHaveBeenCalled();
+    });
+
+    it("should warn for authConfigs", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "user",
+          components: { dtos: {}, schemas: {}, authConfigs: {} as any },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Auth Config Files"))).toBe(true);
+      expect(
+        calls.some((c) => c.includes("src/modules/user/user.auth.ts"))
+      ).toBe(true);
+      expect(calls.some((c) => c.includes("arkosjs.com"))).toBe(true);
+    });
+
+    it("should warn for interceptors", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: {
+            dtos: {},
+            schemas: {},
+            interceptors: { beforeCreateOne: jest.fn() },
+          },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Interceptors"))).toBe(true);
+      expect(
+        calls.some((c) => c.includes("src/modules/post/post.interceptors.ts"))
+      ).toBe(true);
+    });
+
+    it("should warn for hooks", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: {
+            dtos: {},
+            schemas: {},
+            hooks: { beforeCreateOne: jest.fn() } as any,
+          },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Service Hooks"))).toBe(true);
+      expect(
+        calls.some((c) => c.includes("src/modules/post/post.hooks.ts"))
+      ).toBe(true);
+    });
+
+    it("should warn for prismaQueryOptions", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: {
+            dtos: {},
+            schemas: {},
+            prismaQueryOptions: { findMany: {} } as any,
+          },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Query Options"))).toBe(true);
+      expect(
+        calls.some((c) => c.includes("src/modules/post/post.query.ts"))
+      ).toBe(true);
+    });
+
+    it("should warn for dtos when dtos object has keys", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: { dtos: { create: class {} }, schemas: {} },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("DTOs"))).toBe(true);
+      expect(calls.some((c) => c.includes("src/modules/post/post/dtos/"))).toBe(
+        true
+      );
+    });
+
+    it("should warn for schemas when schemas object has keys", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: { dtos: {}, schemas: { create: {} as any } },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Zod Schemas"))).toBe(true);
+      expect(
+        calls.some((c) => c.includes("src/modules/post/post/schemas/"))
+      ).toBe(true);
+    });
+
+    it("should warn for routerConfig when config has keys", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: {
+            dtos: {},
+            schemas: {},
+            router: { config: { disable: true }, default: {} as any },
+          },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Router Config"))).toBe(true);
+      expect(
+        calls.some((c) => c.includes("post.router.ts (config export)"))
+      ).toBe(true);
+    });
+
+    it("should warn for autoLoadedRouter for auth module", () => {
+      warnDeprecatedModuleComponents([
+        { moduleName: "auth", components: { dtos: {}, schemas: {} } },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Auto-loaded Routers"))).toBe(true);
+    });
+
+    it("should warn for autoLoadedRouter for file-upload module", () => {
+      warnDeprecatedModuleComponents([
+        { moduleName: "file-upload", components: { dtos: {}, schemas: {} } },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Auto-loaded Routers"))).toBe(true);
+    });
+
+    it("should warn for autoLoadedRouter for prisma model with router", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: { dtos: {}, schemas: {}, router: { default: {} as any } },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Auto-loaded Routers"))).toBe(true);
+    });
+
+    it("should group multiple modules under the same deprecation label", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "user",
+          components: {
+            dtos: {},
+            schemas: {},
+            interceptors: { beforeCreateOne: jest.fn() },
+          },
+        },
+        {
+          moduleName: "post",
+          components: {
+            dtos: {},
+            schemas: {},
+            interceptors: { beforeCreateOne: jest.fn() },
+          },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      const interceptorLabelCalls = calls.filter((c) =>
+        c.includes("Interceptors")
+      );
+      // label appears once
+      expect(interceptorLabelCalls.length).toBe(1);
+      expect(calls.some((c) => c.includes("user.interceptors.ts"))).toBe(true);
+      expect(calls.some((c) => c.includes("post.interceptors.ts"))).toBe(true);
+    });
+
+    it("should print migration link for each warned group", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "user",
+          components: { dtos: {}, schemas: {}, authConfigs: {} as any },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("→ Migrate:"))).toBe(true);
+      expect(calls.some((c) => c.includes("arkosjs.com"))).toBe(true);
+    });
+
+    it("should not warn for dtos when dtos is empty", () => {
+      warnDeprecatedModuleComponents([
+        { moduleName: "post", components: { dtos: {}, schemas: {} } },
+      ]);
+      expect(mockWarn).not.toHaveBeenCalled();
+    });
+
+    it("should not warn for routerConfig when config is empty object", () => {
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: {
+            dtos: {},
+            schemas: {},
+            router: { config: {}, default: {} as any },
+          },
+        },
+      ]);
+      // only autoLoadedRouter should fire since router exists, not routerConfig
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("Router Config"))).toBe(false);
+    });
+
+    it("should use js extension when getUserFileExtension returns js", () => {
+      (fsHelpers.getUserFileExtension as jest.Mock).mockReturnValue("js");
+      warnDeprecatedModuleComponents([
+        {
+          moduleName: "post",
+          components: {
+            dtos: {},
+            schemas: {},
+            interceptors: { beforeCreateOne: jest.fn() },
+          },
+        },
+      ]);
+      const calls = mockWarn.mock.calls.map((c) => c[0]);
+      expect(calls.some((c) => c.includes("post.interceptors.js"))).toBe(true);
     });
   });
 });
