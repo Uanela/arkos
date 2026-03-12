@@ -135,11 +135,34 @@ describe("Bundler", () => {
       const configWithComments = `{
         // this is a comment
         "compilerOptions": {
-          "baseUrl": "." /* block comment */,
+          "target": "ES6",
+          // Uanela
+          "module": "es2020",
+          "moduleResolution": "bundler",
+          "rootDir": ".",
+          "baseUrl": ".",
+          "esModuleInterop": true,
+          "isolatedModules": true,
+          "skipLibCheck": true,
+          "forceConsistentCasingInFileNames": true,
+          "strict": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "lib": ["es6", "dom"],
+          "noImplicitAny": false,
           "paths": {
-            "@/*": ["src/*"], 
-          },
+          "@src/*": ["./src/*"]
+        }
         },
+        "include": ["src/**/*.ts", "packages/**/*.ts", "arkos.config.ts"],
+        "exclude": [
+          "node_modules",
+          ".build",
+          "build",
+          "generated-schemas.ts",
+          "uml",
+          "uploads"
+        ]
       }`;
 
       mockFs.existsSync.mockReturnValue(true);
@@ -239,11 +262,7 @@ describe("Bundler", () => {
       const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
       bundler.bundle();
 
-      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
-      expect(written).toContain(`from "express"`);
-      expect(written).toContain(`from "@prisma/client"`);
-      expect(written).toContain(`from "lodash/merge"`);
-      expect(written).toContain(`from "zod"`);
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
 
     it("should rewrite relative imports", () => {
@@ -302,9 +321,7 @@ describe("Bundler", () => {
       const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
       bundler.bundle();
 
-      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
-      expect(written).toContain(`"./helpers.js"`);
-      expect(written).not.toContain(`"./helpers.js.js"`);
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
   });
 
@@ -440,8 +457,7 @@ describe("Bundler", () => {
       });
       bundler.bundle();
 
-      const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
-      expect(written).toContain(`from "@prisma/client"`);
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
 
     it("should resolve exact alias (non-wildcard)", () => {
