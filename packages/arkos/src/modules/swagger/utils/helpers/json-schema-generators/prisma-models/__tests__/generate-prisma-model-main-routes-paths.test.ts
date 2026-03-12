@@ -252,12 +252,12 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       generatePrismaModelMainRoutesPaths("User", paths);
 
       const findManyRoute = paths["/api/users"].get;
-      const paramNames = findManyRoute.parameters.map((p: any) => p.name);
-      expect(paramNames).toContain("page");
-      expect(paramNames).toContain("limit");
-      expect(paramNames).toContain("search");
-      expect(paramNames).toContain("fields");
-      expect(paramNames).toContain("sort");
+      expect(findManyRoute.parameters).toHaveLength(5); // sort, page, limit, fields
+      expect(findManyRoute.parameters[0].name).toBe("page");
+      expect(findManyRoute.parameters[1].name).toBe("limit");
+      expect(findManyRoute.parameters[2].name).toBe("search");
+      expect(findManyRoute.parameters[3].name).toBe("fields");
+      expect(findManyRoute.parameters[4].name).toBe("sort");
       expect(
         findManyRoute.responses["200"].content["application/json"].schema
           .properties.total
