@@ -99,7 +99,7 @@ const generateFile = async (
     modulePath = path.resolve(process.cwd(), resolvedPath);
 
     function getSuffix() {
-      return config.fileSuffix ? `.${config.fileSuffix}` : "";
+      return config.fileSuffix ? `.${config.fileSuffix}` : config.templateName;
     }
 
     const fileName = config.prefix
@@ -213,6 +213,20 @@ export const generateCommand = {
       templateName: "policy",
       fileSuffix: "policy",
       allowedModules: "*",
+    });
+  },
+
+  routeHook: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "route-hook",
+      allowedModules: knownModules,
+    });
+  },
+
+  serviceHook: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "service-hook",
+      allowedModules: kebabPrismaModels,
     });
   },
 

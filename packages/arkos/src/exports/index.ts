@@ -11,7 +11,6 @@ import {
   ArkosRequestHandler,
 } from "../types";
 import { ArkosConfig } from "../types/new-arkos-config";
-import { ArkosInitConfig } from "../types/arkos-config";
 import { loadEnvironmentVariables } from "../utils/dotenv.helpers";
 import { arkos } from "../app";
 import { ArkosRouteHook } from "../components/arkos-route-hook";
@@ -28,7 +27,6 @@ export {
   IArkosRouter,
   BaseController,
   ArkosConfig,
-  ArkosInitConfig,
   RouterConfig,
   loadEnvironmentVariables,
   getArkosConfig,
