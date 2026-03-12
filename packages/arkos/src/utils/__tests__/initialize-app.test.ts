@@ -142,7 +142,7 @@ describe("initializeApp", () => {
     it("should always mount fileUploadRouter", () => {
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(getFileUploadRouter).toHaveBeenCalledWith(expect.any(Object));
+      expect(getFileUploadRouter).toHaveBeenCalledWith();
       expect(app.use).toHaveBeenCalledWith("fileUploadRouter");
     });
   });
