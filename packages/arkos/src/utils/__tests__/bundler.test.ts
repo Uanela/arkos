@@ -41,20 +41,16 @@ describe("Bundler", () => {
     mockFs.writeFileSync.mockImplementation(() => {});
   });
 
-  describe("constructor / config loading", () => {
+  describe("config loading", () => {
     it("should auto-detect tsconfig.json when no configPath provided", () => {
       mockFs.existsSync.mockImplementation((p) =>
         String(p).endsWith("tsconfig.json")
       );
       mockFs.readFileSync.mockReturnValue(TSCONFIG);
 
-      const bundler = new Bundler({
-        ext: ".js",
-        outDir: "./dist",
-        rootDir: "./",
-      });
-
-      expect(bundler).toBeDefined();
+      expect(() =>
+        new Bundler().bundle({ ext: ".js", outDir: "./dist", rootDir: "./" })
+      ).not.toThrow();
     });
 
     it("should fall back to jsconfig.json when tsconfig.json not found", () => {
@@ -63,25 +59,17 @@ describe("Bundler", () => {
       );
       mockFs.readFileSync.mockReturnValue(TSCONFIG);
 
-      const bundler = new Bundler({
-        ext: ".js",
-        outDir: "./dist",
-        rootDir: "./",
-      });
-
-      expect(bundler).toBeDefined();
+      expect(() =>
+        new Bundler().bundle({ ext: ".js", outDir: "./dist", rootDir: "./" })
+      ).not.toThrow();
     });
 
     it("should use empty paths when no config found", () => {
       mockFs.existsSync.mockReturnValue(false);
 
-      const bundler = new Bundler({
-        ext: ".js",
-        outDir: "./dist",
-        rootDir: "./",
-      });
-
-      expect(bundler).toBeDefined();
+      expect(() =>
+        new Bundler().bundle({ ext: ".js", outDir: "./dist", rootDir: "./" })
+      ).not.toThrow();
     });
 
     it("should use explicit configPath when provided", () => {
@@ -90,14 +78,14 @@ describe("Bundler", () => {
       );
       mockFs.readFileSync.mockReturnValue(TSCONFIG);
 
-      const bundler = new Bundler({
-        ext: ".js",
-        outDir: "./dist",
-        rootDir: "./",
-        configPath: "./custom.tsconfig.json",
-      });
-
-      expect(bundler).toBeDefined();
+      expect(() =>
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "./dist",
+          rootDir: "./",
+          configPath: "./custom.tsconfig.json",
+        })
+      ).not.toThrow();
     });
 
     it("should handle tsconfig with extends", () => {
@@ -121,14 +109,14 @@ describe("Bundler", () => {
         return childConfig;
       });
 
-      const bundler = new Bundler({
-        ext: ".js",
-        outDir: "./dist",
-        rootDir: "./",
-        configPath: "./tsconfig.json",
-      });
-
-      expect(bundler).toBeDefined();
+      expect(() =>
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "./dist",
+          rootDir: "./",
+          configPath: "./tsconfig.json",
+        })
+      ).not.toThrow();
     });
 
     it("should handle tsconfig with comments and trailing commas", () => {
@@ -168,14 +156,13 @@ describe("Bundler", () => {
       mockFs.existsSync.mockReturnValue(true);
       mockFs.readFileSync.mockReturnValue(configWithComments);
 
-      expect(
-        () =>
-          new Bundler({
-            ext: ".js",
-            outDir: "./dist",
-            rootDir: "./",
-            configPath: "./tsconfig.json",
-          })
+      expect(() =>
+        new Bundler().bundle({
+          ext: ".js",
+          outDir: "./dist",
+          rootDir: "./",
+          configPath: "./tsconfig.json",
+        })
       ).not.toThrow();
     });
   });
@@ -197,8 +184,7 @@ describe("Bundler", () => {
       });
       mockFs.readFileSync.mockReturnValue(`import { foo } from "./foo";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       expect(mockFs.writeFileSync).toHaveBeenCalledTimes(2);
     });
@@ -211,8 +197,7 @@ describe("Bundler", () => {
         makeDirent("readme.md", false),
       ] as any);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
@@ -224,8 +209,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`const x = require("./foo");`);
 
-      const bundler = new Bundler({ ext: ".cjs", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".cjs", outDir: "./dist" });
 
       expect(mockFs.writeFileSync).toHaveBeenCalledTimes(1);
     });
@@ -237,8 +221,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`import foo from "./foo";`);
 
-      const bundler = new Bundler({ ext: ".mjs", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".mjs", outDir: "./dist" });
 
       expect(mockFs.writeFileSync).toHaveBeenCalledTimes(1);
     });
@@ -259,9 +242,9 @@ describe("Bundler", () => {
       `;
       mockFs.readFileSync.mockReturnValue(content);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
+      // Content is unchanged so writeFileSync should not be called
       expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
 
@@ -272,8 +255,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`import { foo } from "./utils";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`from "./utils.js"`);
@@ -288,8 +270,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`import { a } from "./helpers";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`"./helpers.js"`);
@@ -304,8 +285,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`import { a } from "./helpers";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`"./helpers/index.js"`);
@@ -318,9 +298,9 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`import { a } from "./helpers.js";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
+      // Content is unchanged so writeFileSync should not be called
       expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
   });
@@ -333,8 +313,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`import { foo } from "./foo";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`from "./foo.js"`);
@@ -347,8 +326,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`import foo from "./foo";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`from "./foo.js"`);
@@ -361,8 +339,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`import "./setup";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`import "./setup.js"`);
@@ -375,8 +352,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`const m = import("./module");`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`import("./module.js")`);
@@ -389,8 +365,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`const x = require("./config");`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`require("./config.js")`);
@@ -403,8 +378,7 @@ describe("Bundler", () => {
       ] as any);
       mockFs.readFileSync.mockReturnValue(`export { foo } from "./foo";`);
 
-      const bundler = new Bundler({ ext: ".js", outDir: "./dist" });
-      bundler.bundle();
+      new Bundler().bundle({ ext: ".js", outDir: "./dist" });
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).toContain(`from "./foo.js"`);
@@ -424,13 +398,12 @@ describe("Bundler", () => {
         makeDirent("index.js", false),
       ] as any);
 
-      const bundler = new Bundler({
+      new Bundler().bundle({
         ext: ".js",
         outDir: "/project/dist",
         rootDir: "/project",
         configPath: "/project/tsconfig.json",
       });
-      bundler.bundle();
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).not.toContain(`"@/helpers/utils"`);
@@ -449,14 +422,14 @@ describe("Bundler", () => {
         makeDirent("index.js", false),
       ] as any);
 
-      const bundler = new Bundler({
+      new Bundler().bundle({
         ext: ".js",
         outDir: "/project/dist",
         rootDir: "/project",
         configPath: "/project/tsconfig.json",
       });
-      bundler.bundle();
 
+      // Content is unchanged so writeFileSync should not be called
       expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
 
@@ -479,13 +452,12 @@ describe("Bundler", () => {
         makeDirent("index.js", false),
       ] as any);
 
-      const bundler = new Bundler({
+      new Bundler().bundle({
         ext: ".js",
         outDir: "/project/dist",
         rootDir: "/project",
         configPath: "/project/tsconfig.json",
       });
-      bundler.bundle();
 
       const written = (mockFs.writeFileSync as jest.Mock).mock.calls[0][1];
       expect(written).not.toContain(`from "@root"`);
