@@ -211,9 +211,12 @@ export class Bundler {
    * @param resolvedPaths - Resolved baseUrl and paths from tsconfig
    * @param compiledAliases - Pre-compiled alias entries
    */
+
   private resolveImport(
     importPath: string,
     fileDir: string,
+    rootOutDir: string,
+    rootDir: string,
     ext: string,
     resolvedPaths: ResolvedPaths,
     compiledAliases: CompiledAlias[]
@@ -228,33 +231,34 @@ export class Bundler {
         const remainder = importPath.slice(alias.prefix.length + 1);
 
         for (const target of alias.targets) {
-          const resolved = path.resolve(
+          const absoluteSource = path.resolve(
             resolvedPaths.baseUrl,
             target.replace("*", remainder)
           );
-          const outPath = this.sourceToOut(
-            resolved,
-            resolvedPaths.baseUrl,
-            fileDir
+          const fileDirInSource = this.getFileDirInSource(
+            fileDir,
+            rootOutDir,
+            rootDir,
+            resolvedPaths.baseUrl
           );
           return this.addExtension(
-            this.toRelative(fileDir, outPath),
+            this.toRelative(fileDirInSource, absoluteSource),
             fileDir,
             ext
           );
         }
       } else {
         if (importPath !== alias.prefix) continue;
-
         for (const target of alias.targets) {
-          const resolved = path.resolve(resolvedPaths.baseUrl, target);
-          const outPath = this.sourceToOut(
-            resolved,
-            resolvedPaths.baseUrl,
-            fileDir
+          const absoluteSource = path.resolve(resolvedPaths.baseUrl, target);
+          const fileDirInSource = this.getFileDirInSource(
+            fileDir,
+            rootOutDir,
+            rootDir,
+            resolvedPaths.baseUrl
           );
           return this.addExtension(
-            this.toRelative(fileDir, outPath),
+            this.toRelative(fileDirInSource, absoluteSource),
             fileDir,
             ext
           );
@@ -263,6 +267,22 @@ export class Bundler {
     }
 
     return importPath;
+  }
+
+  private getFileDirInSource(
+    fileDir: string,
+    rootOutDir: string,
+    rootDir: string,
+    baseUrl: string
+  ): string {
+    const relToRootDir = path.relative(rootDir, rootOutDir);
+    if (!relToRootDir) return baseUrl;
+
+    // First component of relToRootDir is the dist folder name (e.g. "dist")
+    const distFolderName = relToRootDir.split(path.sep)[0];
+    const distRoot = path.join(rootDir, distFolderName);
+    const relFromDistRoot = path.relative(distRoot, fileDir);
+    return path.resolve(baseUrl, relFromDistRoot);
   }
 
   /**
@@ -287,24 +307,6 @@ export class Bundler {
     }
 
     return importPath + ext;
-  }
-
-  /**
-   * Maps an absolute source-tree path to its corresponding path in outDir.
-   * Paths outside rootDir are returned unchanged.
-   *
-   * @param sourcePath - Absolute path in the source tree
-   * @param rootDir - Absolute root directory
-   * @param outDir - Absolute output directory
-   */
-  private sourceToOut(
-    sourcePath: string,
-    rootDir: string,
-    outDir: string
-  ): string {
-    return sourcePath.startsWith(rootDir)
-      ? path.join(outDir, sourcePath.slice(rootDir.length))
-      : sourcePath;
   }
 
   /**
@@ -333,6 +335,8 @@ export class Bundler {
   private rewriteImports(
     content: string,
     fileDir: string,
+    rootOutDir: string,
+    rootDir: string,
     ext: string,
     resolvedPaths: ResolvedPaths,
     compiledAliases: CompiledAlias[]
@@ -343,6 +347,8 @@ export class Bundler {
         const fixed = this.resolveImport(
           p,
           fileDir,
+          rootOutDir,
+          rootDir,
           ext,
           resolvedPaths,
           compiledAliases
@@ -382,7 +388,7 @@ export class Bundler {
    */
   private _bundleDir(
     ext: string,
-    outDir: string,
+    rootOutDir: string,
     rootDir: string,
     resolvedPaths: ResolvedPaths,
     compiledAliases: CompiledAlias[],
@@ -396,7 +402,7 @@ export class Bundler {
       if (entry.isDirectory()) {
         this._bundleDir(
           ext,
-          outDir,
+          rootOutDir,
           rootDir,
           resolvedPaths,
           compiledAliases,
@@ -407,6 +413,8 @@ export class Bundler {
         const updated = this.rewriteImports(
           content,
           path.dirname(fullPath),
+          rootOutDir,
+          rootDir,
           ext,
           resolvedPaths,
           compiledAliases
