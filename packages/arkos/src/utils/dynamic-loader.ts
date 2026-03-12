@@ -370,6 +370,22 @@ export async function loadAllModuleComponents() {
   );
 
   const modulesComponents = await Promise.all(modulesComponentsImportPromises);
+  warnDeprecatedModuleComponents(
+    modulesComponents.map((components, i) => {
+      const moduleDir = path.resolve(
+        crd(),
+        "src",
+        "modules",
+        kebabCase(appModules[i])
+      );
+
+      return {
+        moduleName: kebabCase(appModules[i]),
+        moduleDir,
+        components,
+      };
+    })
+  );
   debuggerService.logDynamicLoadedModulesComponents(
     modulesComponents.map((components, i) => {
       const moduleDir = path.resolve(
@@ -386,4 +402,115 @@ export async function loadAllModuleComponents() {
       };
     })
   );
+}
+
+const DEPRECATION_GROUPS = [
+  {
+    key: "authConfigs",
+    fileKey: (moduleName: string, ext: string) => `${moduleName}.auth.${ext}`,
+    label: "Auth Config Files (.auth.ts)",
+    migration: "https://www.arkosjs.com/docs/migration/auth-to-policy",
+  },
+  {
+    key: "interceptors",
+    fileKey: (moduleName: string, ext: string) =>
+      `${moduleName}.interceptors.${ext}`,
+    label: "Interceptors (.interceptors.ts)",
+    migration:
+      "https://www.arkosjs.com/docs/migration/interceptors-to-route-hook",
+  },
+  {
+    key: "hooks",
+    fileKey: (moduleName: string, ext: string) => `${moduleName}.hooks.${ext}`,
+    label: "Service Hooks (.hooks.ts)",
+    migration: "https://www.arkosjs.com/docs/migration/hooks-to-service-hook",
+  },
+  {
+    key: "prismaQueryOptions",
+    fileKey: (moduleName: string, ext: string) => `${moduleName}.query.${ext}`,
+    label: "Query Options (.query.ts)",
+    migration: "https://www.arkosjs.com/docs/migration/query-to-route-hook",
+  },
+  {
+    key: "dtos",
+    fileKey: (moduleName: string, ext: string) => `${moduleName}/dtos/`,
+    label: "DTOs (dtos/ folder)",
+    migration: "https://www.arkosjs.com/docs/migration/dtos-to-route-hook",
+  },
+  {
+    key: "schemas",
+    fileKey: (moduleName: string, ext: string) => `${moduleName}/schemas/`,
+    label: "Zod Schemas (schemas/ folder)",
+    migration: "https://www.arkosjs.com/docs/migration/schemas-to-route-hook",
+  },
+  {
+    key: "routerConfig",
+    fileKey: (moduleName: string, ext: string) =>
+      `${moduleName}.router.${ext} (config export)`,
+    label: "Router Config (router.config)",
+    migration:
+      "https://www.arkosjs.com/docs/migration/router-config-to-route-hook",
+  },
+  {
+    key: "autoLoadedRouter",
+    fileKey: (moduleName: string, ext: string) => `${moduleName}.router.${ext}`,
+    label: "Auto-loaded Routers (auth, file-upload, prisma models)",
+    migration: "https://www.arkosjs.com/docs/migration/auto-routers-to-app-use",
+  },
+];
+
+export function warnDeprecatedModuleComponents(
+  modulesComponents: {
+    moduleName: string;
+    components: ImportModuleComponentsReturnType;
+  }[]
+) {
+  const ext = getUserFileExtension();
+
+  const groups = DEPRECATION_GROUPS.map((g) => ({
+    ...g,
+    files: [] as string[],
+  }));
+
+  for (const { moduleName, components } of modulesComponents) {
+    for (const group of groups) {
+      let found = false;
+
+      if (group.key === "dtos") {
+        found = Object.keys(components.dtos || {}).length > 0;
+      } else if (group.key === "schemas") {
+        found = Object.keys(components.schemas || {}).length > 0;
+      } else if (group.key === "routerConfig") {
+        found =
+          !!(components.router as any)?.config &&
+          Object.keys((components.router as any).config).length > 0;
+      } else if (group.key === "autoLoadedRouter") {
+        // auth, file-upload always auto-loaded; prisma models with a router file
+        found =
+          ["auth", "file-upload"].includes(moduleName) || !!components.router;
+      } else {
+        found = !!(components as any)[group.key];
+      }
+
+      if (found) {
+        group.files.push(`src/modules/${group.fileKey(moduleName, ext)}`);
+      }
+    }
+  }
+
+  const hasAny = groups.some((g) => g.files.length > 0);
+  if (!hasAny) return;
+
+  sheu.warn(
+    `\nDeprecation warnings — the following patterns will be removed in v2.0:\n`
+  );
+
+  for (const group of groups) {
+    if (group.files.length === 0) continue;
+    sheu.warn(`  ${group.label}`);
+    for (const file of group.files) {
+      sheu.warn(`    - ${file}`);
+    }
+    sheu.warn(`  → Migrate: ${group.migration}\n`);
+  }
 }
