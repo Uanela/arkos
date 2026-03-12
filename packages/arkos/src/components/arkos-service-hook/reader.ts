@@ -1,58 +1,66 @@
-import { ArkosLoadable } from "../../types/arkos";
+import loadableRegistry from "../../components/arkos-loadable-registry";
+import { ArkosModuleType } from "../arkos-route-hook/types";
 import {
   ArkosServiceHookMethodConfigs,
   ServiceHookOperationConfig,
 } from "./types";
 
+type ServiceHookOperation = keyof ArkosServiceHookMethodConfigs<any, any>;
+
 /**
  * Reader for `ArkosServiceHook` instances.
- * Reads config directly from the instance passed in — no internal registry.
+ * Reads config from the global loadable registry by module name.
  *
  * @example
  * ```ts
- * serviceHookReader.getHooks(userServiceHook, "createOne")          // { before, after, onError }
- * serviceHookReader.getHooks(userServiceHook, "createOne").before   // ServiceHookHandler[]
- * serviceHookReader.getHooks(userServiceHook, "createOne").after    // ServiceHookHandler[]
- * serviceHookReader.getHooks(userServiceHook, "createOne").onError  // ServiceHookHandler[]
- * serviceHookReader.hasOperation(userServiceHook, "createOne")      // true | false
- * serviceHookReader.getFullConfig(userServiceHook, "createOne")     // { before, after, onError } | null
+ * serviceHookReader.getHooks("user", "createOne")          // { before, after, onError }
+ * serviceHookReader.getHooks("user", "createOne").before   // ServiceHookHandler[]
+ * serviceHookReader.getHooks("user", "createOne").after    // ServiceHookHandler[]
+ * serviceHookReader.getHooks("user", "createOne").onError  // ServiceHookHandler[]
+ * serviceHookReader.hasOperation("user", "createOne")      // true | false
+ * serviceHookReader.getFullConfig("user", "createOne")     // { before, after, onError } | null
  * ```
  */
 class ArkosServiceHookReader {
+  private getServiceHook(moduleName: ArkosModuleType) {
+    return loadableRegistry.getItem("ArkosServiceHook", moduleName);
+  }
+
   private getStore(
-    serviceHook: ArkosLoadable
+    moduleName: ArkosModuleType
   ): Partial<ArkosServiceHookMethodConfigs<any, any>> {
-    return (serviceHook as any)._store ?? {};
+    return (this.getServiceHook(moduleName) as any)?._store ?? {};
   }
 
   /**
    * Returns true if the serviceHook has a config registered for the given operation.
    */
-  hasOperation(serviceHook: ArkosLoadable, operation: string): boolean {
-    return operation in this.getStore(serviceHook);
+  hasOperation(
+    moduleName: ArkosModuleType,
+    operation: ServiceHookOperation
+  ): boolean {
+    return operation in this.getStore(moduleName);
   }
 
   /**
    * Returns the full raw config for the given operation, or `null` if not registered.
    */
   getFullConfig(
-    serviceHook: ArkosLoadable,
-    operation: string
+    moduleName: ArkosModuleType,
+    operation: ServiceHookOperation
   ): ServiceHookOperationConfig<any, any, any> | null {
-    return (this.getStore(serviceHook) as any)[operation] ?? null;
+    return (this.getStore(moduleName) as any)[operation] ?? null;
   }
 
   /**
    * Returns only the lifecycle hooks (`before`, `after`, `onError`) for the given operation.
    */
   getHooks(
-    serviceHook: ArkosLoadable | null | undefined,
-    operation: string
+    moduleName: ArkosModuleType,
+    operation: ServiceHookOperation
   ): ServiceHookOperationConfig<any, any, any> | undefined {
-    if (!serviceHook) return;
-    const config = (this.getStore(serviceHook) as any)[operation];
+    const config = (this.getStore(moduleName) as any)[operation];
     if (!config) return {};
-
     const { before, after, onError } = config;
     return { before, after, onError };
   }

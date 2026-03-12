@@ -1,10 +1,13 @@
 import { OpenAPIV3 } from "openapi-types";
 import { RouterConfig } from "../../../../exports";
-import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import { isEndpointDisabled } from "../../../base/utils/helpers/base.router.helpers";
 import deepmerge from "../../../../utils/helpers/deepmerge.helper";
 import { fileUploadDefaultRestrictions } from "../../../file-upload/file-upload.service";
 import { UserArkosConfig } from "../../../../utils/define-config";
+import {
+  OperationByModule,
+  routeHookReader,
+} from "../../../../components/arkos-route-hook/reader";
 
 export default function getFileUploadJsonSchemaPaths(
   arkosConfig: UserArkosConfig,
@@ -14,15 +17,10 @@ export default function getFileUploadJsonSchemaPaths(
 
   if (!arkosConfig.fileUpload) return paths;
 
-  const FileUploadModuleComponents = getModuleComponents("file-upload");
-  const routerConfig = FileUploadModuleComponents?.router
-    ?.config as RouterConfig<"file-upload">;
-  const authConfigs = FileUploadModuleComponents?.authConfigs;
-
-  if (routerConfig?.disable === true) return paths;
-
-  const isFileUploadEndpointDisabled = (endpoint: string): boolean => {
-    return isEndpointDisabled(routerConfig, endpoint as any);
+  const isFileUploadEndpointDisabled = (
+    endpoint: OperationByModule<"file-upload">
+  ): boolean => {
+    return !!routeHookReader.getRouteConfig("file-upload", endpoint)?.disabled;
   };
 
   const basePathname = arkosConfig.fileUpload?.baseRoute || "/api/uploads/";
@@ -57,17 +55,10 @@ export default function getFileUploadJsonSchemaPaths(
   };
 
   const shouldIncludeSecurity = (
-    action: "View" | "Create" | "Update" | "Delete"
+    action: OperationByModule<"file-upload">
   ): boolean => {
-    const authControl = authConfigs?.authenticationControl;
-    if (!authControl) return false;
-
-    if (typeof authControl === "boolean") return authControl;
-    if (typeof authControl === "object") {
-      return authControl[action] === true;
-    }
-
-    return false;
+    return !!routeHookReader.getRouteConfig("file-upload", action)
+      ?.authentication;
   };
 
   // Find File - GET /{filePath*}
@@ -121,7 +112,7 @@ export default function getFileUploadJsonSchemaPaths(
         !currentPath?.operationId
           ? "findFile"
           : currentPath?.operationId,
-      ...(shouldIncludeSecurity("View") && {
+      ...(shouldIncludeSecurity("findFile") && {
         security: [{ BearerAuth: [] }],
       }),
       parameters: mergedParameters,
@@ -141,7 +132,7 @@ export default function getFileUploadJsonSchemaPaths(
         "404": currentPath?.responses?.["404"] || {
           description: "File not found",
         },
-        ...(shouldIncludeSecurity("View") && {
+        ...(shouldIncludeSecurity("findFile") && {
           "401": currentPath?.responses?.["401"] || {
             description: "Authentication required",
           },
@@ -245,7 +236,7 @@ export default function getFileUploadJsonSchemaPaths(
         !currentPath?.operationId
           ? "uploadFile"
           : currentPath?.operationId,
-      ...(shouldIncludeSecurity("Create") && {
+      ...(shouldIncludeSecurity("uploadFile") && {
         security: [{ BearerAuth: [] }],
       }),
       parameters: mergedParameters,
@@ -311,7 +302,7 @@ export default function getFileUploadJsonSchemaPaths(
           description:
             "Invalid file type, size limit exceeded, or no file uploaded",
         },
-        ...(shouldIncludeSecurity("Create") && {
+        ...(shouldIncludeSecurity("findFile") && {
           "401": currentPath?.responses?.["401"] || {
             description: "Authentication required",
           },
@@ -422,7 +413,7 @@ export default function getFileUploadJsonSchemaPaths(
         !currentPath?.operationId
           ? "updateFile"
           : currentPath?.operationId,
-      ...(shouldIncludeSecurity("Update") && {
+      ...(shouldIncludeSecurity("updateFile") && {
         security: [{ BearerAuth: [] }],
       }),
       parameters: mergedParameters,
@@ -491,7 +482,7 @@ export default function getFileUploadJsonSchemaPaths(
         "404": currentPath?.responses?.["404"] || {
           description: "Original file not found",
         },
-        ...(shouldIncludeSecurity("Update") && {
+        ...(shouldIncludeSecurity("updateFile") && {
           "401": currentPath?.responses?.["401"] || {
             description: "Authentication required",
           },
@@ -565,7 +556,7 @@ export default function getFileUploadJsonSchemaPaths(
         !currentPath?.operationId
           ? "deleteFile"
           : currentPath?.operationId,
-      ...(shouldIncludeSecurity("Delete") && {
+      ...(shouldIncludeSecurity("deleteFile") && {
         security: [{ BearerAuth: [] }],
       }),
       parameters: mergedParameters,
@@ -577,7 +568,7 @@ export default function getFileUploadJsonSchemaPaths(
         "404": currentPath?.responses?.["404"] || {
           description: "File not found",
         },
-        ...(shouldIncludeSecurity("Delete") && {
+        ...(shouldIncludeSecurity("deleteFile") && {
           "401": currentPath?.responses?.["401"] || {
             description: "Authentication required",
           },

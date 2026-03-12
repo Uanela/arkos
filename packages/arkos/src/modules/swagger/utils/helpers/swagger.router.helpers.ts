@@ -1,4 +1,4 @@
-import { camelCase, pascalCase } from "../../../../exports/utils";
+import { pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
 import getAuthenticationJsonSchemaPaths from "./get-authentication-json-schema-paths";
@@ -10,24 +10,19 @@ import sheu from "../../../../utils/sheu";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import { isAuthenticationEnabled } from "../../../../utils/helpers/arkos-config.helpers";
 import { UserArkosConfig } from "../../../../utils/define-config";
+import { getArkosConfig } from "../../../../server";
 
 /**
  * Helps choosing the right json schemas according to swagger configurations
  */
-export function getOpenAPIJsonSchemasByConfigMode(
-  arkosConfig: UserArkosConfig
-) {
-  switch (arkosConfig?.swagger!.mode) {
-    case "prisma":
-      return generatePrismaJsonSchemas(arkosConfig);
+export function getOpenAPIJsonSchemasByConfigMode() {
+  switch (getArkosConfig()?.validation?.resolver) {
     case "class-validator":
       return generateClassValidatorJsonSchemas();
     case "zod":
       return generateZodJsonSchemas();
     default:
-      throw Error(
-        "Unknown mode for auto documentation, supported values are prisma, class-validator, zod or json-schemas"
-      );
+      return generatePrismaJsonSchemas();
   }
 }
 
@@ -41,10 +36,12 @@ export function getCorrectJsonSchemaName(
   const map: Record<string, string> = {
     model: pascalModelName,
     create: `Create${pascalModelName}`,
+    createOne: `Create${pascalModelName}`,
     createMany: `CreateMany${pascalModelName}`,
     findOne: `FindOne${pascalModelName}`,
     findMany: `FindMany${pascalModelName}`,
     update: `Update${pascalModelName}`,
+    updateOne: `Update${pascalModelName}`,
     updateMany: `UpdateMany${pascalModelName}`,
     query: `Query${pascalModelName}`,
     login: "Login",
@@ -112,7 +109,7 @@ export function generatePathsForModels(
   const models = prismaSchemaParser.getModelsAsArrayOfStrings();
 
   for (const model of models) {
-    generatePrismaModelMainRoutesPaths(model, paths, arkosConfig);
+    generatePrismaModelMainRoutesPaths(model, paths);
   }
 
   paths = {
@@ -123,7 +120,7 @@ export function generatePathsForModels(
   if (isAuthenticationEnabled())
     paths = {
       ...paths,
-      ...(getAuthenticationJsonSchemaPaths(arkosConfig, existingPaths) || {}),
+      ...(getAuthenticationJsonSchemaPaths(existingPaths) || {}),
     };
 
   return paths;

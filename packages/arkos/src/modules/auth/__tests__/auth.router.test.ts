@@ -1,18 +1,34 @@
-import { authControllerFactory } from "../auth.controller";
-import rateLimit from "express-rate-limit";
-import { getModuleComponents } from "../../../utils/dynamic-loader";
+import { getAuthRouter } from "../auth.router";
+import loadableRegistry from "../../../components/arkos-loadable-registry";
+import authController from "../auth.controller";
 import {
   sendResponse,
   addPrismaQueryOptionsToRequest,
 } from "../../base/base.middlewares";
-import deepmerge from "../../../utils/helpers/deepmerge.helper";
-import { getArkosConfig } from "../../../server";
-import catchAsync from "../../error-handler/utils/catch-async";
 import ArkosRouter from "../../../utils/arkos-router";
-import { getAuthRouter } from "../auth.router";
 
-jest.mock("../../error-handler/utils/catch-async");
+// -- Minimal mocks: only what can't run in unit/integration context --
 jest.mock("fs");
+jest.mock("../../../utils/dynamic-loader");
+jest.mock("../auth.controller", () => ({
+  __esModule: true,
+  default: {
+    getMe: jest.fn(),
+    updateMe: jest.fn(),
+    deleteMe: jest.fn(),
+    login: jest.fn(),
+    logout: jest.fn(),
+    signup: jest.fn(),
+    updatePassword: jest.fn(),
+    findOneAuthAction: jest.fn(),
+    findManyAuthAction: jest.fn(),
+  },
+}));
+jest.mock("../../base/base.middlewares", () => ({
+  sendResponse: jest.fn(),
+  addPrismaQueryOptionsToRequest: jest.fn(() => jest.fn()),
+  handleRequestBodyValidationAndTransformation: jest.fn(() => jest.fn()),
+}));
 jest.mock("../../../utils/arkos-router", () => {
   const mockRouter = {
     get: jest.fn().mockReturnThis(),
@@ -26,892 +42,340 @@ jest.mock("../../../utils/arkos-router", () => {
     default: jest.fn(() => mockRouter),
   };
 });
-jest.mock("express", () => {
-  const mockRouter = {
-    get: jest.fn().mockReturnThis(),
-    post: jest.fn().mockReturnThis(),
-    patch: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    use: jest.fn().mockReturnThis(),
-  };
 
-  const mockExpress: any = jest.fn(() => ({
-    use: jest.fn().mockReturnThis(),
-    listen: jest.fn().mockReturnThis(),
-  }));
+// Real loadableRegistry + routeHookReader used — no mock
 
-  mockExpress.Router = jest.fn(() => mockRouter);
-
-  mockExpress.default = mockExpress;
-
-  // Add other express exports you might need
-  mockExpress.json = jest.fn();
-  mockExpress.urlencoded = jest.fn();
-  mockExpress.static = jest.fn();
-
-  return mockExpress;
-});
-jest.mock("../auth.controller");
-jest.mock("../auth.service", () => ({
-  ...jest.requireActual("../auth.controller"),
-  authenticate: jest.fn(),
-  handleAccessControl: jest.fn(),
-}));
-jest.mock("express-rate-limit");
-jest.mock("../../../utils/dynamic-loader");
-jest.mock("../../../utils/helpers/deepmerge.helper");
-jest.mock("../../../server");
-jest.mock("../../base/base.middlewares", () => ({
-  ...jest.requireActual("../../base/base.middlewares"),
-  handleRequestBodyValidationAndTransformation: jest.fn(() => {
-    return () => {};
-  }),
-  addPrismaQueryOptionsToRequest: jest.fn(() => {
-    return () => {};
-  }),
-  sendResponse: jest.fn(),
-}));
+function getMockRouter() {
+  return (ArkosRouter as jest.Mock).mock.results[
+    (ArkosRouter as jest.Mock).mock.results.length - 1
+  ].value;
+}
 
 describe("Auth Router", () => {
-  let mockRouter: any;
-  let mockAuthController: any;
-  let mockArkosConfig: any;
-  let mockPrismaQueryOptions: any;
-
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
+    // Ensure no stale hook registrations bleed between tests
+    (loadableRegistry as any).items = new Map();
+  });
 
-    (getArkosConfig as jest.Mock).mockImplementation(() => ({
-      authentication: { mode: "static" },
-      validation: { resolver: "zod" },
-    }));
+  describe("No ArkosRouteHook registered (default behavior)", () => {
+    it("should register GET /users/me with correct route config", () => {
+      getAuthRouter();
+      const router = getMockRouter();
 
-    // Setup mocks
-
-    mockRouter = ArkosRouter();
-    mockAuthController = {
-      getMe: jest.fn(),
-      updateMe: jest.fn(),
-      deleteMe: jest.fn(),
-      login: jest.fn(),
-      logout: jest.fn(),
-      signup: jest.fn(),
-      updatePassword: jest.fn(),
-      findOneAuthAction: jest.fn(),
-      findManyAuthAction: jest.fn(),
-    };
-
-    (catchAsync as jest.Mock).mockImplementation((fn) => fn);
-
-    mockPrismaQueryOptions = {
-      getMe: { include: { profile: true } },
-      updateMe: { include: { profile: true } },
-      deleteMe: { where: { active: true } },
-      login: { where: { active: true } },
-      signup: { include: { profile: true } },
-      updatePassword: { where: { active: true } },
-    };
-
-    (authControllerFactory as jest.Mock).mockReturnValue(mockAuthController);
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: {},
-      prismaQueryOptions: mockPrismaQueryOptions,
+      expect(router.get).toHaveBeenCalledWith(
+        { path: "/users/me" },
+        expect.any(Function), // addPrismaQueryOptionsToRequest
+        authController.getMe,
+        sendResponse
+      );
     });
-    (rateLimit as jest.Mock).mockReturnValue(jest.fn());
-    (deepmerge as any as jest.Mock).mockImplementation((obj1, obj2) => ({
-      ...obj1,
-      ...obj2,
-    }));
-    // (getArkosConfig as jest.Mock).mockReturnValue({});
 
-    mockArkosConfig = {
-      validation: { resolver: "zod" },
-      authentication: {
-        mode: "static",
-        rateLimit: {
-          windowMs: 10000,
-          limit: 5,
+    it("should register PATCH /users/me with correct route config", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      expect(router.patch).toHaveBeenCalledWith(
+        { path: "/users/me" },
+        expect.any(Function),
+        authController.updateMe,
+        sendResponse
+      );
+    });
+
+    it("should register DELETE /users/me with correct route config", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      expect(router.delete).toHaveBeenCalledWith(
+        { path: "/users/me" },
+        expect.any(Function),
+        authController.deleteMe,
+        sendResponse
+      );
+    });
+
+    it("should register POST /auth/login with rateLimit config", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      expect(router.post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/auth/login",
+          rateLimit: expect.objectContaining({
+            windowMs: 5000,
+            limit: 10,
+            standardHeaders: "draft-7",
+            legacyHeaders: false,
+            handler: expect.any(Function),
+          }),
+        }),
+        expect.any(Function),
+        authController.login,
+        sendResponse
+      );
+    });
+
+    it("should register DELETE /auth/logout with rateLimit config", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      expect(router.delete).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/auth/logout",
+          rateLimit: expect.objectContaining({ windowMs: 5000, limit: 10 }),
+        }),
+        authController.logout,
+        sendResponse
+      );
+    });
+
+    it("should register POST /auth/signup with rateLimit config", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      expect(router.post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/auth/signup",
+          rateLimit: expect.objectContaining({ windowMs: 5000, limit: 10 }),
+        }),
+        expect.any(Function),
+        authController.signup,
+        sendResponse
+      );
+    });
+
+    it("should register POST /auth/update-password with rateLimit config", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      expect(router.post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: "/auth/update-password",
+          rateLimit: expect.objectContaining({ windowMs: 5000, limit: 10 }),
+        }),
+        expect.any(Function),
+        authController.updatePassword,
+        sendResponse
+      );
+    });
+
+    it("should register GET /auth-actions", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      expect(router.get).toHaveBeenCalledWith(
+        { path: "/auth-actions" },
+        authController.findManyAuthAction,
+        sendResponse
+      );
+    });
+
+    it("should register GET /auth-actions/:resourceName", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      expect(router.get).toHaveBeenCalledWith(
+        { path: "/auth-actions/:resourceName" },
+        authController.findOneAuthAction,
+        sendResponse
+      );
+    });
+
+    it("should call addPrismaQueryOptionsToRequest with empty prismaArgs for each route", () => {
+      getAuthRouter();
+
+      expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
+        { getMe: {} },
+        "getMe"
+      );
+      expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
+        { updateMe: {} },
+        "updateMe"
+      );
+      expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
+        { deleteMe: {} },
+        "deleteMe"
+      );
+      expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
+        { login: {} },
+        "login"
+      );
+      expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
+        { signup: {} },
+        "signup"
+      );
+      expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
+        { updatePassword: {} },
+        "updatePassword"
+      );
+    });
+  });
+
+  describe("ArkosRouteHook registered with before/after/onError hooks", () => {
+    const beforeGetMe = jest.fn();
+    const afterGetMe = jest.fn();
+    const onGetMeError = jest.fn();
+    const beforeLogin = jest.fn();
+    const afterLogin = jest.fn();
+
+    beforeEach(() => {
+      // Register a real ArkosRouteHook into the real loadableRegistry
+      const mockHook = {
+        __type: "ArkosRouteHook",
+        moduleName: "auth",
+        _store: {
+          getMe: {
+            before: [beforeGetMe],
+            after: [afterGetMe],
+            onError: [onGetMeError],
+            prismaArgs: { include: { profile: true } },
+            authentication: true, // top-level — getRouteConfig spreads everything except before/after/onError/prismaArgs
+          },
+          login: {
+            before: [beforeLogin],
+            after: [afterLogin],
+            onError: [],
+            prismaArgs: { where: { active: true } },
+            authentication: false,
+          },
         },
-      },
-    };
-  });
-
-  test("should create router with default middleware configuration when no custom interceptors", async () => {
-    getAuthRouter(mockArkosConfig);
-
-    expect(ArkosRouter).toHaveBeenCalled();
-    expect(getModuleComponents).toHaveBeenCalledWith("auth");
-    expect(authControllerFactory).toHaveBeenCalled();
-
-    // GET /users/me - protected route
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      mockAuthController.getMe,
-      sendResponse
-    );
-
-    // POST /auth/login - public route
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/login",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      mockAuthController.login,
-      sendResponse
-    );
-
-    // POST /auth/signup - public route
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/signup",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      mockAuthController.signup,
-      sendResponse
-    );
-
-    // Verify rate limiting is applied with merged config
-    expect(deepmerge).toHaveBeenCalledWith(
-      {
-        windowMs: 5000,
-        limit: 10,
-        standardHeaders: "draft-7",
-        legacyHeaders: false,
-        handler: expect.any(Function),
-      },
-      mockArkosConfig.authentication.rateLimit
-    );
-    expect(rateLimit).toHaveBeenCalled();
-    expect(mockRouter.use).toHaveBeenCalled();
-  });
-
-  test("should call addPrismaQueryOptionsToRequest with correct parameters for each route", async () => {
-    getAuthRouter(mockArkosConfig);
-
-    expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-      mockPrismaQueryOptions,
-      "getMe"
-    );
-
-    expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-      mockPrismaQueryOptions,
-      "updateMe"
-    );
-
-    expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-      mockPrismaQueryOptions,
-      "deleteMe"
-    );
-
-    expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-      mockPrismaQueryOptions,
-      "login"
-    );
-
-    expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-      mockPrismaQueryOptions,
-      "signup"
-    );
-
-    expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-      mockPrismaQueryOptions,
-      "updatePassword"
-    );
-  });
-
-  test("should create router with custom middleware configuration", async () => {
-    const customMiddlewares = {
-      beforeGetMe: jest.fn(),
-      afterGetMe: jest.fn(),
-      beforeLogin: jest.fn(),
-      afterLogin: jest.fn(),
-      beforeSignup: jest.fn(),
-      afterSignup: jest.fn(),
-      beforeLogout: jest.fn(),
-      afterLogout: jest.fn(),
-      beforeUpdatePassword: jest.fn(),
-      afterUpdatePassword: jest.fn(),
-    };
-
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: customMiddlewares,
-      prismaQueryOptions: mockPrismaQueryOptions,
+      };
+      loadableRegistry.register(mockHook as any);
     });
 
-    getAuthRouter(mockArkosConfig);
+    it("should include before/after/onError for GET /users/me", () => {
+      getAuthRouter();
+      const router = getMockRouter();
 
-    // GET /users/me with custom interceptors
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      customMiddlewares.beforeGetMe,
-      mockAuthController.getMe,
-      customMiddlewares.afterGetMe,
-      sendResponse
-    );
+      const call = router.get.mock.calls.find(
+        ([config]: any) => config?.path === "/users/me"
+      );
 
-    // POST /auth/login with custom interceptors
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/login",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      customMiddlewares.beforeLogin,
-      mockAuthController.login,
-      customMiddlewares.afterLogin,
-      sendResponse
-    );
-
-    // POST /auth/signup with custom interceptors
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/signup",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      customMiddlewares.beforeSignup,
-      mockAuthController.signup,
-      customMiddlewares.afterSignup,
-      sendResponse
-    );
-  });
-
-  test("should pass correct DTOs or schemas to validation config based on resolver", async () => {
-    const mockDtos = {
-      updateMe: "UpdateMeDto",
-      login: "LoginDto",
-      signup: "SignupDto",
-      updatePassword: "UpdatePasswordDto",
-    };
-
-    const mockSchemas = {
-      updateMe: "updateMeSchema",
-      login: "loginSchema",
-      signup: "signupSchema",
-      updatePassword: "updatePasswordSchema",
-    };
-
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: {},
-      dtos: mockDtos,
-      schemas: mockSchemas,
-      prismaQueryOptions: mockPrismaQueryOptions,
+      expect(call).toBeDefined();
+      // [routeConfig, addPrismaQuery, ...before, controller, ...after, sendResponse, ...onError]
+      expect(call).toContain(authController.getMe);
+      expect(call).toContain(sendResponse);
+      // before and after are wrapped in catchAsync — verify they appear as functions
+      const fnArgs = call.filter((a: any) => typeof a === "function");
+      // addPrismaQuery + catchAsync(before) + controller + catchAsync(after) + sendResponse + catchAsync(onError)
+      expect(fnArgs.length).toBeGreaterThanOrEqual(5);
     });
 
-    // Test with class-validator configuration
-    const classValidatorConfig = {
-      validation: { resolver: "class-validator" },
-      authentication: { mode: "static" },
-    };
+    it("should spread routeConfig into route object for GET /users/me", () => {
+      getAuthRouter();
+      const router = getMockRouter();
 
-    getAuthRouter(classValidatorConfig as any);
+      const call = router.get.mock.calls.find(
+        ([config]: any) => config?.path === "/users/me"
+      );
 
-    expect(mockRouter.patch).toHaveBeenCalledWith(
-      {
+      expect(call[0]).toMatchObject({
         path: "/users/me",
-        disabled: false,
         authentication: true,
-        validation: { body: mockDtos.updateMe },
-      },
-      expect.any(Function),
-      mockAuthController.updateMe,
-      sendResponse
-    );
-
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/login",
-        disabled: false,
-        authentication: false,
-        validation: { body: mockDtos.login },
-      },
-      expect.any(Function),
-      mockAuthController.login,
-      sendResponse
-    );
-
-    // Reset for next test
-    jest.clearAllMocks();
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: {},
-      dtos: mockDtos,
-      schemas: mockSchemas,
-      prismaQueryOptions: mockPrismaQueryOptions,
+      });
     });
 
-    // Test with zod configuration
-    const zodConfig = {
-      validation: { resolver: "zod" },
-      authentication: { mode: "dynamic" },
-    };
+    it("should spread routeConfig into route object for POST /auth/login", () => {
+      getAuthRouter();
+      const router = getMockRouter();
 
-    getAuthRouter(zodConfig as any);
+      const call = router.post.mock.calls.find(
+        ([config]: any) => config?.path === "/auth/login"
+      );
 
-    expect(mockRouter.patch).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: { body: mockSchemas.updateMe },
-      },
-      expect.any(Function),
-      mockAuthController.updateMe,
-      sendResponse
-    );
-
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
+      expect(call[0]).toMatchObject({
         path: "/auth/login",
-        disabled: false,
         authentication: false,
-        validation: { body: mockSchemas.login },
-      },
-      expect.any(Function),
-      mockAuthController.login,
-      sendResponse
-    );
-  });
-
-  test("should create all required routes with no interceptors passed", async () => {
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: undefined,
-      prismaQueryOptions: mockPrismaQueryOptions,
+        rateLimit: expect.objectContaining({ windowMs: 5000 }),
+      });
     });
 
-    getAuthRouter({ authentication: { mode: "static" } } as any);
+    it("should pass prismaArgs to addPrismaQueryOptionsToRequest for getMe", () => {
+      getAuthRouter();
 
-    // GET /users/me
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function),
-      expect.any(Function),
-      sendResponse
-    );
-
-    // PATCH /users/me
-    expect(mockRouter.patch).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function),
-      expect.any(Function),
-      sendResponse
-    );
-
-    // DELETE /users/me
-    expect(mockRouter.delete).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function),
-      expect.any(Function),
-      sendResponse
-    );
-
-    // POST /auth/login
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/login",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function),
-      expect.any(Function),
-      sendResponse
-    );
-
-    // DELETE /auth/logout
-    expect(mockRouter.delete).toHaveBeenCalledWith(
-      {
-        path: "/auth/logout",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function),
-      sendResponse
-    );
-
-    // POST /auth/signup
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/signup",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function),
-      expect.any(Function),
-      sendResponse
-    );
-
-    // POST /auth/update-password
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/update-password",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function),
-      expect.any(Function),
-      sendResponse
-    );
-  });
-
-  test("should create all required routes with after interceptors passed to all routes", async () => {
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: {
-        afterGetMe: jest.fn(),
-        afterUpdateMe: jest.fn(),
-        afterDeleteMe: jest.fn(),
-        afterLogin: jest.fn(),
-        afterLogout: jest.fn(),
-        afterSignup: jest.fn(),
-        afterUpdatePassword: jest.fn(),
-      },
-      prismaQueryOptions: mockPrismaQueryOptions,
-    });
-    getAuthRouter(mockArkosConfig);
-
-    // GET /users/me
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // getMe
-      expect.any(Function), // afterGetMe
-      sendResponse
-    );
-
-    // PATCH /users/me
-    expect(mockRouter.patch).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // updateMe
-      expect.any(Function), // afterUpdateMe
-      sendResponse
-    );
-
-    // DELETE /users/me
-    expect(mockRouter.delete).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // deleteMe
-      expect.any(Function), // afterDeleteMe
-      sendResponse
-    );
-
-    // POST /auth/login
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/login",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // login
-      expect.any(Function), // afterLogin
-      sendResponse
-    );
-
-    // DELETE /auth/logout
-    expect(mockRouter.delete).toHaveBeenCalledWith(
-      {
-        path: "/auth/logout",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // logout
-      expect.any(Function), // afterLogout
-      sendResponse
-    );
-
-    // POST /auth/signup
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/signup",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // signup
-      expect.any(Function), // afterSignup
-      sendResponse
-    );
-
-    // POST /auth/update-password
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/update-password",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // updatePassword
-      expect.any(Function), // afterUpdatePassword
-      sendResponse
-    );
-  });
-
-  test("should create all required routes with before interceptors passed to all routes", async () => {
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: {
-        beforeGetMe: jest.fn(),
-        beforeUpdateMe: jest.fn(),
-        beforeDeleteMe: jest.fn(),
-        beforeLogin: jest.fn(),
-        beforeLogout: jest.fn(),
-        beforeSignup: jest.fn(),
-        beforeUpdatePassword: jest.fn(),
-      },
-      prismaQueryOptions: mockPrismaQueryOptions,
-    });
-    getAuthRouter(mockArkosConfig);
-
-    // GET /users/me
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeGetMe
-      expect.any(Function), // getMe
-      sendResponse
-    );
-
-    // PATCH /users/me
-    expect(mockRouter.patch).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeUpdateMe
-      expect.any(Function), // updateMe
-      sendResponse
-    );
-
-    // DELETE /users/me
-    expect(mockRouter.delete).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeDeleteMe
-      expect.any(Function), // deleteMe
-      sendResponse
-    );
-
-    // POST /auth/login
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/login",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeLogin
-      expect.any(Function), // login
-      sendResponse
-    );
-
-    // DELETE /auth/logout
-    expect(mockRouter.delete).toHaveBeenCalledWith(
-      {
-        path: "/auth/logout",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // beforeLogout
-      expect.any(Function), // logout
-      sendResponse
-    );
-
-    // POST /auth/signup
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/signup",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeSignup
-      expect.any(Function), // signup
-      sendResponse
-    );
-
-    // POST /auth/update-password
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/update-password",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeUpdatePassword
-      expect.any(Function), // updatePassword
-      sendResponse
-    );
-  });
-
-  test("should create all required routes with before and after interceptors passed to all routes", async () => {
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: {
-        beforeGetMe: jest.fn(),
-        afterGetMe: jest.fn(),
-        onGetMeError: jest.fn(),
-
-        beforeUpdateMe: jest.fn(),
-        afterUpdateMe: jest.fn(),
-        onUpdateMeError: jest.fn(),
-
-        beforeDeleteMe: jest.fn(),
-        afterDeleteMe: jest.fn(),
-        onDeleteMeError: jest.fn(),
-
-        beforeLogin: jest.fn(),
-        afterLogin: jest.fn(),
-        onLoginError: jest.fn(),
-
-        beforeLogout: jest.fn(),
-        afterLogout: jest.fn(),
-        onLogoutError: jest.fn(),
-
-        beforeSignup: jest.fn(),
-        afterSignup: jest.fn(),
-        onSignupError: jest.fn(),
-
-        beforeUpdatePassword: jest.fn(),
-        afterUpdatePassword: jest.fn(),
-        onUpdatePasswordError: jest.fn(),
-      },
-      prismaQueryOptions: mockPrismaQueryOptions,
-    });
-    getAuthRouter(mockArkosConfig);
-
-    // GET /users/me
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeGetMe
-      expect.any(Function), // getMe
-      expect.any(Function), // afterGetMe
-      sendResponse,
-      expect.any(Function) // Error handler middleware
-    );
-
-    // PATCH /users/me
-    expect(mockRouter.patch).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeUpdateMe
-      expect.any(Function), // updateMe
-      expect.any(Function), // afterUpdateMe
-      sendResponse,
-      expect.any(Function) // Error handler middleware
-    );
-
-    // DELETE /users/me
-    expect(mockRouter.delete).toHaveBeenCalledWith(
-      {
-        path: "/users/me",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeDeleteMe
-      expect.any(Function), // deleteMe
-      expect.any(Function), // afterDeleteMe
-      sendResponse,
-      expect.any(Function) // Error handler middleware
-    );
-
-    // POST /auth/login
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/login",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeLogin
-      expect.any(Function), // login
-      expect.any(Function), // afterLogin
-      sendResponse,
-      expect.any(Function) // Error handler middleware
-    );
-
-    // DELETE /auth/logout
-    expect(mockRouter.delete).toHaveBeenCalledWith(
-      {
-        path: "/auth/logout",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // beforeLogout
-      expect.any(Function), // logout
-      expect.any(Function), // afterLogout
-      sendResponse,
-      expect.any(Function) // Error handler middleware
-    );
-
-    // POST /auth/signup
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/signup",
-        disabled: false,
-        authentication: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeSignup
-      expect.any(Function), // signup
-      expect.any(Function), // afterSignup
-      sendResponse,
-      expect.any(Function) // Error handler middleware
-    );
-
-    // POST /auth/update-password
-    expect(mockRouter.post).toHaveBeenCalledWith(
-      {
-        path: "/auth/update-password",
-        disabled: false,
-        authentication: true,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeUpdatePassword
-      expect.any(Function), // updatePassword
-      expect.any(Function), // afterUpdatePassword
-      sendResponse,
-      expect.any(Function) // Error handler middleware
-    );
-  });
-
-  test("should handle auth-action routes with proper authentication config", async () => {
-    const mockAuthConfigs = {
-      accessControl: {
-        View: { roles: ["admin"] },
-      },
-    };
-
-    (getModuleComponents as jest.Mock).mockReturnValue({
-      interceptors: {},
-      prismaQueryOptions: mockPrismaQueryOptions,
-      authConfigs: mockAuthConfigs,
+      expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
+        { getMe: { include: { profile: true } } },
+        "getMe"
+      );
     });
 
-    getAuthRouter(mockArkosConfig);
+    it("should pass prismaArgs to addPrismaQueryOptionsToRequest for login", () => {
+      getAuthRouter();
 
-    // GET /auth-actions
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      {
-        path: "/auth-actions",
-        disabled: false,
-        authentication: {
-          resource: "auth",
-          action: "View",
-          rule: { roles: ["admin"] },
+      expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
+        { login: { where: { active: true } } },
+        "login"
+      );
+    });
+
+    it("should handle only before hooks for GET /users/me", () => {
+      const beforeGetMe = jest.fn();
+      (loadableRegistry as any).items = new Map();
+      loadableRegistry.register({
+        __type: "ArkosRouteHook",
+        moduleName: "auth",
+        _store: {
+          getMe: { before: [beforeGetMe], after: [], onError: [] },
         },
-        validation: undefined,
-      },
-      expect.any(Function), // findManyAuthAction
-      sendResponse
-    );
+      } as any);
 
-    // GET /auth-actions/:resourceName
-    expect(mockRouter.get).toHaveBeenCalledWith(
-      {
-        path: "/auth-actions/:resourceName",
-        disabled: false,
-        authentication: {
-          resource: "auth",
-          action: "View",
-          rule: { roles: ["admin"] },
+      getAuthRouter();
+      const router = getMockRouter();
+      const call = router.get.mock.calls.find(
+        ([c]: any) => c?.path === "/users/me"
+      );
+
+      expect(call).toContain(authController.getMe);
+      expect(call).toContain(sendResponse);
+      // addPrismaQuery + catchAsync(before) + controller + sendResponse = 4 args minimum, no onError
+      expect(call.length).toBe(5);
+    });
+
+    it("should handle only after hooks for GET /users/me", () => {
+      const afterGetMe = jest.fn();
+      (loadableRegistry as any).items = new Map();
+      loadableRegistry.register({
+        __type: "ArkosRouteHook",
+        moduleName: "auth",
+        _store: {
+          getMe: { before: [], after: [afterGetMe], onError: [] },
         },
-        validation: undefined,
-      },
-      expect.any(Function), // findOneAuthAction
-      sendResponse
-    );
+      } as any);
+
+      getAuthRouter();
+      const router = getMockRouter();
+      const call = router.get.mock.calls.find(
+        ([c]: any) => c?.path === "/users/me"
+      );
+
+      expect(call).toContain(authController.getMe);
+      expect(call).toContain(sendResponse);
+      expect(call.length).toBe(5);
+    });
+  });
+
+  describe("rateLimit handler behavior", () => {
+    it("should respond 429 with correct message when rate limit handler is called", () => {
+      getAuthRouter();
+      const router = getMockRouter();
+
+      const loginCall = router.post.mock.calls.find(
+        ([config]: any) => config?.path === "/auth/login"
+      );
+      const handler = loginCall[0].rateLimit.handler;
+
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      };
+
+      handler({}, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(429);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        message: "Too many requests, please try again later",
+      });
+    });
   });
 });

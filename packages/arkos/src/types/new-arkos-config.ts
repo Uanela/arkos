@@ -569,14 +569,6 @@ export type ArkosConfig = {
      */
     endpoint?: string;
     /**
-     * Determines how your API schemas should be generated.
-     *
-     * - "prisma": Generates schemas based on Prisma models
-     * - "class-validator": Uses class-validator and class-transformer DTO classes
-     * - "zod": Uses OpenAPI-compliant schemas directly
-     */
-    mode: "prisma" | "class-validator" | "zod";
-    /**
      * Allows `Arkos.js` to fallback to prisma schema and use them as json schema for defining request body and response data
      * when a given zod Schema or class-validator Class is not found to be transformed to json schema.
      *

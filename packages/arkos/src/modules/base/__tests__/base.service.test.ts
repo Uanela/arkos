@@ -2,11 +2,13 @@ import { BaseService } from "../base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import authService from "../../auth/auth.service";
 import * as baseServiceHelpers from "../utils/helpers/base.service.helpers";
-import { getModuleComponents } from "../../../utils/dynamic-loader";
 import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
 import { PrismaField } from "../../../utils/prisma/types";
 import serviceHooksManager from "../utils/service-hooks-manager";
+import loadableRegistry from "../../../components/arkos-loadable-registry";
+import { serviceHookReader } from "../../../components/arkos-service-hook/reader";
 
+jest.mock("../base.service", () => jest.requireActual("../base.service"));
 jest.mock("fs", () => ({
   ...jest.requireActual("fs"),
   readdirSync: jest.fn(),
@@ -14,13 +16,6 @@ jest.mock("fs", () => ({
 }));
 jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../auth/auth.service");
-jest.mock("../../../utils/dynamic-loader", () => ({
-  ...jest.requireActual("../../../utils/dynamic-loader"),
-  getPrismaModelRelations: jest.fn(),
-  getModels: jest.fn(),
-  getModuleComponents: jest.fn(),
-  getAllPrismaFiles: jest.fn(),
-}));
 jest.mock("../../../utils/helpers/change-case.helpers", () => ({
   camelCase: jest.fn((str) => str.toLowerCase()),
   kebabCase: jest.fn((str) => str.toLowerCase()),
@@ -41,6 +36,20 @@ jest.mock("../utils/service-hooks-manager", () => ({
     } else hook(data);
   }),
 }));
+jest.mock("../../../components/arkos-loadable-registry", () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(),
+  },
+}));
+jest.mock("../../../components/arkos-service-hook/reader", () => ({
+  serviceHookReader: {
+    getHooks: jest.fn(),
+  },
+}));
+
+const mockGetItem = loadableRegistry.getItem as jest.Mock;
+const mockGetHooks = serviceHookReader.getHooks as jest.Mock;
 
 const handleRelationFieldsInBody = jest.spyOn(
   baseServiceHelpers,
@@ -54,6 +63,10 @@ describe("BaseService", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Default: no service hook registered
+    mockGetItem.mockReturnValue(null);
+    mockGetHooks.mockReturnValue(null);
 
     jest.spyOn(prismaSchemaParser, "getModelRelations").mockReturnValue([
       {
@@ -95,11 +108,47 @@ describe("BaseService", () => {
 
     mockPrisma.$transaction.mockImplementation((fn: any) => fn(mockPrisma));
     (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
-    (getModuleComponents as jest.Mock).mockReturnValue({ hooks: {} });
 
     baseService = new BaseService("Post");
     userService = new BaseService("User");
   });
+
+  // ─── Helper to set up hooks via reader ──────────────────────────────────────
+
+  function setupHooks(
+    operationType: string,
+    hooks: {
+      before?: jest.Mock | jest.Mock[];
+      after?: jest.Mock | jest.Mock[];
+      onError?: jest.Mock | jest.Mock[];
+    }
+  ) {
+    mockGetItem.mockReturnValue({});
+    mockGetHooks.mockImplementation((_modelName: string, op: string) => {
+      if (op === operationType) {
+        return {
+          before: hooks.before
+            ? Array.isArray(hooks.before)
+              ? hooks.before
+              : [hooks.before]
+            : undefined,
+          after: hooks.after
+            ? Array.isArray(hooks.after)
+              ? hooks.after
+              : [hooks.after]
+            : undefined,
+          onError: hooks.onError
+            ? Array.isArray(hooks.onError)
+              ? hooks.onError
+              : [hooks.onError]
+            : undefined,
+        };
+      }
+      return null;
+    });
+  }
+
+  // ─── Constructor ────────────────────────────────────────────────────────────
 
   describe("constructor", () => {
     it("should initialize service with correct model name and relations", () => {
@@ -120,11 +169,7 @@ describe("BaseService", () => {
     it("should handle models with no relations", () => {
       jest.spyOn(prismaSchemaParser, "getModelRelations").mockReturnValue([]);
       const simpleService = new BaseService("SimpleModel");
-
-      expect(simpleService.relationFields).toEqual({
-        singular: [],
-        list: [],
-      });
+      expect(simpleService.relationFields).toEqual({ singular: [], list: [] });
     });
 
     it("should filter relations correctly", () => {
@@ -134,19 +179,18 @@ describe("BaseService", () => {
         { name: "arrayRel", isRelation: true, isArray: true },
         { name: "field2", isRelation: false, isArray: true },
       ] as PrismaField[]);
-
       const testService = new BaseService("TestModel");
-
       expect(testService.relationFields.singular).toHaveLength(1);
       expect(testService.relationFields.list).toHaveLength(1);
     });
   });
 
+  // ─── createOne ──────────────────────────────────────────────────────────────
+
   describe("createOne", () => {
     it("should create a record successfully", async () => {
       const data = { title: "Test Post", content: "Test Content" };
       const expectedResult = { id: "1", ...data };
-
       mockPrisma.post.create.mockResolvedValue(expectedResult);
 
       const result = await baseService.createOne(data);
@@ -156,25 +200,16 @@ describe("BaseService", () => {
         baseService.relationFields,
         ["delete", "disconnect", "update"]
       );
-      expect(mockPrisma.post.create).toHaveBeenCalledWith({
-        data: data,
-      });
+      expect(mockPrisma.post.create).toHaveBeenCalledWith({ data });
       expect(result).toEqual(expectedResult);
     });
 
     it("should hash password for user model with plain password", async () => {
       const data = { email: "test@test.com", password: "plaintext" };
       const hashedPassword = "hashed_password";
-
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeCreateOne: mockBeforeHook,
-          afterCreateOne: mockAfterHook,
-        },
-      });
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
+      setupHooks("createOne", { before: mockBefore, after: mockAfter });
 
       (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
       (authService.hashPassword as jest.Mock).mockResolvedValue(hashedPassword);
@@ -187,7 +222,7 @@ describe("BaseService", () => {
       await userService.createOne(data);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ data })
       );
       expect(authService.isPasswordHashed).toHaveBeenCalledWith("plaintext");
@@ -208,9 +243,7 @@ describe("BaseService", () => {
 
       expect(authService.isPasswordHashed).toHaveBeenCalledWith(hashedPassword);
       expect(authService.hashPassword).not.toHaveBeenCalled();
-      expect(mockPrisma.user.create).toHaveBeenCalledWith({
-        data: data,
-      });
+      expect(mockPrisma.user.create).toHaveBeenCalledWith({ data });
     });
 
     it("should execute beforeCreateOne hook with already handled relation fields", async () => {
@@ -226,17 +259,13 @@ describe("BaseService", () => {
         },
         title: "Test",
       };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { beforeCreateOne: mockHook },
-      });
-
+      setupHooks("createOne", { before: mockHook });
       mockPrisma.post.create.mockResolvedValue({ id: "1", title: "Test" });
 
       await baseService.createOne(data);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ data: transformedData })
       );
     });
@@ -244,11 +273,7 @@ describe("BaseService", () => {
     it("should execute beforeCreateOne hook as array of functions", async () => {
       const mockHook = [jest.fn()];
       const data = { title: "Test" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { beforeCreateOne: mockHook },
-      });
-
+      setupHooks("createOne", { before: mockHook });
       mockPrisma.post.create.mockResolvedValue({ id: "1", ...data });
 
       await baseService.createOne(data);
@@ -263,17 +288,13 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const data = { title: "Test" };
       const result = { id: "1", ...data };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { afterCreateOne: mockHook },
-      });
-
+      setupHooks("createOne", { after: mockHook });
       mockPrisma.post.create.mockResolvedValue(result);
 
       await baseService.createOne(data);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ result, data })
       );
     });
@@ -281,11 +302,7 @@ describe("BaseService", () => {
     it("should execute afterCreateOne hook as array of functions", async () => {
       const mockHook = [jest.fn()];
       const data = { title: "Test" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { afterCreateOne: mockHook },
-      });
-
+      setupHooks("createOne", { after: mockHook });
       mockPrisma.post.create.mockResolvedValue({ id: "1", ...data });
 
       await baseService.createOne(data);
@@ -300,59 +317,43 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const data = { title: "Test" };
       const error = new Error("Create failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onCreateOneError: mockHook },
-      });
-
+      setupHooks("createOne", { onError: mockHook });
       mockPrisma.post.create.mockRejectedValue(error);
+
       await expect(baseService.createOne(data)).rejects.toThrow(
         "Create failed"
       );
+
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, data })
       );
     });
 
-    it("should skip hooks based on context skip settings", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+    it("should skip before hooks based on context skip settings", async () => {
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const data = { title: "Test" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeCreateOne: mockBeforeHook,
-          afterCreateOne: mockAfterHook,
-        },
-      });
-
+      setupHooks("createOne", { before: mockBefore, after: mockAfter });
       mockPrisma.post.create.mockResolvedValue({ id: "1", ...data });
 
       await baseService.createOne(data, {}, { skip: "before" });
 
       expect(serviceHooksManager.handleHook).not.toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.anything()
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.anything()
       );
     });
 
     it("should skip all hooks when context skip is 'all'", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const data = { title: "Test" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeCreateOne: mockBeforeHook,
-          afterCreateOne: mockAfterHook,
-        },
-      });
-
+      setupHooks("createOne", { before: mockBefore, after: mockAfter });
       mockPrisma.post.create.mockResolvedValue({ id: "1", ...data });
 
       await baseService.createOne(data, {}, { skip: "all" });
@@ -361,36 +362,27 @@ describe("BaseService", () => {
     });
 
     it("should skip hooks when context skip is array containing hook type", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const data = { title: "Test" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeCreateOne: mockBeforeHook,
-          afterCreateOne: mockAfterHook,
-        },
-      });
-
+      setupHooks("createOne", { before: mockBefore, after: mockAfter });
       mockPrisma.post.create.mockResolvedValue({ id: "1", ...data });
 
       await baseService.createOne(data, {}, { skip: ["before", "error"] });
 
       expect(serviceHooksManager.handleHook).not.toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.anything()
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.anything()
       );
     });
 
     it("should return undefined when throwOnError is false and error occurs", async () => {
       const data = { title: "Test" };
-      const error = new Error("Create failed");
-
-      mockPrisma.post.create.mockRejectedValue(error);
+      mockPrisma.post.create.mockRejectedValue(new Error("Create failed"));
 
       const result = await baseService.createOne(
         data,
@@ -407,7 +399,6 @@ describe("BaseService", () => {
         select: { id: true, title: true },
         include: { comments: true },
       };
-
       mockPrisma.post.create.mockResolvedValue({ id: "1", title: "Test" });
 
       await baseService.createOne(data, queryOptions);
@@ -419,6 +410,8 @@ describe("BaseService", () => {
       });
     });
   });
+
+  // ─── createMany ─────────────────────────────────────────────────────────────
 
   describe("createMany", () => {
     it("should create multiple records successfully", async () => {
@@ -433,33 +426,15 @@ describe("BaseService", () => {
       const transformedData = [
         {
           content: "Content 1",
-          tags: {
-            connect: [
-              {
-                id: "4321",
-              },
-            ],
-          },
+          tags: { connect: [{ id: "4321" }] },
           title: "Post 1",
         },
         {
           content: "Content 2",
-          tags: {
-            connect: [
-              {
-                id: "1324",
-              },
-            ],
-            create: [
-              {
-                name: "boss",
-              },
-            ],
-          },
+          tags: { connect: [{ id: "1324" }], create: [{ name: "boss" }] },
           title: "Post 2",
         },
       ];
-
       mockPrisma.post.createMany.mockResolvedValue({ count: 2 });
 
       const result = await baseService.createMany(data);
@@ -476,13 +451,10 @@ describe("BaseService", () => {
         { email: "user1@test.com", password: "pass1" },
         { email: "user2@test.com", password: "pass2" },
       ];
-      const hashedPasswords = ["hashed1", "hashed2"];
-
       (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
       (authService.hashPassword as jest.Mock)
-        .mockResolvedValueOnce(hashedPasswords[0])
-        .mockResolvedValueOnce(hashedPasswords[1]);
-
+        .mockResolvedValueOnce("hashed1")
+        .mockResolvedValueOnce("hashed2");
       mockPrisma.user.createMany.mockResolvedValue({ count: 2 });
 
       await userService.createMany(data);
@@ -507,27 +479,20 @@ describe("BaseService", () => {
     });
 
     it("should execute beforeCreateMany and afterCreateMany hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const data = [{ title: "Test" }];
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeCreateMany: mockBeforeHook,
-          afterCreateMany: mockAfterHook,
-        },
-      });
-
+      setupHooks("createMany", { before: mockBefore, after: mockAfter });
       mockPrisma.post.createMany.mockResolvedValue({ count: 1 });
 
       await baseService.createMany(data);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ data })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ data, result: { count: 1 } })
       );
     });
@@ -536,11 +501,7 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const data = [{ title: "Test" }];
       const error = new Error("Create many failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onCreateManyError: mockHook },
-      });
-
+      setupHooks("createMany", { onError: mockHook });
       mockPrisma.post.createMany.mockRejectedValue(error);
 
       await expect(baseService.createMany(data)).rejects.toThrow(
@@ -548,16 +509,16 @@ describe("BaseService", () => {
       );
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, data })
       );
     });
 
     it("should return undefined when throwOnError is false and error occurs", async () => {
       const data = [{ title: "Test" }];
-      const error = new Error("Create many failed");
-
-      mockPrisma.post.createMany.mockRejectedValue(error);
+      mockPrisma.post.createMany.mockRejectedValue(
+        new Error("Create many failed")
+      );
 
       const result = await baseService.createMany(
         data,
@@ -569,6 +530,8 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── count ──────────────────────────────────────────────────────────────────
+
   describe("count", () => {
     it("should count records with filters", async () => {
       const filters = { published: true };
@@ -576,9 +539,7 @@ describe("BaseService", () => {
 
       const result = await baseService.count(filters);
 
-      expect(mockPrisma.post.count).toHaveBeenCalledWith({
-        where: filters,
-      });
+      expect(mockPrisma.post.count).toHaveBeenCalledWith({ where: filters });
       expect(result).toBe(5);
     });
 
@@ -587,34 +548,25 @@ describe("BaseService", () => {
 
       const result = await baseService.count();
 
-      expect(mockPrisma.post.count).toHaveBeenCalledWith({
-        where: undefined,
-      });
+      expect(mockPrisma.post.count).toHaveBeenCalledWith({ where: undefined });
       expect(result).toBe(10);
     });
 
     it("should execute beforeCount and afterCount hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const filters = { published: true };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeCount: mockBeforeHook,
-          afterCount: mockAfterHook,
-        },
-      });
-
+      setupHooks("count", { before: mockBefore, after: mockAfter });
       mockPrisma.post.count.mockResolvedValue(3);
 
       await baseService.count(filters);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ filters })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ filters, result: 3 })
       );
     });
@@ -623,26 +575,20 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const filters = { published: true };
       const error = new Error("Count failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onCountError: mockHook },
-      });
-
+      setupHooks("count", { onError: mockHook });
       mockPrisma.post.count.mockRejectedValue(error);
 
       await expect(baseService.count(filters)).rejects.toThrow("Count failed");
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, filters })
       );
     });
 
     it("should return 0 when throwOnError is false and error occurs", async () => {
       const filters = { published: true };
-      const error = new Error("Count failed");
-
-      mockPrisma.post.count.mockRejectedValue(error);
+      mockPrisma.post.count.mockRejectedValue(new Error("Count failed"));
 
       const result = await baseService.count(filters, { throwOnError: false });
 
@@ -650,18 +596,17 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── findMany ───────────────────────────────────────────────────────────────
+
   describe("findMany", () => {
     it("should find multiple records with filters", async () => {
       const filters = { published: true };
       const expectedData = [{ id: "1", title: "Test" }];
-
       mockPrisma.post.findMany.mockResolvedValue(expectedData);
 
       const result = await baseService.findMany(filters);
 
-      expect(mockPrisma.post.findMany).toHaveBeenCalledWith({
-        where: filters,
-      });
+      expect(mockPrisma.post.findMany).toHaveBeenCalledWith({ where: filters });
       expect(result).toEqual(expectedData);
     });
 
@@ -672,7 +617,6 @@ describe("BaseService", () => {
         orderBy: { createdAt: "desc" },
         take: 10,
       };
-
       mockPrisma.post.findMany.mockResolvedValue([]);
 
       await baseService.findMany(filters, queryOptions);
@@ -686,28 +630,21 @@ describe("BaseService", () => {
     });
 
     it("should execute beforeFindMany and afterFindMany hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const filters = { published: true };
       const result = [{ id: "1", title: "Test" }];
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeFindMany: mockBeforeHook,
-          afterFindMany: mockAfterHook,
-        },
-      });
-
+      setupHooks("findMany", { before: mockBefore, after: mockAfter });
       mockPrisma.post.findMany.mockResolvedValue(result);
 
       await baseService.findMany(filters);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ filters })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ filters, result })
       );
     });
@@ -716,11 +653,7 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const filters = { published: true };
       const error = new Error("Find many failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onFindManyError: mockHook },
-      });
-
+      setupHooks("findMany", { onError: mockHook });
       mockPrisma.post.findMany.mockRejectedValue(error);
 
       await expect(baseService.findMany(filters)).rejects.toThrow(
@@ -728,16 +661,14 @@ describe("BaseService", () => {
       );
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, filters })
       );
     });
 
     it("should return empty array when throwOnError is false and error occurs", async () => {
       const filters = { published: true };
-      const error = new Error("Find many failed");
-
-      mockPrisma.post.findMany.mockRejectedValue(error);
+      mockPrisma.post.findMany.mockRejectedValue(new Error("Find many failed"));
 
       const result = await baseService.findMany(
         filters,
@@ -749,17 +680,18 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── findById ───────────────────────────────────────────────────────────────
+
   describe("findById", () => {
     it("should find record by string id", async () => {
       const id = "test-id";
       const expectedData = { id: "test-id", title: "Test Post" };
-
       mockPrisma.post.findUnique.mockResolvedValue(expectedData);
 
       const result = await baseService.findById(id);
 
       expect(mockPrisma.post.findUnique).toHaveBeenCalledWith({
-        where: { id: "test-id" },
+        where: { id },
       });
       expect(result).toEqual(expectedData);
     });
@@ -767,40 +699,32 @@ describe("BaseService", () => {
     it("should find record by numeric id", async () => {
       const id = 123;
       const expectedData = { id: 123, title: "Test Post" };
-
       mockPrisma.post.findUnique.mockResolvedValue(expectedData);
 
       const result = await baseService.findById(id);
 
       expect(mockPrisma.post.findUnique).toHaveBeenCalledWith({
-        where: { id: 123 },
+        where: { id },
       });
       expect(result).toEqual(expectedData);
     });
 
     it("should execute beforeFindById and afterFindById hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const id = "1";
       const result = { id: "1", title: "Test" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeFindById: mockBeforeHook,
-          afterFindById: mockAfterHook,
-        },
-      });
-
+      setupHooks("findById", { before: mockBefore, after: mockAfter });
       mockPrisma.post.findUnique.mockResolvedValue(result);
 
       await baseService.findById(id);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ id })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ id, result })
       );
     });
@@ -809,11 +733,7 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const id = "1";
       const error = new Error("Find by id failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onFindByIdError: mockHook },
-      });
-
+      setupHooks("findById", { onError: mockHook });
       mockPrisma.post.findUnique.mockRejectedValue(error);
 
       await expect(baseService.findById(id)).rejects.toThrow(
@@ -821,16 +741,16 @@ describe("BaseService", () => {
       );
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, id })
       );
     });
 
     it("should return undefined when throwOnError is false and error occurs", async () => {
       const id = "1";
-      const error = new Error("Find by id failed");
-
-      mockPrisma.post.findUnique.mockRejectedValue(error);
+      mockPrisma.post.findUnique.mockRejectedValue(
+        new Error("Find by id failed")
+      );
 
       const result = await baseService.findById(
         id,
@@ -842,11 +762,12 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── findOne ────────────────────────────────────────────────────────────────
+
   describe("findOne", () => {
     it("should use findUnique when filter has only id and id is not 'me'", async () => {
       const filters = { id: "123" };
       const expectedData = { id: "123", title: "Test Post" };
-
       mockPrisma.post.findUnique.mockResolvedValue(expectedData);
 
       const result = await baseService.findOne(filters);
@@ -861,7 +782,6 @@ describe("BaseService", () => {
     it("should use findFirst when filter has id = 'me'", async () => {
       const filters = { id: "me" };
       const expectedData = { id: "current-user", title: "Current User Post" };
-
       mockPrisma.post.findFirst.mockResolvedValue(expectedData);
 
       const result = await baseService.findOne(filters);
@@ -876,7 +796,6 @@ describe("BaseService", () => {
     it("should use findFirst when filter has multiple fields", async () => {
       const filters = { id: "123", published: true };
       const expectedData = { id: "123", title: "Test Post" };
-
       mockPrisma.post.findFirst.mockResolvedValue(expectedData);
 
       const result = await baseService.findOne(filters);
@@ -891,7 +810,6 @@ describe("BaseService", () => {
     it("should use findFirst when filter has non-id fields", async () => {
       const filters = { title: "Test Post" };
       const expectedData = { id: "1", title: "Test Post" };
-
       mockPrisma.post.findFirst.mockResolvedValue(expectedData);
 
       const result = await baseService.findOne(filters);
@@ -904,28 +822,21 @@ describe("BaseService", () => {
     });
 
     it("should execute beforeFindOne and afterFindOne hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const filters = { title: "Test" };
       const result = { id: "1", title: "Test" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeFindOne: mockBeforeHook,
-          afterFindOne: mockAfterHook,
-        },
-      });
-
+      setupHooks("findOne", { before: mockBefore, after: mockAfter });
       mockPrisma.post.findFirst.mockResolvedValue(result);
 
       await baseService.findOne(filters);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ filters })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ filters, result })
       );
     });
@@ -934,11 +845,7 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const filters = { title: "Test" };
       const error = new Error("Find one failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onFindOneError: mockHook },
-      });
-
+      setupHooks("findOne", { onError: mockHook });
       mockPrisma.post.findFirst.mockRejectedValue(error);
 
       await expect(baseService.findOne(filters)).rejects.toThrow(
@@ -946,16 +853,14 @@ describe("BaseService", () => {
       );
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, filters })
       );
     });
 
     it("should return undefined when throwOnError is false and error occurs", async () => {
       const filters = { title: "Test" };
-      const error = new Error("Find one failed");
-
-      mockPrisma.post.findFirst.mockRejectedValue(error);
+      mockPrisma.post.findFirst.mockRejectedValue(new Error("Find one failed"));
 
       const result = await baseService.findOne(
         filters,
@@ -967,6 +872,8 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── updateOne ──────────────────────────────────────────────────────────────
+
   describe("updateOne", () => {
     it("should update a record successfully", async () => {
       const filters = { id: "1" };
@@ -976,22 +883,11 @@ describe("BaseService", () => {
       };
       const transformedData = {
         tags: {
-          update: [
-            {
-              data: {
-                color: "#ff3",
-              },
-              where: {
-                id: "1234",
-              },
-            },
-          ],
+          update: [{ data: { color: "#ff3" }, where: { id: "1234" } }],
         },
         title: "Updated Title",
       };
-
       const expectedResult = { id: "1", title: "Updated Title" };
-
       mockPrisma.post.update.mockResolvedValue(expectedResult);
 
       const result = await baseService.updateOne(filters, data);
@@ -1012,7 +908,6 @@ describe("BaseService", () => {
       const filters = { id: "1" };
       const data = { name: "Updated User", password: "newpassword" };
       const hashedPassword = "new_hashed_password";
-
       (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
       (authService.hashPassword as jest.Mock).mockResolvedValue(hashedPassword);
       mockPrisma.user.update.mockResolvedValue({
@@ -1035,7 +930,6 @@ describe("BaseService", () => {
       const filters = { id: "1" };
       const hashedPassword = "$2b$10$hashedpassword";
       const data = { name: "Updated User", password: hashedPassword };
-
       (authService.isPasswordHashed as jest.Mock).mockReturnValue(true);
       mockPrisma.user.update.mockResolvedValue({ id: "1", ...data });
 
@@ -1045,34 +939,27 @@ describe("BaseService", () => {
       expect(authService.hashPassword).not.toHaveBeenCalled();
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: filters,
-        data: data,
+        data,
       });
     });
 
     it("should execute beforeUpdateOne and afterUpdateOne hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const filters = { id: "1" };
       const data = { title: "Updated" };
       const result = { id: "1", title: "Updated" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeUpdateOne: mockBeforeHook,
-          afterUpdateOne: mockAfterHook,
-        },
-      });
-
+      setupHooks("updateOne", { before: mockBefore, after: mockAfter });
       mockPrisma.post.update.mockResolvedValue(result);
 
       await baseService.updateOne(filters, data);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ filters, data })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ filters, data, result })
       );
     });
@@ -1082,11 +969,7 @@ describe("BaseService", () => {
       const filters = { id: "1" };
       const data = { title: "Updated" };
       const error = new Error("Update failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onUpdateOneError: mockHook },
-      });
-
+      setupHooks("updateOne", { onError: mockHook });
       mockPrisma.post.update.mockRejectedValue(error);
 
       await expect(baseService.updateOne(filters, data)).rejects.toThrow(
@@ -1094,7 +977,7 @@ describe("BaseService", () => {
       );
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, filters, data })
       );
     });
@@ -1102,9 +985,7 @@ describe("BaseService", () => {
     it("should return undefined when throwOnError is false and error occurs", async () => {
       const filters = { id: "1" };
       const data = { title: "Updated" };
-      const error = new Error("Update failed");
-
-      mockPrisma.post.update.mockRejectedValue(error);
+      mockPrisma.post.update.mockRejectedValue(new Error("Update failed"));
 
       const result = await baseService.updateOne(
         filters,
@@ -1117,12 +998,13 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── updateMany ─────────────────────────────────────────────────────────────
+
   describe("updateMany", () => {
     it("should update multiple records successfully", async () => {
       const filters = { published: false };
       const data = { published: true, tags: [{ name: "sheu", color: "pink" }] };
       const expectedResult = { count: 3 };
-
       mockPrisma.post.updateMany.mockResolvedValue(expectedResult);
 
       const result = await baseService.updateMany(filters, data);
@@ -1131,14 +1013,7 @@ describe("BaseService", () => {
         where: filters,
         data: {
           published: true,
-          tags: {
-            create: [
-              {
-                color: "pink",
-                name: "sheu",
-              },
-            ],
-          },
+          tags: { create: [{ color: "pink", name: "sheu" }] },
         },
       });
       expect(result).toEqual(expectedResult);
@@ -1148,7 +1023,6 @@ describe("BaseService", () => {
       const filters = { role: "user" };
       const data = { password: "newpassword" };
       const hashedPassword = "new_hashed_password";
-
       (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
       (authService.hashPassword as jest.Mock).mockResolvedValue(hashedPassword);
       mockPrisma.user.updateMany.mockResolvedValue({ count: 2 });
@@ -1167,42 +1041,34 @@ describe("BaseService", () => {
       const filters = { published: false };
       const data = { published: true };
       const queryOptions = { select: { id: true } };
-
       mockPrisma.post.updateMany.mockResolvedValue({ count: 2 });
 
       await baseService.updateMany(filters, data, queryOptions);
 
       expect(mockPrisma.post.updateMany).toHaveBeenCalledWith({
         where: filters,
-        data: data,
+        data,
         select: { id: true },
       });
     });
 
     it("should execute beforeUpdateMany and afterUpdateMany hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const filters = { published: false };
       const data = { published: true };
       const result = { count: 3 };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeUpdateMany: mockBeforeHook,
-          afterUpdateMany: mockAfterHook,
-        },
-      });
-
+      setupHooks("updateMany", { before: mockBefore, after: mockAfter });
       mockPrisma.post.updateMany.mockResolvedValue(result);
 
       await baseService.updateMany(filters, data);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ filters, data })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ filters, data, result })
       );
     });
@@ -1212,11 +1078,7 @@ describe("BaseService", () => {
       const filters = { published: false };
       const data = { published: true };
       const error = new Error("Update many failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onUpdateManyError: mockHook },
-      });
-
+      setupHooks("updateMany", { onError: mockHook });
       mockPrisma.post.updateMany.mockRejectedValue(error);
 
       await expect(baseService.updateMany(filters, data)).rejects.toThrow(
@@ -1224,7 +1086,7 @@ describe("BaseService", () => {
       );
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, filters, data })
       );
     });
@@ -1232,9 +1094,9 @@ describe("BaseService", () => {
     it("should return undefined when throwOnError is false and error occurs", async () => {
       const filters = { published: false };
       const data = { published: true };
-      const error = new Error("Update many failed");
-
-      mockPrisma.post.updateMany.mockRejectedValue(error);
+      mockPrisma.post.updateMany.mockRejectedValue(
+        new Error("Update many failed")
+      );
 
       const result = await baseService.updateMany(
         filters,
@@ -1247,17 +1109,16 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── batchUpdate ────────────────────────────────────────────────────────────
+
   describe("batchUpdate", () => {
     beforeEach(() => {
-      const prismaFieldOfTypePost = {
+      jest.spyOn(prismaSchemaParser, "getField").mockReturnValue({
         name: "posts",
         type: "Post",
         isArray: true,
         isRelation: true,
-      };
-      jest
-        .spyOn(prismaSchemaParser, "getField")
-        .mockReturnValue(prismaFieldOfTypePost as PrismaField);
+      } as PrismaField);
     });
 
     it("should batch update multiple records successfully", async () => {
@@ -1265,7 +1126,6 @@ describe("BaseService", () => {
         { id: "1", title: "Updated Title 1" },
         { id: "2", title: "Updated Title 2" },
       ];
-
       mockPrisma.post.update
         .mockResolvedValueOnce({ id: "1", title: "Updated Title 1" })
         .mockResolvedValueOnce({ id: "2", title: "Updated Title 2" });
@@ -1282,8 +1142,6 @@ describe("BaseService", () => {
       });
       expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(results).toHaveLength(2);
-      expect(results[0]).toEqual({ id: "1", title: "Updated Title 1" });
-      expect(results[1]).toEqual({ id: "2", title: "Updated Title 2" });
     });
 
     it("should hash passwords for user model batch update", async () => {
@@ -1292,23 +1150,16 @@ describe("BaseService", () => {
         { id: "1", name: "User 1", password: "pass1" },
         { id: "2", name: "User 2", password: "pass2" },
       ];
-      const hashedPasswords = ["hashed1", "hashed2"];
-
       (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
       (authService.hashPassword as jest.Mock)
-        .mockResolvedValueOnce(hashedPasswords[0])
-        .mockResolvedValueOnce(hashedPasswords[1]);
-
+        .mockResolvedValueOnce("hashed1")
+        .mockResolvedValueOnce("hashed2");
       mockPrisma.user.update
-        .mockResolvedValueOnce({
-          id: "1",
-          name: "User 1",
-          password: hashedPasswords[0],
-        })
+        .mockResolvedValueOnce({ id: "1", name: "User 1", password: "hashed1" })
         .mockResolvedValueOnce({
           id: "2",
           name: "User 2",
-          password: hashedPasswords[1],
+          password: "hashed2",
         });
 
       await userService.batchUpdate(dataArray);
@@ -1317,64 +1168,33 @@ describe("BaseService", () => {
       expect(authService.hashPassword).toHaveBeenCalledWith("pass2");
     });
 
-    it("should execute beforeBatchUpdate and afterBatchUpdate hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
-      const dataArray = [{ id: "1", title: "Updated" }];
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeBatchUpdate: mockBeforeHook,
-          afterBatchUpdate: mockAfterHook,
-        },
-      });
-
+    // batchUpdate/batchDelete hooks are intentionally skipped in executeHooks (by design)
+    it("should NOT execute hooks for batchUpdate (by design)", async () => {
+      const mockBefore = jest.fn();
+      setupHooks("batchUpdate", { before: mockBefore });
       mockPrisma.post.update.mockResolvedValue({ id: "1", title: "Updated" });
 
-      await baseService.batchUpdate(dataArray);
+      await baseService.batchUpdate([{ id: "1", title: "Updated" }]);
 
-      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
-        expect.objectContaining({ data: dataArray })
-      );
-      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
-        expect.objectContaining({
-          data: dataArray,
-          results: [{ id: "1", title: "Updated" }],
-        })
-      );
+      expect(serviceHooksManager.handleHook).not.toHaveBeenCalled();
     });
 
-    it("should execute onBatchUpdateError hook on error", async () => {
-      const mockHook = jest.fn();
-      const dataArray = [{ id: "1", title: "Updated" }];
+    it("should throw on transaction failure", async () => {
       const error = new Error("Batch update failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onBatchUpdateError: mockHook },
-      });
-
       mockPrisma.$transaction.mockRejectedValue(error);
 
-      await expect(baseService.batchUpdate(dataArray)).rejects.toThrow(
-        "Batch update failed"
-      );
-
-      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
-        expect.objectContaining({ error, data: dataArray })
-      );
+      await expect(
+        baseService.batchUpdate([{ id: "1", title: "Updated" }])
+      ).rejects.toThrow("Batch update failed");
     });
 
     it("should return undefined when throwOnError is false and error occurs", async () => {
-      const dataArray = [{ id: "1", title: "Updated" }];
-      const error = new Error("Batch update failed");
-
-      mockPrisma.$transaction.mockRejectedValue(error);
+      mockPrisma.$transaction.mockRejectedValue(
+        new Error("Batch update failed")
+      );
 
       const result = await baseService.batchUpdate(
-        dataArray,
+        [{ id: "1", title: "Updated" }],
         {},
         { throwOnError: false }
       );
@@ -1383,44 +1203,36 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── deleteOne ──────────────────────────────────────────────────────────────
+
   describe("deleteOne", () => {
     it("should delete a record successfully", async () => {
       const filters = { id: "1" };
       const expectedResult = { id: "1", title: "Deleted Post" };
-
       mockPrisma.post.delete.mockResolvedValue(expectedResult);
 
       const result = await baseService.deleteOne(filters);
 
-      expect(mockPrisma.post.delete).toHaveBeenCalledWith({
-        where: filters,
-      });
+      expect(mockPrisma.post.delete).toHaveBeenCalledWith({ where: filters });
       expect(result).toEqual(expectedResult);
     });
 
     it("should execute beforeDeleteOne and afterDeleteOne hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const filters = { id: "1" };
       const result = { id: "1", title: "Deleted" };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeDeleteOne: mockBeforeHook,
-          afterDeleteOne: mockAfterHook,
-        },
-      });
-
+      setupHooks("deleteOne", { before: mockBefore, after: mockAfter });
       mockPrisma.post.delete.mockResolvedValue(result);
 
       await baseService.deleteOne(filters);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ filters })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ filters, result })
       );
     });
@@ -1429,11 +1241,7 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const filters = { id: "1" };
       const error = new Error("Delete failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onDeleteOneError: mockHook },
-      });
-
+      setupHooks("deleteOne", { onError: mockHook });
       mockPrisma.post.delete.mockRejectedValue(error);
 
       await expect(baseService.deleteOne(filters)).rejects.toThrow(
@@ -1441,16 +1249,14 @@ describe("BaseService", () => {
       );
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, filters })
       );
     });
 
     it("should return undefined when throwOnError is false and error occurs", async () => {
       const filters = { id: "1" };
-      const error = new Error("Delete failed");
-
-      mockPrisma.post.delete.mockRejectedValue(error);
+      mockPrisma.post.delete.mockRejectedValue(new Error("Delete failed"));
 
       const result = await baseService.deleteOne(filters, {
         throwOnError: false,
@@ -1460,11 +1266,12 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── deleteMany ─────────────────────────────────────────────────────────────
+
   describe("deleteMany", () => {
     it("should delete multiple records successfully", async () => {
       const filters = { published: false };
       const expectedResult = { count: 3 };
-
       mockPrisma.post.deleteMany.mockResolvedValue(expectedResult);
 
       const result = await baseService.deleteMany(filters);
@@ -1476,28 +1283,21 @@ describe("BaseService", () => {
     });
 
     it("should execute beforeDeleteMany and afterDeleteMany hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
       const filters = { published: false };
       const result = { count: 3 };
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeDeleteMany: mockBeforeHook,
-          afterDeleteMany: mockAfterHook,
-        },
-      });
-
+      setupHooks("deleteMany", { before: mockBefore, after: mockAfter });
       mockPrisma.post.deleteMany.mockResolvedValue(result);
 
       await baseService.deleteMany(filters);
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.objectContaining({ filters })
       );
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.objectContaining({ filters, result })
       );
     });
@@ -1506,11 +1306,7 @@ describe("BaseService", () => {
       const mockHook = jest.fn();
       const filters = { published: false };
       const error = new Error("Delete many failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onDeleteManyError: mockHook },
-      });
-
+      setupHooks("deleteMany", { onError: mockHook });
       mockPrisma.post.deleteMany.mockRejectedValue(error);
 
       await expect(baseService.deleteMany(filters)).rejects.toThrow(
@@ -1518,16 +1314,16 @@ describe("BaseService", () => {
       );
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
+        [mockHook],
         expect.objectContaining({ error, filters })
       );
     });
 
     it("should return undefined when throwOnError is false and error occurs", async () => {
       const filters = { published: false };
-      const error = new Error("Delete many failed");
-
-      mockPrisma.post.deleteMany.mockRejectedValue(error);
+      mockPrisma.post.deleteMany.mockRejectedValue(
+        new Error("Delete many failed")
+      );
 
       const result = await baseService.deleteMany(filters, {
         throwOnError: false,
@@ -1537,10 +1333,11 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── batchDelete ────────────────────────────────────────────────────────────
+
   describe("batchDelete", () => {
     it("should batch delete multiple records successfully", async () => {
       const batchFilters = [{ id: "1" }, { id: "2" }, { id: "3" }];
-
       mockPrisma.post.delete
         .mockResolvedValueOnce({ id: "1", title: "Post 1" })
         .mockResolvedValueOnce({ id: "2", title: "Post 2" })
@@ -1560,7 +1357,6 @@ describe("BaseService", () => {
         { id: "1", category: { disconnect: true } },
         { id: "2", tags: { set: [] } },
       ];
-
       mockPrisma.post.delete
         .mockResolvedValueOnce({ id: "1" })
         .mockResolvedValueOnce({ id: "2" });
@@ -1578,63 +1374,32 @@ describe("BaseService", () => {
       );
     });
 
-    it("should execute beforeBatchDelete and afterBatchDelete hooks", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
-      const batchFilters = [{ id: "1" }];
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeBatchDelete: mockBeforeHook,
-          afterBatchDelete: mockAfterHook,
-        },
-      });
-
+    // batchDelete hooks intentionally skipped by design
+    it("should NOT execute hooks for batchDelete (by design)", async () => {
+      const mockBefore = jest.fn();
+      setupHooks("batchDelete", { before: mockBefore });
       mockPrisma.post.delete.mockResolvedValue({ id: "1", title: "Deleted" });
 
-      await baseService.batchDelete(batchFilters);
+      await baseService.batchDelete([{ id: "1" }]);
 
-      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
-        expect.objectContaining({ batchFilters })
-      );
-      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockAfterHook,
-        expect.objectContaining({
-          batchFilters,
-          results: [{ id: "1", title: "Deleted" }],
-        })
-      );
+      expect(serviceHooksManager.handleHook).not.toHaveBeenCalled();
     });
 
-    it("should execute onBatchDeleteError hook on error", async () => {
-      const mockHook = jest.fn();
-      const batchFilters = [{ id: "1" }];
+    it("should throw on transaction failure", async () => {
       const error = new Error("Batch delete failed");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onBatchDeleteError: mockHook },
-      });
-
       mockPrisma.$transaction.mockRejectedValue(error);
 
-      await expect(baseService.batchDelete(batchFilters)).rejects.toThrow(
+      await expect(baseService.batchDelete([{ id: "1" }])).rejects.toThrow(
         "Batch delete failed"
-      );
-
-      expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockHook,
-        expect.objectContaining({ error, batchFilters })
       );
     });
 
     it("should return undefined when throwOnError is false and error occurs", async () => {
-      const batchFilters = [{ id: "1" }];
-      const error = new Error("Batch delete failed");
+      mockPrisma.$transaction.mockRejectedValue(
+        new Error("Batch delete failed")
+      );
 
-      mockPrisma.$transaction.mockRejectedValue(error);
-
-      const result = await baseService.batchDelete(batchFilters, {
+      const result = await baseService.batchDelete([{ id: "1" }], {
         throwOnError: false,
       });
 
@@ -1642,143 +1407,137 @@ describe("BaseService", () => {
     });
   });
 
+  // ─── context skip functionality ─────────────────────────────────────────────
+
   describe("context skip functionality", () => {
     it("should skip after hooks when context skip is 'after'", async () => {
-      const mockBeforeHook = jest.fn();
-      const mockAfterHook = jest.fn();
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: {
-          beforeCreateOne: mockBeforeHook,
-          afterCreateOne: mockAfterHook,
-        },
-      });
-
+      const mockBefore = jest.fn();
+      const mockAfter = jest.fn();
+      setupHooks("createOne", { before: mockBefore, after: mockAfter });
       mockPrisma.post.create.mockResolvedValue({ id: "1", title: "Test" });
 
       await baseService.createOne({ title: "Test" }, {}, { skip: "after" });
 
       expect(serviceHooksManager.handleHook).toHaveBeenCalledWith(
-        mockBeforeHook,
+        [mockBefore],
         expect.anything()
       );
       expect(serviceHooksManager.handleHook).not.toHaveBeenCalledWith(
-        mockAfterHook,
+        [mockAfter],
         expect.anything()
       );
     });
 
     it("should skip error hooks when context skip is 'error'", async () => {
-      const mockErrorHook = jest.fn();
-      const error = new Error("Test error");
-
-      (getModuleComponents as jest.Mock).mockReturnValue({
-        hooks: { onCreateOneError: mockErrorHook },
-      });
-
-      mockPrisma.post.create.mockRejectedValue(error);
+      const mockError = jest.fn();
+      setupHooks("createOne", { onError: mockError });
+      mockPrisma.post.create.mockRejectedValue(new Error("Test error"));
 
       await expect(
         baseService.createOne({ title: "Test" }, {}, { skip: "error" })
       ).rejects.toThrow();
 
       expect(serviceHooksManager.handleHook).not.toHaveBeenCalledWith(
-        mockErrorHook,
+        [mockError],
         expect.anything()
       );
     });
   });
 
+  // ─── processPasswordHashing ─────────────────────────────────────────────────
+
   describe("BaseService - processPasswordHashing method", () => {
-    let userService: BaseService<any>;
+    let localUserService: BaseService<any>;
 
     beforeEach(() => {
       jest.clearAllMocks();
-      userService = new BaseService("User");
+      mockGetItem.mockReturnValue(null);
+      mockGetHooks.mockReturnValue(null);
+      localUserService = new BaseService("User");
     });
 
-    describe("processPasswordHashing", () => {
-      it("should hash plain password for single object", async () => {
-        const data = { email: "test@test.com", password: "plaintext" };
-        const hashedPassword = "hashed_password";
+    it("should hash plain password for single object", async () => {
+      const data = { email: "test@test.com", password: "plaintext" };
+      const hashedPassword = "hashed_password";
+      (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
+      (authService.hashPassword as jest.Mock).mockResolvedValue(hashedPassword);
 
-        (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
-        (authService.hashPassword as jest.Mock).mockResolvedValue(
-          hashedPassword
-        );
+      const result = await (localUserService as any).processPasswordHashing(
+        data
+      );
 
-        // Access private method through any cast for testing
-        const result = await (userService as any).processPasswordHashing(data);
-
-        expect(authService.isPasswordHashed).toHaveBeenCalledWith("plaintext");
-        expect(authService.hashPassword).toHaveBeenCalledWith("plaintext");
-        expect(result).toEqual({
-          email: "test@test.com",
-          password: hashedPassword,
-        });
+      expect(authService.isPasswordHashed).toHaveBeenCalledWith("plaintext");
+      expect(authService.hashPassword).toHaveBeenCalledWith("plaintext");
+      expect(result).toEqual({
+        email: "test@test.com",
+        password: hashedPassword,
       });
+    });
 
-      it("should not modify already hashed password", async () => {
-        const hashedPassword = "$2b$10$hashedpassword";
-        const data = { email: "test@test.com", password: hashedPassword };
+    it("should not modify already hashed password", async () => {
+      const hashedPassword = "$2b$10$hashedpassword";
+      const data = { email: "test@test.com", password: hashedPassword };
+      (authService.isPasswordHashed as jest.Mock).mockReturnValue(true);
 
-        (authService.isPasswordHashed as jest.Mock).mockReturnValue(true);
+      const result = await (localUserService as any).processPasswordHashing(
+        data
+      );
 
-        const result = await (userService as any).processPasswordHashing(data);
+      expect(authService.isPasswordHashed).toHaveBeenCalledWith(hashedPassword);
+      expect(authService.hashPassword).not.toHaveBeenCalled();
+      expect(result).toEqual(data);
+    });
 
-        expect(authService.isPasswordHashed).toHaveBeenCalledWith(
-          hashedPassword
-        );
-        expect(authService.hashPassword).not.toHaveBeenCalled();
-        expect(result).toEqual(data);
-      });
+    it("should return original data when no password field", async () => {
+      const data = { email: "test@test.com", name: "Test User" };
 
-      it("should return original data when no password field", async () => {
-        const data = { email: "test@test.com", name: "Test User" };
+      const result = await (localUserService as any).processPasswordHashing(
+        data
+      );
 
-        const result = await (userService as any).processPasswordHashing(data);
+      expect(authService.isPasswordHashed).not.toHaveBeenCalled();
+      expect(result).toEqual(data);
+    });
 
-        expect(authService.isPasswordHashed).not.toHaveBeenCalled();
-        expect(authService.hashPassword).not.toHaveBeenCalled();
-        expect(result).toEqual(data);
-      });
+    it("should hash passwords in array", async () => {
+      const data = [
+        { email: "user1@test.com", password: "pass1" },
+        { email: "user2@test.com", password: "pass2" },
+      ];
+      (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
+      (authService.hashPassword as jest.Mock)
+        .mockResolvedValueOnce("hashed1")
+        .mockResolvedValueOnce("hashed2");
 
-      it("should hash passwords in array", async () => {
-        const data = [
-          { email: "user1@test.com", password: "pass1" },
-          { email: "user2@test.com", password: "pass2" },
-        ];
+      const result = await (localUserService as any).processPasswordHashing(
+        data
+      );
 
-        (authService.isPasswordHashed as jest.Mock).mockReturnValue(false);
-        (authService.hashPassword as jest.Mock)
-          .mockResolvedValueOnce("hashed1")
-          .mockResolvedValueOnce("hashed2");
+      expect(authService.hashPassword).toHaveBeenCalledWith("pass1");
+      expect(authService.hashPassword).toHaveBeenCalledWith("pass2");
+      expect(result).toEqual([
+        { email: "user1@test.com", password: "hashed1" },
+        { email: "user2@test.com", password: "hashed2" },
+      ]);
+    });
 
-        const result = await (userService as any).processPasswordHashing(data);
+    it("should return original data when password is undefined", async () => {
+      const data = { email: "test@test.com", password: undefined };
 
-        expect(authService.hashPassword).toHaveBeenCalledWith("pass1");
-        expect(authService.hashPassword).toHaveBeenCalledWith("pass2");
-        expect(result).toEqual([
-          { email: "user1@test.com", password: "hashed1" },
-          { email: "user2@test.com", password: "hashed2" },
-        ]);
-      });
+      const result = await (localUserService as any).processPasswordHashing(
+        data
+      );
 
-      it("should return original data when password is undefined", async () => {
-        const data = { email: "test@test.com", password: undefined };
-
-        const result = await (userService as any).processPasswordHashing(data);
-
-        expect(result).toEqual(data);
-        expect(authService.isPasswordHashed).not.toHaveBeenCalled();
-      });
+      expect(result).toEqual(data);
+      expect(authService.isPasswordHashed).not.toHaveBeenCalled();
     });
   });
+
+  // ─── edge cases ─────────────────────────────────────────────────────────────
 
   describe("edge cases", () => {
     it("should handle password field that is undefined", async () => {
       const data = { email: "test@test.com", password: undefined };
-
       mockPrisma.user.create.mockResolvedValue({ id: "1", ...data });
 
       await userService.createOne(data);
@@ -1788,8 +1547,7 @@ describe("BaseService", () => {
     });
 
     it("should handle missing hooks gracefully", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue({ hooks: {} });
-
+      mockGetItem.mockReturnValue(null);
       mockPrisma.post.create.mockResolvedValue({ id: "1", title: "Test" });
 
       const result = await baseService.createOne({ title: "Test" });

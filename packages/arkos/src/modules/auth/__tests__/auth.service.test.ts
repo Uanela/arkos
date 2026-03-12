@@ -8,7 +8,6 @@ import {
   isUsingAuthentication,
 } from "../../../utils/helpers/arkos-config.helpers";
 import AppError from "../../error-handler/utils/app-error";
-import { getModuleComponents } from "../../../utils/dynamic-loader";
 
 const authService: any = authServiceImport;
 
@@ -20,15 +19,6 @@ jest.mock("../../../utils/helpers/prisma.helpers");
 jest.mock("../../../utils/helpers/arkos-config.helpers");
 jest.mock("../../../server");
 jest.mock("../../error-handler/utils/app-error");
-jest.mock("../../../utils/dynamic-loader", () => ({
-  getModels: jest.fn().mockReturnValue([]),
-  getModelFields: jest.fn().mockReturnValue([]),
-  getPrismaModels: jest.fn().mockReturnValue([]),
-  getModuleComponents: jest.fn().mockReturnValue([]),
-  getPrismaSchemasContent: jest.fn().mockReturnValue(""),
-  appModules: ["user", "auth", "file-upload"],
-}));
-
 jest.mock("fs");
 
 describe("AuthService", () => {
@@ -1479,17 +1469,6 @@ describe("AuthService", () => {
       });
     });
 
-    // it("should return function that throws error when authentication is not configured", async () => {
-    //   // Setup
-    //   (getArkosConfig as jest.Mock).mockReturnValue({});
-    //   const permissionChecker = authService.permission("create", "User");
-    //   const user = { id: "user-123" };
-
-    //   // Execute & Verify
-    //   await expect(permissionChecker(user)).rejects.toThrow(
-    //     "Validation Error: Trying to use authService.permission without setting up authentication."
-    //   );
-    // });
     it("should throw login error when auth is enabled and user is undefined", async () => {
       (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
 
@@ -1560,23 +1539,6 @@ describe("AuthService", () => {
       mockConfig.authentication.mode = "static";
       const permissionChecker = authService.permission("create", "User"); // No accessControl provided
       const user = { id: "user-123", role: "admin" };
-
-      // Execute
-      const result = await permissionChecker(user as any);
-
-      // Verify
-      expect(result).toBe(false);
-    });
-
-    it("should return function that returns true for static mode with accessControl automatically loaded", async () => {
-      // Setup
-      mockConfig.authentication.mode = "static";
-      (getModuleComponents as jest.Mock).mockImplementationOnce(
-        (moduleName: string) =>
-          moduleName === "user-role" || { Delete: ["Admin"] }
-      );
-      const permissionChecker = authService.permission("Delete", "user-role"); // No accessControl provided
-      const user = { id: "user-123", role: "Admin" };
 
       // Execute
       const result = await permissionChecker(user as any);

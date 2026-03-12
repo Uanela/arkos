@@ -1,115 +1,166 @@
-import { Router } from "express";
+import { getPrismaModelsRouter } from "../base.router";
+import loadableRegistry from "../../../components/arkos-loadable-registry";
+import { routeHookReader } from "../../../components/arkos-route-hook/reader";
+
 const mockRouter = {
   get: jest.fn().mockReturnThis(),
   post: jest.fn().mockReturnThis(),
-  put: jest.fn().mockReturnThis(),
+  patch: jest.fn().mockReturnThis(),
   delete: jest.fn().mockReturnThis(),
   use: jest.fn().mockReturnThis(),
 };
-jest.mock("../../../utils/arkos-router", () => {
-  return {
-    __esModule: true,
-    default: jest.fn(() => mockRouter),
-  };
-});
 
-import {
-  getPrismaModelsRouter,
-  getAvailableResourcesAndRoutesRouter,
-} from "../base.router";
-import * as baseController from "../base.controller";
-import authService from "../../auth/auth.service";
-import * as routerHelpers from "../utils/helpers/base.router.helpers";
-import prismaSchemaParser from "../../../utils/prisma/prisma-schema-parser";
+jest.mock("../../../utils/arkos-router", () => ({
+  __esModule: true,
+  ArkosRouter: jest.fn(() => mockRouter),
+}));
 
-jest.mock("../../../utils/dynamic-loader");
-jest.mock("../base.controller");
-jest.mock("../../auth/auth.service");
-jest.mock("../utils/helpers/base.router.helpers");
-jest.mock("fs");
+jest.mock("../../../exports", () => ({
+  ArkosRouter: jest.fn(() => mockRouter),
+  BaseController: jest.fn().mockImplementation(() => ({
+    createOne: jest.fn(),
+    createMany: jest.fn(),
+    findMany: jest.fn(),
+    findOne: jest.fn(),
+    updateOne: jest.fn(),
+    updateMany: jest.fn(),
+    deleteOne: jest.fn(),
+    deleteMany: jest.fn(),
+  })),
+}));
+
+jest.mock("../../../components/arkos-loadable-registry", () => ({
+  __esModule: true,
+  default: { getItem: jest.fn() },
+}));
+
+jest.mock("../../../components/arkos-route-hook/reader", () => ({
+  routeHookReader: {
+    forOperation: jest.fn().mockReturnValue({
+      before: [],
+      after: [],
+      onError: [],
+      prismaArgs: {},
+      routeConfig: {},
+    }),
+  },
+}));
+
+jest.mock("../../../utils/prisma/prisma-schema-parser", () => ({
+  __esModule: true,
+  default: {
+    getModelsAsArrayOfStrings: jest.fn(),
+  },
+}));
+
+jest.mock("../../../exports/utils", () => ({
+  kebabCase: jest.fn((str: string) => str.toLowerCase()),
+}));
+
+jest.mock("../base.middlewares", () => ({
+  addPrismaQueryOptionsToRequest: jest.fn(() => jest.fn()),
+  sendResponse: jest.fn(),
+}));
+
+jest.mock("../../../utils/helpers/routers.helpers", () => ({
+  processMiddleware: jest.fn(() => []),
+}));
+
+jest.mock("pluralize", () => ({
+  plural: jest.fn((str: string) => str + "s"),
+}));
 
 describe("Base Router", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset router mock call counts
+    mockRouter.get.mockReturnThis();
+    mockRouter.post.mockReturnThis();
+    mockRouter.patch.mockReturnThis();
+    mockRouter.delete.mockReturnThis();
   });
 
   describe("getPrismaModelsRouter", () => {
-    it("should create a router with routes for all models", async () => {
-      // Mock return values
-      const mockModels = ["User", "Post", "Comment"];
-      jest
-        .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
-        .mockReturnValue(mockModels);
+    it("should return a router", () => {
+      const {
+        prismaSchemaParser: mockParser,
+      } = require("../../../exports/prisma");
+      mockParser.getModelsAsArrayOfStrings.mockReturnValue([]);
 
-      (routerHelpers.setupRouters as jest.Mock).mockReturnValue([
-        Promise.resolve(),
-        Promise.resolve(),
-        Promise.resolve(),
-      ]);
+      const result = getPrismaModelsRouter();
 
-      // Call the function
-      const result = getPrismaModelsRouter({} as any);
-
-      expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
-      // expect(routerHelpers.setupRouters).toHaveBeenCalledWith(mockRouter, {});
       expect(result).toBe(mockRouter);
     });
 
-    it("should pass arkosConfigs to the router setup if provided", async () => {
-      // Mock return values
-      const mockModels = ["User", "Post"];
-      jest
-        .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
-        .mockReturnValue(mockModels);
+    it("should register all 8 routes per model", () => {
+      const {
+        prismaSchemaParser: mockParser,
+      } = require("../../../exports/prisma");
+      mockParser.getModelsAsArrayOfStrings.mockReturnValue(["User"]);
+      (loadableRegistry.getItem as jest.Mock).mockReturnValue(null);
 
-      (routerHelpers.setupRouters as jest.Mock).mockReturnValue([
-        Promise.resolve(),
-        Promise.resolve(),
-      ]);
+      getPrismaModelsRouter();
 
-      const mockArkosConfig = { authentication: { mode: "dynamic" } };
-
-      // Call the function
-      // const mockRouter = ArkosRouter();
-      const result = getPrismaModelsRouter(mockArkosConfig as any);
-
-      // Assertions
-      expect(routerHelpers.setupRouters).toHaveBeenCalledTimes(1);
-      expect(routerHelpers.setupRouters).toHaveBeenCalledWith(
-        mockRouter,
-        mockArkosConfig
-      );
-      expect(result).toBe(mockRouter);
+      // POST /users, POST /users/many
+      expect(mockRouter.post).toHaveBeenCalledTimes(2);
+      // GET /users, GET /users/:id
+      expect(mockRouter.get).toHaveBeenCalledTimes(2);
+      // PATCH /users/many, PATCH /users/:id
+      expect(mockRouter.patch).toHaveBeenCalledTimes(2);
+      // DELETE /users/many, DELETE /users/:id
+      expect(mockRouter.delete).toHaveBeenCalledTimes(2);
     });
-  });
 
-  describe("getAvailableResources", () => {
-    it("should create a router with available routes and resources endpoints", () => {
-      // Mock authentication middleware
-      (authService.authenticate as jest.Mock) = jest.fn();
-      (authService.handleAccessControl as jest.Mock) = jest.fn(() => jest.fn());
-      (baseController.getAvailableResources as jest.Mock) = jest.fn();
+    it("should register routes for multiple models", () => {
+      const {
+        prismaSchemaParser: mockParser,
+      } = require("../../../exports/prisma");
+      mockParser.getModelsAsArrayOfStrings.mockReturnValue(["User", "Post"]);
+      (loadableRegistry.getItem as jest.Mock).mockReturnValue(null);
 
-      // Call the function
-      const mockRouter = Router();
-      const result = getAvailableResourcesAndRoutesRouter();
+      getPrismaModelsRouter();
 
-      // Verify route setup
-      expect(Router).toHaveBeenCalledTimes(2);
+      expect(mockRouter.post).toHaveBeenCalledTimes(4); // 2 per model
+      expect(mockRouter.get).toHaveBeenCalledTimes(4);
+    });
 
-      // Verify routes were created
-      const routerInstance = (Router as jest.Mock).mock.results[0].value;
-      expect(routerInstance.get).toHaveBeenCalledTimes(1);
+    it("should use routeHookReader when interceptor exists for model", () => {
+      const {
+        prismaSchemaParser: mockParser,
+      } = require("../../../exports/prisma");
+      mockParser.getModelsAsArrayOfStrings.mockReturnValue(["Post"]);
+      (loadableRegistry.getItem as jest.Mock).mockReturnValue({
+        someHook: jest.fn(),
+      });
 
-      // Check second route (available-resources)
-      expect(routerInstance.get).toHaveBeenCalledWith(
-        "/available-resources",
-        authService.authenticate,
-        baseController.getAvailableResources
-      );
+      getPrismaModelsRouter();
 
-      // Verify result
-      expect(result).toStrictEqual(mockRouter);
+      expect(routeHookReader.forOperation).toHaveBeenCalled();
+    });
+
+    it("should not call routeHookReader when no interceptor for model", () => {
+      const {
+        prismaSchemaParser: mockParser,
+      } = require("../../../exports/prisma");
+      mockParser.getModelsAsArrayOfStrings.mockReturnValue(["Post"]);
+      (loadableRegistry.getItem as jest.Mock).mockReturnValue(null);
+
+      getPrismaModelsRouter();
+
+      expect(routeHookReader.forOperation).not.toHaveBeenCalled();
+    });
+
+    it("should handle empty models list", () => {
+      const {
+        prismaSchemaParser: mockParser,
+      } = require("../../../exports/prisma");
+      mockParser.getModelsAsArrayOfStrings.mockReturnValue([]);
+
+      const result = getPrismaModelsRouter();
+
+      expect(result).toBe(mockRouter);
+      expect(mockRouter.get).not.toHaveBeenCalled();
+      expect(mockRouter.post).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,4 +1,3 @@
-import { authControllerFactory } from "./auth.controller";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import {
   addPrismaQueryOptionsToRequest,
@@ -10,15 +9,17 @@ import ArkosRouter from "../../utils/arkos-router";
 import loadableRegistry from "../../components/arkos-loadable-registry";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
 import { ArkosAuthRouteHookInstance } from "../../components/arkos-route-hook/types";
-
-const router = ArkosRouter();
+import authController from "./auth.controller";
 
 export function getAuthRouter() {
+  const router = ArkosRouter();
   const interceptor = loadableRegistry.getItem("ArkosRouteHook", "auth");
 
-  const op = (operation: string) =>
+  const op = (
+    operation: keyof Omit<ArkosAuthRouteHookInstance, "__type" | "moduleName">
+  ) =>
     interceptor
-      ? routeHookReader.forOperation(interceptor, operation)
+      ? routeHookReader.forOperation("auth", operation)
       : {
           before: [],
           after: [],
@@ -26,10 +27,6 @@ export function getAuthRouter() {
           prismaArgs: {},
           routeConfig: {},
         };
-
-  const authController = authControllerFactory(
-    interceptor as ArkosAuthRouteHookInstance
-  );
 
   // GET /users/me - Get current user
   {

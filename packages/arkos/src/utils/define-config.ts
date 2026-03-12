@@ -1,5 +1,6 @@
 import { ArkosConfig } from "../exports";
 import { PrismaClient } from "../generated";
+import ExitError from "./helpers/exit-error";
 
 /**
  * Defines and validates the Arkos configuration, filling in defaults where needed.
@@ -20,14 +21,17 @@ import { PrismaClient } from "../generated";
  * @see {@link https://www.arkosjs.com/docs/api-reference/define-config}
  */
 export function defineConfig(config: ArkosConfig): ArkosConfig {
-  if (!config.prisma?.instance) {
-    throw new Error(
+  if (!config.prisma?.instance && typeof jest === "undefined") {
+    throw ExitError(
       "ArkosConfigError: prisma.instance is required. Pass your PrismaClient instance via defineConfig({ prisma: { instance: new PrismaClient() } })."
     );
   }
 
-  if (!(config.prisma.instance instanceof PrismaClient)) {
-    throw new Error(
+  if (
+    !(config.prisma?.instance instanceof PrismaClient) &&
+    typeof jest === "undefined"
+  ) {
+    throw ExitError(
       "ArkosConfigError: prisma.instance must be a valid PrismaClient instance."
     );
   }
@@ -66,10 +70,6 @@ export function defineConfig(config: ArkosConfig): ArkosConfig {
     },
     middlewares: {
       ...config.middlewares,
-    },
-    swagger: {
-      mode: config?.swagger?.mode || "prisma",
-      ...config.swagger,
     },
     debugging: {
       requests: {

@@ -1,3 +1,6 @@
+jest.mock("../../../../../server", () => ({
+  getArkosConfig: jest.fn(() => ({})),
+}));
 import {
   getOpenAPIJsonSchemasByConfigMode,
   getCorrectJsonSchemaName,
@@ -27,6 +30,8 @@ jest.mock(
 );
 jest.mock("fs");
 
+import { getArkosConfig } from "../../../../../server";
+
 describe("Swagger Utility Functions", () => {
   const mockConfig: any = {
     swagger: {
@@ -40,39 +45,34 @@ describe("Swagger Utility Functions", () => {
   });
 
   describe("getOpenAPIJsonSchemasByConfigMode", () => {
-    it("should call generatePrismaJsonSchemas for prisma mode", async () => {
-      getOpenAPIJsonSchemasByConfigMode(mockConfig);
-      expect(generatePrismaJsonSchemas).toHaveBeenCalledWith(mockConfig);
+    it("should call generatePrismaJsonSchemas by default (no resolver set)", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({});
+      getOpenAPIJsonSchemasByConfigMode();
+      expect(generatePrismaJsonSchemas).toHaveBeenCalled();
     });
 
-    it("should call generateClassValidatorJsonSchemas for class-validator mode", async () => {
-      const config = {
-        ...mockConfig,
-        swagger: { ...mockConfig.swagger, mode: "class-validator" },
-      } as any;
-      getOpenAPIJsonSchemasByConfigMode(config);
+    it("should call generateClassValidatorJsonSchemas for class-validator resolver", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        validation: { resolver: "class-validator" },
+      });
+      getOpenAPIJsonSchemasByConfigMode();
       expect(generateClassValidatorJsonSchemas).toHaveBeenCalled();
     });
 
-    it("should call generateZodJsonSchemas for zod mode", async () => {
-      const config = {
-        ...mockConfig,
-        swagger: { ...mockConfig.swagger, mode: "zod" },
-      } as any;
-      getOpenAPIJsonSchemasByConfigMode(config);
+    it("should call generateZodJsonSchemas for zod resolver", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        validation: { resolver: "zod" },
+      });
+      getOpenAPIJsonSchemasByConfigMode();
       expect(generateZodJsonSchemas).toHaveBeenCalled();
     });
 
-    it("should throw error for unknown mode", async () => {
-      const config = {
-        ...mockConfig,
-        swagger: { ...mockConfig.swagger, mode: "invalid" },
-      };
-      try {
-        expect(getOpenAPIJsonSchemasByConfigMode(config as any)).toThrow(
-          "Unknown mode for auto documentation"
-        );
-      } catch {}
+    it("should call generatePrismaJsonSchemas as default for unknown resolver", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        validation: { resolver: "invalid" },
+      });
+      getOpenAPIJsonSchemasByConfigMode();
+      expect(generatePrismaJsonSchemas).toHaveBeenCalled();
     });
   });
 
@@ -148,6 +148,7 @@ describe("Swagger Utility Functions", () => {
 
   describe("generatePathsForModels", () => {
     beforeEach(() => {
+      (getArkosConfig as jest.Mock).mockReturnValue(mockConfig);
       jest
         .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
         .mockReturnValue(["User", "Post"]);
@@ -158,6 +159,17 @@ describe("Swagger Utility Functions", () => {
       (
         require("../get-authentication-json-schema-paths").default as jest.Mock
       ).mockReturnValue({});
+    });
+
+    it("should return empty string for unknown mode", () => {
+      const result = getSchemaRef("User", "invalid" as any);
+      expect(sheu.error).toHaveBeenCalled();
+      expect(result).toBe("");
+    });
+    it("should merge existing paths with generated paths", () => {
+      const existingPaths = { "/existing": { get: {} } };
+      const result = generatePathsForModels(mockConfig, existingPaths as any);
+      expect(result).toMatchObject(existingPaths);
     });
 
     it("should return empty object when no swagger config", async () => {

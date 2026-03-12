@@ -1,12 +1,9 @@
-import {
-  authControllerFactory,
-  defaultExcludedUserFields,
-} from "../auth.controller";
+import { AuthController, defaultExcludedUserFields } from "../auth.controller";
 import authService from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
-import { getModuleComponents } from "../../../utils/dynamic-loader";
 import { getArkosConfig } from "../../../server";
 import { BaseService } from "../../base/base.service";
+import { routeHookReader } from "../../../components/arkos-route-hook/reader";
 
 jest.mock("fs");
 jest.mock("bcryptjs", () => ({
@@ -16,7 +13,6 @@ jest.mock("bcryptjs", () => ({
   },
 }));
 
-// Mock dependencies
 jest.mock("../auth.service", () => ({
   ...jest.requireActual("../auth.service"),
   isCorrectPassword: jest.fn(),
@@ -40,14 +36,10 @@ jest.mock("../../../utils/helpers/prisma.helpers", () => ({
   getPrismaInstance: jest.fn(),
 }));
 
-// Update your mock for dynamic-loader.ts
-jest.mock("../../../utils/dynamic-loader", () => ({
-  getModuleComponents: jest.fn(),
-  getPrismaModelRelations: jest.fn(),
-  getModels: jest.fn(() => []),
-  getModelUniqueFields: jest.fn(() => []),
-  models: [],
-  prismaModelRelationFields: {},
+jest.mock("../../../components/arkos-route-hook/reader", () => ({
+  routeHookReader: {
+    getHooks: jest.fn(),
+  },
 }));
 
 jest.mock("../../../server", () => ({
@@ -55,12 +47,14 @@ jest.mock("../../../server", () => ({
   close: jest.fn(),
 }));
 
-describe("Auth Controller Factory", () => {
+const mockGetHooks = routeHookReader.getHooks as jest.Mock;
+
+describe("Auth Controller", () => {
   let req: any;
   let res: any;
   let next: any;
   let mockPrisma: any;
-  let authController: any;
+  let authController: AuthController;
   let userService: any = {
     findOne: jest.fn(),
     updateOne: jest.fn(),
@@ -68,10 +62,10 @@ describe("Auth Controller Factory", () => {
   };
 
   beforeEach(async () => {
-    // Reset mocks
     jest.resetAllMocks();
 
     (authService.getJwtCookieOptions as jest.Mock).mockReturnValue({});
+    mockGetHooks.mockReturnValue(null);
 
     mockPrisma = {
       user: {
@@ -82,14 +76,7 @@ describe("Auth Controller Factory", () => {
     MockedBaseService.mockImplementation(() => userService);
 
     (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
-    (getModuleComponents as jest.Mock).mockResolvedValue({
-      prismaQueryOptions: {
-        queryOptions: {},
-        findOne: {},
-      },
-    });
 
-    // Create request, response, and next function mocks
     req = {
       user: {
         id: "user-id-123",
@@ -115,8 +102,7 @@ describe("Auth Controller Factory", () => {
 
     next = jest.fn();
 
-    // Create the auth controller
-    authController = await authControllerFactory();
+    authController = new AuthController();
   });
 
   afterEach(() => {
@@ -125,7 +111,6 @@ describe("Auth Controller Factory", () => {
 
   describe("getMe", () => {
     it("should get the current user and return it", async () => {
-      // Setup
       const user = {
         id: "user-id-123",
         username: "testuser",
@@ -135,10 +120,8 @@ describe("Auth Controller Factory", () => {
       userService.findOne.mockResolvedValueOnce(user);
       MockedBaseService.mockImplementation(() => userService);
 
-      // Execute
       await authController.getMe(req, res, next);
 
-      // Verify
       expect(userService.findOne).toHaveBeenCalledWith(
         { id: "user-id-123" },
         {}
@@ -148,7 +131,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should remove excluded fields from the user object", async () => {
-      // Setup
       const fullUser = {
         id: "user-id-123",
         username: "testuser",
@@ -161,19 +143,18 @@ describe("Auth Controller Factory", () => {
       req.user = { ...fullUser };
       userService.findOne.mockResolvedValueOnce(fullUser);
 
-      // Execute
       await authController.getMe(req, res, next);
 
-      // Verify
       Object.keys(defaultExcludedUserFields).forEach((field) => {
         expect(fullUser[field as keyof typeof fullUser]).toBeUndefined();
       });
     });
 
-    it("should call next middleware when afterGetMe is provided", async () => {
-      // Setup
-      const controllerWithMiddleware = await authControllerFactory({
-        afterGetMe: true,
+    it("should call next middleware when afterGetMe hook is registered", async () => {
+      mockGetHooks.mockImplementation((module: string, operation: string) => {
+        if (module === "auth" && operation === "getMe")
+          return { after: jest.fn() };
+        return null;
       });
 
       userService.findOne.mockResolvedValueOnce({
@@ -182,10 +163,8 @@ describe("Auth Controller Factory", () => {
         email: "test@example.com",
       });
 
-      // Execute
-      await controllerWithMiddleware.getMe(req, res, next);
+      await authController.getMe(req, res, next);
 
-      // Verify
       expect(req.responseData).toBeDefined();
       expect(req.responseStatus).toBe(200);
       expect(next).toHaveBeenCalled();
@@ -195,10 +174,8 @@ describe("Auth Controller Factory", () => {
 
   describe("logout", () => {
     it("should clear the access token cookie and return 204", async () => {
-      // Execute
       await authController.logout(req, res, next);
 
-      // Verify
       expect(res.cookie).toHaveBeenCalledWith(
         "arkos_access_token",
         "no-token",
@@ -210,16 +187,15 @@ describe("Auth Controller Factory", () => {
       expect(res.json).toHaveBeenCalled();
     });
 
-    it("should call next middleware when afterLogout is provided", async () => {
-      // Setup
-      const controllerWithMiddleware = await authControllerFactory({
-        afterLogout: true,
+    it("should call next middleware when afterLogout hook is registered", async () => {
+      mockGetHooks.mockImplementation((module: string, operation: string) => {
+        if (module === "auth" && operation === "logout")
+          return { after: jest.fn() };
+        return null;
       });
 
-      // Execute
-      await controllerWithMiddleware.logout(req, res, next);
+      await authController.logout(req, res, next);
 
-      // Verify
       expect(req.responseData).toBeNull();
       expect(req.responseStatus).toBe(204);
       expect(next).toHaveBeenCalled();
@@ -229,13 +205,10 @@ describe("Auth Controller Factory", () => {
 
   describe("login", () => {
     it("should return 400 if username or password is missing", async () => {
-      // Setup
-      req.body = { username: "testuser" }; // Missing password
+      req.body = { username: "testuser" };
 
-      // Execute
       await authController.login(req, res, next);
 
-      // Verify
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 400,
@@ -245,7 +218,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should use default username field from config when not specified in query", async () => {
-      // Setup
       req.body = { username: "testuser", password: "Password123" };
 
       userService.findOne.mockResolvedValueOnce({
@@ -256,14 +228,10 @@ describe("Auth Controller Factory", () => {
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      // Execute
       await authController.login(req, res, next);
 
-      // Verify
       expect(userService.findOne).toHaveBeenCalledWith(
-        {
-          username: "testuser",
-        },
+        { username: "testuser" },
         {}
       );
     });
@@ -277,7 +245,6 @@ describe("Auth Controller Factory", () => {
         },
       });
 
-      // Setup
       req = {
         body: { email: "test@arkosjs.com", password: "Password123" },
         query: { usernameField: "email" },
@@ -294,7 +261,6 @@ describe("Auth Controller Factory", () => {
 
       await authController.login(req, res, next);
 
-      // Verify
       expect(userService.findOne).toHaveBeenCalledWith(
         { email: "test@arkosjs.com" },
         {}
@@ -302,14 +268,11 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should return 401 if user is not found", async () => {
-      // Setup
       req.body = { username: "nonexistentuser", password: "Password123" };
       userService.findOne.mockResolvedValueOnce(null);
 
-      // Execute
       await authController.login(req, res, next);
 
-      // Verify
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
@@ -319,7 +282,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should return 401 if password is incorrect", async () => {
-      // Setup
       req.body = { username: "testuser", password: "WrongPassword123" };
 
       userService.findOne.mockResolvedValueOnce({
@@ -330,10 +292,8 @@ describe("Auth Controller Factory", () => {
 
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(false);
 
-      // Execute
       await authController.login(req, res, next);
 
-      // Verify
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 401,
@@ -343,7 +303,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it('should set cookie and return token in response when config is "both"', async () => {
-      // Setup
       req.body = { username: "testuser", password: "Password123" };
 
       userService.findOne.mockResolvedValueOnce({
@@ -362,10 +321,9 @@ describe("Auth Controller Factory", () => {
           },
         },
       });
-      // Execute
+
       await authController.login(req, res, next);
 
-      // Verify
       expect(res.cookie).toHaveBeenCalledWith(
         "arkos_access_token",
         "jwt-token-123",
@@ -378,7 +336,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it('should only set cookie when config is "cookie-only"', async () => {
-      // Setup
       (getArkosConfig as jest.Mock).mockReturnValueOnce({
         authentication: {
           login: {
@@ -398,10 +355,8 @@ describe("Auth Controller Factory", () => {
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      // Execute
       await authController.login(req, res, next);
 
-      // Verify
       expect(res.cookie).toHaveBeenCalledWith(
         "arkos_access_token",
         "jwt-token-123",
@@ -413,7 +368,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it('should only return token in response when config is "response-only"', async () => {
-      // Setup
       req.body = { username: "testuser", password: "Password123" };
 
       userService.findOne.mockResolvedValueOnce({
@@ -433,10 +387,8 @@ describe("Auth Controller Factory", () => {
         },
       });
 
-      // Execute
       await authController.login(req, res, next);
 
-      // Verify
       expect(res.cookie).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
@@ -444,7 +396,7 @@ describe("Auth Controller Factory", () => {
       });
     });
 
-    it("should call next middleware when afterLogin is provided and send cookies strategy response-only or both", async () => {
+    it("should call next middleware when afterLogin hook is registered and send cookies strategy response-only or both", async () => {
       (getArkosConfig as jest.Mock).mockReturnValue({
         authentication: {
           login: {
@@ -453,9 +405,10 @@ describe("Auth Controller Factory", () => {
         },
       });
 
-      // Setup
-      const controllerWithMiddleware = await authControllerFactory({
-        afterLogin: true,
+      mockGetHooks.mockImplementation((module: string, operation: string) => {
+        if (module === "auth" && operation === "login")
+          return { after: jest.fn() };
+        return null;
       });
 
       req.body = { username: "testuser", password: "Password123" };
@@ -469,10 +422,8 @@ describe("Auth Controller Factory", () => {
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.signJwtToken as jest.Mock).mockReturnValue("jwt-token-123");
 
-      // Execute
-      await controllerWithMiddleware.login(req, res, next);
+      await authController.login(req, res, next);
 
-      // Verify
       expect(req.responseData).toEqual({ accessToken: "jwt-token-123" });
       expect(req.responseStatus).toBe(200);
       expect(next).toHaveBeenCalled();
@@ -482,7 +433,6 @@ describe("Auth Controller Factory", () => {
 
   describe("signup", () => {
     it("should create a new user and return 201", async () => {
-      // Setup
       req.body = {
         username: "newuser",
         email: "newuser@example.com",
@@ -499,24 +449,22 @@ describe("Auth Controller Factory", () => {
 
       userService.createOne.mockResolvedValueOnce({ ...createdUser });
 
-      // Execute
       await authController.signup(req, res, next);
 
-      // Verify
       expect(userService.createOne).toHaveBeenCalledWith({ ...req.body }, {});
       expect(res.status).toHaveBeenCalledWith(201);
 
-      // Check that excluded fields are removed
       const responseUser = res.json.mock.calls[0][0].data;
       Object.keys(defaultExcludedUserFields).forEach((field) => {
         expect(responseUser[field]).toBeUndefined();
       });
     });
 
-    it("should call next middleware when afterSignup is provided", async () => {
-      // Setup
-      const controllerWithMiddleware = await authControllerFactory({
-        afterSignup: true,
+    it("should call next middleware when afterSignup hook is registered", async () => {
+      mockGetHooks.mockImplementation((module: string, operation: string) => {
+        if (module === "auth" && operation === "signup")
+          return { after: jest.fn() };
+        return null;
       });
 
       req.body = {
@@ -534,10 +482,8 @@ describe("Auth Controller Factory", () => {
 
       userService.createOne.mockResolvedValueOnce({ ...createdUser });
 
-      // Execute
-      await controllerWithMiddleware.signup(req, res, next);
+      await authController.signup(req, res, next);
 
-      // Verify
       expect(req.responseData).toEqual({ data: createdUser });
       expect(req.responseStatus).toBe(201);
       expect(next).toHaveBeenCalled();
@@ -547,16 +493,13 @@ describe("Auth Controller Factory", () => {
 
   describe("updateMe", () => {
     it("should return 400 if password field is included in request body", async () => {
-      // Setup
       req.body = {
         username: "updateduser",
-        password: "NewPassword123", // This should trigger the error
+        password: "NewPassword123",
       };
 
-      // Execute
       await authController.updateMe(req, res, next);
 
-      // Verify
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 400,
@@ -568,7 +511,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should update user data and return 200 on success", async () => {
-      // Setup
       req.body = {
         username: "updateduser",
         email: "updated@example.com",
@@ -585,10 +527,8 @@ describe("Auth Controller Factory", () => {
 
       userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
 
-      // Execute
       await authController.updateMe(req, res, next);
 
-      // Verify
       expect(userService.updateOne).toHaveBeenCalledWith(
         { id: "user-id-123" },
         req.body,
@@ -596,7 +536,6 @@ describe("Auth Controller Factory", () => {
       );
       expect(res.status).toHaveBeenCalledWith(200);
 
-      // Check that excluded fields are removed from response
       const responseUser = res.json.mock.calls[0][0].data;
       Object.keys(defaultExcludedUserFields).forEach((field) => {
         expect(responseUser[field]).toBeUndefined();
@@ -604,13 +543,8 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should use prismaQueryOptions from request when available", async () => {
-      // Setup
-      req.body = {
-        username: "updateduser",
-      };
-      req.prismaQueryOptions = {
-        include: { profile: true },
-      };
+      req.body = { username: "updateduser" };
+      req.prismaQueryOptions = { include: { profile: true } };
 
       const updatedUser = {
         id: "user-id-123",
@@ -620,10 +554,8 @@ describe("Auth Controller Factory", () => {
 
       userService.updateOne.mockResolvedValueOnce(updatedUser);
 
-      // Execute
       await authController.updateMe(req, res, next);
 
-      // Verify
       expect(userService.updateOne).toHaveBeenCalledWith(
         { id: "user-id-123" },
         req.body,
@@ -631,10 +563,11 @@ describe("Auth Controller Factory", () => {
       );
     });
 
-    it("should call next middleware when afterUpdateMe is provided", async () => {
-      // Setup
-      const controllerWithMiddleware = await authControllerFactory({
-        afterUpdateMe: true,
+    it("should call next middleware when afterUpdateMe hook is registered", async () => {
+      mockGetHooks.mockImplementation((module: string, operation: string) => {
+        if (module === "auth" && operation === "updateMe")
+          return { after: jest.fn() };
+        return null;
       });
 
       req.body = {
@@ -650,10 +583,8 @@ describe("Auth Controller Factory", () => {
 
       userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
 
-      // Execute
-      await controllerWithMiddleware.updateMe(req, res, next);
+      await authController.updateMe(req, res, next);
 
-      // Verify
       expect(req.responseData).toEqual({ data: updatedUser });
       expect(req.responseStatus).toBe(200);
       expect(next).toHaveBeenCalled();
@@ -661,10 +592,7 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should remove excluded fields from user object before responding", async () => {
-      // Setup
-      req.body = {
-        username: "updateduser",
-      };
+      req.body = { username: "updateduser" };
 
       const updatedUserWithSensitiveData = {
         id: "user-id-123",
@@ -679,10 +607,8 @@ describe("Auth Controller Factory", () => {
         ...updatedUserWithSensitiveData,
       });
 
-      // Execute
       await authController.updateMe(req, res, next);
 
-      // Verify that sensitive fields are removed
       const responseUser = res.json.mock.calls[0][0].data;
       expect(responseUser.password).toBeUndefined();
       expect(responseUser.username).toBe("updateduser");
@@ -693,13 +619,10 @@ describe("Auth Controller Factory", () => {
 
   describe("updatePassword", () => {
     it("should return 400 if currentPassword or newPassword is missing", async () => {
-      // Setup - missing newPassword
       req.body = { currentPassword: "CurrentPassword123" };
 
-      // Execute
       await authController.updatePassword(req, res, next);
 
-      // Verify
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 400,
@@ -711,17 +634,14 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should return 404 if user is not found or inactive", async () => {
-      // Setup
       req.user = null;
       req.body = {
         currentPassword: "CurrentPassword123",
         newPassword: "NewPassword123",
       };
 
-      // Execute
       await authController.updatePassword(req, res, next);
 
-      // Verify
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 404,
@@ -731,7 +651,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should return 400 if current password is incorrect", async () => {
-      // Setup
       req.user = {
         id: "user-id-123",
         username: "testuser",
@@ -746,10 +665,8 @@ describe("Auth Controller Factory", () => {
 
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(false);
 
-      // Execute
       await authController.updatePassword(req, res, next);
 
-      // Verify
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 400,
@@ -759,7 +676,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should return 400 if new password is not strong enough", async () => {
-      // Setup
       req.user = {
         id: "user-id-123",
         username: "testuser",
@@ -775,10 +691,8 @@ describe("Auth Controller Factory", () => {
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
       (authService.isPasswordStrong as jest.Mock).mockReturnValue(false);
 
-      // Execute
       await authController.updatePassword(req, res, next);
 
-      // Verify
       expect(next).toHaveBeenCalledWith(
         expect.objectContaining({
           statusCode: 400,
@@ -788,7 +702,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should update password and return 200 on success", async () => {
-      // Setup
       req.user = {
         id: "user-id-123",
         username: "testuser",
@@ -807,10 +720,8 @@ describe("Auth Controller Factory", () => {
         "newHashedPassword"
       );
 
-      // Execute
       await authController.updatePassword(req, res, next);
 
-      // Verify
       expect(userService.updateOne).toHaveBeenCalledWith(
         { id: "user-id-123" },
         {
@@ -828,10 +739,11 @@ describe("Auth Controller Factory", () => {
       });
     });
 
-    it("should call next middleware when afterUpdatePassword is provided", async () => {
-      // Setup
-      const controllerWithMiddleware = await authControllerFactory({
-        afterUpdatePassword: true,
+    it("should call next middleware when afterUpdatePassword hook is registered", async () => {
+      mockGetHooks.mockImplementation((module: string, operation: string) => {
+        if (module === "auth" && operation === "updatePassword")
+          return { after: jest.fn() };
+        return null;
       });
 
       req.user = {
@@ -852,18 +764,14 @@ describe("Auth Controller Factory", () => {
         "newHashedPassword123"
       );
 
-      // Execute
-      await controllerWithMiddleware.updatePassword(req, res, next);
+      await authController.updatePassword(req, res, next);
 
-      // Verify
       expect(req.responseData).toEqual({
         status: "success",
         message: "Password updated successfully!",
       });
       expect(req.responseStatus).toBe(200);
-      expect(req.additionalData).toEqual({
-        user: req.user,
-      });
+      expect(req.additionalData).toEqual({ user: req.user });
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
     });
@@ -871,7 +779,6 @@ describe("Auth Controller Factory", () => {
 
   describe("deleteMe", () => {
     it("should mark user account as deleted and return 200", async () => {
-      // Setup
       const updatedUser = {
         id: "user-id-123",
         username: "testuser",
@@ -881,15 +788,11 @@ describe("Auth Controller Factory", () => {
 
       userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
 
-      // Execute
       await authController.deleteMe(req, res, next);
 
-      // Verify
       expect(userService.updateOne).toHaveBeenCalledWith(
         { id: "user-id-123" },
-        {
-          deletedSelfAccountAt: expect.any(String),
-        },
+        { deletedSelfAccountAt: expect.any(String) },
         {}
       );
       expect(res.status).toHaveBeenCalledWith(200);
@@ -898,10 +801,11 @@ describe("Auth Controller Factory", () => {
       });
     });
 
-    it("should call next middleware when afterDeleteMe is provided", async () => {
-      // Setup
-      const controllerWithMiddleware = await authControllerFactory({
-        afterDeleteMe: true,
+    it("should call next middleware when afterDeleteMe hook is registered", async () => {
+      mockGetHooks.mockImplementation((module: string, operation: string) => {
+        if (module === "auth" && operation === "deleteMe")
+          return { after: jest.fn() };
+        return null;
       });
 
       const updatedUser = {
@@ -913,10 +817,8 @@ describe("Auth Controller Factory", () => {
 
       userService.updateOne.mockResolvedValueOnce({ ...updatedUser });
 
-      // Execute
-      await controllerWithMiddleware.deleteMe(req, res, next);
+      await authController.deleteMe(req, res, next);
 
-      // Verify
       expect(req.responseData).toEqual({ data: updatedUser });
       expect(req.responseStatus).toBe(200);
       expect(next).toHaveBeenCalled();
@@ -924,7 +826,6 @@ describe("Auth Controller Factory", () => {
     });
 
     it("should remove excluded fields from user object", async () => {
-      // Setup
       const updatedUserWithSensitiveData = {
         id: "user-id-123",
         username: "testuser",
@@ -937,10 +838,8 @@ describe("Auth Controller Factory", () => {
         ...updatedUserWithSensitiveData,
       });
 
-      // Execute
       await authController.deleteMe(req, res, next);
 
-      // Verify that sensitive fields would be removed (though message is returned instead)
       expect(res.json).toHaveBeenCalledWith({
         message: "Account deleted successfully",
       });

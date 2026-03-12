@@ -1,6 +1,7 @@
 import * as runtimeCliCommanderModule from "../utils/cli/utils/runtime-cli-commander";
 
 jest.mock("../utils/helpers/arkos-config.helpers", () => ({}));
+
 let mockListenFn: jest.Mock;
 
 jest.mock("express", () => {
@@ -24,15 +25,9 @@ jest.mock("../utils/initialize-app", () => ({
   default: jest.fn((app: any) => app),
 }));
 jest.mock("../server", () => ({ logAppStartup: jest.fn() }));
-jest.mock("../utils/helpers/prisma.helpers", () => ({
-  loadPrismaModule: jest.fn().mockResolvedValue(undefined),
-}));
-jest.mock("../utils/dynamic-loader", () => ({
-  loadAllModuleComponents: jest.fn().mockResolvedValue(undefined),
-}));
 jest.mock("../utils/cli/utils/runtime-cli-commander", () => ({
   __esModule: true,
-  default: { handle: jest.fn().mockResolvedValue(undefined) },
+  default: { handle: jest.fn() },
 }));
 jest.mock("../utils/helpers/exit-error", () => ({
   __esModule: true,
@@ -46,8 +41,6 @@ describe("arkos()", () => {
   let getAppServer: typeof import("../app").getAppServer;
   let mockExpressApp: any;
   let mockServer: any;
-  let prismaHelpers: typeof import("../utils/helpers/prisma.helpers");
-  let dynamicLoader: typeof import("../utils/dynamic-loader");
   let initializeAppModule: typeof import("../utils/initialize-app");
   let serverModule: typeof import("../server");
   let runtimeCliCommander: typeof runtimeCliCommanderModule;
@@ -71,8 +64,6 @@ describe("arkos()", () => {
 
     arkos = require("../app").arkos;
     getAppServer = require("../app").getAppServer;
-    prismaHelpers = require("../utils/helpers/prisma.helpers");
-    dynamicLoader = require("../utils/dynamic-loader");
     initializeAppModule = require("../utils/initialize-app");
     serverModule = require("../server");
     runtimeCliCommander = require("../utils/cli/utils/runtime-cli-commander");
@@ -98,52 +89,63 @@ describe("arkos()", () => {
   });
 
   describe("app.build()", () => {
-    it("should build successfully on first call", async () => {
+    it("should build successfully on first call", () => {
       const app = arkos();
-      await expect(app.build()).resolves.not.toThrow();
-      expect(prismaHelpers.loadPrismaModule).toHaveBeenCalledTimes(1);
-      expect(dynamicLoader.loadAllModuleComponents).toHaveBeenCalledTimes(1);
+      expect(() => app.build()).not.toThrow();
       expect(initializeAppModule.default).toHaveBeenCalledTimes(1);
     });
 
-    it("should throw if build() called twice", async () => {
+    it("should throw if build() called twice", () => {
       const app = arkos();
-      await app.build();
-      await expect(app.build()).rejects.toThrow("process.exit(1)");
+      app.build();
+      expect(() => app.build()).toThrow("process.exit(1)");
     });
 
-    it("should throw if build() called while building", async () => {
+    it("should throw if build() called while building", () => {
       const app = arkos();
-      const buildPromise = app.build();
-      await expect(app.build()).rejects.toThrow("process.exit(1)");
-      await buildPromise;
+      // Simulate building state by calling build and immediately calling again
+      // Since build is sync, we test via state — build sets state to built
+      app.build();
+      expect(() => app.build()).toThrow("process.exit(1)");
     });
 
     it("should throw if build() called after listen()", async () => {
       const app = arkos();
       await app.listen();
-      await expect(app.build()).rejects.toThrow("process.exit(1)");
+      expect(() => app.build()).toThrow("process.exit(1)");
     });
 
-    it("should handle CLI_COMMAND env var", async () => {
+    it("should handle CLI_COMMAND env var", () => {
       process.env.CLI_COMMAND = "some-command";
       const app = arkos();
-      await app.build();
+      app.build();
       expect(runtimeCliCommander.default.handle).toHaveBeenCalledTimes(1);
     });
 
-    it("should not call CLI handler without CLI_COMMAND", async () => {
+    it("should not call CLI handler without CLI_COMMAND", () => {
       const app = arkos();
-      await app.build();
+      app.build();
       expect(runtimeCliCommander.default.handle).not.toHaveBeenCalled();
     });
   });
 
   describe("app.listen()", () => {
+    it("should use instanceof Server branch for http.Server objects", async () => {
+      const http = require("http");
+      const customServer = Object.create(http.Server.prototype);
+      customServer.listen = jest.fn().mockReturnThis();
+      const app = arkos();
+      await app.listen(customServer);
+      expect(customServer.listen).toHaveBeenCalledWith(
+        8000,
+        "0.0.0.0",
+        expect.any(Function)
+      );
+    });
     it("should listen successfully without prior build", async () => {
       const app = arkos();
       await app.listen();
-      expect(prismaHelpers.loadPrismaModule).toHaveBeenCalledTimes(1);
+      expect(initializeAppModule.default).toHaveBeenCalledTimes(1);
       expect(mockListenFn).toHaveBeenCalledWith(
         8000,
         "0.0.0.0",
@@ -153,9 +155,9 @@ describe("arkos()", () => {
 
     it("should listen successfully after build", async () => {
       const app = arkos();
-      await app.build();
+      app.build();
       await app.listen();
-      expect(prismaHelpers.loadPrismaModule).toHaveBeenCalledTimes(1);
+      expect(initializeAppModule.default).toHaveBeenCalledTimes(1);
       expect(mockListenFn).toHaveBeenCalled();
     });
 
@@ -163,13 +165,6 @@ describe("arkos()", () => {
       const app = arkos();
       await app.listen();
       await expect(app.listen()).rejects.toThrow("process.exit(1)");
-    });
-
-    it("should throw if listen() called while building", async () => {
-      const app = arkos();
-      const buildPromise = app.build();
-      await expect(app.listen()).rejects.toThrow("process.exit(1)");
-      await buildPromise;
     });
 
     it("should use PORT env var", async () => {
@@ -260,6 +255,26 @@ describe("arkos()", () => {
       const app = arkos();
       await app.listen();
       expect(getAppServer()).toBe(mockServer);
+    });
+  });
+
+  describe("app.load()", () => {
+    it("should register loadable items when state is idle", () => {
+      const app = arkos();
+      const mockItem = { __type: "ArkosRouteHook" } as any;
+      expect(() => app.load(mockItem)).not.toThrow();
+    });
+
+    it("should throw if load() called after build()", () => {
+      const app = arkos();
+      app.build();
+      expect(() => app.load({} as any)).toThrow("process.exit(1)");
+    });
+
+    it("should throw if load() called after listen()", async () => {
+      const app = arkos();
+      await app.listen();
+      expect(() => app.load({} as any)).toThrow("process.exit(1)");
     });
   });
 });

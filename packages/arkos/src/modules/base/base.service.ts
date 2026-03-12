@@ -38,6 +38,7 @@ import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import loadableRegistry from "../../components/arkos-loadable-registry";
 import {
   ArkosServiceHookInstance,
+  ArkosServiceHookMethodConfigs,
   ServiceHookContext,
 } from "../../components/arkos-service-hook/types";
 import { serviceHookReader } from "../../components/arkos-service-hook/reader";
@@ -50,7 +51,10 @@ export interface ServiceOperationHooks {
 }
 
 interface ServiceOperationConfig {
-  operationType: string;
+  operationType:
+    | keyof ArkosServiceHookMethodConfigs<any, any>
+    | "batchDelete"
+    | "batchUpdate";
   prismaMethod: string;
   requiresPasswordHashing?: boolean;
   relationFieldsHandling?: string[];
@@ -90,7 +94,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
 
   constructor(modelName: TModelName) {
     this.modelName = camelCase(modelName as string) as TModelName;
-    const modelFields = prismaSchemaParser.getModelRelations(
+    const modelFields = prismaSchemaParser?.getModelRelations?.(
       modelName as string
     );
 
@@ -254,7 +258,10 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
 
   private async executeHooks(
     hookType: "before" | "after" | "error",
-    operationType: string,
+    operationType:
+      | keyof ArkosServiceHookMethodConfigs<any, any>
+      | "batchUpdate"
+      | "batchDelete",
     params: any,
     context?: ServiceHookContext
   ): Promise<void> {
@@ -266,9 +273,13 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
       context?.skip === "all" ||
       (Array.isArray(context?.skip) && context.skip.includes(hookType));
 
-    if (skipCondition) return;
+    if (skipCondition || ["batchDelete", "batchUpdate"].includes(operationType))
+      return;
 
-    const hooks = serviceHookReader.getHooks(serviceHook, operationType);
+    const hooks = serviceHookReader.getHooks(
+      this.modelName,
+      operationType as any
+    );
     if (!hooks) return;
 
     const handlers =

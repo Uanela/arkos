@@ -26,7 +26,7 @@ export function getSwaggerRouter(
   arkosConfig: UserArkosConfig,
   app: Arkos
 ): Router {
-  let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
+  let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode();
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
   const defaultModelsPaths = generatePathsForModels(
     arkosConfig,
@@ -39,8 +39,7 @@ export function getSwaggerRouter(
   const missingJsonSchemas =
     missingJsonSchemaGenerator.generateMissingJsonSchemas(
       defaultModelsPaths,
-      defaultJsonSchemas,
-      arkosConfig
+      defaultJsonSchemas
     );
   defaultJsonSchemas = {
     ...defaultJsonSchemas,

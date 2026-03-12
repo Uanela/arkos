@@ -42,3 +42,8 @@ jest.mock("express", () => {
 jest.mock("@scalar/express-api-reference", () => ({
   apiReference: jest.fn(),
 }));
+
+jest.mock("./src/modules/base/base.service", () => ({
+  __esModule: true,
+  BaseService: jest.fn(),
+}));

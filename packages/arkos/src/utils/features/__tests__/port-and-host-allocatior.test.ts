@@ -1,5 +1,4 @@
 import * as net from "net";
-import { ArkosConfig } from "../../../exports";
 import portAndHostAllocator from "../../features/port-and-host-allocator";
 import sheu from "../../sheu";
 
@@ -44,7 +43,7 @@ describe("PortAndHostAllocator", () => {
         HOST: "env-host",
         PORT: "8080",
       };
-      const config: ArkosConfig = {
+      const config: any = {
         host: "config-host",
         port: 7000,
       };
@@ -65,7 +64,7 @@ describe("PortAndHostAllocator", () => {
         HOST: "env-host",
         PORT: "8080",
       };
-      const config: ArkosConfig = {
+      const config: any = {
         host: "config-host",
         port: 7000,
       };
@@ -115,7 +114,7 @@ describe("PortAndHostAllocator", () => {
         CLI_HOST: "custom-host",
         PORT: "9090",
       };
-      const config: ArkosConfig = {
+      const config: any = {
         port: 7777,
       };
 
@@ -321,7 +320,7 @@ describe("PortAndHostAllocator", () => {
 
     it("should use configuration with custom host", async () => {
       const env = {};
-      const config: ArkosConfig = {
+      const config: any = {
         host: "0.0.0.0",
         port: 5000,
       };

@@ -1,21 +1,22 @@
 import { PrismaJsonSchemaGenerator } from "../prisma-json-schema-generator";
-import { ArkosConfig, RouterConfig } from "../../../exports";
-import { PrismaQueryOptions } from "../../../types";
-import deepmerge from "../../helpers/deepmerge.helper";
-import { getModuleComponents } from "../../dynamic-loader";
+import { ArkosConfig } from "../../../exports";
 import prismaSchemaParser from "../prisma-schema-parser";
 import { localValidatorFileExists } from "../../../modules/swagger/utils/helpers/swagger.router.helpers";
+import { getArkosConfig } from "../../../exports";
+import loadableRegistry from "../../../components/arkos-loadable-registry";
+import { isAuthenticationEnabled } from "../../helpers/arkos-config.helpers";
 
-// Mock all dependencies
-jest.mock("../../helpers/deepmerge.helper");
-jest.mock("../../dynamic-loader");
 jest.mock("../../../modules/swagger/utils/helpers/swagger.router.helpers");
+jest.mock("../../../exports", () => ({
+  ...jest.requireActual("../../../exports"),
+  getArkosConfig: jest.fn(),
+}));
+jest.mock("../../helpers/arkos-config.helpers");
 jest.mock("fs");
 
 describe("PrismaJsonSchemaGenerator", () => {
   let generator: PrismaJsonSchemaGenerator;
 
-  // Mock data
   const mockSchema = {
     models: [
       {
@@ -212,6 +213,7 @@ describe("PrismaJsonSchemaGenerator", () => {
   };
 
   const mockArkosConfig: ArkosConfig = {
+    prisma: { instance: {} },
     authentication: {
       mode: "static",
       login: {
@@ -220,40 +222,29 @@ describe("PrismaJsonSchemaGenerator", () => {
     },
     swagger: {
       strict: false,
-      mode: "prisma",
     },
     validation: {
       resolver: "zod",
     },
   };
 
-  // Mock functions
-  const mockgetModuleComponents = getModuleComponents as jest.Mock;
   const mockLocalValidatorFileExists = localValidatorFileExists as jest.Mock;
-  const mockDeepmerge = deepmerge as unknown as jest.Mock;
   const mockPrismaSchemaParser = prismaSchemaParser as any;
 
   beforeEach(() => {
     generator = new PrismaJsonSchemaGenerator();
-
-    // Reset all mocks
     jest.clearAllMocks();
-
-    // Setup default mock returns
+    (loadableRegistry as any).items = new Map();
     mockPrismaSchemaParser.parse = jest.fn().mockReturnValue(mockSchema);
-    mockgetModuleComponents.mockReturnValue({
-      router: { config: {} },
-      prismaQueryOptions: {},
-    });
     mockLocalValidatorFileExists.mockReturnValue(false);
-    mockDeepmerge.mockImplementation((a, b) => ({ ...a, ...b }));
+    (getArkosConfig as jest.Mock).mockReturnValue(mockArkosConfig);
+    (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
   });
 
   describe("generateModelSchemas", () => {
-    it("should generate schemas for a regular model", async () => {
+    it("should generate schemas for a regular model", () => {
       const config = {
         modelName: "User",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: ["createOne", "updateOne", "findOne"] as const,
       };
 
@@ -262,69 +253,52 @@ describe("PrismaJsonSchemaGenerator", () => {
         enums: [],
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("CreateUserModelSchema");
       expect(result).toHaveProperty("UpdateUserModelSchema");
       expect(result).toHaveProperty("FindOneUserModelSchema");
     });
 
-    it("should generate auth schemas for auth models", async () => {
+    it("should generate auth schemas for auth models", () => {
       const config = {
         modelName: "auth",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: ["login", "signup", "getMe"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("LoginSchema");
       expect(result).toHaveProperty("SignupSchema");
       expect(result).toHaveProperty("GetMeSchema");
     });
 
-    it("should return empty object when swagger is strict and mode is not prisma", async () => {
-      const config = {
-        modelName: "User",
-        arkosConfig: {
-          ...mockArkosConfig,
-          swagger: { strict: true, mode: "manual" as const },
-        },
-        schemasToGenerate: ["createOne"] as const,
-      };
-
-      const result = await generator.generateModelSchemas(config as any);
-
-      expect(result).toEqual({});
-    });
-
-    it("should return empty object when router is disabled", async () => {
-      mockgetModuleComponents.mockReturnValue({
-        router: { config: { disable: true } },
-        prismaQueryOptions: {},
+    it("should return empty object when swagger is strict and resolver is set", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        ...mockArkosConfig,
+        swagger: { strict: true },
+        validation: { resolver: "zod" },
       });
 
       const config = {
         modelName: "User",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: ["createOne"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toEqual({});
     });
 
-    it("should skip schema generation when local validator exists", async () => {
+    it("should skip schema generation when local validator exists", () => {
       mockLocalValidatorFileExists.mockReturnValue(true);
 
       const config = {
         modelName: "User",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: ["createOne"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).not.toHaveProperty("CreateUserModelSchema");
     });
@@ -342,10 +316,10 @@ describe("PrismaJsonSchemaGenerator", () => {
       expect(schema.properties).toHaveProperty("role");
       expect(schema.properties).not.toHaveProperty("id");
       expect(schema.properties).not.toHaveProperty("createdAt");
-      expect(schema.properties).not.toHaveProperty("posts"); // Array relation
+      expect(schema.properties).not.toHaveProperty("posts");
     });
 
-    it("should include relation field with a single reference field (field.id for example) for single relations", () => {
+    it("should include relation field with a single reference field for single relations", () => {
       const userModel = mockSchema.models.find((m) => m.name === "User")!;
       const schema = (generator as any).generateCreateSchema(userModel, {});
 
@@ -360,8 +334,8 @@ describe("PrismaJsonSchemaGenerator", () => {
 
       expect(schema.required).toContain("email");
       expect(schema.required).toContain("password");
-      expect(schema.required).not.toContain("name"); // Optional
-      expect(schema.required).not.toContain("role"); // Has default
+      expect(schema.required).not.toContain("name");
+      expect(schema.required).not.toContain("role");
     });
 
     it("should handle auth model restrictions", () => {
@@ -382,7 +356,7 @@ describe("PrismaJsonSchemaGenerator", () => {
       const schema = (generator as any).generateUpdateSchema(userModel, {});
 
       expect(schema.type).toBe("object");
-      expect(schema.required).toEqual([]); // All optional
+      expect(schema.required).toEqual([]);
       expect(schema.properties).toHaveProperty("email");
       expect(schema.properties).toHaveProperty("name");
       expect(schema.properties).not.toHaveProperty("id");
@@ -403,7 +377,7 @@ describe("PrismaJsonSchemaGenerator", () => {
       expect(schema.properties).toHaveProperty("id");
       expect(schema.properties).toHaveProperty("email");
       expect(schema.properties).toHaveProperty("name");
-      expect(schema.properties).not.toHaveProperty("password"); // Excluded
+      expect(schema.properties).not.toHaveProperty("password");
     });
 
     it("should respect select options", () => {
@@ -625,13 +599,13 @@ describe("PrismaJsonSchemaGenerator", () => {
         );
         expect((generator as any).mapPrismaTypeToJsonSchema("UserRole")).toBe(
           "string"
-        ); // Enum
+        );
         expect((generator as any).mapPrismaTypeToJsonSchema("User")).toBe(
           "object"
-        ); // Model
+        );
         expect((generator as any).mapPrismaTypeToJsonSchema("Unknown")).toBe(
           "string"
-        ); // Fallback
+        );
       });
     });
 
@@ -653,96 +627,46 @@ describe("PrismaJsonSchemaGenerator", () => {
     });
 
     describe("isEndpointDisabled", () => {
-      it("should check endpoint disable status correctly", () => {
-        const routerConfig1: RouterConfig = { disable: true };
-        expect(
-          (generator as any).isEndpointDisabled("createOne", routerConfig1)
-        ).toBe(true);
-
-        const routerConfig2: RouterConfig = {
-          disable: { createOne: true, findOne: false },
-        };
-        expect(
-          (generator as any).isEndpointDisabled("createOne", routerConfig2)
-        ).toBe(true);
-        expect(
-          (generator as any).isEndpointDisabled("findOne", routerConfig2)
-        ).toBe(false);
-
-        expect(
-          (generator as any).isEndpointDisabled("createOne", undefined)
-        ).toBe(false);
-      });
-    });
-
-    describe("resolvePrismaQueryOptions", () => {
-      it("should merge query options correctly", () => {
-        const queryOptions: PrismaQueryOptions<any> = {
-          global: { select: { id: true } },
-          find: { select: { email: true } },
-          findOne: { include: { profile: true } },
-        };
-
-        const result = (generator as any).resolvePrismaQueryOptions(
-          queryOptions,
-          "findOne"
+      it("should return false when no hook is registered", () => {
+        expect((generator as any).isEndpointDisabled("User", "createOne")).toBe(
+          false
         );
-
-        expect(mockDeepmerge).toHaveBeenCalled();
-        expect(result).toBeDefined();
       });
 
-      it("should handle deprecated queryOptions", () => {
-        const queryOptions = {
-          queryOptions: { select: { id: true } },
-        };
+      it("should return true when endpoint is disabled via routeHookReader", () => {
+        loadableRegistry.register({
+          __type: "ArkosRouteHook",
+          moduleName: "user",
+          _store: { createOne: { disabled: true } },
+        } as any);
 
-        const result = (generator as any).resolvePrismaQueryOptions(
-          queryOptions,
-          "findOne"
+        expect((generator as any).isEndpointDisabled("User", "createOne")).toBe(
+          true
         );
-
-        expect(result).toBeDefined();
       });
-    });
 
-    describe("getGeneralOptionsForAction", () => {
-      it("should map actions to general options", () => {
-        const options = {
-          find: { select: { id: true } },
-          create: { include: { profile: true } },
-        };
+      it("should return false when endpoint is explicitly not disabled", () => {
+        loadableRegistry.register({
+          __type: "ArkosRouteHook",
+          moduleName: "User",
+          _store: { createOne: { disabled: false } },
+        } as any);
 
-        const findResult = (generator as any).getGeneralOptionsForAction(
-          options,
-          "findOne"
+        expect((generator as any).isEndpointDisabled("User", "createOne")).toBe(
+          false
         );
-        expect(findResult).toEqual({ select: { id: true } });
-
-        const createResult = (generator as any).getGeneralOptionsForAction(
-          options,
-          "createOne"
-        );
-        expect(createResult).toEqual({ include: { profile: true } });
-
-        const noMatchResult = (generator as any).getGeneralOptionsForAction(
-          options,
-          "updateOne"
-        );
-        expect(noMatchResult).toBeNull();
       });
     });
   });
 
   describe("complex scenarios", () => {
-    it("should handle createMany schema generation with proper references", async () => {
+    it("should handle createMany schema generation with proper references", () => {
       const config = {
         modelName: "User",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: ["createOne", "createMany"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("CreateUserModelSchema");
       expect(result).toHaveProperty("CreateManyUserModelSchema");
@@ -752,14 +676,13 @@ describe("PrismaJsonSchemaGenerator", () => {
       );
     });
 
-    it("should handle updateMany schema generation", async () => {
+    it("should handle updateMany schema generation", () => {
       const config = {
         modelName: "User",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: ["updateOne", "updateMany"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("UpdateManyUserModelSchema");
       expect(result.UpdateManyUserModelSchema.type).toBe("object");
@@ -793,14 +716,13 @@ describe("PrismaJsonSchemaGenerator", () => {
       );
     });
 
-    it("should handle findMany schema generation", async () => {
+    it("should handle findMany schema generation", () => {
       const config = {
         modelName: "User",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: ["findMany"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("FindManyUserModelSchema");
       expect(result.FindManyUserModelSchema.type).toBe("array");
@@ -823,26 +745,26 @@ describe("PrismaJsonSchemaGenerator", () => {
   });
 
   describe("edge cases", () => {
-    it("should handle model not found gracefully", async () => {
+    it("should handle model not found gracefully", () => {
       const config = {
         modelName: "NonExistentModel",
-        arkosConfig: mockArkosConfig,
         schemasToGenerate: ["createOne"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toEqual({});
     });
 
-    it("should handle auth module without authentication config", async () => {
+    it("should handle auth module when authentication is disabled", () => {
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(false);
+
       const config = {
         modelName: "auth",
-        arkosConfig: { ...mockArkosConfig, authentication: undefined },
         schemasToGenerate: ["login"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toEqual({});
     });

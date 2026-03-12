@@ -1,380 +1,243 @@
 import { generatePrismaModelMainRoutesPaths } from "../generate-prisma-model-main-routes-paths";
-import {
-  getSchemaRef,
-  kebabToHuman,
-  localValidatorFileExists,
-} from "../../../swagger.router.helpers";
-import pluralize from "pluralize";
-import { isEndpointDisabled } from "../../../../../../base/utils/helpers/base.router.helpers";
-import { kebabCase, pascalCase } from "../../../../../../../exports/utils";
-import { getModuleComponents } from "../../../../../../../utils/dynamic-loader";
 import { isAuthenticationEnabled } from "../../../../../../../utils/helpers/arkos-config.helpers";
+import { getArkosConfig } from "../../../../../../../server";
+import loadableRegistry from "../../../../../../../components/arkos-loadable-registry";
 
-// Mock all dependencies
-jest.mock("../../../swagger.router.helpers");
-jest.mock("pluralize");
-jest.mock("../../../../../../base/utils/helpers/base.router.helpers");
-jest.mock("../../../../../../../exports/utils");
 jest.mock("../../../../../../../utils/dynamic-loader");
-jest.mock("fs");
 jest.mock("../../../../../../../utils/helpers/arkos-config.helpers");
+jest.mock("../../../../../../../server");
+jest.mock("fs");
 
 describe("generatePrismaModelMainRoutesPaths", () => {
   let paths: any = {};
-  let arkosConfig: any;
-  let mockModuleComponents: any;
 
   beforeEach(() => {
-    // Reset all mocks
     jest.clearAllMocks();
+    (loadableRegistry as any).items = new Map();
     (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
-
-    // Initialize test data
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      validation: { resolver: "prisma" },
+      swagger: { strict: false },
+    });
     paths = {};
-    arkosConfig = {
-      swagger: {
-        mode: "prisma",
-        strict: false,
-      },
-    };
-
-    mockModuleComponents = {
-      router: {
-        config: {},
-      },
-    };
-
-    // Setup default mock implementations
-    (kebabCase as jest.Mock).mockImplementation((str) =>
-      str
-        .toLowerCase()
-        .replace(/([A-Z])/g, "-$1")
-        .replace(/^-/, "")
-    );
-    (pascalCase as jest.Mock).mockImplementation(
-      (str) => str.charAt(0).toUpperCase() + str.slice(1)
-    );
-    (kebabToHuman as jest.Mock).mockImplementation((str) =>
-      str.replace(/-/g, " ").replace(/\b\w/g, (l: any) => l.toUpperCase())
-    );
-    (pluralize.plural as jest.Mock).mockImplementation((str) => str + "s");
-    (getSchemaRef as jest.Mock).mockImplementation(
-      (schema, _) => `#/components/schemas/${schema}`
-    );
-    (isEndpointDisabled as jest.Mock).mockReturnValue(false);
-    (getModuleComponents as jest.Mock).mockReturnValue(mockModuleComponents);
-    (localValidatorFileExists as jest.Mock).mockReturnValue(false);
   });
 
   describe("Basic Functionality", () => {
-    it("should generate all CRUD routes for a basic model", async () => {
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+    it("should generate all CRUD routes for a basic model", () => {
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      // Check that all main routes are created
       expect(paths["/api/users"]).toBeDefined();
-      expect(paths["/api/users"].post).toBeDefined(); // Create One
-      expect(paths["/api/users"].get).toBeDefined(); // Find Many
+      expect(paths["/api/users"].post).toBeDefined(); // createOne
+      expect(paths["/api/users"].get).toBeDefined(); // findMany
       expect(paths["/api/users/many"]).toBeDefined();
-      expect(paths["/api/users/many"].post).toBeDefined(); // Create Many
-      expect(paths["/api/users/many"].patch).toBeDefined(); // Update Many
-      expect(paths["/api/users/many"].delete).toBeDefined(); // Delete Many
+      expect(paths["/api/users/many"].post).toBeDefined(); // createMany
+      expect(paths["/api/users/many"].patch).toBeDefined(); // updateMany
+      expect(paths["/api/users/many"].delete).toBeDefined(); // deleteMany
       expect(paths["/api/users/{id}"]).toBeDefined();
-      expect(paths["/api/users/{id}"].get).toBeDefined(); // Find One
-      expect(paths["/api/users/{id}"].patch).toBeDefined(); // Update One
-      expect(paths["/api/users/{id}"].delete).toBeDefined(); // Delete One
+      expect(paths["/api/users/{id}"].get).toBeDefined(); // findOne
+      expect(paths["/api/users/{id}"].patch).toBeDefined(); // updateOne
+      expect(paths["/api/users/{id}"].delete).toBeDefined(); // deleteOne
     });
 
-    it("should use correct naming conventions", async () => {
-      (kebabCase as jest.Mock).mockReturnValue("user-profile");
-      (pascalCase as jest.Mock).mockReturnValue("UserProfile");
-      (kebabToHuman as jest.Mock).mockReturnValue("User Profile");
-      (pluralize.plural as jest.Mock).mockReturnValue("User Profiles");
+    it("should use correct naming conventions for a PascalCase model", () => {
+      generatePrismaModelMainRoutesPaths("UserProfile", paths);
 
-      generatePrismaModelMainRoutesPaths("UserProfile", paths, arkosConfig);
-
-      expect(kebabCase).toHaveBeenCalledWith("UserProfile");
-      expect(pascalCase).toHaveBeenCalledWith("UserProfile");
-      expect(kebabToHuman).toHaveBeenCalledWith("user-profile");
-      expect(pluralize.plural).toHaveBeenCalledWith("user-profile");
-      expect(pluralize.plural).toHaveBeenCalledWith("User Profile");
-    });
-
-    it("should call getModuleComponents with correct parameters", async () => {
-      generatePrismaModelMainRoutesPaths("Product", paths, arkosConfig);
-
-      expect(getModuleComponents).toHaveBeenCalledWith("Product");
-    });
-  });
-
-  describe("Router Configuration - Complete Disable", () => {
-    it("should skip route generation when router is completely disabled", async () => {
-      mockModuleComponents.router.config = { disable: true };
-      (getModuleComponents as jest.Mock).mockReturnValue(mockModuleComponents);
-
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      expect(Object.keys(paths)).toHaveLength(0);
-    });
-
-    it("should handle missing router config gracefully", async () => {
-      mockModuleComponents.router = undefined;
-      (getModuleComponents as jest.Mock).mockReturnValue(mockModuleComponents);
-
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      // Should still generate routes when router config is undefined
-      expect(paths["/api/users"]).toBeDefined();
-    });
-
-    it("should handle missing model modules gracefully", async () => {
-      (getModuleComponents as jest.Mock).mockReturnValue(null);
-
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      // Should still generate routes when model modules are null
-      expect(paths["/api/users"]).toBeDefined();
+      expect(paths["/api/user-profiles"]).toBeDefined();
+      expect(paths["/api/user-profiles"].post?.operationId).toBe(
+        "createUserProfile"
+      );
+      expect(paths["/api/user-profiles"].get?.operationId).toBe(
+        "findUserProfiles"
+      );
     });
   });
 
   describe("Individual Endpoint Disabling", () => {
-    it("should skip createOne when disabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation(
-        (_, endpoint) => endpoint === "createOne"
-      );
+    function registerDisabled(...endpoints: string[]) {
+      const store: Record<string, any> = {};
+      for (const ep of endpoints) store[ep] = { disabled: true };
+      loadableRegistry.register({
+        __type: "ArkosRouteHook",
+        moduleName: "",
+        _store: store,
+      } as any);
+    }
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+    it("should skip createOne when disabled", () => {
+      registerDisabled("createOne");
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      expect(paths["/api/users"]).toBeDefined();
       expect(paths["/api/users"].post).toBeUndefined();
-      expect(paths["/api/users"].get).toBeDefined(); // findMany should still exist
+      expect(paths["/api/users"].get).toBeDefined(); // findMany still present
     });
 
-    it("should skip findMany when disabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation(
-        (_, endpoint) => endpoint === "findMany"
-      );
+    it("should skip findMany when disabled", () => {
+      registerDisabled("findMany");
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      expect(paths["/api/users"]).toBeDefined();
       expect(paths["/api/users"].get).toBeUndefined();
-      expect(paths["/api/users"].post).toBeDefined(); // createOne should still exist
+      expect(paths["/api/users"].post).toBeDefined(); // createOne still present
     });
 
-    it("should skip createMany when disabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation(
-        (_, endpoint) => endpoint === "createMany"
-      );
+    it("should skip createMany when disabled", () => {
+      registerDisabled("createMany");
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      expect(paths["/api/users/many"]).toBeDefined();
       expect(paths["/api/users/many"].post).toBeUndefined();
     });
 
-    it("should skip updateMany when disabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation(
-        (_, endpoint) => endpoint === "updateMany"
-      );
+    it("should skip updateMany when disabled", () => {
+      registerDisabled("updateMany");
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      expect(paths["/api/users/many"]).toBeDefined();
       expect(paths["/api/users/many"].patch).toBeUndefined();
     });
 
-    it("should skip deleteMany when disabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation(
-        (_, endpoint) => endpoint === "deleteMany"
-      );
+    it("should skip deleteMany when disabled", () => {
+      registerDisabled("deleteMany");
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      expect(paths["/api/users/many"]).toBeDefined();
       expect(paths["/api/users/many"].delete).toBeUndefined();
     });
 
-    it("should skip findOne when disabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation(
-        (_, endpoint) => endpoint === "findOne"
-      );
-
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+    it("should skip findOne when disabled", () => {
+      registerDisabled("findOne");
+      generatePrismaModelMainRoutesPaths("User", paths);
 
       expect(paths["/api/users/{id}"].get).toBeUndefined();
     });
 
-    it("should skip updateOne when disabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation(
-        (_, endpoint) => endpoint === "updateOne"
-      );
+    it("should skip updateOne when disabled", () => {
+      registerDisabled("updateOne");
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      expect(paths["/api/users/{id}"]).toBeDefined();
       expect(paths["/api/users/{id}"].patch).toBeUndefined();
     });
 
-    it("should skip deleteOne when disabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation(
-        (_, endpoint) => endpoint === "deleteOne"
-      );
+    it("should skip deleteOne when disabled", () => {
+      registerDisabled("deleteOne");
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      expect(paths["/api/users/{id}"]).toBeDefined();
       expect(paths["/api/users/{id}"].delete).toBeUndefined();
     });
   });
 
   describe("Schema Mode Selection", () => {
-    it("should use swagger mode when strict is true", async () => {
-      arkosConfig.swagger.strict = true;
-      arkosConfig.swagger.mode = "zod";
+    it("should use prisma schema refs when resolver is prisma and not strict", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        validation: { resolver: "prisma" },
+        swagger: { strict: false },
+      });
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      expect(getSchemaRef).toHaveBeenCalledWith("CreateUser", "zod");
-      expect(localValidatorFileExists).not.toHaveBeenCalled();
+      expect(
+        paths["/api/users"].post?.requestBody?.content?.["application/json"]
+          ?.schema?.$ref
+      ).toBe("#/components/schemas/CreateUserModelSchema");
     });
 
-    it("should fall back to prisma when swagger mode is undefined and strict is true", async () => {
-      arkosConfig.swagger.strict = true;
-      arkosConfig.swagger.mode = undefined;
+    it("should use configured resolver mode when strict is true", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        validation: { resolver: "zod" },
+        swagger: { strict: true },
+      });
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      expect(getSchemaRef).toHaveBeenCalledWith("CreateUser", "prisma");
+      expect(
+        paths["/api/users"].post?.requestBody?.content?.["application/json"]
+          ?.schema?.$ref
+      ).toBe("#/components/schemas/CreateUserSchema");
     });
 
-    it("should use prisma when local file does not exist and not strict", async () => {
-      arkosConfig.swagger.strict = false;
-      (localValidatorFileExists as jest.Mock).mockReturnValue(false);
+    it("should use configured resolver when route has validation body", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        validation: { resolver: "zod" },
+        swagger: { strict: false },
+      });
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      loadableRegistry.register({
+        __type: "ArkosRouteHook",
+        moduleName: "",
+        _store: {
+          createOne: { validation: { body: "createUserSchema" } },
+        },
+      } as any);
 
-      expect(getSchemaRef).toHaveBeenCalledWith("CreateUser", "prisma");
+      generatePrismaModelMainRoutesPaths("User", paths);
+
+      expect(
+        paths["/api/users"].post?.requestBody?.content?.["application/json"]
+          ?.schema?.$ref
+      ).toBe("#/components/schemas/CreateUserSchema");
     });
 
-    it("should use swagger mode when local file exists and not strict", async () => {
-      arkosConfig.swagger.strict = false;
-      arkosConfig.swagger.mode = "class-validator";
-      (localValidatorFileExists as jest.Mock).mockReturnValue(true);
+    it("should fall back to prisma when validation is false on route", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        validation: { resolver: "zod" },
+        swagger: { strict: false },
+      });
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      loadableRegistry.register({
+        __type: "ArkosRouteHook",
+        moduleName: "",
+        _store: {
+          createOne: { validation: false },
+        },
+      } as any);
 
-      expect(getSchemaRef).toHaveBeenCalledWith(
-        "CreateUser",
-        "class-validator"
-      );
-    });
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-    it("should call localValidatorFileExists for each action when not strict", async () => {
-      arkosConfig.swagger.strict = false;
-      (localValidatorFileExists as jest.Mock).mockReturnValue(false);
-
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      // Should be called for each CRUD operation
-      expect(localValidatorFileExists).toHaveBeenCalledTimes(6); // create, findMany, createMany, updateMany, findOne, update
+      expect(
+        paths["/api/users"].post?.requestBody?.content?.["application/json"]
+          ?.schema?.$ref
+      ).toBe("#/components/schemas/CreateUserModelSchema");
     });
   });
 
-  describe("Edge Cases - Path Merging", () => {
-    it("should merge routes when path already exists", async () => {
-      // Pre-populate paths with existing route
+  describe("Path Merging", () => {
+    it("should merge routes when path already exists", () => {
       paths["/api/users"] = {
-        options: {
-          summary: "Existing OPTIONS method",
-        },
+        options: { summary: "Existing OPTIONS method" },
       };
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths);
 
-      // Should preserve existing method and add new ones
       expect(paths["/api/users"].options).toBeDefined();
       expect(paths["/api/users"].post).toBeDefined();
       expect(paths["/api/users"].get).toBeDefined();
     });
 
-    it("should handle complex model names", async () => {
-      (kebabCase as jest.Mock).mockReturnValue("user-billing-address");
-      (pascalCase as jest.Mock).mockReturnValue("UserBillingAddress");
-      (kebabToHuman as jest.Mock).mockReturnValue("User Billing Address");
-      (pluralize.plural as jest.Mock).mockImplementation((str) => str + "s");
-
-      generatePrismaModelMainRoutesPaths(
-        "UserBillingAddress",
-        paths,
-        arkosConfig
-      );
-
-      expect(paths["/api/user-billing-addresss"]).toBeDefined(); // Note: pluralize mock adds 's'
-    });
-  });
-
-  describe("Edge Cases - Empty/Invalid Inputs", () => {
-    it("should handle empty model name", async () => {
-      (kebabCase as jest.Mock).mockReturnValue("");
-      (pascalCase as jest.Mock).mockReturnValue("");
-      (kebabToHuman as jest.Mock).mockReturnValue("");
-      (pluralize.plural as jest.Mock).mockReturnValue("");
-
-      generatePrismaModelMainRoutesPaths("", paths, arkosConfig);
-
-      expect(paths["/api/"]).toBeDefined();
-    });
-
-    it("should use custom passed route path properties", async () => {
+    it("should use custom passed route path properties and not override them", () => {
       const successResponse = {
         description: "user found",
-        "application/json": {
-          content: {
-            schema: {
-              properties: {
-                name: {
-                  type: "string",
-                },
-              },
-            },
+        content: {
+          "application/json": {
+            schema: { properties: { name: { type: "string" } } },
           },
         },
       };
 
-      const result = generatePrismaModelMainRoutesPaths(
+      paths["/api/users"] = { get: { responses: { "200": successResponse } } };
+      generatePrismaModelMainRoutesPaths(
         "User",
-        {
-          "/api/users": {
-            get: {
-              responses: {
-                200: successResponse,
-              },
-            },
-          },
-        },
-        arkosConfig
+        paths
+        // paths
       );
-      expect(result["/api/users"]?.get?.responses?.["200"]).toBe(
+
+      expect(paths["/api/users"]?.get?.responses?.["200"]).toEqual(
         successResponse
       );
-    });
-
-    it("should handle arkosConfig without swagger property", async () => {
-      arkosConfig = {};
-
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      // Should still work with default behavior
-      expect(paths["/api/users"]).toBeDefined();
     });
   });
 
   describe("Response Structure Validation", () => {
-    it("should generate correct OpenAPI structure for createOne", async () => {
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+    it("should generate correct OpenAPI structure for createOne", () => {
+      generatePrismaModelMainRoutesPaths("User", paths);
 
       const createRoute = paths["/api/users"].post;
-      expect(createRoute.tags).toEqual(["Users"]);
+      expect(createRoute.tags).toContain("Users");
       expect(createRoute.summary).toBe("Create a new User");
       expect(createRoute.operationId).toBe("createUser");
       expect(createRoute.requestBody.required).toBe(true);
@@ -385,15 +248,16 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       expect(createRoute.security).toEqual([{ BearerAuth: [] }]);
     });
 
-    it("should generate correct OpenAPI structure for findMany", async () => {
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+    it("should generate correct OpenAPI structure for findMany with default parameters", () => {
+      generatePrismaModelMainRoutesPaths("User", paths);
 
       const findManyRoute = paths["/api/users"].get;
-      expect(findManyRoute.parameters).toHaveLength(4); // sort, page, limit, fields
-      expect(findManyRoute.parameters[0].name).toBe("page");
-      expect(findManyRoute.parameters[1].name).toBe("limit");
-      expect(findManyRoute.parameters[2].name).toBe("fields");
-      expect(findManyRoute.parameters[3].name).toBe("sort");
+      const paramNames = findManyRoute.parameters.map((p: any) => p.name);
+      expect(paramNames).toContain("page");
+      expect(paramNames).toContain("limit");
+      expect(paramNames).toContain("search");
+      expect(paramNames).toContain("fields");
+      expect(paramNames).toContain("sort");
       expect(
         findManyRoute.responses["200"].content["application/json"].schema
           .properties.total
@@ -408,33 +272,44 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       ).toBeDefined();
     });
 
-    it("should generate correct OpenAPI structure for updateMany", async () => {
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
-
-      const updateManyRoute = paths["/api/users/many"].patch;
-      expect(updateManyRoute.parameters).toHaveLength(1); // filter
-      expect(updateManyRoute.parameters[0].required).toBe(true);
-      expect(updateManyRoute.requestBody.required).toBe(true);
-    });
-
-    it("should generate correct OpenAPI structure for deleteOne", async () => {
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+    it("should generate correct OpenAPI structure for deleteOne", () => {
+      generatePrismaModelMainRoutesPaths("User", paths);
 
       const deleteOneRoute = paths["/api/users/{id}"].delete;
       expect(deleteOneRoute.responses["204"]).toBeDefined();
       expect(deleteOneRoute.responses["404"]).toBeDefined();
-      expect(deleteOneRoute.parameters[0].name).toBe("id");
-      expect(deleteOneRoute.parameters[0].required).toBe(true);
+      const idParam = deleteOneRoute.parameters.find(
+        (p: any) => p.name === "id"
+      );
+      expect(idParam).toBeDefined();
+      expect(idParam.required).toBe(true);
+    });
+
+    it("should not include auth error responses when authentication is disabled", () => {
+      (isAuthenticationEnabled as jest.Mock).mockReturnValue(false);
+
+      generatePrismaModelMainRoutesPaths("User", paths);
+
+      expect(paths["/api/users"].post?.responses?.["401"]).toBeUndefined();
+      expect(paths["/api/users"].post?.responses?.["403"]).toBeUndefined();
     });
   });
 
   describe("Multiple Endpoint Combinations", () => {
-    it("should handle multiple disabled endpoints", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation((_, endpoint) =>
-        ["createOne", "updateMany", "deleteOne"].includes(endpoint)
-      );
+    function registerDisabled(...endpoints: string[]) {
+      const store: Record<string, any> = {};
+      for (const ep of endpoints) store[ep] = { disabled: true };
+      loadableRegistry.register({
+        __type: "ArkosRouteHook",
+        moduleName: "",
+        _store: store,
+      } as any);
+    }
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+    it("should handle multiple disabled endpoints", () => {
+      registerDisabled("createOne", "updateMany", "deleteOne");
+
+      generatePrismaModelMainRoutesPaths("User", paths);
 
       expect(paths["/api/users"].post).toBeUndefined(); // createOne disabled
       expect(paths["/api/users"].get).toBeDefined(); // findMany enabled
@@ -444,14 +319,10 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       expect(paths["/api/users/{id}"].get).toBeDefined(); // findOne enabled
     });
 
-    it("should handle scenario where only single-record operations are enabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation((_, endpoint) =>
-        ["findMany", "createMany", "updateMany", "deleteMany"].includes(
-          endpoint
-        )
-      );
+    it("should handle scenario where only single-record operations are enabled", () => {
+      registerDisabled("findMany", "createMany", "updateMany", "deleteMany");
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths);
 
       expect(paths["/api/users"].post).toBeDefined(); // createOne
       expect(paths["/api/users"].get).toBeUndefined(); // findMany disabled
@@ -459,12 +330,10 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       expect(paths["/api/users/{id}"]).toBeDefined(); // single record operations
     });
 
-    it("should handle scenario where only batch operations are enabled", async () => {
-      (isEndpointDisabled as jest.Mock).mockImplementation((_, endpoint) =>
-        ["createOne", "findOne", "updateOne", "deleteOne"].includes(endpoint)
-      );
+    it("should handle scenario where only batch operations are enabled", () => {
+      registerDisabled("createOne", "findOne", "updateOne", "deleteOne");
 
-      generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
+      generatePrismaModelMainRoutesPaths("User", paths);
 
       expect(paths["/api/users"].post).toBeUndefined(); // createOne disabled
       expect(paths["/api/users"].get).toBeDefined(); // findMany enabled
