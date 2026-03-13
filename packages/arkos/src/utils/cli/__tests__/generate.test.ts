@@ -3,7 +3,7 @@ import path from "path";
 import { generateTemplate } from "../utils/template-generators";
 import { ensureDirectoryExists } from "../utils/cli.helpers";
 import { generateCommand } from "../generate";
-import { getUserFileExtension, fullCleanCwd } from "../../helpers/fs.helpers";
+import { getUserFileExtension } from "../../helpers/fs.helpers";
 import sheu from "../../sheu";
 
 // Mock all dependencies
@@ -16,7 +16,10 @@ jest.mock("path", () => ({
 jest.mock("../utils/template-generators");
 jest.mock("../../sheu");
 jest.mock("../utils/cli.helpers");
-jest.mock("../../helpers/fs.helpers");
+jest.mock("../../helpers/fs.helpers", () => ({
+  ...jest.requireActual("../../helpers/fs.helpers"),
+  getUserFileExtension: jest.fn(),
+}));
 jest.mock("../../../utils/prisma/prisma-schema-parser", () => ({
   __esModule: true,
   default: {
@@ -62,10 +65,6 @@ describe("generateCommand", () => {
     // Setup default mocks
     jest.spyOn(process, "cwd").mockReturnValue(mockCwd);
     mockedPath.join.mockImplementation((...args) => args.join("/"));
-    mockedGenerateTemplate.mockReturnValue(mockTemplateContent);
-    (fullCleanCwd as jest.Mock).mockImplementation((text: string) =>
-      text.replace(mockCwd, "")
-    );
   });
 
   afterEach(() => {
