@@ -180,7 +180,6 @@ export type AuthAction<R extends AuthResource = AuthResource> = Extract<
 `
     : ""
 }
-
 export default authActions;
 `;
 
