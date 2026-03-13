@@ -17,10 +17,10 @@ export function getFileUploadRouter() {
   const router = ArkosRouter();
   const { fileUpload } = getArkosConfig();
 
-  const interceptor = loadableRegistry.getItem("ArkosRouteHook", "file-upload");
+  const routeHook = loadableRegistry.getItem("ArkosRouteHook", "file-upload");
 
   const op = (operation: OperationByModule<"file-upload">) =>
-    interceptor
+    routeHook
       ? routeHookReader.forOperation("file-upload", operation)
       : {
           before: [],

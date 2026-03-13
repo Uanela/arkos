@@ -13,12 +13,12 @@ import authController from "./auth.controller";
 
 export function getAuthRouter() {
   const router = ArkosRouter();
-  const interceptor = loadableRegistry.getItem("ArkosRouteHook", "auth");
+  const routeHook = loadableRegistry.getItem("ArkosRouteHook", "auth");
 
   const op = (
     operation: keyof Omit<ArkosAuthRouteHookInstance, "__type" | "moduleName">
   ) =>
-    interceptor
+    routeHook
       ? routeHookReader.forOperation("auth", operation)
       : {
           before: [],
@@ -109,6 +109,7 @@ export function getAuthRouter() {
 
     router.post(
       {
+        authentication: false,
         rateLimit: rateLimitConfig,
         ...routeConfig,
         path: "/auth/login",
@@ -149,6 +150,7 @@ export function getAuthRouter() {
 
     router.post(
       {
+        authentication: false,
         rateLimit: rateLimitConfig,
         ...routeConfig,
         path: "/auth/signup",
