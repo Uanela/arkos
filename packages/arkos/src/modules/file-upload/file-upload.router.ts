@@ -42,6 +42,13 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
   const customRouter = customRouterModule?.default as Router;
   let basePathname = fileUpload?.baseRoute || "/api/uploads/";
 
+  if (!basePathname.startsWith("/")) basePathname = "/" + basePathname;
+  if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
+
+  // Strip leading slash so createRouteConfig can prepend its own "/"
+  // e.g. "/api/uploads/" → "api/uploads/" → createRouteConfig builds "/api/uploads/*"
+  const baseRoutePrefix = basePathname.slice(1);
+
   if (customRouter && customRouterModule) {
     if (routerValidator.isExpressRouter(customRouter))
       router.use(basePathname, customRouter);
@@ -50,9 +57,6 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
         `ValidationError: The exported router from file-upload.router.${getUserFileExtension()} is not a valid express or arkos Router.`
       );
   }
-
-  if (!basePathname.startsWith("/")) basePathname = "/" + basePathname;
-  if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
 
   if (!isEndpointDisabled(routerConfig, "findFile")) {
     const baseUploadDirFullPath = path.resolve(
@@ -64,8 +68,8 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
       createRouteConfig(
         arkosConfig,
         "findFile",
-        "file-upload",
-        `${basePathname}*`,
+        baseRoutePrefix,
+        `*`,
         routerConfig,
         "file-upload",
         authConfigs
@@ -96,8 +100,8 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
       createRouteConfig(
         arkosConfig,
         "uploadFile",
-        "file-upload",
-        `${basePathname}:fileType`,
+        baseRoutePrefix,
+        `:fileType`,
         routerConfig,
         "file-upload",
         authConfigs
@@ -115,8 +119,8 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
       createRouteConfig(
         arkosConfig,
         "updateFile",
-        "file-upload",
-        `${basePathname}:fileType/:fileName`,
+        baseRoutePrefix,
+        `:fileType/:fileName`,
         routerConfig,
         "file-upload",
         authConfigs
@@ -134,8 +138,8 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
       createRouteConfig(
         arkosConfig,
         "deleteFile",
-        "file-upload",
-        `${basePathname}:fileType/:fileName`,
+        baseRoutePrefix,
+        `:fileType/:fileName`,
         routerConfig,
         "file-upload",
         authConfigs
