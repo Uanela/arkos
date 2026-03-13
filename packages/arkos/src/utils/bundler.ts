@@ -186,7 +186,6 @@ export class Bundler {
    */
   private readJsonWithComments(filePath: string): any {
     const raw = fs.readFileSync(filePath, "utf8");
-
     return JSON.parse(
       raw
         .replace(
