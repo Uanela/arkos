@@ -137,7 +137,6 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
       configPath: tempTsconfigPath,
     });
 
-    // Clean up temp config
     cleanupTempConfig(tempTsconfigPath);
   } catch (error) {
     cleanupTempConfig(tempTsconfigPath);
@@ -187,8 +186,9 @@ function buildJavaScriptProject(_: BuildOptions, moduleType: ModuleType) {
       rootDir: process.cwd(),
     });
     // createModulePackageJson(moduleType);
-  } catch (error) {
-    console.error("❌ Error building JavaScript project:", error);
+  } catch (error: any) {
+    console.info(error.stack);
+    console.error("❌ Error building JavaScript project:", error.stack);
     throw error;
   }
 }
