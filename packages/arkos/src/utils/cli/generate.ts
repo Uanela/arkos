@@ -99,7 +99,7 @@ const generateFile = async (
     modulePath = path.resolve(process.cwd(), resolvedPath);
 
     function getSuffix() {
-      return config.fileSuffix ? `.${config.fileSuffix}` : config.templateName;
+      return config.fileSuffix ? `.${config.fileSuffix}` : "";
     }
 
     const fileName = config.prefix
