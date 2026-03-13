@@ -24,10 +24,12 @@ export const defaultExcludedUserFields = {
  * Authentication controller class handling all auth-related operations
  */
 export class AuthController {
-  private userService: BaseService<"user">;
+  private userService!: BaseService<"user">;
 
   constructor() {
-    this.userService = new BaseService("user");
+    try {
+      this.userService = new BaseService("user");
+    } catch {}
   }
 
   /**

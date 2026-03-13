@@ -1,5 +1,4 @@
-import { getUserFileExtension } from "../../../../helpers/fs.helpers";
-import { kebabPrismaModels } from "../../../generate";
+import pluralize from "pluralize";
 import { TemplateOptions } from "../../template-generators";
 
 export function generateRouterTemplate(options: TemplateOptions): string {
@@ -8,28 +7,9 @@ export function generateRouterTemplate(options: TemplateOptions): string {
   if (!modelName)
     throw new Error("Module name is required for router template");
 
-  const isNormalModule = [...kebabPrismaModels, "file-upload", "auth"].includes(
-    modelName.kebab
-  );
-  const ext = getUserFileExtension();
-
-  const routerConfigTsType =
-    ext === "ts"
-      ? `: RouterConfig<${["file-upload", "auth"].includes(modelName.kebab) ? modelName.kebab : '"prisma"'}>`
-      : "";
-  const routerConfigTsTypeImport =
-    ext === "ts" ? "import { RouterConfig } from 'arkos'" : "";
-  const routeConfig = isNormalModule
-    ? `
-export const config${routerConfigTsType} = { }
-`
-    : "";
-
   return `import { ArkosRouter } from 'arkos'
-${routerConfigTsTypeImport}
-${routeConfig}
 
-const ${modelName.camel}Router = ArkosRouter()
+const ${modelName.camel}Router = ArkosRouter({ prefix: "${pluralize(modelName.kebab)}" })
 
 export default ${modelName.camel}Router
 `;

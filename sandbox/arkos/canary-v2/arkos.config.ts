@@ -17,7 +17,6 @@ const config = defineConfig({
     resolver: "zod",
   },
   swagger: {
-    mode: "zod",
     strict: false,
   },
   middlewares: {

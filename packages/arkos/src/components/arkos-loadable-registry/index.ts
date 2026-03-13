@@ -1,6 +1,8 @@
 import { ArkosLoadable } from "../../types/arkos";
 import { ArkosModuleType } from "../arkos-route-hook/types";
 
+const LOADABLES = ["ArkosRouteHook", "ArkosServiceHook"];
+
 /**
  * Registry for all items loaded via `app.load()`.
  * Instantiated once at app start and passed through the entire Arkos chain.
@@ -16,9 +18,12 @@ export class ArkosLoadableRegistry {
     const type = (item as any).__type;
     const moduleName = (item as any).moduleName;
 
-    if (!this.items.has(type)) {
-      this.items.set(type, new Map());
-    }
+    if (!LOADABLES.includes(type))
+      throw Error(
+        `Invalid loadable component, expected on of ${LOADABLES.join(", ")} but received "${item}"`
+      );
+
+    if (!this.items.has(type)) this.items.set(type, new Map());
 
     this.items.get(type)!.set(moduleName, item);
   }

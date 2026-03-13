@@ -18,8 +18,10 @@ import { ArkosServiceHook } from "../components/arkos-service-hook";
 import { ArkosRouteHookInstance } from "../components/arkos-route-hook/types";
 import { ArkosPolicy } from "../components/arkos-policy";
 import { IArkosPolicy } from "../components/arkos-policy/types";
+import type { ArkosLoadable } from "../types/arkos";
 
 export {
+  ArkosLoadable,
   ArkosRequest,
   ArkosResponse,
   ArkosNextFunction,
