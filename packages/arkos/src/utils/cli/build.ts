@@ -22,6 +22,7 @@ interface BuildOptions {
  * Main build function for the arkos CLI
  */
 export function buildCommand(options: BuildOptions = {}) {
+  process.env.NO_CLI = "true";
   const fileExt = getUserFileExtension();
   if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
     process.env.NODE_ENV = "production";
