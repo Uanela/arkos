@@ -72,6 +72,7 @@ export function arkos(): Arkos {
         `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`
       );
 
+    if (Array.isArray(items[0])) items = items[0];
     items = Array.isArray(items) ? items : [items];
 
     items.forEach((item) => loadableRegistry.register(item));

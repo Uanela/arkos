@@ -83,6 +83,7 @@ export default function ArkosRouter(
               ...handlers: ArkosAnyRequestHandler[]
             ) {
               const fullConfig: ArkosRouteConfig = {
+                authentication: true,
                 ...config,
                 ...(options?.openapi
                   ? {
@@ -119,6 +120,7 @@ export default function ArkosRouter(
           const path = applyPrefix(options?.prefix, config.path);
 
           config = {
+            authentication: true,
             ...config,
             ...(options?.openapi
               ? {

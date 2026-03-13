@@ -22,13 +22,13 @@ export function getPrismaModelsRouter() {
     const routeName = pluralize.plural(modelNameInKebab);
     const controller = new BaseController(model);
 
-    const interceptor = loadableRegistry.getItem(
+    const routeHook = loadableRegistry.getItem(
       "ArkosRouteHook",
       modelNameInKebab
     );
 
     const op = (operation: OperationByModule<"">) =>
-      interceptor
+      routeHook
         ? routeHookReader.forOperation(modelNameInKebab, operation)
         : {
             before: [],
