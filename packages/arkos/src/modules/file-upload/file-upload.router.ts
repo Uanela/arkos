@@ -42,7 +42,11 @@ export function getFileUploadRouter() {
         .replaceAll("//", "/")
     );
     router.get(
-      { ...routeConfig, path: `${basePathname}*` },
+      {
+        authentication: { action: "View", resource: "file-upload" },
+        ...routeConfig,
+        path: `${basePathname}*`,
+      },
       ...processMiddleware(before),
       adjustRequestUrl,
       express.static(
@@ -68,7 +72,11 @@ export function getFileUploadRouter() {
   {
     const { before, after, onError, routeConfig } = op("uploadFile");
     router.post(
-      { ...routeConfig, path: `${basePathname}:fileType` },
+      {
+        authentication: { action: "Create", resource: "file-upload" },
+        ...routeConfig,
+        path: `${basePathname}:fileType`,
+      },
       ...processMiddleware(before),
       fileUploadController.uploadFile,
       ...processMiddleware(after),
@@ -81,7 +89,11 @@ export function getFileUploadRouter() {
   {
     const { before, after, onError, routeConfig } = op("updateFile");
     router.patch(
-      { ...routeConfig, path: `${basePathname}:fileType/:fileName` },
+      {
+        authentication: { action: "Update", resource: "file-upload" },
+        ...routeConfig,
+        path: `${basePathname}:fileType/:fileName`,
+      },
       ...processMiddleware(before),
       fileUploadController.updateFile,
       ...processMiddleware(after),
@@ -94,7 +106,11 @@ export function getFileUploadRouter() {
   {
     const { before, after, onError, routeConfig } = op("deleteFile");
     router.delete(
-      { ...routeConfig, path: `${basePathname}:fileType/:fileName` },
+      {
+        authentication: { action: "Delete", resource: "file-upload" },
+        ...routeConfig,
+        path: `${basePathname}:fileType/:fileName`,
+      },
       ...processMiddleware(before),
       fileUploadController.deleteFile,
       ...processMiddleware(after),

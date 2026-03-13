@@ -1,4 +1,5 @@
 import { JwtPayload } from "jsonwebtoken";
+import { UserRole } from ".";
 
 /**
  * Base set of controller actions available to all controllers.
@@ -11,7 +12,7 @@ export type AccessAction = "Create" | "Update" | "Delete" | "View" | string;
 
 export type DetailedAccessControlRule = {
   /** Array of role names that have permission for this action */
-  roles?: string[] | "*";
+  roles?: UserRole[] | "*";
   /** Human-readable name for this permission (optional) */
   name?: string;
   /** Detailed description of what this permission allows (optional) */
@@ -43,7 +44,7 @@ export type DetailedAccessControlRule = {
  *
  */
 export type AccessControlRules = {
-  [key in AccessAction]: string[] | DetailedAccessControlRule | "*";
+  [key in AccessAction]: UserRole[] | DetailedAccessControlRule | "*";
 };
 
 /**
@@ -93,7 +94,10 @@ export type AuthenticationControlConfig =
  *   View: ["User", "Admin"]
  * };
  */
-export type AccessControlConfig = string[] | Partial<AccessControlRules> | "*";
+export type AccessControlConfig =
+  | UserRole[]
+  | Partial<AccessControlRules>
+  | "*";
 
 /**
  * Configuration for authentication and access control.
