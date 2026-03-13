@@ -36,7 +36,9 @@ jest.mock("../../../utils/dynamic-loader");
 jest.mock("../file-upload.controller");
 jest.mock("../../base/base.middlewares");
 jest.mock("../../../utils/helpers/routers.helpers", () => ({
-  createRouteConfig: jest.fn((_, __, ___, path) => path),
+  createRouteConfig: jest.fn(
+    (_, __, routeName, path) => `/${routeName}${path}`
+  ),
   processMiddleware: jest.fn((mw, opts) => (mw ? [mw] : [])),
 }));
 jest.mock("path", () => ({
@@ -93,8 +95,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "findFile",
-      "file-upload",
-      "/api/uploads/*",
+      "api/uploads/",
+      "*",
       expect.any(Object),
       "file-upload",
       expect.any(Object)
@@ -102,8 +104,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "uploadFile",
-      "file-upload",
-      "/api/uploads/:fileType",
+      "api/uploads/",
+      ":fileType",
       expect.any(Object),
       "file-upload",
       expect.any(Object)
@@ -111,8 +113,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "updateFile",
-      "file-upload",
-      "/api/uploads/:fileType/:fileName",
+      "api/uploads/",
+      ":fileType/:fileName",
       expect.any(Object),
       "file-upload",
       expect.any(Object)
@@ -120,8 +122,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "deleteFile",
-      "file-upload",
-      "/api/uploads/:fileType/:fileName",
+      "api/uploads/",
+      ":fileType/:fileName",
       expect.any(Object),
       "file-upload",
       expect.any(Object)
@@ -369,10 +371,10 @@ describe("File Upload Router", () => {
     });
 
     const testCases = [
-      { baseRoute: "api/files", expected: "/api/files/*" },
-      { baseRoute: "/api/files", expected: "/api/files/*" },
-      { baseRoute: "api/files/", expected: "/api/files/*" },
-      { baseRoute: "/api/files/", expected: "/api/files/*" },
+      { baseRoute: "api/files", prefix: "api/files/" },
+      { baseRoute: "/api/files", prefix: "api/files/" },
+      { baseRoute: "api/files/", prefix: "api/files/" },
+      { baseRoute: "/api/files/", prefix: "api/files/" },
     ];
 
     for (const testCase of testCases) {
@@ -392,8 +394,8 @@ describe("File Upload Router", () => {
       expect(createRouteConfig).toHaveBeenCalledWith(
         config,
         "findFile",
-        "file-upload",
-        testCase.expected,
+        testCase.prefix,
+        "*",
         expect.any(Object),
         "file-upload",
         expect.any(Object)
@@ -402,8 +404,8 @@ describe("File Upload Router", () => {
       expect(createRouteConfig).toHaveBeenCalledWith(
         config,
         "uploadFile",
-        "file-upload",
-        `${testCase.expected}:fileType`.replace("*", ""),
+        testCase.prefix,
+        ":fileType",
         expect.any(Object),
         "file-upload",
         expect.any(Object)
@@ -412,8 +414,8 @@ describe("File Upload Router", () => {
       expect(createRouteConfig).toHaveBeenCalledWith(
         config,
         "updateFile",
-        "file-upload",
-        `${testCase.expected}:fileType/:fileName`.replace("*", ""),
+        testCase.prefix,
+        ":fileType/:fileName",
         expect.any(Object),
         "file-upload",
         expect.any(Object)
@@ -422,8 +424,8 @@ describe("File Upload Router", () => {
       expect(createRouteConfig).toHaveBeenCalledWith(
         config,
         "deleteFile",
-        "file-upload",
-        `${testCase.expected}:fileType/:fileName`.replace("*", ""),
+        testCase.prefix,
+        ":fileType/:fileName",
         expect.any(Object),
         "file-upload",
         expect.any(Object)
@@ -451,8 +453,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       configWithoutBaseRoute,
       "findFile",
-      "file-upload",
-      "/api/uploads/*",
+      "api/uploads/",
+      "*",
       expect.any(Object),
       "file-upload",
       expect.any(Object)
@@ -498,8 +500,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "findFile",
-      "file-upload",
-      "/api/uploads/*",
+      "api/uploads/",
+      "*",
       expect.any(Object),
       "file-upload",
       customAuthConfigs
@@ -507,8 +509,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "uploadFile",
-      "file-upload",
-      "/api/uploads/:fileType",
+      "api/uploads/",
+      ":fileType",
       expect.any(Object),
       "file-upload",
       customAuthConfigs
@@ -516,8 +518,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "updateFile",
-      "file-upload",
-      "/api/uploads/:fileType/:fileName",
+      "api/uploads/",
+      ":fileType/:fileName",
       expect.any(Object),
       "file-upload",
       customAuthConfigs
@@ -525,8 +527,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "deleteFile",
-      "file-upload",
-      "/api/uploads/:fileType/:fileName",
+      "api/uploads/",
+      ":fileType/:fileName",
       expect.any(Object),
       "file-upload",
       customAuthConfigs
@@ -544,8 +546,8 @@ describe("File Upload Router", () => {
     expect(createRouteConfig).toHaveBeenCalledWith(
       mockArkosConfig,
       "findFile",
-      "file-upload",
-      "/api/uploads/*",
+      "api/uploads/",
+      "*",
       expect.any(Object),
       "file-upload",
       {}
