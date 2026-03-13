@@ -195,6 +195,7 @@ export const generateCommand = {
   routeHook: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "route-hook",
+      fileSuffix: "route-hook",
       allowedModules: knownModules,
     });
   },
@@ -202,6 +203,7 @@ export const generateCommand = {
   serviceHook: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "service-hook",
+      fileSuffix: "service-hook",
       allowedModules: kebabPrismaModels,
     });
   },
