@@ -66,11 +66,13 @@ export function arkos(): Arkos {
   type AppState = "idle" | "building" | "built" | "listening";
   let state: AppState = "idle";
 
-  app.load = (...items: ArkosLoadable[]) => {
+  app.load = (items: ArkosLoadable | ArkosLoadable[]) => {
     if (state !== "idle")
       throw ExitError(
         `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`
       );
+
+    items = Array.isArray(items) ? items : [items];
 
     items.forEach((item) => loadableRegistry.register(item));
     return app;

@@ -1,5 +1,5 @@
 import { ArkosConfig } from "../exports";
-import { PrismaClient } from "../generated";
+// import { PrismaClient } from "../generated";
 import ExitError from "./helpers/exit-error";
 
 /**
@@ -21,20 +21,20 @@ import ExitError from "./helpers/exit-error";
  * @see {@link https://www.arkosjs.com/docs/api-reference/define-config}
  */
 export function defineConfig(config: ArkosConfig): ArkosConfig {
-  if (!config.prisma?.instance && typeof jest === "undefined") {
-    throw ExitError(
-      "ArkosConfigError: prisma.instance is required. Pass your PrismaClient instance via defineConfig({ prisma: { instance: new PrismaClient() } })."
-    );
-  }
+  // if (!config.prisma?.instance && typeof jest === "undefined") {
+  //   throw ExitError(
+  //     "ArkosConfigError: prisma.instance is required. Pass your PrismaClient instance via defineConfig({ prisma: { instance: new PrismaClient() } })."
+  //   );
+  // }
 
-  if (
-    !(config.prisma?.instance instanceof PrismaClient) &&
-    typeof jest === "undefined"
-  ) {
-    throw ExitError(
-      "ArkosConfigError: prisma.instance must be a valid PrismaClient instance."
-    );
-  }
+  // if (
+  //   !(config.prisma?.instance instanceof PrismaClient) &&
+  //   typeof jest === "undefined"
+  // ) {
+  //   throw ExitError(
+  //     "ArkosConfigError: prisma.instance must be a valid PrismaClient instance."
+  //   );
+  // }
 
   const finalConfig = {
     welcomeMessage:
