@@ -1,10 +1,10 @@
-import { ArkosRouter{{#if typescript}}, RouterConfig{{/if}} } from "arkos";
+import { ArkosRouter } from "arkos";
 {{#if authentication}}
 import authPermissionPolicy from "@/src/modules/auth-permission/auth-permission.policy";
 {{/if}}
 
 const authPermissionRouter = ArkosRouter({ 
-    path: "/auth-permissions",
+    prefix: "/auth-permissions",
     openapi: { tags: ["Auth Permissions"] } 
   });
 

@@ -22,11 +22,6 @@ const arkosConfig = defineConfig({
   },
   {{/if}}
   swagger: {
-    {{#if validation.type}}
-    mode: '{{validation.type}}',
-    {{else}}
-    mode: 'prisma',
-    {{/if}}
     strict: false,
   },
   middlewares: {

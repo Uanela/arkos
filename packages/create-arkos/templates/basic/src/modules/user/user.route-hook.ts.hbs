@@ -6,9 +6,6 @@ import userPolicy from '@/src/modules/user/user.policy';
 import CreateUserDto from '@/src/modules/user/dtos/create-user.dto';
 import UpdateUserDto from '@/src/modules/user/dtos/update-user.dto';
 {{/if}}
-{{#if typescript}}
-import { Prisma } from "@prisma/client";
-{{/if}}
 
 const userRouteHook = ArkosRouteHook("user");
 
