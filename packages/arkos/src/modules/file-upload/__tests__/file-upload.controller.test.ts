@@ -286,7 +286,7 @@ describe("FileUploadController", () => {
       await fileUploadController.uploadFile(mockReq, mockRes, mockNext);
 
       expect(fs.promises.mkdir).toHaveBeenCalledWith(
-        path.resolve(process.cwd(), "/uploads", "files"),
+        path.resolve(path.join(process.cwd(), "/uploads", "files")),
         { recursive: true }
       );
     });
