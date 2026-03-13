@@ -31,7 +31,11 @@
   });
   child.stderr.on("data", (data) => {
     const str = data.toString();
-    if (!str.includes("DeprecationWarning") && !str.includes("npm warn"))
+    if (
+      !str.includes("DeprecationWarning") &&
+      !str.includes("npm warn") &&
+      !str.includes("ExperimentalWarning")
+    )
       process.stderr.write(data);
   });
   child.on("exit", (code) => process.exit(code ?? 0));
