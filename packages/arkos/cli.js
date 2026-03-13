@@ -13,7 +13,7 @@
   }
 
   const tsSrc = join(process.cwd(), "tsconfig.json");
-  const jsSrc = join(
+  const entryPoint = join(
     __dirname,
     `dist/${useEsm ? "esm" : "cjs"}/utils/cli/index.js`
   );
@@ -21,7 +21,7 @@
 
   const args = [
     ...(useTs ? ["--experimental-strip-types"] : []),
-    useTs ? tsSrc : jsSrc,
+    entryPoint,
     ...process.argv.slice(2),
   ];
 
