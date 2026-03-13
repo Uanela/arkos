@@ -66,7 +66,7 @@ export function arkos(): Arkos {
   type AppState = "idle" | "building" | "built" | "listening";
   let state: AppState = "idle";
 
-  app.load = (items: ArkosLoadable | ArkosLoadable[]) => {
+  app.load = (...items: ArkosLoadable[]) => {
     if (state !== "idle")
       throw ExitError(
         `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`

@@ -24,12 +24,11 @@ export const defaultExcludedUserFields = {
  * Authentication controller class handling all auth-related operations
  */
 export class AuthController {
-  private userService!: BaseService<"user">;
+  private userService?: BaseService<"user">;
 
-  constructor() {
-    try {
-      this.userService = new BaseService("user");
-    } catch {}
+  private getUserService() {
+    if (!this.userService) this.userService = new BaseService("user");
+    return this.userService;
   }
 
   /**
@@ -37,7 +36,7 @@ export class AuthController {
    */
   getMe = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const user = (await this.userService.findOne(
+      const user = (await this.getUserService().findOne(
         { id: req.user!.id },
         req.prismaQueryOptions || {}
       )) as Record<string, any>;
@@ -72,7 +71,7 @@ export class AuthController {
           "InvalidFieldPassword"
         );
 
-      const user = (await this.userService.updateOne(
+      const user = (await this.getUserService().updateOne(
         { id: req.user!.id },
         req.body,
         req.prismaQueryOptions || {}
@@ -156,7 +155,7 @@ export class AuthController {
         whereClause = { [usernameField]: usernameValue };
       }
 
-      const user = (await this.userService.findOne(
+      const user = (await this.getUserService().findOne(
         whereClause,
         req.prismaQueryOptions || {}
       )) as Record<string, any>;
@@ -225,7 +224,7 @@ export class AuthController {
    */
   signup = catchAsync(
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-      const user = (await this.userService.createOne(
+      const user = (await this.getUserService().createOne(
         req.body,
         req.prismaQueryOptions || {}
       )) as Record<string, any>;
@@ -255,7 +254,7 @@ export class AuthController {
     async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
       const userId = req.user!.id;
 
-      const updatedUser = (await this.userService.updateOne(
+      const updatedUser = (await this.getUserService().updateOne(
         { id: userId },
         { deletedSelfAccountAt: new Date().toISOString() },
         req.prismaQueryOptions || {}
@@ -331,7 +330,7 @@ export class AuthController {
         );
       }
 
-      await this.userService.updateOne(
+      await this.getUserService().updateOne(
         { id: user.id },
         {
           password: await authService.hashPassword(newPassword),

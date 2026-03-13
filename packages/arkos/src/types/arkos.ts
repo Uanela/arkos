@@ -56,6 +56,12 @@ export interface Arkos extends Omit<Express, "listen"> {
    * Unlike use(), load() has no order — it simply makes the loaded
    * data available for Arkos to apply where needed.
    */
+  load(...items: ArkosLoadable[]): this;
+  /**
+   * Loads Arkos-specific instances into the app for internal usage.
+   * Unlike use(), load() has no order — it simply makes the loaded
+   * data available for Arkos to apply where needed.
+   */
   load(items: ArkosLoadable[] | ArkosLoadable): this;
 
   /**
