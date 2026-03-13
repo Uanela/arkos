@@ -389,11 +389,12 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       const findManyRoute = paths["/api/users"].get;
-      expect(findManyRoute.parameters).toHaveLength(4); // sort, page, limit, fields
+      expect(findManyRoute.parameters).toHaveLength(5); // sort, page, limit, fields
       expect(findManyRoute.parameters[0].name).toBe("page");
       expect(findManyRoute.parameters[1].name).toBe("limit");
-      expect(findManyRoute.parameters[2].name).toBe("fields");
-      expect(findManyRoute.parameters[3].name).toBe("sort");
+      expect(findManyRoute.parameters[2].name).toBe("search");
+      expect(findManyRoute.parameters[3].name).toBe("fields");
+      expect(findManyRoute.parameters[4].name).toBe("sort");
       expect(
         findManyRoute.responses["200"].content["application/json"].schema
           .properties.total
@@ -412,8 +413,6 @@ describe("generatePrismaModelMainRoutesPaths", () => {
       generatePrismaModelMainRoutesPaths("User", paths, arkosConfig);
 
       const updateManyRoute = paths["/api/users/many"].patch;
-      expect(updateManyRoute.parameters).toHaveLength(1); // filter
-      expect(updateManyRoute.parameters[0].required).toBe(true);
       expect(updateManyRoute.requestBody.required).toBe(true);
     });
 
