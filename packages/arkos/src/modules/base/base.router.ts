@@ -45,6 +45,7 @@ export function getPrismaModelsRouter() {
 
       router.post(
         {
+          authentication: { action: "Create", resource: modelNameInKebab },
           ...routeConfig,
           path: `/${routeName}`,
         },
@@ -68,6 +69,7 @@ export function getPrismaModelsRouter() {
         op("findMany");
       router.get(
         {
+          authentication: { action: "View", resource: modelNameInKebab },
           ...routeConfig,
           path: `/${routeName}`,
         },
@@ -91,6 +93,7 @@ export function getPrismaModelsRouter() {
         op("createMany");
       router.post(
         {
+          authentication: { action: "Create", resource: modelNameInKebab },
           ...routeConfig,
           path: `/${routeName}/many`,
         },
@@ -114,6 +117,7 @@ export function getPrismaModelsRouter() {
         op("updateMany");
       router.patch(
         {
+          authentication: { action: "Update", resource: modelNameInKebab },
           ...routeConfig,
           path: `/${routeName}/many`,
         },
@@ -137,6 +141,7 @@ export function getPrismaModelsRouter() {
         op("deleteMany");
       router.delete(
         {
+          authentication: { action: "Delete", resource: modelNameInKebab },
           ...routeConfig,
           path: `/${routeName}/many`,
         },
@@ -159,6 +164,7 @@ export function getPrismaModelsRouter() {
       const { before, after, onError, prismaArgs, routeConfig } = op("findOne");
       router.get(
         {
+          authentication: { action: "View", resource: modelNameInKebab },
           ...routeConfig,
           path: `/${routeName}/:id`,
         },
@@ -180,6 +186,7 @@ export function getPrismaModelsRouter() {
     const { before, after, onError, prismaArgs, routeConfig } = op("updateOne");
     router.patch(
       {
+        authentication: { action: "Update", resource: modelNameInKebab },
         ...routeConfig,
         path: `/${routeName}/:id`,
       },
@@ -202,6 +209,7 @@ export function getPrismaModelsRouter() {
         op("deleteOne");
       router.delete(
         {
+          authentication: { action: "Delete", resource: modelNameInKebab },
           ...routeConfig,
           path: `/${routeName}/:id`,
         },

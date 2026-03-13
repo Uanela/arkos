@@ -169,42 +169,6 @@ export type PrismaModelDelegate = {
   count: (args: { where: never; [key: string]: never }) => Promise<number>;
 };
 
-export interface UserRole {
-  id: string;
-  createdAt: Date;
-  deletedAt?: Date;
-  roleId: string;
-  role: AuthRole;
-  user: User;
-  userId: string;
-}
-
-export interface AuthRole {
-  id: string;
-  createdAt: Date;
-  deletedAt?: Date;
-  name: string;
-  permissions: AuthPermission[];
-  userRoles: UserRole[];
-}
-
-export enum AuthPermissionAction {
-  Create = "Create",
-  View = "View",
-  Update = "Update",
-  Delete = "Delete",
-}
-
-export interface AuthPermission {
-  id: string;
-  createdAt: Date;
-  deletedAt?: Date;
-  resource: string;
-  action: AuthPermissionAction;
-  roleId: string;
-  role: AuthRole;
-}
-
 export interface BaseUser extends Record<string, any> {
   id: string;
   isSuperUser: boolean;
@@ -222,6 +186,12 @@ type UserModelPayload =
     : never;
 
 export type User = UserModelPayload extends never ? BaseUser : UserModelPayload;
+
+export type UserRole = User extends { roles: infer R extends any[] }
+  ? R[number]
+  : User extends { role: infer R }
+    ? R
+    : string;
 
 export interface ArkosRequest<
   P extends Record<string, any> = any,

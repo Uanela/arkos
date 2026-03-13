@@ -10,7 +10,7 @@ import { getArkosConfig } from "../../server";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 import { MulterError } from "multer";
-import { pascalCase, kebabCase } from "../../exports/utils";
+import { pascalCase } from "../../exports/utils";
 import loadableRegistry from "../../components/arkos-loadable-registry";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
 

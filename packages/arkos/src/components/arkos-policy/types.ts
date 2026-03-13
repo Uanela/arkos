@@ -1,7 +1,7 @@
-import { User } from "../../types";
+import { User, UserRole } from "../../types";
 import { DetailedAccessControlRule } from "../../types/auth";
 
-export type ArkosPolicyRule = string[] | DetailedAccessControlRule | "*";
+export type ArkosPolicyRule = UserRole[] | DetailedAccessControlRule | "*";
 
 export type PolicyAuthEntry<
   TResource extends string,
