@@ -1,15 +1,5 @@
 {{#if typescript}}
 import { ArkosLoadable } from "arkos";
-
-{{else}}
-/** @type import("arkos").ArkosLoadable */
-{{/if}}
-const loadables{{#if typescript}}: ArkosLoadable[]{{/if}} = []
-
-export default loadables
-
-{{#if typescript}}
-import { ArkosLoadable } from "arkos";
 {{/if}}
 import fileUploadRouteHook from "@/src/modules/file-upload/file-upload.route-hook";
 {{#if authentication.type}}

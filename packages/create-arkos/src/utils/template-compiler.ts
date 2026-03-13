@@ -40,24 +40,28 @@ class TemplateCompiler {
       "query-auth-role.dto.ts.hbs",
     ];
 
-    const authModuleComponents = ["auth-route-hook.ts.hbs"];
+    const authModuleComponents = [
+      "auth.route-hook.ts.hbs",
+      "auth.policy.ts.hbs",
+      "auth.router.ts.hbs",
+    ];
 
     const authPermissionModuleComponents = [
       "auth-permission.router.ts.hbs",
       "auth-permission.policy.ts.hbs",
-      "auth-permission-route-hook.ts.hbs",
+      "auth-permission.route-hook.ts.hbs",
       "auth-permission.service.ts.hbs",
     ];
 
     const authRoleModuleComponents = [
       "auth-role.router.ts.hbs",
       "auth-role.policy.ts.hbs",
-      "auth-role-route-hook.ts.hbs",
+      "auth-role.route-hook.ts.hbs",
       "auth-role.service.ts.hbs",
     ];
 
     const userModuleComponents = [
-      "user-route-hook.ts.hbs",
+      "user.route-hook.ts.hbs",
       "user.service.ts.hbs",
       "user.router.ts.hbs",
       "user.policy.ts.hbs",

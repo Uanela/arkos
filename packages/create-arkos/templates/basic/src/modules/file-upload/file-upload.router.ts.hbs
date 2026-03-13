@@ -5,7 +5,7 @@ import fileUploadPolicy from "@/src/modules/file-upload/file-upload.policy";
 import config from "@/arkos.config"
 
 const fileUploadRouter = ArkosRouter({ 
-    prefix: config.fileUpload.baseRoute,
+    prefix: config?.fileUpload?.baseRoute,
     openapi: { tags: ["File Uploads"] } 
   });
 
