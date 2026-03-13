@@ -166,6 +166,20 @@ npx arkos export auth-action --overwrite
     }
 
     const fileContent = `const authActions = ${JSON.stringify(finalAuthActions, null, 2)}${ext === "ts" ? " as const" : ""};
+${
+  ext === "ts"
+    ? `
+type AuthActionsArray = typeof authActions;
+
+export type AuthResource = AuthActionsArray[number]["resource"];
+
+export type AuthAction<R extends AuthResource = AuthResource> = Extract<
+  AuthActionsArray[number],
+  { resource: R }
+>["action"];
+`
+    : ""
+}
 
 export default authActions;
 `;
