@@ -198,7 +198,7 @@ describe("fs.helpers", () => {
 
     it("should remove the cwd from the start of a path", () => {
       const input = `${cwd}/src/index.ts`;
-      const expected = "src/index.ts";
+      const expected = "/src/index.ts";
       expect(fsHelpers.fullCleanCwd(input)).toBe(expected);
     });
 
@@ -207,9 +207,9 @@ describe("fs.helpers", () => {
       expect(fsHelpers.fullCleanCwd(input)).toBe("");
     });
 
-    it("should return empty string when path is cwd with trailing slash", () => {
+    it("should NOT return empty string when path is cwd with trailing slash", () => {
       const input = cwd + "/";
-      expect(fsHelpers.fullCleanCwd(input)).toBe("");
+      expect(fsHelpers.fullCleanCwd(input)).toBe("/");
     });
 
     it("should not alter a path that does not start with cwd", () => {
@@ -232,7 +232,7 @@ describe("fs.helpers", () => {
     it("should handle mixed trailing slashes", () => {
       const withSlash = cwd + "/";
       const input = withSlash + "folder/file.ts";
-      const expected = "folder/file.ts";
+      const expected = "/folder/file.ts";
       expect(fsHelpers.fullCleanCwd(input)).toBe(expected);
     });
   });

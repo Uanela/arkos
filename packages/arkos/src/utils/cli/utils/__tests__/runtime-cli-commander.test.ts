@@ -16,7 +16,8 @@ jest.mock("fs/promises");
 jest.mock("path");
 jest.mock("../../../sheu");
 jest.mock("../../../helpers/fs.helpers", () => ({
-  fullCleanCwd: jest.fn((val: any) => val),
+  ...jest.requireActual("../../../helpers/fs.helpers"),
+  // fullCleanCwd: jest.fn((val: any) => val),
   getUserFileExtension: jest.fn(),
 }));
 jest.mock("../../../helpers/global.helpers");
@@ -253,6 +254,15 @@ describe("RuntimeCliCommander", () => {
         null,
         2
       )} as const;
+
+type AuthActionsArray = typeof authActions;
+
+export type AuthResource = AuthActionsArray[number]["resource"];
+
+export type AuthAction<R extends AuthResource = AuthResource> = Extract<
+  AuthActionsArray[number],
+  { resource: R }
+>["action"];
 
 export default authActions;
 `;
@@ -774,9 +784,15 @@ export default authActions;
         await runtimeCliCommander.exportAuthAction();
 
         const writeCall = (fs.writeFile as jest.Mock).mock.calls[0][1];
-        expect(writeCall).toMatch(
-          /const authActions = \[[\s\S]*\] as const;\n\nexport default authActions;\n/
+        expect(writeCall).toContain("const authActions = [");
+        expect(writeCall).toContain("] as const;");
+        expect(writeCall).toContain(
+          "type AuthActionsArray = typeof authActions;"
         );
+        expect(writeCall).toContain(
+          'export type AuthResource = AuthActionsArray[number]["resource"];'
+        );
+        expect(writeCall).toContain("export default authActions;");
       });
     });
   });
