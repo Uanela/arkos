@@ -176,7 +176,7 @@ generate
   .description("Generate a new route hook")
   .action((options) => {
     const generateOptions = generate.opts();
-    generateCommand.policy({ ...generateOptions, ...options });
+    generateCommand.routeHook({ ...generateOptions, ...options });
   });
 
 generate
@@ -185,7 +185,7 @@ generate
   .description("Generate a new service hook")
   .action((options) => {
     const generateOptions = generate.opts();
-    generateCommand.policy({ ...generateOptions, ...options });
+    generateCommand.serviceHook({ ...generateOptions, ...options });
   });
 
 generate
