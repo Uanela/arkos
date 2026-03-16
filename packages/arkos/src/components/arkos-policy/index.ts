@@ -63,10 +63,9 @@ function buildPolicy<TResource extends string, TActions extends string>(
         rule: config,
       };
 
-      const checker: PolicyChecker = (user?: User): Promise<boolean> =>
-        authService.permission(action, resource, { [action]: config || {} })(
-          user
-        );
+      const checker: PolicyChecker = authService.permission(action, resource, {
+        [action]: config || {},
+      });
 
       const canKey = `can${action.charAt(0).toUpperCase()}${action.slice(1)}`;
 
