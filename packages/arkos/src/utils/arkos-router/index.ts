@@ -4,7 +4,7 @@ import {
   ArkosRouteConfig,
   ArkosAnyRequestHandler,
   PathParams,
-  ArkosIRoute,
+  IArkosRoute,
 } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
@@ -96,7 +96,7 @@ export default function ArkosRouter(
 
               receiver[method](fullConfig, ...handlers);
 
-              return routeChain as ArkosIRoute;
+              return routeChain as IArkosRoute;
             };
           });
 
