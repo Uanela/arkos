@@ -62,7 +62,7 @@ export function arkos(): Arkos {
   if (instanciated)
     throw ExitError(`arkos() must be called only once, see ${docsLink}`);
 
-  const app = applyArkosRouterProxy(express()) as any as Arkos;
+  const app = applyArkosRouterProxy(express(), {}, "app") as any as Arkos;
   setupApp(app);
   instanciated = true;
 
