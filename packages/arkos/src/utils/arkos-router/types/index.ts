@@ -9,6 +9,18 @@ import { OpenApiConfig } from "./openapi-config";
 import { UploadConfig } from "./upload-config";
 import { BodyParserConfig } from "./body-parser-config";
 
+export type ArkosUseConfig = Pick<
+  ArkosRouteConfig,
+  | "authentication"
+  | "rateLimit"
+  | "compression"
+  | "queryParser"
+  | "bodyParser"
+  | "disabled"
+> & {
+  path?: PathParams; // optional unlike ArkosRouteConfig where path is required
+};
+
 type InferValidationType<T, Fallback> = T extends ZodSchema
   ? z.infer<T>
   : T extends new (...args: any[]) => infer I
@@ -193,6 +205,18 @@ export type ArkosRouteMethodHandler<T> = {
   ): T;
 };
 
+/**
+ * Handler function for `use` that accepts route configuration and middleware handlers.
+ *
+ * @param {ArkosUseConfig | PathParams} config - The use configuration object or path.
+ * @param {...ArkosAnyRequestHandler} handlers - Middleware handlers.
+ * @returns {T} The router instance.
+ */
+export type UseMethodHandler<T> = {
+  (config: PathParams, ...handlers: Array<ArkosAnyRequestHandler>): T;
+  (config: ArkosUseConfig, ...handlers: Array<ArkosAnyRequestHandler>): T;
+};
+
 export interface IArkosRoute extends IRoute {
   /** GET method handler with route configuration support */
   get: ArkosRouteMethodHandler<this>;
@@ -257,6 +281,7 @@ export interface IArkosRouter extends IRouter {
   trace: RouterMethodHandler<this>;
   /** ALL methods handler with route configuration support */
   all: RouterMethodHandler<this>;
+  use: UseMethodHandler<this>;
 
   route<T extends string>(prefix: T): IArkosRoute;
   route(prefix: PathParams): IArkosRoute;

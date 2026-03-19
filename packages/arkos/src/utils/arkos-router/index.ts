@@ -5,6 +5,7 @@ import {
   ArkosAnyRequestHandler,
   PathParams,
   IArkosRoute,
+  ArkosUseConfig,
 } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import RouteConfigValidator from "./route-config-validator";
@@ -24,6 +25,7 @@ import uploadManager from "./utils/helpers/upload-manager";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 import deepmerge from "../helpers/deepmerge.helper";
+import ExitError from "../helpers/exit-error";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -72,6 +74,47 @@ export default function ArkosRouter(
         "trace",
         "options",
       ] as const;
+
+      if (prop === "use") {
+        return function (
+          config: ArkosUseConfig | PathParams | ArkosAnyRequestHandler,
+          ...handlers: ArkosAnyRequestHandler[]
+        ) {
+          // if not an ArkosUseConfig object, fall through to native Express use
+          if (
+            !config ||
+            typeof config !== "object" ||
+            Array.isArray(config) ||
+            typeof config === "function"
+          )
+            return originalMethod.call(target, config, ...handlers);
+
+          if ((config as ArkosUseConfig).disabled) return;
+
+          const useConfig = config as ArkosUseConfig;
+          const path = useConfig.path
+            ? applyPrefix(options?.prefix, useConfig.path)
+            : undefined;
+
+          const arkosConfig = getArkosConfig();
+          const authenticationConfig = arkosConfig.authentication;
+
+          if (useConfig.authentication && !authenticationConfig?.mode)
+            throw ExitError(
+              `Trying to authenticate route use${path ? ` ${path}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
+
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
+            );
+
+          const middlewareStack = getMiddlewareStack(useConfig);
+
+          const allHandlers = [...middlewareStack, ...handlers];
+
+          return path
+            ? originalMethod.call(target, path, ...allHandlers)
+            : originalMethod.call(target, ...allHandlers);
+        };
+      }
 
       if (prop === "route") {
         return function (path: PathParams) {
