@@ -672,6 +672,11 @@ export type ArkosConfig = {
      * */
     enableAfterBuild?: boolean;
     /**
+     * Whether to require superUser authentication to access docs in production.
+     * Default: true after build
+     */
+    requireAuth?: boolean;
+    /**
      * Endpoint where the Swagger UI will be available.
      *
      * @default "/api/api-docs"
@@ -683,6 +688,7 @@ export type ArkosConfig = {
      * - "prisma": Generates schemas based on Prisma models
      * - "class-validator": Uses class-validator and class-transformer DTO classes
      * - "zod": Uses OpenAPI-compliant schemas directly
+     *
      */
     mode: "prisma" | "class-validator" | "zod";
     /**
