@@ -1,10 +1,4 @@
-import {
-  ErrorRequestHandler,
-  NextFunction,
-  RequestHandler,
-  Response,
-  Request,
-} from "express";
+import { NextFunction, Response, Request } from "express";
 import { PrismaModels } from "../generated";
 
 export type PrismaOperations = "findMany";
@@ -200,6 +194,27 @@ export interface ArkosRequest<
   Query extends Record<string, any> = any,
 > extends Request<P, ResBody, ReqBody, Query> {
   /**
+   * Request signals used to control Arkos's built-in request handling pipeline.
+   *
+   * @since v1.6.0-beta
+   */
+  signals?: {
+    /**
+     * When set to `true` in a `before` hook, Arkos skips its built-in logic for the current pipeline step (e.g. CRUD, authentication, authorization).
+     * Automatically reset to `false` after the step completes.
+     *
+     * @example
+     * ```ts
+     * before: (req, res, next) => {
+     *   req.user = myCustomAuth(req);
+     *   req.signals.skip = true;
+     *   next();
+     * }
+     * ```
+     */
+    skip?: boolean;
+  };
+  /**
    * Authenticated user
    */
   user?: User;
@@ -209,6 +224,7 @@ export interface ArkosRequest<
   file?: Express.Multer.File;
   /**
    * Uploaded files, populated when using `multer.array()` or `multer.fields()`.
+   *
    */
   files?: Express.Multer.File[] | Record<string, Express.Multer.File[]>;
 
@@ -280,18 +296,27 @@ export interface ArkosResponse<
 
 export interface ArkosNextFunction extends NextFunction {}
 
-export interface ArkosRequestHandler<
+export type ArkosRequestHandler<
   P extends Record<string, any> = any,
   ResBody = any,
   ReqBody = any,
-  ReqQuery = qs.ParsedQs,
+  ReqQuery extends Record<string, any> = any,
   Locals extends Record<string, any> = Record<string, any>,
-> extends RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {}
+> = (
+  req: ArkosRequest<P, ResBody, ReqBody, ReqQuery>,
+  res: ArkosResponse<ResBody, Locals>,
+  next: ArkosNextFunction
+) => void | Promise<void>;
 
-export interface ArkosErrorRequestHandler<
+export type ArkosErrorRequestHandler<
   P extends Record<string, any> = any,
   ResBody = any,
   ReqBody = any,
-  ReqQuery = qs.ParsedQs,
+  ReqQuery extends Record<string, any> = any,
   Locals extends Record<string, any> = Record<string, any>,
-> extends ErrorRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {}
+> = (
+  err: any,
+  req: ArkosRequest<P, ResBody, ReqBody, ReqQuery>,
+  res: ArkosResponse<ResBody, Locals>,
+  next: ArkosNextFunction
+) => void | Promise<void>;

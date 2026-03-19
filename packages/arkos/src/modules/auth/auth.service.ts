@@ -31,6 +31,11 @@ import {
   isAuthenticationEnabled,
   isUsingAuthentication,
 } from "../../utils/helpers/arkos-config.helpers";
+import {
+  AuthAfterHookHandler,
+  AuthErrorHookHandler,
+  AuthHookHandler,
+} from "../../types/arkos-config/utils";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -40,6 +45,134 @@ export class AuthService {
    * Object containing a combination of actions per resource, tracked by each set of calls of `authService.handleAccessControl`, this can be accessed through the `authService` object or through the endpoint
    */
   actionsPerResource: Record<string, Set<string>> = {};
+
+  /**
+   * Runs a chain of `before` hooks in sequence.
+   *
+   * Each hook receives a `ctx` object with `req`, `next`, and `skip`.
+   *
+   * - If a hook calls `ctx.next(err)` — chain aborts and forwards to the global error handler.
+   * - If a hook calls `ctx.next()` — chain stops, no further hooks run, core logic is skipped.
+   * - If a hook calls `ctx.skip()` — chain stops, core logic is bypassed, jumps to `after` hooks.
+   * - If a hook returns without calling anything — next hook in chain runs.
+   *
+   * @returns Promise resolving to `{ stopped, skipped, error? }`
+   */
+  private async runHooks(
+    hooks: AuthHookHandler | AuthHookHandler[] | undefined,
+    req: ArkosRequest
+  ): Promise<{ stopped: boolean; skipped: boolean; error?: unknown }> {
+    if (!hooks) return { stopped: false, skipped: false };
+
+    const hookArray = Array.isArray(hooks) ? hooks : [hooks];
+
+    for (const hook of hookArray) {
+      let nextCalled = false;
+      let skipCalled = false;
+      let hookErr: unknown;
+
+      await hook({
+        req,
+        next: (err?: unknown) => {
+          nextCalled = true;
+          hookErr = err;
+        },
+        skip: () => {
+          skipCalled = true;
+        },
+      });
+
+      if (hookErr) return { stopped: true, skipped: false, error: hookErr };
+      if (skipCalled) return { stopped: true, skipped: true };
+      if (nextCalled) return { stopped: true, skipped: false };
+    }
+
+    return { stopped: false, skipped: false };
+  }
+
+  /**
+   * Runs a chain of `after` hooks in sequence.
+   *
+   * Each hook receives a `ctx` object with `req` and `next` only — no `skip` since
+   * there is nothing meaningful to skip to after the pipeline has completed.
+   *
+   * - If a hook calls `ctx.next(err)` — chain aborts and forwards to the global error handler.
+   * - If a hook calls `ctx.next()` — chain stops, no further hooks run.
+   * - If a hook returns without calling anything — next hook in chain runs.
+   *
+   * @returns Promise resolving to `{ stopped, error? }`
+   */
+  private async runAfterHooks(
+    hooks: AuthAfterHookHandler | AuthAfterHookHandler[] | undefined,
+    req: ArkosRequest
+  ): Promise<{ stopped: boolean; error?: unknown }> {
+    if (!hooks) return { stopped: false };
+
+    const hookArray = Array.isArray(hooks) ? hooks : [hooks];
+
+    for (const hook of hookArray) {
+      let nextCalled = false;
+      let hookErr: unknown;
+
+      await hook({
+        req,
+        next: (err?: unknown) => {
+          nextCalled = true;
+          hookErr = err;
+        },
+      });
+
+      if (hookErr) return { stopped: true, error: hookErr };
+      if (nextCalled) return { stopped: true };
+    }
+
+    return { stopped: false };
+  }
+
+  /**
+   * Runs a chain of `onError` hooks in sequence.
+   *
+   * Each hook receives a `ctx` object with `req`, `error`, `next`, and `skip`.
+   *
+   * - If a hook calls `ctx.next(err)` — chain aborts and forwards the error (original or replaced) to the global error handler.
+   * - If a hook calls `ctx.skip()` — suppresses the error and jumps to `after` hooks.
+   * - If a hook returns without calling anything — next hook in chain runs.
+   *
+   * @returns Promise resolving to `{ stopped, skipped, error? }`
+   */
+  private async runErrorHooks(
+    hooks: AuthErrorHookHandler | AuthErrorHookHandler[] | undefined,
+    error: unknown,
+    req: ArkosRequest
+  ): Promise<{ stopped: boolean; skipped: boolean; error?: unknown }> {
+    if (!hooks) return { stopped: false, skipped: false };
+
+    const hookArray = Array.isArray(hooks) ? hooks : [hooks];
+
+    for (const hook of hookArray) {
+      let nextCalled = false;
+      let skipCalled = false;
+      let hookErr: unknown;
+
+      await hook({
+        req,
+        error,
+        next: (err?: unknown) => {
+          nextCalled = true;
+          hookErr = err;
+        },
+        skip: () => {
+          skipCalled = true;
+        },
+      });
+
+      if (hookErr) return { stopped: true, skipped: false, error: hookErr };
+      if (skipCalled) return { stopped: true, skipped: true };
+      if (nextCalled) return { stopped: true, skipped: false };
+    }
+
+    return { stopped: false, skipped: false };
+  }
 
   /**
    * Signs a JWT token for the user.
@@ -372,6 +505,8 @@ export class AuthService {
    * @param {string} resource - The resource name that the action is being performed on (e.g., "User", "Post").
    * @param {AccessControlConfig} accessControl - The access control configuration.
    * @returns {ArkosRequestHandler} The middleware function that checks if the user has permission to perform the action.
+   *
+   * @deprecated Will be removed on v2.0, use AuthService.authorize instead
    */
   handleAccessControl(
     action: AccessAction,
@@ -491,23 +626,169 @@ export class AuthService {
   }
 
   /**
-   * Middleware function to authenticate the user based on the JWT token.
+   * Middleware to authenticate the request by extracting and verifying the JWT token and setting `req.user`.
    *
-   * @param {ArkosRequest} req - The request object.
-   * @param {ArkosResponse} res - The response object.
-   * @param {ArkosNextFunction} next - The next middleware function to be called.
-   * @returns {void}
+   * Runs `authentication.hooks.authenticate` before/after the authentication logic.
+   *
+   * Hook execution flow:
+   * - `before` hooks run first — call `ctx.skip()` to bypass core logic and jump to `after` hooks,
+   *   call `ctx.next()` to stop the chain early, or return without calling anything to continue.
+   * - Core logic runs — extracts and verifies the JWT token, sets `req.user`.
+   * - `after` hooks run — call `ctx.next(err)` to abort or return without calling anything to continue.
+   * - `onError` hooks run if core logic throws — call `ctx.skip()` to suppress the error and jump to
+   *   `after` hooks, or call `ctx.next(err)` to forward it to the global error handler.
+   *
+   * On custom routes, hooks defined in `arkosConfig` still apply since they are baked into this method.
+   *
+   * @example
+   * ```ts
+   * // custom route - hooks still run
+   * router.get("/custom", authService.authenticate, handler);
+   * ```
+   *
+   * @example
+   * ```ts
+   * // skip built-in auth from a before hook
+   * before: (ctx) => {
+   *   ctx.req.user = myCustomAuth(ctx.req);
+   *   ctx.skip();
+   * }
+   * ```
+   *
+   * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks}
    */
   authenticate = catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      if (isAuthenticationEnabled()) {
-        const user = (await this.getAuthenticatedUser(req)) as User;
-        if (!user) throw loginRequiredError;
-        req.user = user;
+      const hooks = getArkosConfig()?.authentication?.hooks?.authenticate;
+
+      const before = await this.runHooks(hooks?.before, req);
+      if (before.stopped && !before.skipped)
+        return before.error ? next(before.error) : next();
+
+      if (!before.skipped) {
+        try {
+          if (isAuthenticationEnabled()) {
+            const user = (await this.getAuthenticatedUser(req)) as User;
+            if (!user) throw loginRequiredError;
+            req.user = user;
+          }
+        } catch (err) {
+          const onError = await this.runErrorHooks(hooks?.onError, err, req);
+          if (onError.skipped) {
+            const after = await this.runAfterHooks(hooks?.after, req);
+            return after.error ? next(after.error) : next();
+          }
+          return next(onError.error ?? err);
+        }
       }
+
+      const after = await this.runAfterHooks(hooks?.after, req);
+      if (after.stopped) return after.error ? next(after.error) : next();
+
       next();
     }
   );
+
+  /**
+   * Middleware to authorize the authenticated user for a given action on a resource.
+   *
+   * Runs `authentication.hooks.authorize` before/after the authorization logic.
+   *
+   * Hook execution flow:
+   * - `before` hooks run first — call `ctx.skip()` to bypass core logic and jump to `after` hooks,
+   *   call `ctx.next()` to stop the chain early, or return without calling anything to continue.
+   * - Core logic runs — checks user role/permissions against the access control rules.
+   * - `after` hooks run — call `ctx.next(err)` to abort or return without calling anything to continue.
+   * - `onError` hooks run if authorization fails — call `ctx.skip()` to suppress the error and jump to
+   *   `after` hooks, or call `ctx.next(err)` to forward it to the global error handler.
+   *
+   * @param resource - The resource being accessed, in kebabCase (e.g. `"product"`, `"cart-item"`)
+   * @param action - The action being performed (e.g. `"View"`, `"Create"`, `"Delete"`)
+   * @param rule - Access control rules for this action. Accepts a role list, a wildcard, or a `DetailedAccessControlRule`.
+   *
+   * @example
+   * ```ts
+   * router.delete("/products/:id",
+   *   authService.authenticate,
+   *   authService.authorize("product", "Delete", ["admin"]),
+   *   handler
+   * );
+   * ```
+   *
+   * @example
+   * ```ts
+   * // skip built-in authorization from a before hook
+   * before: (ctx) => {
+   *   ctx.req.user.role = myCustomRoleResolver(ctx.req);
+   *   ctx.skip();
+   * }
+   * ```
+   *
+   * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#authorize}
+   * @since v1.6.0-beta
+   */
+  authorize(
+    resource: string,
+    action: AccessAction,
+    rule?: string[] | DetailedAccessControlRule | "*"
+  ): ArkosRequestHandler {
+    authActionService.add(action, resource, { [action]: rule });
+
+    return catchAsync(
+      async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+        const hooks = getArkosConfig()?.authentication?.hooks?.authorize;
+
+        const before = await this.runHooks(hooks?.before, req);
+        if (before.stopped && !before.skipped)
+          return before.error ? next(before.error) : next();
+
+        if (!before.skipped) {
+          try {
+            if (req.user) {
+              const user = req.user as User;
+              const configs = getArkosConfig();
+
+              if (!user.isSuperUser) {
+                const notEnoughPermissionsError = new AppError(
+                  "You do not have permission to perform this action",
+                  403,
+                  "NotEnoughPermissions"
+                );
+
+                if (configs?.authentication?.mode === "dynamic") {
+                  const hasPermission = await this.checkDynamicAccessControl(
+                    user.id,
+                    action,
+                    resource
+                  );
+                  if (!hasPermission) throw notEnoughPermissionsError;
+                } else if (configs?.authentication?.mode === "static") {
+                  const hasPermission = this.checkStaticAccessControl(
+                    user,
+                    action,
+                    { [action]: rule }
+                  );
+                  if (!hasPermission) throw notEnoughPermissionsError;
+                }
+              }
+            }
+          } catch (err) {
+            const onError = await this.runErrorHooks(hooks?.onError, err, req);
+            if (onError.skipped) {
+              const after = await this.runAfterHooks(hooks?.after, req);
+              return after.error ? next(after.error) : next();
+            }
+            return next(onError.error ?? err);
+          }
+        }
+
+        const after = await this.runAfterHooks(hooks?.after, req);
+        if (after.stopped) return after.error ? next(after.error) : next();
+
+        next();
+      }
+    );
+  }
 
   /**
    * Handles authentication control by checking the `authenticationControl` configuration in the `authConfigs`.
@@ -515,6 +796,8 @@ export class AuthService {
    * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
    * @param {AuthenticationControlConfig} authenticationControl - The authentication configuration object.
    * @returns {ArkosRequestHandler} The middleware function that checks if authentication is required.
+   *
+   * @deprecated Will be removed on v2.0, use AuthService.authenticate instead
    */
   handleAuthenticationControl(
     action: AccessAction,

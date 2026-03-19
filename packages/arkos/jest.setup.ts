@@ -47,3 +47,9 @@ jest.mock("./src/modules/base/base.service", () => ({
   __esModule: true,
   BaseService: jest.fn(),
 }));
+
+jest.mock("./src/utils/arkos-router", () => ({
+  __esModule: true,
+  ...jest.requireActual("./src/utils/arkos-router"),
+  default: jest.fn(),
+}));
