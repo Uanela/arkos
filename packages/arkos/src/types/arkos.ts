@@ -6,6 +6,20 @@ import {
   ArkosRouteHookInstance,
 } from "../components/arkos-route-hook/types";
 import { ArkosServiceHookInstance } from "../components/arkos-service-hook/types";
+import { IArkosRouter } from "../exports";
+
+type ArkosRouterMethods =
+  | "get"
+  | "post"
+  | "put"
+  | "patch"
+  | "delete"
+  | "options"
+  | "head"
+  | "all"
+  | "use"
+  | "trace"
+  | "route";
 
 /**
  * Creates and configures an Arkos application instance.
@@ -48,7 +62,9 @@ import { ArkosServiceHookInstance } from "../components/arkos-service-hook/types
  *
  * @see {@link https://www.arkosjs.com/docs/core-concepts/routing/setup}
  */
-export interface Arkos extends Omit<Express, "listen"> {
+export interface Arkos
+  extends Omit<Express, "listen" | ArkosRouterMethods>,
+    Pick<IArkosRouter, ArkosRouterMethods> {
   (req: IncomingMessage, res: ServerResponse): void;
 
   /**

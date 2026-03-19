@@ -11,6 +11,11 @@ import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" w
 import nodemailer from "nodemailer";
 import { ArkosRequestHandler } from ".";
 import { PrismaClient } from "../generated";
+import {
+  AuthAfterHookHandler,
+  AuthErrorHookHandler,
+  AuthHookHandler,
+} from "./arkos-config/utils";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
@@ -70,6 +75,104 @@ export type ArkosConfig = {
    * See [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for details.
    */
   authentication?: {
+    /**
+     * Lifecycle hooks for the built-in authentication and authorization pipeline.
+     *
+     * These hooks only apply to **auto-generated Arkos routes**. On custom routes using
+     * `authService.authenticate` directly, chain them manually as standard middlewares.
+     *
+     * Hooks run as standard Express middlewares — call `next()` to continue or
+     * `next(error)` to abort and forward to the global error handler.
+     *
+     * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks}
+     */
+    hooks?: {
+      authenticate?: {
+        /**
+         * Runs before JWT extraction and verification.
+         *
+         * @example
+         * ```ts
+         * before: (ctx) => {
+         *   ctx.req.authContext = { startedAt: Date.now() };
+         *   ctx.next();
+         * }
+         * ```
+         */
+        before?: AuthHookHandler | AuthHookHandler[];
+
+        /**
+         * Runs after `req.user` has been set.
+         *
+         * @example
+         * ```ts
+         * after: (ctx) => {
+         *   if (!ctx.req.user.hasChangedPassword) {
+         *     ctx.next(new AppError("Password change required.", 403, "PasswordChangeRequired"));
+         *   }
+         *   ctx.next();
+         * }
+         * ```
+         */
+        after?: AuthAfterHookHandler | AuthAfterHookHandler[];
+
+        /**
+         * Runs when `authService.authenticate` throws — invalid token, expired token, user not found, etc.
+         *
+         * @example
+         * ```ts
+         * onError: (ctx) => {
+         *   console.warn(`Auth failed:`, ctx.error);
+         *   ctx.next(ctx.error);
+         * }
+         * ```
+         */
+        onError?: AuthErrorHookHandler | AuthErrorHookHandler[];
+      };
+
+      authorize?: {
+        /**
+         * Runs before the role/permission check.
+         *
+         * @example
+         * ```ts
+         * before: (ctx) => {
+         *   if (ctx.req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
+         *     ctx.req.user.role = "admin";
+         *   }
+         *   ctx.next();
+         * }
+         * ```
+         */
+        before?: AuthHookHandler | AuthHookHandler[];
+
+        /**
+         * Runs after the permission check passes.
+         *
+         * @example
+         * ```ts
+         * after: (ctx) => {
+         *   auditLog.record({ userId: ctx.req.user.id, path: ctx.req.path });
+         *   ctx.next();
+         * }
+         * ```
+         */
+        after?: AuthAfterHookHandler | AuthAfterHookHandler[];
+
+        /**
+         * Runs when the user lacks sufficient permissions (403).
+         *
+         * @example
+         * ```ts
+         * onError: (ctx) => {
+         *   auditLog.record({ userId: ctx.req.user?.id, reason: "insufficient_permissions" });
+         *   ctx.next(ctx.error);
+         * }
+         * ```
+         */
+        onError?: AuthErrorHookHandler | AuthErrorHookHandler[];
+      };
+    };
     enabled?: boolean;
     /**
      * Defines whether to use Static or Dynamic Role-Based Acess Control
@@ -122,6 +225,7 @@ export type ArkosConfig = {
      * **Default**: ```/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/``` - Ensures the password contains at least one uppercase letter, one lowercase letter, and one numeric digit.
      *
      * **message**: (Optional) A custom error message to display when the password does not meet the required strength criteria.
+     * @deprecated will stop working on v2.0
      */
     passwordValidation?: { regex: RegExp; message?: string };
     /**
@@ -226,6 +330,8 @@ export type ArkosConfig = {
      * })
      *
      * ```
+     *
+     * @since 1.4.0-beta
      */
     strict?: boolean;
   } & (
@@ -246,6 +352,9 @@ export type ArkosConfig = {
       }
     | {
         resolver: "zod";
+        /**
+         * @since v1.5.0-beta
+         */
         validationOptions?: {
           /**
            * Throws an error for know whitelisted fields
@@ -563,12 +672,29 @@ export type ArkosConfig = {
      * */
     enableAfterBuild?: boolean;
     /**
+     * Whether to require superUser authentication to access docs in production.
+     * Default: true after build
+     */
+    requireAuth?: boolean;
+    /**
      * Endpoint where the Swagger UI will be available.
      *
      * @default "/api/api-docs"
      */
     endpoint?: string;
     /**
+<<<<<<< HEAD
+=======
+     * Determines how your API schemas should be generated.
+     *
+     * - "prisma": Generates schemas based on Prisma models
+     * - "class-validator": Uses class-validator and class-transformer DTO classes
+     * - "zod": Uses OpenAPI-compliant schemas directly
+     *
+     */
+    mode: "prisma" | "class-validator" | "zod";
+    /**
+>>>>>>> 669ed09ab5f6ee3fee4fa1f34f1adc20720fd3a1
      * Allows `Arkos.js` to fallback to prisma schema and use them as json schema for defining request body and response data
      * when a given zod Schema or class-validator Class is not found to be transformed to json schema.
      *

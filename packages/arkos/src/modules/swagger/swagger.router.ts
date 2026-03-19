@@ -19,6 +19,9 @@ import {
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { Arkos } from "../../types/arkos";
 import { UserArkosConfig } from "../../utils/define-config";
+import authService from "../auth/auth.service";
+import AppError from "../error-handler/utils/app-error";
+import getOpenApiLoginHtml from "./utils/get-open-api-login-html";
 
 const swaggerRouter = Router();
 
@@ -65,6 +68,56 @@ export function getSwaggerRouter(
   });
 
   const endpoint = swaggerConfigs!.endpoint!;
+
+  const swaggerAuth = arkosConfig?.swagger;
+  const requireAuth = swaggerAuth?.requireAuth !== false;
+
+  if (requireAuth) {
+    swaggerRouter.use(
+      endpoint,
+      (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+        if (req.path.includes("/auth")) return next();
+        next("route"); // skip to auth chain below
+      }
+    );
+
+    swaggerRouter.use(
+      endpoint,
+      authService.authenticate,
+      (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+        if (!req.user?.isSuperUser)
+          return next(
+            new AppError(
+              "Only super users can access API documentation in production.",
+              403,
+              "SuperUserRequired"
+            )
+          );
+        next();
+      },
+      (
+        err: AppError,
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
+        if (req.path.includes("/auth")) return next();
+        const message = encodeURIComponent(
+          err?.message || "Authentication required."
+        );
+        return res.redirect(
+          `${arkosConfig.globalPrefix}${endpoint}/auth/login?error-message=${message}`
+        );
+      }
+    );
+  }
+
+  swaggerRouter.get(
+    `${endpoint}/auth/login`,
+    (_: ArkosRequest, res: ArkosResponse) => {
+      res.send(getOpenApiLoginHtml());
+    }
+  );
 
   swaggerRouter.get(
     `${endpoint}/openapi.json`,
