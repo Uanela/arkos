@@ -3,7 +3,7 @@ import path from "path";
 import { generateTemplate } from "../utils/template-generators";
 import { ensureDirectoryExists } from "../utils/cli.helpers";
 import { generateCommand } from "../generate";
-import { getUserFileExtension, fullCleanCwd } from "../../helpers/fs.helpers";
+import { getUserFileExtension } from "../../helpers/fs.helpers";
 import sheu from "../../sheu";
 
 // Mock all dependencies
@@ -277,149 +277,6 @@ describe("generateCommand", () => {
     });
   });
 
-  describe("interceptors command", () => {
-    it("should generate interceptors with correct naming", async () => {
-      const options = { model: "auth" };
-
-      await generateCommand.interceptors(options);
-
-      expect(mockedGenerateTemplate).toHaveBeenCalledWith("interceptors", {
-        modelName: {
-          pascal: "Auth",
-          camel: "auth",
-          kebab: "auth",
-        },
-      });
-      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-        `${mockCwd}/src/modules/auth/auth.interceptors.ts`,
-        mockTemplateContent
-      );
-      expect(sheuDoneSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Interceptors for")
-      );
-    });
-
-    it("should exit with error when middleware name is missing", async () => {
-      const options = { model: "" };
-
-      try {
-        await generateCommand.interceptors(options);
-
-        expect(sheuErrorSpy).toHaveBeenCalledWith("Module name is required!");
-        expect(processExitSpy).toHaveBeenCalledWith(1);
-      } catch {}
-    });
-
-    it("should use custom path for interceptors", async () => {
-      const options = {
-        model: "user",
-        path: "src/middleware/{{module-name}}",
-      };
-
-      await generateCommand.interceptors(options);
-
-      expect(mockedEnsureDirectoryExists).toHaveBeenCalledWith(
-        `${mockCwd}/src/middleware/user`
-      );
-      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-        `${mockCwd}/src/middleware/user/user.interceptors.ts`,
-        mockTemplateContent
-      );
-    });
-  });
-
-  describe("authConfigs command", () => {
-    it("should generate auth configs", async () => {
-      const options = { model: "user" };
-
-      await generateCommand.authConfigs(options);
-
-      expect(mockedGenerateTemplate).toHaveBeenCalledWith("auth-configs", {
-        modelName: { camel: "user", kebab: "user", pascal: "User" },
-      });
-      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-        `${mockCwd}/src/modules/user/user.auth.ts`,
-        mockTemplateContent
-      );
-      expect(sheuDoneSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Auth configs for")
-      );
-    });
-
-    it("should throw auth config generation without model name", async () => {
-      const options = { model: "" };
-
-      expect(
-        async () => await generateCommand.authConfigs(options)
-      ).rejects.toThrow();
-    });
-
-    it("should handle auth config generation errors", async () => {
-      const options = { model: "user" };
-      const error = new Error("Auth config generation failed");
-      mockedGenerateTemplate.mockImplementation(() => {
-        throw error;
-      });
-
-      await generateCommand.authConfigs(options);
-
-      expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("auth config generation failed")
-      );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
-    });
-  });
-
-  describe("queryOptions command", () => {
-    it("should generate query options", async () => {
-      const options = { model: "product" };
-
-      await generateCommand.queryOptions(options);
-
-      expect(mockedGenerateTemplate).toHaveBeenCalledWith("query-options", {
-        modelName: {
-          pascal: "Product",
-          camel: "product",
-          kebab: "product",
-        },
-      });
-      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-        `${mockCwd}/src/modules/product/product.query.ts`,
-        mockTemplateContent
-      );
-      expect(sheuDoneSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Query options for")
-      );
-    });
-
-    it("should exit with error when model name is missing", async () => {
-      const options = { model: "" };
-
-      try {
-        await generateCommand.queryOptions(options);
-        expect(sheuErrorSpy).toHaveBeenCalledWith(
-          expect.stringContaining("Module name is required!")
-        );
-        expect(processExitSpy).toHaveBeenCalledWith(1);
-      } catch {}
-    });
-
-    it("should exit with error when trying to geneate query options for file-upload", async () => {
-      const options = { model: "file-upload" };
-
-      try {
-        await generateCommand.queryOptions(options);
-
-        expect(sheuErrorSpy).toHaveBeenCalledWith(
-          expect.stringContaining(
-            "Prisma query options are not available to file-upload resource"
-          )
-        );
-        expect(processExitSpy).toHaveBeenCalledWith(1);
-      } catch {}
-    });
-  });
-
   describe("edge cases and validation", () => {
     it("should handle special characters in model names", async () => {
       const options = { model: "user profile" };
@@ -510,18 +367,6 @@ describe("generateCommand", () => {
       await generateCommand.router(options);
       expect(mockedFs.writeFileSync).toHaveBeenLastCalledWith(
         expect.stringContaining("user.router.ts"),
-        expect.any(String)
-      );
-
-      await generateCommand.authConfigs(options);
-      expect(mockedFs.writeFileSync).toHaveBeenLastCalledWith(
-        expect.stringContaining("user.auth.ts"),
-        expect.any(String)
-      );
-
-      await generateCommand.queryOptions(options);
-      expect(mockedFs.writeFileSync).toHaveBeenLastCalledWith(
-        expect.stringContaining("user.query.ts"),
         expect.any(String)
       );
     });

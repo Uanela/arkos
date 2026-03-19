@@ -34,7 +34,9 @@ jest.mock(
 jest.mock(
   "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs"
 );
-jest.mock("../../../../src/utils/arkos-router");
+jest.mock("../../../../src/utils/arkos-router", () => ({
+  generateOpenAPIFromApp: jest.fn(),
+}));
 jest.mock(
   "../../../../src/modules/swagger/utils/helpers/get-file-upload-json-schema-paths"
 );
