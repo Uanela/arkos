@@ -10,12 +10,12 @@ import { OpenAPIV3 } from "openapi-types";
 import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with { "resolution-mode": "import" };
 import nodemailer from "nodemailer";
 import { ModuleComponents } from "../utils/dynamic-loader";
+import { ArkosRequestHandler } from ".";
 import {
-  ArkosErrorRequestHandler,
-  ArkosRequest,
-  ArkosRequestHandler,
-  ArkosResponse,
-} from ".";
+  AuthAfterHookHandler,
+  AuthErrorHookHandler,
+  AuthHookHandler,
+} from "./arkos-config/utils";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
@@ -87,109 +87,90 @@ export type ArkosConfig = {
      * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks}
      */
     hooks?: {
-      /**
-       * Hooks around `authService.authenticate` — JWT extraction, verification and `req.user` assignment.
-       *
-       * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#authenticate}
-       */
       authenticate?: {
         /**
          * Runs before JWT extraction and verification.
          *
          * @example
          * ```ts
-         * before: (req, res, next) => {
-         *   req.authContext = { startedAt: Date.now() };
-         *   next();
+         * before: (ctx) => {
+         *   ctx.req.authContext = { startedAt: Date.now() };
+         *   ctx.next();
          * }
          * ```
-         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#before-authenticate}
          */
-        before?: ArkosRequestHandler | ArkosRequestHandler[];
+        before?: AuthHookHandler | AuthHookHandler[];
 
         /**
          * Runs after `req.user` has been set.
          *
          * @example
          * ```ts
-         * after: (req, res, next) => {
-         *   if (!req.user.hasChangedPassword) {
-         *     return next(new AppError("Password change required.", 403, "PasswordChangeRequired"));
+         * after: (ctx) => {
+         *   if (!ctx.req.user.hasChangedPassword) {
+         *     ctx.next(new AppError("Password change required.", 403, "PasswordChangeRequired"));
          *   }
-         *   next();
+         *   ctx.next();
          * }
          * ```
-         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#after-authenticate}
          */
-        after?: ArkosRequestHandler | ArkosRequestHandler[];
+        after?: AuthAfterHookHandler | AuthAfterHookHandler[];
 
         /**
          * Runs when `authService.authenticate` throws — invalid token, expired token, user not found, etc.
-         * Receives the original error. Call `next(error)` to forward it or `next(newError)` to replace it.
          *
          * @example
          * ```ts
-         * onError: (err, req, res, next) => {
-         *   console.warn(`Auth failed on ${req.path}:`, err.message);
-         *   next(err);
+         * onError: (ctx) => {
+         *   console.warn(`Auth failed:`, ctx.error);
+         *   ctx.next(ctx.error);
          * }
          * ```
-         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#on-error-authenticate}
          */
-        onError?: ArkosErrorRequestHandler | ArkosErrorRequestHandler[];
+        onError?: AuthErrorHookHandler | AuthErrorHookHandler[];
       };
 
-      /**
-       * Hooks around `authService.handleAccessControl` — role and permission checking.
-       * Always runs after `authenticate` has resolved `req.user`.
-       *
-       * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#authorize}
-       */
       authorize?: {
         /**
          * Runs before the role/permission check.
          *
          * @example
          * ```ts
-         * before: (req, res, next) => {
-         *   if (req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
-         *     req.user.role = "admin";
+         * before: (ctx) => {
+         *   if (ctx.req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
+         *     ctx.req.user.role = "admin";
          *   }
-         *   next();
+         *   ctx.next();
          * }
          * ```
-         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#before-authorize}
          */
-        before?: ArkosRequestHandler | ArkosRequestHandler[];
+        before?: AuthHookHandler | AuthHookHandler[];
 
         /**
          * Runs after the permission check passes.
          *
          * @example
          * ```ts
-         * after: (req, res, next) => {
-         *   auditLog.record({ userId: req.user.id, path: req.path, method: req.method });
-         *   next();
+         * after: (ctx) => {
+         *   auditLog.record({ userId: ctx.req.user.id, path: ctx.req.path });
+         *   ctx.next();
          * }
          * ```
-         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#after-authorize}
          */
-        after?: ArkosRequestHandler | ArkosRequestHandler[];
+        after?: AuthAfterHookHandler | AuthAfterHookHandler[];
 
         /**
          * Runs when the user lacks sufficient permissions (403).
-         * Call `next(err)` to forward the original error or `next(newError)` to replace it.
          *
          * @example
          * ```ts
-         * onError: (err, req, res, next) => {
-         *   auditLog.record({ userId: req.user?.id, path: req.path, reason: "insufficient_permissions" });
-         *   next(err);
+         * onError: (ctx) => {
+         *   auditLog.record({ userId: ctx.req.user?.id, reason: "insufficient_permissions" });
+         *   ctx.next(ctx.error);
          * }
          * ```
-         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#on-error-authorize}
          */
-        onError?: ArkosErrorRequestHandler | ArkosErrorRequestHandler[];
+        onError?: AuthErrorHookHandler | AuthErrorHookHandler[];
       };
     };
     enabled?: boolean;
