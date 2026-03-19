@@ -1,7 +1,23 @@
 import { Express } from "express";
 import { IncomingMessage, Server, ServerResponse } from "http";
+import { IArkosRouter } from "../exports";
 
-export interface Arkos extends Omit<Express, "listen"> {
+type ArkosRouterMethods =
+  | "get"
+  | "post"
+  | "put"
+  | "patch"
+  | "delete"
+  | "options"
+  | "head"
+  | "all"
+  | "use"
+  | "trace"
+  | "route";
+
+export interface Arkos
+  extends Omit<Express, "listen" | ArkosRouterMethods>,
+    Pick<IArkosRouter, ArkosRouterMethods> {
   (req: IncomingMessage, res: ServerResponse): void;
   /**
    * Applies all loaded items to the app by adding them as middleware,
