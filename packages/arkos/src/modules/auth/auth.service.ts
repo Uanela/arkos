@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { User } from "../../types";
+import { ArkosErrorRequestHandler, User } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
@@ -42,6 +42,69 @@ export class AuthService {
    * Object containing a combination of actions per resource, tracked by each set of calls of `authService.handleAccessControl`, this can be accessed through the `authService` object or through the endpoint
    */
   actionsPerResource: Record<string, Set<string>> = {};
+
+  /**
+   * Runs a chain of hooks in sequence.
+   * If a hook calls `next(err)` the chain aborts and forwards to the global error handler.
+   * If a hook calls `next()` the chain stops — no further hooks run.
+   *
+   * @returns Promise resolving to `{ stopped: boolean, error?: unknown }`
+   */
+  private async runHooks(
+    hooks: ArkosRequestHandler | ArkosRequestHandler[] | undefined,
+    req: ArkosRequest,
+    res: ArkosResponse
+  ): Promise<{ stopped: boolean; error?: unknown }> {
+    if (!hooks) return { stopped: false };
+
+    const hookArray = Array.isArray(hooks) ? hooks : [hooks];
+
+    for (const hook of hookArray) {
+      let called = false;
+      let hookErr: unknown;
+
+      await hook(req, res, (err?: unknown) => {
+        called = true;
+        hookErr = err;
+      });
+
+      if (hookErr) return { stopped: true, error: hookErr };
+      if (called) return { stopped: true };
+    }
+
+    return { stopped: false };
+  }
+
+  /**
+   * Runs a chain of error hooks in sequence.
+   *
+   * @returns Promise resolving to `{ stopped: boolean, error?: unknown }`
+   */
+  private async runErrorHooks(
+    hooks: ArkosErrorRequestHandler | ArkosErrorRequestHandler[] | undefined,
+    error: unknown,
+    req: ArkosRequest,
+    res: ArkosResponse
+  ): Promise<{ stopped: boolean; error?: unknown }> {
+    if (!hooks) return { stopped: false };
+
+    const hookArray = Array.isArray(hooks) ? hooks : [hooks];
+
+    for (const hook of hookArray) {
+      let called = false;
+      let hookErr: unknown;
+
+      await hook(error, req, res, (err?: unknown) => {
+        called = true;
+        hookErr = err;
+      });
+
+      if (hookErr) return { stopped: true, error: hookErr };
+      if (called) return { stopped: true };
+    }
+
+    return { stopped: false };
+  }
 
   /**
    * Signs a JWT token for the user.
@@ -374,6 +437,8 @@ export class AuthService {
    * @param {string} resource - The resource name that the action is being performed on (e.g., "User", "Post").
    * @param {AccessControlConfig} accessControl - The access control configuration.
    * @returns {ArkosRequestHandler} The middleware function that checks if the user has permission to perform the action.
+   *
+   * @deprecated Will be removed on v2.0, use AuthService.authorize instead
    */
   handleAccessControl(
     action: AccessAction,
@@ -501,23 +566,149 @@ export class AuthService {
   }
 
   /**
-   * Middleware function to authenticate the user based on the JWT token.
+   * Middleware to authenticate the request by extracting and verifying the JWT token and setting `req.user`.
    *
-   * @param {ArkosRequest} req - The request object.
-   * @param {ArkosResponse} res - The response object.
-   * @param {ArkosNextFunction} next - The next middleware function to be called.
-   * @returns {void}
+   * Runs `authentication.hooks.authenticate` before/after the authentication logic.
+   * Set `req.signals.skip = true` in a `before` hook to bypass Arkos's built-in authentication entirely — useful for custom auth logic.
+   *
+   * On custom routes, hooks defined in `arkosConfig` still apply since they are baked into this method.
+   *
+   * @example
+   * ```ts
+   * // custom route - hooks still run
+   * router.get("/custom", authService.authenticate, handler);
+   *
+   * // skip built-in auth from a before hook
+   * before: (req, res, next) => {
+   *   req.user = myCustomAuth(req);
+   *   req.signals.skip = true;
+   *   next();
+   * }
+   * ```
+   * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks}
    */
   authenticate = catchAsync(
-    async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      if (isAuthenticationEnabled()) {
-        const user = (await this.getAuthenticatedUser(req)) as User;
-        if (!user) throw loginRequiredError;
-        req.user = user;
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const hooks = getArkosConfig()?.authentication?.hooks?.authenticate;
+
+      const before = await this.runHooks(hooks?.before, req, res);
+      if (before.stopped) return before.error ? next(before.error) : next();
+
+      if (!req.signals?.skip) {
+        try {
+          if (isAuthenticationEnabled()) {
+            const user = (await this.getAuthenticatedUser(req)) as User;
+            if (!user) throw loginRequiredError;
+            req.user = user;
+          }
+        } catch (err) {
+          const onError = await this.runErrorHooks(
+            hooks?.onError,
+            err,
+            req,
+            res
+          );
+          return next(onError.error ?? err);
+        }
+
+        const after = await this.runHooks(hooks?.after, req, res);
+        if (after.stopped) return after.error ? next(after.error) : next();
       }
+
+      if (req.signals) req.signals.skip = false;
       next();
     }
   );
+
+  /**
+   * Middleware to authorize the authenticated user for a given action on a resource.
+   *
+   * Runs `authentication.hooks.authorize` before/after the authorization logic.
+   * Set `req.signals.skip = true` in a `before` hook to bypass Arkos's built-in authorization entirely — useful for custom permission logic.
+   *
+   * @param resource - The resource being accessed, in kebabCase (e.g. `"product"`, `"cart-item"`)
+   * @param action - The action being performed (e.g. `"View"`, `"Create"`, `"Delete"`)
+   * @param accessControl - Access control rules for this action. Accepts a role list, a wildcard, or a `DetailedAccessControlRule`.
+   *
+   * @example
+   * ```ts
+   * router.delete("/products/:id",
+   *   authService.authenticate,
+   *   authService.authorize("product", "Delete", ["admin"]),
+   *   handler
+   * );
+   * ```
+   * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#authorize}
+   * @since v1.6.0-beta
+   */
+  authorize(
+    resource: string,
+    action: AccessAction,
+    rule: string[] | DetailedAccessControlRule | "*"
+  ): ArkosRequestHandler {
+    authActionService.add(action, resource, { [action]: rule });
+
+    return catchAsync(
+      async (
+        req: ArkosRequest,
+        res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
+        const hooks = getArkosConfig()?.authentication?.hooks?.authorize;
+
+        const before = await this.runHooks(hooks?.before, req, res);
+        if (before.stopped) return before.error ? next(before.error) : next();
+
+        if (!req.signals?.skip) {
+          try {
+            if (req.user) {
+              const user = req.user as User;
+              const configs = getArkosConfig();
+
+              if (!user.isSuperUser) {
+                const notEnoughPermissionsError = new AppError(
+                  "You do not have permission to perform this action",
+                  403,
+                  "NotEnoughPermissions"
+                );
+
+                if (configs?.authentication?.mode === "dynamic") {
+                  const hasPermission = await this.checkDynamicAccessControl(
+                    user.id,
+                    action,
+                    resource
+                  );
+                  if (!hasPermission) throw notEnoughPermissionsError;
+                } else if (configs?.authentication?.mode === "static") {
+                  const hasPermission = this.checkStaticAccessControl(
+                    user,
+                    action,
+                    { [action]: rule }
+                  );
+
+                  if (!hasPermission) throw notEnoughPermissionsError;
+                }
+              }
+            }
+          } catch (err) {
+            const onError = await this.runErrorHooks(
+              hooks?.onError,
+              err,
+              req,
+              res
+            );
+            return next(onError.error ?? err);
+          }
+
+          const after = await this.runHooks(hooks?.after, req, res);
+          if (after.stopped) return after.error ? next(after.error) : next();
+        }
+
+        if (req.signals) req.signals.skip = false;
+        next();
+      }
+    );
+  }
 
   /**
    * Handles authentication control by checking the `authenticationControl` configuration in the `authConfigs`.
@@ -525,6 +716,8 @@ export class AuthService {
    * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
    * @param {AuthenticationControlConfig} authenticationControl - The authentication configuration object.
    * @returns {ArkosRequestHandler} The middleware function that checks if authentication is required.
+   *
+   * @deprecated Will be removed on v2.0, use AuthService.authenticate instead
    */
   handleAuthenticationControl(
     action: AccessAction,

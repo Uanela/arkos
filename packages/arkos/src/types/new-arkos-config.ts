@@ -10,7 +10,12 @@ import { OpenAPIV3 } from "openapi-types";
 import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with { "resolution-mode": "import" };
 import nodemailer from "nodemailer";
 import { ModuleComponents } from "../utils/dynamic-loader";
-import { ArkosRequestHandler } from ".";
+import {
+  ArkosErrorRequestHandler,
+  ArkosRequest,
+  ArkosRequestHandler,
+  ArkosResponse,
+} from ".";
 
 /**
  * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
@@ -70,6 +75,123 @@ export type ArkosConfig = {
    * See [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for details.
    */
   authentication?: {
+    /**
+     * Lifecycle hooks for the built-in authentication and authorization pipeline.
+     *
+     * These hooks only apply to **auto-generated Arkos routes**. On custom routes using
+     * `authService.authenticate` directly, chain them manually as standard middlewares.
+     *
+     * Hooks run as standard Express middlewares — call `next()` to continue or
+     * `next(error)` to abort and forward to the global error handler.
+     *
+     * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks}
+     */
+    hooks?: {
+      /**
+       * Hooks around `authService.authenticate` — JWT extraction, verification and `req.user` assignment.
+       *
+       * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#authenticate}
+       */
+      authenticate?: {
+        /**
+         * Runs before JWT extraction and verification.
+         *
+         * @example
+         * ```ts
+         * before: (req, res, next) => {
+         *   req.authContext = { startedAt: Date.now() };
+         *   next();
+         * }
+         * ```
+         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#before-authenticate}
+         */
+        before?: ArkosRequestHandler | ArkosRequestHandler[];
+
+        /**
+         * Runs after `req.user` has been set.
+         *
+         * @example
+         * ```ts
+         * after: (req, res, next) => {
+         *   if (!req.user.hasChangedPassword) {
+         *     return next(new AppError("Password change required.", 403, "PasswordChangeRequired"));
+         *   }
+         *   next();
+         * }
+         * ```
+         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#after-authenticate}
+         */
+        after?: ArkosRequestHandler | ArkosRequestHandler[];
+
+        /**
+         * Runs when `authService.authenticate` throws — invalid token, expired token, user not found, etc.
+         * Receives the original error. Call `next(error)` to forward it or `next(newError)` to replace it.
+         *
+         * @example
+         * ```ts
+         * onError: (err, req, res, next) => {
+         *   console.warn(`Auth failed on ${req.path}:`, err.message);
+         *   next(err);
+         * }
+         * ```
+         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#on-error-authenticate}
+         */
+        onError?: ArkosErrorRequestHandler | ArkosErrorRequestHandler[];
+      };
+
+      /**
+       * Hooks around `authService.handleAccessControl` — role and permission checking.
+       * Always runs after `authenticate` has resolved `req.user`.
+       *
+       * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#authorize}
+       */
+      authorize?: {
+        /**
+         * Runs before the role/permission check.
+         *
+         * @example
+         * ```ts
+         * before: (req, res, next) => {
+         *   if (req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
+         *     req.user.role = "admin";
+         *   }
+         *   next();
+         * }
+         * ```
+         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#before-authorize}
+         */
+        before?: ArkosRequestHandler | ArkosRequestHandler[];
+
+        /**
+         * Runs after the permission check passes.
+         *
+         * @example
+         * ```ts
+         * after: (req, res, next) => {
+         *   auditLog.record({ userId: req.user.id, path: req.path, method: req.method });
+         *   next();
+         * }
+         * ```
+         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#after-authorize}
+         */
+        after?: ArkosRequestHandler | ArkosRequestHandler[];
+
+        /**
+         * Runs when the user lacks sufficient permissions (403).
+         * Call `next(err)` to forward the original error or `next(newError)` to replace it.
+         *
+         * @example
+         * ```ts
+         * onError: (err, req, res, next) => {
+         *   auditLog.record({ userId: req.user?.id, path: req.path, reason: "insufficient_permissions" });
+         *   next(err);
+         * }
+         * ```
+         * @see {@link https://www.arkosjs.com/docs/core-concepts/authentication/hooks#on-error-authorize}
+         */
+        onError?: ArkosErrorRequestHandler | ArkosErrorRequestHandler[];
+      };
+    };
     enabled?: boolean;
     /**
      * Defines whether to use Static or Dynamic Role-Based Acess Control
@@ -122,6 +244,7 @@ export type ArkosConfig = {
      * **Default**: ```/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/``` - Ensures the password contains at least one uppercase letter, one lowercase letter, and one numeric digit.
      *
      * **message**: (Optional) A custom error message to display when the password does not meet the required strength criteria.
+     * @deprecated will stop working on v2.0
      */
     passwordValidation?: { regex: RegExp; message?: string };
     /**
@@ -226,6 +349,8 @@ export type ArkosConfig = {
      * })
      *
      * ```
+     *
+     * @since 1.4.0-beta
      */
     strict?: boolean;
   } & (
@@ -246,6 +371,9 @@ export type ArkosConfig = {
       }
     | {
         resolver: "zod";
+        /**
+         * @since v1.5.0-beta
+         */
         validationOptions?: {
           /**
            * Throws an error for know whitelisted fields
