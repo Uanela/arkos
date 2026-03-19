@@ -10,6 +10,7 @@ import { loadAllModuleComponents } from "./utils/dynamic-loader";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
 import { IncomingMessage, Server, ServerResponse } from "http";
 import ExitError from "./utils/helpers/exit-error";
+import { applyArkosRouterProxy } from "./utils/arkos-router/utils/helpers/apply-arkos-router-proxy";
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
 const docsLink =
@@ -61,7 +62,7 @@ export function arkos(): Arkos {
   if (instanciated)
     throw ExitError(`arkos() must be called only once, see ${docsLink}`);
 
-  const app = express() as any as Arkos;
+  const app = applyArkosRouterProxy(express(), {}, "app") as any as Arkos;
   setupApp(app);
   instanciated = true;
 

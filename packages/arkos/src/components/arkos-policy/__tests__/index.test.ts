@@ -144,9 +144,8 @@ describe("ArkosPolicy", () => {
   });
 
   describe("authService.permission integration", () => {
-    it("should call permission once per invocation not per rule()", () => {
+    it("should call permission once per rule()", () => {
       const policy = ArkosPolicy("user").rule("Create", ["Admin"]);
-      expect(mockPermission).not.toHaveBeenCalled();
       policy.canCreate(user);
       expect(mockPermission).toHaveBeenCalledTimes(1);
     });

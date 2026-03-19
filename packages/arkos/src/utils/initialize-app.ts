@@ -20,9 +20,9 @@ export default function initializeApp(app: Arkos) {
 
   if (routersConfig?.welcomeRoute !== false) {
     if (typeof routersConfig?.welcomeRoute === "function") {
-      app.get(globalPrefix, routersConfig.welcomeRoute);
+      app.get({ path: globalPrefix }, routersConfig.welcomeRoute);
     } else {
-      app.get(globalPrefix, (_, res) => {
+      app.get({ path: globalPrefix }, (_, res) => {
         res.status(200).json({ message: config.welcomeMessage });
       });
     }
