@@ -21,7 +21,8 @@ export function applyArkosRouterProxy<T extends object>(
   options?: RouterOptions & {
     prefix?: string | RegExp | Array<string | RegExp>;
     openapi?: { tags?: string[] };
-  }
+  },
+  name: "app" | "ArkosRouter()" = "ArkosRouter()"
 ): T {
   return new Proxy(target, {
     get(target, prop, receiver) {
@@ -120,7 +121,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
 
           if (!RouteConfigValidator.isArkosRouteConfig(config))
             throw Error(
-              `First argument of ArkosRouter().${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
+              `First argument of ${name}.${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
 
           const path = applyPrefix(options?.prefix, config.path);

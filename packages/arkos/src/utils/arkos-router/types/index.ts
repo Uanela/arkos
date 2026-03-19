@@ -67,7 +67,7 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
         | false
         | undefined = any,
     >(
-      config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
+      config: ArkosRouteConfig<TQuery, TBody, TParams>,
       ...handlers: Array<
         | ArkosRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
@@ -104,7 +104,7 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
         | false
         | undefined = any,
     >(
-      config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
+      config: ArkosRouteConfig<TQuery, TBody, TParams>,
       ...handlers: Array<
         | ArkosErrorRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
@@ -215,7 +215,7 @@ export type ArkosRouteMethodHandler<T> = {
 /**
  * Handler function for `use` that accepts route configuration and middleware handlers.
  *
- * @param {ArkosUseConfig | PathParams} config - The use configuration object or path.
+ * @param {ArkosUseConfig} config - The use configuration object or path.
  * @param {...ArkosAnyRequestHandler} handlers - Middleware handlers.
  * @returns {T} The router instance.
  */
