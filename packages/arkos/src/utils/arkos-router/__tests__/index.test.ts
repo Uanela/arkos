@@ -2,7 +2,12 @@ import { Router } from "express";
 import ArkosRouter, { generateOpenAPIFromApp } from "../";
 import RouteConfigRegistry from "../route-config-registry";
 import { getArkosConfig } from "../../../server";
+import ExitError from "../../helpers/exit-error";
 
+jest.mock("../../helpers/exit-error", () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),
 }));
@@ -144,6 +149,99 @@ describe("ArkosRouter", () => {
         "Trying to authenticate route GET /api/cacilda without choosing an authentication mode under arkos.config.js"
       );
     }
+  });
+
+  describe("ArkosRouter - use() method", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      RouteConfigRegistry.register = jest.fn();
+      RouteConfigRegistry.get = jest.fn();
+      (ExitError as jest.Mock).mockImplementation(() => {}); // re-setup after clearAllMocks
+    });
+
+    it("should fall through to native express use when passed a function", () => {
+      const proxied = ArkosRouter() as any;
+      const middleware = jest.fn();
+      expect(() => proxied.use(middleware)).not.toThrow();
+      expect(ExitError).not.toHaveBeenCalled();
+    });
+
+    it("should fall through to native express use when passed a path string", () => {
+      const proxied = ArkosRouter() as any;
+      const middleware = jest.fn();
+      expect(() => proxied.use("/api", middleware)).not.toThrow();
+      expect(ExitError).not.toHaveBeenCalled();
+    });
+
+    it("should apply middleware stack when passed ArkosUseConfig", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "static" },
+      });
+      const proxied = ArkosRouter() as any;
+      const middleware = jest.fn();
+      expect(() =>
+        proxied.use({ authentication: true }, middleware)
+      ).not.toThrow();
+    });
+
+    it("should apply path when passed in ArkosUseConfig", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "static" },
+      });
+      const proxied = ArkosRouter() as any;
+      const middleware = jest.fn();
+      expect(() =>
+        proxied.use({ path: "/api/admin", authentication: true }, middleware)
+      ).not.toThrow();
+    });
+
+    it("should not require path in ArkosUseConfig", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "static" },
+      });
+      const proxied = ArkosRouter() as any;
+      const middleware = jest.fn();
+      expect(() =>
+        proxied.use({ authentication: true }, middleware)
+      ).not.toThrow();
+    });
+
+    it("should call ExitError when authentication is set but no authentication mode configured", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({});
+      const proxied = ArkosRouter() as any;
+      const middleware = jest.fn();
+
+      try {
+        proxied.use({ path: "/api/admin", authentication: true }, middleware);
+      } catch {
+        expect(ExitError).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "Trying to authenticate route use /api/admin without choosing an authentication mode"
+          )
+        );
+      }
+    });
+
+    it("should respect disabled flag and not mount", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({});
+      const proxied = ArkosRouter() as any;
+      const middleware = jest.fn();
+
+      proxied.use({ path: "/api/admin", disabled: true }, middleware);
+
+      expect(ExitError).not.toHaveBeenCalled();
+    });
+
+    it("should apply prefix to path in ArkosUseConfig", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "static" },
+      });
+      const proxied = ArkosRouter({ prefix: "/api" }) as any;
+      const middleware = jest.fn();
+      expect(() =>
+        proxied.use({ path: "/admin", authentication: true }, middleware)
+      ).not.toThrow();
+    });
   });
 });
 
