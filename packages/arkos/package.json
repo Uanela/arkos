@@ -194,6 +194,6 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "engines": {
-    "node": ">=20.16"
+    "node": ">=22.9"
   }
 }
