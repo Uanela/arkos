@@ -392,7 +392,7 @@ describe("PrismaSchemaParser", () => {
     `;
       mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
 
-      const result = parser.parse({ override: true });
+      parser.parse({ override: true });
 
       expect(parser.compositeTypes).toHaveLength(1);
       expect(parser.compositeTypes[0].name).toBe("InteractionEventAgentInfo");
