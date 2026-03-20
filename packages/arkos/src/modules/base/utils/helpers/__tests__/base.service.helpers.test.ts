@@ -611,7 +611,13 @@ describe("handleRelationFieldsInBody", () => {
         list: [{ name: "posts", type: "Post" }],
       };
 
-      const result = handleRelationFieldsInBody(body, relationFields);
+      const result = handleRelationFieldsInBody(
+        body,
+        relationFields,
+        [],
+        false,
+        "update"
+      );
 
       expect(result).toEqual({
         name: "John Doe",
@@ -639,16 +645,13 @@ describe("handleRelationFieldsInBody", () => {
                       },
                     },
                   },
+                  ,
                 ],
-                update: [
+                connect: [
                   {
-                    where: { id: "comment-123" },
-                    data: {
-                      content: "Updated comment",
-                      author: {
-                        connect: { id: "user-456" },
-                      },
-                    },
+                    author: { id: "user-456" },
+                    id: "comment-123",
+                    content: "Updated comment",
                   },
                 ],
               },
@@ -724,6 +727,58 @@ describe("handleRelationFieldsInBody", () => {
           create: [{ content: "Valid array" }],
         },
       });
+    });
+  });
+
+  describe("Nested update inside create context", () => {
+    it("should still allow update at the top level when not inside a create context", () => {
+      const body = {
+        title: "My Post",
+        tags: [{ id: "1", name: "Updated Tag" }],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "tags", type: "Tag" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result.tags.update).toBeDefined();
+      expect(result.tags.update[0]).toEqual({
+        where: { id: "1" },
+        data: { name: "Updated Tag" },
+      });
+    });
+
+    it("should allow normal connect inside create context when only id is present", () => {
+      const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+      const body = {
+        title: "New Post",
+        comments: [
+          {
+            content: "Great!",
+            author: {
+              id: "user-123",
+            },
+          },
+        ],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "comments", type: "Comment" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result.comments.create[0].author).toEqual({
+        connect: { id: "user-123" },
+      });
+      expect(warnSpy).not.toHaveBeenCalled();
+
+      warnSpy.mockRestore();
     });
   });
 });
