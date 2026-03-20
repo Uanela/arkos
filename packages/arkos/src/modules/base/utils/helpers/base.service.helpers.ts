@@ -94,7 +94,8 @@ export function handleRelationFieldsInBody(
   body: Record<string, any>,
   relationFields: ModelGroupRelationFields,
   ignoreActions: string[] = [],
-  isRelation: boolean = false
+  isRelation: boolean = false,
+  parentOperation: "create" | "update" | null = null
 ): Record<string, any> {
   body = JSON.parse(JSON.stringify(body));
   let mutableBody = { ...body };
@@ -133,12 +134,10 @@ export function handleRelationFieldsInBody(
         canBeUsedToConnect(field.type, bodyField)
       ) {
         const { apiAction, ...cleanedData } = bodyField;
-
         throwErrorIfApiActionIsInvalid(apiAction);
         connectData.push(cleanedData);
       } else if (bodyField?.apiAction !== "update" && !bodyField?.id) {
         let nestedRelations = getGroupedModelReations(field.type);
-
         let dataToPush = { ...bodyField };
 
         if (nestedRelations?.singular || nestedRelations?.list) {
@@ -146,19 +145,26 @@ export function handleRelationFieldsInBody(
             dataToPush,
             nestedRelations,
             ignoreActions,
-            true
+            true,
+            "create"
           );
         }
 
         if (dataToPush?.apiAction) {
           const { apiAction, ...rest } = dataToPush;
-
           throwErrorIfApiActionIsInvalid(apiAction);
           dataToPush = rest;
         }
 
         createData.push(dataToPush);
       } else {
+        if (parentOperation === "create") {
+          const { apiAction, ...cleanedData } = bodyField;
+          throwErrorIfApiActionIsInvalid(apiAction);
+          connectData.push(cleanedData);
+          return;
+        }
+
         const { apiAction, ...data } = bodyField;
         let foreignKeyFieldName = bodyField?.id ? "id" : "";
         let foreignKeyFieldValue = bodyField?.id ? bodyField.id : "";
@@ -192,7 +198,8 @@ export function handleRelationFieldsInBody(
             data,
             nestedRelations,
             ignoreActions,
-            true
+            true,
+            "update"
           );
         }
 
@@ -238,9 +245,7 @@ export function handleRelationFieldsInBody(
       canBeUsedToConnect(field.type, relationData)
     ) {
       const { apiAction, ...cleanedData } = relationData;
-
       throwErrorIfApiActionIsInvalid(apiAction);
-
       mutableBody[field.name] = { connect: cleanedData };
     } else if (relationData?.apiAction !== "update" && !relationData?.id) {
       let dataToCreate = { ...relationData };
@@ -248,7 +253,6 @@ export function handleRelationFieldsInBody(
       if (dataToCreate?.apiAction) {
         const { apiAction, ...rest } = dataToCreate;
         throwErrorIfApiActionIsInvalid(apiAction);
-
         dataToCreate = rest;
       }
 
@@ -257,15 +261,21 @@ export function handleRelationFieldsInBody(
           dataToCreate,
           nestedRelations,
           ignoreActions,
-          true
+          true,
+          "create"
         );
       }
 
       mutableBody[field.name] = { create: dataToCreate };
     } else {
-      // If ID and other fields, assume update operation
-      const { id, apiAction, ...data } = relationData;
+      if (parentOperation === "create") {
+        const { apiAction, ...cleanedData } = relationData;
+        throwErrorIfApiActionIsInvalid(apiAction);
+        mutableBody[field.name] = { connect: cleanedData };
+        return;
+      }
 
+      const { id, apiAction, ...data } = relationData;
       throwErrorIfApiActionIsInvalid(apiAction);
 
       let dataToUpdate = data;
@@ -274,7 +284,8 @@ export function handleRelationFieldsInBody(
           data,
           nestedRelations,
           ignoreActions,
-          true
+          true,
+          "update"
         );
       }
 
@@ -299,7 +310,6 @@ export function handleRelationFieldsInBody(
     );
   }
 
-  // As a final step, recursively remove any remaining apiAction fields
   return removeApiAction(mutableBody);
 }
 

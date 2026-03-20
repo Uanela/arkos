@@ -262,7 +262,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         enums: [],
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("CreateUserModelSchema");
       expect(result).toHaveProperty("UpdateUserModelSchema");
@@ -276,7 +276,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["login", "signup", "getMe"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("LoginSchema");
       expect(result).toHaveProperty("SignupSchema");
@@ -293,7 +293,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["createOne"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toEqual({});
     });
@@ -310,7 +310,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["createOne"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toEqual({});
     });
@@ -324,7 +324,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["createOne"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).not.toHaveProperty("CreateUserModelSchema");
     });
@@ -742,7 +742,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["createOne", "createMany"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("CreateUserModelSchema");
       expect(result).toHaveProperty("CreateManyUserModelSchema");
@@ -759,7 +759,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["updateOne", "updateMany"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("UpdateManyUserModelSchema");
       expect(result.UpdateManyUserModelSchema.type).toBe("object");
@@ -800,7 +800,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["findMany"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toHaveProperty("FindManyUserModelSchema");
       expect(result.FindManyUserModelSchema.type).toBe("array");
@@ -830,7 +830,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["createOne"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toEqual({});
     });
@@ -842,7 +842,7 @@ describe("PrismaJsonSchemaGenerator", () => {
         schemasToGenerate: ["login"] as const,
       };
 
-      const result = await generator.generateModelSchemas(config as any);
+      const result = generator.generateModelSchemas(config as any);
 
       expect(result).toEqual({});
     });
@@ -854,6 +854,304 @@ describe("PrismaJsonSchemaGenerator", () => {
       const schema = (generator as any).generateCreateSchema(userModel, {});
 
       expect(schema).toBeDefined();
+    });
+  });
+
+  describe("composite type handling", () => {
+    const mockCompositeTypes = [
+      {
+        name: "AgentInfo",
+        fields: [
+          {
+            name: "ip",
+            type: "String",
+            isOptional: true,
+            isArray: false,
+            isCompositeType: false,
+            isRelation: false,
+            foreignKeyField: "",
+            foreignReferenceField: "",
+            defaultValue: undefined,
+            isId: false,
+            isUnique: false,
+            attributes: [],
+          },
+          {
+            name: "city",
+            type: "String",
+            isOptional: true,
+            isArray: false,
+            isCompositeType: false,
+            isRelation: false,
+            foreignKeyField: "",
+            foreignReferenceField: "",
+            defaultValue: undefined,
+            isId: false,
+            isUnique: false,
+            attributes: [],
+          },
+        ],
+      },
+      {
+        name: "GeoLocation",
+        fields: [
+          {
+            name: "lat",
+            type: "Float",
+            isOptional: false,
+            isArray: false,
+            isCompositeType: false,
+            isRelation: false,
+            foreignKeyField: "",
+            foreignReferenceField: "",
+            defaultValue: undefined,
+            isId: false,
+            isUnique: false,
+            attributes: [],
+          },
+          {
+            name: "lng",
+            type: "Float",
+            isOptional: false,
+            isArray: false,
+            isCompositeType: false,
+            isRelation: false,
+            foreignKeyField: "",
+            foreignReferenceField: "",
+            defaultValue: undefined,
+            isId: false,
+            isUnique: false,
+            attributes: [],
+          },
+        ],
+      },
+    ];
+
+    const modelWithCompositeTypes = {
+      name: "InteractionEvent",
+      mapName: undefined,
+      fields: [
+        {
+          name: "id",
+          type: "String",
+          isId: true,
+          isOptional: false,
+          isArray: false,
+          isCompositeType: false,
+          isRelation: false,
+          foreignKeyField: "",
+          foreignReferenceField: "",
+          defaultValue: undefined,
+          isUnique: false,
+          attributes: ["@id"],
+        },
+        {
+          name: "agentInfo",
+          type: "AgentInfo",
+          isId: false,
+          isOptional: false,
+          isArray: false,
+          isCompositeType: true,
+          isRelation: false,
+          foreignKeyField: "",
+          foreignReferenceField: "",
+          defaultValue: undefined,
+          isUnique: false,
+          attributes: [],
+        },
+        {
+          name: "location",
+          type: "GeoLocation",
+          isId: false,
+          isOptional: true,
+          isArray: false,
+          isCompositeType: true,
+          isRelation: false,
+          foreignKeyField: "",
+          foreignReferenceField: "",
+          defaultValue: undefined,
+          isUnique: false,
+          attributes: [],
+        },
+        {
+          name: "tags",
+          type: "AgentInfo",
+          isId: false,
+          isOptional: false,
+          isArray: true,
+          isCompositeType: true,
+          isRelation: false,
+          foreignKeyField: "",
+          foreignReferenceField: "",
+          defaultValue: undefined,
+          isUnique: false,
+          attributes: [],
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      mockPrismaSchemaParser.compositeTypes = mockCompositeTypes;
+      (generator as any).schema = {
+        models: [modelWithCompositeTypes],
+        enums: [],
+      };
+    });
+
+    afterEach(() => {
+      mockPrismaSchemaParser.compositeTypes = [];
+    });
+
+    describe("isCompositeType()", () => {
+      it("should return true for known composite types", () => {
+        expect((generator as any).isCompositeType("AgentInfo")).toBe(true);
+        expect((generator as any).isCompositeType("GeoLocation")).toBe(true);
+      });
+
+      it("should return false for models, enums and primitives", () => {
+        expect((generator as any).isCompositeType("User")).toBe(false);
+        expect((generator as any).isCompositeType("UserRole")).toBe(false);
+        expect((generator as any).isCompositeType("String")).toBe(false);
+      });
+    });
+
+    describe("convertFieldToJsonSchema() with composite types", () => {
+      it("should expand a composite type field into an object schema", () => {
+        const field = modelWithCompositeTypes.fields.find(
+          (f) => f.name === "agentInfo"
+        )!;
+        const property = (generator as any).convertFieldToJsonSchema(field);
+
+        expect(property.type).toBe("object");
+        expect(property.properties).toHaveProperty("ip");
+        expect(property.properties).toHaveProperty("city");
+        expect(property.properties.ip.type).toBe("string");
+      });
+
+      it("should expand an array composite type field into an array of objects", () => {
+        const field = modelWithCompositeTypes.fields.find(
+          (f) => f.name === "tags"
+        )!;
+        const property = (generator as any).convertFieldToJsonSchema(field);
+
+        expect(property.type).toBe("array");
+        expect(property.items.type).toBe("object");
+        expect(property.items.properties).toHaveProperty("ip");
+        expect(property.items.properties).toHaveProperty("city");
+      });
+    });
+
+    describe("mapPrismaTypeToJsonSchema() with composite types", () => {
+      it("should return object for composite type names", () => {
+        expect((generator as any).mapPrismaTypeToJsonSchema("AgentInfo")).toBe(
+          "object"
+        );
+        expect(
+          (generator as any).mapPrismaTypeToJsonSchema("GeoLocation")
+        ).toBe("object");
+      });
+    });
+
+    describe("generateCreateSchema() with composite type fields", () => {
+      it("should include composite type fields as nested objects", () => {
+        const schema = (generator as any).generateCreateSchema(
+          modelWithCompositeTypes,
+          {}
+        );
+
+        expect(schema.properties).toHaveProperty("agentInfo");
+        expect(schema.properties.agentInfo.type).toBe("object");
+        expect(schema.properties.agentInfo.properties).toHaveProperty("ip");
+        expect(schema.properties.agentInfo.properties).toHaveProperty("city");
+      });
+
+      it("should include optional composite type fields without adding to required", () => {
+        const schema = (generator as any).generateCreateSchema(
+          modelWithCompositeTypes,
+          {}
+        );
+
+        expect(schema.properties).toHaveProperty("location");
+        expect(schema.required).not.toContain("location");
+      });
+
+      it("should include required composite type fields in required array", () => {
+        const schema = (generator as any).generateCreateSchema(
+          modelWithCompositeTypes,
+          {}
+        );
+
+        expect(schema.required).toContain("agentInfo");
+      });
+
+      it("should expand array composite type fields correctly", () => {
+        const schema = (generator as any).generateCreateSchema(
+          modelWithCompositeTypes,
+          {}
+        );
+
+        expect(schema.properties).toHaveProperty("tags");
+        expect(schema.properties.tags.type).toBe("array");
+        expect(schema.properties.tags.items.type).toBe("object");
+      });
+    });
+
+    describe("generateUpdateSchema() with composite type fields", () => {
+      it("should include composite type fields as nested objects", () => {
+        const schema = (generator as any).generateUpdateSchema(
+          modelWithCompositeTypes,
+          {}
+        );
+
+        expect(schema.properties).toHaveProperty("agentInfo");
+        expect(schema.properties.agentInfo.type).toBe("object");
+        expect(schema.properties).toHaveProperty("location");
+      });
+
+      it("should not add composite type fields to required", () => {
+        const schema = (generator as any).generateUpdateSchema(
+          modelWithCompositeTypes,
+          {}
+        );
+
+        expect(schema.required).toEqual([]);
+      });
+    });
+
+    describe("generateResponseSchema() with composite type fields", () => {
+      it("should include composite type fields in response", () => {
+        const schema = (generator as any).generateResponseSchema(
+          modelWithCompositeTypes,
+          {},
+          "findOne"
+        );
+
+        expect(schema.properties).toHaveProperty("agentInfo");
+        expect(schema.properties.agentInfo.type).toBe("object");
+        expect(schema.properties.agentInfo.properties).toHaveProperty("ip");
+      });
+
+      it("should respect select options for composite type fields", () => {
+        const schema = (generator as any).generateResponseSchema(
+          modelWithCompositeTypes,
+          { select: { id: true, agentInfo: true } },
+          "findOne"
+        );
+
+        expect(schema.properties).toHaveProperty("agentInfo");
+        expect(schema.properties).not.toHaveProperty("location");
+      });
+
+      it("should add non-optional composite type fields to required", () => {
+        const schema = (generator as any).generateResponseSchema(
+          modelWithCompositeTypes,
+          {},
+          "findOne"
+        );
+
+        expect(schema.required).toContain("agentInfo");
+        expect(schema.required).not.toContain("location");
+      });
     });
   });
 });
