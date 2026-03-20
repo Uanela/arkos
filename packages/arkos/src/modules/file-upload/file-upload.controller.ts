@@ -62,7 +62,9 @@ export class FileUploadController {
       const { fileUpload } = getArkosConfig();
       const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
 
-      const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
+      const uploadPath = path.resolve(
+        path.join(process.cwd(), baseUploadDir, fileType)
+      );
       try {
         await fs.promises.access(uploadPath);
       } catch (err) {
@@ -247,7 +249,9 @@ export class FileUploadController {
       const { fileUpload } = getArkosConfig();
       const baseUploadDir = fileUpload?.baseUploadDir || "/uploads";
 
-      const uploadPath = path.resolve(process.cwd(), baseUploadDir, fileType);
+      const uploadPath = path.resolve(
+        path.join(process.cwd(), baseUploadDir, fileType)
+      );
       try {
         await fs.promises.access(uploadPath);
       } catch (err) {

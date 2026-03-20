@@ -7,6 +7,7 @@ import { getVersion } from "./utils/cli.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
 import sheu from "../sheu";
 import { removeDir } from "../remove-dir";
+import { bundler } from "../bundler";
 
 const BUILD_DIR = ".build";
 const MODULE_TYPES = ["cjs", "esm"] as const;
@@ -131,8 +132,13 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
     });
 
     copyAllNonSourceFiles(moduleType, [".ts", ".tsx"]);
+    bundler.bundle({
+      ext: ".js",
+      outDir: path.join(process.cwd(), BUILD_DIR),
+      rootDir: process.cwd(),
+      configPath: tempTsconfigPath,
+    });
 
-    // Clean up temp config
     cleanupTempConfig(tempTsconfigPath);
   } catch (error) {
     cleanupTempConfig(tempTsconfigPath);
@@ -176,10 +182,15 @@ function buildJavaScriptProject(_: BuildOptions, moduleType: ModuleType) {
       ".tsx",
     ]);
 
-    // Create appropriate package.json in the build directory
-    createModulePackageJson(moduleType);
-  } catch (error) {
-    console.error("❌ Error building JavaScript project:", error);
+    bundler.bundle({
+      ext: ".js",
+      outDir: path.join(process.cwd(), BUILD_DIR),
+      rootDir: process.cwd(),
+    });
+    // createModulePackageJson(moduleType);
+  } catch (error: any) {
+    console.info(error.stack);
+    console.error("❌ Error building JavaScript project:", error.stack);
     throw error;
   }
 }
@@ -237,7 +248,7 @@ function copyAllNonSourceFiles(_: ModuleType, skipExtensions: string[]) {
     copyDirRecursive(sourceDir);
 
     // Copy project root files if needed
-    const rootFilesToCopy = ["README.md", "LICENSE"];
+    const rootFilesToCopy = ["arkos.config.js"];
 
     for (const file of rootFilesToCopy) {
       if (fs.existsSync(path.join(process.cwd(), file))) {
@@ -252,44 +263,6 @@ function copyAllNonSourceFiles(_: ModuleType, skipExtensions: string[]) {
   } catch (error) {
     console.warn("Warning: Error copying project files:", error);
     console.error(error);
-  }
-}
-
-/**
- * Create appropriate package.json in the build directory
- */
-function createModulePackageJson(moduleType: ModuleType) {
-  const packageJsonPath = path.join(process.cwd(), "package.json");
-
-  if (!fs.existsSync(packageJsonPath)) {
-    return;
-  }
-
-  try {
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-    const buildPackageJson: any = {
-      name: packageJson.name,
-      version: packageJson.version,
-      description: packageJson.description,
-      main: "index.js",
-      dependencies: packageJson.dependencies,
-    };
-
-    // Set appropriate type field for ESM
-    if (moduleType === "esm") {
-      buildPackageJson.type = "module";
-    }
-
-    const targetDir = path.join(BUILD_DIR, moduleType);
-    fs.writeFileSync(
-      path.join(targetDir, "package.json"),
-      JSON.stringify(buildPackageJson, null, 2)
-    );
-  } catch (error) {
-    console.warn(
-      "Warning: Failed to create module-specific package.json",
-      error
-    );
   }
 }
 

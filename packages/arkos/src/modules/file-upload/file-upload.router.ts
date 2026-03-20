@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { getModuleComponents } from "../../utils/dynamic-loader";
-import authService from "../auth/auth.service";
 import fileUploadController from "./file-upload.controller";
 import express from "express";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthConfigs } from "../../types/auth";
 import { sendResponse } from "../base/base.middlewares";
-import { processMiddleware } from "../../utils/helpers/routers.helpers";
+import {
+  createRouteConfig,
+  processMiddleware,
+} from "../../utils/helpers/routers.helpers";
 import { adjustRequestUrl } from "./utils/helpers/file-upload.helpers";
 import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
@@ -14,10 +16,10 @@ import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import { ArkosConfig } from "../../exports";
 import path from "path";
-
-const router: Router = Router();
+import ArkosRouter from "../../utils/arkos-router";
 
 export function getFileUploadRouter(arkosConfig: ArkosConfig) {
+  const router = ArkosRouter();
   const { fileUpload } = arkosConfig;
 
   const moduleComponents = getModuleComponents("file-upload");
@@ -40,6 +42,13 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const customRouter = customRouterModule?.default as Router;
   let basePathname = fileUpload?.baseRoute || "/api/uploads/";
 
+  if (!basePathname.startsWith("/")) basePathname = "/" + basePathname;
+  if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
+
+  // Strip leading slash so createRouteConfig can prepend its own "/"
+  // e.g. "/api/uploads/" → "api/uploads/" → createRouteConfig builds "/api/uploads/*"
+  const baseRoutePrefix = basePathname.slice(1);
+
   if (customRouter && customRouterModule) {
     if (routerValidator.isExpressRouter(customRouter))
       router.use(basePathname, customRouter);
@@ -49,9 +58,6 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
       );
   }
 
-  if (!basePathname.startsWith("/")) basePathname = "/" + basePathname;
-  if (!basePathname.endsWith("/")) basePathname = basePathname + "/";
-
   if (!isEndpointDisabled(routerConfig, "findFile")) {
     const baseUploadDirFullPath = path.resolve(
       path
@@ -59,15 +65,14 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
         .replaceAll("//", "/")
     );
     router.get(
-      `${basePathname}*`,
-      authService.handleAuthenticationControl(
-        "View",
-        authConfigs.authenticationControl
-      ),
-      authService.handleAccessControl(
-        "View",
+      createRouteConfig(
+        arkosConfig,
+        "findFile",
+        baseRoutePrefix,
+        `*`,
+        routerConfig,
         "file-upload",
-        authConfigs.accessControl
+        authConfigs
       ),
       ...processMiddleware(interceptors?.beforeFindFile),
       adjustRequestUrl,
@@ -92,15 +97,14 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
 
   if (!isEndpointDisabled(routerConfig, "uploadFile")) {
     router.post(
-      `${basePathname}:fileType`,
-      authService.handleAuthenticationControl(
-        "Create",
-        authConfigs.authenticationControl
-      ),
-      authService.handleAccessControl(
-        "Create",
+      createRouteConfig(
+        arkosConfig,
+        "uploadFile",
+        baseRoutePrefix,
+        `:fileType`,
+        routerConfig,
         "file-upload",
-        authConfigs.accessControl
+        authConfigs
       ),
       ...processMiddleware(interceptors?.beforeUploadFile),
       fileUploadController.uploadFile,
@@ -112,15 +116,14 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
 
   if (!isEndpointDisabled(routerConfig, "updateFile")) {
     router.patch(
-      `${basePathname}:fileType/:fileName`,
-      authService.handleAuthenticationControl(
-        "Update",
-        authConfigs.authenticationControl
-      ),
-      authService.handleAccessControl(
-        "Update",
+      createRouteConfig(
+        arkosConfig,
+        "updateFile",
+        baseRoutePrefix,
+        `:fileType/:fileName`,
+        routerConfig,
         "file-upload",
-        authConfigs.accessControl
+        authConfigs
       ),
       ...processMiddleware(interceptors?.beforeUpdateFile),
       fileUploadController.updateFile,
@@ -132,15 +135,14 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
 
   if (!isEndpointDisabled(routerConfig, "deleteFile")) {
     router.delete(
-      `${basePathname}:fileType/:fileName`,
-      authService.handleAuthenticationControl(
-        "Delete",
-        authConfigs.authenticationControl
-      ),
-      authService.handleAccessControl(
-        "Delete",
+      createRouteConfig(
+        arkosConfig,
+        "deleteFile",
+        baseRoutePrefix,
+        `:fileType/:fileName`,
+        routerConfig,
         "file-upload",
-        authConfigs.accessControl
+        authConfigs
       ),
       ...processMiddleware(interceptors?.beforeDeleteFile),
       fileUploadController.deleteFile,
