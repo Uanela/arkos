@@ -300,18 +300,27 @@ export interface ArkosResponse<
 
 export interface ArkosNextFunction extends NextFunction {}
 
-export interface ArkosRequestHandler<
+export type ArkosRequestHandler<
   P extends Record<string, any> = any,
   ResBody = any,
   ReqBody = any,
-  ReqQuery = qs.ParsedQs,
+  ReqQuery extends Record<string, any> = any,
   Locals extends Record<string, any> = Record<string, any>,
-> extends RequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {}
+> = (
+  req: ArkosRequest<P, ResBody, ReqBody, ReqQuery>,
+  res: ArkosResponse<ResBody, Locals>,
+  next: ArkosNextFunction
+) => void | Promise<void>;
 
-export interface ArkosErrorRequestHandler<
+export type ArkosErrorRequestHandler<
   P extends Record<string, any> = any,
   ResBody = any,
   ReqBody = any,
-  ReqQuery = qs.ParsedQs,
+  ReqQuery extends Record<string, any> = any,
   Locals extends Record<string, any> = Record<string, any>,
-> extends ErrorRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals> {}
+> = (
+  err: any,
+  req: ArkosRequest<P, ResBody, ReqBody, ReqQuery>,
+  res: ArkosResponse<ResBody, Locals>,
+  next: ArkosNextFunction
+) => void | Promise<void>;

@@ -104,6 +104,7 @@ export async function devCommand(options: DevOptions = {}) {
           shell: true,
         });
       } else {
+        env.TSX_TSCONFIG_PATH = "./jsconfig.json";
         child = spawn(
           "npx",
           ["tsx-strict", "--no-type-check", "--watch", entryPoint],

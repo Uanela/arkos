@@ -32,7 +32,7 @@ export function startCommand(options: StartOptions = {}) {
 
     if (!fs.existsSync(path.join(entryPoint))) {
       sheu.error(
-        `Could not find built application entry point at ${fullCleanCwd(entryPoint)}`
+        `Could not find built application entry point at ${fullCleanCwd(entryPoint).replaceAll(/^\/+/g, "")}`
       );
       process.exit(1);
     }
