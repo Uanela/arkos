@@ -9,6 +9,7 @@ export default async function exportAuthActionCommand(options: {
   overwrite?: boolean;
   path?: string;
 }) {
+  process.env.NO_CLI = "true";
   process.env.CLI_COMMAND = "EXPORT_AUTH_ACTION";
   process.env.CLI_COMMAND_OPTIONS = JSON.stringify(options);
 
