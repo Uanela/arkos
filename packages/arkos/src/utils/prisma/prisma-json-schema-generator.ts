@@ -30,6 +30,9 @@ export interface GeneratedSchemas {
 export class PrismaJsonSchemaGenerator {
   schema = prismaSchemaParser.parse();
 
+  private isCompositeType(typeName: string): boolean {
+    return prismaSchemaParser.compositeTypes.some((t) => t.name === typeName);
+  }
   /**
    * Main method to generate all schemas for a model
    */
@@ -757,6 +760,24 @@ export class PrismaJsonSchemaGenerator {
     const baseType = this.mapPrismaTypeToJsonSchema(field.type);
     const property: JsonSchemaProperty = { type: baseType };
 
+    if (this.isCompositeType(field.type)) {
+      const compositeType = prismaSchemaParser.compositeTypes.find(
+        (t) => t.name === field.type
+      )!;
+      const nestedProperties: { [key: string]: JsonSchemaProperty } = {};
+      for (const nestedField of compositeType.fields) {
+        nestedProperties[nestedField.name] =
+          this.convertFieldToJsonSchema(nestedField);
+      }
+      if (field.isArray) {
+        return {
+          type: "array",
+          items: { type: "object", properties: nestedProperties },
+        };
+      }
+      return { type: "object", properties: nestedProperties };
+    }
+
     if (field.isArray) {
       property.type = "array";
       property.items = { type: this.mapPrismaTypeToJsonSchema(field.type) };
@@ -796,6 +817,8 @@ export class PrismaJsonSchemaGenerator {
     if (this.isEnum(prismaType)) return "string";
 
     if (this.isModelRelation(prismaType)) return "object";
+
+    if (this.isCompositeType(prismaType)) return "object";
 
     return "string";
   }
