@@ -127,7 +127,7 @@ export function createRouteConfig(
   };
 
   const endpointConfig = (routerConfig as any)[endpoint];
-  if (endpointConfig) config = deepmerge(config, endpointConfig);
+  if (endpointConfig) config = { ...config, ...endpointConfig };
 
   return config;
 }
