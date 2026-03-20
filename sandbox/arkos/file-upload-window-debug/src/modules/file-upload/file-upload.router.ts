@@ -11,7 +11,7 @@ export const config: RouterConfig<"file-upload"> = {
   },
   findFile: {
     validation: {
-      body: z.object({ the: z.string() }),
+      // body: z.object({ the: z.string() }),
       // params: z.object({ sheu: z.string() }),
     },
     experimental: {

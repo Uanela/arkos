@@ -1,12 +1,16 @@
 import { ArkosRouter } from "arkos";
 
-// export config = {
-//   createOne: {
-//     validation: {
-//       body: C
-//     }
-//   }
-// }
+export const config = {
+  createOne: {
+    validation: { body: false },
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "0[cover]",
+      },
+    },
+  },
+};
 
 const postRouter = ArkosRouter();
 
