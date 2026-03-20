@@ -149,7 +149,7 @@ type RequestBodyDefinition =
  * Defining both validation and openapi schemas for the same field will cause
  * a startup error to prevent documentation drift.
  */
-type ExtendedOperationObject = Omit<
+export type ExtendedOperationObject = Omit<
   OpenAPIV3.OperationObject,
   "responses" | "requestBody"
 > & {
