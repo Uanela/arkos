@@ -216,6 +216,13 @@ export function generateOpenAPIFromApp(app: any) {
       );
     }
 
+    let wildcardCount = (path.match(/\*/g) || []).length;
+    let wildcardIndex = 0;
+    path = path.replace(/\*/g, () => {
+      wildcardIndex++;
+      return wildcardCount === 1 ? "{path}" : `{path${wildcardIndex}}`;
+    });
+
     if (!paths[path]) paths[path] = {};
 
     if (typeof config?.experimental?.openapi === "boolean") {
@@ -288,7 +295,8 @@ export function generateOpenAPIFromApp(app: any) {
       if (
         !pathParatemersFromRoutePath.includes(param.name) &&
         !pathParatemersFromRoutePath.includes(`${param.name}?`) &&
-        param.in === "path"
+        param.in === "path" &&
+        param.name !== "*"
       )
         throw new Error(
           `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`
