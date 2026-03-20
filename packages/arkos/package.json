@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.5.3-beta",
+  "version": "1.5.4-beta",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -89,7 +89,7 @@
     "buildTsup": "tsup && tsx scripts/post-build-scripts.ts",
     "minifyOld": "esbuild dist/cjs/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "minify": "esbuild $(find dist -type f -name '*.js') --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
-    "clean": "tsx src/utils/cli/remove-dir-cli.ts",
+    "clean": "tsx scripts/remove-dir-cli.ts",
     "dev": "tsx --watch",
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "pnpm run build",
