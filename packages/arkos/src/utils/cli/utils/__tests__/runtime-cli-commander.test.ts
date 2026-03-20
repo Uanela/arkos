@@ -16,7 +16,8 @@ jest.mock("fs/promises");
 jest.mock("path");
 jest.mock("../../../sheu");
 jest.mock("../../../helpers/fs.helpers", () => ({
-  fullCleanCwd: jest.fn((val: any) => val),
+  ...jest.requireActual("../../../helpers/fs.helpers"),
+  // fullCleanCwd: jest.fn((val: any) => val),
   getUserFileExtension: jest.fn(),
 }));
 jest.mock("../../../helpers/global.helpers");
