@@ -4081,7 +4081,7 @@ describe("ClassValidatorDtoGenerator", () => {
       expect(result).toContain("@IsString()\n  name!: string;");
       expect(result).toContain("@IsString()\n  slug!: string;");
       expect(result).toContain(
-        "@IsOptional()\n  @IsString()\n  color?: string;"
+        "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  color?: string;"
       );
       expect(result).toContain(
         "@ValidateNested()\n  @Type(() => PostTagForCreatePostDto)\n  mainTag!: PostTagForCreatePostDto;"
@@ -4350,7 +4350,7 @@ describe("ClassValidatorDtoGenerator", () => {
         },
       ];
 
-      const result = classValidatorDtoGenerator.generateCreateDto({
+      const result = classValidatorDtoGenerator.generateUpdateDto({
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
@@ -4387,7 +4387,7 @@ describe("ClassValidatorDtoGenerator", () => {
         },
       ];
 
-      const result = classValidatorDtoGenerator.generateCreateDto({
+      const result = classValidatorDtoGenerator.generateUpdateDto({
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
@@ -4422,7 +4422,7 @@ describe("ClassValidatorDtoGenerator", () => {
         },
       ];
 
-      const result = classValidatorDtoGenerator.generateCreateDto({
+      const result = classValidatorDtoGenerator.generateUpdateDto({
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
@@ -4468,7 +4468,7 @@ describe("ClassValidatorDtoGenerator", () => {
         },
       ];
 
-      const result = classValidatorDtoGenerator.generateCreateDto({
+      const result = classValidatorDtoGenerator.generateUpdateDto({
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
@@ -4506,7 +4506,7 @@ describe("ClassValidatorDtoGenerator", () => {
         },
       ];
 
-      const result = classValidatorDtoGenerator.generateCreateDto({
+      const result = classValidatorDtoGenerator.generateUpdateDto({
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
@@ -4541,7 +4541,7 @@ describe("ClassValidatorDtoGenerator", () => {
         },
       ];
 
-      const result = classValidatorDtoGenerator.generateCreateDto({
+      const result = classValidatorDtoGenerator.generateUpdateDto({
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
