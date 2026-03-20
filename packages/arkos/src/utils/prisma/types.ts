@@ -9,6 +9,7 @@ export interface PrismaField {
   defaultValue?: any;
   isId?: boolean;
   isUnique?: boolean;
+  isCompositeType?: boolean;
   attributes: string[];
 }
 
