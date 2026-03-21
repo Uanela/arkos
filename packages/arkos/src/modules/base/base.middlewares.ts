@@ -203,6 +203,9 @@ export function handleRequestLogs(
   next();
 }
 
+/**
+ * @deprecated Will be removed in v2.0, please ArkosRouter instead.
+ */
 export function handleRequestBodyValidationAndTransformation<T extends object>(
   schemaOrDtoClass?: ClassConstructor<T>,
   classValidatorValidationOptions?: ValidatorOptions
