@@ -210,22 +210,26 @@ describe("getPrismaModelsRouter", () => {
   it("should skip openapi injection when experimental.openapi is false", () => {
     const mockParser = getPrismaParser();
     mockParser.getModelsAsArrayOfStrings.mockReturnValue(["User"]);
-    (loadableRegistry.getItem as jest.Mock).mockReturnValue(null);
+    (loadableRegistry.getItem as jest.Mock).mockReturnValue({ exists: true }); // non-null triggers routeHookReader
 
-    (routeHookReader.forOperation as jest.Mock).mockReturnValue({
-      before: [],
-      after: [],
-      onError: [],
-      prismaArgs: {},
-      routeConfig: {
-        experimental: { openapi: false },
-      },
-    });
+    (routeHookReader.forOperation as jest.Mock).mockImplementation(
+      (_, operation) => ({
+        before: [],
+        after: [],
+        onError: [],
+        prismaArgs: {},
+        routeConfig:
+          operation === "createOne" ? { experimental: { openapi: false } } : {},
+      })
+    );
 
     getPrismaModelsRouter();
 
-    // getOpenApiConfig should not be called for this endpoint
-    expect(modelOpenAPIGenerator.getOpenApiConfig).not.toHaveBeenCalled();
+    const createOneCall = (mockRouter.post as jest.Mock).mock.calls.find(
+      ([config]: any) => config?.path === "/users"
+    );
+    expect(createOneCall[0].experimental?.openapi).toBe(false);
+    expect(modelOpenAPIGenerator.getOpenApiConfig).toHaveBeenCalledTimes(7);
   });
 
   it("should pass prismaArgs from routeHookReader to getOpenApiConfig", () => {
@@ -256,28 +260,31 @@ describe("getPrismaModelsRouter", () => {
   it("should preserve existing experimental config when injecting openapi", () => {
     const mockParser = getPrismaParser();
     mockParser.getModelsAsArrayOfStrings.mockReturnValue(["User"]);
-    (loadableRegistry.getItem as jest.Mock).mockReturnValue(null);
+    (loadableRegistry.getItem as jest.Mock).mockReturnValue({ exists: true });
 
-    (routeHookReader.forOperation as jest.Mock).mockReturnValue({
-      before: [],
-      after: [],
-      onError: [],
-      prismaArgs: {},
-      routeConfig: {
-        experimental: {
-          uploads: { type: "single", field: "avatar" },
-        },
-      },
-    });
+    (routeHookReader.forOperation as jest.Mock).mockImplementation(
+      (_, operation: string) => ({
+        before: [],
+        after: [],
+        onError: [],
+        prismaArgs: {},
+        routeConfig:
+          operation === "createOne"
+            ? { experimental: { uploads: { type: "single", field: "avatar" } } }
+            : {},
+      })
+    );
 
     getPrismaModelsRouter();
 
-    const firstPostCall = (mockRouter.post as jest.Mock).mock.calls[0][0];
-    expect(firstPostCall.experimental?.uploads).toEqual({
+    const createOneCall = (mockRouter.post as jest.Mock).mock.calls.find(
+      ([config]: any) => config?.path === "/users"
+    );
+    expect(createOneCall[0].experimental?.uploads).toEqual({
       type: "single",
       field: "avatar",
     });
-    expect(firstPostCall.experimental?.openapi).toBeDefined();
+    expect(createOneCall[0].experimental?.openapi).toBeDefined();
   });
 
   it("should pass correct path for each endpoint", () => {

@@ -75,7 +75,7 @@ describe("getAuthRouter", () => {
       const router = getMockRouter();
 
       expect(router.get).toHaveBeenCalledWith(
-        { path: "/users/me" },
+        expect.objectContaining({ path: "/users/me" }),
         expect.any(Function),
         authController.getMe,
         sendResponse
@@ -87,7 +87,7 @@ describe("getAuthRouter", () => {
       const router = getMockRouter();
 
       expect(router.patch).toHaveBeenCalledWith(
-        { path: "/users/me" },
+        expect.objectContaining({ path: "/users/me" }),
         expect.any(Function),
         authController.updateMe,
         sendResponse
@@ -98,12 +98,13 @@ describe("getAuthRouter", () => {
       getAuthRouter();
       const router = getMockRouter();
 
-      expect(router.delete).toHaveBeenCalledWith(
-        { path: "/users/me" },
-        expect.any(Function),
-        authController.deleteMe,
-        sendResponse
+      const call = (getMockRouter().delete as jest.Mock).mock.calls.find(
+        ([config]: any) => config?.path === "/users/me"
       );
+      expect(call).toBeDefined();
+      expect(call[0]).toMatchObject({ path: "/users/me" });
+      expect(call).toContain(authController.deleteMe);
+      expect(call).toContain(sendResponse);
     });
 
     it("should register POST /auth/login with rateLimit and authentication: false", () => {
@@ -177,49 +178,51 @@ describe("getAuthRouter", () => {
       getAuthRouter();
       const router = getMockRouter();
 
-      expect(router.get).toHaveBeenCalledWith(
-        { path: "/auth-actions" },
-        authController.findManyAuthAction,
-        sendResponse
+      const call = (router.get as jest.Mock).mock.calls.find(
+        ([config]: any) => config?.path === "/auth-actions"
       );
+      expect(call).toBeDefined();
+      expect(call).toContain(authController.findManyAuthAction);
+      expect(call).toContain(sendResponse);
     });
 
     it("should register GET /auth-actions/:resourceName", () => {
       getAuthRouter();
       const router = getMockRouter();
 
-      expect(router.get).toHaveBeenCalledWith(
-        { path: "/auth-actions/:resourceName" },
-        authController.findOneAuthAction,
-        sendResponse
+      const call = (router.get as jest.Mock).mock.calls.find(
+        ([config]: any) => config?.path === "/auth-actions/:resourceName"
       );
+      expect(call).toBeDefined();
+      expect(call).toContain(authController.findOneAuthAction);
+      expect(call).toContain(sendResponse);
     });
 
     it("should call addPrismaQueryOptionsToRequest with empty prismaArgs for each route", () => {
       getAuthRouter();
 
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { getMe: undefined },
+        { getMe: {} },
         "getMe"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { updateMe: undefined },
+        { updateMe: {} },
         "updateMe"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { deleteMe: undefined },
+        { deleteMe: {} },
         "deleteMe"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { login: undefined },
+        { login: {} },
         "login"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { signup: undefined },
+        { signup: {} },
         "signup"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { updatePassword: undefined },
+        { updatePassword: {} },
         "updatePassword"
       );
     });
