@@ -14,6 +14,7 @@ import prismaSchemaParser from "../prisma/prisma-schema-parser";
 import generateMultipleComponents, {
   MultipleComponentsGenerateOptions,
 } from "./utils/template-generator/templates/generate-multiple-components";
+import ExitError from "../helpers/exit-error";
 
 export const kebabPrismaModels = prismaSchemaParser
   .getModelsAsArrayOfStrings()
@@ -25,6 +26,7 @@ export type GenerateOptions = {
   path?: string;
   model?: string;
   module?: string;
+  modules?: string;
   overwrite?: boolean;
   shouldExit?: boolean;
   shouldPrintError?: boolean;
@@ -40,16 +42,43 @@ interface GenerateConfig {
   prefix?: string;
   allowedModules: string[] | "*";
   ext?: string;
+  attachModuleName?: boolean; // defaults to true
 }
 
 const generateFile = async (
   options: GenerateOptions,
   config: GenerateConfig
 ) => {
+  if (options.modules) {
+    const moduleNames = options.modules
+      .split(",")
+      .map((m: string) => m.trim())
+      .filter(Boolean);
+
+    let totalFail = 0;
+    for (const moduleName of moduleNames) {
+      try {
+        await generateFile(
+          { ...options, modules: undefined, module: moduleName },
+          config
+        );
+      } catch (err: any) {
+        totalFail++;
+      }
+    }
+    if (totalFail > 0) process.exit(1);
+    return;
+  }
+
   const modelName = options.module || options.model;
+  if (modelName?.includes(","))
+    throw ExitError(
+      "Multiple modules are not supported with -m/--module. Use -ms/--modules instead.\n" +
+        "Example: arkos g router -ms post,user,auth"
+    );
 
   if (options.module && options.model)
-    throw Error(
+    throw ExitError(
       "You must either pass --module or --model, prefer --module to align with future updates."
     );
 
@@ -102,8 +131,12 @@ const generateFile = async (
     }
 
     const fileName = config.prefix
-      ? `${config.prefix}${names.kebab}${getSuffix()}.${ext}`
-      : `${names.kebab}${getSuffix()}.${ext}`;
+      ? config.attachModuleName === false
+        ? `${config.prefix}${getSuffix()}.${ext}`
+        : `${config.prefix}${names.kebab}${getSuffix()}.${ext}`
+      : config.attachModuleName === false
+        ? `${names.kebab}${getSuffix()}.${ext}`
+        : `${names.kebab}${getSuffix()}.${ext}`;
 
     filePath = path.join(modulePath, fileName);
   }
@@ -324,6 +357,94 @@ export const generateCommand = {
       templateName: "prisma-model",
       allowedModules: "*",
       ext: "prisma",
+    });
+  },
+
+  loginSchema: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "login-schema",
+      fileSuffix: "schema",
+      customPath: "src/modules/auth/schemas",
+      prefix: "login",
+      allowedModules: ["auth"],
+      attachModuleName: false,
+    });
+  },
+
+  signupSchema: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "signup-schema",
+      fileSuffix: "schema",
+      customPath: "src/modules/auth/schemas",
+      prefix: "signup",
+      allowedModules: ["auth"],
+      attachModuleName: false,
+    });
+  },
+
+  updateMeSchema: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "update-me-schema",
+      fileSuffix: "schema",
+      customPath: "src/modules/auth/schemas",
+      prefix: "update-me",
+      allowedModules: ["auth"],
+      attachModuleName: false,
+    });
+  },
+
+  updatePasswordSchema: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "update-password-schema",
+      fileSuffix: "schema",
+      customPath: "src/modules/auth/schemas",
+      prefix: "update-password",
+      allowedModules: ["auth"],
+      attachModuleName: false,
+    });
+  },
+
+  loginDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "login-dto",
+      fileSuffix: "dto",
+      customPath: "src/modules/auth/dtos",
+      prefix: "login",
+      allowedModules: ["auth"],
+      attachModuleName: false,
+    });
+  },
+
+  signupDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "signup-dto",
+      fileSuffix: "dto",
+      customPath: "src/modules/auth/dtos",
+      prefix: "signup",
+      allowedModules: ["auth"],
+      attachModuleName: false,
+    });
+  },
+
+  updateMeDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "update-me-dto",
+      fileSuffix: "dto",
+      customPath: "src/modules/auth/dtos",
+      prefix: "update-me",
+      allowedModules: ["auth"],
+      attachModuleName: false,
+    });
+  },
+
+  updatePasswordDto: async (options: GenerateOptions) => {
+    await generateFile(options, {
+      templateName: "update-password-dto",
+      fileSuffix: "dto",
+      customPath: "src/modules/auth/dtos",
+      prefix: "update-password",
+      allowedModules: ["auth"],
+      attachModuleName: false,
     });
   },
 
