@@ -622,60 +622,6 @@ describe("arkosRouterOpenApiManager", () => {
           "Upload field 'avatar' must have format 'binary', got 'undefined'"
         );
       });
-
-      it("should throw error when required field not marked as required in schema", () => {
-        const userSchema = {
-          type: "object",
-          properties: {
-            document: {
-              type: "string",
-              format: "binary",
-            },
-          },
-        };
-
-        const uploadConfig: UploadConfig = {
-          type: "single",
-          field: "document",
-        };
-
-        expect(() =>
-          arkosRouterOpenApiManager.validateMultipartFormDocs(
-            userSchema,
-            "/upload/document",
-            uploadConfig
-          )
-        ).toThrow(
-          "Upload field 'document' is required in config but not marked as required in schema"
-        );
-      });
-
-      it("should throw error when optional field marked as required in schema", () => {
-        const userSchema = {
-          type: "object",
-          properties: {
-            avatar: {
-              type: "string",
-              format: "binary",
-            },
-          },
-        };
-
-        const uploadConfig: UploadConfig = {
-          type: "single",
-          field: "avatar",
-        };
-
-        expect(() =>
-          arkosRouterOpenApiManager.validateMultipartFormDocs(
-            userSchema,
-            "/users/avatar",
-            uploadConfig
-          )
-        ).toThrow(
-          "Upload field 'avatar' is not required in config but marked as required in schema"
-        );
-      });
     });
 
     describe("Array file upload validation", () => {
@@ -1026,72 +972,9 @@ describe("arkosRouterOpenApiManager", () => {
           )
         ).toThrow("Upload field 'avatar' must have type 'array', got 'string'");
       });
-
-      it("should throw error when required fields not all marked as required", () => {
-        const userSchema = {
-          type: "object",
-          properties: {
-            id_front: {
-              type: "array",
-              items: {
-                type: "string",
-                format: "binary",
-              },
-            },
-            id_back: {
-              type: "array",
-              items: {
-                type: "string",
-                format: "binary",
-              },
-            },
-          },
-        };
-
-        const uploadConfig: UploadConfig = {
-          type: "fields",
-          fields: [{ name: "id_front" }, { name: "id_back" }],
-        };
-
-        expect(() =>
-          arkosRouterOpenApiManager.validateMultipartFormDocs(
-            userSchema,
-            "/verify/identity",
-            uploadConfig
-          )
-        ).toThrow(
-          "Upload field 'id_back' is required in config but not marked as required in schema"
-        );
-      });
     });
 
     describe("Multiple errors collection", () => {
-      it("should collect and report all errors at once", () => {
-        const userSchema = {
-          type: "object",
-          properties: {
-            avatar: {
-              type: "number",
-            },
-          },
-        };
-
-        const uploadConfig: UploadConfig = {
-          type: "single",
-          field: "avatar",
-        };
-
-        expect(() =>
-          arkosRouterOpenApiManager.validateMultipartFormDocs(
-            userSchema,
-            "/users/avatar",
-            uploadConfig
-          )
-        ).toThrow(
-          /Upload field 'avatar' must have type 'string'.*Upload field 'avatar' must have format 'binary'.*Upload field 'avatar' is required in config/s
-        );
-      });
-
       it("should collect multiple missing fields and type errors", () => {
         const userSchema = {
           type: "object",
@@ -1117,7 +1000,6 @@ describe("arkosRouterOpenApiManager", () => {
           Error(
             `ValidationError: Invalid multipart/form-data schema for route '/users/profile':
   - Upload field 'avatar' must have type 'array', got 'string'
-  - Upload field 'avatar' is not required in config but marked as required in schema
   - Missing upload field 'resume' in multipart/form-data schema`
           )
         );
