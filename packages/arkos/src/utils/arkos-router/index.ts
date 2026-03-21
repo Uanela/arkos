@@ -64,6 +64,13 @@ export function generateOpenAPIFromApp(app: any) {
       );
     }
 
+    let wildcardCount = (path.match(/\*/g) || []).length;
+    let wildcardIndex = 0;
+    path = path.replace(/\*/g, () => {
+      wildcardIndex++;
+      return wildcardCount === 1 ? "{path}" : `{path${wildcardIndex}}`;
+    });
+
     if (!paths[path]) paths[path] = {};
 
     if (typeof config?.experimental?.openapi === "boolean") {
@@ -136,7 +143,8 @@ export function generateOpenAPIFromApp(app: any) {
       if (
         !pathParatemersFromRoutePath.includes(param.name) &&
         !pathParatemersFromRoutePath.includes(`${param.name}?`) &&
-        param.in === "path"
+        param.in === "path" &&
+        param.name !== "*"
       )
         throw new Error(
           `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`
@@ -157,10 +165,11 @@ export function generateOpenAPIFromApp(app: any) {
       );
 
     (paths as any)[path][method.toLowerCase()] = {
+      ...convertedOpenAPI,
       summary: openapi?.summary || `${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Defaults"],
-      operationId: `${method.toLowerCase()}:${path}`,
+      operationId: openapi.operationId || `${method.toLowerCase()}:${path}`,
       parameters: allParameters,
       ...(!convertedOpenAPI.requestBody &&
         config?.validation &&
@@ -172,6 +181,7 @@ export function generateOpenAPIFromApp(app: any) {
               );
 
               return {
+                ...convertedOpenAPI?.requestBody?.content,
                 ...(hasUploadFields && {
                   "multipart/form-data": {
                     schema: openApiSchemaConverter.flattenSchema(
@@ -189,14 +199,16 @@ export function generateOpenAPIFromApp(app: any) {
             })(),
           },
         }),
-      ...(convertedOpenAPI?.requestBody?.content?.["application/json"] &&
+      ...(convertedOpenAPI?.requestBody?.content?.["application/json"]
+        ?.schema &&
         !multipartFormSchema &&
         !(config as any)?.validation?.body &&
         hasUploadFields && {
           requestBody: {
             content: (() => {
               const schema =
-                convertedOpenAPI?.requestBody?.content?.["application/json"];
+                convertedOpenAPI?.requestBody?.content?.["application/json"]
+                  ?.schema;
 
               return {
                 "multipart/form-data": {
@@ -207,12 +219,11 @@ export function generateOpenAPIFromApp(app: any) {
                     )
                   ),
                 },
-                ...convertedOpenAPI?.requestBody,
+                ...convertedOpenAPI?.requestBody?.content,
               };
             })(),
           },
         }),
-      ...convertedOpenAPI,
     };
   });
 

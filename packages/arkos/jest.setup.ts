@@ -53,3 +53,5 @@ jest.mock("./src/utils/arkos-router", () => ({
   ...jest.requireActual("./src/utils/arkos-router"),
   default: jest.fn(),
 }));
+
+jest.spyOn(console, "warn").mockImplementation(jest.fn());

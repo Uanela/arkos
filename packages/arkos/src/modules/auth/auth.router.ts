@@ -10,6 +10,7 @@ import loadableRegistry from "../../components/arkos-loadable-registry";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
 import { ArkosAuthRouteHookInstance } from "../../components/arkos-route-hook/types";
 import authController from "./auth.controller";
+import authOpenAPIGenerator from "./utils/auth-openapi-generator";
 
 export function getAuthRouter() {
   const router = ArkosRouter();
@@ -17,8 +18,8 @@ export function getAuthRouter() {
 
   const op = (
     operation: keyof Omit<ArkosAuthRouteHookInstance, "__type" | "moduleName">
-  ) =>
-    routeHook
+  ) => {
+    const components = routeHook
       ? routeHookReader.forOperation("auth", operation)
       : {
           before: [],
@@ -27,6 +28,24 @@ export function getAuthRouter() {
           prismaArgs: {},
           routeConfig: {},
         };
+
+    let endpointConfig = components.routeConfig || {};
+
+    if (endpointConfig?.experimental?.openapi !== false)
+      endpointConfig = {
+        ...(endpointConfig || {}),
+        experimental: {
+          ...(endpointConfig?.experimental || {}),
+          openapi: authOpenAPIGenerator.getOpenApiConfig(
+            endpointConfig,
+            operation
+          ),
+        },
+      };
+
+    components.routeConfig = endpointConfig;
+    return components;
+  };
 
   // GET /users/me - Get current user
   {

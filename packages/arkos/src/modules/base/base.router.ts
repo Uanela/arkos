@@ -12,6 +12,7 @@ import {
 } from "./base.middlewares";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
+import modelOpenAPIGenerator from "./utils/model-openapi-generator";
 
 export function getPrismaModelsRouter() {
   const router = ArkosRouter();
@@ -27,8 +28,8 @@ export function getPrismaModelsRouter() {
       modelNameInKebab
     );
 
-    const op = (operation: OperationByModule<"">) =>
-      routeHook
+    const op = (operation: OperationByModule<"">) => {
+      const components = routeHook
         ? routeHookReader.forOperation(modelNameInKebab, operation)
         : {
             before: [],
@@ -37,6 +38,27 @@ export function getPrismaModelsRouter() {
             prismaArgs: {},
             routeConfig: {},
           };
+
+      let endpointConfig = components.routeConfig || {};
+
+      if (endpointConfig?.experimental?.openapi !== false)
+        endpointConfig = {
+          ...(endpointConfig || {}),
+          experimental: {
+            ...(endpointConfig?.experimental || {}),
+            openapi: modelOpenAPIGenerator.getOpenApiConfig(
+              endpointConfig,
+              operation,
+              modelNameInKebab,
+              components.prismaArgs
+            ),
+          },
+        };
+
+      components.routeConfig = endpointConfig;
+
+      return components;
+    };
 
     // CREATE ONE
     {

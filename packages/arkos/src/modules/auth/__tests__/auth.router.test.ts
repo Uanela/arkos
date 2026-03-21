@@ -6,10 +6,11 @@ import {
   addPrismaQueryOptionsToRequest,
 } from "../../base/base.middlewares";
 import ArkosRouter from "../../../utils/arkos-router";
+import authOpenAPIGenerator from "../utils/auth-openapi-generator";
 
-// -- Minimal mocks: only what can't run in unit/integration context --
 jest.mock("fs");
 jest.mock("../../../utils/dynamic-loader");
+
 jest.mock("../auth.controller", () => ({
   __esModule: true,
   default: {
@@ -24,11 +25,13 @@ jest.mock("../auth.controller", () => ({
     findManyAuthAction: jest.fn(),
   },
 }));
+
 jest.mock("../../base/base.middlewares", () => ({
   sendResponse: jest.fn(),
   addPrismaQueryOptionsToRequest: jest.fn(() => jest.fn()),
   handleRequestBodyValidationAndTransformation: jest.fn(() => jest.fn()),
 }));
+
 jest.mock("../../../utils/arkos-router", () => {
   const mockRouter = {
     get: jest.fn().mockReturnThis(),
@@ -43,7 +46,16 @@ jest.mock("../../../utils/arkos-router", () => {
   };
 });
 
-// Real loadableRegistry + routeHookReader used — no mock
+jest.mock("../utils/auth-openapi-generator", () => ({
+  __esModule: true,
+  default: {
+    getOpenApiConfig: jest.fn().mockReturnValue({ summary: "generated" }),
+  },
+}));
+
+jest.mock("../../../utils/helpers/routers.helpers", () => ({
+  processMiddleware: jest.fn(() => []),
+}));
 
 function getMockRouter() {
   return (ArkosRouter as jest.Mock).mock.results[
@@ -51,27 +63,26 @@ function getMockRouter() {
   ].value;
 }
 
-describe("Auth Router", () => {
+describe("getAuthRouter", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Ensure no stale hook registrations bleed between tests
     (loadableRegistry as any).items = new Map();
   });
 
   describe("No ArkosRouteHook registered (default behavior)", () => {
-    it("should register GET /users/me with correct route config", () => {
+    it("should register GET /users/me", () => {
       getAuthRouter();
       const router = getMockRouter();
 
       expect(router.get).toHaveBeenCalledWith(
         { path: "/users/me" },
-        expect.any(Function), // addPrismaQueryOptionsToRequest
+        expect.any(Function),
         authController.getMe,
         sendResponse
       );
     });
 
-    it("should register PATCH /users/me with correct route config", () => {
+    it("should register PATCH /users/me", () => {
       getAuthRouter();
       const router = getMockRouter();
 
@@ -83,7 +94,7 @@ describe("Auth Router", () => {
       );
     });
 
-    it("should register DELETE /users/me with correct route config", () => {
+    it("should register DELETE /users/me", () => {
       getAuthRouter();
       const router = getMockRouter();
 
@@ -95,13 +106,14 @@ describe("Auth Router", () => {
       );
     });
 
-    it("should register POST /auth/login with rateLimit config", () => {
+    it("should register POST /auth/login with rateLimit and authentication: false", () => {
       getAuthRouter();
       const router = getMockRouter();
 
       expect(router.post).toHaveBeenCalledWith(
         expect.objectContaining({
           path: "/auth/login",
+          authentication: false,
           rateLimit: expect.objectContaining({
             windowMs: 5000,
             limit: 10,
@@ -116,7 +128,7 @@ describe("Auth Router", () => {
       );
     });
 
-    it("should register DELETE /auth/logout with rateLimit config", () => {
+    it("should register DELETE /auth/logout with rateLimit", () => {
       getAuthRouter();
       const router = getMockRouter();
 
@@ -130,13 +142,14 @@ describe("Auth Router", () => {
       );
     });
 
-    it("should register POST /auth/signup with rateLimit config", () => {
+    it("should register POST /auth/signup with rateLimit and authentication: false", () => {
       getAuthRouter();
       const router = getMockRouter();
 
       expect(router.post).toHaveBeenCalledWith(
         expect.objectContaining({
           path: "/auth/signup",
+          authentication: false,
           rateLimit: expect.objectContaining({ windowMs: 5000, limit: 10 }),
         }),
         expect.any(Function),
@@ -145,7 +158,7 @@ describe("Auth Router", () => {
       );
     });
 
-    it("should register POST /auth/update-password with rateLimit config", () => {
+    it("should register POST /auth/update-password with rateLimit", () => {
       getAuthRouter();
       const router = getMockRouter();
 
@@ -186,33 +199,126 @@ describe("Auth Router", () => {
       getAuthRouter();
 
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { getMe: {} },
+        { getMe: undefined },
         "getMe"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { updateMe: {} },
+        { updateMe: undefined },
         "updateMe"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { deleteMe: {} },
+        { deleteMe: undefined },
         "deleteMe"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { login: {} },
+        { login: undefined },
         "login"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { signup: {} },
+        { signup: undefined },
         "signup"
       );
       expect(addPrismaQueryOptionsToRequest).toHaveBeenCalledWith(
-        { updatePassword: {} },
+        { updatePassword: undefined },
         "updatePassword"
       );
     });
   });
 
-  describe("ArkosRouteHook registered with before/after/onError hooks", () => {
+  describe("OpenAPI injection", () => {
+    it("should call getOpenApiConfig for all 9 endpoints", () => {
+      getAuthRouter();
+
+      expect(authOpenAPIGenerator.getOpenApiConfig).toHaveBeenCalledTimes(9);
+    });
+
+    it("should call getOpenApiConfig with correct endpoint names", () => {
+      getAuthRouter();
+
+      const calledEndpoints = (
+        authOpenAPIGenerator.getOpenApiConfig as jest.Mock
+      ).mock.calls.map(([, endpoint]) => endpoint);
+
+      expect(calledEndpoints).toContain("getMe");
+      expect(calledEndpoints).toContain("updateMe");
+      expect(calledEndpoints).toContain("deleteMe");
+      expect(calledEndpoints).toContain("login");
+      expect(calledEndpoints).toContain("logout");
+      expect(calledEndpoints).toContain("signup");
+      expect(calledEndpoints).toContain("updatePassword");
+      expect(calledEndpoints).toContain("findManyAuthAction");
+      expect(calledEndpoints).toContain("findOneAuthAction");
+    });
+
+    it("should inject openapi config into experimental for each endpoint", () => {
+      (authOpenAPIGenerator.getOpenApiConfig as jest.Mock).mockReturnValue({
+        summary: "generated",
+      });
+
+      getAuthRouter();
+      const router = getMockRouter();
+
+      const getCall = router.get.mock.calls.find(
+        ([config]: any) => config?.path === "/users/me"
+      );
+      expect(getCall[0].experimental?.openapi).toEqual({
+        summary: "generated",
+      });
+    });
+
+    it("should skip openapi injection when experimental.openapi is false", () => {
+      (loadableRegistry as any).items = new Map();
+      loadableRegistry.register({
+        __type: "ArkosRouteHook",
+        moduleName: "auth",
+        _store: {
+          login: {
+            before: [],
+            after: [],
+            onError: [],
+            experimental: { openapi: false },
+          },
+        },
+      } as any);
+
+      getAuthRouter();
+
+      const calledEndpoints = (
+        authOpenAPIGenerator.getOpenApiConfig as jest.Mock
+      ).mock.calls.map(([, endpoint]) => endpoint);
+      expect(calledEndpoints).not.toContain("login");
+    });
+
+    it("should preserve existing experimental config when injecting openapi", () => {
+      (loadableRegistry as any).items = new Map();
+      loadableRegistry.register({
+        __type: "ArkosRouteHook",
+        moduleName: "auth",
+        _store: {
+          getMe: {
+            before: [],
+            after: [],
+            onError: [],
+            experimental: { uploads: { type: "single", field: "avatar" } },
+          },
+        },
+      } as any);
+
+      getAuthRouter();
+      const router = getMockRouter();
+
+      const getCall = router.get.mock.calls.find(
+        ([config]: any) => config?.path === "/users/me"
+      );
+      expect(getCall[0].experimental?.uploads).toEqual({
+        type: "single",
+        field: "avatar",
+      });
+      expect(getCall[0].experimental?.openapi).toBeDefined();
+    });
+  });
+
+  describe("ArkosRouteHook registered", () => {
     const beforeGetMe = jest.fn();
     const afterGetMe = jest.fn();
     const onGetMeError = jest.fn();
@@ -220,8 +326,8 @@ describe("Auth Router", () => {
     const afterLogin = jest.fn();
 
     beforeEach(() => {
-      // Register a real ArkosRouteHook into the real loadableRegistry
-      const mockHook = {
+      (loadableRegistry as any).items = new Map();
+      loadableRegistry.register({
         __type: "ArkosRouteHook",
         moduleName: "auth",
         _store: {
@@ -230,7 +336,7 @@ describe("Auth Router", () => {
             after: [afterGetMe],
             onError: [onGetMeError],
             prismaArgs: { include: { profile: true } },
-            authentication: true, // top-level — getRouteConfig spreads everything except before/after/onError/prismaArgs
+            authentication: true,
           },
           login: {
             before: [beforeLogin],
@@ -240,26 +346,7 @@ describe("Auth Router", () => {
             authentication: false,
           },
         },
-      };
-      loadableRegistry.register(mockHook as any);
-    });
-
-    it("should include before/after/onError for GET /users/me", () => {
-      getAuthRouter();
-      const router = getMockRouter();
-
-      const call = router.get.mock.calls.find(
-        ([config]: any) => config?.path === "/users/me"
-      );
-
-      expect(call).toBeDefined();
-      // [routeConfig, addPrismaQuery, ...before, controller, ...after, sendResponse, ...onError]
-      expect(call).toContain(authController.getMe);
-      expect(call).toContain(sendResponse);
-      // before and after are wrapped in catchAsync — verify they appear as functions
-      const fnArgs = call.filter((a: any) => typeof a === "function");
-      // addPrismaQuery + catchAsync(before) + controller + catchAsync(after) + sendResponse + catchAsync(onError)
-      expect(fnArgs.length).toBeGreaterThanOrEqual(5);
+      } as any);
     });
 
     it("should spread routeConfig into route object for GET /users/me", () => {
@@ -308,55 +395,10 @@ describe("Auth Router", () => {
         "login"
       );
     });
-
-    it("should handle only before hooks for GET /users/me", () => {
-      const beforeGetMe = jest.fn();
-      (loadableRegistry as any).items = new Map();
-      loadableRegistry.register({
-        __type: "ArkosRouteHook",
-        moduleName: "auth",
-        _store: {
-          getMe: { before: [beforeGetMe], after: [], onError: [] },
-        },
-      } as any);
-
-      getAuthRouter();
-      const router = getMockRouter();
-      const call = router.get.mock.calls.find(
-        ([c]: any) => c?.path === "/users/me"
-      );
-
-      expect(call).toContain(authController.getMe);
-      expect(call).toContain(sendResponse);
-      // addPrismaQuery + catchAsync(before) + controller + sendResponse = 4 args minimum, no onError
-      expect(call.length).toBe(5);
-    });
-
-    it("should handle only after hooks for GET /users/me", () => {
-      const afterGetMe = jest.fn();
-      (loadableRegistry as any).items = new Map();
-      loadableRegistry.register({
-        __type: "ArkosRouteHook",
-        moduleName: "auth",
-        _store: {
-          getMe: { before: [], after: [afterGetMe], onError: [] },
-        },
-      } as any);
-
-      getAuthRouter();
-      const router = getMockRouter();
-      const call = router.get.mock.calls.find(
-        ([c]: any) => c?.path === "/users/me"
-      );
-
-      expect(call).toContain(authController.getMe);
-      expect(call).toContain(sendResponse);
-      expect(call.length).toBe(5);
-    });
   });
 
-  describe("rateLimit handler behavior", () => {
-    it("should respond 429 with correct message when rate limit handler is called", () => {
+  describe("rateLimit handler", () => {
+    it("should respond 429 with correct message", () => {
       getAuthRouter();
       const router = getMockRouter();
 

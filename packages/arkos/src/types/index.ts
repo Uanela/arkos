@@ -1,8 +1,6 @@
 import { NextFunction, Response, Request } from "express";
 import { PrismaModels } from "../generated";
 
-export type PrismaOperations = "findMany";
-
 /**
  * Type definition for authentication-related Prisma query operations
  * @template T - The Prisma model delegate type
@@ -138,30 +136,6 @@ export type PrismaQueryOptions<
 > = ModelName extends "auth"
   ? AuthPrismaQueryOptions<T>
   : BasePrismaQueryOptions<T>;
-/**
- * Interface defining the minimum structure required for Prisma model delegates
- * This allows us to constraint TModel without requiring Prisma imports
- */
-export type PrismaModelDelegate = {
-  create: (args: { data: never; [key: string]: never }) => Promise<any>;
-  createMany: (args: { data: never; [key: string]: never }) => Promise<any>;
-  findMany: (args: { [key: string]: never }) => Promise<any[]>;
-  findFirst: (args: { where: never; [key: string]: never }) => Promise<any>;
-  findUnique: (args: { where: never; [key: string]: never }) => Promise<any>;
-  update: (args: {
-    where: never;
-    data: never;
-    [key: string]: never;
-  }) => Promise<any>;
-  updateMany: (args: {
-    where: never;
-    data: never;
-    [key: string]: never;
-  }) => Promise<any>;
-  delete: (args: { where: never; [key: string]: never }) => Promise<any>;
-  deleteMany: (args: { where: never; [key: string]: never }) => Promise<any>;
-  count: (args: { where: never; [key: string]: never }) => Promise<number>;
-};
 
 export interface BaseUser extends Record<string, any> {
   id: string;

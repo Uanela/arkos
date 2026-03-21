@@ -45,9 +45,9 @@ export default function initializeApp(app: Arkos) {
 
   app.use("*", (req) => {
     throw new AppError(
-      "Route not found",
+      `Route ${req.method} ${req.originalUrl} was not found`,
       404,
-      { route: req.originalUrl },
+      { route: `${req.method} ${req.originalUrl}` },
       "RouteNotFound"
     );
   });

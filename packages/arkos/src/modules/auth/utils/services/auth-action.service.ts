@@ -172,7 +172,11 @@ class AuthActionService {
     if (Array.isArray(accessControl)) return baseAuthAction;
 
     const actionRule =
-      accessControl !== "*" ? accessControl[action] : undefined;
+      (accessControl as any) !== "*"
+        ? (accessControl as any)[action]
+        : undefined;
+
+    if (config?.authentication?.mode !== "static") delete baseAuthAction.roles;
 
     if (actionRule) {
       if (Array.isArray(actionRule)) {

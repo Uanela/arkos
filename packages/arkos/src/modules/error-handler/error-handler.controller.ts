@@ -50,9 +50,6 @@ export default function errorHandler(
     case "PrismaClientInitializationError":
       error = errorControllerHelper.handlePrismaClientInitializationError(err);
       break;
-    case "NetworkError":
-      error = errorControllerHelper.handleNetworkError(err);
-      break;
   }
 
   switch (err.code) {
@@ -82,12 +79,6 @@ export default function errorHandler(
       break;
     case "P2004":
       error = errorControllerHelper.handleConstraintFailedError(err);
-      break;
-    case "P2011":
-      error = errorControllerHelper.handleNullConstraintViolationError(err);
-      break;
-    case "P2014":
-      error = errorControllerHelper.handleRequiredRelationViolationError(err);
       break;
     case "P2025":
       error = errorControllerHelper.handleNonExistingRecord(err);
