@@ -23,6 +23,7 @@ import { getUserFileExtension } from "../../../../utils/helpers/fs.helpers";
 import prismaSchemaParser from "../../../../utils/prisma/prisma-schema-parser";
 import debuggerService from "../../../debugger/debugger.service";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
+import modelOpenAPIGenerator from "../model-openapi-generator";
 
 export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
@@ -74,6 +75,64 @@ export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
         throw Error(
           `ValidationError: The exported router from ${modelNameInKebab}.router.${getUserFileExtension()} is not a valid express Router.`
         );
+    }
+
+    const validationMap: Record<
+      string,
+      "create" | "update" | "createMany" | "updateMany"
+    > = {
+      createOne: "create",
+      updateOne: "update",
+      createMany: "createMany",
+      updateMany: "updateMany",
+    };
+
+    const endpoints: RouterEndpoint[] = [
+      "createOne",
+      "findMany",
+      "createMany",
+      "updateMany",
+      "deleteMany",
+      "findOne",
+      "updateOne",
+      "deleteOne",
+    ];
+
+    for (const endpoint of endpoints) {
+      let endpointConfig = (routerConfig as any)[endpoint];
+
+      const validationKey = validationMap[endpoint];
+      if (validationKey) {
+        const schema = getValidationSchemaOrDto(validationKey);
+        if (
+          schema &&
+          endpointConfig?.validation !== false &&
+          endpointConfig?.validation?.body !== false
+        )
+          endpointConfig = {
+            ...(endpointConfig || {}),
+            validation: {
+              ...(endpointConfig?.validation || {}),
+              body: schema,
+            },
+          };
+      }
+
+      if (endpointConfig?.experimental?.openapi !== false)
+        endpointConfig = {
+          ...(endpointConfig || {}),
+          experimental: {
+            ...(endpointConfig?.experimental || {}),
+            openapi: modelOpenAPIGenerator.getOpenApiConfig(
+              endpointConfig,
+              endpoint,
+              modelNameInKebab,
+              prismaQueryOptions as PrismaQueryOptions<any>
+            ),
+          },
+        };
+
+      (routerConfig as any)[endpoint] = endpointConfig;
     }
 
     // CREATE ONE
@@ -232,8 +291,7 @@ export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
           "/:id",
           routerConfig,
           modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("update")
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
@@ -287,17 +345,4 @@ export function isEndpointDisabled(
     return routerConfig.disable[endpoint as never] === true;
 
   return false;
-}
-
-export function isParentEndpointAllowed(
-  routerConfig: any,
-  endpoint: string
-): boolean {
-  if (!routerConfig?.parent) return false;
-
-  const parentEndpoints = routerConfig.parent.endpoints;
-  if (parentEndpoints === "*") return true;
-  if (Array.isArray(parentEndpoints)) return parentEndpoints.includes(endpoint);
-
-  return true;
 }
