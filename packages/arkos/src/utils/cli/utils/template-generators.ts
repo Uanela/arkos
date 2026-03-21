@@ -65,6 +65,23 @@ export function generateTemplate(
     case "prisma-model":
       return prismaSchemaParser.generatePrismaModel(options);
 
+    case "login-schema":
+      return zodSchemaGenerator.generateLoginSchema(options);
+    case "signup-schema":
+      return zodSchemaGenerator.generateSignupSchema(options);
+    case "update-me-schema":
+      return zodSchemaGenerator.generateUpdateMeSchema(options);
+    case "update-password-schema":
+      return zodSchemaGenerator.generateUpdatePasswordSchema(options);
+    case "login-dto":
+      return classValidatorDtoGenerator.generateLoginDto(options);
+    case "signup-dto":
+      return classValidatorDtoGenerator.generateSignupDto(options);
+    case "update-me-dto":
+      return classValidatorDtoGenerator.generateUpdateMeDto(options);
+    case "update-password-dto":
+      return classValidatorDtoGenerator.generateUpdatePasswordDto(options);
+
     default:
       throw new Error(`Unknown template type: ${type}`);
   }

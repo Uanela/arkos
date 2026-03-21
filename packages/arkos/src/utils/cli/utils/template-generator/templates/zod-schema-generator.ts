@@ -2,6 +2,7 @@ import prismaSchemaParser from "../../../../prisma/prisma-schema-parser";
 import { PrismaField } from "../../../../prisma/types";
 import { getUserFileExtension } from "../../../../helpers/fs.helpers";
 import { TemplateOptions } from "../../template-generators";
+import { getArkosConfig } from "../../../../helpers/arkos-config.helpers";
 
 export class ZodSchemaGenerator {
   private ensureCorrectOptions(options: TemplateOptions) {
@@ -494,6 +495,222 @@ export default Query${modelName!.pascal}Schema;${typeExport}
         }
         return "z.any()";
     }
+  }
+
+  generateLoginSchema(_: TemplateOptions): string {
+    const ext = getUserFileExtension();
+    const isTypeScript = ext === "ts";
+    const allowedUsernames = getArkosConfig()?.authentication?.login
+      ?.allowedUsernames || ["username"];
+
+    const usernameFields = allowedUsernames.map((field: string) => {
+      const displayName = field.includes(".") ? field.split(".").pop()! : field;
+      const zodType =
+        displayName === "email" ? "z.string().email()" : "z.string().min(1)";
+      return `  ${displayName}: ${zodType}.optional()`;
+    });
+
+    const anyOfComment =
+      allowedUsernames.length > 1
+        ? `\n// At least one of: ${allowedUsernames.map((f: string) => (f.includes(".") ? f.split(".").pop() : f)).join(", ")} is required`
+        : "";
+
+    const typeExport = isTypeScript
+      ? `\n\nexport type LoginSchemaType = z.infer<typeof LoginSchema>;`
+      : "";
+
+    return `import { z } from "zod";
+${anyOfComment}
+const LoginSchema = z.object({
+${usernameFields.join(",\n")},
+  password: z.string().min(8)
+});
+
+export default LoginSchema;${typeExport}
+`;
+  }
+
+  generateSignupSchema(_: TemplateOptions): string {
+    const ext = getUserFileExtension();
+    const isTypeScript = ext === "ts";
+
+    const userModel = prismaSchemaParser.models.find(
+      (m) => m.name.toLowerCase() === "user"
+    );
+    if (!userModel) throw new Error("User model not found in Prisma schema");
+
+    const restrictedFields = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "roles",
+      "role",
+      "isActive",
+      "isStaff",
+      "isSuperUser",
+      "passwordChangedAt",
+      "deletedSelfAccountAt",
+      "lastLoginAt",
+    ];
+
+    const enumsUsed = new Set<string>();
+    const schemaFields: string[] = [];
+
+    for (const field of userModel.fields) {
+      const isForeignKey = userModel.fields.some(
+        (f) => f.foreignKeyField === field.name
+      );
+      if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
+        continue;
+      if (field.isRelation) {
+        if (field.isArray) continue;
+        const referencedModel = prismaSchemaParser.models.find(
+          (m) => m.name === field.type
+        );
+        if (referencedModel) {
+          const refField = field.foreignReferenceField || "id";
+          const refFieldType = referencedModel.fields.find(
+            (f) => f.name === refField
+          );
+          let zodType = this.mapPrismaTypeToZod(refFieldType?.type!);
+          if (
+            refFieldType?.type?.toLowerCase?.() === "string" ||
+            !refFieldType?.type
+          )
+            zodType = zodType + ".min(1)";
+          const isOptional =
+            field.isOptional || field.defaultValue !== undefined;
+          schemaFields.push(
+            `  ${field.name}: z.object({ ${refField}: ${zodType} })${isOptional ? ".optional()" : ""}`
+          );
+        }
+        continue;
+      }
+      if (prismaSchemaParser.isEnum(field.type)) enumsUsed.add(field.type);
+      const zodSchema =
+        field.name === "password"
+          ? `z.string().min(8).regex(/[a-z]/, "Must contain lowercase").regex(/[A-Z]/, "Must contain uppercase").regex(/[0-9]/, "Must contain number")`
+          : this.generateZodField(field, true, false);
+      schemaFields.push(`  ${field.name}: ${zodSchema}`);
+    }
+
+    const enumImports =
+      enumsUsed.size > 0
+        ? `import { ${Array.from(enumsUsed).join(", ")} } from "@prisma/client";\n`
+        : "";
+
+    const typeExport = isTypeScript
+      ? `\n\nexport type SignupSchemaType = z.infer<typeof SignupSchema>;`
+      : "";
+
+    return `import { z } from "zod";
+${enumImports}
+const SignupSchema = z.object({
+${schemaFields.join(",\n")}
+});
+
+export default SignupSchema;${typeExport}
+`;
+  }
+
+  generateUpdateMeSchema(_: TemplateOptions): string {
+    const ext = getUserFileExtension();
+    const isTypeScript = ext === "ts";
+
+    const userModel = prismaSchemaParser.models.find(
+      (m) => m.name.toLowerCase() === "user"
+    );
+    if (!userModel) throw new Error("User model not found in Prisma schema");
+
+    const restrictedFields = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "roles",
+      "role",
+      "isActive",
+      "isStaff",
+      "isSuperUser",
+      "passwordChangedAt",
+      "deletedSelfAccountAt",
+      "lastLoginAt",
+      "password",
+    ];
+
+    const enumsUsed = new Set<string>();
+    const schemaFields: string[] = [];
+
+    for (const field of userModel.fields) {
+      const isForeignKey = userModel.fields.some(
+        (f) => f.foreignKeyField === field.name
+      );
+      if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
+        continue;
+      if (field.isRelation) {
+        if (field.isArray) continue;
+        const referencedModel = prismaSchemaParser.models.find(
+          (m) => m.name === field.type
+        );
+        if (referencedModel) {
+          const refField = field.foreignReferenceField || "id";
+          const refFieldType = referencedModel.fields.find(
+            (f) => f.name === refField
+          );
+          let zodType = this.mapPrismaTypeToZod(refFieldType?.type!);
+          if (
+            refFieldType?.type?.toLowerCase?.() === "string" ||
+            !refFieldType?.type
+          )
+            zodType = zodType + ".min(1)";
+          schemaFields.push(
+            `  ${field.name}: z.object({ ${refField}: ${zodType} }).optional()`
+          );
+        }
+        continue;
+      }
+      if (prismaSchemaParser.isEnum(field.type)) enumsUsed.add(field.type);
+      const zodSchema = this.generateZodField(field, true, true);
+      schemaFields.push(`  ${field.name}: ${zodSchema}`);
+    }
+
+    const enumImports =
+      enumsUsed.size > 0
+        ? `import { ${Array.from(enumsUsed).join(", ")} } from "@prisma/client";\n`
+        : "";
+
+    const typeExport = isTypeScript
+      ? `\n\nexport type UpdateMeSchemaType = z.infer<typeof UpdateMeSchema>;`
+      : "";
+
+    return `import { z } from "zod";
+${enumImports}
+const UpdateMeSchema = z.object({
+${schemaFields.join(",\n")}
+});
+
+export default UpdateMeSchema;${typeExport}
+`;
+  }
+
+  generateUpdatePasswordSchema(_: TemplateOptions): string {
+    const ext = getUserFileExtension();
+    const isTypeScript = ext === "ts";
+
+    const typeExport = isTypeScript
+      ? `\n\nexport type UpdatePasswordSchemaType = z.infer<typeof UpdatePasswordSchema>;`
+      : "";
+
+    return `import { z } from "zod";
+
+const UpdatePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).regex(/[a-z]/, "Must contain lowercase").regex(/[A-Z]/, "Must contain uppercase").regex(/[0-9]/, "Must contain number")
+});
+
+export default UpdatePasswordSchema;${typeExport}
+`;
   }
 }
 

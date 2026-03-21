@@ -10,7 +10,7 @@ import {
   prismaSchemaParser,
 } from "../../../exports/prisma";
 import prismaJsonSchemaGenerator from "../../../utils/prisma/prisma-json-schema-generator";
-import { getModuleComponents } from "../../../utils/dynamic-loader";
+import { routeHookReader } from "../../../components/arkos-route-hook/reader";
 
 class AuthPrismaJsonSchemaGenerator {
   private userModel?: PrismaModel;
@@ -25,12 +25,7 @@ class AuthPrismaJsonSchemaGenerator {
   }
 
   private getPrismaArgs(endpoint: keyof AuthPrismaQueryOptions<any>) {
-    return (
-      (
-        getModuleComponents("auth")
-          ?.prismaQueryOptions as AuthPrismaQueryOptions<any>
-      )?.[endpoint] || {}
-    );
+    return routeHookReader.getPrismaArgs("auth", endpoint) || {};
   }
 
   generateGetMeResponse(): JsonSchema {
