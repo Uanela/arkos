@@ -2,10 +2,16 @@ import classValidatorDtoGenerator from "../class-validator-dto-generator";
 import prismaSchemaParser from "../../../../../prisma/prisma-schema-parser";
 import * as fsHelpers from "../../../../../helpers/fs.helpers";
 import { TemplateOptions } from "../../../template-generators";
+import { getArkosConfig } from "../../../../../../utils/helpers/arkos-config.helpers";
 
+jest.mock("../../../../../../utils/helpers/arkos-config.helpers");
 jest.mock("../../../../../prisma/prisma-schema-parser");
 jest.mock("../../../../../helpers/fs.helpers");
 jest.mock("fs");
+
+const mockGetArkosConfig = getArkosConfig as jest.MockedFunction<
+  typeof getArkosConfig
+>;
 
 describe("ClassValidatorDtoGenerator", () => {
   const mockGetUserFileExtension =
@@ -4547,6 +4553,524 @@ describe("ClassValidatorDtoGenerator", () => {
 
       expect(result).toContain("ValidateNested");
       expect(result).toContain('import { Type } from "class-transformer"');
+    });
+  });
+
+  describe("generateLoginDto", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+    });
+
+    it("should generate login DTO with default username field", () => {
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["username"] } },
+      } as any);
+
+      const result = classValidatorDtoGenerator.generateLoginDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("export default class LoginDto {");
+      expect(result).toContain("@IsOptional()");
+      expect(result).toContain("@IsString()");
+      expect(result).toContain("username?: string;");
+      expect(result).toContain("@IsNotEmpty()");
+      expect(result).toContain("@MinLength(8)");
+      expect(result).toContain("@Matches(/[a-z]/");
+      expect(result).toContain("@Matches(/[A-Z]/");
+      expect(result).toContain("@Matches(/[0-9]/");
+      expect(result).toContain("password!: string;");
+    });
+
+    it("should use @IsEmail() for email username field", () => {
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["email"] } },
+      } as any);
+
+      const result = classValidatorDtoGenerator.generateLoginDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("@IsEmail()");
+      expect(result).toContain("email?: string;");
+      expect(result).toContain("IsEmail");
+    });
+
+    it("should handle multiple username fields", () => {
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["username", "email"] } },
+      } as any);
+
+      const result = classValidatorDtoGenerator.generateLoginDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("username?: string;");
+      expect(result).toContain("@IsEmail()");
+      expect(result).toContain("email?: string;");
+    });
+
+    it("should handle dotted username fields", () => {
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["profile.email"] } },
+      } as any);
+
+      const result = classValidatorDtoGenerator.generateLoginDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("email?: string;");
+      expect(result).not.toContain("profile.email");
+    });
+
+    it("should fall back to username when allowedUsernames is not set", () => {
+      mockGetArkosConfig.mockReturnValue({} as any);
+
+      const result = classValidatorDtoGenerator.generateLoginDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("username?: string;");
+    });
+
+    it("should not include type modifiers for JavaScript", () => {
+      mockGetUserFileExtension.mockReturnValue("js");
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["username"] } },
+      } as any);
+
+      const result = classValidatorDtoGenerator.generateLoginDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).not.toContain("!:");
+      expect(result).not.toContain("?:");
+    });
+  });
+
+  describe("generateSignupDto", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+      (prismaSchemaParser.isEnum as jest.Mock) = jest
+        .fn()
+        .mockReturnValue(false);
+      (prismaSchemaParser.compositeTypes as any) = [];
+    });
+
+    it("should throw error when User model is not found", () => {
+      (prismaSchemaParser.models as any) = [];
+
+      expect(() =>
+        classValidatorDtoGenerator.generateSignupDto({
+          modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+        })
+      ).toThrow("User model not found in Prisma schema");
+    });
+
+    it("should generate signup DTO excluding restricted fields", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "username",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "password",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "roles",
+              type: "String",
+              isOptional: true,
+              isArray: true,
+              isRelation: false,
+            },
+            {
+              name: "isActive",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: true,
+            },
+            {
+              name: "isSuperUser",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: false,
+            },
+            {
+              name: "isStaff",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: false,
+            },
+            {
+              name: "passwordChangedAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "deletedSelfAccountAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "lastLoginAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "createdAt",
+              type: "DateTime",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "updatedAt",
+              type: "DateTime",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateSignupDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("export default class SignupDto {");
+      expect(result).toContain("username!: string;");
+      expect(result).toContain("@IsNotEmpty()");
+      expect(result).toContain("@MinLength(8)");
+      expect(result).toContain("@Matches(/[a-z]/");
+      expect(result).toContain("@Matches(/[A-Z]/");
+      expect(result).toContain("@Matches(/[0-9]/");
+      expect(result).toContain("password!: string;");
+      expect(result).not.toContain("roles:");
+      expect(result).not.toContain("isActive:");
+      expect(result).not.toContain("isSuperUser:");
+      expect(result).not.toContain("isStaff:");
+      expect(result).not.toContain("passwordChangedAt:");
+      expect(result).not.toContain("deletedSelfAccountAt:");
+      expect(result).not.toContain("lastLoginAt:");
+      expect(result).not.toContain("id:");
+      expect(result).not.toContain("createdAt:");
+      expect(result).not.toContain("updatedAt:");
+    });
+
+    it("should apply @IsEmail() for email field in signup", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "email",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "password",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateSignupDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("@IsEmail()");
+      expect(result).toContain("email!: string;");
+    });
+  });
+
+  describe("generateUpdateMeDto", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+      (prismaSchemaParser.isEnum as jest.Mock) = jest
+        .fn()
+        .mockReturnValue(false);
+      (prismaSchemaParser.compositeTypes as any) = [];
+    });
+
+    it("should throw error when User model is not found", () => {
+      (prismaSchemaParser.models as any) = [];
+
+      expect(() =>
+        classValidatorDtoGenerator.generateUpdateMeDto({
+          modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+        })
+      ).toThrow("User model not found in Prisma schema");
+    });
+
+    it("should generate updateMe DTO excluding restricted and password fields", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "username",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "password",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "roles",
+              type: "String",
+              isOptional: true,
+              isArray: true,
+              isRelation: false,
+            },
+            {
+              name: "isActive",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: true,
+            },
+            {
+              name: "isSuperUser",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: false,
+            },
+            {
+              name: "isStaff",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: false,
+            },
+            {
+              name: "passwordChangedAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "deletedSelfAccountAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "lastLoginAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "createdAt",
+              type: "DateTime",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "updatedAt",
+              type: "DateTime",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateMeDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("export default class UpdateMeDto {");
+      expect(result).toContain("username?: string;");
+      expect(result).not.toContain("password:");
+      expect(result).not.toContain("roles:");
+      expect(result).not.toContain("isActive:");
+      expect(result).not.toContain("isSuperUser:");
+      expect(result).not.toContain("isStaff:");
+      expect(result).not.toContain("passwordChangedAt:");
+      expect(result).not.toContain("deletedSelfAccountAt:");
+      expect(result).not.toContain("lastLoginAt:");
+      expect(result).not.toContain("id:");
+      expect(result).not.toContain("createdAt:");
+      expect(result).not.toContain("updatedAt:");
+    });
+
+    it("should make all fields optional in updateMe DTO", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "username",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "firstName",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateMeDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("username?: string;");
+      expect(result).toContain("firstName?: string;");
+      expect(result).not.toContain("username!:");
+      expect(result).not.toContain("firstName!:");
+    });
+
+    it("should apply @IsEmail() for email field in updateMe", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "email",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateMeDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("@IsEmail()");
+      expect(result).toContain("email?: string;");
+    });
+  });
+
+  describe("generateUpdatePasswordDto", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+    });
+
+    it("should generate update password DTO with currentPassword and newPassword", () => {
+      const result = classValidatorDtoGenerator.generateUpdatePasswordDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("export default class UpdatePasswordDto {");
+      expect(result).toContain("@IsNotEmpty()");
+      expect(result).toContain("@IsString()");
+      expect(result).toContain("currentPassword!: string;");
+      expect(result).toContain("@MinLength(8)");
+      expect(result).toContain("@Matches(/[a-z]/");
+      expect(result).toContain("@Matches(/[A-Z]/");
+      expect(result).toContain("@Matches(/[0-9]/");
+      expect(result).toContain("newPassword!: string;");
+      expect(result).toContain(
+        'import { IsNotEmpty, IsString, MinLength, Matches } from "class-validator"'
+      );
+    });
+
+    it("should not include type modifiers for JavaScript", () => {
+      mockGetUserFileExtension.mockReturnValue("js");
+
+      const result = classValidatorDtoGenerator.generateUpdatePasswordDto({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).not.toContain("!:");
+      expect(result).toContain("currentPassword: string;");
+      expect(result).toContain("newPassword: string;");
     });
   });
 });
