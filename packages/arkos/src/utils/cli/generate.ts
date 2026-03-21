@@ -14,6 +14,7 @@ import prismaSchemaParser from "../prisma/prisma-schema-parser";
 import generateMultipleComponents, {
   MultipleComponentsGenerateOptions,
 } from "./utils/template-generator/templates/generate-multiple-components";
+import ExitError from "../helpers/exit-error";
 
 export const kebabPrismaModels = prismaSchemaParser
   .getModelsAsArrayOfStrings()
@@ -25,6 +26,7 @@ export type GenerateOptions = {
   path?: string;
   model?: string;
   module?: string;
+  modules?: string;
   overwrite?: boolean;
   shouldExit?: boolean;
   shouldPrintError?: boolean;
@@ -47,10 +49,36 @@ const generateFile = async (
   options: GenerateOptions,
   config: GenerateConfig
 ) => {
+  if (options.modules) {
+    const moduleNames = options.modules
+      .split(",")
+      .map((m: string) => m.trim())
+      .filter(Boolean);
+
+    let totalFail = 0;
+    for (const moduleName of moduleNames) {
+      try {
+        await generateFile(
+          { ...options, modules: undefined, module: moduleName },
+          config
+        );
+      } catch (err: any) {
+        totalFail++;
+      }
+    }
+    if (totalFail > 0) process.exit(1);
+    return;
+  }
+
   const modelName = options.module || options.model;
+  if (modelName?.includes(","))
+    throw ExitError(
+      "Multiple modules are not supported with -m/--module. Use -ms/--modules instead.\n" +
+        "Example: arkos g router -ms post,user,auth"
+    );
 
   if (options.module && options.model)
-    throw Error(
+    throw ExitError(
       "You must either pass --module or --model, prefer --module to align with future updates."
     );
 

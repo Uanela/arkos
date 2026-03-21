@@ -38,6 +38,10 @@ const generate = program
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
   .option(
+    "-ms, --modules <names>",
+    "Comma-separated module names for bulk generation"
+  )
+  .option(
     "-p, --path <path>",
     "Custom path for the component",
     "src/modules/{{module-name}}"
@@ -283,7 +287,9 @@ generate
 generate
   .command("components")
   .alias("co")
-  .description("Generate multiple components for a module")
+  .description(
+    "Generate multiple components for one or more modules. Use comma-separated module names for multiple modules (e.g., -m post,user,auth)"
+  )
   .option("-a, --all", "Generate all components")
   .option(
     "-n, --names <names>",
