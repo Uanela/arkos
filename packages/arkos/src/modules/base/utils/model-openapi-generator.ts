@@ -17,6 +17,14 @@ class ModelOpenAPIGenerator {
     )!;
   }
 
+  private getAuthErrorResponses(): Record<string, any> {
+    if (!isAuthenticationEnabled()) return {};
+    return {
+      "401": { description: "Authentication required" },
+      "403": { description: "Insufficient permissions" },
+    };
+  }
+
   private resolvePrismaQueryOptions(
     prismaQueryOptions: PrismaQueryOptions<any> | undefined,
     action: string
@@ -43,14 +51,6 @@ class ModelOpenAPIGenerator {
 
     if (options[action]) merged = { ...merged, ...options[action] };
     return merged;
-  }
-
-  private getAuthErrorResponses(): Record<string, any> {
-    if (!isAuthenticationEnabled()) return {};
-    return {
-      "401": { description: "Authentication required" },
-      "403": { description: "Insufficient permissions" },
-    };
   }
 
   getOpenApiConfig(
@@ -92,13 +92,7 @@ class ModelOpenAPIGenerator {
               required: true,
               content: {
                 "application/json": {
-                  schema: prismaJsonSchemaGenerator.generateCreateSchema(
-                    model,
-                    this.resolvePrismaQueryOptions(
-                      prismaQueryOptions,
-                      "createOne"
-                    )
-                  ),
+                  schema: prismaJsonSchemaGenerator.generateCreateSchema(model),
                 },
               },
             },
@@ -114,8 +108,7 @@ class ModelOpenAPIGenerator {
                     this.resolvePrismaQueryOptions(
                       prismaQueryOptions,
                       "createOne"
-                    ),
-                    "findOne"
+                    )
                   ),
                 },
               },
@@ -212,8 +205,7 @@ class ModelOpenAPIGenerator {
                           this.resolvePrismaQueryOptions(
                             prismaQueryOptions,
                             "findMany"
-                          ),
-                          "findMany"
+                          )
                         ),
                       },
                     },
@@ -249,13 +241,8 @@ class ModelOpenAPIGenerator {
                 "application/json": {
                   schema: {
                     type: "array",
-                    items: prismaJsonSchemaGenerator.generateCreateSchema(
-                      model,
-                      this.resolvePrismaQueryOptions(
-                        prismaQueryOptions,
-                        "createMany"
-                      )
-                    ),
+                    items:
+                      prismaJsonSchemaGenerator.generateCreateSchema(model),
                   },
                 },
               },
@@ -327,13 +314,7 @@ class ModelOpenAPIGenerator {
               required: true,
               content: {
                 "application/json": {
-                  schema: prismaJsonSchemaGenerator.generateUpdateSchema(
-                    model,
-                    this.resolvePrismaQueryOptions(
-                      prismaQueryOptions,
-                      "updateMany"
-                    )
-                  ),
+                  schema: prismaJsonSchemaGenerator.generateUpdateSchema(model),
                 },
               },
             },
@@ -467,8 +448,7 @@ class ModelOpenAPIGenerator {
                     this.resolvePrismaQueryOptions(
                       prismaQueryOptions,
                       "findOne"
-                    ),
-                    "findOne"
+                    )
                   ),
                 },
               },
@@ -520,13 +500,7 @@ class ModelOpenAPIGenerator {
               required: true,
               content: {
                 "application/json": {
-                  schema: prismaJsonSchemaGenerator.generateUpdateSchema(
-                    model,
-                    this.resolvePrismaQueryOptions(
-                      prismaQueryOptions,
-                      "updateOne"
-                    )
-                  ),
+                  schema: prismaJsonSchemaGenerator.generateUpdateSchema(model),
                 },
               },
             },
@@ -542,8 +516,7 @@ class ModelOpenAPIGenerator {
                     this.resolvePrismaQueryOptions(
                       prismaQueryOptions,
                       "updateOne"
-                    ),
-                    "findOne"
+                    )
                   ),
                 },
               },
