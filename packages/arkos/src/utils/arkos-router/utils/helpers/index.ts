@@ -144,10 +144,22 @@ export function getMiddlewareStack(
 export function extractPathParams(path: string): string[] {
   const params: string[] = [];
   const segments = path.split("/");
+  let wildcardCount = 0;
 
   for (const segment of segments) {
-    if (segment.startsWith(":")) {
-      params.push(segment.substring(1));
+    if (segment === "*") {
+      wildcardCount++;
+    } else if (segment.startsWith(":")) {
+      const clean = segment.substring(1).replace(/\(.*\)$/, "");
+      params.push(clean);
+    }
+  }
+
+  if (wildcardCount === 1) {
+    params.push("path");
+  } else {
+    for (let i = 1; i <= wildcardCount; i++) {
+      params.push(`path${i}`);
     }
   }
 

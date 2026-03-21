@@ -25,6 +25,7 @@ import debuggerService from "../../../debugger/debugger.service";
 import { IArkosRouter } from "../../../../utils/arkos-router/types";
 import { UserArkosConfig } from "../../../../utils/define-config";
 import ExitError from "../../../../utils/helpers/exit-error";
+import modelOpenAPIGenerator from "../model-openapi-generator";
 
 export function setupRouters(
   router: IArkosRouter,
@@ -81,6 +82,64 @@ export function setupRouters(
         );
     }
 
+    const validationMap: Record<
+      string,
+      "create" | "update" | "createMany" | "updateMany"
+    > = {
+      createOne: "create",
+      updateOne: "update",
+      createMany: "createMany",
+      updateMany: "updateMany",
+    };
+
+    const endpoints: RouterEndpoint[] = [
+      "createOne",
+      "findMany",
+      "createMany",
+      "updateMany",
+      "deleteMany",
+      "findOne",
+      "updateOne",
+      "deleteOne",
+    ];
+
+    for (const endpoint of endpoints) {
+      let endpointConfig = (routerConfig as any)[endpoint];
+
+      const validationKey = validationMap[endpoint];
+      if (validationKey) {
+        const schema = getValidationSchemaOrDto(validationKey);
+        if (
+          schema &&
+          endpointConfig?.validation !== false &&
+          endpointConfig?.validation?.body !== false
+        )
+          endpointConfig = {
+            ...(endpointConfig || {}),
+            validation: {
+              ...(endpointConfig?.validation || {}),
+              body: schema,
+            },
+          };
+      }
+
+      if (endpointConfig?.experimental?.openapi !== false)
+        endpointConfig = {
+          ...(endpointConfig || {}),
+          experimental: {
+            ...(endpointConfig?.experimental || {}),
+            openapi: modelOpenAPIGenerator.getOpenApiConfig(
+              endpointConfig,
+              endpoint,
+              modelNameInKebab,
+              prismaQueryOptions as PrismaQueryOptions<any>
+            ),
+          },
+        };
+
+      (routerConfig as any)[endpoint] = endpointConfig;
+    }
+
     // CREATE ONE
     if (!hasCustomImplementation(`/${routeName}`, "post")) {
       router.post(
@@ -91,8 +150,7 @@ export function setupRouters(
           "",
           routerConfig,
           modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("create")
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
@@ -140,8 +198,7 @@ export function setupRouters(
           "/many",
           routerConfig,
           modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("createMany")
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
@@ -237,8 +294,7 @@ export function setupRouters(
           "/:id",
           routerConfig,
           modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("update")
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,

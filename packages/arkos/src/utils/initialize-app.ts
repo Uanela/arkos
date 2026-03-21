@@ -47,13 +47,13 @@ export default function initializeApp(app: Arkos) {
     (process.env.ARKOS_BUILD !== "true" ||
       config.swagger.enableAfterBuild === true)
   )
-    app.use(globalPrefix, getSwaggerRouter(config, app as any));
+    app.use({ path: globalPrefix }, getSwaggerRouter(config, app));
 
   app.use("*", (req) => {
     throw new AppError(
-      "Route not found",
+      `Route ${req.method.toUpperCase()} ${req.originalUrl} was not found`,
       404,
-      { route: req.originalUrl },
+      { route: `${req.method.toUpperCase()} ${req.originalUrl}` },
       "RouteNotFound"
     );
   });
