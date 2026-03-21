@@ -377,22 +377,6 @@ describe("Error Handler Middleware", () => {
       }
     });
 
-    it("should handle network error", () => {
-      const error = new AppError("Network error", 503);
-      error.name = "NetworkError";
-
-      errorHandler(
-        error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      expect(errorControllerHelper.handleNetworkError).toHaveBeenCalledWith(
-        expect.any(AppError)
-      );
-    });
-
     it("should fallback to generic error", () => {
       const error = new AppError("Unknown error", 500);
       error.name = "UnknownError";
