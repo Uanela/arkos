@@ -199,9 +199,9 @@ export async function bootstrap(
 
   app.use("*", (req) => {
     throw new AppError(
-      `Route ${req.method.toUpperCase()} ${req.method} was not found`,
+      `Route ${req.method.toUpperCase()} ${req.originalUrl} was not found`,
       404,
-      { route: `${req.method.toUpperCase()} ${req.method}` },
+      { route: `${req.method.toUpperCase()} ${req.originalUrl}` },
       "RouteNotFound"
     );
   });
