@@ -14,7 +14,12 @@
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "arkos.config.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "arkos.config.ts",
+    "src/modules/post/dtos/create-post.dto.tsaa"
+  ],
   "exclude": [
     "node_modules",
     ".build",
