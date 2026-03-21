@@ -1,3 +1,4 @@
+import { PrismaQueryOptions } from "../../types";
 import prismaSchemaParser from "./prisma-schema-parser";
 import {
   PrismaModel,
@@ -19,7 +20,7 @@ export class PrismaJsonSchemaGenerator {
   /**
    * Generate create schema (excludes ID, includes relation IDs only)
    */
-  generateCreateSchema(model: PrismaModel, _: Record<string, any>): JsonSchema {
+  generateCreateSchema(model: PrismaModel): JsonSchema {
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const required: string[] = [];
     const restrictedFields = ["createdAt", "updatedAt", "deletedAt", "id"];
@@ -91,7 +92,7 @@ export class PrismaJsonSchemaGenerator {
   /**
    * Generate update schema (all fields optional, includes relation IDs only)
    */
-  generateUpdateSchema(model: PrismaModel, _: Record<string, any>): JsonSchema {
+  generateUpdateSchema(model: PrismaModel): JsonSchema {
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const autoFillFields = ["createdAt", "updatedAt", "deletedAt", "id"];
 
@@ -141,8 +142,7 @@ export class PrismaJsonSchemaGenerator {
    */
   generateResponseSchema(
     model: PrismaModel,
-    options: Record<string, any>,
-    _: "findOne" | "findMany"
+    options: Record<string, any>
   ): JsonSchema {
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const required: string[] = [];
