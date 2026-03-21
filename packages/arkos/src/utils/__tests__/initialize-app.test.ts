@@ -243,13 +243,13 @@ describe("initializeApp", () => {
       expect(wildcardCall).toBeDefined();
 
       const handler = wildcardCall[1];
-      const req = { originalUrl: "/unknown/path" };
+      const req = { method: "GET", originalUrl: "/unknown/path" };
 
       expect(() => handler(req)).toThrow();
       expect(AppError).toHaveBeenCalledWith(
-        "Route not found",
+        `Route ${req.method} ${req.originalUrl} was not found`,
         404,
-        { route: "/unknown/path" },
+        { route: "GET /unknown/path" },
         "RouteNotFound"
       );
     });
