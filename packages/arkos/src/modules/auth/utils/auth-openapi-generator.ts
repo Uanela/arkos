@@ -1,9 +1,9 @@
-import { getArkosConfig } from "../../../exports";
 import { AuthRouterEndpoint } from "../../../types/router-config";
 import { ArkosRouteConfig } from "../../../exports";
 import { ExtendedOperationObject } from "../../../utils/arkos-router/types/openapi-config";
 import { OpenAPIV3 } from "openapi-types";
 import authPrismaJsonSchemaGenerator from "./auth-prisma-json-schema-generator";
+import { getArkosConfig } from "../../../utils/helpers/arkos-config.helpers";
 
 class AuthOpenAPIGenerator {
   getOpenApiConfig(
@@ -304,17 +304,7 @@ class AuthOpenAPIGenerator {
               description: "Auth actions retrieved successfully",
               content: {
                 "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      total: { type: "number" },
-                      results: { type: "number" },
-                      data: {
-                        type: "array",
-                        items: { type: "object" },
-                      },
-                    },
-                  },
+                  schema: this.getAuthActionSchema(),
                 },
               },
             },
@@ -367,17 +357,7 @@ class AuthOpenAPIGenerator {
               description: "Auth actions for resource retrieved successfully",
               content: {
                 "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      total: { type: "number" },
-                      results: { type: "number" },
-                      data: {
-                        type: "array",
-                        items: { type: "object" },
-                      },
-                    },
-                  },
+                  schema: this.getAuthActionSchema(),
                 },
               },
             },
@@ -396,6 +376,52 @@ class AuthOpenAPIGenerator {
       default:
         return {};
     }
+  }
+
+  private getAuthActionSchema() {
+    const arkosConfig = getArkosConfig();
+    const isDynamicMode = arkosConfig?.authentication?.mode === "dynamic";
+
+    const properties: Record<string, any> = {
+      action: {
+        type: "string",
+        description: "Action name, e.g Create, View, Update, Download, Cancel",
+      },
+      resource: {
+        type: "string",
+        description: "Resource name, e.g user, user-role, product, author",
+      },
+      name: {
+        type: "string",
+        description: "Human-readable name for this permission",
+        nullable: true,
+      },
+      description: {
+        type: "string",
+        description: "Detailed description of what this permission allows",
+        nullable: true,
+      },
+      errorMessage: {
+        type: "string",
+        description: "Error message returned on forbidden response",
+        nullable: true,
+      },
+    };
+
+    if (!isDynamicMode) {
+      properties.roles = {
+        type: "array",
+        description: "Role names that have this permission, e.g Admin, Manager",
+        items: { type: "string" },
+      };
+    }
+
+    return {
+      type: "object",
+      properties,
+      required: ["action", "resource"],
+      additionalProperties: false,
+    };
   }
 }
 
