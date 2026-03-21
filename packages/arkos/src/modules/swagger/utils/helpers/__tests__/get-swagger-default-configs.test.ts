@@ -20,15 +20,6 @@ describe("getSwaggerDefaultConfig", () => {
     },
   };
 
-  const mockDefaultJsonSchemas: any = {
-    User: {
-      type: "object",
-      properties: {
-        id: { type: "string" },
-      },
-    },
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
     (capitalize as jest.Mock).mockImplementation(
@@ -39,10 +30,7 @@ describe("getSwaggerDefaultConfig", () => {
   it("should return default swagger config with correct structure", async () => {
     process.env.__PORT = "3000";
     process.env.__HOST = "localhost";
-    const result = getSwaggerDefaultConfig(
-      mockDefaultModelsPaths,
-      mockDefaultJsonSchemas
-    ) as any;
+    const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(result).toHaveProperty("endpoint", "/docs");
     expect(result).toHaveProperty("mode", "prisma");
@@ -54,22 +42,13 @@ describe("getSwaggerDefaultConfig", () => {
   });
 
   it("should use provided models and schemas", async () => {
-    const result = getSwaggerDefaultConfig(
-      mockDefaultModelsPaths,
-      mockDefaultJsonSchemas
-    ) as any;
+    const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(result.options.definition.paths).toEqual(mockDefaultModelsPaths);
-    expect(result.options.definition.components.schemas).toEqual(
-      mockDefaultJsonSchemas
-    );
   });
 
   it("should include BearerAuth security scheme", async () => {
-    const result = getSwaggerDefaultConfig(
-      mockDefaultModelsPaths,
-      mockDefaultJsonSchemas
-    ) as any;
+    const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(
       result.options.definition.components.securitySchemes.BearerAuth
@@ -82,10 +61,7 @@ describe("getSwaggerDefaultConfig", () => {
 
   it("should use capitalized NODE_ENV in server description", async () => {
     process.env.NODE_ENV = "production";
-    const result = getSwaggerDefaultConfig(
-      mockDefaultModelsPaths,
-      mockDefaultJsonSchemas
-    ) as any;
+    const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(result.options.definition.servers[0].description).toBe(
       "Local Production Server"
@@ -95,10 +71,7 @@ describe("getSwaggerDefaultConfig", () => {
 
   it("should use capitalized NODE_ENV fallback (development) in server description", async () => {
     process.env.NODE_ENV = "";
-    const result = getSwaggerDefaultConfig(
-      mockDefaultModelsPaths,
-      mockDefaultJsonSchemas
-    ) as any;
+    const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(result.options.definition.servers[0].description).toBe(
       "Local Development Server"
@@ -110,14 +83,10 @@ describe("getSwaggerDefaultConfig", () => {
     const result = (getSwaggerDefaultConfig as any)({}, undefined) as any;
 
     expect(result.options.definition.paths).toEqual({});
-    expect(result.options.definition.components.schemas).toEqual({});
   });
 
   it("should include scalar API reference configuration", async () => {
-    const result = getSwaggerDefaultConfig(
-      mockDefaultModelsPaths,
-      mockDefaultJsonSchemas
-    ) as any;
+    const result = getSwaggerDefaultConfig(mockDefaultModelsPaths) as any;
 
     expect(result.scalarApiReferenceConfiguration).toEqual({
       theme: "deepSpace",

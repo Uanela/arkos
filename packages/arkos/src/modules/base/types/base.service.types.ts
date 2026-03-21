@@ -1,11 +1,6 @@
 import { User } from "../../../types";
 
 export type ModelDelegate = Record<string, any>;
-export type ModelGetPayload<G, T = any> = G extends {
-  $args: (arg: T) => infer R;
-}
-  ? R
-  : never;
 
 // Create Operations
 export type CreateOneData<T extends ModelDelegate> = Parameters<
