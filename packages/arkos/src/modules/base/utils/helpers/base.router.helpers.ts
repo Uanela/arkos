@@ -145,8 +145,7 @@ export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
           "",
           routerConfig,
           modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("create")
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
@@ -194,8 +193,7 @@ export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
           "/many",
           routerConfig,
           modelNameInKebab,
-          authConfigs,
-          getValidationSchemaOrDto("createMany")
+          authConfigs
         ),
         addPrismaQueryOptionsToRequest<any>(
           prismaQueryOptions as PrismaQueryOptions<any>,
