@@ -1,9 +1,11 @@
+import { getArkosConfig } from "../../../../helpers/arkos-config.helpers";
 import { kebabCase } from "../../../../helpers/change-case.helpers";
 import prismaSchemaParser from "../../../../prisma/prisma-schema-parser";
 import { TemplateOptions } from "../../template-generators";
 
 export function generatePolicyTemplate(options: TemplateOptions): string {
   const { modelName } = options;
+  const arkosConfig = getArkosConfig();
 
   if (!modelName)
     throw new Error("Module name is required for policy template");
@@ -25,23 +27,19 @@ export function generatePolicyTemplate(options: TemplateOptions): string {
   const crudRules = isPrismaModel
     ? `
   .rule("Create", {
-    roles: [],
-    name: "Create ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n" : ""}name: "Create ${modelNameCapitalized}",
     description: "Permission to create new ${modelNameSpaced} records",
   })
   .rule("View", {
-    roles: [],
-    name: "View ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n" : ""}name: "View ${modelNameCapitalized}",
     description: "Permission to view ${modelNameSpaced} records",
   })
   .rule("Update", {
-    roles: [],
-    name: "Update ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n" : ""}name: "Update ${modelNameCapitalized}",
     description: "Permission to update existing ${modelNameSpaced} records",
   })
   .rule("Delete", {
-    roles: [],
-    name: "Delete ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n" : ""}name: "Delete ${modelNameCapitalized}",
     description: "Permission to delete ${modelNameSpaced} records",
   })`
     : "";

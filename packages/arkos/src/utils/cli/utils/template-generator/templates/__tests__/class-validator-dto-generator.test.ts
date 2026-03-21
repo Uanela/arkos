@@ -4001,4 +4001,552 @@ describe("ClassValidatorDtoGenerator", () => {
       });
     });
   });
+
+  describe("Composite Type Fields create", () => {
+    beforeEach(() => {
+      (prismaSchemaParser.compositeTypes as any) = [
+        {
+          name: "PostTag",
+          fields: [
+            {
+              name: "name",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "slug",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "color",
+              type: "String",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "featured",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+              defaultValue: false,
+            },
+          ],
+        },
+      ];
+    });
+
+    it("should generate a nested DTO class for a single composite type field", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateCreateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("class PostTagForCreatePostDto {");
+      expect(result).toContain("@IsString()\n  name!: string;");
+      expect(result).toContain("@IsString()\n  slug!: string;");
+      expect(result).toContain(
+        "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  color?: string;"
+      );
+      expect(result).toContain(
+        "@ValidateNested()\n  @Type(() => PostTagForCreatePostDto)\n  mainTag!: PostTagForCreatePostDto;"
+      );
+    });
+
+    it("should generate optional composite type field with @IsOptional", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateCreateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain(
+        "@IsOptional()\n  @ValidateNested()\n  @Type(() => PostTagForCreatePostDto)\n  mainTag?: PostTagForCreatePostDto;"
+      );
+    });
+
+    it("should generate array composite type field with @IsArray and { each: true }", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateCreateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("class PostTagForCreatePostDto {");
+      expect(result).toContain(
+        "@IsArray()\n  @ValidateNested({ each: true })\n  @Type(() => PostTagForCreatePostDto)\n  tags!: PostTagForCreatePostDto[];"
+      );
+    });
+
+    it("should reuse the same nested DTO class for single and array composite type fields", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateCreateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      const occurrences = (result.match(/class PostTagForCreatePostDto/g) || [])
+        .length;
+      expect(occurrences).toBe(1);
+      expect(result).toContain("mainTag!: PostTagForCreatePostDto;");
+      expect(result).toContain("tags!: PostTagForCreatePostDto[];");
+    });
+
+    it("should import ValidateNested and Type when composite types are present", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateCreateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("ValidateNested");
+      expect(result).toContain('import { Type } from "class-transformer"');
+    });
+
+    it("should not generate index-based partial update — full array replacement only", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateCreateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("tags!: PostTagForCreatePostDto[]");
+      expect(result).not.toContain("tags!: PostTagForCreatePostDto;");
+    });
+  });
+
+  describe("Composite Type Fields - Update", () => {
+    beforeEach(() => {
+      (prismaSchemaParser.compositeTypes as any) = [
+        {
+          name: "PostTag",
+          fields: [
+            {
+              name: "name",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "slug",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "color",
+              type: "String",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "featured",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+              defaultValue: false,
+            },
+          ],
+        },
+      ];
+    });
+
+    it("should generate a nested DTO class and mark the field as optional", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("class PostTagForUpdatePostDto {");
+      expect(result).toContain(
+        "@IsOptional()\n  @ValidateNested()\n  @Type(() => PostTagForUpdatePostDto)\n  mainTag?: PostTagForUpdatePostDto;"
+      );
+    });
+
+    it("should always mark composite type field as optional in update regardless of schema", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("mainTag?: PostTagForUpdatePostDto;");
+      expect(result).not.toContain("mainTag!: PostTagForUpdatePostDto;");
+    });
+
+    it("should generate array composite type field with @IsArray and { each: true }, optional", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("class PostTagForUpdatePostDto {");
+      expect(result).toContain(
+        "@IsOptional()\n  @IsArray()\n  @ValidateNested({ each: true })\n  @Type(() => PostTagForUpdatePostDto)\n  tags?: PostTagForUpdatePostDto[];"
+      );
+    });
+
+    it("should reuse the same nested DTO class for single and array composite type fields", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      const occurrences = (result.match(/class PostTagForUpdatePostDto/g) || [])
+        .length;
+      expect(occurrences).toBe(1);
+      expect(result).toContain("mainTag?: PostTagForUpdatePostDto;");
+      expect(result).toContain("tags?: PostTagForUpdatePostDto[];");
+    });
+
+    it("should not generate index-based partial update — full array replacement only", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("tags?: PostTagForUpdatePostDto[]");
+      expect(result).not.toContain("tags?: PostTagForUpdatePostDto;");
+    });
+
+    it("should import ValidateNested and Type when composite types are present", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = classValidatorDtoGenerator.generateUpdateDto({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("ValidateNested");
+      expect(result).toContain('import { Type } from "class-transformer"');
+    });
+  });
 });

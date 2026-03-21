@@ -18,6 +18,8 @@ import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import ArkosRouter from "../../utils/arkos-router";
 import { UserArkosConfig } from "../../utils/define-config";
+import authOpenAPIGenerator from "./utils/auth-openapi-generator";
+import { AuthRouterEndpoint, RouterConfig } from "../../types/router-config";
 
 const router = ArkosRouter();
 
@@ -31,7 +33,8 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
     authConfigs,
   } = getModuleComponents("auth") || {};
 
-  const routerConfig = customRouterModule?.config || {};
+  const routerConfig: RouterConfig<"auth"> =
+    (customRouterModule?.config as any) || {};
   const customRouter = customRouterModule?.default as Router;
 
   if (customRouter && customRouterModule) {
@@ -56,6 +59,50 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
 
     return undefined;
   };
+
+  const endpoints: AuthRouterEndpoint[] = [
+    "login",
+    "logout",
+    "signup",
+    "updatePassword",
+    "getMe",
+    "updateMe",
+    "deleteMe",
+    "findManyAuthAction",
+    "findOneAuthAction",
+  ];
+
+  for (const endpoint of endpoints) {
+    let endpointConfig = routerConfig[endpoint] || {};
+
+    const schema = getValidationSchemaOrDto(endpoint as any);
+    if (
+      schema &&
+      endpointConfig?.validation !== false &&
+      endpointConfig?.validation?.body !== false
+    )
+      endpointConfig = {
+        ...(endpointConfig || {}),
+        validation: {
+          ...(endpointConfig?.validation || {}),
+          body: schema,
+        },
+      };
+
+    if (endpointConfig?.experimental?.openapi !== false)
+      endpointConfig = {
+        ...(endpointConfig || {}),
+        experimental: {
+          ...(endpointConfig?.experimental || {}),
+          openapi: authOpenAPIGenerator.getOpenApiConfig(
+            endpointConfig,
+            endpoint
+          ),
+        },
+      };
+
+    routerConfig[endpoint] = endpointConfig;
+  }
 
   // GET /users/me - Get current user
   if (!isEndpointDisabled(routerConfig, "getMe")) {
@@ -91,8 +138,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/me",
         routerConfig,
         "auth",
-        true,
-        getValidationSchemaOrDto("updateMe")
+        true
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
@@ -168,8 +214,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/login",
         routerConfig,
         "auth",
-        false,
-        getValidationSchemaOrDto("login")
+        false
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
@@ -213,8 +258,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/signup",
         routerConfig,
         "auth",
-        false,
-        getValidationSchemaOrDto("signup")
+        false
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
@@ -238,8 +282,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/update-password",
         routerConfig,
         "auth",
-        true,
-        getValidationSchemaOrDto("updatePassword")
+        true
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,

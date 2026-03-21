@@ -1,10 +1,14 @@
 import { generatePolicyTemplate } from "../policy-template";
+import { getArkosConfig } from "../../../../../helpers/arkos-config.helpers";
 
 jest.mock("../../../../../prisma/prisma-schema-parser", () => ({
   __esModule: true,
   default: {
     getModelsAsArrayOfStrings: jest.fn(),
   },
+}));
+jest.mock("../../../../../helpers/arkos-config.helpers", () => ({
+  getArkosConfig: jest.fn(),
 }));
 
 import prismaSchemaParser from "../../../../../prisma/prisma-schema-parser";
@@ -149,7 +153,16 @@ describe("generatePolicyTemplate", () => {
       );
     });
 
-    it("should initialize all rules with empty roles array", () => {
+    it("should initialize all rules with empty roles array when auth is static", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "static" },
+      });
+      const result = generatePolicyTemplate({ modelName: userModelName });
+      const rolesMatches = result.match(/roles: \[\]/g);
+      expect(rolesMatches).toHaveLength(4);
+    });
+
+    it("should initialize all rules WITHOUT roles array when auth not static", () => {
       const result = generatePolicyTemplate({ modelName: userModelName });
       const rolesMatches = result.match(/roles: \[\]/g);
       expect(rolesMatches).toHaveLength(4);

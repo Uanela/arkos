@@ -1,10 +1,8 @@
-import { OpenAPIV3 } from "openapi-types";
 import { ArkosConfig } from "../../../../exports";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
 
 export default function getSwaggerDefaultConfig(
-  defaultModelsPaths: Record<string, any>,
-  defaultJsonSchemas: OpenAPIV3.PathsObject<{}, {}>
+  defaultModelsPaths: Record<string, any>
 ) {
   const portAndHost = {
     port: process.env.__PORT || process.env.PORT || "8000",
@@ -32,7 +30,6 @@ export default function getSwaggerDefaultConfig(
         ],
         paths: defaultModelsPaths,
         components: {
-          schemas: defaultJsonSchemas || {},
           securitySchemes: {
             BearerAuth: {
               type: "http",

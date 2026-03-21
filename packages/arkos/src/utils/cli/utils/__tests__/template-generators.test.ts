@@ -1,7 +1,4 @@
-import {
-  checkFileExists,
-  getUserFileExtension,
-} from "../../../helpers/fs.helpers";
+import { getUserFileExtension } from "../../../helpers/fs.helpers";
 import { generateTemplate } from "../template-generators";
 
 // Mock the fs helpers
@@ -9,9 +6,6 @@ jest.mock("fs");
 jest.mock("../../../helpers/fs.helpers");
 const mockedGetUserFileExtension = getUserFileExtension as jest.MockedFunction<
   typeof getUserFileExtension
->;
-const mockedCheckFileExits = checkFileExists as jest.MockedFunction<
-  typeof checkFileExists
 >;
 
 describe("generateTemplate", () => {
