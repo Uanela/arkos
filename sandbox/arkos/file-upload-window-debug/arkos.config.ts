@@ -15,7 +15,7 @@ const config: ArkosConfig = {
     enabled: false,
   },
   validation: {
-    resolver: "class-validator",
+    resolver: "zod",
   },
   swagger: {
     mode: "zod",

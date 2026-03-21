@@ -5,7 +5,7 @@ export interface PrismaField {
   isArray: boolean;
   foreignKeyField?: string;
   foreignReferenceField?: string;
-  isRelation: boolean;
+  isRelation?: boolean;
   defaultValue?: any;
   isId?: boolean;
   isUnique?: boolean;

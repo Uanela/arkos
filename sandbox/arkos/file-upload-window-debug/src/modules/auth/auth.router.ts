@@ -5,7 +5,7 @@ import z from "zod";
 export const config: RouterConfig<"auth"> = {
   getMe: {
     validation: {
-      body: z.object({ the: z.string() }),
+      // body: z.object({ the: z.string() }),
       // params: z.object({ sheu: z.string() }),
     },
     experimental: {
@@ -16,6 +16,15 @@ export const config: RouterConfig<"auth"> = {
         responses: {
           201: z.object({ data: z.object({ uanela: z.number() }) }),
         },
+      },
+    },
+  },
+  login: {
+    // validation: false,
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "cover",
       },
     },
   },

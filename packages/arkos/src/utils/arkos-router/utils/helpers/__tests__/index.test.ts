@@ -159,6 +159,30 @@ describe("extractPathParams", () => {
     const result = extractPathParams(path);
     expect(result).toEqual(["userId"]);
   });
+
+  it("should extract wildcard * as path", () => {
+    const path = "/api/uploads/*";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["path"]);
+  });
+
+  it("should extract wildcard * alongside other params", () => {
+    const path = "/api/:version/uploads/*";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["version", "path"]);
+  });
+
+  it("should strip regex constraint from :param(\\d+)", () => {
+    const path = "/api/users/:userId(\\d+)";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["userId"]);
+  });
+
+  it("should strip regex constraint alongside other params", () => {
+    const path = "/api/:version(v\\d+)/users/:userId(\\d+)";
+    const result = extractPathParams(path);
+    expect(result).toEqual(["version", "userId"]);
+  });
 });
 
 describe("getMiddlewareStack", () => {
