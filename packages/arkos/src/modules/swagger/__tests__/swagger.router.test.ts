@@ -3,14 +3,10 @@ import {
   getSwaggerRouter,
   scalarMiddleware,
 } from "../../../../src/modules/swagger/swagger.router";
-import * as swaggerRouterHelpers from "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers";
-import missingJsonSchemaGenerator from "../../../../src/modules/swagger/utils/helpers/missing-json-schemas-generator";
-import getSwaggerDefaultConfig from "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs";
-import * as arkosRouter from "../../../../src/utils/arkos-router";
-import getFileUploadJsonSchemaPaths from "../../../../src/modules/swagger/utils/helpers/get-file-upload-json-schema-paths";
-import generateSystemJsonSchemas from "../../../../src/modules/swagger/utils/helpers/json-schema-generators/generate-system-json-schemas";
 import deepmerge from "../../../../src/utils/helpers/deepmerge.helper";
 import { importEsmPreventingTsTransformation } from "../../../../src/utils/helpers/global.helpers";
+import getSwaggerDefaultConfig from "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs";
+import { Arkos } from "../../../types/arkos";
 
 jest.mock("fs");
 jest.mock("express", () => ({
@@ -25,12 +21,16 @@ jest.mock("express", () => ({
   default: jest.fn(),
 }));
 jest.mock("swagger-jsdoc");
-jest.mock(
-  "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers"
-);
-jest.mock(
-  "../../../../src/modules/swagger/utils/helpers/missing-json-schemas-generator"
-);
+
+const mockApiReference = jest.fn();
+
+jest.mock("../../../utils/helpers/global.helpers", () => ({
+  ...jest.requireActual("../../../utils/helpers/global.helpers"),
+  importEsmPreventingTsTransformation: jest.fn(() => ({
+    apiReference: mockApiReference,
+  })),
+}));
+
 jest.mock(
   "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs"
 );
@@ -57,12 +57,12 @@ describe("getSwaggerRouter", () => {
     },
   };
 
-  const mockApp = { _router: { stack: [] } } as any;
-  const mockJsonSchemas = { UserModelSchema: { type: "object" } };
-  const mockPaths = { "/test": { get: {} } };
-  const mockCustomPaths = { "/custom": { get: {} } };
-  const mockFileUploadPaths = { "/upload": { post: {} } };
-  const mockSystemSchemas = { SystemSchema: { type: "object" } };
+  const mockApp = {
+    _router: {
+      stack: [],
+    },
+  } as any as Arkos;
+
   const mockSwaggerSpec = { openapi: "3.0.0" };
   const mockMergedConfig = {
     endpoint: "/docs",
@@ -76,29 +76,13 @@ describe("getSwaggerRouter", () => {
     jest.clearAllMocks();
 
     (swaggerJsdoc as jest.Mock).mockReturnValue(mockSwaggerSpec);
-    (
-      swaggerRouterHelpers.getOpenAPIJsonSchemasByConfigMode as jest.Mock
-    ).mockReturnValue(mockJsonSchemas);
-    (swaggerRouterHelpers.generatePathsForModels as jest.Mock).mockReturnValue(
-      mockPaths
-    );
-    (arkosRouter.generateOpenAPIFromApp as jest.Mock).mockReturnValue(
-      mockCustomPaths
-    );
-    (getFileUploadJsonSchemaPaths as jest.Mock).mockReturnValue(
-      mockFileUploadPaths
-    );
-    (generateSystemJsonSchemas as jest.Mock).mockReturnValue(mockSystemSchemas);
-    (
-      missingJsonSchemaGenerator.generateMissingJsonSchemas as jest.Mock
-    ).mockReturnValue({});
-    (getSwaggerDefaultConfig as jest.Mock).mockReturnValue({
-      options: mockConfig.swagger.options,
-    });
     (deepmerge as any as jest.Mock).mockReturnValue(mockMergedConfig);
     (importEsmPreventingTsTransformation as jest.Mock).mockResolvedValue({
       apiReference: jest.fn().mockReturnValue(jest.fn()),
     });
+    (mockApiReference as jest.Mock).mockReturnValue(jest.fn());
+
+    (getSwaggerDefaultConfig as jest.Mock).mockReturnValue(mockConfig.swagger);
   });
 
   it("should return a router instance", () => {
@@ -106,51 +90,11 @@ describe("getSwaggerRouter", () => {
     expect(router).toHaveProperty("use");
   });
 
-  it("should call getOpenAPIJsonSchemasByConfigMode with no arguments", () => {
-    getSwaggerRouter(mockConfig, mockApp);
-    expect(
-      swaggerRouterHelpers.getOpenAPIJsonSchemasByConfigMode
-    ).toHaveBeenCalledWith();
-  });
-
-  it("should generate custom paths from app using generateOpenAPIFromApp", () => {
-    getSwaggerRouter(mockConfig, mockApp);
-    expect(arkosRouter.generateOpenAPIFromApp).toHaveBeenCalledWith(mockApp);
-  });
-
-  it("should generate model paths passing arkosConfig and custom paths", () => {
-    getSwaggerRouter(mockConfig, mockApp);
-    expect(swaggerRouterHelpers.generatePathsForModels).toHaveBeenCalledWith(
-      mockConfig,
-      mockCustomPaths
-    );
-  });
-
-  it("should generate file upload paths passing arkosConfig and custom paths", () => {
-    getSwaggerRouter(mockConfig, mockApp);
-    expect(getFileUploadJsonSchemaPaths).toHaveBeenCalledWith(
-      mockConfig,
-      mockCustomPaths
-    );
-  });
-
-  it("should generate missing JSON schemas without config param", () => {
-    getSwaggerRouter(mockConfig, mockApp);
-    expect(
-      missingJsonSchemaGenerator.generateMissingJsonSchemas
-    ).toHaveBeenCalledWith(mockPaths, mockJsonSchemas);
-  });
-
-  it("should merge system schemas into defaultJsonSchemas", () => {
+  it("should merge default and user configs", async () => {
     getSwaggerRouter(mockConfig, mockApp);
     expect(generateSystemJsonSchemas).toHaveBeenCalledWith(mockConfig);
     expect(getSwaggerDefaultConfig).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ...mockCustomPaths,
-        ...mockPaths,
-        ...mockFileUploadPaths,
-      }),
-      expect.objectContaining({ ...mockJsonSchemas, ...mockSystemSchemas })
+      expect.objectContaining({})
     );
   });
 

@@ -50,6 +50,49 @@ export class ClassValidatorDtoGenerator {
         continue;
       }
 
+      if (field.isCompositeType) {
+        const compositeType = prismaSchemaParser.compositeTypes.find(
+          (t) => t.name === field.type
+        )!;
+        const compositeDtoName = `${field.type}ForCreate${modelName!.pascal}Dto`;
+
+        validatorsUsed.add("ValidateNested");
+        transformersUsed.add("Type");
+
+        if (
+          !nestedDtoClasses.find((c) => c.includes(`class ${compositeDtoName}`))
+        ) {
+          const nestedFields = compositeType.fields.map((f) => {
+            const { decorators, type } = this.generateClassValidatorField(
+              f,
+              false,
+              validatorsUsed
+            );
+            const mod = isTypeScript ? (f.isOptional ? "?" : "!") : "";
+            return `${decorators}  ${f.name}${mod}: ${type};`;
+          });
+          nestedDtoClasses.push(
+            `class ${compositeDtoName} {\n${nestedFields.join("\n\n")}\n}`
+          );
+        }
+
+        const isOptional = field.isOptional || field.defaultValue !== undefined;
+        if (isOptional) validatorsUsed.add("IsOptional");
+        const optDecorator = isOptional ? "  @IsOptional()\n" : "";
+        const mod = isTypeScript ? (isOptional ? "?" : "!") : "";
+        const eachOpt = field.isArray ? "{ each: true }" : "";
+        const typeStr = field.isArray
+          ? `${compositeDtoName}[]`
+          : compositeDtoName;
+
+        if (field.isArray) validatorsUsed.add("IsArray");
+
+        dtoFields.push(
+          `${optDecorator}${field.isArray ? "  @IsArray()\n" : ""}  @ValidateNested(${eachOpt})\n  @Type(() => ${compositeDtoName})\n  ${field.name}${mod}: ${typeStr};`
+        );
+        continue;
+      }
+
       if (field.isRelation) {
         if (field.isArray) continue;
 
@@ -152,6 +195,47 @@ ${dtoFields.join("\n\n")}
         (f) => f.foreignKeyField === field.name
       );
       if (isForeignKey) {
+        continue;
+      }
+
+      if (field.isCompositeType) {
+        const compositeType = prismaSchemaParser.compositeTypes.find(
+          (t) => t.name === field.type
+        )!;
+        const compositeDtoName = `${field.type}ForUpdate${modelName!.pascal}Dto`;
+
+        validatorsUsed.add("ValidateNested");
+        validatorsUsed.add("IsOptional");
+        transformersUsed.add("Type");
+
+        if (
+          !nestedDtoClasses.find((c) => c.includes(`class ${compositeDtoName}`))
+        ) {
+          const nestedFields = compositeType.fields.map((f) => {
+            const { decorators, type } =
+              this.generateClassValidatorFieldForUpdate(
+                f,
+                false,
+                validatorsUsed
+              );
+            const mod = isTypeScript ? "?" : "";
+            return `${decorators}  ${f.name}${mod}: ${type};`;
+          });
+          nestedDtoClasses.push(
+            `class ${compositeDtoName} {\n${nestedFields.join("\n\n")}\n}`
+          );
+        }
+
+        if (field.isArray) validatorsUsed.add("IsArray");
+
+        const eachOpt = field.isArray ? "{ each: true }" : "";
+        const typeStr = field.isArray
+          ? `${compositeDtoName}[]`
+          : compositeDtoName;
+
+        dtoFields.push(
+          `  @IsOptional()\n${field.isArray ? "  @IsArray()\n" : ""}  @ValidateNested(${eachOpt})\n  @Type(() => ${compositeDtoName})\n  ${field.name}?: ${typeStr};`
+        );
         continue;
       }
 
@@ -750,6 +834,10 @@ ${fields.join("\n\n")}
       case "BigInt":
         return "bigint";
       default:
+        if (
+          prismaSchemaParser.compositeTypes.some((t) => t.name === prismaType)
+        )
+          return prismaType;
         return prismaSchemaParser.isEnum(prismaType) ? prismaType : "any";
     }
   }

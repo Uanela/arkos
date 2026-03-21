@@ -85,14 +85,20 @@ describe("initializeApp", () => {
       );
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(app.get).toHaveBeenCalledWith("/api", expect.any(Function));
+      expect(app.get).toHaveBeenCalledWith(
+        { path: "/api" },
+        expect.any(Function)
+      );
     });
 
     it("should use configured globalPrefix", () => {
       mockGetArkosConfig.mockReturnValue(baseConfig({ globalPrefix: "/v1" }));
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(app.get).toHaveBeenCalledWith("/v1", expect.any(Function));
+      expect(app.get).toHaveBeenCalledWith(
+        { path: "/v1" },
+        expect.any(Function)
+      );
     });
   });
 
@@ -100,7 +106,10 @@ describe("initializeApp", () => {
     it("should register default welcome route handler", () => {
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(app.get).toHaveBeenCalledWith("/api", expect.any(Function));
+      expect(app.get).toHaveBeenCalledWith(
+        { path: "/api" },
+        expect.any(Function)
+      );
     });
 
     it("default welcome handler responds with 200 and welcomeMessage", () => {
@@ -125,7 +134,7 @@ describe("initializeApp", () => {
       );
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(app.get).toHaveBeenCalledWith("/api", customWelcome);
+      expect(app.get).toHaveBeenCalledWith({ path: "/api" }, customWelcome);
     });
 
     it("should skip welcomeRoute when set to false", () => {
@@ -224,13 +233,13 @@ describe("initializeApp", () => {
       expect(wildcardCall).toBeDefined();
 
       const handler = wildcardCall[1];
-      const req = { originalUrl: "/unknown/path" };
+      const req = { method: "GET", originalUrl: "/unknown/path" };
 
       expect(() => handler(req)).toThrow();
       expect(AppError).toHaveBeenCalledWith(
-        "Route not found",
+        `Route ${req.method} ${req.originalUrl} was not found`,
         404,
-        { route: "/unknown/path" },
+        { route: "GET /unknown/path" },
         "RouteNotFound"
       );
     });

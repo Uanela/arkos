@@ -12,6 +12,7 @@ import {
   routeHookReader,
 } from "../../components/arkos-route-hook/reader";
 import { getArkosConfig } from "../../server";
+import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-generator";
 
 export function getFileUploadRouter() {
   const router = ArkosRouter();
@@ -19,8 +20,8 @@ export function getFileUploadRouter() {
 
   const routeHook = loadableRegistry.getItem("ArkosRouteHook", "file-upload");
 
-  const op = (operation: OperationByModule<"file-upload">) =>
-    routeHook
+  const op = (operation: OperationByModule<"file-upload">) => {
+    let components = routeHook
       ? routeHookReader.forOperation("file-upload", operation)
       : {
           before: [],
@@ -28,6 +29,23 @@ export function getFileUploadRouter() {
           onError: [],
           routeConfig: {},
         };
+
+    let endpointConfig = components.routeConfig || {};
+    if (endpointConfig?.experimental?.openapi !== false)
+      endpointConfig = {
+        ...(endpointConfig || {}),
+        experimental: {
+          ...(endpointConfig?.experimental || {}),
+          openapi: fileUploadJsonSchemaGenerator.getOpenApiConfig(
+            endpointConfig,
+            operation
+          ),
+        },
+      };
+
+    components.routeConfig = endpointConfig;
+    return components;
+  };
 
   let basePathname = fileUpload?.baseRoute || "/api/uploads/";
   if (!basePathname.startsWith("/")) basePathname = "/" + basePathname;

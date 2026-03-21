@@ -1,7 +1,5 @@
 import { PrismaJsonSchemaGenerator } from "../prisma-json-schema-generator";
-import { ArkosConfig } from "../../../exports";
 import prismaSchemaParser from "../prisma-schema-parser";
-import { localValidatorFileExists } from "../../../modules/swagger/utils/helpers/swagger.router.helpers";
 import { getArkosConfig } from "../../../exports";
 import loadableRegistry from "../../../components/arkos-loadable-registry";
 import { isAuthenticationEnabled } from "../../helpers/arkos-config.helpers";
@@ -12,6 +10,10 @@ jest.mock("../../../exports", () => ({
   getArkosConfig: jest.fn(),
 }));
 jest.mock("../../helpers/arkos-config.helpers");
+
+// Mock all dependencies
+jest.mock("../../helpers/deepmerge.helper");
+jest.mock("../../dynamic-loader");
 jest.mock("fs");
 
 describe("PrismaJsonSchemaGenerator", () => {
@@ -212,23 +214,6 @@ describe("PrismaJsonSchemaGenerator", () => {
     ],
   };
 
-  const mockArkosConfig: ArkosConfig = {
-    prisma: { instance: {} },
-    authentication: {
-      mode: "static",
-      login: {
-        allowedUsernames: ["email", "username"],
-      },
-    },
-    swagger: {
-      strict: false,
-    },
-    validation: {
-      resolver: "zod",
-    },
-  };
-
-  const mockLocalValidatorFileExists = localValidatorFileExists as jest.Mock;
   const mockPrismaSchemaParser = prismaSchemaParser as any;
 
   beforeEach(() => {
@@ -236,546 +221,552 @@ describe("PrismaJsonSchemaGenerator", () => {
     jest.clearAllMocks();
     (loadableRegistry as any).items = new Map();
     mockPrismaSchemaParser.parse = jest.fn().mockReturnValue(mockSchema);
-    mockLocalValidatorFileExists.mockReturnValue(false);
     (getArkosConfig as jest.Mock).mockReturnValue(mockArkosConfig);
     (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
   });
 
-  describe("generateModelSchemas", () => {
-    it("should generate schemas for a regular model", () => {
-      const config = {
-        modelName: "User",
-        schemasToGenerate: ["createOne", "updateOne", "findOne"] as const,
+  mockPrismaSchemaParser.models = mockSchema.models;
+  (generator as any).schema = mockSchema;
+  mockDeepmerge.mockImplementation((a, b) => ({ ...a, ...b }));
+});
+
+describe("generateCreateSchema", () => {
+  it("should generate create schema excluding ID and auto fields", () => {
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const schema = generator.generateCreateSchema(userModel);
+
+    expect(schema.type).toBe("object");
+    expect(schema.properties).toHaveProperty("email");
+    expect(schema.properties).toHaveProperty("name");
+    expect(schema.properties).toHaveProperty("password");
+    expect(schema.properties).toHaveProperty("role");
+    expect(schema.properties).not.toHaveProperty("id");
+    expect(schema.properties).not.toHaveProperty("createdAt");
+    expect(schema.properties).not.toHaveProperty("posts");
+  });
+
+  it("should include relation field with a single reference field for single relations", () => {
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const schema = generator.generateCreateSchema(userModel);
+
+    expect(schema.properties).toHaveProperty("profile");
+    expect(schema.properties?.profile.properties).toHaveProperty("id");
+    expect(schema.properties).not.toHaveProperty("profileId");
+  });
+
+  it("should mark required fields correctly", () => {
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const schema = generator.generateCreateSchema(userModel);
+
+    expect(schema.required).toContain("email");
+    expect(schema.required).toContain("password");
+    expect(schema.required).not.toContain("name");
+    expect(schema.required).not.toContain("role");
+  });
+
+  it("should handle auth model restrictions", () => {
+    const authModel = {
+      ...mockSchema.models.find((m) => m.name === "User")!,
+      name: "auth",
+    };
+    const schema = generator.generateCreateSchema(authModel);
+
+    expect(schema.properties).not.toHaveProperty("role");
+    expect(schema.properties).not.toHaveProperty("isActive");
+  });
+});
+
+describe("generateUpdateSchema", () => {
+  it("should generate update schema with all fields optional", () => {
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const schema = (generator as any).generateUpdateSchema(userModel);
+
+    expect(schema.type).toBe("object");
+    expect(schema.required).toEqual([]);
+    expect(schema.properties).toHaveProperty("email");
+    expect(schema.properties).toHaveProperty("name");
+    expect(schema.properties).not.toHaveProperty("id");
+    expect(schema.properties).not.toHaveProperty("createdAt");
+  });
+});
+
+describe("generateResponseSchema", () => {
+  it("should generate response schema with all fields", () => {
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const schema = (generator as any).generateResponseSchema(
+      userModel,
+      {},
+      "findOne"
+    );
+
+    expect(schema.type).toBe("object");
+    expect(schema.properties).toHaveProperty("id");
+    expect(schema.properties).toHaveProperty("email");
+    expect(schema.properties).toHaveProperty("name");
+    expect(schema.properties).not.toHaveProperty("password");
+  });
+
+  it("should respect select options", () => {
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const options = { select: { id: true, email: true } };
+    const schema = (generator as any).generateResponseSchema(
+      userModel,
+      options,
+      "findOne"
+    );
+
+    expect(schema.properties).toHaveProperty("id");
+    expect(schema.properties).toHaveProperty("email");
+    expect(schema.properties).not.toHaveProperty("name");
+  });
+
+  it("should include relations when specified in include", () => {
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const options = { include: { profile: true } };
+    const schema = (generator as any).generateResponseSchema(
+      userModel,
+      options,
+      "findOne"
+    );
+
+    expect(schema.properties).toHaveProperty("profile");
+    expect(schema.properties.profile.type).toBe("object");
+  });
+
+  it("should handle array relations", () => {
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const options = { include: { posts: true } };
+    const schema = (generator as any).generateResponseSchema(
+      userModel,
+      options,
+      "findOne"
+    );
+
+    expect(schema.properties).toHaveProperty("posts");
+    expect(schema.properties.posts.type).toBe("array");
+    expect(schema.properties.posts.items).toBeDefined();
+  });
+});
+
+describe("utility methods", () => {
+  describe("convertFieldToJsonSchema", () => {
+    it("should convert basic field types", () => {
+      const stringField = {
+        name: "email",
+        type: "String",
+        isOptional: false,
+        isArray: false,
+        foreignKeyField: "",
+        defaultValue: undefined,
+        isId: false,
+        isUnique: true,
+        attributes: [],
       };
 
-      (generator as any).schema = {
-        models: [{ name: "User", fields: [] }],
-        enums: [],
-      };
+      const property = (generator as any).convertFieldToJsonSchema(stringField);
 
-      const result = generator.generateModelSchemas(config as any);
-
-      expect(result).toHaveProperty("CreateUserModelSchema");
-      expect(result).toHaveProperty("UpdateUserModelSchema");
-      expect(result).toHaveProperty("FindOneUserModelSchema");
+      expect(property.type).toBe("string");
     });
 
-    it("should generate auth schemas for auth models", () => {
-      const config = {
-        modelName: "auth",
-        schemasToGenerate: ["login", "signup", "getMe"] as const,
+    it("should handle array fields", () => {
+      const arrayField = {
+        name: "tags",
+        type: "String",
+        isOptional: false,
+        isArray: true,
+        foreignKeyField: "",
+        defaultValue: undefined,
+        isId: false,
+        isUnique: false,
+        attributes: [],
       };
 
-      const result = generator.generateModelSchemas(config as any);
+      const property = (generator as any).convertFieldToJsonSchema(arrayField);
 
-      expect(result).toHaveProperty("LoginSchema");
-      expect(result).toHaveProperty("SignupSchema");
-      expect(result).toHaveProperty("GetMeSchema");
+      expect(property.type).toBe("array");
+      expect(property.items.type).toBe("string");
     });
 
-    it("should return empty object when swagger is strict and resolver is set", () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        ...mockArkosConfig,
-        swagger: { strict: true },
-        validation: { resolver: "zod" },
-      });
-
-      const config = {
-        modelName: "User",
-        schemasToGenerate: ["createOne"] as const,
+    it("should handle enum fields", () => {
+      const enumField = {
+        name: "role",
+        type: "UserRole",
+        isOptional: false,
+        isArray: false,
+        foreignKeyField: "",
+        defaultValue: "USER",
+        isId: false,
+        isUnique: false,
+        attributes: [],
       };
 
-      const result = generator.generateModelSchemas(config as any);
+      const property = (generator as any).convertFieldToJsonSchema(enumField);
 
-      expect(result).toEqual({});
+      expect(property.type).toBe("string");
+      expect(property.enum).toEqual(["ADMIN", "USER", "MODERATOR"]);
+      expect(property.default).toBe("USER");
     });
 
-    it("should skip schema generation when local validator exists", () => {
-      mockLocalValidatorFileExists.mockReturnValue(true);
-
-      const config = {
-        modelName: "User",
-        schemasToGenerate: ["createOne"] as const,
+    it("should handle DateTime fields", () => {
+      const dateTimeField = {
+        name: "createdAt",
+        type: "DateTime",
+        isOptional: false,
+        isArray: false,
+        foreignKeyField: "",
+        defaultValue: undefined,
+        isId: false,
+        isUnique: false,
+        attributes: [],
       };
 
-      const result = generator.generateModelSchemas(config as any);
+      const property = (generator as any).convertFieldToJsonSchema(
+        dateTimeField
+      );
 
-      expect(result).not.toHaveProperty("CreateUserModelSchema");
+      expect(property.type).toBe("string");
+      expect(property.format).toBe("date-time");
     });
   });
 
-  describe("generateCreateSchema", () => {
-    it("should generate create schema excluding ID and auto fields", () => {
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
-      const schema = (generator as any).generateCreateSchema(userModel, {});
-
-      expect(schema.type).toBe("object");
-      expect(schema.properties).toHaveProperty("email");
-      expect(schema.properties).toHaveProperty("name");
-      expect(schema.properties).toHaveProperty("password");
-      expect(schema.properties).toHaveProperty("role");
-      expect(schema.properties).not.toHaveProperty("id");
-      expect(schema.properties).not.toHaveProperty("createdAt");
-      expect(schema.properties).not.toHaveProperty("posts");
-    });
-
-    it("should include relation field with a single reference field for single relations", () => {
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
-      const schema = (generator as any).generateCreateSchema(userModel, {});
-
-      expect(schema.properties).toHaveProperty("profile");
-      expect(schema.properties.profile.properties).toHaveProperty("id");
-      expect(schema.properties).not.toHaveProperty("profileId");
-    });
-
-    it("should mark required fields correctly", () => {
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
-      const schema = (generator as any).generateCreateSchema(userModel, {});
-
-      expect(schema.required).toContain("email");
-      expect(schema.required).toContain("password");
-      expect(schema.required).not.toContain("name");
-      expect(schema.required).not.toContain("role");
-    });
-
-    it("should handle auth model restrictions", () => {
-      const authModel = {
-        ...mockSchema.models.find((m) => m.name === "User")!,
-        name: "auth",
-      };
-      const schema = (generator as any).generateCreateSchema(authModel, {});
-
-      expect(schema.properties).not.toHaveProperty("role");
-      expect(schema.properties).not.toHaveProperty("isActive");
+  describe("mapPrismaTypeToJsonSchema", () => {
+    it("should map Prisma types to JSON schema types", () => {
+      expect((generator as any).mapPrismaTypeToJsonSchema("String")).toBe(
+        "string"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("Int")).toBe(
+        "number"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("Float")).toBe(
+        "number"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("Boolean")).toBe(
+        "boolean"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("DateTime")).toBe(
+        "string"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("Json")).toBe(
+        "object"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("UserRole")).toBe(
+        "string"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("User")).toBe(
+        "object"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("Unknown")).toBe(
+        "string"
+      );
     });
   });
 
-  describe("generateUpdateSchema", () => {
-    it("should generate update schema with all fields optional", () => {
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
-      const schema = (generator as any).generateUpdateSchema(userModel, {});
+  describe("isModelRelation", () => {
+    it("should identify model relations correctly", () => {
+      expect((generator as any).isModelRelation("User")).toBe(true);
+      expect((generator as any).isModelRelation("Profile")).toBe(true);
+      expect((generator as any).isModelRelation("String")).toBe(false);
+      expect((generator as any).isModelRelation("UserRole")).toBe(false);
+    });
+  });
 
-      expect(schema.type).toBe("object");
+  describe("isEnum", () => {
+    it("should identify enums correctly", () => {
+      expect((generator as any).isEnum("UserRole")).toBe(true);
+      expect((generator as any).isEnum("String")).toBe(false);
+      expect((generator as any).isEnum("User")).toBe(false);
+    });
+  });
+  it("should handle empty schema gracefully", () => {
+    mockPrismaSchemaParser.parse.mockReturnValue({ models: [], enums: [] });
+
+    const userModel = mockSchema.models.find((m) => m.name === "User")!;
+    const schema = generator.generateCreateSchema(userModel);
+
+    expect(schema).toBeDefined();
+  });
+});
+
+describe("composite type handling", () => {
+  const mockCompositeTypes = [
+    {
+      name: "AgentInfo",
+      fields: [
+        {
+          name: "ip",
+          type: "String",
+          isOptional: true,
+          isArray: false,
+          isCompositeType: false,
+          isRelation: false,
+          foreignKeyField: "",
+          foreignReferenceField: "",
+          defaultValue: undefined,
+          isId: false,
+          isUnique: false,
+          attributes: [],
+        },
+        {
+          name: "city",
+          type: "String",
+          isOptional: true,
+          isArray: false,
+          isCompositeType: false,
+          isRelation: false,
+          foreignKeyField: "",
+          foreignReferenceField: "",
+          defaultValue: undefined,
+          isId: false,
+          isUnique: false,
+          attributes: [],
+        },
+      ],
+    },
+    {
+      name: "GeoLocation",
+      fields: [
+        {
+          name: "lat",
+          type: "Float",
+          isOptional: false,
+          isArray: false,
+          isCompositeType: false,
+          isRelation: false,
+          foreignKeyField: "",
+          foreignReferenceField: "",
+          defaultValue: undefined,
+          isId: false,
+          isUnique: false,
+          attributes: [],
+        },
+        {
+          name: "lng",
+          type: "Float",
+          isOptional: false,
+          isArray: false,
+          isCompositeType: false,
+          isRelation: false,
+          foreignKeyField: "",
+          foreignReferenceField: "",
+          defaultValue: undefined,
+          isId: false,
+          isUnique: false,
+          attributes: [],
+        },
+      ],
+    },
+  ];
+
+  const modelWithCompositeTypes = {
+    name: "InteractionEvent",
+    mapName: undefined,
+    fields: [
+      {
+        name: "id",
+        type: "String",
+        isId: true,
+        isOptional: false,
+        isArray: false,
+        isCompositeType: false,
+        isRelation: false,
+        foreignKeyField: "",
+        foreignReferenceField: "",
+        defaultValue: undefined,
+        isUnique: false,
+        attributes: ["@id"],
+      },
+      {
+        name: "agentInfo",
+        type: "AgentInfo",
+        isId: false,
+        isOptional: false,
+        isArray: false,
+        isCompositeType: true,
+        isRelation: false,
+        foreignKeyField: "",
+        foreignReferenceField: "",
+        defaultValue: undefined,
+        isUnique: false,
+        attributes: [],
+      },
+      {
+        name: "location",
+        type: "GeoLocation",
+        isId: false,
+        isOptional: true,
+        isArray: false,
+        isCompositeType: true,
+        isRelation: false,
+        foreignKeyField: "",
+        foreignReferenceField: "",
+        defaultValue: undefined,
+        isUnique: false,
+        attributes: [],
+      },
+      {
+        name: "tags",
+        type: "AgentInfo",
+        isId: false,
+        isOptional: false,
+        isArray: true,
+        isCompositeType: true,
+        isRelation: false,
+        foreignKeyField: "",
+        foreignReferenceField: "",
+        defaultValue: undefined,
+        isUnique: false,
+        attributes: [],
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    mockPrismaSchemaParser.compositeTypes = mockCompositeTypes;
+    (generator as any).schema = {
+      models: [modelWithCompositeTypes],
+      enums: [],
+    };
+  });
+
+  afterEach(() => {
+    mockPrismaSchemaParser.compositeTypes = [];
+  });
+
+  describe("isCompositeType()", () => {
+    it("should return true for known composite types", () => {
+      expect((generator as any).isCompositeType("AgentInfo")).toBe(true);
+      expect((generator as any).isCompositeType("GeoLocation")).toBe(true);
+    });
+
+    it("should return false for models, enums and primitives", () => {
+      expect((generator as any).isCompositeType("User")).toBe(false);
+      expect((generator as any).isCompositeType("UserRole")).toBe(false);
+      expect((generator as any).isCompositeType("String")).toBe(false);
+    });
+  });
+
+  describe("convertFieldToJsonSchema() with composite types", () => {
+    it("should expand a composite type field into an object schema", () => {
+      const field = modelWithCompositeTypes.fields.find(
+        (f) => f.name === "agentInfo"
+      )!;
+      const property = (generator as any).convertFieldToJsonSchema(field);
+
+      expect(property.type).toBe("object");
+      expect(property.properties).toHaveProperty("ip");
+      expect(property.properties).toHaveProperty("city");
+      expect(property.properties.ip.type).toBe("string");
+    });
+
+    it("should expand an array composite type field into an array of objects", () => {
+      const field = modelWithCompositeTypes.fields.find(
+        (f) => f.name === "tags"
+      )!;
+      const property = (generator as any).convertFieldToJsonSchema(field);
+
+      expect(property.type).toBe("array");
+      expect(property.items.type).toBe("object");
+      expect(property.items.properties).toHaveProperty("ip");
+      expect(property.items.properties).toHaveProperty("city");
+    });
+  });
+
+  describe("mapPrismaTypeToJsonSchema() with composite types", () => {
+    it("should return object for composite type names", () => {
+      expect((generator as any).mapPrismaTypeToJsonSchema("AgentInfo")).toBe(
+        "object"
+      );
+      expect((generator as any).mapPrismaTypeToJsonSchema("GeoLocation")).toBe(
+        "object"
+      );
+    });
+  });
+
+  describe("generateCreateSchema() with composite type fields", () => {
+    it("should include composite type fields as nested objects", () => {
+      const schema = generator.generateCreateSchema(modelWithCompositeTypes);
+
+      expect(schema.properties).toHaveProperty("agentInfo");
+      expect(schema.properties?.agentInfo.type).toBe("object");
+      expect(schema.properties?.agentInfo.properties).toHaveProperty("ip");
+      expect(schema.properties?.agentInfo.properties).toHaveProperty("city");
+    });
+
+    it("should include optional composite type fields without adding to required", () => {
+      const schema = generator.generateCreateSchema(modelWithCompositeTypes);
+
+      expect(schema.properties).toHaveProperty("location");
+      expect(schema.required).not.toContain("location");
+    });
+
+    it("should include required composite type fields in required array", () => {
+      const schema = generator.generateCreateSchema(modelWithCompositeTypes);
+
+      expect(schema.required).toContain("agentInfo");
+    });
+
+    it("should expand array composite type fields correctly", () => {
+      const schema = generator.generateCreateSchema(modelWithCompositeTypes);
+
+      expect(schema.properties).toHaveProperty("tags");
+      expect(schema.properties?.tags.type).toBe("array");
+      expect(schema.properties?.tags?.items?.type).toBe("object");
+    });
+  });
+
+  describe("generateUpdateSchema() with composite type fields", () => {
+    it("should include composite type fields as nested objects", () => {
+      const schema = (generator as any).generateUpdateSchema(
+        modelWithCompositeTypes
+      );
+
+      expect(schema.properties).toHaveProperty("agentInfo");
+      expect(schema.properties.agentInfo.type).toBe("object");
+      expect(schema.properties).toHaveProperty("location");
+    });
+
+    it("should not add composite type fields to required", () => {
+      const schema = (generator as any).generateUpdateSchema(
+        modelWithCompositeTypes
+      );
+
       expect(schema.required).toEqual([]);
-      expect(schema.properties).toHaveProperty("email");
-      expect(schema.properties).toHaveProperty("name");
-      expect(schema.properties).not.toHaveProperty("id");
-      expect(schema.properties).not.toHaveProperty("createdAt");
     });
   });
 
-  describe("generateResponseSchema", () => {
-    it("should generate response schema with all fields", () => {
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+  describe("generateResponseSchema() with composite type fields", () => {
+    it("should include composite type fields in response", () => {
       const schema = (generator as any).generateResponseSchema(
-        userModel,
+        modelWithCompositeTypes,
         {},
         "findOne"
       );
 
-      expect(schema.type).toBe("object");
-      expect(schema.properties).toHaveProperty("id");
-      expect(schema.properties).toHaveProperty("email");
-      expect(schema.properties).toHaveProperty("name");
-      expect(schema.properties).not.toHaveProperty("password");
+      expect(schema.properties).toHaveProperty("agentInfo");
+      expect(schema.properties.agentInfo.type).toBe("object");
+      expect(schema.properties.agentInfo.properties).toHaveProperty("ip");
     });
 
-    it("should respect select options", () => {
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
-      const options = { select: { id: true, email: true } };
+    it("should respect select options for composite type fields", () => {
       const schema = (generator as any).generateResponseSchema(
-        userModel,
-        options,
+        modelWithCompositeTypes,
+        { select: { id: true, agentInfo: true } },
         "findOne"
       );
 
-      expect(schema.properties).toHaveProperty("id");
-      expect(schema.properties).toHaveProperty("email");
-      expect(schema.properties).not.toHaveProperty("name");
+      expect(schema.properties).toHaveProperty("agentInfo");
+      expect(schema.properties).not.toHaveProperty("location");
     });
 
-    it("should include relations when specified in include", () => {
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
-      const options = { include: { profile: true } };
+    it("should add non-optional composite type fields to required", () => {
       const schema = (generator as any).generateResponseSchema(
-        userModel,
-        options,
+        modelWithCompositeTypes,
+        {},
         "findOne"
       );
 
-      expect(schema.properties).toHaveProperty("profile");
-      expect(schema.properties.profile.type).toBe("object");
-    });
-
-    it("should handle array relations", () => {
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
-      const options = { include: { posts: true } };
-      const schema = (generator as any).generateResponseSchema(
-        userModel,
-        options,
-        "findOne"
-      );
-
-      expect(schema.properties).toHaveProperty("posts");
-      expect(schema.properties.posts.type).toBe("array");
-      expect(schema.properties.posts.items).toBeDefined();
-    });
-  });
-
-  describe("auth schema generation", () => {
-    describe("generateLoginSchema", () => {
-      it("should generate login schema with password and username fields", () => {
-        const schema = (generator as any).generateLoginSchema(mockArkosConfig);
-
-        expect(schema.type).toBe("object");
-        expect(schema.properties).toHaveProperty("password");
-        expect(schema.properties).toHaveProperty("email");
-        expect(schema.properties).toHaveProperty("username");
-        expect(schema.required).toContain("password");
-      });
-
-      it("should handle nested username fields", () => {
-        const config = {
-          ...mockArkosConfig,
-          authentication: {
-            login: {
-              allowedUsernames: ["profile.username", "email"],
-            },
-          },
-        };
-        const schema = (generator as any).generateLoginSchema(config as any);
-
-        expect(schema.properties).toHaveProperty("username");
-        expect(schema.properties).toHaveProperty("email");
-      });
-    });
-
-    describe("generateSignupSchema", () => {
-      it("should generate signup schema excluding restricted fields", () => {
-        const userModel = mockSchema.models.find((m) => m.name === "User")!;
-        const schema = (generator as any).generateSignupSchema(userModel, {});
-
-        expect(schema.properties).toHaveProperty("email");
-        expect(schema.properties).toHaveProperty("password");
-        expect(schema.properties).not.toHaveProperty("role");
-        expect(schema.properties).not.toHaveProperty("isActive");
-      });
-    });
-
-    describe("generateUpdateMeSchema", () => {
-      it("should generate updateMe schema excluding sensitive fields", () => {
-        const userModel = mockSchema.models.find((m) => m.name === "User")!;
-        const schema = (generator as any).generateUpdateMeSchema(userModel, {});
-
-        expect(schema.properties).toHaveProperty("email");
-        expect(schema.properties).toHaveProperty("name");
-        expect(schema.properties).not.toHaveProperty("password");
-        expect(schema.properties).not.toHaveProperty("role");
-        expect(schema.properties).not.toHaveProperty("isActive");
-      });
-    });
-
-    describe("generateUpdatePasswordSchema", () => {
-      it("should generate password update schema", () => {
-        const userModel = mockSchema.models.find((m) => m.name === "User")!;
-        const schema = (generator as any).generateUpdatePasswordSchema(
-          userModel,
-          {}
-        );
-
-        expect(schema.type).toBe("object");
-        expect(schema.properties).toHaveProperty("currentPassword");
-        expect(schema.properties).toHaveProperty("newPassword");
-        expect(schema.properties.newPassword.minLength).toBe(8);
-        expect(schema.required).toEqual(["currentPassword", "newPassword"]);
-      });
-    });
-  });
-
-  describe("utility methods", () => {
-    describe("convertFieldToJsonSchema", () => {
-      it("should convert basic field types", () => {
-        const stringField = {
-          name: "email",
-          type: "String",
-          isOptional: false,
-          isArray: false,
-          foreignKeyField: "",
-          defaultValue: undefined,
-          isId: false,
-          isUnique: true,
-          attributes: [],
-        };
-
-        const property = (generator as any).convertFieldToJsonSchema(
-          stringField
-        );
-
-        expect(property.type).toBe("string");
-      });
-
-      it("should handle array fields", () => {
-        const arrayField = {
-          name: "tags",
-          type: "String",
-          isOptional: false,
-          isArray: true,
-          foreignKeyField: "",
-          defaultValue: undefined,
-          isId: false,
-          isUnique: false,
-          attributes: [],
-        };
-
-        const property = (generator as any).convertFieldToJsonSchema(
-          arrayField
-        );
-
-        expect(property.type).toBe("array");
-        expect(property.items.type).toBe("string");
-      });
-
-      it("should handle enum fields", () => {
-        const enumField = {
-          name: "role",
-          type: "UserRole",
-          isOptional: false,
-          isArray: false,
-          foreignKeyField: "",
-          defaultValue: "USER",
-          isId: false,
-          isUnique: false,
-          attributes: [],
-        };
-
-        const property = (generator as any).convertFieldToJsonSchema(enumField);
-
-        expect(property.type).toBe("string");
-        expect(property.enum).toEqual(["ADMIN", "USER", "MODERATOR"]);
-        expect(property.default).toBe("USER");
-      });
-
-      it("should handle DateTime fields", () => {
-        const dateTimeField = {
-          name: "createdAt",
-          type: "DateTime",
-          isOptional: false,
-          isArray: false,
-          foreignKeyField: "",
-          defaultValue: undefined,
-          isId: false,
-          isUnique: false,
-          attributes: [],
-        };
-
-        const property = (generator as any).convertFieldToJsonSchema(
-          dateTimeField
-        );
-
-        expect(property.type).toBe("string");
-        expect(property.format).toBe("date-time");
-      });
-    });
-
-    describe("mapPrismaTypeToJsonSchema", () => {
-      it("should map Prisma types to JSON schema types", () => {
-        expect((generator as any).mapPrismaTypeToJsonSchema("String")).toBe(
-          "string"
-        );
-        expect((generator as any).mapPrismaTypeToJsonSchema("Int")).toBe(
-          "number"
-        );
-        expect((generator as any).mapPrismaTypeToJsonSchema("Float")).toBe(
-          "number"
-        );
-        expect((generator as any).mapPrismaTypeToJsonSchema("Boolean")).toBe(
-          "boolean"
-        );
-        expect((generator as any).mapPrismaTypeToJsonSchema("DateTime")).toBe(
-          "string"
-        );
-        expect((generator as any).mapPrismaTypeToJsonSchema("Json")).toBe(
-          "object"
-        );
-        expect((generator as any).mapPrismaTypeToJsonSchema("UserRole")).toBe(
-          "string"
-        );
-        expect((generator as any).mapPrismaTypeToJsonSchema("User")).toBe(
-          "object"
-        );
-        expect((generator as any).mapPrismaTypeToJsonSchema("Unknown")).toBe(
-          "string"
-        );
-      });
-    });
-
-    describe("isModelRelation", () => {
-      it("should identify model relations correctly", () => {
-        expect((generator as any).isModelRelation("User")).toBe(true);
-        expect((generator as any).isModelRelation("Profile")).toBe(true);
-        expect((generator as any).isModelRelation("String")).toBe(false);
-        expect((generator as any).isModelRelation("UserRole")).toBe(false);
-      });
-    });
-
-    describe("isEnum", () => {
-      it("should identify enums correctly", () => {
-        expect((generator as any).isEnum("UserRole")).toBe(true);
-        expect((generator as any).isEnum("String")).toBe(false);
-        expect((generator as any).isEnum("User")).toBe(false);
-      });
-    });
-
-    describe("isEndpointDisabled", () => {
-      it("should return false when no hook is registered", () => {
-        expect((generator as any).isEndpointDisabled("User", "createOne")).toBe(
-          false
-        );
-      });
-
-      it("should return true when endpoint is disabled via routeHookReader", () => {
-        loadableRegistry.register({
-          __type: "ArkosRouteHook",
-          moduleName: "user",
-          _store: { createOne: { disabled: true } },
-        } as any);
-
-        expect((generator as any).isEndpointDisabled("User", "createOne")).toBe(
-          true
-        );
-      });
-
-      it("should return false when endpoint is explicitly not disabled", () => {
-        loadableRegistry.register({
-          __type: "ArkosRouteHook",
-          moduleName: "User",
-          _store: { createOne: { disabled: false } },
-        } as any);
-
-        expect((generator as any).isEndpointDisabled("User", "createOne")).toBe(
-          false
-        );
-      });
-    });
-  });
-
-  describe("complex scenarios", () => {
-    it("should handle createMany schema generation with proper references", () => {
-      const config = {
-        modelName: "User",
-        schemasToGenerate: ["createOne", "createMany"] as const,
-      };
-
-      const result = generator.generateModelSchemas(config as any);
-
-      expect(result).toHaveProperty("CreateUserModelSchema");
-      expect(result).toHaveProperty("CreateManyUserModelSchema");
-      expect(result.CreateManyUserModelSchema.type).toBe("array");
-      expect((result.CreateManyUserModelSchema.items as any)?.$ref).toContain(
-        "CreateUserModelSchema"
-      );
-    });
-
-    it("should handle updateMany schema generation", () => {
-      const config = {
-        modelName: "User",
-        schemasToGenerate: ["updateOne", "updateMany"] as const,
-      };
-
-      const result = generator.generateModelSchemas(config as any);
-
-      expect(result).toHaveProperty("UpdateManyUserModelSchema");
-      expect(result.UpdateManyUserModelSchema.type).toBe("object");
-      expect(result.UpdateManyUserModelSchema.properties).not.toHaveProperty(
-        "data"
-      );
-      expect(result.UpdateManyUserModelSchema.properties).not.toHaveProperty(
-        "where"
-      );
-      expect(result).toStrictEqual(
-        expect.objectContaining({
-          UpdateUserModelSchema: {
-            type: "object",
-            properties: {
-              email: { type: "string" },
-              name: { type: "string" },
-              password: { type: "string" },
-              profile: {
-                properties: { id: { type: "string" } },
-                type: "object",
-              },
-              role: {
-                default: "USER",
-                enum: ["ADMIN", "USER", "MODERATOR"],
-                type: "string",
-              },
-            },
-            required: [],
-          },
-        })
-      );
-    });
-
-    it("should handle findMany schema generation", () => {
-      const config = {
-        modelName: "User",
-        schemasToGenerate: ["findMany"] as const,
-      };
-
-      const result = generator.generateModelSchemas(config as any);
-
-      expect(result).toHaveProperty("FindManyUserModelSchema");
-      expect(result.FindManyUserModelSchema.type).toBe("array");
-      expect(result.FindManyUserModelSchema.items).toBeDefined();
-    });
-
-    it("should handle nested relation schemas correctly", () => {
-      const profileModel = mockSchema.models.find((m) => m.name === "Profile")!;
-      const includeOptions = { select: { id: true, bio: true } };
-
-      const schema = (generator as any).generateNestedRelationSchema(
-        profileModel,
-        includeOptions
-      );
-
-      expect(schema.type).toBe("object");
-      expect(schema.properties).toHaveProperty("id");
-      expect(schema.properties).toHaveProperty("bio");
-    });
-  });
-
-  describe("edge cases", () => {
-    it("should handle model not found gracefully", () => {
-      const config = {
-        modelName: "NonExistentModel",
-        schemasToGenerate: ["createOne"] as const,
-      };
-
-      const result = generator.generateModelSchemas(config as any);
-
-      expect(result).toEqual({});
-    });
-
-    it("should handle auth module when authentication is disabled", () => {
-      (isAuthenticationEnabled as jest.Mock).mockReturnValue(false);
-
-      const config = {
-        modelName: "auth",
-        schemasToGenerate: ["login"] as const,
-      };
-
-      const result = generator.generateModelSchemas(config as any);
-
-      expect(result).toEqual({});
-    });
-
-    it("should handle empty schema gracefully", () => {
-      mockPrismaSchemaParser.parse.mockReturnValue({ models: [], enums: [] });
-
-      const userModel = mockSchema.models.find((m) => m.name === "User")!;
-      const schema = (generator as any).generateCreateSchema(userModel, {});
-
-      expect(schema).toBeDefined();
+      expect(schema.required).toContain("agentInfo");
+      expect(schema.required).not.toContain("location");
     });
   });
 });
