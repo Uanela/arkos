@@ -1,5 +1,6 @@
 import { OpenAPIV3 } from "openapi-types";
 import { ZodSchema } from "zod";
+import { JsonSchema } from "../../prisma/types";
 
 /**
  * Represents a schema-like object that can be used for OpenAPI documentation.
@@ -8,7 +9,8 @@ import { ZodSchema } from "zod";
 type SchemaLike =
   | ZodSchema
   | (new (...args: any[]) => object)
-  | OpenAPIV3.SchemaObject;
+  | OpenAPIV3.SchemaObject
+  | JsonSchema;
 
 /**
  * Extended media type object that accepts SchemaLike in addition to standard OpenAPI schemas.
