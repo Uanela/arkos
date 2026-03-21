@@ -1,17 +1,12 @@
 import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
-import {
-  generatePathsForModels,
-  getOpenAPIJsonSchemasByConfigMode,
-} from "./utils/helpers/swagger.router.helpers";
-import missingJsonSchemaGenerator from "./utils/helpers/missing-json-schemas-generator";
 import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs";
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
-import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/generate-system-json-schemas";
 import { generateOpenAPIFromApp } from "../../utils/arkos-router";
 import express from "express";
 import { ArkosConfig, ArkosRequest, ArkosResponse } from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
+import { OpenAPIV3 } from "openapi-types";
 
 const swaggerRouter = Router();
 
@@ -19,34 +14,13 @@ export async function getSwaggerRouter(
   arkosConfig: ArkosConfig,
   app: express.Express
 ): Promise<Router> {
-  let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
-  const defaultModelsPaths = generatePathsForModels(
-    arkosConfig,
-    pathsFromCustomArkosRouters
-  );
-
-  const missingJsonSchemas =
-    missingJsonSchemaGenerator.generateMissingJsonSchemas(
-      defaultModelsPaths,
-      defaultJsonSchemas,
-      arkosConfig
-    );
-
-  defaultJsonSchemas = {
-    ...defaultJsonSchemas,
-    ...missingJsonSchemas,
-    ...generateSystemJsonSchemas(arkosConfig),
-  };
 
   const swaggerConfigs = deepmerge(
-    getSwaggerDefaultConfig(
-      {
-        ...pathsFromCustomArkosRouters,
-        ...defaultModelsPaths,
-      },
-      defaultJsonSchemas
-    ) || {},
+    getSwaggerDefaultConfig({
+      ...pathsFromCustomArkosRouters,
+      ...getSystemJsonSchemaPaths(),
+    }) || {},
     arkosConfig.swagger || {}
   ) as ArkosConfig["swagger"];
 
@@ -79,4 +53,41 @@ export async function getSwaggerRouter(
   );
 
   return swaggerRouter;
+}
+
+function getSystemJsonSchemaPaths() {
+  const paths: OpenAPIV3.PathsObject = {};
+
+  paths["/api/available-resources"] = {
+    get: {
+      tags: ["System"],
+      summary: "Get available resources",
+      description:
+        "Returns a comprehensive list of all available API resource endpoints",
+      operationId: "getAvailableResources",
+      responses: {
+        "200": {
+          description: "List of available resources retrieved successfully",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  data: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                    description: "Array of available resource endpoints",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  return paths;
 }
