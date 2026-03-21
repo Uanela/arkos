@@ -39,7 +39,6 @@ export default function initializeApp(app: Arkos) {
   const modelsRouter = getPrismaModelsRouter(config);
   app.use(globalPrefix, modelsRouter);
 
-  // app.use(knowModulesRouter);
   app.use(globalPrefix, getAvailableResourcesAndRoutesRouter());
 
   if (
@@ -47,13 +46,13 @@ export default function initializeApp(app: Arkos) {
     (process.env.ARKOS_BUILD !== "true" ||
       config.swagger.enableAfterBuild === true)
   )
-    app.use(globalPrefix, getSwaggerRouter(config, app as any));
+    app.use(globalPrefix, getSwaggerRouter(config, app));
 
   app.use("*", (req) => {
     throw new AppError(
-      "Route not found",
+      `Route ${req.method} ${req.originalUrl} was not found`,
       404,
-      { route: req.originalUrl },
+      { route: `${req.method} ${req.originalUrl}` },
       "RouteNotFound"
     );
   });

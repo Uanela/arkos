@@ -43,6 +43,24 @@ export class ZodSchemaGenerator {
       if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
         continue;
 
+      if (field.isCompositeType) {
+        const compositeType = prismaSchemaParser.compositeTypes.find(
+          (t) => t.name === field.type
+        )!;
+        const fields = compositeType.fields
+          .map(
+            (f) =>
+              `    ${f.name}: ${this.mapPrismaTypeToZod(f.type)}${f.isOptional ? ".optional()" : ""}`
+          )
+          .join(",\n");
+        const zodObj = `z.object({\n${fields}\n  })`;
+        const isOptional = field.isOptional || field.defaultValue !== undefined;
+        schemaFields.push(
+          `  ${field.name}: ${field.isArray ? `z.array(${zodObj})` : zodObj}${isOptional ? ".optional()" : ""}`
+        );
+        continue;
+      }
+
       if (field.isRelation) {
         if (field.isArray) continue;
 
@@ -111,7 +129,23 @@ export default Create${modelName!.pascal}Schema;${typeExport}
       const isForeignKey = model.fields.some(
         (f) => f.foreignKeyField === field.name
       );
-      if (field.isId || restrictedFields.includes(field.name) || isForeignKey) {
+      if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
+        continue;
+
+      if (field.isCompositeType) {
+        const compositeType = prismaSchemaParser.compositeTypes.find(
+          (t) => t.name === field.type
+        )!;
+        const fields = compositeType.fields
+          .map(
+            (f) =>
+              `    ${f.name}: ${this.mapPrismaTypeToZod(f.type)}${f.isOptional ? ".optional()" : ""}`
+          )
+          .join(",\n");
+        const zodObj = `z.object({\n${fields}\n  })`;
+        schemaFields.push(
+          `  ${field.name}: ${field.isArray ? `z.array(${zodObj})` : zodObj}.optional()`
+        );
         continue;
       }
 
@@ -444,6 +478,20 @@ export default Query${modelName!.pascal}Schema;${typeExport}
       case "BigInt":
         return "z.bigint()";
       default:
+        if (
+          prismaSchemaParser.compositeTypes.some((t) => t.name === prismaType)
+        ) {
+          const compositeType = prismaSchemaParser.compositeTypes.find(
+            (t) => t.name === prismaType
+          )!;
+          const fields = compositeType.fields
+            .map(
+              (f) =>
+                `${f.name}: ${this.mapPrismaTypeToZod(f.type)}${f.isOptional ? ".optional()" : ""}`
+            )
+            .join(", ");
+          return `z.object({ ${fields} })`;
+        }
         return "z.any()";
     }
   }

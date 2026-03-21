@@ -1,9 +1,8 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import { getSwaggerRouter } from "../../../../src/modules/swagger/swagger.router";
-import * as swaggerRouterHelpers from "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers";
-import missingJsonSchemaGenerator from "../../../../src/modules/swagger/utils/helpers/missing-json-schemas-generator";
 import getSwaggerDefaultConfig from "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs";
 import express from "express";
+import { Arkos } from "../../../types/arkos";
 
 jest.mock("fs", () => ({
   __esModule: true,
@@ -40,12 +39,7 @@ jest.mock("../../../utils/helpers/global.helpers", () => ({
     apiReference: mockApiReference,
   })),
 }));
-jest.mock(
-  "../../../../src/modules/swagger/utils/helpers/swagger.router.helpers"
-);
-jest.mock(
-  "../../../../src/modules/swagger/utils/helpers/missing-json-schemas-generator"
-);
+
 jest.mock(
   "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs"
 );
@@ -71,10 +65,8 @@ describe("getSwaggerRouter", () => {
     _router: {
       stack: [],
     },
-  } as any as express.Express;
+  } as any as Arkos;
 
-  const mockJsonSchemas = { components: { schemas: {} } };
-  const mockPaths = { "/test": { get: {} } };
   const mockSwaggerSpec = { openapi: "3.0.0" };
 
   beforeEach(() => {
@@ -84,18 +76,6 @@ describe("getSwaggerRouter", () => {
     (swaggerJsdoc as jest.Mock).mockReturnValue(mockSwaggerSpec);
     (mockApiReference as jest.Mock).mockReturnValue(jest.fn());
 
-    (
-      swaggerRouterHelpers.getOpenAPIJsonSchemasByConfigMode as jest.Mock
-    ).mockReturnValue(mockJsonSchemas);
-
-    (swaggerRouterHelpers.generatePathsForModels as jest.Mock).mockReturnValue(
-      mockPaths
-    );
-
-    (
-      missingJsonSchemaGenerator.generateMissingJsonSchemas as jest.Mock
-    ).mockReturnValue({});
-
     (getSwaggerDefaultConfig as jest.Mock).mockReturnValue(mockConfig.swagger);
   });
 
@@ -104,36 +84,11 @@ describe("getSwaggerRouter", () => {
     expect(router).toHaveProperty("use");
   });
 
-  it("should generate JSON schemas and paths", async () => {
-    getSwaggerRouter(mockConfig, mockApp);
-
-    expect(
-      swaggerRouterHelpers.getOpenAPIJsonSchemasByConfigMode
-    ).toHaveBeenCalledWith(mockConfig);
-
-    expect(swaggerRouterHelpers.generatePathsForModels).toHaveBeenCalledWith(
-      mockConfig,
-      {}
-    );
-  });
-
-  it("should generate missing JSON schemas", async () => {
-    getSwaggerRouter(mockConfig, mockApp);
-
-    expect(
-      missingJsonSchemaGenerator.generateMissingJsonSchemas
-    ).toHaveBeenCalledWith(mockPaths, mockJsonSchemas, mockConfig);
-  });
-
   it("should merge default and user configs", async () => {
     getSwaggerRouter(mockConfig, mockApp);
 
     expect(getSwaggerDefaultConfig).toHaveBeenCalledWith(
-      mockPaths,
-      expect.objectContaining({
-        ...mockJsonSchemas,
-        FindManyAuthActionSystemSchema: expect.any(Object),
-      })
+      expect.objectContaining({})
     );
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "create-arkos",
-  "version": "1.6.0-canary.37",
+  "version": "1.6.0-canary.38",
   "type": "module",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
