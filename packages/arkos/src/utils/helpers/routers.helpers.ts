@@ -111,8 +111,7 @@ export function createRouteConfig(
   path: string,
   routerConfig: RouterConfig<any>,
   modelNameInKebab: string,
-  authConfigs: any,
-  validationSchema?: any
+  authConfigs: any
 ) {
   let config: ArkosRouteConfig = {
     path: `/${routeName}${path}`,
@@ -123,7 +122,6 @@ export function createRouteConfig(
           ? authConfigs
           : getAuthenticationConfig(endpoint, modelNameInKebab, authConfigs),
     }),
-    validation: validationSchema ? { body: validationSchema } : undefined,
   };
 
   const endpointConfig = (routerConfig as any)[endpoint];
