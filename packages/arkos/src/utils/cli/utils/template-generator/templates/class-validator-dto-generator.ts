@@ -2,6 +2,7 @@ import prismaSchemaParser from "../../../../prisma/prisma-schema-parser";
 import { PrismaField, PrismaModel } from "../../../../prisma/types";
 import { getUserFileExtension } from "../../../../helpers/fs.helpers";
 import { TemplateOptions } from "../../template-generators";
+import { getArkosConfig } from "../../../../helpers/arkos-config.helpers";
 
 export class ClassValidatorDtoGenerator {
   private ensureCorrectOptions(options: TemplateOptions) {
@@ -840,6 +841,285 @@ ${fields.join("\n\n")}
           return prismaType;
         return prismaSchemaParser.isEnum(prismaType) ? prismaType : "any";
     }
+  }
+
+  generateLoginDto(_: TemplateOptions): string {
+    const ext = getUserFileExtension();
+    const isTypeScript = ext === "ts";
+    const allowedUsernames = getArkosConfig()?.authentication?.login
+      ?.allowedUsernames || ["username"];
+
+    const usernameFields = allowedUsernames.map((field: string) => {
+      const displayName = field.includes(".") ? field.split(".").pop()! : field;
+      const typeModifier = isTypeScript ? "?" : "";
+      const emailDecorator =
+        displayName === "email" ? "\n  @IsEmail()" : "\n  @IsString()";
+      return `  @IsOptional()${emailDecorator}\n  ${displayName}${typeModifier}: string;`;
+    });
+
+    const validatorsUsed = new Set([
+      "IsOptional",
+      "IsNotEmpty",
+      "IsString",
+      "MinLength",
+      "Matches",
+    ]);
+    const hasEmail = allowedUsernames.some(
+      (f: string) => (f.includes(".") ? f.split(".").pop() : f) === "email"
+    );
+    if (hasEmail) validatorsUsed.add("IsEmail");
+
+    const typeModifier = isTypeScript ? "!" : "";
+
+    return `import { ${Array.from(validatorsUsed).join(", ")} } from "class-validator";
+
+export default class LoginDto {
+${usernameFields.join("\n\n")}
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(8)
+  @Matches(/[a-z]/, { message: "Must contain lowercase" })
+  @Matches(/[A-Z]/, { message: "Must contain uppercase" })
+  @Matches(/[0-9]/, { message: "Must contain number" })
+  password${typeModifier}: string;
+}
+`;
+  }
+
+  generateSignupDto(_: TemplateOptions): string {
+    const ext = getUserFileExtension();
+    const isTypeScript = ext === "ts";
+
+    const userModel = prismaSchemaParser.models.find(
+      (m) => m.name.toLowerCase() === "user"
+    );
+    if (!userModel) throw new Error("User model not found in Prisma schema");
+
+    const restrictedFields = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "roles",
+      "role",
+      "isActive",
+      "isStaff",
+      "isSuperUser",
+      "passwordChangedAt",
+      "deletedSelfAccountAt",
+      "lastLoginAt",
+    ];
+
+    const enumsUsed = new Set<string>();
+    const validatorsUsed = new Set<string>();
+    const transformersUsed = new Set<string>();
+    const nestedDtoClasses: string[] = [];
+    const dtoFields: string[] = [];
+
+    for (const field of userModel.fields) {
+      const isForeignKey = userModel.fields.some(
+        (f) => f.foreignKeyField === field.name
+      );
+      if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
+        continue;
+
+      if (field.isRelation) {
+        if (field.isArray) continue;
+        const referencedModel = prismaSchemaParser.models.find(
+          (m) => m.name === field.type
+        );
+        if (referencedModel) {
+          const isOptional =
+            field.isOptional || field.defaultValue !== undefined;
+          if (isOptional) validatorsUsed.add("IsOptional");
+          validatorsUsed.add("ValidateNested");
+          transformersUsed.add("Type");
+          const relationDtoName = `${referencedModel.name}ForSignupDto`;
+          const nestedDtoClass = this.generateNestedDtoClass(
+            field,
+            referencedModel,
+            relationDtoName,
+            validatorsUsed,
+            enumsUsed,
+            isTypeScript
+          );
+          if (!dtoFields.find((d) => d.includes(relationDtoName)))
+            nestedDtoClasses.push(nestedDtoClass);
+          const typeModifier = isTypeScript ? (isOptional ? "?" : "!") : "";
+          dtoFields.push(
+            `  ${isOptional ? "@IsOptional()\n  " : ""}@ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`
+          );
+        }
+        continue;
+      }
+
+      if (prismaSchemaParser.isEnum(field.type)) enumsUsed.add(field.type);
+
+      if (field.name === "password") {
+        validatorsUsed.add("IsNotEmpty");
+        validatorsUsed.add("IsString");
+        validatorsUsed.add("MinLength");
+        validatorsUsed.add("Matches");
+        const typeModifier = isTypeScript ? "!" : "";
+        dtoFields.push(
+          `  @IsNotEmpty()\n  @IsString()\n  @MinLength(8)\n  @Matches(/[a-z]/, { message: "Must contain lowercase" })\n  @Matches(/[A-Z]/, { message: "Must contain uppercase" })\n  @Matches(/[0-9]/, { message: "Must contain number" })\n  ${field.name}${typeModifier}: string;`
+        );
+        continue;
+      }
+
+      const { decorators, type } = this.generateClassValidatorField(
+        field,
+        true,
+        validatorsUsed
+      );
+      const isOptional = field.isOptional || field.defaultValue !== undefined;
+      const typeModifier = isTypeScript ? (isOptional ? "?" : "!") : "";
+      dtoFields.push(`${decorators}  ${field.name}${typeModifier}: ${type};`);
+    }
+
+    const enumImports =
+      enumsUsed.size > 0
+        ? `import { ${Array.from(enumsUsed).join(", ")} } from "@prisma/client";\n`
+        : "";
+    const validatorImports =
+      validatorsUsed.size > 0
+        ? `import { ${Array.from(validatorsUsed).join(", ")} } from "class-validator";\n`
+        : "";
+    const transformerImports =
+      transformersUsed.size > 0
+        ? `import { ${Array.from(transformersUsed).join(", ")} } from "class-transformer";\n`
+        : "";
+    const nestedDtoSection =
+      nestedDtoClasses.length > 0 ? `\n${nestedDtoClasses.join("\n\n")}\n` : "";
+
+    return `${validatorImports}${transformerImports}${enumImports}${nestedDtoSection}
+export default class SignupDto {
+${dtoFields.join("\n\n")}
+}
+`;
+  }
+
+  generateUpdateMeDto(_: TemplateOptions): string {
+    const ext = getUserFileExtension();
+    const isTypeScript = ext === "ts";
+
+    const userModel = prismaSchemaParser.models.find(
+      (m) => m.name.toLowerCase() === "user"
+    );
+    if (!userModel) throw new Error("User model not found in Prisma schema");
+
+    const restrictedFields = [
+      "id",
+      "createdAt",
+      "updatedAt",
+      "deletedAt",
+      "roles",
+      "role",
+      "isActive",
+      "isStaff",
+      "isSuperUser",
+      "passwordChangedAt",
+      "deletedSelfAccountAt",
+      "lastLoginAt",
+      "password",
+    ];
+
+    const enumsUsed = new Set<string>();
+    const validatorsUsed = new Set<string>();
+    const transformersUsed = new Set<string>();
+    const nestedDtoClasses: string[] = [];
+    const dtoFields: string[] = [];
+
+    for (const field of userModel.fields) {
+      const isForeignKey = userModel.fields.some(
+        (f) => f.foreignKeyField === field.name
+      );
+      if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
+        continue;
+
+      if (field.isRelation) {
+        if (field.isArray) continue;
+        const referencedModel = prismaSchemaParser.models.find(
+          (m) => m.name === field.type
+        );
+        if (referencedModel) {
+          validatorsUsed.add("IsOptional");
+          validatorsUsed.add("ValidateNested");
+          transformersUsed.add("Type");
+          const relationDtoName = `${referencedModel.name}ForUpdateMeDto`;
+          const nestedDtoClass = this.generateNestedDtoClass(
+            field,
+            referencedModel,
+            relationDtoName,
+            validatorsUsed,
+            enumsUsed,
+            isTypeScript
+          );
+          if (!dtoFields.find((d) => d.includes(relationDtoName)))
+            nestedDtoClasses.push(nestedDtoClass);
+          const typeModifier = isTypeScript ? "?" : "";
+          dtoFields.push(
+            `  @IsOptional()\n  @ValidateNested()\n  @Type(() => ${relationDtoName})\n  ${field.name}${typeModifier}: ${relationDtoName};`
+          );
+        }
+        continue;
+      }
+
+      if (prismaSchemaParser.isEnum(field.type)) enumsUsed.add(field.type);
+
+      const { decorators, type } = this.generateClassValidatorFieldForUpdate(
+        field,
+        true,
+        validatorsUsed
+      );
+      const typeModifier = isTypeScript ? "?" : "";
+      dtoFields.push(`${decorators}  ${field.name}${typeModifier}: ${type};`);
+    }
+
+    const enumImports =
+      enumsUsed.size > 0
+        ? `import { ${Array.from(enumsUsed).join(", ")} } from "@prisma/client";\n`
+        : "";
+    const validatorImports =
+      validatorsUsed.size > 0
+        ? `import { ${Array.from(validatorsUsed).join(", ")} } from "class-validator";\n`
+        : "";
+    const transformerImports =
+      transformersUsed.size > 0
+        ? `import { ${Array.from(transformersUsed).join(", ")} } from "class-transformer";\n`
+        : "";
+    const nestedDtoSection =
+      nestedDtoClasses.length > 0 ? `\n${nestedDtoClasses.join("\n\n")}\n` : "";
+
+    return `${validatorImports}${transformerImports}${enumImports}${nestedDtoSection}
+export default class UpdateMeDto {
+${dtoFields.join("\n\n")}
+}
+`;
+  }
+
+  generateUpdatePasswordDto(_: TemplateOptions): string {
+    const ext = getUserFileExtension();
+    const isTypeScript = ext === "ts";
+    const typeModifier = isTypeScript ? "!" : "";
+
+    return `import { IsNotEmpty, IsString, MinLength, Matches } from "class-validator";
+
+export default class UpdatePasswordDto {
+  @IsNotEmpty()
+  @IsString()
+  currentPassword${typeModifier}: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(8)
+  @Matches(/[a-z]/, { message: "Must contain lowercase" })
+  @Matches(/[A-Z]/, { message: "Must contain uppercase" })
+  @Matches(/[0-9]/, { message: "Must contain number" })
+  newPassword${typeModifier}: string;
+}
+`;
   }
 }
 

@@ -52,6 +52,24 @@ export default async function generateMultipleComponents(
     interceptors: generateCommand.interceptors,
     h: generateCommand.hooks,
     hooks: generateCommand.hooks,
+    p: generateCommand.policy,
+    policy: generateCommand.policy,
+    ls: generateCommand.loginSchema,
+    "login-schema": generateCommand.loginSchema,
+    ss: generateCommand.signupSchema,
+    "signup-schema": generateCommand.signupSchema,
+    ums: generateCommand.updateMeSchema,
+    "update-me-schema": generateCommand.updateMeSchema,
+    ups: generateCommand.updatePasswordSchema,
+    "update-password-schema": generateCommand.updatePasswordSchema,
+    ld: generateCommand.loginDto,
+    "login-dto": generateCommand.loginDto,
+    sd: generateCommand.signupDto,
+    "signup-dto": generateCommand.signupDto,
+    umd: generateCommand.updateMeDto,
+    "update-me-dto": generateCommand.updateMeDto,
+    upd: generateCommand.updatePasswordDto,
+    "update-password-dto": generateCommand.updatePasswordDto,
   };
 
   const allComponents = [
@@ -71,6 +89,15 @@ export default async function generateMultipleComponents(
     "interceptors",
     "hooks",
     "auth-configs",
+    "login-schema",
+    "signup-schema",
+    "update-me-schema",
+    "update-password-schema",
+    "login-dto",
+    "signup-dto",
+    "update-me-dto",
+    "update-password-dto",
+    "policy",
   ];
 
   const defaultPaths: Record<string, string> = {
@@ -83,6 +110,14 @@ export default async function generateMultipleComponents(
     "query-dto": "src/modules/{{module-name}}/dtos",
     dto: "src/modules/{{module-name}}/dtos",
     model: "prisma/schema",
+    "login-schema": "src/modules/auth/schemas",
+    "signup-schema": "src/modules/auth/schemas",
+    "update-me-schema": "src/modules/auth/schemas",
+    "update-password-schema": "src/modules/auth/schemas",
+    "login-dto": "src/modules/auth/dtos",
+    "signup-dto": "src/modules/auth/dtos",
+    "update-me-dto": "src/modules/auth/dtos",
+    "update-password-dto": "src/modules/auth/dtos",
   };
 
   const names = {

@@ -209,6 +209,78 @@ generate
   });
 
 generate
+  .command("login-schema")
+  .alias("ls")
+  .description("Generate zod login schema for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.loginSchema({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("signup-schema")
+  .alias("ss")
+  .description("Generate zod signup schema for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.signupSchema({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("update-me-schema")
+  .alias("ums")
+  .description("Generate zod update-me schema for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updateMeSchema({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("update-password-schema")
+  .alias("ups")
+  .description("Generate zod update-password schema for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updatePasswordSchema({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("login-dto")
+  .alias("ld")
+  .description("Generate class-validator login dto for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.loginDto({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("signup-dto")
+  .alias("sd")
+  .description("Generate class-validator signup dto for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.signupDto({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("update-me-dto")
+  .alias("umd")
+  .description("Generate class-validator update-me dto for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updateMeDto({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("update-password-dto")
+  .alias("upd")
+  .description("Generate class-validator update-password dto for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updatePasswordDto({ ...generateOptions, ...options });
+  });
+
+generate
   .command("components")
   .alias("co")
   .description("Generate multiple components for a module")
