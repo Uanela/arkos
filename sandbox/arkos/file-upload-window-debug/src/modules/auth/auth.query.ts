@@ -1,16 +1,19 @@
-import { Prisma } from "@prisma/client"
-import { AuthPrismaQueryOptions } from 'arkos/prisma';
+import { Prisma } from "@prisma/client";
+import { AuthPrismaQueryOptions } from "arkos/prisma";
 
 const authQueryOptions: AuthPrismaQueryOptions<Prisma.UserDelegate> = {
   getMe: {
-    omit: {
-      password: true,
-    }, 
+    select: {
+      id: true,
+    },
+    // include: {
+    //   posts: true,
+    // },
   },
   updateMe: {
     omit: {
       password: true,
-    }, 
+    },
   },
   deleteMe: {},
   login: {},
@@ -20,6 +23,6 @@ const authQueryOptions: AuthPrismaQueryOptions<Prisma.UserDelegate> = {
     },
   },
   updatePassword: {},
-}
+};
 
 export default authQueryOptions;

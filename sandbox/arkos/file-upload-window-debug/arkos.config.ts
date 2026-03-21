@@ -12,10 +12,10 @@ const config: ArkosConfig = {
     login: {
       allowedUsernames: ["username"],
     },
-    enabled: false,
+    enabled: true,
   },
   validation: {
-    resolver: "class-validator",
+    resolver: "zod",
   },
   swagger: {
     mode: "zod",
