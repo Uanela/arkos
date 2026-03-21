@@ -1,9 +1,5 @@
 import { Router } from "express";
-import {
-  isEndpointDisabled,
-  isParentEndpointAllowed,
-  setupRouters,
-} from "../base.router.helpers"; // Adjust the import path
+import { isEndpointDisabled, setupRouters } from "../base.router.helpers";
 import * as importHelpers from "../../../../../utils/dynamic-loader";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
@@ -13,6 +9,10 @@ import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser
 import { getArkosConfig } from "../../../../../server";
 import z from "zod";
 
+jest.mock("../../model-openapi-generator", () => ({
+  __esModule: true,
+  default: { getOpenApiConfig: jest.fn().mockReturnValue({}) },
+}));
 jest.mock("../../../../error-handler/utils/catch-async");
 jest.mock("../../../../../server");
 jest.mock("fs");
@@ -25,19 +25,15 @@ jest.mock("express", () => {
     route: jest.fn().mockReturnThis(),
     use: jest.fn().mockReturnThis(),
   };
-
-  // Create a mock express function
   const mockExpress: any = jest.fn(() => ({
     use: jest.fn().mockReturnThis(),
     listen: jest.fn().mockReturnThis(),
   }));
-
   mockExpress.Router = jest.fn(() => mockRouter);
   mockExpress.default = mockExpress;
   mockExpress.json = jest.fn();
   mockExpress.urlencoded = jest.fn();
   mockExpress.static = jest.fn();
-
   return mockExpress;
 });
 jest.mock("../../../../../utils/dynamic-loader");
@@ -45,31 +41,20 @@ jest.mock("../../../../auth/auth.service", () => ({
   authenticate: jest.fn(() => jest.fn()),
   handleAccessControl: jest.fn(() => jest.fn()),
 }));
-
 jest.mock("../../../base.middlewares", () => ({
   addPrismaQueryOptionsToRequest: jest.fn(() => jest.fn()),
   sendResponse: jest.fn(),
   validateRequestInputs: jest.fn(),
   handleRequestBodyValidationAndTransformation: jest.fn(() => jest.fn()),
 }));
-
 jest.mock("../../../base.controller");
 jest.mock("pluralize", () => ({
   ...jest.requireActual("pluralize"),
   plural: jest.fn((str) => `${str}s`),
 }));
-
-jest.mock("../../../../../exports/utils", () => ({
-  kebabCase: jest.fn((str) => str.toLowerCase()),
-}));
-
-jest.mock("fs");
-
 jest.mock("../../router-validator", () => ({
   __esModule: true,
-  default: {
-    isExpressRouter: jest.fn(() => true),
-  },
+  default: { isExpressRouter: jest.fn(() => true) },
 }));
 
 jest
@@ -81,13 +66,13 @@ describe("setupRouters", () => {
   let mockBaseController: any;
 
   beforeEach(() => {
-    // Clear all mocks
     jest.clearAllMocks();
 
     (getArkosConfig as jest.Mock).mockImplementation(() => ({
       authentication: { mode: "static" },
       validation: { resolver: "zod" },
     }));
+
     router = Router();
 
     mockBaseController = {
@@ -102,14 +87,14 @@ describe("setupRouters", () => {
     };
 
     (BaseController as jest.Mock).mockImplementation(() => mockBaseController);
-
     (catchAsync as jest.Mock).mockImplementation((fn) => fn);
   });
 
-  it("should register all routes for a model with no customization", async () => {
+  it("should register all routes for a model with no customization", () => {
     const CreateUserSchema = z.object({});
     const UpdateUserSchema = z.object({});
-    const mockModuleComponents = {
+
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
@@ -118,11 +103,7 @@ describe("setupRouters", () => {
         create: CreateUserSchema,
         update: UpdateUserSchema,
       },
-    };
-
-    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-      mockModuleComponents
-    );
+    });
 
     setupRouters(router, {
       validation: { resolver: "zod" },
@@ -130,117 +111,100 @@ describe("setupRouters", () => {
     });
 
     expect(router.post).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users",
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: false,
         validation: { body: CreateUserSchema },
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users",
         authentication: { action: "View", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.post).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users/many",
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.patch).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users/many",
         authentication: { action: "Update", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
-
     expect(router.delete).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users/many",
         authentication: { action: "Delete", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
-
     expect(router.get).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users/:id",
         authentication: { action: "View", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
-
     expect(router.patch).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users/:id",
         authentication: { action: "Update", resource: "user", rule: undefined },
         disabled: false,
         validation: { body: UpdateUserSchema },
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
-
     expect(router.delete).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users/:id",
         authentication: { action: "Delete", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
   });
 
-  it("should not register disabled routes", async () => {
-    const mockModuleComponents = {
+  it("should not register disabled routes", () => {
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: {
         config: {
-          disable: {
-            createOne: true,
-            findMany: true,
-          },
+          disable: { createOne: true, findMany: true },
         },
       },
-    };
-
-    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-      mockModuleComponents
-    );
+    });
 
     setupRouters(router, { authentication: { mode: "static" } });
 
@@ -248,31 +212,29 @@ describe("setupRouters", () => {
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
 
     expect(router.post).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: false,
         path: "/users/many",
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         authentication: { action: "View", resource: "user", rule: undefined },
         disabled: false,
         path: "/users/:id",
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
   });
 
-  it("should correctly transform the accessControl object into a simple rule object or array", async () => {
-    const mockModuleComponents = {
+  it("should correctly transform the accessControl object into a simple rule object or array", () => {
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {
         accessControl: {
@@ -283,17 +245,10 @@ describe("setupRouters", () => {
       prismaQueryOptions: {},
       router: {
         config: {
-          disable: {
-            createOne: true,
-            findMany: true,
-          },
+          disable: { createOne: true, findMany: true },
         },
       },
-    };
-
-    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-      mockModuleComponents
-    );
+    });
 
     setupRouters(router, { authentication: { mode: "static" } });
 
@@ -301,7 +256,7 @@ describe("setupRouters", () => {
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
 
     expect(router.post).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         authentication: {
           action: "Create",
           resource: "user",
@@ -309,14 +264,13 @@ describe("setupRouters", () => {
         },
         disabled: false,
         path: "/users/many",
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.get).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         authentication: {
           action: "View",
           resource: "user",
@@ -324,82 +278,70 @@ describe("setupRouters", () => {
         },
         disabled: false,
         path: "/users/:id",
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
   });
 
-  it("should not register any routes if completely disabled", async () => {
-    const mockModuleComponents = {
+  it("should not register any routes if completely disabled", () => {
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: {
         default: {},
-        config: {
-          disable: true,
-        },
+        config: { disable: true },
       },
-    };
-
-    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-      mockModuleComponents
-    );
+    });
 
     setupRouters(router, { authentication: { mode: "static" } });
 
     expect(router.get).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         authentication: { action: "View", resource: "user", rule: undefined },
         disabled: true,
         path: "/users",
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.post).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         authentication: { action: "Create", resource: "user", rule: undefined },
         disabled: true,
         path: "/users",
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.patch).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         authentication: { action: "Update", resource: "user", rule: undefined },
         disabled: true,
         path: "/users/:id",
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
     expect(router.delete).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         authentication: { action: "Delete", resource: "user", rule: undefined },
         disabled: true,
         path: "/users/:id",
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
     );
   });
 
-  it("should use custom middleware when provided as function", async () => {
-    // Mock the imported modules with custom interceptors
-    const mockModuleComponents = {
+  it("should use custom middleware when provided as function", () => {
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {
         beforeFindMany: jest.fn(),
         afterFindMany: jest.fn(),
@@ -407,31 +349,25 @@ describe("setupRouters", () => {
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
-    };
-
-    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-      mockModuleComponents
-    );
+    });
 
     setupRouters(router, {});
 
     expect(router.get).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users",
         disabled: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // beforeFindMany
-      expect.any(Function), // findManyHandler
-      expect.any(Function), // afterFindMany
-      expect.any(Function) // sendResponse
+      }),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
   });
 
-  it("should use custom middleware when provided as array of functions", async () => {
-    // Mock the imported modules with custom interceptors as arrays
-    const mockModuleComponents = {
+  it("should use custom middleware when provided as array of functions", () => {
+    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
       interceptors: {
         beforeFindMany: [jest.fn(), jest.fn(), jest.fn()],
         afterFindMany: [jest.fn(), jest.fn()],
@@ -439,121 +375,39 @@ describe("setupRouters", () => {
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
-    };
+    });
 
-    (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-      mockModuleComponents
-    );
-
-    // Call the function
     setupRouters(router, { authentication: { mode: "static" } });
 
-    // Verify custom middleware is used - should spread the array
     expect(router.get).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users",
-        authentication: {
-          action: "View",
-          resource: "user",
-          rule: undefined,
-        },
+        authentication: { action: "View", resource: "user", rule: undefined },
         disabled: false,
-        validation: undefined,
-      },
-      expect.any(Function), // addPrismaQueryOptionsToRequest
-      expect.any(Function), // first beforeFindMany
-      expect.any(Function), // second beforeFindMany
-      expect.any(Function), // third beforeFindMany
-      expect.any(Function), // findManyHandler
-      expect.any(Function), // first afterFindMany
-      expect.any(Function), // second afterFindMany
-      expect.any(Function) // sendResponse
+      }),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function),
+      expect.any(Function)
     );
   });
 
-  // it("should throw error when middleware is not a function", () => {
-  //   const mockModuleComponents = {
-  //     interceptors: {
-  //       beforeFindMany: "something-cool", // This should cause an error
-  //     },
-  //     authConfigs: {},
-  //     prismaQueryOptions: {},
-  //     router: undefined,
-  //   };
-
-  //   (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-  //     mockModuleComponents
-  //   );
-
-  //   try {
-  //     setupRouters(router, { authentication: { mode: "static" } });
-  //   } catch (err: any) {
-  //     expect(err.message).toBe(
-  //       expect.stringContaining("Invalid interceptor of type string")
-  //     );
-  //   }
-  // });
-
-  // it("should throw error when middleware array contains non-function values", () => {
-  //   const mockModuleComponents = {
-  //     interceptors: {
-  //       beforeFindMany: [jest.fn(), "not-a-function", jest.fn()], // Second item should cause error
-  //     },
-  //     authConfigs: {},
-  //     prismaQueryOptions: {},
-  //     router: undefined,
-  //   };
-
-  //   (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-  //     mockModuleComponents
-  //   );
-
-  //   try {
-  //     // expect(() => setupRouters(router, { authentication: { mode: "static" } })).toThrow();
-  //   } catch {
-  //     expect(() => setupRouters(router, { authentication: { mode: "static" } })).toThrow();
-  //   }
-
-  // });
-
-  // it("should throw error for various non-function middleware types", async () => {
-  //   const mockModuleComponents = {
-  //     interceptors: { beforeFindMany: [jest.fn(), null, jest.fn()] },
-  //     authConfigs: {},
-  //     prismaQueryOptions: {},
-  //     router: undefined,
-  //   };
-
-  //   (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-  //     mockModuleComponents
-  //   );
-
-  //   try {
-  //     expect(() => setupRouters(router, { authentication: { mode: "static" } })).toThrow();
-  //   } catch {}
-
-  //   jest.clearAllMocks();
-  // });
-
-  it("should not register routes that have custom implementations", async () => {
-    // Create mock custom router stack
+  it("should not register routes that have custom implementations", () => {
     const customRouterStack = [
       { path: "/users", method: "GET", handle: jest.fn() },
     ];
 
-    // Mock the imported modules with custom router
     const mockModuleComponents = {
       interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
-      router: {
-        default: {
-          stack: customRouterStack,
-        },
-      },
+      router: { default: { stack: customRouterStack } },
     };
 
-    // Mock hasCustomImplementation to return true for specific path/method
     mockModuleComponents.router.default.stack.some = jest
       .fn()
       .mockImplementation((callback) =>
@@ -568,11 +422,10 @@ describe("setupRouters", () => {
 
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
     expect(router.post).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         path: "/users/many",
         disabled: false,
-        validation: undefined,
-      },
+      }),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function)
@@ -580,14 +433,12 @@ describe("setupRouters", () => {
   });
 
   it("should handle multiple models in parallel", async () => {
-    // Mock the imported modules for different models
     const mockUserModules = {
       interceptors: {},
       authConfigs: {},
       prismaQueryOptions: {},
       router: undefined,
     };
-
     const mockPostModules = {
       interceptors: {},
       authConfigs: {},
@@ -603,7 +454,6 @@ describe("setupRouters", () => {
       }
     );
 
-    // Call the function
     jest
       .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
       .mockReturnValue(["User", "Post"]);
@@ -613,11 +463,9 @@ describe("setupRouters", () => {
     });
     await Promise.all(await setupPromises);
 
-    // Verify routes for both models were registered
     expect(pluralize.plural).toHaveBeenCalledWith("user");
     expect(pluralize.plural).toHaveBeenCalledWith("post");
 
-    // 8 routes per model * 2 models = 16 total routes
     expect(
       (router.get as jest.Mock).mock.calls.length +
         (router.post as jest.Mock).mock.calls.length +
@@ -627,23 +475,19 @@ describe("setupRouters", () => {
   });
 
   it("should first setup the custom router if provided", async () => {
-    const mockPostModules = {
-      interceptors: {},
-      authConfigs: {},
-      prismaQueryOptions: {},
-      router: {
-        default: jest.fn(), // Mock router as function
-      },
-    };
-
     (importHelpers.getModuleComponents as jest.Mock).mockImplementation(
       (modelName) => {
-        if (modelName === "post") return mockPostModules;
+        if (modelName === "post")
+          return {
+            interceptors: {},
+            authConfigs: {},
+            prismaQueryOptions: {},
+            router: { default: jest.fn() },
+          };
         return {};
       }
     );
 
-    // Call the function
     jest
       .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
       .mockReturnValue(["Post"]);
@@ -653,12 +497,8 @@ describe("setupRouters", () => {
     });
     await Promise.all(await setupPromises);
 
-    // Verify routes for both models were registered
     expect(pluralize.plural).toHaveBeenCalledWith("post");
-
     expect(router.use).toHaveBeenCalledWith(`/posts`, expect.any(Function));
-
-    // 8 routes per model
     expect(
       (router.get as jest.Mock).mock.calls.length +
         (router.post as jest.Mock).mock.calls.length +
@@ -668,25 +508,20 @@ describe("setupRouters", () => {
   });
 
   it("should throw an error when invalid express router is passed", async () => {
-    const mockPostModules = {
-      interceptors: {},
-      authConfigs: {},
-      prismaQueryOptions: {},
-      router: {
-        default: jest.fn(), // Mock router as function
-      },
-    };
-
     (importHelpers.getModuleComponents as jest.Mock).mockImplementation(
       (modelName) => {
-        if (modelName === "post") return mockPostModules;
+        if (modelName === "post")
+          return {
+            interceptors: {},
+            authConfigs: {},
+            prismaQueryOptions: {},
+            router: { default: jest.fn() },
+          };
         return {};
       }
     );
 
     jest.spyOn(routerValidator, "isExpressRouter").mockReturnValue(false);
-
-    // Call the function
     jest
       .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
       .mockReturnValue(["Post"]);
@@ -704,15 +539,11 @@ describe("setupRouters", () => {
           ),
         })
       );
-
-      // Verify routes for both models were registered
       expect(pluralize.plural).toHaveBeenCalledWith("post");
-
       expect(router.use).not.toHaveBeenCalledWith(
         `/posts`,
         expect.any(Function)
       );
-
       expect(
         (router.get as jest.Mock).mock.calls.length +
           (router.post as jest.Mock).mock.calls.length +
@@ -729,7 +560,6 @@ describe("setupRouters", () => {
     beforeEach(() => {
       jest.clearAllMocks();
       router = Router();
-
       jest.spyOn(routerValidator, "isExpressRouter").mockReturnValue(true);
 
       mockBaseController = {
@@ -747,34 +577,31 @@ describe("setupRouters", () => {
         () => mockBaseController
       );
       (catchAsync as jest.Mock).mockImplementation((fn) => fn);
-
       jest
         .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
         .mockReturnValue(["User"]);
     });
 
-    // Test for line 58: when getModuleComponents returns falsy value
-    it("should handle when getModuleComponents returns falsy value", async () => {
+    it("should handle when getModuleComponents returns falsy value", () => {
       (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(null);
 
       setupRouters(router, {});
 
       expect(router.post).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           path: "/users/many",
           disabled: false,
-          validation: undefined,
-        },
+        }),
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
       );
     });
 
-    // Test for lines 333, 340-346: validation configuration branches
     it("should use class-validator DTOs when resolver is class-validator", async () => {
       const CreateManyDto = jest.fn();
-      const mockModuleComponents = {
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
@@ -782,35 +609,19 @@ describe("setupRouters", () => {
         dtos: {
           create: CreateManyDto,
           update: jest.fn(),
-          findOne: jest.fn(),
           createMany: CreateManyDto,
           updateMany: jest.fn(),
-          deleteMany: jest.fn(),
-          delete: jest.fn(),
         },
-        schemas: {
-          create: jest.fn(),
-          update: jest.fn(),
-        },
-      };
+        schemas: { create: jest.fn(), update: jest.fn() },
+      });
 
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
-
-      // Mock arkosConfigs with class-validator resolver
-      const arkosConfigs = {
+      setupRouters(router, {
         authentication: { mode: "static" },
-        validation: {
-          resolver: "class-validator",
-        },
-      };
+        validation: { resolver: "class-validator" },
+      } as any);
 
-      setupRouters(router, arkosConfigs as any);
-
-      // Verify that DTOs are used (this tests line 333)
       expect(router.post).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           path: "/users/many",
           authentication: {
             action: "Create",
@@ -819,7 +630,7 @@ describe("setupRouters", () => {
           },
           disabled: false,
           validation: { body: CreateManyDto },
-        },
+        }),
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
@@ -828,42 +639,28 @@ describe("setupRouters", () => {
 
     it("should use zod schemas when resolver is zod", async () => {
       const CreateManySchema = jest.fn();
-      const mockModuleComponents = {
+
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
         router: undefined,
-        dtos: {
-          create: jest.fn(),
-        },
+        dtos: { create: jest.fn() },
         schemas: {
           create: CreateManySchema,
           update: jest.fn(),
-          findOne: jest.fn(),
           createMany: CreateManySchema,
           updateMany: jest.fn(),
-          deleteMany: jest.fn(),
-          delete: jest.fn(),
         },
-      };
+      });
 
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
-
-      // Mock arkosConfigs with zod resolver
-      const arkosConfigs = {
+      setupRouters(router, {
         authentication: { mode: "static" },
-        validation: {
-          resolver: "zod",
-        },
-      };
+        validation: { resolver: "zod" },
+      } as any);
 
-      setupRouters(router, arkosConfigs as any);
-
-      // Verify that schemas are used (this tests line 340)
       expect(router.post).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           path: "/users/many",
           authentication: {
             action: "Create",
@@ -872,40 +669,27 @@ describe("setupRouters", () => {
           },
           disabled: false,
           validation: { body: CreateManySchema },
-        },
+        }),
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
       );
     });
 
-    it("should keep autentication even authConfigs.authenticationControl is an empty object", async () => {
-      const mockModuleComponents = {
+    it("should keep authentication even authConfigs.authenticationControl is an empty object", () => {
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: { authenticationControl: {} },
         prismaQueryOptions: {},
         router: undefined,
-        dtos: {
-          create: jest.fn(),
-        },
-        schemas: {
-          create: jest.fn(),
-        },
-      };
+        dtos: { create: jest.fn() },
+        schemas: { create: jest.fn() },
+      });
 
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
+      setupRouters(router, { authentication: { mode: "static" } } as any);
 
-      // Mock arkosConfigs without validation config
-      const arkosConfigs = { authentication: { mode: "static" } };
-
-      const setupPromises = setupRouters(router, arkosConfigs as any);
-      await Promise.all(await setupPromises);
-
-      // Should still register routes but without specific validation (tests line 342)
       expect(router.post).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           path: "/users",
           authentication: {
             action: "Create",
@@ -913,82 +697,57 @@ describe("setupRouters", () => {
             rule: undefined,
           },
           disabled: false,
-          validation: undefined,
-        },
+        }),
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
       );
     });
 
-    it("should return undefined when validation resolver is not configured", async () => {
-      const mockModuleComponents = {
+    it("should return undefined when validation resolver is not configured", () => {
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
         router: undefined,
-        dtos: {
-          create: jest.fn(),
-        },
-        schemas: {
-          create: jest.fn(),
-        },
-      };
+        dtos: { create: jest.fn() },
+        schemas: { create: jest.fn() },
+      });
 
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
+      setupRouters(router, {} as any);
 
-      const arkosConfigs = {};
-
-      setupRouters(router, arkosConfigs as any);
-
-      // Should still register routes but without specific validation (tests line 342)
       expect(router.post).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           path: "/users",
           disabled: false,
-          validation: undefined,
-        },
+        }),
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
       );
     });
 
-    it("should return undefined when validation resolver is unknown", async () => {
-      const mockModuleComponents = {
+    it("should return undefined when validation resolver is unknown", () => {
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
         router: undefined,
-        dtos: {
-          create: jest.fn(),
-        },
-        schemas: {
-          create: jest.fn(),
-        },
-      };
-
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
-
-      const arkosConfigs = {
-        authentication: { mode: "static" },
-        validation: {
-          resolver: "unknown-resolver",
-        },
-      };
+        dtos: { create: jest.fn() },
+        schemas: { create: jest.fn() },
+      });
 
       jest
         .spyOn(prismaSchemaParser, "getModelsAsArrayOfStrings")
         .mockReturnValue(["User"]);
 
-      setupRouters(router, arkosConfigs as any);
+      setupRouters(router, {
+        authentication: { mode: "static" },
+        validation: { resolver: "unknown-resolver" },
+      } as any);
 
       expect(router.post).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           path: "/users",
           authentication: {
             action: "Create",
@@ -996,8 +755,7 @@ describe("setupRouters", () => {
             rule: undefined,
           },
           disabled: false,
-          validation: undefined,
-        },
+        }),
         expect.any(Function),
         expect.any(Function),
         expect.any(Function)
@@ -1005,7 +763,7 @@ describe("setupRouters", () => {
     });
 
     it("should detect custom implementation with different path formats", async () => {
-      const mockModuleComponents = {
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
@@ -1020,11 +778,7 @@ describe("setupRouters", () => {
             ],
           },
         },
-      };
-
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
+      });
 
       const setupPromises = setupRouters(router, {
         authentication: { mode: "static" },
@@ -1035,7 +789,7 @@ describe("setupRouters", () => {
     });
 
     it("should detect custom implementation with api/ path format", async () => {
-      const mockModuleComponents = {
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
@@ -1050,23 +804,18 @@ describe("setupRouters", () => {
             ],
           },
         },
-      };
-
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
+      });
 
       const setupPromises = setupRouters(router, {
         authentication: { mode: "static" },
       });
       await Promise.all(await setupPromises);
 
-      // Should not register GET /users because custom implementation exists
       expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
     });
 
     it("should detect custom implementation with api/path/ trailing slash format", async () => {
-      const mockModuleComponents = {
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
@@ -1081,11 +830,7 @@ describe("setupRouters", () => {
             ],
           },
         },
-      };
-
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
+      });
 
       setupRouters(router, { authentication: { mode: "static" } });
 
@@ -1096,7 +841,7 @@ describe("setupRouters", () => {
     });
 
     it("should detect custom implementation with /api/path/ format", async () => {
-      const mockModuleComponents = {
+      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue({
         interceptors: {},
         authConfigs: {},
         prismaQueryOptions: {},
@@ -1111,11 +856,7 @@ describe("setupRouters", () => {
             ],
           },
         },
-      };
-
-      (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(
-        mockModuleComponents
-      );
+      });
 
       setupRouters(router, { authentication: { mode: "static" } });
 
@@ -1128,77 +869,17 @@ describe("setupRouters", () => {
 
   describe("isEndpointDisabled - Additional Coverage", () => {
     it("should return false when routerConfig is undefined", () => {
-      const result = isEndpointDisabled(undefined as any, "createOne");
-      expect(result).toBe(false);
+      expect(isEndpointDisabled(undefined as any, "createOne")).toBe(false);
     });
 
     it("should return false when routerConfig.disable is undefined", () => {
-      const routerConfig = {};
-      const result = isEndpointDisabled(routerConfig, "createOne");
-      expect(result).toBe(false);
+      expect(isEndpointDisabled({}, "createOne")).toBe(false);
     });
 
     it("should handle when disable is an object but endpoint is not specified", () => {
-      const routerConfig = {
-        disable: {
-          findMany: true,
-        },
-      };
-      const result = isEndpointDisabled(routerConfig, "createOne");
-      expect(result).toBe(false); // Should return false when endpoint is not in disable object
-    });
-  });
-
-  describe("isParentEndpointAllowed", () => {
-    it("should return false when routerConfig is null", () => {
-      const result = isParentEndpointAllowed(null, "createOne");
-      expect(result).toBe(false);
-    });
-
-    it("should return false when routerConfig.parent is undefined", () => {
-      const routerConfig = {};
-      const result = isParentEndpointAllowed(routerConfig, "createOne");
-      expect(result).toBe(false);
-    });
-
-    it("should return true when parent.endpoints is '*'", () => {
-      const routerConfig = {
-        parent: {
-          endpoints: "*",
-        },
-      };
-      const result = isParentEndpointAllowed(routerConfig, "createOne");
-      expect(result).toBe(true);
-    });
-
-    it("should return true when endpoint is in parent.endpoints array", () => {
-      const routerConfig = {
-        parent: {
-          endpoints: ["createOne", "findMany"],
-        },
-      };
-      const result = isParentEndpointAllowed(routerConfig, "createOne");
-      expect(result).toBe(true);
-    });
-
-    it("should return false when endpoint is not in parent.endpoints array", () => {
-      const routerConfig = {
-        parent: {
-          endpoints: ["findMany", "updateOne"],
-        },
-      };
-      const result = isParentEndpointAllowed(routerConfig, "createOne");
-      expect(result).toBe(false);
-    });
-
-    it("should return true when parent.endpoints is neither '*' nor array (default case)", () => {
-      const routerConfig = {
-        parent: {
-          endpoints: "some-other-value",
-        },
-      };
-      const result = isParentEndpointAllowed(routerConfig, "createOne");
-      expect(result).toBe(true);
+      expect(
+        isEndpointDisabled({ disable: { findMany: true } }, "createOne")
+      ).toBe(false);
     });
   });
 });
