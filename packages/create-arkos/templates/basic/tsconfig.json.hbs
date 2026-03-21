@@ -18,16 +18,8 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["src/**/*.ts", "packages/**/*.ts", "arkos.config.ts"],
-  "exclude": [
-    "**/node_modules",
-    "node_modules",
-    ".build",
-    "build",
-    "temp",
-    "dist",
-    "uploads"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.tsx",  "src/**/*.jsx", "arkos.config.ts"],
+  "exclude": ["node_modules", ".build", "src/**/__tests__/**", "src/**/*.test", "src/**/*.spec", "temp", "dist", "build", "uploads"],
   "watchOptions": {
     "excludeDirectories": ["**/node_modules", "node_modules"]
   }

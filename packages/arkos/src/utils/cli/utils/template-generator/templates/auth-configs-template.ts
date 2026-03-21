@@ -3,6 +3,7 @@ import { capitalize } from "../../../../helpers/text.helpers";
 import sheu from "../../../../sheu";
 import { kebabPrismaModels } from "../../../generate";
 import { TemplateOptions } from "../../template-generators";
+import { getArkosConfig } from "../../../../helpers/arkos-config.helpers";
 
 export function generateAuthConfigsTemplate(
   options: TemplateOptions & { advanced?: boolean }
@@ -10,6 +11,7 @@ export function generateAuthConfigsTemplate(
   const { modelName, advanced = false } = options;
   const ext = getUserFileExtension();
   const isTypeScript = ext === "ts";
+  const arkosConfig = getArkosConfig();
 
   sheu.warn(
     `The file ${modelName?.kebab || ""}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy, see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
@@ -75,23 +77,19 @@ ${
   return `${imports}import { authService } from "arkos/services";
 export const ${modelName.camel}AccessControl = {
   Create: {
-    roles: [],
-    name: "Create ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n    " : ""}name: "Create ${modelNameCapitalized}",
     description: "Permission to create new ${modelNameSpaced} records",
   },
   Update: {
-    roles: [],
-    name: "Update ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n    " : ""}name: "Update ${modelNameCapitalized}",
     description: "Permission to update existing ${modelNameSpaced} records",
   },
   Delete: {
-    roles: [],
-    name: "Delete ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n    " : ""}name: "Delete ${modelNameCapitalized}",
     description: "Permission to delete ${modelNameSpaced} records",
   },
   View: {
-    roles: [],
-    name: "View ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n    " : ""}name: "View ${modelNameCapitalized}",
     description: "Permission to view ${modelNameSpaced} records",
   },
 }${typeSatisfies};

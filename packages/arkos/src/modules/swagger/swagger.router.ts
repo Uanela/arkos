@@ -1,15 +1,8 @@
 import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
-import {
-  generatePathsForModels,
-  getOpenAPIJsonSchemasByConfigMode,
-} from "./utils/helpers/swagger.router.helpers";
-import missingJsonSchemaGenerator from "./utils/helpers/missing-json-schemas-generator";
 import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs";
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
-import generateSystemJsonSchemas from "./utils/helpers/json-schema-generators/generate-system-json-schemas";
 import { generateOpenAPIFromApp } from "../../utils/arkos-router";
-import getFileUploadJsonSchemaPaths from "./utils/helpers/get-file-upload-json-schema-paths";
 import {
   ArkosConfig,
   ArkosNextFunction,
@@ -17,48 +10,22 @@ import {
   ArkosResponse,
 } from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { Express } from "express";
-import { UserArkosConfig } from "../../utils/define-config";
 import authService from "../auth/auth.service";
 import AppError from "../error-handler/utils/app-error";
 import getOpenApiLoginHtml from "./utils/get-open-api-login-html";
+import { Arkos } from "../../types/arkos";
+import { OpenAPIV3 } from "openapi-types";
 
 const swaggerRouter = Router();
 
-export function getSwaggerRouter(
-  arkosConfig: UserArkosConfig,
-  app: Express
-): Router {
-  let defaultJsonSchemas = getOpenAPIJsonSchemasByConfigMode(arkosConfig);
+export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
-  const defaultModelsPaths = generatePathsForModels(
-    arkosConfig,
-    pathsFromCustomArkosRouters
-  );
-  const fileUploadDefaultPaths = getFileUploadJsonSchemaPaths(
-    arkosConfig,
-    pathsFromCustomArkosRouters
-  );
-  const missingJsonSchemas =
-    missingJsonSchemaGenerator.generateMissingJsonSchemas(
-      defaultModelsPaths,
-      defaultJsonSchemas,
-      arkosConfig
-    );
-  defaultJsonSchemas = {
-    ...defaultJsonSchemas,
-    ...missingJsonSchemas,
-    ...generateSystemJsonSchemas(arkosConfig),
-  };
+
   const swaggerConfigs = deepmerge(
-    getSwaggerDefaultConfig(
-      {
-        ...pathsFromCustomArkosRouters,
-        ...defaultModelsPaths,
-        ...fileUploadDefaultPaths,
-      },
-      defaultJsonSchemas
-    ) || {},
+    getSwaggerDefaultConfig({
+      ...pathsFromCustomArkosRouters,
+      ...getSystemJsonSchemaPaths(),
+    }) || {},
     arkosConfig.swagger || {}
   ) as ArkosConfig["swagger"];
 
@@ -164,4 +131,41 @@ export function scalarMiddleware(
     }
     return scalarHandler(req, res, next);
   };
+}
+
+function getSystemJsonSchemaPaths() {
+  const paths: OpenAPIV3.PathsObject = {};
+
+  paths["/api/available-resources"] = {
+    get: {
+      tags: ["System"],
+      summary: "Get available resources",
+      description:
+        "Returns a comprehensive list of all available API resource endpoints",
+      operationId: "getAvailableResources",
+      responses: {
+        "200": {
+          description: "List of available resources retrieved successfully",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  data: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                    description: "Array of available resource endpoints",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  return paths;
 }
