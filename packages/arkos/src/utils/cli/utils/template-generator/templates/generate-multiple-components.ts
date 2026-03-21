@@ -3,6 +3,7 @@ import {
   kebabCase,
   pascalCase,
 } from "../../../../helpers/change-case.helpers";
+import ExitError from "../../../../helpers/exit-error";
 import sheu from "../../../../sheu";
 import { generateCommand, GenerateOptions } from "../../../generate";
 
@@ -11,13 +12,47 @@ export type MultipleComponentsGenerateOptions = GenerateOptions & {
   names?: string;
 };
 
+const authOnlyComponents = new Set([
+  "login-schema",
+  "signup-schema",
+  "update-me-schema",
+  "update-password-schema",
+  "login-dto",
+  "signup-dto",
+  "update-me-dto",
+  "update-password-dto",
+]);
+
+const prismaOnlyComponents = new Set([
+  "model",
+  "schema",
+  "create-schema",
+  "update-schema",
+  "query-schema",
+  "dto",
+  "create-dto",
+  "update-dto",
+  "query-dto",
+]);
+
 export default async function generateMultipleComponents(
   options: MultipleComponentsGenerateOptions
 ) {
-  const moduleName = options.module || options.model;
+  const moduleInput = options.modules || options.module || options.model;
 
-  if (!moduleName)
-    throw new Error("Module name is required. Use -m or --module flag.");
+  if (!moduleInput)
+    throw ExitError("Module name is required. Use -m or --module flag.");
+
+  if (!options.modules && moduleInput?.includes(","))
+    throw ExitError(
+      "Multiple modules are not supported with -m/--module. Use -ms/--modules instead.\n" +
+        "Example: arkos g components -ms post,user,auth --names s,sc"
+    );
+
+  const moduleNames = moduleInput
+    .split(",")
+    .map((m: string) => m.trim())
+    .filter(Boolean);
 
   const componentMap: Record<string, Function> = {
     s: generateCommand.service,
@@ -30,8 +65,6 @@ export default async function generateMultipleComponents(
     routeHook: generateCommand.routeHook,
     sh: generateCommand.serviceHook,
     serviceHook: generateCommand.serviceHook,
-    p: generateCommand.policy,
-    policy: generateCommand.policy,
     sc: generateCommand.baseSchema,
     schema: generateCommand.baseSchema,
     cs: generateCommand.createSchema,
@@ -50,6 +83,24 @@ export default async function generateMultipleComponents(
     "query-dto": generateCommand.queryDto,
     m: generateCommand.prismaModel,
     model: generateCommand.prismaModel,
+    p: generateCommand.policy,
+    policy: generateCommand.policy,
+    ls: generateCommand.loginSchema,
+    "login-schema": generateCommand.loginSchema,
+    ss: generateCommand.signupSchema,
+    "signup-schema": generateCommand.signupSchema,
+    ums: generateCommand.updateMeSchema,
+    "update-me-schema": generateCommand.updateMeSchema,
+    ups: generateCommand.updatePasswordSchema,
+    "update-password-schema": generateCommand.updatePasswordSchema,
+    ld: generateCommand.loginDto,
+    "login-dto": generateCommand.loginDto,
+    sd: generateCommand.signupDto,
+    "signup-dto": generateCommand.signupDto,
+    umd: generateCommand.updateMeDto,
+    "update-me-dto": generateCommand.updateMeDto,
+    upd: generateCommand.updatePasswordDto,
+    "update-password-dto": generateCommand.updatePasswordDto,
   };
 
   const allComponents = [
@@ -69,6 +120,23 @@ export default async function generateMultipleComponents(
     "interceptors",
     "hooks",
     "auth-configs",
+    "policy",
+  ];
+
+  const allAuthComponents = [
+    "login-schema",
+    "signup-schema",
+    "update-me-schema",
+    "update-password-schema",
+    "login-dto",
+    "signup-dto",
+    "update-me-dto",
+    "update-password-dto",
+    "query-options",
+    "interceptors",
+    "hooks",
+    "router",
+    "policy",
   ];
 
   const defaultPaths: Record<string, string> = {
@@ -81,21 +149,22 @@ export default async function generateMultipleComponents(
     "query-dto": "src/modules/{{module-name}}/dtos",
     dto: "src/modules/{{module-name}}/dtos",
     model: "prisma/schema",
+    "login-schema": "src/modules/auth/schemas",
+    "signup-schema": "src/modules/auth/schemas",
+    "update-me-schema": "src/modules/auth/schemas",
+    "update-password-schema": "src/modules/auth/schemas",
+    "login-dto": "src/modules/auth/dtos",
+    "signup-dto": "src/modules/auth/dtos",
+    "update-me-dto": "src/modules/auth/dtos",
+    "update-password-dto": "src/modules/auth/dtos",
   };
 
-  const names = {
-    pascal: pascalCase(moduleName),
-    camel: camelCase(moduleName),
-    kebab: kebabCase(moduleName),
-  };
-  const readableName = names.kebab.replaceAll("-", " ");
-
-  let componentsToGenerate: string[] = [];
+  // Resolve which components to generate from --names or --all
+  // (done once, applied per module with filtering)
+  let requestedComponents: string[] = [];
 
   if (options.all) {
-    componentsToGenerate = allComponents;
-    console.log("");
-    sheu.info(`Generating all components for ${readableName}\n`);
+    // will be resolved per module below
   } else if (options.names) {
     const requested = options.names
       .split(",")
@@ -108,56 +177,107 @@ export default async function generateMultipleComponents(
           Object.keys(componentMap).find(
             (k) => componentMap[k] === componentMap[comp] && k.length > 2
           ) || comp;
-        if (!componentsToGenerate.includes(fullName)) {
-          componentsToGenerate.push(fullName);
+        if (!requestedComponents.includes(fullName)) {
+          requestedComponents.push(fullName);
         }
       } else {
         sheu.warn(`Unknown component: "${comp}" - skipping`);
       }
     }
 
-    if (componentsToGenerate.length === 0)
+    if (requestedComponents.length === 0)
       throw new Error("No valid components specified.");
-
-    sheu.info(`Generating components for ${readableName}`);
-    sheu.info(`Components: ${componentsToGenerate.join(", ")}\n`);
   } else {
     throw new Error(
-      "Please specify either --all or --components flag.\n" +
+      "Please specify either --all or --names flag.\n" +
         "Examples:\n" +
-        "  arkos g module -m user --all\n" +
-        "  arkos g module -m user -c s,sc,m"
+        "  arkos g components -m user --all\n" +
+        "  arkos g components -m user,post,auth --names s,sc,m"
     );
   }
 
-  let successCount = 0;
-  let failCount = 0;
+  const isMultipleModules = moduleNames.length > 1;
+  let totalSuccess = 0;
+  let totalFail = 0;
 
-  for (const componentName of componentsToGenerate) {
-    try {
-      await componentMap[componentName]({
-        ...options,
-        module: moduleName,
-        path: defaultPaths[componentName],
-        shouldExit: false,
-        shouldPrintError: false,
-        isBulk: true,
+  if (isMultipleModules) {
+    console.log("");
+    sheu.info(`Generating components for modules: ${moduleNames.join(", ")}\n`);
+  }
+
+  for (const moduleName of moduleNames) {
+    const isAuth = kebabCase(moduleName) === "auth";
+    const names = {
+      pascal: pascalCase(moduleName),
+      camel: camelCase(moduleName),
+      kebab: kebabCase(moduleName),
+    };
+    const readableName = names.kebab.replaceAll("-", " ");
+
+    // Resolve components for this specific module
+    let componentsToGenerate: string[];
+
+    if (options.all) {
+      componentsToGenerate = isAuth ? allAuthComponents : allComponents;
+    } else {
+      // Filter requested components — skip auth-only for non-auth, skip prisma-only for auth
+      componentsToGenerate = requestedComponents.filter((comp) => {
+        if (authOnlyComponents.has(comp) && !isAuth) {
+          sheu.warn(
+            `Skipping "${comp}" for module "${moduleName}" — only valid for auth`
+          );
+          return false;
+        }
+        if (prismaOnlyComponents.has(comp) && isAuth) {
+          sheu.warn(
+            `Skipping "${comp}" for module "${moduleName}" — not valid for auth`
+          );
+          return false;
+        }
+        return true;
       });
-      successCount++;
-    } catch (error: any) {
-      sheu.error(
-        `Failed to generate ${componentName} because ${error?.message}`
-      );
-      failCount++;
     }
+
+    if (isMultipleModules) {
+      sheu.info(`\n→ ${readableName}`);
+    } else {
+      console.log("");
+      sheu.info(`Generating components for ${readableName}`);
+      if (!options.all)
+        sheu.info(`Components: ${componentsToGenerate.join(", ")}\n`);
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const componentName of componentsToGenerate) {
+      try {
+        await componentMap[componentName]({
+          ...options,
+          module: moduleName,
+          model: undefined,
+          path: defaultPaths[componentName],
+          shouldExit: false,
+          shouldPrintError: false,
+          isBulk: true,
+        });
+        successCount++;
+      } catch (error: any) {
+        sheu.error(
+          `Failed to generate ${componentName} for ${readableName}: ${error?.message}`
+        );
+        failCount++;
+      }
+    }
+
+    totalSuccess += successCount;
+    totalFail += failCount;
   }
 
   console.info("");
   sheu.done(
-    `Components generation complete ${moduleName.replaceAll("-", " ")}`
+    `Components generation complete for: ${moduleNames.map((m) => m.replaceAll("-", " ")).join(", ")}`
   );
 
-  if (failCount > 0) {
-    process.exit(1);
-  }
+  if (totalFail > 0) process.exit(1);
 }
