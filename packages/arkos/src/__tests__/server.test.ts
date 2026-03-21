@@ -17,12 +17,7 @@ import portAndHostAllocator from "../utils/features/port-and-host-allocator";
 import runtimeCliCommander from "../utils/cli/utils/runtime-cli-commander";
 import * as arkosConfigHelpers from "../utils/helpers/arkos-config.helpers";
 
-const {
-  initApp,
-  getExpressApp,
-  terminateApplicationRunningProcessAndServer,
-  getArkosConfig,
-} = server;
+const { initApp, getExpressApp, getArkosConfig } = server;
 
 jest.mock("../app");
 jest.mock("../utils/features/port-and-host-allocator");
@@ -472,29 +467,6 @@ describe("Server Module", () => {
       expect(sheu.error).toHaveBeenCalledWith(
         "Something went wrong while starting your application!"
       );
-    });
-  });
-
-  describe("terminateApplicationRunningProcessAndServer", () => {
-    it("should close server and exit process", () => {
-      expect(() => {
-        terminateApplicationRunningProcessAndServer();
-      }).toThrow("process.exit called with 1");
-
-      expect(mockServer.close).toHaveBeenCalled();
-    });
-
-    it("should call server.close callback", () => {
-      const closeMock = jest.fn((callback) => {
-        callback();
-      });
-      mockServer.close = closeMock;
-
-      expect(() => {
-        terminateApplicationRunningProcessAndServer();
-      }).toThrow("process.exit called with 1");
-
-      expect(closeMock).toHaveBeenCalled();
     });
   });
 

@@ -11,7 +11,6 @@ import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import sheu from "../sheu";
 import { capitalize } from "../helpers/text.helpers";
 import prismaSchemaParser from "../prisma/prisma-schema-parser";
-import { kebabToHuman } from "../../modules/swagger/utils/helpers/swagger.router.helpers";
 import generateMultipleComponents, {
   MultipleComponentsGenerateOptions,
 } from "./utils/template-generator/templates/generate-multiple-components";
@@ -69,7 +68,7 @@ const generateFile = async (
     );
   else if (!isAllowedModule)
     throw Error(
-      `${kebabToHuman(kebabCase(config.templateName))} are not available for module ${modelName}`
+      `${kebabCase(config.templateName).replaceAll("-", " ")} are not available for module ${modelName}`
     );
 
   if (config.customValidation) config.customValidation(modelName);
