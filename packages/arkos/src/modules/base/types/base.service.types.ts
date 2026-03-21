@@ -1,11 +1,6 @@
 import { User } from "../../../types";
 
 export type ModelDelegate = Record<string, any>;
-export type ModelGetPayload<G, T = any> = G extends {
-  $args: (arg: T) => infer R;
-}
-  ? R
-  : never;
 
 // Create Operations
 export type CreateOneData<T extends ModelDelegate> = Parameters<
@@ -65,9 +60,6 @@ export type FindByIdOptions<T extends ModelDelegate> = Omit<
   Parameters<T["findUnique"]>[0],
   "where"
 >;
-
-export type FindByIdResult<T extends ModelDelegate> =
-  T["findUnique"] extends (args: { where: any }) => infer R ? R : any;
 
 export type FindOneFilters<T extends ModelDelegate> = Parameters<
   T["findFirst"]

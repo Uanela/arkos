@@ -34,7 +34,7 @@ export const config: RouterConfig = {
           // { name: "uanela", in: "path", schema: { type: "string" } },
         ],
         responses: {
-          201: z.object({ data: z.object({ uanela: z.number() }) }),
+          203: z.object({ data: z.object({ uanela: z.number() }) }),
         },
       },
     },

@@ -132,6 +132,7 @@ describe("PrismaSchemaParser", () => {
         isOptional: false,
         isRelation: false,
         isArray: false,
+        isCompositeType: false,
         foreignKeyField: "",
         foreignReferenceField: "",
         defaultValue: undefined,
@@ -149,6 +150,7 @@ describe("PrismaSchemaParser", () => {
         isOptional: false,
         isRelation: false,
         isArray: false,
+        isCompositeType: false,
         foreignKeyField: "",
         foreignReferenceField: "",
         defaultValue: undefined,
@@ -375,6 +377,245 @@ describe("PrismaSchemaParser", () => {
     });
   });
 
+  describe("composite type parsing", () => {
+    it("should parse composite types from schema", () => {
+      const schemaContent = `
+      type InteractionEventAgentInfo {
+        deviceType  String?
+        platformOS  String?
+        browser     String?
+        ip          String?
+      }
+
+      model InteractionEvent {
+        id        String   @id @default(auto()) @map("_id") @db.ObjectId
+        agentInfo InteractionEventAgentInfo
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      parser.parse({ override: true });
+
+      expect(parser.compositeTypes).toHaveLength(1);
+      expect(parser.compositeTypes[0].name).toBe("InteractionEventAgentInfo");
+      expect(parser.compositeTypes[0].fields.map((f) => f.name)).toEqual([
+        "deviceType",
+        "platformOS",
+        "browser",
+        "ip",
+      ]);
+    });
+
+    it("should mark composite type fields as isCompositeType and not isRelation", () => {
+      const schemaContent = `
+      type AgentInfo {
+        deviceType String?
+        ip         String?
+      }
+
+      model InteractionEvent {
+        id        String    @id
+        agentInfo AgentInfo
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      const model = result.models.find((m) => m.name === "InteractionEvent")!;
+      const agentInfoField = model.fields.find((f) => f.name === "agentInfo")!;
+
+      expect(agentInfoField.isCompositeType).toBe(true);
+      expect(agentInfoField.isRelation).toBe(false);
+    });
+
+    it("should mark composite type array fields correctly", () => {
+      const schemaContent = `
+      type Address {
+        street String
+        city   String
+      }
+
+      model User {
+        id        String    @id
+        addresses Address[]
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      const model = result.models.find((m) => m.name === "User")!;
+      const addressesField = model.fields.find((f) => f.name === "addresses")!;
+
+      expect(addressesField.isCompositeType).toBe(true);
+      expect(addressesField.isArray).toBe(true);
+      expect(addressesField.isRelation).toBe(false);
+    });
+
+    it("should mark composite type optional fields correctly", () => {
+      const schemaContent = `
+      type AgentInfo {
+        ip String?
+      }
+
+      model InteractionEvent {
+        id        String     @id
+        agentInfo AgentInfo?
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      const model = result.models.find((m) => m.name === "InteractionEvent")!;
+      const agentInfoField = model.fields.find((f) => f.name === "agentInfo")!;
+
+      expect(agentInfoField.isCompositeType).toBe(true);
+      expect(agentInfoField.isOptional).toBe(true);
+    });
+
+    it("should not confuse composite types with model relations", () => {
+      const schemaContent = `
+      type AgentInfo {
+        ip String?
+      }
+
+      model User {
+        id    String @id
+        posts Post[]
+      }
+
+      model Post {
+        id       String @id
+        authorId String
+        author   User   @relation(fields: [authorId], references: [id])
+      }
+
+      model InteractionEvent {
+        id        String    @id
+        agentInfo AgentInfo
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      const postModel = result.models.find((m) => m.name === "Post")!;
+      const authorField = postModel.fields.find((f) => f.name === "author")!;
+      expect(authorField.isRelation).toBe(true);
+      expect(authorField.isCompositeType).toBe(false);
+
+      const eventModel = result.models.find(
+        (m) => m.name === "InteractionEvent"
+      )!;
+      const agentInfoField = eventModel.fields.find(
+        (f) => f.name === "agentInfo"
+      )!;
+      expect(agentInfoField.isRelation).toBe(false);
+      expect(agentInfoField.isCompositeType).toBe(true);
+    });
+
+    it("should handle multiple composite types in schema", () => {
+      const schemaContent = `
+      type AgentInfo {
+        ip     String?
+        city   String?
+      }
+
+      type GeoLocation {
+        lat  Float
+        lng  Float
+      }
+
+      model InteractionEvent {
+        id       String      @id
+        agent    AgentInfo
+        location GeoLocation
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      expect(parser.compositeTypes).toHaveLength(2);
+      expect(parser.compositeTypes.map((t) => t.name)).toEqual([
+        "AgentInfo",
+        "GeoLocation",
+      ]);
+
+      const model = result.models.find((m) => m.name === "InteractionEvent")!;
+      model.fields.forEach((f) => {
+        if (f.name === "agent" || f.name === "location") {
+          expect(f.isCompositeType).toBe(true);
+        }
+      });
+    });
+
+    it("should not include composite types in models array", () => {
+      const schemaContent = `
+      type AgentInfo {
+        ip String?
+      }
+
+      model InteractionEvent {
+        id        String    @id
+        agentInfo AgentInfo
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      expect(result.models.map((m) => m.name)).not.toContain("AgentInfo");
+      expect(parser.compositeTypes.map((t) => t.name)).toContain("AgentInfo");
+    });
+
+    it("should reset compositeTypes on override parse", () => {
+      const schemaContent1 = `
+      type AgentInfo {
+        ip String?
+      }
+      model Foo { id String @id }
+    `;
+      const schemaContent2 = `
+      type GeoLocation {
+        lat Float
+        lng Float
+      }
+      model Bar { id String @id }
+    `;
+
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent1);
+      parser.parse({ override: true });
+      expect(parser.compositeTypes.map((t) => t.name)).toContain("AgentInfo");
+
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent2);
+      parser.parse({ override: true });
+      expect(parser.compositeTypes.map((t) => t.name)).not.toContain(
+        "AgentInfo"
+      );
+      expect(parser.compositeTypes.map((t) => t.name)).toContain("GeoLocation");
+    });
+
+    it("should return false for isCompositeType on primitive fields", () => {
+      const schemaContent = `
+      model User {
+        id   String @id
+        name String
+        age  Int?
+      }
+    `;
+      mockGetPrismaSchemasContent.mockReturnValue(schemaContent);
+
+      const result = parser.parse({ override: true });
+
+      result.models[0].fields.forEach((f) => {
+        expect(f.isCompositeType).toBe(false);
+      });
+    });
+  });
+
   describe("edge cases", () => {
     it("should handle empty schema gracefully", () => {
       mockGetPrismaSchemasContent.mockReturnValue("");
@@ -548,7 +789,7 @@ describe("PrismaSchemaParser", () => {
 
       // First parse
       const result1 = parser.parse({ override: true });
-      expect(mockGetPrismaSchemasContent).toHaveBeenCalledTimes(3); // Called in extractEnums and extractModels
+      expect(mockGetPrismaSchemasContent).toHaveBeenCalledTimes(4); // Called in extractEnums and extractModels
 
       mockGetPrismaSchemasContent.mockClear();
 

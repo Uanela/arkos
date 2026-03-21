@@ -1,7 +1,9 @@
 import { getUserFileExtension } from "../../../../../helpers/fs.helpers";
 import { generateAuthConfigsTemplate } from "../auth-configs-template";
+import { getArkosConfig } from "../../../../../helpers/arkos-config.helpers";
 
 jest.mock("fs");
+jest.mock("../../../../../helpers/arkos-config.helpers");
 jest.mock("../../../../../helpers/fs.helpers");
 jest.mock("../../../../generate", () => ({
   kebabPrismaModels: [
@@ -13,16 +15,24 @@ jest.mock("../../../../generate", () => ({
   ],
 }));
 
-const mockedGetUserFileExtension = getUserFileExtension as jest.MockedFunction<
-  typeof getUserFileExtension
->;
-
 describe("generateAuthConfigsTemplate", () => {
   const mockModelName = {
     pascal: "User",
     camel: "user",
     kebab: "user",
   };
+  let mockedGetUserFileExtension: any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      authentication: { mode: "static" },
+    });
+    mockedGetUserFileExtension = getUserFileExtension as jest.MockedFunction<
+      typeof getUserFileExtension
+    >;
+    mockedGetUserFileExtension.mockReturnValue("ts");
+  });
 
   describe("TypeScript generation", () => {
     beforeEach(() => {
@@ -297,6 +307,29 @@ describe("generateAuthConfigsTemplate", () => {
       expect(advancedResult).not.toContain("canUpdate:");
       expect(advancedResult).not.toContain("canDelete:");
       expect(advancedResult).not.toContain("canView:");
+    });
+
+    it("should not contain roles when auth not static", () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        authentication: { mode: "dynamic" },
+      });
+
+      const defaultResult = generateAuthConfigsTemplate({
+        modelName: mockModelName,
+        advanced: false,
+      });
+      const advancedResult = generateAuthConfigsTemplate({
+        modelName: mockModelName,
+        advanced: true,
+      });
+
+      ["Create", "Update", "Delete", "View"].forEach((action) => {
+        expect(defaultResult).toContain(`${action}: {`);
+        expect(advancedResult).toContain(`${action}: {`);
+      });
+
+      expect(defaultResult).not.toContain("roles: []");
+      expect(advancedResult).not.toContain("roles: []");
     });
 
     it("should maintain consistent action names in both modes", () => {

@@ -1,18 +1,21 @@
-import { PrismaQueryOptions } from 'arkos/prisma';
-import { Prisma } from "@prisma/client"
+import { PrismaQueryOptions } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
 
 const userQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
   global: {
     omit: {
       password: true,
-    }, 
+    },
+    include: { posts: true },
   },
   find: {
+    include: { posts: true },
   },
-  findOne: {
-  },
+  findOne: {},
   findMany: {},
-  update: {},
+  update: {
+    include: { posts: true },
+  },
   updateMany: {},
   updateOne: {},
   create: {},
@@ -24,6 +27,6 @@ const userQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
   delete: {},
   deleteMany: {},
   deleteOne: {},
-}
+};
 
 export default userQueryOptions;
