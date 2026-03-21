@@ -2,10 +2,16 @@ import { TemplateOptions } from "../../../template-generators";
 import prismaSchemaParser from "../../../../../prisma/prisma-schema-parser";
 import * as fsHelpers from "../../../../../helpers/fs.helpers";
 import zodSchemaGenerator from "../zod-schema-generator";
+import { getArkosConfig } from "../../../../../../utils/helpers/arkos-config.helpers";
 
+jest.mock("../../../../../../utils/helpers/arkos-config.helpers");
 jest.mock("../../../../../prisma/prisma-schema-parser");
 jest.mock("../../../../../helpers/fs.helpers");
 jest.mock("fs");
+
+const mockGetArkosConfig = getArkosConfig as jest.MockedFunction<
+  typeof getArkosConfig
+>;
 
 describe("ZodSchemaGenerator", () => {
   const mockGetUserFileExtension =
@@ -3108,6 +3114,515 @@ describe("ZodSchemaGenerator", () => {
       // full array replacement only — no partial item schema
       expect(result).toContain("tags: z.array(z.object({");
       expect(result).not.toContain("tags: z.object(");
+    });
+  });
+
+  describe("generateLoginSchema", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+    });
+
+    it("should generate login schema with default username field", () => {
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["username"] } },
+      } as any);
+
+      const result = zodSchemaGenerator.generateLoginSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain('import { z } from "zod"');
+      expect(result).toContain("username: z.string().min(1).optional()");
+      expect(result).toContain("password: z.string().min(8)");
+      expect(result).toContain("const LoginSchema = z.object({");
+      expect(result).toContain("export default LoginSchema;");
+      expect(result).toContain(
+        "export type LoginSchemaType = z.infer<typeof LoginSchema>"
+      );
+    });
+
+    it("should generate login schema with email field using .email() validation", () => {
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["email"] } },
+      } as any);
+
+      const result = zodSchemaGenerator.generateLoginSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("email: z.string().email().optional()");
+      expect(result).toContain("password: z.string().min(8)");
+    });
+
+    it("should generate login schema with multiple username fields", () => {
+      mockGetArkosConfig.mockReturnValue({
+        authentication: {
+          login: { allowedUsernames: ["username", "email", "phone"] },
+        },
+      } as any);
+
+      const result = zodSchemaGenerator.generateLoginSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("username: z.string().min(1).optional()");
+      expect(result).toContain("email: z.string().email().optional()");
+      expect(result).toContain("phone: z.string().min(1).optional()");
+      expect(result).toContain("password: z.string().min(8)");
+    });
+
+    it("should handle dotted username fields by using last part", () => {
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["profile.email"] } },
+      } as any);
+
+      const result = zodSchemaGenerator.generateLoginSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("email: z.string().email().optional()");
+      expect(result).not.toContain("profile.email");
+    });
+
+    it("should fall back to username when allowedUsernames is not set", () => {
+      mockGetArkosConfig.mockReturnValue({} as any);
+
+      const result = zodSchemaGenerator.generateLoginSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("username: z.string().min(1).optional()");
+    });
+
+    it("should not include type export for JavaScript", () => {
+      mockGetUserFileExtension.mockReturnValue("js");
+      mockGetArkosConfig.mockReturnValue({
+        authentication: { login: { allowedUsernames: ["username"] } },
+      } as any);
+
+      const result = zodSchemaGenerator.generateLoginSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).not.toContain("export type");
+      expect(result).toContain("export default LoginSchema;");
+    });
+  });
+
+  describe("generateSignupSchema", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+      (prismaSchemaParser.isEnum as jest.Mock) = jest
+        .fn()
+        .mockReturnValue(false);
+      (prismaSchemaParser.compositeTypes as any) = [];
+    });
+
+    it("should throw error when User model is not found", () => {
+      (prismaSchemaParser.models as any) = [];
+
+      expect(() =>
+        zodSchemaGenerator.generateSignupSchema({
+          modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+        })
+      ).toThrow("User model not found in Prisma schema");
+    });
+
+    it("should generate signup schema excluding restricted fields", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "username",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "password",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "roles",
+              type: "String",
+              isOptional: true,
+              isArray: true,
+              isRelation: false,
+            },
+            {
+              name: "isActive",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: true,
+            },
+            {
+              name: "isSuperUser",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: false,
+            },
+            {
+              name: "isStaff",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: false,
+            },
+            {
+              name: "passwordChangedAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "deletedSelfAccountAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "lastLoginAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "createdAt",
+              type: "DateTime",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "updatedAt",
+              type: "DateTime",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = zodSchemaGenerator.generateSignupSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("username: z.string()");
+      expect(result).toContain("password: z.string().min(8)");
+      expect(result).toContain(".regex(/[a-z]/");
+      expect(result).toContain(".regex(/[A-Z]/");
+      expect(result).toContain(".regex(/[0-9]/");
+      expect(result).not.toContain("roles:");
+      expect(result).not.toContain("isActive:");
+      expect(result).not.toContain("isSuperUser:");
+      expect(result).not.toContain("isStaff:");
+      expect(result).not.toContain("passwordChangedAt:");
+      expect(result).not.toContain("deletedSelfAccountAt:");
+      expect(result).not.toContain("lastLoginAt:");
+      expect(result).not.toContain("id:");
+      expect(result).not.toContain("createdAt:");
+      expect(result).not.toContain("updatedAt:");
+      expect(result).toContain("const SignupSchema = z.object({");
+      expect(result).toContain("export default SignupSchema;");
+      expect(result).toContain(
+        "export type SignupSchemaType = z.infer<typeof SignupSchema>"
+      );
+    });
+
+    it("should apply email validation for user email field in signup", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "email",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "password",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = zodSchemaGenerator.generateSignupSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("email: z.string().email()");
+    });
+
+    it("should not include type export for JavaScript", () => {
+      mockGetUserFileExtension.mockReturnValue("js");
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "username",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "password",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = zodSchemaGenerator.generateSignupSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).not.toContain("export type");
+      expect(result).toContain("export default SignupSchema;");
+    });
+  });
+
+  describe("generateUpdateMeSchema", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+      (prismaSchemaParser.isEnum as jest.Mock) = jest
+        .fn()
+        .mockReturnValue(false);
+      (prismaSchemaParser.compositeTypes as any) = [];
+    });
+
+    it("should throw error when User model is not found", () => {
+      (prismaSchemaParser.models as any) = [];
+
+      expect(() =>
+        zodSchemaGenerator.generateUpdateMeSchema({
+          modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+        })
+      ).toThrow("User model not found in Prisma schema");
+    });
+
+    it("should generate updateMe schema excluding restricted and password fields", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "username",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "password",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "roles",
+              type: "String",
+              isOptional: true,
+              isArray: true,
+              isRelation: false,
+            },
+            {
+              name: "isActive",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: true,
+            },
+            {
+              name: "isSuperUser",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: false,
+            },
+            {
+              name: "isStaff",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              defaultValue: false,
+            },
+            {
+              name: "passwordChangedAt",
+              type: "DateTime",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "createdAt",
+              type: "DateTime",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "updatedAt",
+              type: "DateTime",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = zodSchemaGenerator.generateUpdateMeSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("username: z.string().optional()");
+      expect(result).not.toContain("password:");
+      expect(result).not.toContain("roles:");
+      expect(result).not.toContain("isActive:");
+      expect(result).not.toContain("isSuperUser:");
+      expect(result).not.toContain("isStaff:");
+      expect(result).not.toContain("passwordChangedAt:");
+      expect(result).not.toContain("id:");
+      expect(result).toContain("const UpdateMeSchema = z.object({");
+      expect(result).toContain("export default UpdateMeSchema;");
+      expect(result).toContain(
+        "export type UpdateMeSchemaType = z.infer<typeof UpdateMeSchema>"
+      );
+    });
+
+    it("should make all fields optional in updateMe schema", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "User",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "username",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+            {
+              name: "firstName",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+            },
+          ],
+        },
+      ];
+
+      const result = zodSchemaGenerator.generateUpdateMeSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain("username: z.string().optional()");
+      expect(result).toContain("firstName: z.string().optional()");
+    });
+  });
+
+  describe("generateUpdatePasswordSchema", () => {
+    beforeEach(() => {
+      mockGetUserFileExtension.mockReturnValue("ts");
+    });
+
+    it("should generate update password schema with currentPassword and newPassword", () => {
+      const result = zodSchemaGenerator.generateUpdatePasswordSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).toContain('import { z } from "zod"');
+      expect(result).toContain("const UpdatePasswordSchema = z.object({");
+      expect(result).toContain("currentPassword: z.string().min(1)");
+      expect(result).toContain("newPassword: z.string().min(8)");
+      expect(result).toContain(".regex(/[a-z]/");
+      expect(result).toContain(".regex(/[A-Z]/");
+      expect(result).toContain(".regex(/[0-9]/");
+      expect(result).toContain("export default UpdatePasswordSchema;");
+      expect(result).toContain(
+        "export type UpdatePasswordSchemaType = z.infer<typeof UpdatePasswordSchema>"
+      );
+    });
+
+    it("should not include type export for JavaScript", () => {
+      mockGetUserFileExtension.mockReturnValue("js");
+
+      const result = zodSchemaGenerator.generateUpdatePasswordSchema({
+        modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
+      });
+
+      expect(result).not.toContain("export type");
+      expect(result).toContain("export default UpdatePasswordSchema;");
     });
   });
 });
