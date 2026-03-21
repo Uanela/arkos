@@ -29,15 +29,14 @@ class AuthPrismaJsonSchemaGenerator {
       (
         getModuleComponents("auth")
           ?.prismaQueryOptions as AuthPrismaQueryOptions<any>
-      )[endpoint] || {}
+      )?.[endpoint] || {}
     );
   }
 
   generateGetMeResponse(): JsonSchema {
     return prismaJsonSchemaGenerator.generateResponseSchema(
       this.getUserModel(),
-      this.getPrismaArgs("getMe"),
-      "findOne"
+      this.getPrismaArgs("getMe")
     );
   }
 
@@ -54,8 +53,7 @@ class AuthPrismaJsonSchemaGenerator {
 
   generateUpdateMeSchema(): JsonSchema {
     const updateSchema = prismaJsonSchemaGenerator.generateUpdateSchema(
-      this.getUserModel(),
-      this.getPrismaArgs("updateMe")
+      this.getUserModel()
     );
 
     // Remove sensitive fields that users shouldn't update themselves
@@ -79,8 +77,7 @@ class AuthPrismaJsonSchemaGenerator {
 
   generateSignupSchema(): JsonSchema {
     const singupSchema = prismaJsonSchemaGenerator.generateCreateSchema(
-      this.getUserModel(),
-      this.getPrismaArgs("signup")
+      this.getUserModel()
     );
 
     const restrictedFields = [
