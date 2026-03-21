@@ -11,7 +11,7 @@ export interface PrismaField {
   isUnique?: boolean;
   isCompositeType?: boolean;
   attributes: string[];
-  rawLine: string;
+  rawLine?: string;
 }
 
 export interface PrismaModel {

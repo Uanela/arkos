@@ -1,5 +1,4 @@
 import { PrismaJsonSchemaGenerator } from "../prisma-json-schema-generator";
-import { ArkosConfig } from "../../../exports";
 import deepmerge from "../../helpers/deepmerge.helper";
 import { getModuleComponents } from "../../dynamic-loader";
 import prismaSchemaParser from "../prisma-schema-parser";
