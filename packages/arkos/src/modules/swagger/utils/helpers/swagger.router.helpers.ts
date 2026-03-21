@@ -2,7 +2,6 @@ import { ArkosConfig } from "../../../../exports";
 import { camelCase, pascalCase } from "../../../../exports/utils";
 import { OpenAPIV3 } from "openapi-types";
 import { getSystemJsonSchemaPaths } from "./get-system-json-schema-paths";
-import getAuthenticationJsonSchemaPaths from "./get-authentication-json-schema-paths";
 import generateZodJsonSchemas from "./json-schema-generators/generate-zod-json-schemas";
 import { generateClassValidatorJsonSchemas } from "./json-schema-generators/generate-class-validator-json-schemas";
 import { generatePrismaJsonSchemas } from "./json-schema-generators/generate-prisma-json-schemas";
@@ -127,7 +126,7 @@ export function generatePathsForModels(
   if (isAuthenticationEnabled())
     paths = {
       ...paths,
-      ...(getAuthenticationJsonSchemaPaths(arkosConfig, existingPaths) || {}),
+      // ...(getAuthenticationJsonSchemaPaths(arkosConfig, existingPaths) || {}),
     };
 
   return paths;

@@ -5,7 +5,7 @@ import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser
 export function generatePrismaJsonSchemas(arkosConfig: ArkosConfig) {
   const requiredAppModules = [
     ...prismaSchemaParser.getModelsAsArrayOfStrings(),
-    "auth",
+    // "auth",
   ];
 
   try {
