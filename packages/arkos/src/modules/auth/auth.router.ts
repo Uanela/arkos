@@ -73,7 +73,7 @@ export function getAuthRouter(arkosConfig: ArkosConfig) {
   ];
 
   for (const endpoint of endpoints) {
-    let endpointConfig = routerConfig[endpoint];
+    let endpointConfig = routerConfig[endpoint] || {};
 
     const schema = getValidationSchemaOrDto(endpoint as any);
     if (
