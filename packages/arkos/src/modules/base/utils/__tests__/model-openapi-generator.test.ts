@@ -8,19 +8,13 @@ jest.mock("../../../../exports/prisma", () => ({
   prismaSchemaParser: { models: [] },
 }));
 jest.mock("../../../../utils/helpers/arkos-config.helpers");
-jest.mock("../../../../exports/utils", () => ({
-  pascalCase: jest.fn((str: string) =>
-    str
-      .split(/[-\s]/)
-      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-      .join("")
-  ),
-}));
-jest.mock("pluralize", () => ({
-  plural: jest.fn((str: string) => str + "s"),
-}));
 
 describe("ModelOpenAPIGenerator", () => {
+  const mockUserProfileModel = {
+    name: "UserProfile",
+    mapName: "user-profiles",
+    fields: [],
+  };
   const mockUserModel = {
     name: "User",
     mapName: "users",
@@ -74,13 +68,25 @@ describe("ModelOpenAPIGenerator", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockPrismaSchemaParser.models = [mockUserModel];
+    mockPrismaSchemaParser.models = [mockUserModel, mockUserProfileModel];
     mockIsAuthenticationEnabled.mockReturnValue(false);
     mockGenerator.generateCreateSchema.mockReturnValue(mockCreateSchema as any);
     mockGenerator.generateUpdateSchema.mockReturnValue(mockUpdateSchema as any);
     mockGenerator.generateResponseSchema.mockReturnValue(
       mockResponseSchema as any
     );
+  });
+
+  describe("getModel", () => {
+    it("should get model regardless of passed param casing", () => {
+      const withKebab = (modelOpenAPIGenerator as any).getModel("user-profile");
+      const withCamel = (modelOpenAPIGenerator as any).getModel("userProfile");
+      const withPascal = (modelOpenAPIGenerator as any).getModel("UserProfile");
+
+      expect(withKebab).toBe(mockUserProfileModel);
+      expect(withCamel).toBe(mockUserProfileModel);
+      expect(withPascal).toBe(mockUserProfileModel);
+    });
   });
 
   describe("getOpenApiConfig — createOne", () => {
