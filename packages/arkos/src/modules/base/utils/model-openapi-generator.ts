@@ -3,7 +3,7 @@ import {
   PrismaQueryOptions,
   prismaSchemaParser,
 } from "../../../exports/prisma";
-import { pascalCase } from "../../../exports/utils";
+import { kebabCase, pascalCase } from "../../../exports/utils";
 import { RouterEndpoint } from "../../../types/router-config";
 import { ExtendedOperationObject } from "../../../utils/arkos-router/types/openapi-config";
 import { isAuthenticationEnabled } from "../../../utils/helpers/arkos-config.helpers";
@@ -13,7 +13,7 @@ import pluralize from "pluralize";
 class ModelOpenAPIGenerator {
   private getModel(modelName: string) {
     return prismaSchemaParser.models.find(
-      (m) => m.name.toLowerCase() === modelName.toLowerCase()
+      (m) => kebabCase(m.name) === kebabCase(modelName)
     )!;
   }
 
