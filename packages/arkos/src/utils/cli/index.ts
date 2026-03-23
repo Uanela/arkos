@@ -38,7 +38,7 @@ const generate = program
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
   .option(
-    "-ms, --modules <names>",
+    "--ms, --modules <names>",
     "Comma-separated module names for bulk generation"
   )
   .option(

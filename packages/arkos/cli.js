@@ -26,16 +26,13 @@
   ];
 
   process.env.NO_CLI = "true";
+  process.env.FORCE_COLOR = "3";
   const child = spawn(process.execPath, args, {
     stdio: ["inherit", "inherit", "pipe"],
   });
   child.stderr.on("data", (data) => {
     const str = data.toString();
-    if (
-      !str.includes("DeprecationWarning") &&
-      !str.includes("npm warn") &&
-      !str.includes("ExperimentalWarning")
-    )
+    if (!str.includes("ExperimentalWarning: Type Stripping is an experimental"))
       process.stderr.write(data);
   });
   child.on("exit", (code) => process.exit(code ?? 0));
