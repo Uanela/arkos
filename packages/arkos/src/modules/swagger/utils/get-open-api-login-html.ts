@@ -38,13 +38,16 @@ export default function getOpenApiLoginHtml() {
 
   const firstLabel = formatFieldLabel(allowedUsernames[0]);
   const showSelect = allowedUsernames.length > 1;
+  const title =
+    arkosConfig?.swagger?.options?.definition?.info?.title ||
+    "Arkos.js OpenAPI Documentation";
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${arkosConfig?.swagger?.options?.definition?.info?.title || "Login Into OpenAPI Documentation"}</title>
+  <title>${title}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -55,6 +58,7 @@ export default function getOpenApiLoginHtml() {
       align-items: center;
       justify-content: center;
       background-color: ${colors.bg};
+      padding: 8px;
     }
 
     .login-container {
@@ -72,6 +76,14 @@ export default function getOpenApiLoginHtml() {
       margin-bottom: 30px;
       font-size: 24px;
       font-weight: 600;
+    }
+
+    h2 {
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 16px;
+      font-weight: 500;
     }
 
     .form-group {
@@ -164,7 +176,8 @@ export default function getOpenApiLoginHtml() {
 </head>
 <body>
   <div class="login-container">
-    <h1>Login</h1>
+    <h1>${title}</h1>
+    <h2>Login</h2>
     <form id="loginForm">
 
       ${
