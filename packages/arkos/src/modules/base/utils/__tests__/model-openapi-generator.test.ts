@@ -59,6 +59,32 @@ describe("ModelOpenAPIGenerator", () => {
     properties: { id: { type: "number" }, email: { type: "string" } },
     required: ["id", "email"],
   };
+  const mockQueryFiltersSchema = [
+    {
+      name: "page",
+      in: "query",
+      description: "Page number (starts from 1)",
+      schema: { type: "integer", minimum: 1 },
+    },
+    {
+      name: "limit",
+      in: "query",
+      description: "Number of items per page",
+      schema: { type: "integer", minimum: 1, maximum: 100 },
+    },
+    {
+      name: "sort",
+      in: "query",
+      description: "Sort field (prefix with '-' for descending order)",
+      schema: { type: "string" },
+    },
+    {
+      name: "fields",
+      in: "query",
+      description: "Comma-separated list of fields to include in response",
+      schema: { type: "string" },
+    },
+  ];
 
   const mockPrismaSchemaParser = prismaSchemaParser as any;
   const mockIsAuthenticationEnabled = isAuthenticationEnabled as jest.Mock;
@@ -72,6 +98,9 @@ describe("ModelOpenAPIGenerator", () => {
     mockIsAuthenticationEnabled.mockReturnValue(false);
     mockGenerator.generateCreateSchema.mockReturnValue(mockCreateSchema as any);
     mockGenerator.generateUpdateSchema.mockReturnValue(mockUpdateSchema as any);
+    mockGenerator.generateQueryFilterParameters.mockReturnValue(
+      mockQueryFiltersSchema
+    );
     mockGenerator.generateResponseSchema.mockReturnValue(
       mockResponseSchema as any
     );
@@ -285,7 +314,6 @@ describe("ModelOpenAPIGenerator", () => {
       );
       const paramNames = (result.parameters as any[]).map((p) => p.name);
 
-      expect(paramNames).toContain("filters");
       expect(paramNames).toContain("sort");
       expect(paramNames).toContain("page");
       expect(paramNames).toContain("limit");
@@ -433,6 +461,13 @@ describe("ModelOpenAPIGenerator", () => {
     });
 
     it("should include required filters query parameter", () => {
+      mockGenerator.generateQueryFilterParameters.mockReturnValueOnce([
+        {
+          name: "email[icontains]",
+          in: "query",
+          schema: { type: "string" },
+        },
+      ]);
       const result = modelOpenAPIGenerator.getOpenApiConfig(
         {},
         "updateMany",
@@ -440,10 +475,10 @@ describe("ModelOpenAPIGenerator", () => {
       );
 
       const filtersParam = (result.parameters as any[]).find(
-        (p) => p.name === "filters"
+        (p) => p.name === "email[icontains]"
       );
       expect(filtersParam).toBeDefined();
-      expect(filtersParam.required).toBe(true);
+      expect(filtersParam.required).not.toBe(true);
     });
 
     it("should include requestBody with update schema", () => {
@@ -524,6 +559,13 @@ describe("ModelOpenAPIGenerator", () => {
     });
 
     it("should include required filters query parameter", () => {
+      mockGenerator.generateQueryFilterParameters.mockReturnValueOnce([
+        {
+          name: "email[icontains]",
+          in: "query",
+          schema: { type: "string" },
+        },
+      ]);
       const result = modelOpenAPIGenerator.getOpenApiConfig(
         {},
         "deleteMany",
@@ -531,10 +573,10 @@ describe("ModelOpenAPIGenerator", () => {
       );
 
       const filtersParam = (result.parameters as any[]).find(
-        (p) => p.name === "filters"
+        (p) => p.name === "email[icontains]"
       );
       expect(filtersParam).toBeDefined();
-      expect(filtersParam.required).toBe(true);
+      expect(filtersParam.required).not.toBe(true);
     });
 
     it("should include 200 response with count schema", () => {
