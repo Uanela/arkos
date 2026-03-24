@@ -17,6 +17,8 @@ import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import { ArkosConfig } from "../../exports";
 import path from "path";
 import ArkosRouter from "../../utils/arkos-router";
+import { FileUploadRouterEndpoint } from "../../types/router-config";
+import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-generator";
 
 export function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const router = ArkosRouter();
@@ -56,6 +58,28 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
       throw Error(
         `ValidationError: The exported router from file-upload.router.${getUserFileExtension()} is not a valid express or arkos Router.`
       );
+  }
+
+  const endpoints: FileUploadRouterEndpoint[] = [
+    "findFile",
+    "uploadFile",
+    "updateFile",
+    "deleteFile",
+  ];
+
+  for (const endpoint of endpoints) {
+    const endpointConfig = routerConfig[endpoint];
+    if (endpointConfig?.experimental?.openapi === false) continue;
+    routerConfig[endpoint] = {
+      ...(endpointConfig || {}),
+      experimental: {
+        ...(endpointConfig?.experimental || {}),
+        openapi: fileUploadJsonSchemaGenerator.getOpenApiConfig(
+          endpointConfig,
+          endpoint
+        ),
+      },
+    };
   }
 
   if (!isEndpointDisabled(routerConfig, "findFile")) {

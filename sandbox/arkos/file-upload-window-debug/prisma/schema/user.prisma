@@ -1,6 +1,7 @@
 model User {
-  id                   String    @id @default(cuid())
+  id                   String    @id @default(cuid()) @map("_id")
   username             String    @unique
+  firstName            String    @unique
   password             String
   passwordChangedAt    DateTime?
   lastLoginAt          DateTime?
