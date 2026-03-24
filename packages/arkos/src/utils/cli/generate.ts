@@ -304,6 +304,7 @@ export const generateCommand = {
       templateName: "prisma-model",
       allowedModules: "*",
       ext: "prisma",
+      customPath: "prisma/schema",
     });
   },
 

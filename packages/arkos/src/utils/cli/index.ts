@@ -37,11 +37,7 @@ const generate = program
   .description("Generate arkos components")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the component",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for the component")
   .option("-o, --overwrite", "Overwrites all the content on the existing file");
 
 generate
@@ -103,7 +99,6 @@ generate
   .command("hooks")
   .alias("h")
   .description("Generate a new service hooks file")
-
   .action((options) => {
     const generateOptions = generate.opts();
     generateCommand.hooks({ ...generateOptions, ...options });
@@ -193,7 +188,7 @@ generate
   .command("model")
   .alias("m")
   .description("Generate a new prisma model")
-  .option("-p, --path <path>", "Custom path for prisma model", "prisma/schema")
+  .option("-p, --path <path>", "Custom path for prisma model")
   .action((options) => {
     const generateOptions = generate.opts();
     generateCommand.prismaModel({ ...generateOptions, ...options });
