@@ -361,7 +361,7 @@ export class PrismaJsonSchemaGenerator {
   generateQueryFilterParameters(
     model: PrismaModel,
     options?: { modelFieldsOnly?: boolean }
-  ): any[] {
+  ) {
     const parameters: any[] = [];
     const restrictedFields = ["id", "password"];
 
@@ -502,7 +502,7 @@ export class PrismaJsonSchemaGenerator {
       }
     }
 
-    return parameters;
+    return parameters || [];
   }
 }
 
