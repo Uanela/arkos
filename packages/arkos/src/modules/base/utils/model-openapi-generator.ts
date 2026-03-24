@@ -64,6 +64,12 @@ class ModelOpenAPIGenerator {
     const hasBodyValidation =
       typeof endpointRouterConfig?.validation !== "boolean" &&
       !!endpointRouterConfig?.validation?.body;
+    const hasQueryValidation =
+      typeof endpointRouterConfig?.validation !== "boolean" &&
+      !!endpointRouterConfig?.validation?.query;
+    const hasParamsValidation =
+      typeof endpointRouterConfig?.validation !== "boolean" &&
+      !!endpointRouterConfig?.validation?.params;
 
     const model = this.getModel(modelNameInKebab);
     const pascalModelName = pascalCase(modelNameInKebab);
@@ -138,41 +144,11 @@ class ModelOpenAPIGenerator {
           security: existingOpenApi?.security || [{ BearerAuth: [] }],
           parameters: [
             ...(existingOpenApi?.parameters || []),
-            ...(
-              [
-                {
-                  name: "filters",
-                  in: "query",
-                  description: "Filter criteria in JSON format",
-                  schema: { type: "string" },
-                },
-                {
-                  name: "sort",
-                  in: "query",
-                  description:
-                    "Sort field (prefix with '-' for descending order)",
-                  schema: { type: "string" },
-                },
-                {
-                  name: "page",
-                  in: "query",
-                  description: "Page number (starts from 1)",
-                  schema: { type: "integer", minimum: 1 },
-                },
-                {
-                  name: "limit",
-                  in: "query",
-                  description: "Number of items per page",
-                  schema: { type: "integer", minimum: 1, maximum: 100 },
-                },
-                {
-                  name: "fields",
-                  in: "query",
-                  description:
-                    "Comma-separated list of fields to include in response",
-                  schema: { type: "string" },
-                },
-              ] as any[]
+            ...(!hasQueryValidation
+              ? (prismaJsonSchemaGenerator.generateQueryFilterParameters(
+                  model
+                ) as any[])
+              : []
             ).filter(
               (p) =>
                 !(existingOpenApi?.parameters || []).find(
@@ -289,19 +265,13 @@ class ModelOpenAPIGenerator {
             `Updates multiple ${humanReadableNamePlural} records that match the specified filter criteria`,
           operationId:
             existingOpenApi?.operationId || `updateMany${pascalModelName}`,
-          security: existingOpenApi?.security || [{ BearerAuth: [] }],
           parameters: [
             ...(existingOpenApi?.parameters || []),
-            ...(
-              [
-                {
-                  name: "filters",
-                  in: "query",
-                  description: "Filter criteria in JSON format (required)",
-                  required: true,
-                  schema: { type: "string" },
-                },
-              ] as any[]
+            ...(!hasQueryValidation
+              ? prismaJsonSchemaGenerator.generateQueryFilterParameters(model, {
+                  modelFieldsOnly: true,
+                })
+              : []
             ).filter(
               (p) =>
                 !(existingOpenApi?.parameters || []).find(
@@ -309,6 +279,7 @@ class ModelOpenAPIGenerator {
                 )
             ),
           ],
+          security: existingOpenApi?.security || [{ BearerAuth: [] }],
           ...(!hasBodyValidation && {
             requestBody: existingOpenApi?.requestBody || {
               description: `Partial ${humanReadableName} data to update`,
@@ -360,19 +331,13 @@ class ModelOpenAPIGenerator {
             `Deletes multiple ${humanReadableNamePlural} records that match the specified filter criteria`,
           operationId:
             existingOpenApi?.operationId || `deleteMany${pascalModelName}`,
-          security: existingOpenApi?.security || [{ BearerAuth: [] }],
           parameters: [
             ...(existingOpenApi?.parameters || []),
-            ...(
-              [
-                {
-                  name: "filters",
-                  in: "query",
-                  description: "Filter criteria in JSON format (required)",
-                  required: true,
-                  schema: { type: "string" },
-                },
-              ] as any[]
+            ...(!hasQueryValidation
+              ? prismaJsonSchemaGenerator.generateQueryFilterParameters(model, {
+                  modelFieldsOnly: true,
+                })
+              : []
             ).filter(
               (p) =>
                 !(existingOpenApi?.parameters || []).find(
@@ -380,6 +345,7 @@ class ModelOpenAPIGenerator {
                 )
             ),
           ],
+          security: existingOpenApi?.security || [{ BearerAuth: [] }],
           responses: {
             ...(existingOpenApi?.responses || {}),
             "200": existingOpenApi?.responses?.["200"] || {
@@ -421,16 +387,17 @@ class ModelOpenAPIGenerator {
           security: existingOpenApi?.security || [{ BearerAuth: [] }],
           parameters: [
             ...(existingOpenApi?.parameters || []),
-            ...(
-              [
-                {
-                  name: "id",
-                  in: "path",
-                  description: `Unique identifier of the ${humanReadableName}`,
-                  required: true,
-                  schema: { type: "string" },
-                },
-              ] as any[]
+            ...(!hasParamsValidation
+              ? ([
+                  {
+                    name: "id",
+                    in: "path",
+                    description: `Unique identifier of the ${humanReadableName}`,
+                    required: true,
+                    schema: { type: "string" },
+                  },
+                ] as any[])
+              : []
             ).filter(
               (p) =>
                 !(existingOpenApi?.parameters || []).find(
@@ -478,16 +445,17 @@ class ModelOpenAPIGenerator {
           security: existingOpenApi?.security || [{ BearerAuth: [] }],
           parameters: [
             ...(existingOpenApi?.parameters || []),
-            ...(
-              [
-                {
-                  name: "id",
-                  in: "path",
-                  description: `Unique identifier of the ${humanReadableName}`,
-                  required: true,
-                  schema: { type: "string" },
-                },
-              ] as any[]
+            ...(!hasParamsValidation
+              ? ([
+                  {
+                    name: "id",
+                    in: "path",
+                    description: `Unique identifier of the ${humanReadableName}`,
+                    required: true,
+                    schema: { type: "string" },
+                  },
+                ] as any[])
+              : []
             ).filter(
               (p) =>
                 !(existingOpenApi?.parameters || []).find(
@@ -549,16 +517,17 @@ class ModelOpenAPIGenerator {
           security: existingOpenApi?.security || [{ BearerAuth: [] }],
           parameters: [
             ...(existingOpenApi?.parameters || []),
-            ...(
-              [
-                {
-                  name: "id",
-                  in: "path",
-                  description: `Unique identifier of the ${humanReadableName}`,
-                  required: true,
-                  schema: { type: "string" },
-                },
-              ] as any[]
+            ...(!hasParamsValidation
+              ? ([
+                  {
+                    name: "id",
+                    in: "path",
+                    description: `Unique identifier of the ${humanReadableName}`,
+                    required: true,
+                    schema: { type: "string" },
+                  },
+                ] as any[])
+              : []
             ).filter(
               (p) =>
                 !(existingOpenApi?.parameters || []).find(
