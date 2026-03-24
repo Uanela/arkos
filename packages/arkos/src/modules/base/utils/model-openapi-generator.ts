@@ -7,6 +7,7 @@ import { kebabCase, pascalCase } from "../../../exports/utils";
 import { RouterEndpoint } from "../../../types/router-config";
 import { ExtendedOperationObject } from "../../../utils/arkos-router/types/openapi-config";
 import { isAuthenticationEnabled } from "../../../utils/helpers/arkos-config.helpers";
+import { capitalize } from "../../../utils/helpers/text.helpers";
 import prismaJsonSchemaGenerator from "../../../utils/prisma/prisma-json-schema-generator";
 import pluralize from "pluralize";
 
@@ -75,7 +76,7 @@ class ModelOpenAPIGenerator {
         return {
           ...existingOpenApi,
           tags: [
-            pascalCase(humanReadableNamePlural),
+            capitalize(humanReadableNamePlural),
             ...(existingOpenApi?.tags || []),
           ].filter((tag) => tag !== "Defaults"),
           summary:
@@ -124,7 +125,7 @@ class ModelOpenAPIGenerator {
         return {
           ...existingOpenApi,
           tags: [
-            pascalCase(humanReadableNamePlural),
+            capitalize(humanReadableNamePlural),
             ...(existingOpenApi?.tags || []),
           ].filter((tag) => tag !== "Defaults"),
           summary: existingOpenApi?.summary || `Get ${humanReadableNamePlural}`,
@@ -221,7 +222,7 @@ class ModelOpenAPIGenerator {
         return {
           ...existingOpenApi,
           tags: [
-            pascalCase(humanReadableNamePlural),
+            capitalize(humanReadableNamePlural),
             ...(existingOpenApi?.tags || []),
           ].filter((tag) => tag !== "Defaults"),
           summary:
@@ -277,7 +278,7 @@ class ModelOpenAPIGenerator {
         return {
           ...existingOpenApi,
           tags: [
-            pascalCase(humanReadableNamePlural),
+            capitalize(humanReadableNamePlural),
             ...(existingOpenApi?.tags || []),
           ].filter((tag) => tag !== "Defaults"),
           summary:
@@ -348,7 +349,7 @@ class ModelOpenAPIGenerator {
         return {
           ...existingOpenApi,
           tags: [
-            pascalCase(humanReadableNamePlural),
+            capitalize(humanReadableNamePlural),
             ...(existingOpenApi?.tags || []),
           ].filter((tag) => tag !== "Defaults"),
           summary:
@@ -408,7 +409,7 @@ class ModelOpenAPIGenerator {
         return {
           ...existingOpenApi,
           tags: [
-            pascalCase(humanReadableNamePlural),
+            capitalize(humanReadableNamePlural),
             ...(existingOpenApi?.tags || []),
           ].filter((tag) => tag !== "Defaults"),
           summary: existingOpenApi?.summary || `Get ${humanReadableName} by ID`,
@@ -464,7 +465,7 @@ class ModelOpenAPIGenerator {
         return {
           ...existingOpenApi,
           tags: [
-            pascalCase(humanReadableNamePlural),
+            capitalize(humanReadableNamePlural),
             ...(existingOpenApi?.tags || []),
           ].filter((tag) => tag !== "Defaults"),
           summary:
@@ -535,7 +536,7 @@ class ModelOpenAPIGenerator {
         return {
           ...existingOpenApi,
           tags: [
-            pascalCase(humanReadableNamePlural),
+            capitalize(humanReadableNamePlural),
             ...(existingOpenApi?.tags || []),
           ].filter((tag) => tag !== "Defaults"),
           summary:
