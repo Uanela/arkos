@@ -9,7 +9,9 @@ export const docs = defineDocs({
   },
 });
 
-export default defineConfig();
+export default defineConfig({
+
+});
 
 import { defineCollections } from "fumadocs-mdx/config";
 import { pageSchema } from "fumadocs-core/source/schema";

@@ -22,7 +22,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs"
  
 
 <Tabs groupId="version">
-<TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
 
 The `EmailService` uses the `email` configuration from `arkos.config.ts`:
 
@@ -47,8 +47,8 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-</TabItem>
-<TabItem value="v1.3" label="v1.3.0 and earlier">
+</Tab>
+<Tab value="v1.3" label="v1.3.0 and earlier">
 
 The `EmailService` uses the `email` configuration from `arkos.init()`:
 
@@ -69,7 +69,7 @@ arkos.init({
 });
 ```
 
-</TabItem>
+</Tab>
 </Tabs>
 
 :::info
