@@ -793,4 +793,223 @@ describe("PrismaJsonSchemaGenerator", () => {
       });
     });
   });
+
+  describe("generateQueryFilterParameters", () => {
+    it("should NOT include pagination and sorting parameters when options.modelFieldsOnly = true", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel, {
+        modelFieldsOnly: true,
+      });
+
+      const names = params.map((p) => p.name);
+      expect(names).not.toContain("page");
+      expect(names).not.toContain("limit");
+      expect(names).not.toContain("sort");
+      expect(names).not.toContain("fields");
+    });
+
+    it("should always include pagination and sorting parameters", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel);
+
+      const names = params.map((p) => p.name);
+      expect(names).toContain("page");
+      expect(names).toContain("limit");
+      expect(names).toContain("sort");
+      expect(names).toContain("fields");
+
+      const page = params.find((p) => p.name === "page")!;
+      expect(page.in).toBe("query");
+      expect(page.schema).toEqual({ type: "integer", minimum: 1 });
+
+      const limit = params.find((p) => p.name === "limit")!;
+      expect(limit.schema).toEqual({
+        type: "integer",
+        minimum: 1,
+        maximum: 100,
+      });
+    });
+
+    it("should exclude restricted fields (id, password)", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel);
+      const names = params.map((p) => p.name);
+
+      expect(names).not.toContain("id");
+      expect(names).not.toContain("password");
+    });
+
+    it("should exclude foreign key fields", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel);
+      const names = params.map((p) => p.name);
+
+      // profileId is a foreign key field
+      expect(names).not.toContain("profileId");
+    });
+
+    it("should exclude array relations", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel);
+      const names = params.map((p) => p.name);
+
+      // posts is an array relation
+      expect(names).not.toContain("posts");
+    });
+
+    it("should generate an object filter for single (non-array) relations", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel);
+
+      const profileParam = params.find((p) => p.name === "profile");
+      expect(profileParam).toBeDefined();
+      expect(profileParam!.in).toBe("query");
+      expect(profileParam!.schema.type).toBe("object");
+      expect(profileParam!.schema.properties).toHaveProperty("id");
+    });
+
+    it("should generate an enum filter for enum fields", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel);
+
+      const roleParam = params.find((p) => p.name === "role");
+      expect(roleParam).toBeDefined();
+      expect(roleParam!.in).toBe("query");
+      expect(roleParam!.schema.type).toBe("string");
+      expect(roleParam!.schema.enum).toEqual(["ADMIN", "USER", "MODERATOR"]);
+    });
+
+    it("should generate an icontains object filter for String fields", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel);
+
+      const emailParam = params.find((p) => p.name === "email");
+      expect(emailParam).toBeDefined();
+      expect(emailParam!.in).toBe("query");
+      expect(emailParam!.schema).toEqual({
+        type: "object",
+        properties: { icontains: { type: "string" } },
+      });
+
+      const nameParam = params.find((p) => p.name === "name");
+      expect(nameParam).toBeDefined();
+      expect(nameParam!.schema).toEqual({
+        type: "object",
+        properties: { icontains: { type: "string" } },
+      });
+    });
+
+    it("should generate an equals/gte/lte object filter for DateTime fields", () => {
+      const userModel = mockSchema.models.find((m) => m.name === "User")!;
+      const params = generator.generateQueryFilterParameters(userModel);
+
+      const createdAtParam = params.find((p) => p.name === "createdAt");
+      expect(createdAtParam).toBeDefined();
+      expect(createdAtParam!.in).toBe("query");
+      expect(createdAtParam!.schema).toEqual({
+        type: "object",
+        properties: {
+          equals: { type: "string", format: "date-time" },
+          gte: { type: "string", format: "date-time" },
+          lte: { type: "string", format: "date-time" },
+        },
+      });
+    });
+
+    it("should generate an equals/gte/lte object filter for numeric (Int/Float) fields", () => {
+      const postModel = mockSchema.models.find((m) => m.name === "Post")!;
+
+      // Inject a numeric field for this test
+      const modelWithNumeric = {
+        ...postModel,
+        fields: [
+          ...postModel.fields,
+          {
+            name: "viewCount",
+            type: "Int",
+            isId: false,
+            isOptional: false,
+            isArray: false,
+            foreignKeyField: "",
+            defaultValue: undefined,
+            isUnique: false,
+            attributes: [],
+          },
+        ],
+      };
+
+      const params = generator.generateQueryFilterParameters(
+        modelWithNumeric as any
+      );
+      const viewCountParam = params.find((p) => p.name === "viewCount");
+
+      expect(viewCountParam).toBeDefined();
+      expect(viewCountParam!.schema).toEqual({
+        type: "object",
+        properties: {
+          equals: { type: "number" },
+          gte: { type: "number" },
+          lte: { type: "number" },
+        },
+      });
+    });
+
+    it("should generate a boolean filter for Boolean fields", () => {
+      const modelWithBoolean = {
+        name: "Product",
+        mapName: undefined,
+        fields: [
+          {
+            name: "isActive",
+            type: "Boolean",
+            isId: false,
+            isOptional: false,
+            isArray: false,
+            foreignKeyField: "",
+            defaultValue: undefined,
+            isUnique: false,
+            attributes: [],
+          },
+        ],
+      };
+
+      const params = generator.generateQueryFilterParameters(
+        modelWithBoolean as any
+      );
+      const isActiveParam = params.find((p) => p.name === "isActive");
+
+      expect(isActiveParam).toBeDefined();
+      expect(isActiveParam!.in).toBe("query");
+      expect(isActiveParam!.schema).toEqual({ type: "boolean" });
+    });
+
+    it("should return only pagination params for a model with no filterable scalar fields", () => {
+      const emptyModel = {
+        name: "Empty",
+        mapName: undefined,
+        fields: [
+          {
+            name: "id",
+            type: "String",
+            isId: true,
+            isOptional: false,
+            isArray: false,
+            foreignKeyField: "",
+            defaultValue: undefined,
+            isUnique: false,
+            attributes: ["@id"],
+          },
+        ],
+      };
+
+      const params = generator.generateQueryFilterParameters(emptyModel as any);
+      expect(params).toHaveLength(4); // page, limit, sort, fields only
+      expect(params.map((p) => p.name)).toEqual([
+        "page",
+        "limit",
+        "sort",
+        "fields",
+      ]);
+    });
+  });
 });
