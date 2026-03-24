@@ -61,8 +61,6 @@ const generateFile = async (
 
   if (config.customValidation) config.customValidation(modelName);
 
-  const { path: customPath = "src/modules/{{module-name}}" } = options;
-
   const names = {
     pascal: pascalCase(modelName),
     camel: camelCase(modelName),
@@ -71,10 +69,11 @@ const generateFile = async (
 
   const ext = getUserFileExtension();
 
-  const resolvedPath = (config.customPath || customPath).replaceAll(
-    "{{module-name}}",
-    names.kebab
-  );
+  const resolvedPath = (
+    options.path ||
+    config.customPath ||
+    "src/modules/{{module-name}}"
+  ).replaceAll("{{module-name}}", names.kebab);
 
   const modulePath = path.join(process.cwd(), resolvedPath);
 
