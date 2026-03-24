@@ -203,6 +203,9 @@ export function handleRequestLogs(
   next();
 }
 
+/**
+ * @deprecated Will be removed in v2.0, please ArkosRouter instead.
+ */
 export function handleRequestBodyValidationAndTransformation<T extends object>(
   schemaOrDtoClass?: ClassConstructor<T>,
   classValidatorValidationOptions?: ValidatorOptions
@@ -294,7 +297,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         validators[key]
       ) {
         throw Error(
-          `When usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+          `Error in ${routeConfig.path}: when usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
         );
       }
 
