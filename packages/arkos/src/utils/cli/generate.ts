@@ -11,7 +11,6 @@ import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import sheu from "../sheu";
 import { capitalize } from "../helpers/text.helpers";
 import prismaSchemaParser from "../prisma/prisma-schema-parser";
-import { kebabToHuman } from "../../modules/swagger/utils/helpers/swagger.router.helpers";
 
 const models = prismaSchemaParser
   .getModelsAsArrayOfStrings()
@@ -57,12 +56,10 @@ const generateFile = async (
     );
   else if (!isAllowedModule)
     throw Error(
-      `${kebabToHuman(kebabCase(config.templateName))} are not available for module ${modelName}`
+      `${kebabCase(config.templateName).replaceAll("-", " ")} are not available for module ${modelName}`
     );
 
   if (config.customValidation) config.customValidation(modelName);
-
-  const { path: customPath = "src/modules/{{module-name}}" } = options;
 
   const names = {
     pascal: pascalCase(modelName),
@@ -72,10 +69,11 @@ const generateFile = async (
 
   const ext = getUserFileExtension();
 
-  const resolvedPath = (config.customPath || customPath).replaceAll(
-    "{{module-name}}",
-    names.kebab
-  );
+  const resolvedPath = (
+    options.path ||
+    config.customPath ||
+    "src/modules/{{module-name}}"
+  ).replaceAll("{{module-name}}", names.kebab);
 
   const modulePath = path.join(process.cwd(), resolvedPath);
 

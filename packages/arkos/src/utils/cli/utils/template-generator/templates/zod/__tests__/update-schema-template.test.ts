@@ -2,7 +2,6 @@ import { generateUpdateSchemaTemplate } from "../update-schema-template";
 import { TemplateOptions } from "../../../../template-generators";
 import prismaSchemaParser from "../../../../../../prisma/prisma-schema-parser";
 import * as fsHelpers from "../../../../../../helpers/fs.helpers";
-import { isArray } from "class-validator";
 
 jest.mock("../../../../../../prisma/prisma-schema-parser");
 jest.mock("../../../../../../helpers/fs.helpers");
@@ -264,5 +263,233 @@ describe("generateUpdateSchemaTemplate", () => {
     expect(result).not.toContain("updatedAt:");
     expect(result).not.toContain("deletedAt:");
     expect(result).toContain("title: z.string().optional()");
+  });
+
+  describe("Composite Type Fields", () => {
+    beforeEach(() => {
+      (prismaSchemaParser.compositeTypes as any) = [
+        {
+          name: "PostTag",
+          fields: [
+            {
+              name: "name",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isCompositeType: false,
+            },
+            {
+              name: "slug",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isCompositeType: false,
+            },
+            {
+              name: "color",
+              type: "String",
+              isOptional: true,
+              isArray: false,
+              isCompositeType: false,
+            },
+            {
+              name: "featured",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isCompositeType: false,
+              defaultValue: false,
+            },
+          ],
+        },
+      ];
+    });
+
+    it("should generate a single composite type field as optional nested z.object", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateSchemaTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("mainTag: z.object({");
+      expect(result).toContain("name: z.string()");
+      expect(result).toContain("slug: z.string()");
+      expect(result).toContain("color: z.string().optional()");
+      expect(result).toContain("}).optional()");
+    });
+
+    it("should always generate composite type field as optional in update schema", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateSchemaTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("}).optional()");
+    });
+
+    it("should generate composite type array field as z.array(z.object(...)).optional()", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateSchemaTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("tags: z.array(z.object({");
+      expect(result).toContain("})).optional()");
+    });
+
+    it("should generate both single and array composite type fields correctly", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateSchemaTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("mainTag: z.object({");
+      expect(result).toContain("tags: z.array(z.object({");
+    });
+
+    it("should not generate index-based partial update schema for array composite type", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateSchemaTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      // full array replacement only — no partial item schema
+      expect(result).toContain("tags: z.array(z.object({");
+      expect(result).not.toContain("tags: z.object(");
+    });
   });
 });

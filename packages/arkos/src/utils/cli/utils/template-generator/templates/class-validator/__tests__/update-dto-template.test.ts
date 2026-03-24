@@ -1312,4 +1312,275 @@ describe("generateUpdateDtoTemplate", () => {
       );
     });
   });
+
+  describe("Composite Type Fields - All Optional", () => {
+    beforeEach(() => {
+      (prismaSchemaParser.compositeTypes as any) = [
+        {
+          name: "PostTag",
+          fields: [
+            {
+              name: "name",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "slug",
+              type: "String",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "color",
+              type: "String",
+              isOptional: true,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "featured",
+              type: "Boolean",
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+              defaultValue: false,
+            },
+          ],
+        },
+      ];
+    });
+
+    it("should generate a nested DTO class and mark the field as optional", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateDtoTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("class PostTagForUpdatePostDto {");
+      expect(result).toContain(
+        "@IsOptional()\n  @ValidateNested()\n  @Type(() => PostTagForUpdatePostDto)\n  mainTag?: PostTagForUpdatePostDto;"
+      );
+    });
+
+    it("should always mark composite type field as optional in update regardless of schema", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateDtoTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("mainTag?: PostTagForUpdatePostDto;");
+      expect(result).not.toContain("mainTag!: PostTagForUpdatePostDto;");
+    });
+
+    it("should generate array composite type field with @IsArray and { each: true }, optional", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateDtoTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("class PostTagForUpdatePostDto {");
+      expect(result).toContain(
+        "@IsOptional()\n  @IsArray()\n  @ValidateNested({ each: true })\n  @Type(() => PostTagForUpdatePostDto)\n  tags?: PostTagForUpdatePostDto[];"
+      );
+    });
+
+    it("should reuse the same nested DTO class for single and array composite type fields", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateDtoTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      const occurrences = (result.match(/class PostTagForUpdatePostDto/g) || [])
+        .length;
+      expect(occurrences).toBe(1);
+      expect(result).toContain("mainTag?: PostTagForUpdatePostDto;");
+      expect(result).toContain("tags?: PostTagForUpdatePostDto[];");
+    });
+
+    it("should not generate index-based partial update — full array replacement only", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "tags",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: true,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateDtoTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("tags?: PostTagForUpdatePostDto[]");
+      expect(result).not.toContain("tags?: PostTagForUpdatePostDto;");
+    });
+
+    it("should import ValidateNested and Type when composite types are present", () => {
+      (prismaSchemaParser.models as any) = [
+        {
+          name: "Post",
+          fields: [
+            {
+              name: "id",
+              type: "String",
+              isId: true,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: false,
+            },
+            {
+              name: "mainTag",
+              type: "PostTag",
+              isId: false,
+              isOptional: false,
+              isArray: false,
+              isRelation: false,
+              isCompositeType: true,
+            },
+          ],
+        },
+      ];
+
+      const result = generateUpdateDtoTemplate({
+        modelName: { pascal: "Post", camel: "post", kebab: "post" },
+      });
+
+      expect(result).toContain("ValidateNested");
+      expect(result).toContain('import { Type } from "class-transformer"');
+    });
+  });
 });

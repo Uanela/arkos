@@ -75,9 +75,6 @@ export default function errorHandler(
   if (err.code === "P3003")
     error = errorControllerHelper.handleVersionMismatchError(err);
 
-  if (err.name === "NetworkError")
-    error = errorControllerHelper.handleNetworkError(err);
-
   if (process.env.ARKOS_BUILD !== "true")
     return sendDevelopmentError(
       {

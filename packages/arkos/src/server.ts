@@ -144,17 +144,6 @@ process.on("unhandledRejection", (err: AppError) => {
     }, 0);
 });
 
-/**
- * Terminates the current running express application, server and process.
- *
- * @returns {void}
- */
-export function terminateApplicationRunningProcessAndServer(): void {
-  server?.close(() => {
-    process.exit(1);
-  });
-}
-
 export function getExpressApp() {
   return _app;
 }
