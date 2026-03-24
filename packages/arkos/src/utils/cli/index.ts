@@ -41,11 +41,7 @@ const generate = program
     "--ms, --modules <names>",
     "Comma-separated module names for bulk generation"
   )
-  .option(
-    "-p, --path <path>",
-    "Custom path for the component",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for the component")
   .option("-o, --overwrite", "Overwrites all the content on the existing file");
 
 generate
@@ -159,7 +155,7 @@ generate
   .command("model")
   .alias("m")
   .description("Generate a new prisma model")
-  .option("-p, --path <path>", "Custom path for prisma model", "prisma/schema")
+  .option("-p, --path <path>", "Custom path for prisma model")
   .action((options) => {
     const generateOptions = generate.opts();
     generateCommand.prismaModel({ ...generateOptions, ...options });

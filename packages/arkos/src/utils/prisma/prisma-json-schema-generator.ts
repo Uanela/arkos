@@ -362,6 +362,157 @@ export class PrismaJsonSchemaGenerator {
   private isEnum(typeName: string): boolean {
     return this.schema.enums.some((e) => e.name === typeName);
   }
+
+  /**
+   * Generate OpenAPI query filter parameters from scalar model fields.
+   * Mirrors the logic from ZodSchemaGenerator.generateQuerySchema.
+   */
+  generateQueryFilterParameters(
+    model: PrismaModel,
+    options?: { modelFieldsOnly?: boolean }
+  ) {
+    const parameters: any[] = [];
+    const restrictedFields = ["id", "password"];
+
+    if (options?.modelFieldsOnly !== true)
+      parameters.push(
+        {
+          name: "page",
+          in: "query",
+          description: "Page number (starts from 1)",
+          schema: { type: "integer", minimum: 1 },
+        },
+        {
+          name: "limit",
+          in: "query",
+          description: "Number of items per page",
+          schema: { type: "integer", minimum: 1, maximum: 100 },
+        },
+        {
+          name: "sort",
+          in: "query",
+          description: "Sort field (prefix with '-' for descending order)",
+          schema: { type: "string" },
+        },
+        {
+          name: "fields",
+          in: "query",
+          description: "Comma-separated list of fields to include in response",
+          schema: { type: "string" },
+        }
+      );
+
+    for (const field of model.fields) {
+      if (restrictedFields.includes(field.name)) continue;
+
+      const isForeignKey = model.fields.some(
+        (f) => f.foreignKeyField === field.name
+      );
+      if (isForeignKey) continue;
+
+      if (this.isModelRelation(field.type) && field.isArray) continue;
+
+      if (this.isModelRelation(field.type) && !field.isArray) {
+        const referencedModel = prismaSchemaParser.models.find(
+          (m) => m.name === field.type
+        );
+        if (referencedModel) {
+          const refField = field.foreignReferenceField || "id";
+          const refFieldDef = referencedModel.fields.find(
+            (f) => f.name === refField
+          );
+          parameters.push({
+            name: field.name,
+            in: "query",
+            description: `Filter by ${field.name} (matches on ${refField})`,
+            schema: {
+              type: "object",
+              properties: {
+                [refField]: {
+                  type: this.mapPrismaTypeToJsonSchema(
+                    refFieldDef?.type || "String"
+                  ),
+                },
+              },
+            },
+          });
+        }
+        continue;
+      }
+
+      if (this.isEnum(field.type)) {
+        const enumDef = this.schema.enums.find((e) => e.name === field.type);
+        parameters.push({
+          name: field.name,
+          in: "query",
+          description: `Filter by ${field.name}`,
+          schema: { type: "string", enum: enumDef?.values },
+        });
+        continue;
+      }
+
+      if (field.type === "Boolean") {
+        parameters.push({
+          name: field.name,
+          in: "query",
+          description: `Filter by ${field.name}`,
+          schema: { type: "boolean" },
+        });
+        continue;
+      }
+
+      if (field.type === "String") {
+        parameters.push({
+          name: field.name,
+          in: "query",
+          description: `Filter by ${field.name}`,
+          schema: {
+            type: "object",
+            properties: {
+              icontains: { type: "string" },
+            },
+          },
+        });
+        continue;
+      }
+
+      if (["Int", "Float", "Decimal", "BigInt"].includes(field.type)) {
+        parameters.push({
+          name: field.name,
+          in: "query",
+          description: `Filter by ${field.name}`,
+          schema: {
+            type: "object",
+            properties: {
+              equals: { type: "number" },
+              gte: { type: "number" },
+              lte: { type: "number" },
+            },
+          },
+        });
+        continue;
+      }
+
+      if (field.type === "DateTime") {
+        parameters.push({
+          name: field.name,
+          in: "query",
+          description: `Filter by ${field.name}`,
+          schema: {
+            type: "object",
+            properties: {
+              equals: { type: "string", format: "date-time" },
+              gte: { type: "string", format: "date-time" },
+              lte: { type: "string", format: "date-time" },
+            },
+          },
+        });
+        continue;
+      }
+    }
+
+    return parameters || [];
+  }
 }
 
 const prismaJsonSchemaGenerator = new PrismaJsonSchemaGenerator();
