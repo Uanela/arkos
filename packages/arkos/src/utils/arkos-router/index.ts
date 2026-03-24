@@ -21,6 +21,7 @@ import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/clas
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 import uploadManager from "./utils/helpers/upload-manager";
 import { getUserFileExtension } from "../helpers/fs.helpers";
+import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -216,6 +217,13 @@ export function generateOpenAPIFromApp(app: any) {
       );
     }
 
+    let wildcardCount = (path.match(/\*/g) || []).length;
+    let wildcardIndex = 0;
+    path = path.replace(/\*/g, () => {
+      wildcardIndex++;
+      return wildcardCount === 1 ? "{path}" : `{path${wildcardIndex}}`;
+    });
+
     if (!paths[path]) paths[path] = {};
 
     if (typeof config?.experimental?.openapi === "boolean") {
@@ -288,7 +296,8 @@ export function generateOpenAPIFromApp(app: any) {
       if (
         !pathParatemersFromRoutePath.includes(param.name) &&
         !pathParatemersFromRoutePath.includes(`${param.name}?`) &&
-        param.in === "path"
+        param.in === "path" &&
+        param.name !== "*"
       )
         throw new Error(
           `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`
@@ -296,25 +305,78 @@ export function generateOpenAPIFromApp(app: any) {
     }
 
     delete convertedOpenAPI.parameters;
+    const hasUploadFields =
+      Object.keys(config?.experimental?.uploads || {}).length > 0;
+    const multipartFormSchema =
+      convertedOpenAPI?.requestBody?.content?.["multipart/form-data"];
+
+    if (hasUploadFields && multipartFormSchema)
+      arkosRouterOpenApiManager.validateMultipartFormDocs(
+        multipartFormSchema,
+        path,
+        config?.experimental?.uploads
+      );
 
     (paths as any)[path][method.toLowerCase()] = {
+      ...convertedOpenAPI,
       summary: openapi?.summary || `${path}`,
       description: openapi?.description || `${method} ${path}`,
       tags: openapi?.tags || ["Defaults"],
-      operationId: `${method.toLowerCase()}:${path}`,
+      operationId: openapi.operationId || `${method.toLowerCase()}:${path}`,
       parameters: allParameters,
       ...(!convertedOpenAPI.requestBody &&
         config?.validation &&
         config?.validation?.body && {
           requestBody: {
-            content: {
-              "application/json": {
-                schema: validatorToJsonSchema(config?.validation?.body as any),
-              },
-            },
+            content: (() => {
+              const schema = validatorToJsonSchema(
+                config?.validation?.body as any
+              );
+
+              return {
+                ...convertedOpenAPI?.requestBody?.content,
+                ...(hasUploadFields && {
+                  "multipart/form-data": {
+                    schema: openApiSchemaConverter.flattenSchema(
+                      arkosRouterOpenApiManager.addUploadFields(
+                        config.experimental?.uploads!,
+                        schema
+                      )
+                    ),
+                  },
+                }),
+                "application/json": {
+                  schema,
+                },
+              };
+            })(),
           },
         }),
-      ...convertedOpenAPI,
+      ...(convertedOpenAPI?.requestBody?.content?.["application/json"]
+        ?.schema &&
+        !multipartFormSchema &&
+        !(config as any)?.validation?.body &&
+        hasUploadFields && {
+          requestBody: {
+            content: (() => {
+              const schema =
+                convertedOpenAPI?.requestBody?.content?.["application/json"]
+                  ?.schema;
+
+              return {
+                "multipart/form-data": {
+                  schema: openApiSchemaConverter.flattenSchema(
+                    arkosRouterOpenApiManager.addUploadFields(
+                      config?.experimental?.uploads! || {},
+                      schema
+                    )
+                  ),
+                },
+                ...convertedOpenAPI?.requestBody?.content,
+              };
+            })(),
+          },
+        }),
     };
   });
 

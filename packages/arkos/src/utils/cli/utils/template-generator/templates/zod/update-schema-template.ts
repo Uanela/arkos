@@ -29,7 +29,23 @@ export function generateUpdateSchemaTemplate(options: TemplateOptions): string {
       (f) => f.foreignKeyField === field.name
     );
 
-    if (field.isId || restrictedFields.includes(field.name) || isForeignKey) {
+    if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
+      continue;
+
+    if (field.isCompositeType) {
+      const compositeType = prismaSchemaParser.compositeTypes.find(
+        (t) => t.name === field.type
+      )!;
+      const fields = compositeType.fields
+        .map(
+          (f) =>
+            `    ${f.name}: ${mapPrismaTypeToZod(f.type)}${f.isOptional ? ".optional()" : ""}`
+        )
+        .join(",\n");
+      const zodObj = `z.object({\n${fields}\n  })`;
+      schemaFields.push(
+        `  ${field.name}: ${field.isArray ? `z.array(${zodObj})` : zodObj}.optional()`
+      );
       continue;
     }
 
@@ -45,9 +61,7 @@ export function generateUpdateSchemaTemplate(options: TemplateOptions): string {
         const refFieldType = referencedModel.fields.find(
           (f) => f.name === refField
         );
-
         const zodType = mapPrismaTypeToZod(refFieldType?.type!);
-
         schemaFields.push(
           `  ${field.name}: z.object({ ${refField}: ${zodType} }).optional()`
         );
@@ -77,7 +91,6 @@ ${enumImports}
 const Update${modelName.pascal}Schema = z.object({
 ${schemaFields.join(",\n")}
 });
-
 ${typeExport}
 export default Update${modelName.pascal}Schema;
 `;
@@ -105,7 +118,6 @@ function generateZodField(field: PrismaField, isUserModule: boolean): string {
   }
 
   zodType += ".optional()";
-
   return zodType;
 }
 

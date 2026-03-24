@@ -26,6 +26,7 @@ interface SchemaConfig {
  * ```
  */
 export class PrismaSchemaParser {
+  compositeTypes: PrismaModel[] = [];
   /** Collection of parsed enum definitions */
   enums: PrismaEnum[] = [];
   /** Collection of parsed model definitions */
@@ -49,6 +50,7 @@ export class PrismaSchemaParser {
     { override }: { override: boolean } = { override: false }
   ): PrismaSchema {
     if (!this.parsed || override) {
+      this.compositeTypes = this.extractCompositeTypes();
       this.enums = this.extractEnums();
       this.models = this.extractModels();
       this.parsed = true;
@@ -58,6 +60,15 @@ export class PrismaSchemaParser {
       models: this.models,
       enums: this.enums,
     };
+  }
+
+  private extractCompositeTypes(): PrismaModel[] {
+    const typeRegex = /type\s+\w+\s*\{((?:[^{}]*(?:\{[^{}]*\}[^{}]*)*)*)\}/g;
+    const schema = this.getPrismaSchemasContent() || "";
+    const blocks = schema.match(typeRegex) || [];
+    return blocks
+      .map((block) => this.parseModelBlock(block, /type\s+(\w+)/))
+      .filter(Boolean) as PrismaModel[];
   }
 
   /**
@@ -147,8 +158,11 @@ export class PrismaSchemaParser {
    * @param block - The model block string
    * @returns The parsed model object or null if parsing fails
    */
-  private parseModelBlock(block: string): PrismaModel | null {
-    const nameMatch = block.match(/model\s+(\w+)/);
+  private parseModelBlock(
+    block: string,
+    reg: RegExp = /model\s+(\w+)/
+  ): PrismaModel | null {
+    const nameMatch = block.match(reg);
     if (!nameMatch) return null;
 
     const name = nameMatch[1];
@@ -178,6 +192,7 @@ export class PrismaSchemaParser {
     for (const line of fieldLines) {
       if (line.startsWith("//") || line.startsWith("@@")) continue;
       if (/^model\s+\w+\s*\{/.test(line)) continue;
+      if (/^type\s+\w+\s*\{/.test(line)) continue;
 
       const field = this.parseFieldLine(line);
       if (field) {
@@ -257,6 +272,7 @@ export class PrismaSchemaParser {
       isRelation:
         models.map((model) => model.name).includes(type) ||
         this.getPrismaSchemasContent().includes(`model ${type} {`),
+      isCompositeType: this.compositeTypes.map((t) => t.name).includes(type),
       isArray,
       foreignKeyField,
       foreignReferenceField,

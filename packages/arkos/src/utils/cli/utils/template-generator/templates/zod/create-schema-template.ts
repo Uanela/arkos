@@ -32,6 +32,24 @@ export function generateCreateSchemaTemplate(options: TemplateOptions): string {
     if (field.isId || restrictedFields.includes(field.name) || isForeignKey)
       continue;
 
+    if (field.isCompositeType) {
+      const compositeType = prismaSchemaParser.compositeTypes.find(
+        (t) => t.name === field.type
+      )!;
+      const fields = compositeType.fields
+        .map(
+          (f) =>
+            `    ${f.name}: ${mapPrismaTypeToZod(f.type)}${f.isOptional ? ".optional()" : ""}`
+        )
+        .join(",\n");
+      const zodObj = `z.object({\n${fields}\n  })`;
+      const isOptional = field.isOptional || field.defaultValue !== undefined;
+      schemaFields.push(
+        `  ${field.name}: ${field.isArray ? `z.array(${zodObj})` : zodObj}${isOptional ? ".optional()" : ""}`
+      );
+      continue;
+    }
+
     if (field.isRelation) {
       if (field.isArray) continue;
 
@@ -44,10 +62,8 @@ export function generateCreateSchemaTemplate(options: TemplateOptions): string {
         const refFieldType = referencedModel.fields.find(
           (f) => f.name === refField
         );
-
         const zodType = mapPrismaTypeToZod(refFieldType?.type!);
         const isOptional = field.isOptional || field.defaultValue !== undefined;
-
         schemaFields.push(
           `  ${field.name}: z.object({ ${refField}: ${zodType} })${isOptional ? ".optional()" : ""}`
         );
@@ -75,7 +91,6 @@ ${enumImports}
 const Create${modelName.pascal}Schema = z.object({
 ${schemaFields.join(",\n")}
 });
-
 ${typeExport}
 export default Create${modelName.pascal}Schema;
 `;

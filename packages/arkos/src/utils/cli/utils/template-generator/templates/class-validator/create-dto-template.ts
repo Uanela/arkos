@@ -28,14 +28,53 @@ export function generateCreateDtoTemplate(options: TemplateOptions): string {
   let dtoFields: string[] = [];
 
   for (const field of model.fields) {
-    if (field.isId || restrictedFields.includes(field.name)) {
-      continue;
-    }
+    if (field.isId || restrictedFields.includes(field.name)) continue;
 
     const isForeignKey = model.fields.some(
       (f) => f.foreignKeyField === field.name
     );
-    if (isForeignKey) {
+    if (isForeignKey) continue;
+
+    if (field.isCompositeType) {
+      const compositeType = prismaSchemaParser.compositeTypes.find(
+        (t) => t.name === field.type
+      )!;
+      const compositeDtoName = `${field.type}ForCreate${modelName!.pascal}Dto`;
+
+      validatorsUsed.add("ValidateNested");
+      transformersUsed.add("Type");
+
+      if (
+        !nestedDtoClasses.find((c) => c.includes(`class ${compositeDtoName}`))
+      ) {
+        const nestedFields = compositeType.fields.map((f) => {
+          const { decorators, type } = generateClassValidatorField(
+            f,
+            false,
+            validatorsUsed
+          );
+          const mod = isTypeScript ? (f.isOptional ? "?" : "!") : "";
+          return `${decorators}  ${f.name}${mod}: ${type};`;
+        });
+        nestedDtoClasses.push(
+          `class ${compositeDtoName} {\n${nestedFields.join("\n\n")}\n}`
+        );
+      }
+
+      const isOptional = field.isOptional || field.defaultValue !== undefined;
+      if (isOptional) validatorsUsed.add("IsOptional");
+      const optDecorator = isOptional ? "  @IsOptional()\n" : "";
+      const mod = isTypeScript ? (isOptional ? "?" : "!") : "";
+      const eachOpt = field.isArray ? "{ each: true }" : "";
+      const typeStr = field.isArray
+        ? `${compositeDtoName}[]`
+        : compositeDtoName;
+
+      if (field.isArray) validatorsUsed.add("IsArray");
+
+      dtoFields.push(
+        `${optDecorator}${field.isArray ? "  @IsArray()\n" : ""}  @ValidateNested(${eachOpt})\n  @Type(() => ${compositeDtoName})\n  ${field.name}${mod}: ${typeStr};`
+      );
       continue;
     }
 
@@ -57,7 +96,6 @@ export function generateCreateDtoTemplate(options: TemplateOptions): string {
 
         const relationDtoName = `${referencedModel.name}ForCreate${modelName.pascal}Dto`;
 
-        // Generate the nested DTO class inline
         const nestedDtoClass = generateNestedDtoClass(
           field,
           referencedModel,
@@ -75,9 +113,7 @@ export function generateCreateDtoTemplate(options: TemplateOptions): string {
       continue;
     }
 
-    if (prismaSchemaParser.isEnum(field.type)) {
-      enumsUsed.add(field.type);
-    }
+    if (prismaSchemaParser.isEnum(field.type)) enumsUsed.add(field.type);
 
     const { decorators, type } = generateClassValidatorField(
       field,

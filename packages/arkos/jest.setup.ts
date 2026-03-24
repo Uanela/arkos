@@ -42,3 +42,5 @@ jest.mock("express", () => {
 jest.mock("@scalar/express-api-reference", () => ({
   apiReference: jest.fn(),
 }));
+
+jest.spyOn(console, "warn").mockImplementation(jest.fn());

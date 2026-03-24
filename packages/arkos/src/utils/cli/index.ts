@@ -42,11 +42,7 @@ generate
   .description("Generate a new controller")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the controller",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for the controller")
   .action(generateCommand.controller);
 
 generate
@@ -55,11 +51,7 @@ generate
   .description("Generate a new service")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the service",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for the service")
   .action(generateCommand.service);
 
 generate
@@ -69,11 +61,7 @@ generate
 
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the router",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for the router")
   .action(generateCommand.router);
 
 generate
@@ -82,11 +70,7 @@ generate
   .description("Generate auth configuration")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for the router",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for the router")
   .action(generateCommand.authConfigs);
 
 generate
@@ -95,11 +79,7 @@ generate
   .description("Generate prisma query options")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for query options",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for query options")
   .action(generateCommand.queryOptions);
 
 generate
@@ -110,11 +90,7 @@ generate
   .description("Generate a new interceptors file")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for interceptors",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for interceptors")
   .action(generateCommand.interceptors);
 
 generate
@@ -124,11 +100,7 @@ generate
 
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for hooks",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for hooks")
   .action(generateCommand.hooks);
 
 generate
@@ -137,11 +109,7 @@ generate
   .description("Generate a new zod create schema file for a prisma model")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for hooks",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for hooks")
   .action(generateCommand.createSchema);
 
 generate
@@ -150,11 +118,7 @@ generate
   .description("Generate a new zod update schema file for a prisma model")
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for hooks",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for hooks")
   .action(generateCommand.updateSchema);
 
 generate
@@ -165,11 +129,7 @@ generate
   )
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for hooks",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for hooks")
   .action(generateCommand.createDto);
 
 generate
@@ -180,11 +140,7 @@ generate
   )
   .option("-m, --module <name>", "Module name")
   .option("--model <name>", "Module name (alias for --module)")
-  .option(
-    "-p, --path <path>",
-    "Custom path for hooks",
-    "src/modules/{{module-name}}"
-  )
+  .option("-p, --path <path>", "Custom path for hooks")
   .action(generateCommand.updateDto);
 
 program

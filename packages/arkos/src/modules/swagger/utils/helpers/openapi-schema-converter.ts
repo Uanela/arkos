@@ -96,12 +96,15 @@ class OpenAPIchemaConverter {
   }
 
   /**
-   * Flattens a JSON schema into bracket notation parameters
+   * Core flattening logic that converts a JSON schema into bracket notation.
+   * Handles nested objects, arrays, and circular references.
+   *
    * @param schema - The JSON schema to flatten
    * @param prefix - Optional prefix for nested properties
-   * @returns Array of flattened parameter names with their schemas
+   * @param visitedRefs - Set to track circular references
+   * @returns Array of flattened field descriptors
    */
-  flattenJsonSchema(
+  flattenSchemaCore(
     schema: any,
     prefix = "",
     visitedRefs = new Set<string>()
@@ -117,7 +120,7 @@ class OpenAPIchemaConverter {
       const resolvedSchema = this.resolveRef(schema, refPath);
       if (resolvedSchema) {
         flattened.push(
-          ...this.flattenJsonSchema(resolvedSchema, prefix, visitedRefs)
+          ...this.flattenSchemaCore(resolvedSchema, prefix, visitedRefs)
         );
       }
       visitedRefs.delete(refPath);
@@ -127,24 +130,31 @@ class OpenAPIchemaConverter {
     if (schema.type === "array" && schema.items) {
       const arrayPrefix = prefix ? `${prefix}[0]` : "[0]";
 
-      if (
-        schema.items.properties ||
-        schema.items.type === "object" ||
-        schema.items.type === "array"
-      ) {
+      // Check if items is an array FIRST, before checking for object
+      if (schema.items.type === "array") {
         flattened.push(
-          ...this.flattenJsonSchema(schema.items, arrayPrefix, visitedRefs)
+          ...this.flattenSchemaCore(schema.items, arrayPrefix, visitedRefs)
+        );
+      } else if (schema.items.properties || schema.items.type === "object") {
+        flattened.push(
+          ...this.flattenSchemaCore(schema.items, arrayPrefix, visitedRefs)
         );
       } else if (schema.items.type || schema.items.$ref) {
-        flattened.push(
-          ...this.flattenJsonSchema(schema.items, arrayPrefix, visitedRefs)
-        );
+        flattened.push({
+          name: arrayPrefix,
+          schema: {
+            type: schema.items.type,
+            ...(schema.items.enum && { enum: schema.items.enum }),
+            ...(schema.items.format && { format: schema.items.format }),
+          },
+          required: false,
+        });
       }
 
       return flattened;
     }
 
-    if (schema.type === "object" && schema.properties) {
+    if ((schema.type === "object" || !schema.type) && schema.properties) {
       for (const [key, value] of Object.entries(schema.properties) as any) {
         const paramName = prefix ? `${prefix}[${key}]` : key;
 
@@ -157,18 +167,34 @@ class OpenAPIchemaConverter {
 
           if (resolvedSchema) {
             flattened.push(
-              ...this.flattenJsonSchema(resolvedSchema, paramName, visitedRefs)
+              ...this.flattenSchemaCore(resolvedSchema, paramName, visitedRefs)
             );
           }
           visitedRefs.delete(refPath);
         } else if (value.type === "array" && value.items) {
           const arrayPrefix = `${paramName}[0]`;
-          flattened.push(
-            ...this.flattenJsonSchema(value.items, arrayPrefix, visitedRefs)
-          );
+          if (value.items.type === "array") {
+            flattened.push(
+              ...this.flattenSchemaCore(value.items, arrayPrefix, visitedRefs)
+            );
+          } else if (value.items.type === "object" || value.items.properties) {
+            flattened.push(
+              ...this.flattenSchemaCore(value.items, arrayPrefix, visitedRefs)
+            );
+          } else {
+            flattened.push({
+              name: arrayPrefix,
+              schema: {
+                type: value.items.type,
+                ...(value.items.enum && { enum: value.items.enum }),
+                ...(value.items.format && { format: value.items.format }),
+              },
+              required: false,
+            });
+          }
         } else if (value.type === "object" && value.properties) {
           flattened.push(
-            ...this.flattenJsonSchema(value, paramName, visitedRefs)
+            ...this.flattenSchemaCore(value, paramName, visitedRefs)
           );
         } else {
           flattened.push({
@@ -185,22 +211,7 @@ class OpenAPIchemaConverter {
       return flattened;
     }
 
-    if (schema.properties && !schema.type) {
-      for (const [key, value] of Object.entries(schema.properties) as any) {
-        const paramName = prefix ? `${prefix}[${key}]` : key;
-        flattened.push({
-          name: paramName,
-          schema: {
-            type: value.type,
-            ...(value.enum && { enum: value.enum }),
-            ...(value.format && { format: value.format }),
-          },
-          required: schema.required?.includes(key) || false,
-        });
-      }
-      return flattened;
-    }
-
+    // Handle primitive types with prefix
     if (schema.type && prefix) {
       flattened.push({
         name: prefix,
@@ -214,6 +225,39 @@ class OpenAPIchemaConverter {
     }
 
     return flattened;
+  }
+
+  /**
+   * Flattens a JSON schema while preserving the schema structure.
+   * Converts nested objects and arrays into bracket notation properties.
+   * Used for multipart/form-data schema representation.
+   *
+   * @param schema - The JSON schema to flatten
+   * @returns A flattened schema object with bracket notation properties
+   */
+  flattenSchema(schema: any): any {
+    const flattened = this.flattenSchemaCore(schema);
+
+    // Convert the flattened array into a schema object
+    const flattenedSchema: any = {
+      ...schema,
+      properties: {},
+      required: [],
+    };
+
+    for (const item of flattened) {
+      flattenedSchema.properties[item.name] = item.schema;
+      if (item.required) {
+        flattenedSchema.required.push(item.name);
+      }
+    }
+
+    // Remove empty required array if no required fields
+    if (flattenedSchema.required.length === 0) {
+      delete flattenedSchema.required;
+    }
+
+    return flattenedSchema;
   }
 
   /**
@@ -292,6 +336,8 @@ class OpenAPIchemaConverter {
    * 2. Medium: { content: CreateUserDto, required?: boolean } → custom config
    * 3. Full: { content: { "application/json": { schema: CreateUserDto } } } → full control
    *
+   * For multipart/form-data, automatically converts the schema into an array of parameters.
+   *
    * @param definition - The request body definition to convert
    * @returns A standard OpenAPI RequestBodyObject, or undefined if no definition provided
    */
@@ -335,10 +381,21 @@ class OpenAPIchemaConverter {
       for (const [mediaType, mediaObj] of Object.entries(
         definition.content
       ) as any[]) {
-        converted.content[mediaType] = {
-          ...mediaObj,
-          schema: this.convertToJsonSchema(mediaObj.schema),
-        };
+        const jsonSchema = this.convertToJsonSchema(mediaObj.schema);
+
+        // For multipart/form-data, flatten the schema into bracket notation
+        if (mediaType === "multipart/form-data") {
+          converted.content[mediaType] = {
+            ...mediaObj,
+            schema: this.flattenSchema(jsonSchema),
+          };
+        } else {
+          // For other media types (like application/json), keep the full schema
+          converted.content[mediaType] = {
+            ...mediaObj,
+            schema: jsonSchema,
+          };
+        }
       }
 
       return converted;
@@ -421,13 +478,23 @@ class OpenAPIchemaConverter {
     return converted;
   }
 
+  /**
+   * Converts a JSON schema to OpenAPI parameter objects with flattened paths.
+   * This is used for query/path/header parameters.
+   *
+   * @param paramType - The parameter location (query, path, header, cookie)
+   * @param schema - The JSON schema to convert
+   * @param prefix - Optional prefix for nested properties
+   * @param visitedRefs - Set to track circular references
+   * @returns Array of OpenAPI parameter objects
+   */
   jsonSchemaToOpenApiParameters(
     paramType: string,
     schema: any,
     prefix = "",
     visitedRefs = new Set<string>()
   ): any[] {
-    const flattened = this.flattenJsonSchema(schema, prefix, visitedRefs);
+    const flattened = this.flattenSchemaCore(schema, prefix, visitedRefs);
 
     return flattened.map(({ name, schema, required }) => ({
       in: paramType,

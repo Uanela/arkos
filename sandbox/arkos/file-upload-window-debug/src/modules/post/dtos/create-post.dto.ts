@@ -1,4 +1,11 @@
-import { IsNumber, IsOptional, ValidateNested, IsString } from "class-validator";
+import {
+  IsNumber,
+  IsOptional,
+  ValidateNested,
+  IsString,
+  IsBoolean,
+  IsArray,
+} from "class-validator";
 import { Type } from "class-transformer";
 
 class UserForCreatePostDto {
@@ -6,9 +13,20 @@ class UserForCreatePostDto {
   id!: string;
 }
 
-class UserForCreatePostDto {
+class PostTagDto {
   @IsString()
-  id!: string;
+  name!: string;
+
+  @IsString()
+  slug!: string;
+
+  @IsOptional()
+  @IsString()
+  color?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  featured!: boolean;
 }
 
 export default class CreatePostDto {
@@ -22,4 +40,13 @@ export default class CreatePostDto {
   @ValidateNested()
   @Type(() => UserForCreatePostDto)
   user2!: UserForCreatePostDto;
+
+  @ValidateNested()
+  @Type(() => PostTagDto)
+  mainTag!: PostTagDto;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PostTagDto)
+  tags!: PostTagDto[];
 }
