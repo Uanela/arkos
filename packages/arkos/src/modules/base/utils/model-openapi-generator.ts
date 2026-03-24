@@ -145,9 +145,7 @@ class ModelOpenAPIGenerator {
           parameters: [
             ...(existingOpenApi?.parameters || []),
             ...(!hasQueryValidation
-              ? (prismaJsonSchemaGenerator.generateQueryFilterParameters(
-                  model
-                ) as any[])
+              ? prismaJsonSchemaGenerator.generateQueryFilterParameters(model)
               : []
             ).filter(
               (p) =>
