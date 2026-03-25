@@ -738,8 +738,8 @@ export class AuthService {
    * @since v1.6.0-beta
    */
   authorize(
-    resource: string,
     action: AccessAction,
+    resource: string,
     rule?: string[] | DetailedAccessControlRule | "*"
   ): ArkosRequestHandler {
     authActionService.add(action, resource, { [action]: rule });
