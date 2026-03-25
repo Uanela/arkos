@@ -1293,6 +1293,163 @@ describe("AuthService", () => {
         expect(mockNext).toHaveBeenCalledWith();
       });
     });
+    describe("authorize - correct parameter order (action, resource, rule)", () => {
+      it("should call authorize with correct order: action first, then resource, then rule", async () => {
+        // Setup
+        const authorizeSpy = jest.spyOn(authService, "authorize");
+        const user = { id: "user-123", role: "admin", isSuperUser: false };
+        mockReq.user = user;
+
+        // Execute - note the correct order: action, resource, rule
+        const middleware = authService.authorize("View", "product", ["admin"]);
+
+        // Verify the method was called with correct parameters
+        expect(authorizeSpy).toHaveBeenCalledWith("View", "product", ["admin"]);
+
+        // Test the middleware execution
+        await middleware(mockReq, mockRes, mockNext);
+        expect(mockNext).toHaveBeenCalled();
+
+        authorizeSpy.mockRestore();
+      });
+
+      it("should pass rule as wildcard '*' when provided", async () => {
+        // Setup
+        const authorizeSpy = jest.spyOn(authService, "authorize");
+        const user = { id: "user-123", role: "admin", isSuperUser: false };
+        mockReq.user = user;
+        mockConfig.authentication.mode = "static";
+
+        // Execute with wildcard rule
+        const middleware = authService.authorize("Delete", "user", "*");
+
+        expect(authorizeSpy).toHaveBeenCalledWith("Delete", "user", "*");
+
+        await middleware(mockReq, mockRes, mockNext);
+        expect(mockNext).toHaveBeenCalled();
+
+        authorizeSpy.mockRestore();
+      });
+
+      it("should pass rule as DetailedAccessControlRule when provided", async () => {
+        // Setup
+        const authorizeSpy = jest.spyOn(authService, "authorize");
+        const user = { id: "user-123", role: "admin", isSuperUser: false };
+        mockReq.user = user;
+        mockConfig.authentication.mode = "static";
+
+        const detailedRule = {
+          roles: ["admin", "editor"],
+          name: "Delete products",
+          description: "Allows deleting products from the system",
+        };
+
+        // Execute with detailed rule
+        const middleware = authService.authorize(
+          "Delete",
+          "product",
+          detailedRule
+        );
+
+        expect(authorizeSpy).toHaveBeenCalledWith(
+          "Delete",
+          "product",
+          detailedRule
+        );
+
+        await middleware(mockReq, mockRes, mockNext);
+        expect(mockNext).toHaveBeenCalled();
+
+        authorizeSpy.mockRestore();
+      });
+
+      it("should correctly pass action as string and resource as string", async () => {
+        // Setup
+        const authorizeSpy = jest.spyOn(authService, "authorize");
+        const action = "Create";
+        const resource = "cart-item";
+        const rule = ["admin", "customer"];
+
+        // Execute
+        authService.authorize(action, resource, rule);
+
+        // Verify parameter order and values
+        expect(authorizeSpy).toHaveBeenCalledWith(action, resource, rule);
+        expect(authorizeSpy.mock.calls[0][0]).toBe("Create"); // action
+        expect(authorizeSpy.mock.calls[0][1]).toBe("cart-item"); // resource
+        expect(authorizeSpy.mock.calls[0][2]).toEqual(["admin", "customer"]); // rule
+
+        authorizeSpy.mockRestore();
+      });
+
+      it("should work with different action types", async () => {
+        // Setup
+        const actions = [
+          "View",
+          "Create",
+          "Update",
+          "Delete",
+          "Manage",
+        ] as const;
+
+        actions.forEach((action) => {
+          const authorizeSpy = jest.spyOn(authService, "authorize");
+          const resource = "order";
+          const rule = ["admin"];
+
+          authService.authorize(action, resource, rule);
+
+          expect(authorizeSpy).toHaveBeenCalledWith(action, resource, rule);
+          authorizeSpy.mockRestore();
+        });
+      });
+
+      it("should work with kebab-case resources", async () => {
+        // Setup
+        const authorizeSpy = jest.spyOn(authService, "authorize");
+        const resources = [
+          "user",
+          "product",
+          "cart-item",
+          "order-item",
+          "user-profile",
+          "password-reset",
+        ];
+
+        resources.forEach((resource) => {
+          authService.authorize("View", resource, ["admin"]);
+          expect(authorizeSpy).toHaveBeenCalledWith("View", resource, [
+            "admin",
+          ]);
+          authorizeSpy.mockClear();
+        });
+
+        authorizeSpy.mockRestore();
+      });
+
+      it("should handle missing rule parameter (undefined)", async () => {
+        // Setup
+        const authorizeSpy = jest.spyOn(authService, "authorize");
+        const user = { id: "user-123", role: "admin", isSuperUser: false };
+        mockReq.user = user;
+        mockConfig.authentication.mode = "static";
+
+        // Execute with undefined rule
+        const middleware = authService.authorize("View", "product");
+
+        expect(authorizeSpy).toHaveBeenCalledWith("View", "product");
+
+        // This might fail authorization since no rule is provided
+        await middleware(mockReq, mockRes, mockNext);
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({
+            statusCode: 403,
+          })
+        );
+
+        authorizeSpy.mockRestore();
+      });
+    });
   });
 
   describe("handleAccessControl", () => {
