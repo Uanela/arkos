@@ -220,7 +220,7 @@ export class AuthService {
   userChangedPasswordAfter(user: User, JWTTimestamp: number): boolean {
     if (user.passwordChangedAt) {
       const convertedTimestamp = parseInt(
-        String(user.passwordChangedAt.getTime() / 1000),
+        String(new Date(user.passwordChangedAt).getTime() / 1000),
         10
       );
 
