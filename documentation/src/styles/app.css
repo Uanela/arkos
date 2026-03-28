@@ -55,6 +55,11 @@
   border-right-color: var(--color-fd-border);
 }
 
+div.text-fd-muted-foreground {
+  /* font-weight: 600; */
+  color: var(--color-fd-foreground);
+}
+
 .prose a[target="_blank"] {
   color: var(--color-fd-primary);
   text-decoration: none;
