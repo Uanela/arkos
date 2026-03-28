@@ -1,0 +1,201 @@
+---
+title: Handling Relations
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Arkos provides an easier way to interact with Prisma relations through its **Arkos Prisma Input** system — a built-in runtime transformation that automatically converts flattened JSON data into proper Prisma operations like `connect`, `create`, and `update`. This means you can send intuitive data structures from your frontend without manually structuring nested relation objects.
+
+For type safety in your custom code, the `ArkosPrismaInput` TypeScript utility type is also available, giving you the same flattened format with full type inference.
+
+## How It Works
+
+Arkos scans relation fields in your request body and converts them based on the data shape:
+
+| Input Pattern | Operation | Result |
+|---------------|-----------|--------|
+| `{ id: 5 }` | Connect | `{ connect: { id: 5 } }` |
+| `{ name: "New Item" }` | Create | `{ create: { name: "..." } }` |
+| `{ id: 5, name: "Updated" }` | Update | `{ update: { where: { id: 5 }, data: { name: "..." } } }` |
+| `{ id: 5, apiAction: "delete" }` | Delete | `{ delete: { where: { id: 5 } } }` |
+| `{ id: 5, apiAction: "disconnect" }` | Disconnect | `{ disconnect: { where: { id: 5 } } }` |
+
+## Setup
+
+No configuration needed. Arkos automatically handles relation fields in all auto-generated endpoints. For custom code, you can use the `ArkosPrismaInput` type for type-safe flattened inputs:
+
+```typescript title="src/modules/post/post.controller.ts"
+import { ArkosPrismaInput } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
+
+type CreatePostInput = ArkosPrismaInput<Prisma.PostCreateInput>;
+
+const postData: CreatePostInput = {
+  title: "My Post",
+  author: { id: 1 },  // Auto-converts to connect
+  tags: [
+    { name: "Technology" },  // Auto-converts to create
+    { id: 5 }                 // Auto-converts to connect
+  ]
+};
+```
+
+<Callout type="info">
+  `ArkosPrismaInput` utility type is available since v1.5.0-beta. For earlier versions, Arkos still handles relations automatically at runtime — this type just adds TypeScript safety.
+</Callout>
+
+## Examples
+
+### Create with Mixed Relations
+
+```typescript title="src/modules/post/post.controller.ts"
+const createPost: ArkosPrismaInput<Prisma.PostCreateInput> = {
+  title: "New Blog Post",
+  content: "This is the content",
+  author: { id: 123 },  // Connect to existing user
+  tags: [
+    { name: "Technology" },  // Create new tag
+    { name: "Programming" }, // Create new tag
+    { id: 5 }                 // Connect existing tag
+  ]
+};
+```
+
+### Update with Mixed Operations
+
+```typescript title="src/modules/post/post.controller.ts"
+const updatePost: ArkosPrismaInput<Prisma.PostUpdateInput> = {
+  title: "Updated Title",
+  comments: [
+    { id: 1, content: "Updated comment" },  // Update existing
+    { content: "New comment" },              // Create new
+    { id: 3, apiAction: "delete" }           // Delete
+  ]
+};
+```
+
+### Connect by Unique Fields
+
+```typescript title="src/modules/order/order.controller.ts"
+const createOrder: ArkosPrismaInput<Prisma.OrderCreateInput> = {
+  total: 99.99,
+  customer: { email: "customer@example.com" },  // Connect by email (must be @unique)
+  products: [
+    { sku: "PROD-123" },  // Connect by SKU (must be @unique)
+    { sku: "PROD-456" }
+  ]
+};
+```
+
+### Nested Relations
+
+Arkos handles nested relations recursively:
+
+```typescript title="src/modules/post/post.controller.ts"
+const createPost: ArkosPrismaInput<Prisma.PostCreateInput> = {
+  title: "My Post",
+  author: { id: 1 },
+  comments: [
+    {
+      content: "Great post!",
+      author: { id: 2 }  // Nested relation — connect comment author
+    },
+    {
+      content: "Thanks",
+      author: {
+        name: "Anonymous",  // Nested relation — create new user
+        email: "anon@example.com"
+      }
+    }
+  ]
+};
+```
+
+## Explicit Operations with `apiAction`
+
+For ambiguous cases, use `apiAction` to specify the operation:
+
+```typescript
+const updateUser: ArkosPrismaInput<Prisma.UserUpdateInput> = {
+  posts: [
+    { id: 1, apiAction: "connect" },    // Connect existing
+    { id: 2, title: "Updated", apiAction: "update" },  // Update
+    { id: 3, apiAction: "delete" },     // Delete
+    { id: 4, apiAction: "disconnect" }  // Disconnect without deleting
+  ]
+};
+```
+
+Valid `apiAction` values: `"create"`, `"connect"`, `"update"`, `"delete"`, `"disconnect"`
+
+## Type Safety with Interceptors
+
+Use `ArkosPrismaInput` with interceptors for type-safe request manipulation:
+
+```typescript title="src/modules/post/post.interceptors.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { Prisma } from "@prisma/client";
+import { ArkosPrismaInput } from "arkos/prisma";
+
+type CreatePostBody = ArkosPrismaInput<Prisma.PostCreateInput>;
+
+export const beforeCreateOne = [
+  async (
+    req: ArkosRequest<any, any, CreatePostBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    // Type-safe access to flattened relations
+    req.body.author = { id: req.user!.id };
+    
+    // Add defaults to all tags
+    if (req.body.tags) {
+      req.body.tags = req.body.tags.map(tag => ({
+        ...tag,
+        type: "user-generated"
+      }));
+    }
+    
+    next();
+  }
+];
+```
+
+## What Arkos Does Not Handle
+
+If you manually structure a relation field using Prisma's native format (`connect`, `create`, etc.), Arkos respects your structure and does not transform it. This allows full control when needed:
+
+```typescript
+// Arkos respects this — no transformation applied
+const customPost: Prisma.PostCreateInput = {
+  title: "Custom Post",
+  tags: {
+    connect: [{ id: 1 }, { id: 2 }],
+    create: [{ name: "New Tag" }]
+  }
+};
+```
+
+However, Arkos **does not** recursively transform manually structured fields. If you mix formats:
+
+```json
+{
+  "subCategory": {
+    "create": {
+      "name": "New Sub Category",
+      "category": { "id": 3 }  // ← Arkos won't transform this inner field
+    }
+  }
+}
+```
+
+To work around this, either:
+1. Use the flattened format for all levels
+2. Write the inner relation in full Prisma format (`{ connect: { id: 3 } }`)
+
+## Related
+
+- [Prisma Model Routes](/docs/core-concepts/prisma-orm/routes) — The endpoints that use this relation handling
+- [Custom Queries](/docs/core-concepts/prisma-orm/custom-queries) — Default Prisma options per operation
+- [Interceptors](/docs/core-concepts/components/interceptors) — Run logic before/after operations
+- [ArkosPrismaInput API Reference](/docs/api-reference/arkos-prisma-input) — Full type utility documentation
