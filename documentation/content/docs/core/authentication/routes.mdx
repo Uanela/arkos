@@ -1,0 +1,279 @@
+---
+title: Routes
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Arkos provides a built-in authentication system with JWT and Role-Based Access Control (RBAC). Once configured, it automatically exposes the following endpoints — no route definitions needed.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Authenticate a user |
+| POST | `/api/auth/signup` | Register a new user |
+| DELETE | `/api/auth/logout` | End session |
+| POST | `/api/auth/update-password` | Change password |
+| GET | `/api/users/me` | Get current user |
+| PATCH | `/api/users/me` | Update current user |
+| DELETE | `/api/users/me` | Delete current user |
+
+<Callout type="info">
+  Authentication requires setup before these endpoints are active. See [Authentication Setup](/docs/core-concepts/authentication/setup) for configuration, User Model requirements, and RBAC options.
+</Callout>
+
+## Intercepting Requests
+
+Every authentication endpoint can be intercepted — run logic before or after any operation without replacing built-in behavior. For example, to send a verification email after signup:
+
+```typescript title="@/src/modules/auth/auth.interceptors.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const afterSignup = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const user = res.locals.data.data;
+    emailService.sendVerificationEmail(user.email).catch(console.error);
+    next();
+  },
+];
+```
+
+See [Interceptors](/docs/core-concepts/components/interceptors) for the full list of available auth hooks.
+
+## Sending Requests
+
+### Signup
+
+```http
+POST /api/auth/signup
+Content-Type: application/json
+```
+
+```json
+{
+  "username": "john_doe",
+  "password": "SecurePassword123!",
+  "email": "john@example.com",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "abc123",
+    "username": "john_doe",
+    "email": "john@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "isActive": true,
+    "createdAt": "2025-04-05T14:23:45.123Z"
+  }
+}
+```
+
+### Login
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+```
+
+```json
+{
+  "username": "john_doe",
+  "password": "SecurePassword123!"
+}
+```
+
+Response:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "data": {
+    "id": "abc123",
+    "username": "john_doe",
+    "email": "john@example.com"
+  }
+}
+```
+
+Depending on your `sendAccessTokenThrough` configuration, the token is set as a cookie, included in the response body, or both (default). See [Authentication Setup](/docs/core-concepts/authentication/setup) for configuration.
+
+#### Logging in with different fields
+
+By default users log in with `username`. Arkos supports logging in with other fields like `email`, or even nested relation fields like `profile.nickname`.
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+```
+
+```json
+{
+  "email": "john@example.com",
+  "password": "SecurePassword123!"
+}
+```
+
+When using a non-default field, pass `usernameField` as a query parameter:
+
+```http
+POST /api/auth/login?usernameField=email
+```
+
+See [Authentication Setup](/docs/core-concepts/authentication/setup#login-with-different-fields) for the full `allowedUsernames` configuration and nested field support.
+
+### Logout
+
+```http
+DELETE /api/auth/logout
+```
+
+Clears the authentication cookie and invalidates the session. Response: `204 No Content`.
+
+### Update Password
+
+```http
+POST /api/auth/update-password
+Content-Type: application/json
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+```json
+{
+  "currentPassword": "OldPassword123!",
+  "newPassword": "NewSecurePassword123!"
+}
+```
+
+Response:
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "data": {
+    "id": "abc123",
+    "username": "john_doe"
+  }
+}
+```
+
+<Callout type="info">
+  Since v1.5.0, Arkos automatically re-authenticates the user after a password update and returns a fresh token — no need to log in again.
+</Callout>
+
+### Get Current User
+
+```http
+GET /api/users/me
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "abc123",
+    "username": "john_doe",
+    "email": "john@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "isActive": true,
+    "createdAt": "2025-04-05T14:23:45.123Z"
+  }
+}
+```
+
+### Update Current User
+
+```http
+PATCH /api/users/me
+Content-Type: application/json
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+```json
+{
+  "firstName": "John Updated",
+  "email": "newemail@example.com"
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "abc123",
+    "username": "john_doe",
+    "email": "newemail@example.com",
+    "firstName": "John Updated",
+    "updatedAt": "2025-04-05T15:30:12.456Z"
+  }
+}
+```
+
+### Delete Current User
+
+```http
+DELETE /api/users/me
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+Response: `204 No Content`
+
+## Sending the Token
+
+Authenticated endpoints accept the token either via the `Authorization` header or automatically via cookies (set on login).
+
+**Authorization header:**
+
+```http
+GET /api/users/me
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+**Cookie-based (set automatically on login):**
+
+```javascript
+fetch("/api/users/me", {
+  credentials: "include",
+});
+```
+
+## Error Responses
+
+```json
+// 401 - Invalid or missing token
+{
+  "code": "Unauthorized",
+  "message": "You are not logged in. Please log in to get access."
+}
+
+// 403 - Authenticated but insufficient permissions
+{
+  "code": "Forbidden",
+  "message": "You do not have permission to perform this action."
+}
+
+// 400 - Wrong current password
+{
+  "code": "InvalidCredentials",
+  "message": "Current password is incorrect."
+}
+```
+
+For the full list of possible errors, see [Error Handling](/docs/guides/error-handling).
+
+## Customizing Authentication Routes
+
+- **[Interceptors](/docs/core-concepts/components/interceptors)** — Run logic before or after any auth endpoint
+- **[Authentication Setup](/docs/core-concepts/authentication/setup)** — Configure JWT, User Model, and RBAC
+- **[Static RBAC](/docs/core-concepts/authentication/static)** — Role-based access control via enums
+- **[Dynamic RBAC](/docs/core-concepts/authentication/dynamic)** — Runtime-configurable permissions via database
+- **[Permissions](/docs/core-concepts/authentication/permissions)** — Fine-grained access control
