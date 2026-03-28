@@ -36,8 +36,8 @@ function Home() {
               as your application grows without worrying about standard
               patterns.
             </p>
-            <Link
-              to="https://github.com/uanela"
+            <a
+              href="https://github.com/uanela"
               className="text-white font-medium py-1 px-2 flex items-center gap-2 justify-center outline-[1px]   outline-sky-500 rounded-full z-10 bg-gray-900 w-fit mx-auto"
             >
               <Image
@@ -49,7 +49,7 @@ function Home() {
                 <span className="font-bold">Uanela Como</span>
                 <span className="text-xs">The Creator</span>
               </div>
-            </Link>
+            </a>
 
             <div
               id="tailwind"
