@@ -5,10 +5,12 @@ title: Setup
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-Arkos's routing system is built directly on top of Express.js. If you've used Express before, everything here will feel familiar — the only meaningful difference is how you define route configuration.
+Arkos's routing system is built on top of Express.js. If you've used Express before, most things will feel familiar. The main thing Arkos adds on top is auto-generated CRUD endpoints from your Prisma models — you don't write those routes at all. This page covers how to initialize your app and define your own custom routes.
 
 ## Setting Up Your App
 
+<Tabs items={["v1.6+", "pre-1.6"]}>
+  <Tab value="v1.6+">
 ```typescript title="src/app.ts"
 import arkos from "arkos";
 
@@ -16,32 +18,143 @@ const app = arkos();
 
 app.listen();
 ```
+  </Tab>
+  <Tab value="pre-1.6">
+```typescript title="src/app.ts"
+import arkos from "arkos";
 
-If you need access to the underlying HTTP server — for WebSockets, for example — use `createServer` from Arkos instead of Node's `http.createServer`. This ensures Arkos can finish its internal setup correctly:
+arkos.init({});
+```
+  </Tab>
+</Tabs>
+
+### WebSockets and Custom Server Access
+
+If you need access to the underlying HTTP server — for WebSockets, for example:
+
+<Tabs items={["v1.6+", "pre-1.6"]}>
+  <Tab value="v1.6+">
+
+Build the app first with `app.build()`, then create the HTTP server manually and pass it to `app.listen()`:
 
 ```typescript title="src/app.ts"
-import arkos, { createServer } from "arkos";
+import arkos from "arkos";
+import http from "http";
 import { Server } from "socket.io";
 
 const app = arkos();
-const server = createServer(app);
 
-const io = new Server(server);
+async function start() {
+  await app.build();
 
-server.listen();
+  const server = http.createServer(app);
+
+  const io = new Server(server);
+
+  io.on("connection", (socket) => {
+    console.log("Client connected");
+
+    socket.on("message", (data) => {
+      io.emit("broadcast", data);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Client disconnected");
+    });
+  });
+
+  app.listen(server);
+}
+
+start();
 ```
+  </Tab>
+  <Tab value="pre-1.6">
+
+Use the `configureServer` callback inside `arkos.init()`:
+
+```typescript title="src/app.ts"
+import arkos from "arkos";
+import { Server } from "socket.io";
+
+await arkos.init({
+  configureServer: async (server) => {
+    const io = new Server(server);
+
+    io.on("connection", (socket) => {
+      console.log("Client connected");
+
+      socket.on("message", (data) => {
+        io.emit("broadcast", data);
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Client disconnected");
+      });
+    });
+  },
+});
+```
+  </Tab>
+</Tabs>
 
 <Callout type="info">
-  `app.listen()` and `server.listen()` only accept an optional callback. Port
-  and host are configured in `arkos.config.ts` and managed by Arkos — passing
-  them directly to `listen()` is not supported to avoid mismatches with your
-  config.
+  `app.build()` handles all of Arkos's internal setup — loading Prisma, scanning
+  modules, registering routes. It must be awaited before you create the HTTP server,
+  otherwise built-in routes and middleware won't be in place when connections arrive.
+  In the simple case (`app.listen()` with no arguments), this is done for you automatically.
 </Callout>
+
+### Configuring Express
+
+<Tabs items={["v1.6+", "pre-1.6"]}>
+  <Tab value="v1.6+">
+
+In v1.6+, `arkos()` returns the Express app directly, so you can configure it before calling `app.listen()`:
+
+```typescript title="src/app.ts"
+import arkos from "arkos";
+import helmet from "helmet";
+
+const app = arkos();
+
+app.set("trust proxy", true);
+app.use(helmet());
+
+app.listen();
+```
+  </Tab>
+  <Tab value="pre-1.6">
+
+Use the `configureApp` callback inside `arkos.init()`:
+
+```typescript title="src/app.ts"
+import arkos from "arkos";
+import helmet from "helmet";
+
+arkos.init({
+  configureApp: async (app) => {
+    app.set("trust proxy", true);
+    app.use(helmet());
+
+    app.locals.title = "My Arkos Application";
+    app.set("view engine", "ejs");
+
+    app.use((req, res, next) => {
+      next();
+    });
+  },
+});
+```
+  </Tab>
+</Tabs>
 
 ### arkos.config.ts
 
 Port, host, and other global settings live in your config file:
 
+<Tabs items={["v1.6+ (defineConfig)", "pre-1.6 (plain export)"]}>
+  <Tab value="v1.6+ (defineConfig)">
 ```typescript title="arkos.config.ts"
 import { defineConfig } from "arkos";
 
@@ -53,18 +166,31 @@ const arkosConfig = defineConfig({
 
 export default arkosConfig;
 ```
+  </Tab>
+  <Tab value="pre-1.6 (plain export)">
+```typescript title="arkos.config.ts"
+export default {
+  port: 3000,
+  host: "localhost",
+};
+```
+  </Tab>
+</Tabs>
 
-## Two Types of Routes
+<Callout type="info">
+  `globalPrefix` is available since v1.6.0-beta. It defaults to `/api`. See
+  [Configuration](/docs/getting-started/configuration) for all available options.
+</Callout>
 
-Arkos has two categories of routes:
+## Auto-Generated CRUD Routes
 
-**Built-in routes** are automatically provided by the framework — CRUD endpoints generated from your Prisma models, authentication endpoints, and file upload endpoints. You don't write these, but you can intercept and customize them. These are covered in [Endpoints](/docs/routing/endpoints) and [Interceptors](/docs/routing/interceptors).
+One of Arkos's core features is that it automatically generates full CRUD endpoints for every model in your Prisma schema — no route definitions needed. For a `Post` model, Arkos generates `GET /posts`, `POST /posts`, `GET /posts/:id`, `PATCH /posts/:id`, and `DELETE /posts/:id` out of the box.
 
-**Routers** are routes you write yourself, exactly like you would in a regular Express app. This is what the rest of this section focuses on.
+See [Endpoints](/docs/core-concepts/endpoints) for the full list of generated routes, their behavior, and how to customize or extend them.
 
-## ArkosRouter
+## Custom Routes with ArkosRouter
 
-For your routes, Arkos provides `ArkosRouter` — a thin wrapper around Express Router that adds declarative configuration support. The only difference from Express is that instead of passing a path string as the first argument, you pass a configuration object:
+For routes you write yourself, Arkos provides `ArkosRouter` — a thin wrapper around Express Router that adds declarative configuration support. The only difference from Express is that instead of passing a path string as the first argument, you pass a configuration object:
 
 <Tabs items={["ArkosRouter", "Express Router"]}>
   <Tab value="ArkosRouter">
@@ -129,20 +255,23 @@ reportsRouter.post(
 export default reportsRouter;
 ```
 
-Everything else — middleware chaining, `req`, `res`, `next`, async handlers — works exactly like Express.
-
 ### Route Paths
 
-Paths are defined relative to the `globalPrefix`. With the default `globalPrefix: "/api"`, a route defined as `/reports/generate` is accessible at `/api/reports/generate`.
-
-<Callout type="info">
-  The global prefix is configured in `arkos.config.ts` via the `globalPrefix`
-  option. It defaults to `/api`. See [Configuration](/docs/getting-started/configuration) for more.
-</Callout>
+<Tabs items={["v1.6+", "pre-1.6"]}>
+  <Tab value="v1.6+">
+Paths are defined relative to the `globalPrefix`. With `globalPrefix: "/api"` (the default), a route defined as `/reports/generate` is accessible at `/api/reports/generate`.
+  </Tab>
+  <Tab value="pre-1.6">
+Paths are absolute. A route defined as `/reports/generate` is accessible at `/reports/generate` with no prefix applied automatically.
+  </Tab>
+</Tabs>
 
 ## Registering Routers
 
-Pass your routers to `app.use()` before calling `app.listen()`. Routers and middleware registered this way are applied **before** Arkos's built-in routes, giving you full control over the request pipeline:
+<Tabs items={["v1.6+", "pre-1.6"]}>
+  <Tab value="v1.6+">
+
+Pass your routers to `app.use()` before calling `app.listen()`:
 
 ```typescript title="src/app.ts"
 import arkos from "arkos";
@@ -156,10 +285,28 @@ app.use(userRouter);
 
 app.listen();
 ```
+  </Tab>
+  <Tab value="pre-1.6">
+
+Pass your routers via the `use` array in `arkos.init()`:
+
+```typescript title="src/app.ts"
+import arkos from "arkos";
+import reportsRouter from "./modules/reports/reports.router";
+import userRouter from "./modules/user/user.router";
+
+arkos.init({
+  use: [reportsRouter, userRouter],
+});
+```
+  </Tab>
+</Tabs>
+
+Routers registered this way are applied **before** Arkos's built-in routes, giving you full control over the request pipeline.
 
 ### Project Structure
 
-Routers can live anywhere, but a consistent structure helps as your project grows. We recommend grouping everything under `src/modules/` — both Prisma model-related code and custom feature routers:
+Routers can live anywhere, but a consistent structure helps as your project grows. We recommend grouping everything under `src/modules/`:
 
 ```
 src/
@@ -177,6 +324,8 @@ src/
 
 ## What's Next
 
-- **[ArkosRouter](/docs/routing/arkos-router)** — Full API reference for the route configuration object
-- **[Endpoints](/docs/routing/generated-endpoints)** — The auto-generated routes from your Prisma models, auth system, and file uploads
-- **[Interceptors](/docs/routing/interceptors)** — Hook into built-in routes with before/after middleware
+- **[ArkosRouter](/docs/core-concepts/routing/arkos-router)** — Full API reference for the route configuration object
+- **[Endpoints](/docs/core-concepts/endpoints)** — The auto-generated CRUD routes from your Prisma models, auth system, and file uploads
+- **[Interceptors](/docs/core-concepts/routing/interceptors)** — Hook into built-in routes with before/after middleware
+```
+
