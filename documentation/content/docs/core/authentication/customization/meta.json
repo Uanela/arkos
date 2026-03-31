@@ -1,5 +1,0 @@
-{
-  "title": "Customization",
-  "collapsible": true,
-  "pages": ["interceptors", "validation", "hooks"]
-}
