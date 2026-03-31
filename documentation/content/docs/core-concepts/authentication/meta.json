@@ -1,0 +1,13 @@
+{
+  "title": "Authentication",
+  "collapsible": true,
+  "pages": [
+    "setup",
+    "permissions",
+    "routes",
+    "interceptors",
+    "validation",
+    "advanced",
+    "customization"
+  ]
+}
