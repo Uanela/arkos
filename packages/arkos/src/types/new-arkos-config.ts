@@ -675,7 +675,7 @@ export type ArkosConfig = {
      * Whether to require superUser authentication to access docs in production.
      * Default: true after build
      */
-    requireAuth?: boolean;
+    authenticate?: boolean;
     /**
      * Endpoint where the Swagger UI will be available.
      *
