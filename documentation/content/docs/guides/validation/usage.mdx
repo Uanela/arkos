@@ -1,0 +1,370 @@
+---
+title: Usage
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Validate `req.body`, `req.query`, and `req.params` declaratively on any `ArkosRouter` route — no middleware boilerplate, no manual error handling. Drop a Zod schema or class-validator DTO into the `validation` config, and Arkos handles the rest: error responses, and automatic OpenAPI spec generation.
+
+## Body
+
+Applied on routes that receive a request body — typically `POST`, `PUT`, and `PATCH`.
+
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import z from "zod";
+import postController from "./post.controller";
+
+const router = ArkosRouter();
+
+const CreatePostSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().min(1),
+  published: z.boolean().optional(),
+  authorId: z.string().uuid(),
+});
+
+router.post(
+  {
+    path: "/api/posts",
+    validation: {
+      body: CreatePostSchema,
+    },
+  },
+  postController.createPost
+);
+
+export default router;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/post/dtos/create-post.dto.ts"
+import { IsString, IsBoolean, IsUUID, IsOptional, MinLength } from "class-validator";
+
+export default class CreatePostDto {
+  @IsString()
+  @MinLength(1)
+  title: string;
+
+  @IsString()
+  @MinLength(1)
+  content: string;
+
+  @IsBoolean()
+  @IsOptional()
+  published?: boolean;
+
+  @IsUUID()
+  authorId: string;
+}
+```
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import postController from "./post.controller";
+import CreatePostDto from "./dtos/create-post.dto";
+
+const router = ArkosRouter();
+
+router.post(
+  {
+    path: "/api/posts",
+    validation: {
+      body: CreatePostDto,
+    },
+  },
+  postController.createPost
+);
+
+export default router;
+```
+</Tab>
+</Tabs>
+
+**Validation error response:**
+```json
+{
+  "status": "error",
+  "message": "Invalid Data",
+  "code": 400,
+  "errors": [
+    {
+      "property": "authorId",
+      "constraints": {
+        "isUuid": "authorId must be a valid UUID"
+      }
+    }
+  ]
+}
+```
+
+## Query & Params
+
+Applied on routes that receive URL query strings or path parameters.
+
+<Callout type="info">
+Query and params values arrive as strings from the URL. Use `z.coerce` or `@Type()` to cast them to the correct type — or use the [CLI code generation](/docs/tooling/cli/code-generation#generate-schemas-and-dtos) which handles this automatically.
+</Callout>
+
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/user/user.router.ts"
+import { ArkosRouter } from "arkos";
+import z from "zod";
+import userController from "./user.controller";
+
+const router = ArkosRouter();
+
+router.get(
+  {
+    path: "/api/users",
+    validation: {
+      query: z.object({
+        role: z.enum(["admin", "user"]).optional(),
+        active: z.coerce.boolean().optional(),
+        limit: z.coerce.number().int().min(1).max(100).optional(),
+      }),
+    },
+  },
+  userController.getUsers
+);
+
+router.get(
+  {
+    path: "/api/users/:id",
+    validation: {
+      params: z.object({
+        id: z.string().uuid("Invalid user ID"),
+      }),
+    },
+  },
+  userController.getUser
+);
+
+router.patch(
+  {
+    path: "/api/users/:id",
+    validation: {
+      params: z.object({
+        id: z.string().uuid(),
+      }),
+      body: z.object({
+        name: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+      }),
+      query: z.object({
+        notify: z.coerce.boolean().optional(),
+      }),
+    },
+  },
+  userController.updateUser
+);
+
+export default router;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/user/user.router.ts"
+import { ArkosRouter } from "arkos";
+import { IsEnum, IsBoolean, IsInt, IsUUID, IsOptional, Min, Max } from "class-validator";
+import { Type } from "class-transformer";
+import userController from "./user.controller";
+
+const router = ArkosRouter();
+
+class UserQueryDto {
+  @IsEnum(["admin", "user"])
+  @IsOptional()
+  role?: string;
+
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  active?: boolean;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  limit?: number;
+}
+
+class UserParamsDto {
+  @IsUUID()
+  id: string;
+}
+
+router.get(
+  {
+    path: "/api/users",
+    validation: { query: UserQueryDto },
+  },
+  userController.getUsers
+);
+
+router.get(
+  {
+    path: "/api/users/:id",
+    validation: { params: UserParamsDto },
+  },
+  userController.getUser
+);
+
+export default router;
+```
+</Tab>
+</Tabs>
+
+**Validation error response:**
+```json
+{
+  "status": "error",
+  "message": "Invalid Data",
+  "code": 400,
+  "errors": [
+    {
+      "property": "id",
+      "constraints": {
+        "isUuid": "id must be a valid UUID"
+      }
+    }
+  ]
+}
+```
+
+## File Uploads
+
+When combining validation with file uploads, only pass text fields to `validation.body` — file fields are handled separately by the `uploads` config.
+```ts
+router.post(
+  {
+    path: "/api/users/:id/avatar",
+    validation: {
+      params: z.object({ id: z.string().uuid() }),
+      body: z.object({ caption: z.string().optional() }),
+      // no avatar field here — handled by uploads
+    },
+    experimental: {
+      uploads: { type: "single", field: "avatar", required: true },
+    },
+  },
+  userController.uploadAvatar
+);
+```
+
+| `required` | Behavior |
+|---|---|
+| `true` | Returns `400` if no file is uploaded |
+| `false` | Proceeds without a file |
+
+See [File Upload guide](/docs/guides/file-upload) for full configuration.
+
+## Accessing Validated Data
+
+Arkos automatically types `req.body`, `req.query`, and `req.params` from your validation schema — every handler and middleware in the route stack shares the same typed `req` with no manual generic declarations needed.
+
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/user/user.router.ts"
+import { ArkosRouter } from "arkos";
+import z from "zod";
+import userController from "@/src/modules/user/user.controller";
+
+const router = ArkosRouter();
+
+const UpdateUserBody = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+});
+
+const UpdateUserParams = z.object({
+  id: z.string().uuid(),
+});
+
+const UpdateUserQuery = z.object({
+  notify: z.coerce.boolean().optional(),
+});
+
+router.patch(
+  {
+    path: "/api/users/:id",
+    validation: {
+      params: UpdateUserParams,
+      body: UpdateUserBody,
+      query: UpdateUserQuery,
+    },
+  },
+  logMiddleware,   // req.params, req.body, req.query all typed here
+  userController.updateOne // and here — same signature, no extra work
+);
+
+export default router;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/user/user.router.ts"
+import { ArkosRouter } from "arkos";
+import { IsString, IsEmail, IsBoolean, IsUUID, IsOptional } from "class-validator";
+import { Type } from "class-transformer";
+import userController from "@/src/modules/user/user.controller";
+
+const router = ArkosRouter();
+
+class UpdateUserBodyDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+}
+
+class UpdateUserParamsDto {
+  @IsUUID()
+  id: string;
+}
+
+class UpdateUserQueryDto {
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  notify?: boolean;
+}
+
+router.patch(
+  {
+    path: "/api/users/:id",
+    validation: {
+      params: UpdateUserParamsDto,
+      body: UpdateUserBodyDto,
+      query: UpdateUserQueryDto,
+    },
+  },
+  logMiddleware,
+  userController.updateOne
+);
+
+export default router;
+```
+</Tab>
+</Tabs>
+```ts title="src/modules/user/user.controller.ts"
+import { ArkosRequest, ArkosResponse } from "arkos";
+
+const updateOne = async (req: ArkosRequest, res: ArkosResponse) => {
+  const { id } = req.params;        // string, validated UUID
+  const { notify } = req.query;     // boolean, coerced
+  const { name, email } = req.body; // typed, validated
+};
+
+export default { updateOne };
+```
+
+<Callout type="info">
+For Prisma model route validation see [Prisma Model Routes](/docs/guides/prisma-orm/validation).
+For auth route validation see [Authentication](/docs/core-concepts/authentication/validation).
+</Callout>
