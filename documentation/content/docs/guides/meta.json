@@ -1,0 +1,10 @@
+{
+  "title": "Guides",
+  "collapsible": false,
+  "pages": [
+    "validation",
+    "file-upload",
+    "open-api-documentation",
+    "error-handling"
+  ]
+}
