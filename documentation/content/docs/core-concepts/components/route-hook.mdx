@@ -1,0 +1,192 @@
+---
+title: Route Hook
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+<Callout type="info">
+  Route Hook is the new name for what was previously exported as `config: RouterConfig`. If you have existing code using `export const config: RouterConfig`, it still works but will log a deprecation warning. Migrating is a one-line change — see [Migration from RouterConfig](#migration-from-routerconfig).
+</Callout>
+
+Route Hook is an Arkos component that lets you configure auto-generated routes without touching the route definitions themselves. It is a named export from your module's `*.router.ts` file where each key maps to a built-in operation, and each value is the same configuration object accepted by [ArkosRouter](/docs/core-concepts/components/arkos-router).
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+  createOne: { authentication: { resource: "post", action: "Create", rule: ["admin"] } },
+  deleteOne: { disabled: true },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+## Configuration Object
+
+Every key in a Route Hook accepts the same configuration object as [ArkosRouter](/docs/core-concepts/components/arkos-router) routes — authentication, validation, rate limiting, disabled, and more. See the full reference at [ArkosRouter Configuration Object](/docs/reference/arkos-router#configuration-object).
+
+## Prisma Model Route Hook
+
+Configures the auto-generated RESTful endpoints for a Prisma model. The file lives at `src/modules/<model>/<model>.router.ts`.
+
+| Key | Method | Endpoint |
+|-----|--------|----------|
+| `findMany` | GET | `/api/[model]` |
+| `findOne` | GET | `/api/[model]/:id` |
+| `createOne` | POST | `/api/[model]` |
+| `updateOne` | PATCH | `/api/[model]/:id` |
+| `deleteOne` | DELETE | `/api/[model]/:id` |
+| `createMany` | POST | `/api/[model]/many` |
+| `updateMany` | PATCH | `/api/[model]/many` |
+| `deleteMany` | DELETE | `/api/[model]/many` |
+
+<Tabs items={["ArkosPolicy", "Auth Config File"]}>
+<Tab value="ArkosPolicy">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import postPolicy from "@/src/modules/post/post.policy";
+import { UpdatePostSchema } from "@/src/modules/post/post.schema";
+
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+  findOne: { authentication: true },
+  createOne: { authentication: postPolicy.Create },
+  updateOne: {
+    authentication: postPolicy.Update,
+    validation: { body: UpdatePostSchema },
+  },
+  deleteOne: { authentication: postPolicy.Delete },
+  createMany: { disabled: true },
+  updateMany: { disabled: true },
+  deleteMany: { disabled: true },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+<Tab value="Auth Config File">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import postAuthConfigs from "@/src/modules/post/post.auth";
+import { UpdatePostSchema } from "@/src/modules/post/post.schema";
+
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+  findOne: { authentication: true },
+  createOne: {
+    authentication: {
+      resource: "post",
+      action: "Create",
+      rule: postAuthConfigs.accessControl.Create,
+    },
+  },
+  updateOne: {
+    authentication: {
+      resource: "post",
+      action: "Update",
+      rule: postAuthConfigs.accessControl.Update,
+    },
+    validation: { body: UpdatePostSchema },
+  },
+  deleteOne: {
+    authentication: {
+      resource: "post",
+      action: "Delete",
+      rule: postAuthConfigs.accessControl.Delete,
+    },
+  },
+  createMany: { disabled: true },
+  updateMany: { disabled: true },
+  deleteMany: { disabled: true },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+</Tabs>
+
+See [Model Routes](/docs/core-concepts/prisma-orm/routes) for the full breakdown of generated endpoints and query capabilities.
+
+## Authentication Route Hook
+
+Configures the built-in authentication endpoints. The file lives at `src/modules/auth/auth.router.ts`.
+
+| Key | Method | Endpoint |
+|-----|--------|----------|
+| `login` | POST | `/api/auth/login` |
+| `signup` | POST | `/api/auth/signup` |
+| `logout` | DELETE | `/api/auth/logout` |
+| `updatePassword` | POST | `/api/auth/update-password` |
+| `getMe` | GET | `/api/users/me` |
+| `updateMe` | PATCH | `/api/users/me` |
+| `deleteMe` | DELETE | `/api/users/me` |
+```ts title="src/modules/auth/auth.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import { UpdateMeSchema } from "@/src/modules/auth/auth.schema";
+
+export const hook: RouteHook = {
+  login: { rateLimit: { windowMs: 15 * 60_000, max: 10 } },
+  signup: { disabled: true },
+  getMe: { rateLimit: { windowMs: 15 * 60_000, max: 30 } },
+  deleteMe: { disabled: true },
+  updateMe: { validation: { body: UpdateMeSchema } },
+  updatePassword: { rateLimit: { windowMs: 15 * 60_000, max: 10 } },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+See [Authentication Routes](/docs/core-concepts/authentication/routes) for the full breakdown of auth endpoints and request/response shapes.
+
+## File Upload Route Hook
+
+Configures the built-in standalone file upload endpoints. The file lives at `src/modules/file-upload/file-upload.router.ts`.
+
+| Key | Method | Endpoint |
+|-----|--------|----------|
+| `findFile` | GET | `/api/uploads/:fileType/:fileName` |
+| `uploadFile` | POST | `/api/uploads/:fileType` |
+| `updateFile` | PATCH | `/api/uploads/:fileType/:fileName` |
+| `deleteFile` | DELETE | `/api/uploads/:fileType/:fileName` |
+```ts title="src/modules/file-upload/file-upload.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+
+export const hook: RouteHook = {
+  findFile: { authentication: false },
+  uploadFile: { authentication: true },
+  updateFile: { authentication: true },
+  deleteFile: { disabled: true },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+See [File Upload Routes](/docs/core-concepts/file-uploads/routes) for the full breakdown of file upload endpoints and request/response shapes.
+
+## Migration from RouterConfig
+
+Since v1.6, `RouteHook` replaces `RouterConfig` as the recommended export name. The old name still works but will log a deprecation warning:
+```
+DeprecationWarning: `export const config: RouterConfig` in post.router.ts is deprecated.
+Use `export const hook: RouteHook` instead.
+```
+
+Migrating is a one-line change per file:
+```ts
+// before
+export const config: RouterConfig = { ... };
+
+// after
+export const hook: RouteHook = { ... };
+```
