@@ -96,7 +96,19 @@ type FileUploadRouterConfig = {
   [K in FileUploadRouterEndpoint]?: Omit<ArkosRouteConfig, "path" | "uploads">;
 };
 
+/**
+ * @deprecated use RouteHook instead
+ */
 export type RouterConfig<T extends string = string> = T extends "auth"
+  ? AuthRouterConfig
+  : T extends "file-upload"
+    ? FileUploadRouterConfig
+    : BaseRouterConfig;
+
+/**
+ * @since v1.6.0-beta
+ */
+export type RouteHook<T extends string = string> = T extends "auth"
   ? AuthRouterConfig
   : T extends "file-upload"
     ? FileUploadRouterConfig
