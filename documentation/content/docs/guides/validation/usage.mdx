@@ -5,14 +5,18 @@ title: Usage
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-Validate `req.body`, `req.query`, and `req.params` declaratively on any `ArkosRouter` route — no middleware boilerplate, no manual error handling. Drop a Zod schema or class-validator DTO into the `validation` config, and Arkos handles the rest: error responses, and automatic OpenAPI spec generation.
+Validate `req.body`, `req.query`, and `req.params` declaratively on any route — no middleware boilerplate, no manual error handling. Drop a Zod schema or class-validator DTO into the `validation` config, and Arkos handles the rest: error responses, and automatic OpenAPI spec generation.
+
+This works for:
+- **Custom routes** — inline in `ArkosRouter`
+- **Built-in routes** — via export config of `RouterConfig` in your module's `.router.ts` file
 
 ## Body
 
 Applied on routes that receive a request body — typically `POST`, `PUT`, and `PATCH`.
 
-<Tabs items={["Zod", "Class Validator"]}>
-<Tab value="Zod">
+<Tabs items={["ArkosRouter (Custom)", "RouterConfig (Built-in)"]}>
+<Tab value="ArkosRouter (Custom)">
 ```ts title="src/modules/post/post.router.ts"
 import { ArkosRouter } from "arkos";
 import z from "zod";
@@ -40,43 +44,27 @@ router.post(
 export default router;
 ```
 </Tab>
-<Tab value="Class Validator">
-```ts title="src/modules/post/dtos/create-post.dto.ts"
-import { IsString, IsBoolean, IsUUID, IsOptional, MinLength } from "class-validator";
-
-export default class CreatePostDto {
-  @IsString()
-  @MinLength(1)
-  title: string;
-
-  @IsString()
-  @MinLength(1)
-  content: string;
-
-  @IsBoolean()
-  @IsOptional()
-  published?: boolean;
-
-  @IsUUID()
-  authorId: string;
-}
-```
+<Tab value="RouterConfig (Built-in)">
 ```ts title="src/modules/post/post.router.ts"
-import { ArkosRouter } from "arkos";
-import postController from "./post.controller";
-import CreatePostDto from "./dtos/create-post.dto";
+import { ArkosRouter, RouterConfig } from "arkos";
+import z from "zod";
 
-const router = ArkosRouter();
+const CreatePostSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().min(1),
+  published: z.boolean().optional(),
+  authorId: z.string().uuid(),
+});
 
-router.post(
-  {
-    path: "/api/posts",
+export const config: RouterConfig = {
+  createOne: {
     validation: {
-      body: CreatePostDto,
+      body: CreatePostSchema,
     },
   },
-  postController.createPost
-);
+};
+
+const router = ArkosRouter();
 
 export default router;
 ```
@@ -84,6 +72,7 @@ export default router;
 </Tabs>
 
 **Validation error response:**
+
 ```json
 {
   "status": "error",
@@ -99,6 +88,9 @@ export default router;
   ]
 }
 ```
+<Callout type="info">
+For more details on how to validate built-in routes you can explore [Prisma Model Routes Validation](/docs/guides/prisma-orm/customization/validation) and for auth routes validation see [Authentication Validation](/docs/core-concepts/authentication/customization/validation).
+</Callout>
 
 ## Query & Params
 
@@ -364,7 +356,6 @@ const updateOne = async (req: ArkosRequest, res: ArkosResponse) => {
 export default { updateOne };
 ```
 
-<Callout type="info">
-For Prisma model route validation see [Prisma Model Routes](/docs/guides/prisma-orm/validation).
-For auth route validation see [Authentication](/docs/core-concepts/authentication/validation).
-</Callout>
+## Related Guides
+- [Prisma Model Routes Validation](/docs/guides/prisma-orm/validation) - For Prisma model route validation.
+- [Authentication Validation](/docs/core-concepts/authentication/customization/validation) - For auth route validation.
