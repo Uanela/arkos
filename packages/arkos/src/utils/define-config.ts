@@ -69,9 +69,9 @@ export function defineConfig(config: ArkosConfig) {
       ...config?.swagger,
       mode: config?.swagger?.mode || config?.validation?.resolver || "prisma",
       enableAfterBuild: config?.swagger?.enableAfterBuild !== false,
-      requireAuth:
-        typeof config?.swagger?.requireAuth === "boolean"
-          ? config?.swagger?.requireAuth
+      authenticate:
+        typeof config?.swagger?.authenticate === "boolean"
+          ? config?.swagger?.authenticate
           : config?.swagger?.enableAfterBuild !== false
             ? process.env.ARKOS_BUILD === "true"
             : false,
