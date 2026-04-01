@@ -26,7 +26,7 @@ export type ArkosConfig = {
    *
    * @default "/api"
    */
-  globalPrefix?: string;
+  readonly globalPrefix?: string;
   /**
    * Allows to configure request configs
    */
@@ -93,9 +93,16 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * before: (ctx) => {
-         *   ctx.req.authContext = { startedAt: Date.now() };
-         *   ctx.next();
+         * before: ({ req, skip }) => {
+         *   req.authContext = { startedAt: Date.now() };
+         * }
+         * ```
+         *
+         * @example Skip core logic entirely (e.g. custom auth)
+         * ```ts
+         * before: ({ req, skip }) => {
+         *   req.user = myCustomAuth(req);
+         *   skip();
          * }
          * ```
          */
@@ -106,24 +113,32 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * after: (ctx) => {
-         *   if (!ctx.req.user.hasChangedPassword) {
-         *     ctx.next(new AppError("Password change required.", 403, "PasswordChangeRequired"));
+         * after: ({ req }) => {
+         *   if (!req.user.hasChangedPassword) {
+         *     throw new AppError("Password change required.", 403, "PasswordChangeRequired");
          *   }
-         *   ctx.next();
          * }
          * ```
          */
         after?: AuthAfterHookHandler | AuthAfterHookHandler[];
 
         /**
-         * Runs when `authService.authenticate` throws — invalid token, expired token, user not found, etc.
+         * Runs when authentication throws — invalid token, expired token, user not found, etc.
+         * Throw to forward to the global error handler, or call `skip()` to suppress and jump to `after` hooks.
          *
          * @example
          * ```ts
-         * onError: (ctx) => {
-         *   console.warn(`Auth failed:`, ctx.error);
-         *   ctx.next(ctx.error);
+         * onError: ({ req, error, skip }) => {
+         *   console.warn(`Auth failed:`, error);
+         *   throw error;
+         * }
+         * ```
+         *
+         * @example Suppress error and continue
+         * ```ts
+         * onError: ({ req, skip }) => {
+         *   req.user = guestUser;
+         *   skip();
          * }
          * ```
          */
@@ -136,11 +151,18 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * before: (ctx) => {
-         *   if (ctx.req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
-         *     ctx.req.user.role = "admin";
+         * before: ({ req }) => {
+         *   if (req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
+         *     req.user.role = "admin";
          *   }
-         *   ctx.next();
+         * }
+         * ```
+         *
+         * @example Skip permission check entirely
+         * ```ts
+         * before: ({ req, skip }) => {
+         *   req.user.role = myCustomRoleResolver(req);
+         *   skip();
          * }
          * ```
          */
@@ -151,9 +173,8 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * after: (ctx) => {
-         *   auditLog.record({ userId: ctx.req.user.id, path: ctx.req.path });
-         *   ctx.next();
+         * after: ({ req }) => {
+         *   auditLog.record({ userId: req.user.id, path: req.path });
          * }
          * ```
          */
@@ -161,12 +182,21 @@ export type ArkosConfig = {
 
         /**
          * Runs when the user lacks sufficient permissions (403).
+         * Throw to forward to the global error handler, or call `skip()` to suppress and jump to `after` hooks.
          *
          * @example
          * ```ts
-         * onError: (ctx) => {
-         *   auditLog.record({ userId: ctx.req.user?.id, reason: "insufficient_permissions" });
-         *   ctx.next(ctx.error);
+         * onError: ({ req, error }) => {
+         *   auditLog.record({ userId: req.user?.id, reason: "insufficient_permissions" });
+         *   throw error;
+         * }
+         * ```
+         *
+         * @example Suppress error and continue
+         * ```ts
+         * onError: ({ req, skip }) => {
+         *   req.user.role = "guest";
+         *   skip();
          * }
          * ```
          */
