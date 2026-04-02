@@ -1,0 +1,146 @@
+---
+title: Validation
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+When a request fails validation, Arkos automatically formats the error into a consistent response. The `code` field identifies which part of the request failed — `body`, `query`, or `params`. The `message` field contains the first validation error in human-readable form. The full list of errors is available in `meta`.
+
+## Response Shape
+
+```json
+{
+  "status": "error",
+  "code": "InvalidRequestBody",
+  "message": "'email' must be a valid email address",
+  "meta": {
+    "errors": [
+      {
+        "message": "'email' must be a valid email address",
+        "code": "EmailIsEmailConstraint"
+      },
+      {
+        "message": "'name' must be at least 2 characters",
+        "code": "NameMinLengthConstraint"
+      }
+    ]
+  }
+}
+```
+
+The `code` field will be one of:
+
+| Code | Trigger |
+|---|---|
+| `InvalidRequestBody` | `req.body` failed validation |
+| `InvalidRequestQuery` | `req.query` failed validation |
+| `InvalidRequestParams` | `req.params` failed validation |
+
+## Nested and Array Fields
+
+Arkos includes the full field path in error messages so you always know exactly what failed:
+
+```json
+{
+  "code": "InvalidRequestBody",
+  "message": "'user.profile.bio' must be at least 10 characters",
+  "meta": { "errors": [...] }
+}
+```
+
+```json
+{
+  "code": "InvalidRequestBody",
+  "message": "'tags[0].name' must be a string",
+  "meta": { "errors": [...] }
+}
+```
+
+## Unknown Fields 
+
+By default Arkos passes blocks unknown fields. You can customize this behavior by using `forbidNonWhitelisted` in your `validationOptions`:
+
+<Tabs items={["v1.6", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  validation: {
+    resolver: "zod",
+    validationOptions: {
+      forbidNonWhitelisted: true,
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  validation: {
+    resolver: "zod",
+    validationOptions: {
+      forbidNonWhitelisted: true,
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+<Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+arkos.init({
+  validation: {
+    resolver: "class-validator",
+    validationOptions: {
+      forbidNonWhitelisted: true,
+    },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+When an unrecognized field is sent:
+
+```json
+{
+  "status": "error",
+  "code": "InvalidRequestBody",
+  "message": "Unrecognized key(s) in object: 'isAdmin'",
+  "meta": { "errors": [...] }
+}
+```
+
+<Callout type="warn">
+Enabling `forbidNonWhitelisted` is recommended. It prevents mass assignment vulnerabilities where unexpected fields slip through into your database operations.
+</Callout>
+
+## Strict Mode
+
+Strict mode requires every route to explicitly declare its validation intent at startup — no route can silently pass unvalidated input. See [Validation — Setup](/docs/core-concepts/validation/setup) for the full strict mode rules and behavior table.
+
+## Blocking Input Entirely
+
+To prohibit a specific input type on a route entirely — for example, rejecting any query string — pass `null` to that key in `validation`:
+
+```ts
+router.get(
+  {
+    path: "/api/reports/:id",
+    validation: {
+      body: null,   // not allowed — returns 400 if sent
+    },
+  },
+  reportController.getOne
+);
+```
+
+See [Validation — Setup](/docs/core-concepts/validation/setup) for the full behavior table.
