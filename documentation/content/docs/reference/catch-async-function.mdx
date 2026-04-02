@@ -16,7 +16,7 @@ The `catchAsync` function serves several important purposes:
 1. **Error Propagation**: Automatically forwards errors to Arkos's global error handler (built on top of Express global erro handler).
 2. **Code Cleanliness**: Eliminates repetitive try-catch blocks in route handlers
 3. **Preventing Unhandled Rejections**: Ensures all Promise rejections are properly caught
-4. **Centralized Error Handling**: Works with `AppError` to create a cohesive error management system, [read more about AppError](/docs/api-reference/the-app-error-class).
+4. **Centralized Error Handling**: Works with `AppError` to create a cohesive error management system, [read more about AppError](/docs/reference/the-app-error-class).
 5. **Developer Experience**: Reduces boilerplate code and potential for human error
 
 As you are reading about the `catchAsync` maybe you may want to also read about the **Arkos Global Error Handler** [clicking here](/docs/core-concepts/error-handling).
@@ -152,7 +152,7 @@ When using `catchAsync`, the error handling flow works like this:
 
 ## Integration with AppError
 
-`catchAsync` works best when paired with the `AppError` class, [read more](/docs/api-reference/the-app-error-class) about the `AppError` class:
+`catchAsync` works best when paired with the `AppError` class, [read more](/docs/reference/the-app-error-class) about the `AppError` class:
 
 ```typescript
 import { AppError, catchAsync } from "arkos/error-handler";

@@ -55,7 +55,7 @@ throw new AppError(
 ```
 
 :::tip Hint
-If throwing an error while processing a request you may want to wrap your async or even normal function (that throws an error) inside `catchAsync` ([read more about](/docs/api-reference/the-catch-async-function)), so that you can harness the `Built-in Error Handler` ([read more about](/docs/core-concepts/error-handling)).
+If throwing an error while processing a request you may want to wrap your async or even normal function (that throws an error) inside `catchAsync` ([read more about](/docs/reference/the-catch-async-function)), so that you can harness the `Built-in Error Handler` ([read more about](/docs/core-concepts/error-handling)).
 
 :::
 
@@ -86,7 +86,7 @@ export const getUserById = catchAsync(
 );
 ```
 
-You can read more about the `catchAsync` function [here](/docs/api-reference/the-catch-async-function).
+You can read more about the `catchAsync` function [here](/docs/reference/the-catch-async-function).
 
 ## Error Handling Workflow
 
