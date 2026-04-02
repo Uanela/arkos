@@ -2,16 +2,15 @@
   "title": "Docs",
   "pages": [
     "intro",
+    "quick-start",
     "how-it-works",
     "getting-started",
     "core-concepts",
     "guides",
     "testing",
     "tooling",
-    "migrations",
     "roadmap",
-    "advanced-guide",
-    "api-reference",
+    "reference",
     "next"
   ]
 }
