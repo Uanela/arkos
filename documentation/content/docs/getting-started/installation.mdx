@@ -13,7 +13,7 @@ On this guide you will learn how to install and create an Arkos.js project.
 
 Before you begin, make sure your system meets the following requirements:
 
-- [**Node.js**](https://nodejs.org) 20.19 or later.
+- [**Node.js**](https://nodejs.org) 22.9 or later.
 - macOS, Windows or Linux.
 
 ## Quick Start
@@ -216,7 +216,7 @@ In the snippet above, we configured `CORS` so that we can run our application fr
 
 ### 7. Export Your Prisma Client
 
-Arkos.js requires your Prisma client to be exported as default under `src/utils/prisma/index.js` (or `src/utils/prisma/index.ts` for TypeScript) so that it can dynamically import it later to manage your application's auto-generated endpoints and enhance Prisma power through the [**BaseService Class**](/docs/api-reference/the-base-service-class).
+Arkos.js requires your Prisma client to be exported as default under `src/utils/prisma/index.js` (or `src/utils/prisma/index.ts` for TypeScript) so that it can dynamically import it later to manage your application's auto-generated endpoints and enhance Prisma power through the [**BaseService Class**](/docs/reference/the-base-service-class).
 
 ```javascript
 import { PrismaClient } from "@prisma/client"
