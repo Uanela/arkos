@@ -2,7 +2,7 @@
   "title": "Components",
   "pages": [
     "routers",
-    "route-hook",
+    "route-hooks",
     "controllers",
     "services",
     "interceptors",
