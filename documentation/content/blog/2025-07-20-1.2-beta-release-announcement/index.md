@@ -77,7 +77,7 @@ const postController = new PostController();
 export default postController;
 ```
 
-See more about the `BaseController` class on practice at [The BaseController Class Guide](/docs/api-reference/the-base-controller-class).
+See more about the `BaseController` class on practice at [The BaseController Class Guide](/docs/reference/the-base-controller-class).
 
 #### 1.2. Routers
 
@@ -147,7 +147,7 @@ const postService = new PostService();
 export default postService;
 ```
 
-See more about the `BaseService` by reading [The BaseService Class Guide](/docs/api-reference/the-base-service-class).
+See more about the `BaseService` by reading [The BaseService Class Guide](/docs/reference/the-base-service-class).
 
 #### 1.4. Interceptor Middlewares
 
