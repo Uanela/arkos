@@ -15,7 +15,7 @@ import { ArkosConfig } from "../exports";
  * });
  * ```
  *
- * @see {@link https://www.arkosjs.com/docs/api-reference/define-config}
+ * @see {@link https://www.arkosjs.com/docs/reference/define-config}
  */
 export function defineConfig(config: ArkosConfig) {
   // if (!config.prisma?.instance) {

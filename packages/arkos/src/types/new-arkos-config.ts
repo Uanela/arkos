@@ -455,7 +455,7 @@ export type ArkosConfig = {
      * Passing an object without overriding everything will only cause it
      * to be deepmerged with the default options.
      *
-     * See [www.arkosjs.com/docs/api-reference/default-supported-upload-files](https://www.arkosjs.com/docs/api-reference/default-supported-upload-files) for detailed explanation about default values.
+     * See [www.arkosjs.com/docs/reference/default-supported-upload-files](https://www.arkosjs.com/docs/reference/default-supported-upload-files) for detailed explanation about default values.
      * ```
      */
     restrictions?: {
