@@ -5,16 +5,69 @@ title: Setup
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-Arkos supports two approaches to file uploads: **standalone routes** (`/api/uploads/:fileType`) that handle files independently, and **`RouterConfig` / `ArkosRouter`** uploads that attach files directly to model operations in a single request.
+Arkos supports two approaches to file uploads: **standalone routes** (`/api/uploads/:fileType`) that handle files independently, and **router uploads** that attach files directly to a route in a single request.
 
 ```ts
 // Standalone — upload first, reference the URL later
-const { data } = await fetch("/api/uploads/images", { method: "POST", body: formData }).then(r => r.json());
+const { urls } = await fetch("/api/uploads/images", { method: "POST", body: formData }).then(r => r.json());
 ```
 
-See [File Upload Routes](/docs/guides/file-upload/routes) for the full standalone API. The rest of this page covers the integrated approach.
+See [File Upload Routes](/docs/guides/file-upload/routes) for the full standalone API.
 
-## Global Configuration
+## Router uploads
+
+Use `experimental.uploads` on any route definition to handle file uploads inline — the file path is automatically attached to `req.body` before your handler runs.
+
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+  <Tab value="ArkosRouter">
+```ts title="src/routers/reports.router.ts"
+reportsRouter.post(
+  {
+    path: "/api/reports/upload",
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "reportFile",
+        uploadDir: "reports",
+        deleteOnError: true,
+      },
+    },
+  },
+  reportsController.processUploadedReport
+);
+```
+  </Tab>
+  <Tab value="RouteHook">
+```ts title="src/modules/user/user.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+
+export const hook: RouteHook = {
+  createOne: {
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "profilePhoto",
+        uploadDir: "user-profiles",
+        deleteOnError: true,
+      },
+    },
+  },
+};
+
+const userRouter = ArkosRouter();
+
+export default userRouter;
+```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hook) for details.
+</Callout>
+
+For all upload types (`single`, `array`, `fields`), nested field notation, and `RouteHook` examples, see [Router Upload](/docs/guides/file-upload/router-upload).
+
+## Global configuration
 
 All fields are optional and deep-merged with defaults.
 
@@ -114,158 +167,9 @@ arkos.init({
   </Tab>
 </Tabs>
 
-## ArkosRouter
-
-Use `experimental.uploads` on any `ArkosRouter` route definition to handle file uploads inline — the file path is automatically attached to `req.body` before your handler runs.
-
-```ts title="src/routers/reports.router.ts"
-import { ArkosRouter } from "arkos";
-import reportsController from "../controllers/reports.controller";
-
-const reportsRouter = ArkosRouter();
-
-reportsRouter.post(
-  {
-    path: "/api/reports/upload",
-    authentication: true,
-    experimental: {
-      uploads: {
-        type: "single",
-        field: "reportFile",
-        uploadDir: "reports",
-        maxSize: 50 * 1024 * 1024,
-        allowedFileTypes: [".xlsx", ".csv", ".pdf"],
-        deleteOnError: true,
-      },
-    },
-  },
-  reportsController.processUploadedReport
-);
-
-export default reportsRouter;
-```
-
-## RouterConfig
-
-The `config` named export carries all `ArkosRouter` route config capabilities — including `experimental.uploads`. Use it to attach file uploads to auto-generated CRUD endpoints.
-
-### single
-
-One file per request, attached to `req.body[field]` as a path string.
-
-```ts title="src/modules/user/user.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
-
-export const config: RouterConfig = {
-  createOne: {
-    experimental: {
-      uploads: {
-        type: "single",
-        field: "profilePhoto",
-        uploadDir: "user-profiles",
-        maxSize: 5 * 1024 * 1024,
-        allowedFileTypes: [".jpg", ".jpeg", ".png", ".webp"],
-        deleteOnError: true,
-      },
-    },
-  },
-  updateOne: {
-    experimental: {
-      uploads: {
-        type: "single",
-        field: "profilePhoto",
-        uploadDir: "user-profiles",
-        required: false,
-      },
-    },
-  },
-};
-
-const userRouter = ArkosRouter();
-export default userRouter;
-```
-
-### array
-
-Multiple files under one field, attached as a `string[]`.
-
-```ts title="src/modules/product/product.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
-
-export const config: RouterConfig = {
-  createOne: {
-    experimental: {
-      uploads: {
-        type: "array",
-        field: "images",
-        maxCount: 8,
-        uploadDir: "product-images",
-        deleteOnError: true,
-      },
-    },
-  },
-};
-
-const productRouter = ArkosRouter();
-export default productRouter;
-```
-
-### fields
-
-Multiple named fields, each with its own `maxCount`.
-
-```ts title="src/modules/product/product.router.ts"
-export const config: RouterConfig = {
-  createOne: {
-    experimental: {
-      uploads: {
-        type: "fields",
-        fields: [
-          { name: "thumbnail", maxCount: 1 },
-          { name: "gallery",   maxCount: 6 },
-          { name: "manual",    maxCount: 1 },
-        ],
-        uploadDir: "products",
-        deleteOnError: true,
-      },
-    },
-  },
-};
-```
-
-### Nested fields
-
-Use bracket notation to map uploaded files into nested `req.body` shapes.
-
-```ts
-experimental: {
-  uploads: {
-    type: "single",
-    field: "profile[photo]",
-    uploadDir: "user-profiles",
-  },
-},
-```
-
-The file path lands at `req.body.profile.photo`.
-
-## `experimental.uploads` Reference
-
-| Property | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `type` | `"single" \| "array" \| "fields"` | ✓ | — | Upload strategy |
-| `field` | `string` | For `single` / `array` | — | FormData field name. Supports bracket notation. |
-| `fields` | `Array<{ name: string; maxCount: number }>` | For `fields` | — | Per-field config |
-| `required` | `boolean` | — | `true` | Mark file as optional with `false` |
-| `uploadDir` | `string` | — | Auto by MIME | Subdirectory inside `baseUploadDir` |
-| `maxSize` | `number` | — | From global config | Per-file size limit in bytes |
-| `maxCount` | `number` | For `array` | — | Max number of files |
-| `allowedFileTypes` | `string[] \| RegExp` | — | From global config | Allowed extensions or pattern |
-| `attachToBody` | `"pathname" \| "url" \| "file" \| false` | — | `"pathname"` | How the file reference is attached to `req.body` |
-| `deleteOnError` | `boolean` | — | `true` | Delete uploaded files if the request fails |
-
 ## Related
 
+- [Router Upload](/docs/guides/file-upload/router-upload) — attaching uploads to custom and built-in routes
 - [File Upload Routes](/docs/guides/file-upload/routes) — standalone endpoints, request format, image processing params
-- [File Upload Interceptors](/docs/guides/file-upload/interceptors) — before/after hooks for any file operation
-
+- [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) — before/after hooks for any file operation
+- [Validation with file uploads](/docs/guides/validation/usage#validation-with-file-uploads) — how to combine `validation.body` and `experimental.uploads` in the same request

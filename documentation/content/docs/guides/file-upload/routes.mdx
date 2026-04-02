@@ -17,36 +17,42 @@ Arkos automatically exposes dedicated routes for standalone file operations. The
 `:fileType` accepts: `images`, `videos`, `documents`, or `files`.
 
 <Callout type="info">
-  `/api/uploads` is the default base route and can be customized in your config. See [File Upload Setup](/docs/guides/file-uploads/setup) for details.
+  `/api/uploads` is the default base route and can be customized in your config. See [File Upload Setup](/docs/guides/file-upload/setup) for details.
 </Callout>
 
-## Two Approaches to File Uploads
+## Two approaches to file uploads
 
-These standalone routes are one way to handle file uploads. Arkos also supports declaring uploads directly on your model routes via `RouterConfig` — a single API call that handles both the file and the record together.
+These standalone routes are one way to handle file uploads. Arkos also supports declaring uploads directly on your routes via `experimental.uploads` — a single API call that handles both the file and the record together.
 
 **Use standalone routes when:**
 - You need to upload files independently of any model operation
 - You're building a file management system
 - You need to upload files before deciding where to use them
 
-**Use `RouterConfig` uploads when:**
+**Use router uploads when:**
 - Files are tied to a model (user avatars, post images, product galleries)
 - You want a single API call that handles data and files together
 - You want automatic cleanup on error via `deleteOnError`
 
-## Configuring File Upload Routes
+See [Router Upload](/docs/guides/file-upload/router-upload) for the full router upload guide.
 
-Use the `config` named export in `src/modules/file-upload/file-upload.router.ts` to configure any file upload endpoint. Each key maps to the operation name from the table above:
+## Configuring file upload routes
+
+Use the `hook` named export in `src/modules/file-upload/file-upload.router.ts` to configure any file upload endpoint. Each key maps to the operation name from the table above.
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hook) for details.
+</Callout>
 
 ```ts title="src/modules/file-upload/file-upload.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
+import { ArkosRouter, RouteHook } from "arkos";
 import uploadPolicy from "@/src/modules/file-upload/file-upload.policy";
 
-export const config: RouterConfig = {
-  findFilie: { authentication: false }, // public
+export const hook: RouteHook = {
+  findFile: { authentication: false },
   uploadFile: { authentication: uploadPolicy.Upload },
   updateFile: { authentication: true },
-  deleteFile: { disabled: true }
+  deleteFile: { disabled: true },
 };
 
 const router = ArkosRouter();
@@ -54,13 +60,13 @@ const router = ArkosRouter();
 export default router;
 ```
 
-See the full configuration object reference at [ArkosRouter Configuration Object](/docs/reference/arkos-router#configuration-object).
+See the full configuration object reference at [ArkosRouter](/docs/core-concepts/components/arkos-router).
 
-## Intercepting File Upload Requests
+## Intercepting file upload requests
 
 Every file upload endpoint can be intercepted — run logic before or after any operation. For example, to check if a file is still referenced before deleting it:
 
-```typescript title="@/src/modules/file-upload/file-upload.interceptors.ts"
+```ts title="src/modules/file-upload/file-upload.interceptors.ts"
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const beforeDeleteFile = [
@@ -80,18 +86,19 @@ export const beforeDeleteFile = [
 ];
 ```
 
-Available hooks: `beforeUploadFile`, `afterUploadFile`, `beforeUpdateFile`, `afterUpdateFile`, `beforeDeleteFile`, `afterDeleteFile`, `beforeFindFile`. See [File Upload Interceptors](/docs/guides/file-upload/interceptors) for full details.
+Available hooks: `beforeUploadFile`, `afterUploadFile`, `beforeUpdateFile`, `afterUpdateFile`, `beforeDeleteFile`, `afterDeleteFile`, `beforeFindFile`. See [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) for full details.
 
-## Sending Requests
+## Sending requests
 
-### Retrieve a File
+### Retrieve a file
+
 ```http
 GET /api/uploads/images/1234567890-photo.jpg
 ```
 
 Response: The file is served directly as a static asset.
 
-### Upload a File
+### Upload a file
 
 When uploading, the FormData field name must match the `:fileType` in the URL.
 
@@ -101,7 +108,7 @@ Authorization: Bearer YOUR_API_TOKEN
 Content-Type: multipart/form-data
 ```
 
-```typescript
+```ts
 const formData = new FormData();
 formData.append("images", imageFile); // field name matches fileType
 
@@ -134,7 +141,7 @@ POST /api/uploads/images?resizeTo=800&format=webp
 | `?resizeTo=800` | Resize to fit within px, keeps ratio |
 | `?format=webp` | Convert to format |
 
-### Replace a File
+### Replace a file
 
 Automatically deletes the old file before uploading the new one.
 
@@ -144,7 +151,7 @@ Content-Type: multipart/form-data
 Authorization: Bearer YOUR_API_TOKEN
 ```
 
-```typescript
+```ts
 const formData = new FormData();
 formData.append("images", newImageFile);
 
@@ -166,7 +173,7 @@ Response:
 
 If the old file doesn't exist, it acts as a regular upload and returns `"File uploaded successfully"` instead.
 
-### Delete a File
+### Delete a file
 
 ```http
 DELETE /api/uploads/images/1234567890-photo.jpg
@@ -175,11 +182,11 @@ Authorization: Bearer YOUR_API_TOKEN
 
 Response: `204 No Content`
 
-## Common Workflow
+## Common workflow
 
 Upload a file first, then reference it in a subsequent model request:
 
-```typescript
+```ts
 // 1. Upload the file
 const formData = new FormData();
 formData.append("images", file);
@@ -200,7 +207,7 @@ await fetch("http://localhost:8000/api/users/123", {
 });
 ```
 
-## Default File Type Support
+## Default file type support
 
 **Images** — jpeg, jpg, png, gif, webp, svg, bmp, tiff, heic, avif, psd, and more. Defaults: 30 files max, 15 MB per file.
 
@@ -212,82 +219,78 @@ await fetch("http://localhost:8000/api/users/123", {
 
 ## Configuration
 
-<Tabs items={["v1.6+ (defineConfig)", "before v1.6"]}>
+<Tabs items={["v1.6+ (defineConfig)", "v1.4–v1.5", "v1.3"]}>
   <Tab value="v1.6+ (defineConfig)">
-```typescript title="arkos.config.ts"
-import { defineConfig } from "arkos";
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
 
-const arkosConfig = defineConfig({
+export default defineConfig({
   fileUpload: {
     baseUploadDir: "/uploads",
     baseRoute: "/api/uploads",
     expressStatic: {
-      maxAge: "1y",
-      etag: true,
+      maxAge: "1d",
     },
     restrictions: {
       images: {
         maxCount: 10,
-        maxSize: 5 * 1024 * 1024, // 5MB
+        maxSize: 5 * 1024 * 1024,
         supportedFilesRegex: /\.(jpg|jpeg|png|webp)$/,
-      },
-      videos: {
-        maxCount: 5,
-        maxSize: 100 * 1024 * 1024, // 100MB
-        supportedFilesRegex: /\.(mp4|mov|webm)$/,
-      },
-      documents: {
-        maxCount: 20,
-        maxSize: 10 * 1024 * 1024, // 10MB
-        supportedFilesRegex: /\.(pdf|docx|xlsx)$/,
       },
     },
   },
 });
-
-export default arkosConfig;
 ```
   </Tab>
-  <Tab value="pre-1.6">
+  <Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
 
-<Callout type="info">
-  Before v1.6, `defineConfig` was not available. Export a plain object as default instead.
-</Callout>
-
-```typescript title="arkos.config.ts"
-export default {
+const config: ArkosConfig = {
   fileUpload: {
     baseUploadDir: "/uploads",
     baseRoute: "/api/uploads",
     expressStatic: {
-      maxAge: "1y",
-      etag: true,
+      maxAge: "1d",
     },
     restrictions: {
       images: {
         maxCount: 10,
-        maxSize: 5 * 1024 * 1024, // 5MB
+        maxSize: 5 * 1024 * 1024,
         supportedFilesRegex: /\.(jpg|jpeg|png|webp)$/,
-      },
-      videos: {
-        maxCount: 5,
-        maxSize: 100 * 1024 * 1024, // 100MB
-        supportedFilesRegex: /\.(mp4|mov|webm)$/,
-      },
-      documents: {
-        maxCount: 20,
-        maxSize: 10 * 1024 * 1024, // 10MB
-        supportedFilesRegex: /\.(pdf|docx|xlsx)$/,
       },
     },
   },
 };
+
+export default config;
+```
+  </Tab>
+  <Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+arkos.init({
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    restrictions: {
+      images: {
+        maxCount: 10,
+        maxSize: 5 * 1024 * 1024,
+        supportedFilesRegex: /\.(jpg|jpeg|png|webp)$/,
+      },
+    },
+  },
+});
 ```
   </Tab>
 </Tabs>
+```
 
-## Customizing File Upload Routes
+## Related
 
-- **[Interceptors](/docs/core-concepts/components/interceptors)** — Run logic before or after any file operation
-- **[File Uploads](/docs/core-concepts/file-uploads)** — Full configuration reference and `RouterConfig` approach
-- **[File Upload Services](/docs/api-reference/file-upload-services)** — Programmatic file operations inside controllers and services
+- [Router Upload](/docs/guides/file-upload/router-upload) — attaching uploads to custom and built-in routes
+- [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) — before/after hooks for any file operation
+- [File Upload Services](/docs/api-reference/file-upload-services) — programmatic file operations inside controllers and services
+- [Validation with file uploads](/docs/guides/validation/usage#validation-with-file-uploads) — how to combine `validation.body` and `experimental.uploads` in the same request
