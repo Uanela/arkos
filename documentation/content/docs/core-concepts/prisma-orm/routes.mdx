@@ -1,0 +1,426 @@
+---
+title: Routes
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+For every model in your Prisma schema, Arkos automatically generates a full set of RESTful endpoints. The model name is converted to kebab-case and pluralized for the route path.
+
+**Example:** A `UserProfile` model is accessible at `/api/user-profiles`.
+
+| Method | Endpoint | Description | Operation |
+|--------|----------|-------------|-----------|
+| GET | `/api/[model]` | List records | `findMany` |
+| POST | `/api/[model]` | Create one record | `createOne` |
+| GET | `/api/[model]/:id` | Get one record | `findOne` |
+| PATCH | `/api/[model]/:id` | Update one record | `updateOne` |
+| DELETE | `/api/[model]/:id` | Delete one record | `deleteOne` |
+| POST | `/api/[model]/many` | Create multiple records | `createMany` |
+| PATCH | `/api/[model]/many` | Update multiple records | `updateMany` |
+| DELETE | `/api/[model]/many` | Delete multiple records | `deleteMany` |
+
+<Callout type="info">
+  All routes are mounted under your configured `globalPrefix` (default: `/api`).
+  See [Configuration](/docs/getting-started/configuration) for more.
+</Callout>
+
+## Configuring Model Routes
+
+Every generated endpoint accepts the same configuration object used in `ArkosRouter` — disable routes, add rate limiting, authentication, and more via the [Route Hook](/docs/core-concepts/components/route-hooks) in your router file `src/modules/<model>/<model>.router.ts` where each key maps to the operation name from the table above:
+
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouterConfig, RouteHook } from "arkos";
+import postPolicy from "@/src/modules/post/post.policy";
+import UpdateUserSchema from "@/src/modules/post/schemas/post.schema";
+
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+  findOne: { authentication: true },
+  createOne: { authentication: postPolicy.Create },
+  updateOne: { validation: { body: UpdateUserSchema } },
+  deleteOne: { disabled: true },
+  createMany: { disabled: true },
+  updateMany: { disabled: true },
+  deleteMany: { disabled: true }
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig` introduced in v1.6. The old name still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for the full guide.
+</Callout>
+
+See the full configuration object reference at [ArkosRouter Configuration Object](/docs/reference/arkos-router#configuration-object).
+
+## Intercepting Model Requests
+
+Every generated endpoint can be intercepted — run logic before or after any operation without replacing the built-in behavior. For example, to log every time a post is created:
+
+```typescript title="@/src/modules/post/post.interceptors.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const afterCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    console.log("Post created:", res.locals.data);
+    next();
+  },
+];
+```
+
+See [Prisma Model Interceptors](/docs/core-concepts/components/interceptors#prisma-model-interceptors) for the full list of available hooks and what you can do with them.
+
+## Sending Model Requests
+
+The examples below use a `Post` model. Requests that require authentication pass the token via the `Authorization` header — it can also be sent through cookies, which are set automatically on login depending on your configuration.
+
+### Find Many Posts
+
+```http
+GET /api/posts
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+Response:
+
+```json
+{
+  "total": 42,
+  "results": 10,
+  "data": [
+    {
+      "id": "1",
+      "title": "Getting Started with Arkos",
+      "content": "...",
+      "authorId": "123",
+      "published": true,
+      "createdAt": "2025-04-05T14:23:45.123Z",
+      "updatedAt": "2025-04-05T14:23:45.123Z"
+    }
+  ]
+}
+```
+
+### Find One Post
+
+```http
+GET /api/posts/1
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "1",
+    "title": "Getting Started with Arkos",
+    "content": "...",
+    "authorId": "123",
+    "published": true,
+    "createdAt": "2025-04-05T14:23:45.123Z",
+    "updatedAt": "2025-04-05T14:23:45.123Z"
+  }
+}
+```
+
+### Create One Post
+
+```http
+POST /api/posts
+Content-Type: application/json
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+```json
+{
+  "title": "My New Post",
+  "content": "Post content here",
+  "authorId": "123",
+  "published": false
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "42",
+    "title": "My New Post",
+    "content": "Post content here",
+    "authorId": "123",
+    "published": false,
+    "createdAt": "2025-04-05T14:23:45.123Z",
+    "updatedAt": "2025-04-05T14:23:45.123Z"
+  }
+}
+```
+
+### Create Multiple Posts
+
+```http
+POST /api/posts/many
+Content-Type: application/json
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+```json
+[
+  { "title": "First Post", "content": "...", "authorId": "123" },
+  { "title": "Second Post", "content": "...", "authorId": "123" }
+]
+```
+
+Response:
+
+```json
+{
+  "total": 2,
+  "results": 2,
+  "data": [
+    {
+      "id": "43",
+      "title": "First Post",
+      "content": "...",
+      "authorId": "123",
+      "createdAt": "2025-04-05T14:23:45.123Z",
+      "updatedAt": "2025-04-05T14:23:45.123Z"
+    },
+    {
+      "id": "44",
+      "title": "Second Post",
+      "content": "...",
+      "authorId": "123",
+      "createdAt": "2025-04-05T14:23:45.123Z",
+      "updatedAt": "2025-04-05T14:23:45.123Z"
+    }
+  ]
+}
+```
+
+### Update One Post
+
+```http
+PATCH /api/posts/1
+Content-Type: application/json
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+```json
+{
+  "title": "Updated Title",
+  "published": true
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "1",
+    "title": "Updated Title",
+    "content": "...",
+    "authorId": "123",
+    "published": true,
+    "createdAt": "2025-04-05T14:23:45.123Z",
+    "updatedAt": "2025-04-05T15:30:12.456Z"
+  }
+}
+```
+
+### Update Multiple Posts
+
+Filters are passed as query parameters — all matched records are updated with the request body.
+
+```http
+PATCH /api/posts/many?authorId=123&published=false
+Content-Type: application/json
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+```json
+{
+  "published": true
+}
+```
+
+Response:
+
+```json
+{
+  "total": 5,
+  "results": 5,
+  "data": [
+    {
+      "id": "2",
+      "title": "Draft Post",
+      "published": true,
+      "updatedAt": "2025-04-05T15:30:12.456Z"
+    }
+  ]
+}
+```
+
+### Delete One Post
+
+```http
+DELETE /api/posts/1
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+Response: `204 No Content`
+
+### Delete Multiple Posts
+
+Filters are passed as query parameters — all matched records are deleted.
+
+```http
+DELETE /api/posts/many?authorId=123&published=false
+Authorization: Bearer YOUR_API_TOKEN
+```
+
+Response:
+
+```json
+{
+  "total": 3,
+  "results": 3,
+  "data": [
+    { "id": "7", "title": "Deleted Draft Post" }
+  ]
+}
+```
+
+<Callout type="warn">
+  Bulk delete requires at least one filter query parameter. Sending `DELETE /api/posts/many` with no filters will return a `400` error to prevent accidental mass deletion.
+</Callout>
+
+## Querying
+
+All list endpoints (`GET /api/[model]`) support a rich set of query parameters that translate directly into Prisma queries.
+
+Arkos supports two interchangeable syntaxes — use whichever feels natural, or mix them in the same request:
+
+- **Bracket notation:** `price[gte]=50&price[lt]=100`
+- **Django-style:** `price__gte=50&price__lt=100`
+
+### Filtering
+
+Basic filtering matches records where any of the conditions are true (OR by default):
+
+```http
+GET /api/posts?published=true&authorId=123
+```
+
+To switch to AND logic, use `filterMode`:
+
+```http
+GET /api/posts?filterMode=AND&published=true&authorId=123
+```
+
+**Comparison operators:**
+
+```http
+GET /api/products?price[gte]=50&price[lt]=100
+# or
+GET /api/products?price__gte=50&price__lt=100
+```
+
+Supported operators: `gte`, `gt`, `lte`, `lt`, `contains`, `startsWith`, `endsWith`, `in`, `notIn`, and all other Prisma filter operators.
+
+**Nested / relational filtering:**
+
+```http
+GET /api/posts?author[age]=30&comments[some][content][contains]=interesting
+# or
+GET /api/posts?author__age=30&comments__some__content__contains=interesting
+```
+
+### Search
+
+Full-text search across all string fields except those ending in `id`, `ids`, `ID`, or `IDs`:
+
+```http
+GET /api/posts?search=arkos
+```
+
+This generates a case-insensitive `contains` check across every eligible string field on the model.
+
+### Sorting
+
+Prefix a field with `-` for descending order. Comma-separate multiple fields:
+
+```http
+GET /api/posts?sort=-createdAt,title
+```
+
+This sorts by `createdAt` descending, then `title` ascending.
+
+### Pagination
+
+```http
+GET /api/posts?page=2&limit=20
+```
+
+`limit` defaults to `30`. The response always includes `total` (all matching records) and `results` (records returned in this page).
+
+### Field Selection
+
+**Select specific fields:**
+
+```http
+GET /api/posts?fields=id,title,published
+```
+
+**Include a relation (adds to default fields):**
+
+```http
+GET /api/posts?fields=+author
+```
+
+**Exclude specific fields:**
+
+```http
+GET /api/posts?fields=-content,-updatedAt
+```
+
+You can combine these in a single request:
+
+```http
+GET /api/posts?fields=id,title,+author,-updatedAt
+```
+
+### Combining Parameters
+
+All query parameters work together:
+
+```http
+GET /api/posts?search=arkos&published=true&sort=-createdAt&page=1&limit=10&fields=id,title,+author
+```
+
+## Error Responses
+
+```json
+// 404 - Record not found
+{
+  "code": "PostNotFound",
+  "message": "Post with id '999' not found."
+}
+
+// 400 - Missing filters on bulk operation
+{
+  "code": "MissingFilterCriteria",
+  "message": "Filter criteria not provided for bulk deletion."
+}
+```
+
+For the full list of possible errors, see [Error Handling](/docs/guides/error-handling).
+
+## Customizing Model Routes
+
+- **[Interceptors](/docs/core-concepts/components/interceptors)** — Run logic before or after any generated endpoint
+- **[Authentication](/docs/core-concepts/authentication)** — Control which endpoints require authentication and which roles can access them
+- **[Validation](/docs/guides/validation)** — Add request body and query parameter validation
