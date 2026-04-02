@@ -3,11 +3,11 @@ title: Dynamic
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
-import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 Dynamic mode is Arkos's database-driven permission system. Roles and permissions live in `AuthRole`, `AuthPermission`, and `UserRole` models and can be created, updated, and assigned at runtime without a redeploy — making it the right choice for multi-tenant apps, SaaS platforms, or any system where roles change frequently.
 
-<Callout type="warning">
+<Callout type="warn">
 Before using Dynamic mode make sure you have authentication configured. See [Authentication Setup](/docs/core-concepts/authentication/setup).
 </Callout>
 
@@ -17,12 +17,12 @@ Dynamic mode replaces the `role`/`roles` enum field with a `UserRole` relation, 
 ```prisma title="prisma/schema.prisma"
 model User {
   // ... required Arkos fields
-  roles                UserRole[]
+  roles UserRole[]
 
   // your own fields
-  email                String?    @unique
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AuthRole {
@@ -35,11 +35,11 @@ model AuthRole {
 }
 
 model AuthPermission {
-  id       String               @id @default(uuid())
+  id       String   @id @default(uuid())
   resource String
   action   String
   roleId   String
-  role     AuthRole             @relation(fields: [roleId], references: [id])
+  role     AuthRole @relation(fields: [roleId], references: [id])
 
   @@unique([resource, action, roleId])
 }
@@ -104,7 +104,7 @@ arkos.init({
 
 ## Defining Dynamic Permissions
 
-Same `ArkosPolicy` and `.auth.ts` API as [Static mode](/docs/core-concepts/authentication/modes/static/setup) — the only difference is that `roles` inside rules are ignored. Actual enforcement comes from database records instead. Define your policy with names and descriptions for discovery, skip the roles:
+Same `ArkosPolicy` and `.auth.ts` API as [Static mode](/docs/core-concepts/authentication/modes/static) — the only difference is that `roles` inside rules are ignored at enforcement time. Actual enforcement comes from database records instead. Define your policy with names and descriptions for discovery, and skip the roles — or keep `roles: ["*"]` where all authenticated users should have access:
 ```ts title="src/modules/post/post.policy.ts"
 import { ArkosPolicy } from "arkos";
 
@@ -117,11 +117,7 @@ const postPolicy = ArkosPolicy("post")
 export default postPolicy;
 ```
 
-Wiring to routes is identical to Static mode — see [Static Mode — Wiring to Routes](/docs/core-concepts/authentication/modes/static/setup#wiring-to-routes).
-
-<Callout type="info">
-To protect [authentication routes](/docs/core-concepts/authentication/customization/interceptors) or [file upload routes](/docs/guides/file-upload/authentication) see their respective guides.
-</Callout>
+Wiring to routes is identical to Static mode — see [Static Mode — Using Permissions in Routes](/docs/core-concepts/authentication/modes/static#using-permissions-in-routes).
 
 ## Managing Permissions
 
@@ -164,8 +160,8 @@ await prisma.userRole.create({
 
 `ArkosPolicy` `can*` methods work in Dynamic mode too, checking against database permissions. See [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control) for full usage.
 
-<Callout type="idea">
-Imperative checks in fine grained access control also works with auth config files see it in the full guide [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control).
+<Callout type="info">
+Imperative checks in fine-grained access control also work with auth config files. See the full guide at [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control).
 </Callout>
 
 ## Migrating from Static
@@ -178,4 +174,3 @@ Imperative checks in fine grained access control also works with auth config fil
 6. Create `AuthPermission` records based on your existing rules
 7. Assign users to roles via `UserRole`
 8. Remove `roles` from your policy rules — they'll be ignored anyway
-

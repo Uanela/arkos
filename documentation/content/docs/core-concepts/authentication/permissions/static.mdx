@@ -3,11 +3,11 @@ title: Static
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
-import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 Static mode is Arkos's code-based permission system. Roles are assigned on the `User` model as an enum field, and permissions are declared via [`ArkosPolicy`](#arkospolicy) (v1.6+, recommended) or [`.auth.ts` files](#auth-files) (v1.1+, still supported). Arkos enforces them automatically across all routes.
 
-<Callout type="warning">
+<Callout type="warn">
 Before using Static mode make sure you have authentication configured. See [Authentication Setup](/docs/core-concepts/authentication/setup).
 </Callout>
 
@@ -32,7 +32,7 @@ See the full required User model at [User Model Authentication Setup](/docs/core
 
 ## ArkosPolicy
 
-`ArkosPolicy` is the recommended API introduced in v1.6. It provides a fluent interface for defining permissions, works for any module (Prisma models, auth, file upload or custom), and supports imperative `can*` checks for [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control).
+`ArkosPolicy` is the recommended API introduced in v1.6. It provides a fluent interface for defining permissions, works for any module (Prisma models, auth, file upload, or custom), and supports imperative `can*` checks for [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control).
 
 ### Defining a Policy
 ```ts title="src/modules/post/post.policy.ts"
@@ -55,9 +55,12 @@ export default postPolicy;
 | `{ roles: [...], name?, description? }` | Role-restricted |
 | `["Admin", "Editor"]` | Shorthand for roles array |
 
-### Using Permissions In Routes With ArkosPolicy
+### Using Permissions in Routes
 
-#### Permissions In ArkosRouter
+Permissions wire the same way whether you're on a custom route or a built-in one. For built-in routes (Prisma model, auth, file upload) use a [Route Hook](/docs/core-concepts/components/route-hook) alongside your `ArkosRouter` export.
+
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+<Tab value="ArkosRouter">
 ```ts title="src/modules/post/post.router.ts"
 import { ArkosRouter } from "arkos";
 import postPolicy from "@/src/modules/post/post.policy";
@@ -77,16 +80,15 @@ router.get(
 
 export default router;
 ```
-
-#### Permissions In Built-in Routes
-
+</Tab>
+<Tab value="RouteHook">
 ```ts title="src/modules/post/post.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
+import { ArkosRouter, RouteHook } from "arkos";
 import postPolicy from "@/src/modules/post/post.policy";
 
-export const config: RouterConfig = {
+export const hook: RouteHook = {
   createOne: { authentication: postPolicy.Create },
-  findMany:  { authentication: postPolicy.View },
+  findMany: { authentication: postPolicy.View },
   updateOne: { authentication: postPolicy.Update },
   deleteOne: { authentication: postPolicy.Delete },
 };
@@ -96,15 +98,19 @@ const router = ArkosRouter();
 export default router;
 ```
 
-For further details on using permissions in built-in routes see [Prisma Model Routes](/docs/core-concepts/prisma-orm/model-routes#authentication), [Authentication Routes](/docs/core-concepts/authentication/customization/interceptors), and [File Upload Routes](/docs/guides/file-upload/authentication) for full configuration options.
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+</Callout>
+</Tab>
+</Tabs>
 
-#### Permissions In Express Router
+### Using Permissions in Express Router
 
+If you're using a plain Express `Router` instead of `ArkosRouter`, wire authentication manually via `authService`:
 ```ts title="src/modules/post/post.router.ts"
 import { Router } from "express";
 import { authService } from "arkos/services";
 import postPolicy from "@/src/modules/post/post.policy";
-import postAuthConfigs from "@/src/modules/post/post.auth";
 import postController from "@/src/modules/post/post.controller";
 
 const router = Router();
@@ -117,14 +123,6 @@ router.post(
   "/api/posts",
   authService.authenticate,
   authService.authorize("Create", "post", postPolicy.Create),
-  postController.createOne
-);
-
-// role-based — before v1.6
-router.post(
-  "/api/posts",
-  authService.authenticate,
-  authService.handleAccessControl("Create", "post", postAuthConfigs.accessControl),
   postController.createOne
 );
 ```
@@ -145,8 +143,9 @@ if (await postPolicy.canDelete(req.user)) {
   // proceed
 }
 ```
-<Callout type="idea">
-Imperative checks in fine grained access control also works with auth config files see it in the full guide [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control).
+
+<Callout type="info">
+Imperative checks in fine-grained access control also work with auth config files. See the full guide at [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control).
 </Callout>
 
 ### CLI Generation (v1.6+)
@@ -156,14 +155,13 @@ arkos generate policy --module post
 arkos g p -m post
 ```
 
-## Auth Config Files (deprecated)
+## Auth Config Files
 
-<Callout type="warning">
+<Callout type="warn">
 `.auth.ts` auto-loading is deprecated as of v1.6 and will be removed in v2.0. New projects should use `ArkosPolicy`. Existing projects can migrate gradually — see the [migration guide](/blog/how-migrate-from-auth-files-to-arkos-policy).
 </Callout>
 
 `.auth.ts` files have been the standard since v1.0 and remain fully supported. They define `authenticationControl` (who needs to be logged in) and `accessControl` (which roles can act) separately.
-
 
 ### Creating an Auth File
 ```bash
@@ -199,21 +197,6 @@ export const postAccessControl = {
   },
 } as const satisfies AuthConfigs["accessControl"];
 
-type PostPermissionName = `can${keyof typeof postAccessControl & string}`;
-
-export const postPermissions = Object.keys(postAccessControl).reduce(
-  (acc, key) => {
-    acc[`can${key}` as PostPermissionName] = authService.permission(
-      key,
-      "post",
-      postAccessControl
-    );
-    return acc;
-  },
-  {} as Record<PostPermissionName, ReturnType<typeof authService.permission>>
-);
-
-
 export const postAuthenticationControl = {
   Create: true,
   Update: true,
@@ -229,7 +212,7 @@ const postAuthConfigs: AuthConfigs = {
 export default postAuthConfigs;
 ```
 
-### Auth Configs File Structure
+### Auth Config File Structure
 
 **`authenticationControl`** — whether a route requires login:
 
@@ -246,13 +229,14 @@ export default postAuthConfigs;
 | Detailed | `{ roles: [...], name: "...", description: "..." }` |
 | All authenticated | `["*"]` |
 
-### Using Auth Configs File In Routes
+### Using Auth Config Files in Routes
 
-#### Auth Config File In ArkosRouter
+The same auth config file works on both custom and built-in routes. For built-in routes use a [Route Hook](/docs/core-concepts/components/route-hook) alongside your `ArkosRouter` export.
 
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+<Tab value="ArkosRouter">
 ```ts title="src/modules/post/post.router.ts"
 import { ArkosRouter } from "arkos";
-import { authService } from "@/src/services";
 import postAuthConfigs from "@/src/modules/post/post.auth";
 import postController from "@/src/modules/post/post.controller";
 
@@ -260,34 +244,35 @@ const router = ArkosRouter();
 
 // login required only
 router.get(
-    { 
-      path: "/api/posts",
-      authentication: true,
-    }, 
-    postController.findMany
-  );
+  {
+    path: "/api/posts",
+    authentication: true,
+  },
+  postController.findMany
+);
 
-// role-based — v1.6+
+// role-based
 router.post(
-  { 
+  {
     path: "/api/posts",
     authentication: {
       resource: "post",
       action: "Create",
-      rule: postAuthConfigs.accessControl.Create
-    }
+      rule: postAuthConfigs.accessControl.Create,
+    },
   },
   postController.createOne
 );
+
+export default router;
 ```
-
-#### Auth Configs In Built-in Routes
-
+</Tab>
+<Tab value="RouteHook">
 ```ts title="src/modules/post/post.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
+import { ArkosRouter, RouteHook } from "arkos";
 import postAuthConfigs from "@/src/modules/post/post.auth";
 
-export const config: RouterConfig = {
+export const hook: RouteHook = {
   createOne: {
     authentication: {
       resource: "post",
@@ -309,11 +294,16 @@ const router = ArkosRouter();
 export default router;
 ```
 
-#### Auth Config File In Express Router
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+</Callout>
+</Tab>
+</Tabs>
 
+### Using Auth Config Files in Express Router
 ```ts title="src/modules/post/post.router.ts"
 import { Router } from "express";
-import { authService } from "@/src/services";
+import { authService } from "arkos/services";
 import postAuthConfigs from "@/src/modules/post/post.auth";
 import postController from "@/src/modules/post/post.controller";
 
