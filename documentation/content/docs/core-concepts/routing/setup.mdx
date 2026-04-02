@@ -13,8 +13,11 @@ Arkos's routing system is built on top of Express.js. If you've used Express bef
   <Tab value="v1.6+">
 ```typescript title="src/app.ts"
 import arkos from "arkos";
+import router from "@/src/router";
 
 const app = arkos();
+
+app.use(router);
 
 app.listen();
 ```
@@ -22,8 +25,11 @@ app.listen();
   <Tab value="pre-1.6">
 ```typescript title="src/app.ts"
 import arkos from "arkos";
+import router from "@/src/router";
 
-arkos.init({});
+arkos.init({
+  use: [router],
+});
 ```
   </Tab>
 </Tabs>
@@ -158,57 +164,34 @@ export default {
   [Configuration](/docs/getting-started/configuration) for all available options.
 </Callout>
 
-## Auto-Generated CRUD Routes
-
-One of Arkos's core features is that it automatically generates full CRUD endpoints for every model in your Prisma schema — no route definitions needed. For a `Post` model, Arkos generates `GET /posts`, `POST /posts`, `GET /posts/:id`, `PATCH /posts/:id`, and `DELETE /posts/:id` out of the box.
-
-See [Endpoints](/docs/core-concepts/generated-routes) for the full list of generated routes, their behavior, and how to customize or extend them.
-
 ## Custom Routes with ArkosRouter
 
-For routes you write yourself, Arkos provides `ArkosRouter` — a thin wrapper around Express Router that adds declarative configuration support. The only difference from Express is that instead of passing a path string as the first argument, you pass a configuration object:
+For routes you write yourself, Arkos provides `ArkosRouter` — a thin wrapper around Express Router that adds declarative configuration support:
 
-<Tabs items={["ArkosRouter", "Express Router"]}>
-  <Tab value="ArkosRouter">
-```typescript
+```typescript title="src/router.ts"
 import { ArkosRouter } from "arkos";
+import userRouter from "@/src/modules/user/user.router";
+import reportsRouter from "@/src/modules/reports/reports.router";
 
 const router = ArkosRouter();
 
-router.get({ path: "/reports" }, handler);
+router.use(userRouter);
+router.use(reportsRouter);
+
+export default router;
 ```
-  </Tab>
-  <Tab value="Express Router">
-```typescript
-import { Router } from "express";
 
-const router = Router();
+Each module defines its own router:
 
-router.get("/reports", handler);
-```
-  </Tab>
-</Tabs>
-
-<Callout type="warn">
-  Express Router is supported for backward compatibility but not recommended.
-  Using it means you lose access to built-in authentication, validation, rate
-  limiting, and other features that ArkosRouter provides through its
-  configuration object.
-</Callout>
-
-That configuration object is where the real value lives. Authentication, validation, rate limiting and more — all declared alongside the route itself:
-
-<Tabs items={["v1.6+", "pre-1.6"]}>
-  <Tab value="v1.6+">
 ```typescript title="src/modules/reports/reports.router.ts"
 import { ArkosRouter } from "arkos";
 import reportsController from "@/src/modules/reports/reports.controller";
 import reportsPolicy from "@/src/modules/reports/reports.policy";
 import GenerateReportSchema from "@/src/modules/reports/schemas/generate-report.schema";
 
-const reportsRouter = ArkosRouter();
+const router = ArkosRouter();
 
-reportsRouter.post(
+router.post(
   {
     path: "/reports/generate",
     authentication: reportsPolicy.Generate,
@@ -217,35 +200,15 @@ reportsRouter.post(
   reportsController.generateReport
 );
 
-export default reportsRouter;
+export default router;
 ```
-  </Tab>
-  <Tab value="pre-1.6">
-```typescript title="src/modules/reports/reports.router.ts"
-import { ArkosRouter } from "arkos";
-import reportsController from "@/src/modules/reports/reports.controller";
-import { reportsAccessControl } from "@/src/modules/reports/reports.auth";
-import GenerateReportSchema from "@/src/modules/reports/schemas/generate-report.schema";
 
-const reportsRouter = ArkosRouter();
-
-reportsRouter.post(
-  {
-    path: "/reports/generate",
-    authentication: {
-      resource: "report",
-      action: "Generate",
-      rule: reportsAccessControl.Generate,
-    },
-    validation: { body: GenerateReportSchema },
-  },
-  reportsController.generateReport
-);
-
-export default reportsRouter;
-```
-  </Tab>
-</Tabs>
+<Callout type="warn">
+  Express Router is supported for backward compatibility but not recommended.
+  Using it means you lose access to built-in authentication, validation, rate
+  limiting, and other features that ArkosRouter provides through its
+  configuration object.
+</Callout>
 
 ### Route Paths
 
@@ -258,65 +221,26 @@ Paths are absolute. A route defined as `/reports/generate` is accessible at `/re
   </Tab>
 </Tabs>
 
-## Registering Routers
+## Project Structure
 
-<Tabs items={["v1.6+", "pre-1.6"]}>
-  <Tab value="v1.6+">
-
-Pass your routers to `app.use()` before calling `app.listen()`:
-
-```typescript title="src/app.ts"
-import arkos from "arkos";
-import reportsRouter from "@/src/modules/reports/reports.router";
-import userRouter from "@/src/modules/user/user.router";
-
-const app = arkos();
-
-app.use(reportsRouter);
-app.use(userRouter);
-
-app.listen();
-```
-  </Tab>
-  <Tab value="pre-1.6">
-
-Pass your routers via the `use` array in `arkos.init()`:
-
-```typescript title="src/app.ts"
-import arkos from "arkos";
-import reportsRouter from "@/src/modules/reports/reports.router";
-import userRouter from "@/src/modules/user/user.router";
-
-arkos.init({
-  use: [reportsRouter, userRouter],
-});
-```
-  </Tab>
-</Tabs>
-
-Routers registered this way are applied **before** Arkos's built-in routes, giving you full control over the request pipeline.
-
-### Project Structure
-
-Routers can live anywhere, but a consistent structure helps as your project grows. We recommend grouping everything under `src/modules/`:
+A suggested structure that scales well:
 
 ```
 src/
-└── modules/
-    ├── user/
-    │   ├── user.router.ts        # Custom routes extending the User model
-    │   ├── user.controller.ts
-    │   ├── user.service.ts
-    │   └── user.interceptor.ts  # Hooks into auto-generated User endpoints
-    └── reports/
-        ├── reports.router.ts     # Custom feature routes (no Prisma model)
-        ├── reports.controller.ts
-        └── reports.service.ts
+├── router.ts          # Single import point for all routers
+├── modules/
+│   ├── user/
+│   │   ├── user.router.ts
+│   │   ├── user.controller.ts
+│   │   └── user.service.ts
+│   └── reports/
+│       ├── reports.router.ts
+│       ├── reports.controller.ts
+│       └── reports.service.ts
 ```
 
 ## What's Next
 
-- **[ArkosRouter](/docs/core-concepts/routing/arkos-router)** — Full API reference for the route configuration object
-- **[Generated Routes](/docs/core-concepts/generated-routes)** — The auto-generated CRUD routes from your Prisma models, auth system, and file uploads
-- **[Interceptors](/docs/core-concepts/routing/interceptors)** — Hook into built-in routes with before/after middleware
-
+- **[ArkosRouter](/docs/core-concepts/components/arkos-router)** — Full API reference for the route configuration object
+- **[Route Hook](/docs/core-concepts/components/route-hooks)** — Configure auto-generated routes
+- **[Interceptors](/docs/core-concepts/components/interceptors)** — Hook into built-in routes with before/after middleware
