@@ -3,20 +3,20 @@ title: Usage
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
-import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
-Validate `req.body`, `req.query`, and `req.params` declaratively on any route — no middleware boilerplate, no manual error handling. Drop a Zod schema or class-validator DTO into the `validation` config, and Arkos handles the rest: error responses, and automatic OpenAPI spec generation.
+Validate request data inputs such as `req.body`, `req.query`, and `req.params` declaratively on any route — no middleware boilerplate, no manual error handling. Drop a Zod schema or class-validator DTO into the `validation` config, and Arkos handles the rest: error responses and automatic OpenAPI spec generation.
 
-This works for:
-- **Custom routes** — inline in `ArkosRouter`
-- **Built-in routes** — via export config of `RouterConfig` in your module's `.router.ts` file
+This validation system works the same way across both [ArkosRouter](/docs/core-concepts/components/arkos-router) and [RouteHook](/docs/core-concepts/components/route-hooks).
 
-## Body
+## Request Body Validation
 
 Applied on routes that receive a request body — typically `POST`, `PUT`, and `PATCH`.
 
-<Tabs items={["ArkosRouter (Custom)", "RouterConfig (Built-in)"]}>
-<Tab value="ArkosRouter (Custom)">
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+<Tab value="ArkosRouter">
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
 ```ts title="src/modules/post/post.router.ts"
 import { ArkosRouter } from "arkos";
 import z from "zod";
@@ -44,9 +44,51 @@ router.post(
 export default router;
 ```
 </Tab>
-<Tab value="RouterConfig (Built-in)">
+<Tab value="Class Validator">
 ```ts title="src/modules/post/post.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
+import { ArkosRouter } from "arkos";
+import { IsString, IsBoolean, IsUUID, IsOptional, MinLength } from "class-validator";
+import postController from "./post.controller";
+
+const router = ArkosRouter();
+
+class CreatePostDto {
+  @IsString()
+  @MinLength(1)
+  title: string;
+
+  @IsString()
+  @MinLength(1)
+  content: string;
+
+  @IsBoolean()
+  @IsOptional()
+  published?: boolean;
+
+  @IsUUID()
+  authorId: string;
+}
+
+router.post(
+  {
+    path: "/api/posts",
+    validation: {
+      body: CreatePostDto,
+    },
+  },
+  postController.createPost
+);
+
+export default router;
+```
+</Tab>
+</Tabs>
+</Tab>
+<Tab value="RouteHook">
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
 import z from "zod";
 
 const CreatePostSchema = z.object({
@@ -56,7 +98,7 @@ const CreatePostSchema = z.object({
   authorId: z.string().uuid(),
 });
 
-export const config: RouterConfig = {
+export const hook: RouteHook = {
   createOne: {
     validation: {
       body: CreatePostSchema,
@@ -69,10 +111,50 @@ const router = ArkosRouter();
 export default router;
 ```
 </Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import { IsString, IsBoolean, IsUUID, IsOptional, MinLength } from "class-validator";
+
+class CreatePostDto {
+  @IsString()
+  @MinLength(1)
+  title: string;
+
+  @IsString()
+  @MinLength(1)
+  content: string;
+
+  @IsBoolean()
+  @IsOptional()
+  published?: boolean;
+
+  @IsUUID()
+  authorId: string;
+}
+
+export const hook: RouteHook = {
+  createOne: {
+    validation: {
+      body: CreatePostDto,
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
+</Callout>
+</Tab>
 </Tabs>
 
 **Validation error response:**
-
 ```json
 {
   "status": "error",
@@ -88,11 +170,8 @@ export default router;
   ]
 }
 ```
-<Callout type="info">
-For more details on how to validate built-in routes you can explore [Prisma Model Routes Validation](/docs/guides/prisma-orm/customization/validation) and for auth routes validation see [Authentication Validation](/docs/core-concepts/authentication/customization/validation).
-</Callout>
 
-## Query & Params
+## Request Query & Params Validation
 
 Applied on routes that receive URL query strings or path parameters.
 
@@ -100,6 +179,8 @@ Applied on routes that receive URL query strings or path parameters.
 Query and params values arrive as strings from the URL. Use `z.coerce` or `@Type()` to cast them to the correct type — or use the [CLI code generation](/docs/tooling/cli/code-generation#generate-schemas-and-dtos) which handles this automatically.
 </Callout>
 
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+<Tab value="ArkosRouter">
 <Tabs items={["Zod", "Class Validator"]}>
 <Tab value="Zod">
 ```ts title="src/modules/user/user.router.ts"
@@ -160,7 +241,7 @@ export default router;
 <Tab value="Class Validator">
 ```ts title="src/modules/user/user.router.ts"
 import { ArkosRouter } from "arkos";
-import { IsEnum, IsBoolean, IsInt, IsUUID, IsOptional, Min, Max } from "class-validator";
+import { IsEnum, IsBoolean, IsInt, IsUUID, IsString, IsEmail, IsOptional, Min, Max } from "class-validator";
 import { Type } from "class-transformer";
 import userController from "./user.controller";
 
@@ -189,6 +270,23 @@ class UserParamsDto {
   id: string;
 }
 
+class UpdateUserBodyDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+}
+
+class UpdateUserQueryDto {
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  notify?: boolean;
+}
+
 router.get(
   {
     path: "/api/users",
@@ -205,8 +303,120 @@ router.get(
   userController.getUser
 );
 
+router.patch(
+  {
+    path: "/api/users/:id",
+    validation: {
+      params: UserParamsDto,
+      body: UpdateUserBodyDto,
+      query: UpdateUserQueryDto,
+    },
+  },
+  userController.updateUser
+);
+
 export default router;
 ```
+</Tab>
+</Tabs>
+</Tab>
+<Tab value="RouteHook">
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import z from "zod";
+
+export const hook: RouteHook = {
+  findMany: {
+    validation: {
+      query: z.object({
+        published: z.coerce.boolean().optional(),
+        limit: z.coerce.number().int().min(1).max(100).optional(),
+      }),
+    },
+  },
+  updateOne: {
+    validation: {
+      body: z.object({
+        title: z.string().min(1).optional(),
+        content: z.string().min(1).optional(),
+      }),
+      query: z.object({
+        notify: z.coerce.boolean().optional(),
+      }),
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import { IsBoolean, IsInt, IsString, IsOptional, Min, Max, MinLength } from "class-validator";
+import { Type } from "class-transformer";
+
+class PostQueryDto {
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  published?: boolean;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @IsOptional()
+  limit?: number;
+}
+
+class UpdatePostBodyDto {
+  @IsString()
+  @MinLength(1)
+  @IsOptional()
+  title?: string;
+
+  @IsString()
+  @MinLength(1)
+  @IsOptional()
+  content?: string;
+}
+
+class UpdatePostQueryDto {
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  notify?: boolean;
+}
+
+export const hook: RouteHook = {
+  findMany: {
+    validation: {
+      query: PostQueryDto,
+    },
+  },
+  updateOne: {
+    validation: {
+      body: UpdatePostBodyDto,
+      query: UpdatePostQueryDto,
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
+</Callout>
 </Tab>
 </Tabs>
 
@@ -227,9 +437,14 @@ export default router;
 }
 ```
 
-## File Uploads
+## Validation With File Uploads
 
 When combining validation with file uploads, only pass text fields to `validation.body` — file fields are handled separately by the `uploads` config.
+
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+<Tab value="ArkosRouter">
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
 ```ts
 router.post(
   {
@@ -246,6 +461,93 @@ router.post(
   userController.uploadAvatar
 );
 ```
+</Tab>
+<Tab value="Class Validator">
+```ts
+import { IsUUID, IsString, IsOptional } from "class-validator";
+
+class UploadAvatarParamsDto {
+  @IsUUID()
+  id: string;
+}
+
+class UploadAvatarBodyDto {
+  @IsString()
+  @IsOptional()
+  caption?: string;
+}
+
+router.post(
+  {
+    path: "/api/users/:id/avatar",
+    validation: {
+      params: UploadAvatarParamsDto,
+      body: UploadAvatarBodyDto,
+      // no avatar field here — handled by uploads
+    },
+    experimental: {
+      uploads: { type: "single", field: "avatar", required: true },
+    },
+  },
+  userController.uploadAvatar
+);
+```
+</Tab>
+</Tabs>
+</Tab>
+<Tab value="RouteHook">
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/file/file.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import z from "zod";
+
+export const hook: RouteHook = {
+  uploadFile: {
+    validation: {
+      body: z.object({ caption: z.string().optional() }),
+      // no file field here — handled by uploads
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/file/file.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import { IsString, IsOptional } from "class-validator";
+
+class UploadFileBodyDto {
+  @IsString()
+  @IsOptional()
+  caption?: string;
+}
+
+export const hook: RouteHook = {
+  uploadFile: {
+    validation: {
+      body: UploadFileBodyDto,
+      // no file field here — handled by uploads
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
+</Callout>
+</Tab>
+</Tabs>
 
 | `required` | Behavior |
 |---|---|
@@ -258,6 +560,8 @@ See [File Upload guide](/docs/guides/file-upload) for full configuration.
 
 Arkos automatically types `req.body`, `req.query`, and `req.params` from your validation schema — every handler and middleware in the route stack shares the same typed `req` with no manual generic declarations needed.
 
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+<Tab value="ArkosRouter">
 <Tabs items={["Zod", "Class Validator"]}>
 <Tab value="Zod">
 ```ts title="src/modules/user/user.router.ts"
@@ -344,6 +648,101 @@ export default router;
 ```
 </Tab>
 </Tabs>
+</Tab>
+<Tab value="RouteHook">
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/auth/auth.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import z from "zod";
+
+const UpdateMeBody = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+});
+
+export const hook: RouteHook = {
+  updateMe: {
+    validation: {
+      body: UpdateMeBody,
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+```ts title="src/modules/auth/auth.middleware.ts"
+import { ArkosRequest, ArkosResponse, NextFunction } from "arkos";
+import { z } from "zod";
+
+const UpdateMeBody = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+});
+
+type UpdateMeBody = z.infer<typeof UpdateMeBody>;
+
+export const beforeUpdateMe = (
+  req: ArkosRequest<any, any, UpdateMeBody>,
+  res: ArkosResponse,
+  next: NextFunction
+) => {
+  const { name, email } = req.body; // typed, validated
+  next();
+};
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/auth/auth.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import { IsString, IsEmail, IsOptional } from "class-validator";
+
+class UpdateMeBodyDto {
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+}
+
+export const hook: RouteHook = {
+  updateMe: {
+    validation: {
+      body: UpdateMeBodyDto,
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+```ts title="src/modules/auth/auth.middleware.ts"
+import { ArkosRequest, ArkosResponse, NextFunction } from "arkos";
+
+export const beforeUpdateMe = (
+  req: ArkosRequest<any, any, UpdateMeBodyDto>,
+  res: ArkosResponse,
+  next: NextFunction
+) => {
+  const { name, email } = req.body; // typed, validated
+  next();
+};
+```
+</Tab>
+</Tabs>
+</Tab>
+</Tabs>
+
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
+</Callout>
+
 ```ts title="src/modules/user/user.controller.ts"
 import { ArkosRequest, ArkosResponse } from "arkos";
 
@@ -355,7 +754,3 @@ const updateOne = async (req: ArkosRequest, res: ArkosResponse) => {
 
 export default { updateOne };
 ```
-
-## Related Guides
-- [Prisma Model Routes Validation](/docs/guides/prisma-orm/validation) - For Prisma model route validation.
-- [Authentication Validation](/docs/core-concepts/authentication/customization/validation) - For auth route validation.
