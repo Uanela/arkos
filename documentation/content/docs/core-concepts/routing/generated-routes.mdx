@@ -5,7 +5,7 @@ title: Generated Routes
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-When Arkos boots, it reads your Prisma schema, authentication configuration, and file upload configuration to automatically register three categories of routes — [Prisma Model Routes](/docs/core-concepts/prisma-orm/model-routes), [Authentication Routes](/docs/core-concepts/authentication/routes), and [File Upload Routes](/docs/guides/file-uploads/routes). No route definitions needed. Every endpoint that comes from these categories is fully functional out of the box, and every one of them can be intercepted, configured, or disabled without touching Arkos internals.
+When Arkos boots, it reads your Prisma schema, authentication configuration, and file upload configuration to automatically register three categories of routes — [Prisma Model Routes](/docs/core-concepts/prisma-orm/routes), [Authentication Routes](/docs/core-concepts/authentication/routes), and [File Upload Routes](/docs/guides/file-uploads/routes). No route definitions needed. Every endpoint that comes from these categories is fully functional out of the box, and every one of them can be intercepted, configured, or disabled without touching Arkos internals.
 
 ## How It Works
 
@@ -27,33 +27,35 @@ At boot time, Arkos scans your project and registers routes in this order:
 
 This means your custom routes always take precedence over generated ones.
 
-## Configuring Generated Routes
+## Configuring Generated Routes with Route Hook
 
-Every generated route accepts the same configuration object used in `ArkosRouter`. You control this through a `config` export from the module's router file.
+Every generated route accepts the same configuration object used in `ArkosRouter`. You control this through a `hook` export from the module's router file.
 
-For a Prisma model, that file lives at `src/modules/[model]/[model].router.ts`. For authentication and file uploads, Arkos looks for `src/modules/auth/auth.router.ts` and `src/modules/file-upload/file-upload.router.ts` respectively.
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig` introduced in v1.6. The old name still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for the full guide.
+</Callout>
 
-The `config` export is a `RouterConfig` object where each key is an endpoint name and the value is its configuration. See [ArkosRouter Configuration Object](/docs/reference/arkos-router#configuration-object) for the full config object reference.
+For a Prisma model, that file lives at `src/modules/<model>/<model>.router.ts`. For authentication and file uploads, Arkos looks for `src/modules/auth/auth.router.ts` and `src/modules/file-upload/file-upload.router.ts` respectively.
+
+### Prisma Model Route Hook
 
 ```typescript title="src/modules/post/post.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
-import postAuthConfigs from "./post.auth";
+import { ArkosRouter, RouteHook } from "arkos";
+import postPolicy from "@/src/modules/post/post.policy";
+import { UpdatePostSchema } from "@/src/modules/post/post.schema";
 
-export const config: RouterConfig = {
-  findMany: {
-    authentication: false,
-    rateLimit: { windowMs: 60_000, max: 100 },
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+  findOne: { authentication: true },
+  createOne: { authentication: postPolicy.Create },
+  updateOne: {
+    authentication: postPolicy.Update,
+    validation: { body: UpdatePostSchema },
   },
-  createOne: {
-    authentication: {
-      resource: "post",
-      action: "Create",
-      rule: postAuthConfigs.accessControl.Create,
-    },
-  },
-  deleteOne: {
-    disabled: true,
-  },
+  deleteOne: { authentication: postPolicy.Delete },
+  createMany: { disabled: true },
+  updateMany: { disabled: true },
+  deleteMany: { disabled: true },
 };
 
 const router = ArkosRouter();
@@ -61,18 +63,18 @@ const router = ArkosRouter();
 export default router;
 ```
 
-The same pattern applies to [Authentication Routes](/docs/core-concepts/authentication/routes) and [File Upload Routes](/docs/guides/file-uploads/routes) — just with different endpoint keys:
+### Authentication Route Hook
 
 ```typescript title="src/modules/auth/auth.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
+import { ArkosRouter, RouteHook } from "arkos";
+import { UpdateMeSchema } from "@/src/modules/auth/auth.schema";
 
-export const config: RouterConfig = {
-  login: {
-    rateLimit: { windowMs: 15 * 60_000, max: 10 },
-  },
-  signup: {
-    disabled: true,
-  },
+export const hook: RouteHook = {
+  login: { rateLimit: { windowMs: 15 * 60_000, max: 10 } },
+  signup: { disabled: true },
+  getMe: { rateLimit: { windowMs: 15 * 60_000, max: 30 } },
+  deleteMe: { disabled: true },
+  updateMe: { validation: { body: UpdateMeSchema } },
 };
 
 const router = ArkosRouter();
@@ -80,20 +82,16 @@ const router = ArkosRouter();
 export default router;
 ```
 
-```typescript title="src/modules/file-upload/file-upload.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
+### File Upload Route Hook
 
-export const config: RouterConfig = {
-  uploadFile: {
-    authentication: {
-      resource: "file",
-      action: "Upload",
-      rule: { roles: ["Admin"] },
-    },
-  },
-  deleteFile: {
-    disabled: true,
-  },
+```typescript title="src/modules/file-upload/file-upload.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+
+export const hook: RouteHook = {
+  findFile: { authentication: false },
+  uploadFile: { authentication: true },
+  updateFile: { authentication: true },
+  deleteFile: { disabled: true },
 };
 
 const router = ArkosRouter();
@@ -102,9 +100,7 @@ export default router;
 ```
 
 <Callout type="info">
-  The router file must export `config` as a named export and the router instance
-  as the default export. If either convention is not followed, Arkos won't pick
-  up your customizations.
+  The router file must export `hook` as a named export and the router instance as the default export. If either convention is not followed, Arkos won't pick up your customizations.
 </Callout>
 
 You can also add your own endpoints to any of these router files — they'll be mounted under the same base path as the generated routes for that module.
@@ -112,6 +108,7 @@ You can also add your own endpoints to any of these router files — they'll be 
 ## Intercepting Generated Routes
 
 Every generated endpoint can be intercepted — run logic before or after any operation without replacing the built-in behavior. Arkos looks for an interceptors file next to the router file:
+
 ```typescript title="src/modules/post/post.interceptors.ts"
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
@@ -129,6 +126,6 @@ See [Interceptors](/docs/core-concepts/components/interceptors) for the full lis
 
 ## The Three Categories
 
-- **[Prisma Model Routes](/docs/core-concepts/prisma-orm/model-routes)** — RESTful endpoints generated from your Prisma schema, with built-in filtering, sorting, pagination, field selection, and full-text search.
+- **[Prisma Model Routes](/docs/core-concepts/prisma-orm/routes)** — RESTful endpoints generated from your Prisma schema, with built-in filtering, sorting, pagination, field selection, and full-text search.
 - **[Authentication Routes](/docs/core-concepts/authentication/routes)** — Login, signup, logout, password update, and current user endpoints.
 - **[File Upload Routes](/docs/guides/file-uploads/routes)** — Upload, replace, retrieve, and delete endpoints for standalone file operations.

@@ -1,4 +1,4 @@
 {
   "title": "Routing",
-  "pages": ["setup", "generated-routes", "intercepting-requests"]
+  "pages": ["setup", "concepts", "generated-routes"]
 }
