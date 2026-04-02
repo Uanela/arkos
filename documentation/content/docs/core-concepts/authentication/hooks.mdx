@@ -1,0 +1,406 @@
+---
+title: Hooks
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+> Available since v1.6.0-beta
+
+Arkos runs a two-step pipeline on every protected route: first it authenticates the request via `authService.authenticate` (extracts and verifies the JWT, sets `req.user`), then it authorizes it via `authService.authorize` (checks the user's role or permissions against the route's access control rules).
+
+These are the same two methods that `ArkosRouter` and `RouteHook` wire under the hood when you pass an `authentication` option to a route. Authentication hooks let you tap into both steps — running logic before the core check, after it passes, or when it fails — without replacing the built-in behavior.
+
+Hooks are defined once in `ArkosConfig` and apply globally to every route that goes through the pipeline, whether that's an auto-generated Prisma model route, a built-in auth endpoint, or a custom `ArkosRouter` route. This means you can integrate a third-party authentication or authorization system — Auth0, Clerk, Passport, a custom API key scheme, your own RBAC engine — once in `ArkosConfig` and have it apply everywhere without touching individual routes.
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+</Callout>
+
+## Configuration
+
+<Tabs items={["v1.6", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos";
+import { AppError } from "arkos/error-handler";
+
+export default defineConfig({
+  authentication: {
+    mode: "static",
+    hooks: {
+      authenticate: {
+        before: ({ req, skip }) => { /* runs before JWT verification */ },
+        after: ({ req }) => { /* runs after req.user is set */ },
+        onError: ({ req, error, skip }) => { /* runs when verification fails */ },
+      },
+      authorize: {
+        before: ({ req, skip }) => { /* runs before permission check */ },
+        after: ({ req }) => { /* runs after check passes */ },
+        onError: ({ req, error, skip }) => { /* runs when check fails (403) */ },
+      },
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+import { AppError } from "arkos/error-handler";
+
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    mode: "static",
+    hooks: {
+      authenticate: {
+        before: ({ req, skip }) => { /* runs before JWT verification */ },
+        after: ({ req }) => { /* runs after req.user is set */ },
+        onError: ({ req, error, skip }) => { /* runs when verification fails */ },
+      },
+      authorize: {
+        before: ({ req, skip }) => { /* runs before permission check */ },
+        after: ({ req }) => { /* runs after check passes */ },
+        onError: ({ req, error, skip }) => { /* runs when check fails (403) */ },
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+<Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+import { AppError } from "arkos/error-handler";
+
+arkos.init({
+  authentication: {
+    mode: "static",
+    hooks: {
+      authenticate: {
+        before: ({ req, skip }) => { /* runs before JWT verification */ },
+        after: ({ req }) => { /* runs after req.user is set */ },
+        onError: ({ req, error, skip }) => { /* runs when verification fails */ },
+      },
+      authorize: {
+        before: ({ req, skip }) => { /* runs before permission check */ },
+        after: ({ req }) => { /* runs after check passes */ },
+        onError: ({ req, error, skip }) => { /* runs when check fails (403) */ },
+      },
+    },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+Each hook can be a single function or an array of functions. When an array is provided, they run in order — the chain stops if one throws or calls `skip()`.
+
+## authenticate Hooks
+
+These hooks wrap `authService.authenticate` — the JWT extraction and verification step. When this step runs, Arkos reads the token from the `Authorization` header or the `arkos_access_token` cookie, verifies it, fetches the user from the database, and sets `req.user`.
+
+### Execution Flow
+
+```
+before hooks
+  └─ skip() called?  ──→ jump to after hooks
+  └─ throws?         ──→ onError hooks
+core logic (JWT verify + req.user)
+  └─ throws?         ──→ onError hooks
+after hooks
+```
+
+### before
+
+Runs before JWT extraction and verification. Use it to set up context, mutate the request, or skip core logic entirely when you have a custom auth mechanism:
+
+```ts title="arkos.config.ts"
+authenticate: {
+  before: ({ req, skip }) => {
+    req.authContext = { startedAt: Date.now() };
+  },
+},
+```
+
+Calling `skip()` bypasses JWT verification and jumps straight to `after` hooks — useful when you've already resolved `req.user` through your own mechanism:
+
+```ts title="arkos.config.ts"
+authenticate: {
+  before: async ({ req, skip }) => {
+    const user = await myCustomAuth(req);
+    if (user) {
+      req.user = user;
+      skip();
+    }
+  },
+},
+```
+
+### after
+
+Runs after `req.user` has been set. Use it to enforce additional conditions on the authenticated user — expired subscriptions, required password changes, banned accounts:
+
+```ts title="arkos.config.ts"
+authenticate: {
+  after: ({ req }) => {
+    if (!req.user.hasChangedPassword) {
+      throw new AppError("Password change required.", 403, "PasswordChangeRequired");
+    }
+  },
+},
+```
+
+### onError
+
+Runs when authentication throws — invalid token, expired token, user no longer exists, password changed after token was issued. Throw to forward to the global error handler (default behavior), or call `skip()` to suppress the error and continue as a guest:
+
+```ts title="arkos.config.ts"
+authenticate: {
+  onError: ({ req, error, skip }) => {
+    console.warn("Auth failed:", error);
+    throw error; // forward to global error handler
+  },
+},
+```
+
+Suppress the error and treat the request as unauthenticated:
+
+```ts title="arkos.config.ts"
+authenticate: {
+  onError: ({ req, skip }) => {
+    req.user = guestUser;
+    skip(); // suppresses error, jumps to after hooks
+  },
+},
+```
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+</Callout>
+
+## authorize Hooks
+
+These hooks wrap `authService.authorize` — the permission check step that verifies the authenticated user has the required role or permission for the route they're accessing.
+
+### Execution Flow
+
+```
+before hooks
+  └─ skip() called?  ──→ jump to after hooks
+  └─ throws?         ──→ onError hooks
+core logic (role/permission check)
+  └─ fails?          ──→ onError hooks
+after hooks
+```
+
+### before
+
+Runs before the role or permission check. Use it to elevate privileges, resolve a custom role, or skip the check entirely:
+
+```ts title="arkos.config.ts"
+authorize: {
+  before: ({ req, skip }) => {
+    if (req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
+      req.user.role = "admin";
+    }
+  },
+},
+```
+
+Skip the check entirely when your own logic has already resolved authorization:
+
+```ts title="arkos.config.ts"
+authorize: {
+  before: ({ req, skip }) => {
+    req.user.role = myCustomRoleResolver(req);
+    skip();
+  },
+},
+```
+
+### after
+
+Runs after the permission check passes. Use it for audit logging, analytics, or any side effect that should only happen when access is actually granted:
+
+```ts title="arkos.config.ts"
+authorize: {
+  after: ({ req }) => {
+    auditLog.record({ userId: req.user.id, path: req.path });
+  },
+},
+```
+
+### onError
+
+Runs when the user lacks sufficient permissions (403). Throw to forward to the global error handler, or call `skip()` to suppress and continue:
+
+```ts title="arkos.config.ts"
+authorize: {
+  onError: ({ req, error, skip }) => {
+    auditLog.record({
+      userId: req.user?.id,
+      reason: "insufficient_permissions",
+      path: req.path,
+    });
+    throw error;
+  },
+},
+```
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+</Callout>
+
+## Where Hooks Fire
+
+Because hooks are defined in `ArkosConfig` and baked into `authService.authenticate` and `authService.authorize`, they apply globally — every route that uses either method runs them. `ArkosRouter` and `RouteHook` both call these same methods internally when you pass an `authentication` option, so there is no extra wiring needed. The hook behavior is identical regardless of which kind of route triggered it. What changes is where you write the logic that runs *alongside* the hooks.
+
+### Custom Routes
+
+On custom `ArkosRouter` routes, the logic that runs before and after the auth pipeline lives in your handler or controller methods directly:
+
+```ts title="src/modules/order/order.router.ts"
+import { ArkosRouter } from "arkos";
+import orderPolicy from "@/src/modules/order/order.policy";
+import orderController from "@/src/modules/order/order.controller";
+
+const router = ArkosRouter();
+
+router.patch(
+  {
+    path: "/api/orders/:id",
+    authentication: orderPolicy.Update,
+  },
+  orderController.updateOne
+);
+
+export default router;
+```
+
+```ts title="src/modules/order/order.controller.ts"
+import { BaseController } from "arkos";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import orderService from "./order.service";
+
+class OrderController extends BaseController {
+  updateOne = async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    // By the time this runs, authenticate and authorize hooks have already fired.
+    // req.user is set and the permission check has passed.
+    const order = await orderService.updateOne(
+      { id: req.params.id },
+      req.body
+    );
+    res.status(200).json({ status: "success", data: order });
+  };
+}
+
+export default new OrderController(orderService);
+```
+
+When this route is hit: `authenticate.before` → JWT verify → `authenticate.after` → `authorize.before` → permission check → `authorize.after` → your handler runs.
+
+### Built-in Routes
+
+On auto-generated routes (Prisma model routes, auth routes, file upload routes), you cannot place logic directly in a handler — Arkos owns that. Instead you use interceptors, which run inside the same request lifecycle alongside the hooks:
+
+```ts title="src/modules/post/post.interceptors.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const beforeCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    // authenticate and authorize hooks have already fired before this interceptor runs.
+    // req.user is available here.
+    req.body.authorId = req.user.id;
+    next();
+  },
+];
+
+export const afterCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const created = res.locals.data.data;
+    await notificationService.notify(req.user.id, "post_created", created.id);
+    next();
+  },
+];
+```
+
+The `RouteHook` for this module controls whether authentication is required and which policy applies — the global hooks defined in `ArkosConfig` then run automatically on top:
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+</Callout>
+
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import postPolicy from "@/src/modules/post/post.policy";
+
+export const hook: RouteHook = {
+  createOne: { authentication: postPolicy.Create },
+  findMany: { authentication: postPolicy.View },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+For a full reference on interceptors see [Interceptors](/docs/core-concepts/components/interceptors). For `RouteHook` configuration options see [Route Hook](/docs/core-concepts/components/route-hook).
+
+## Multiple Hooks
+
+Both `authenticate` and `authorize` accept arrays for any hook slot. They run in order — the chain stops at the first `skip()` or throw:
+
+```ts title="arkos.config.ts"
+authenticate: {
+  before: [
+    ({ req, skip }) => {
+      req.authContext = { startedAt: Date.now() };
+    },
+    async ({ req, skip }) => {
+      const apiKey = req.headers["x-api-key"];
+      if (apiKey) {
+        req.user = await apiKeyService.resolve(apiKey);
+        skip();
+      }
+    },
+  ],
+  after: [
+    ({ req }) => {
+      if (!req.user.isActive) {
+        throw new AppError("Account is disabled.", 403, "AccountDisabled");
+      }
+    },
+    ({ req }) => {
+      req.authContext.resolvedAt = Date.now();
+    },
+  ],
+},
+```
+
+## Hook Signatures
+
+```ts
+type AuthHookHandler = (ctx: {
+  req: ArkosRequest;
+  skip: () => void;
+}) => void | Promise<void>;
+
+type AuthAfterHookHandler = (ctx: {
+  req: ArkosRequest;
+}) => void | Promise<void>;
+
+type AuthErrorHookHandler = (ctx: {
+  req: ArkosRequest;
+  error: unknown;
+  skip: () => void;
+}) => void | Promise<void>;
+```
+
+| Hook slot | Receives | `skip()` effect |
+|---|---|---|
+| `before` | `req`, `skip` | Bypasses core logic, jumps to `after` |
+| `after` | `req` | — |
+| `onError` | `req`, `error`, `skip` | Suppresses error, jumps to `after` |
