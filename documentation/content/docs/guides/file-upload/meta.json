@@ -1,4 +1,4 @@
 {
   "title": "File Upload",
-  "pages": ["setup", "routes", "interceptors"]
+  "pages": ["setup", "router-upload", "routes"]
 }
