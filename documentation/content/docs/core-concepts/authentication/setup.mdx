@@ -3,9 +3,9 @@ title: Setup
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
-import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
-Arkos provides a JWT-based authentication and authorization system with Role-Based Access Control (RBAC) that secures your auto-generated Prisma model routes, built-in auth routes, file upload routes and custom `ArkosRouter` routes out of the box. This page covers the general authentication setup shared across all permission modes and helps you understand how Arkos handles permissions.
+Arkos provides a JWT-based authentication and authorization system with Role-Based Access Control (RBAC) that secures your auto-generated Prisma model routes, built-in auth routes, file upload routes, and custom [ArkosRouter](/docs/core-concepts/components/arkos-router) routes out of the box. This page covers the general authentication setup shared across all permission modes and helps you understand how Arkos handles permissions.
 
 ## Permission Modes
 
@@ -128,7 +128,7 @@ arkos.init({
 | `login.sendAccessTokenThrough` | — | `"both"` | `"cookie-only"` \| `"response-only"` \| `"both"` |
 | `login.allowedUsernames` | — | `["username"]` | User model fields accepted as login identifiers |
 
-<Callout type="warning">
+<Callout type="warn">
 Always set a strong `JWT_SECRET` in production. Arkos throws on login attempts when no secret is configured.
 </Callout>
 
@@ -179,7 +179,7 @@ model User {
 | `deletedSelfAccountAt` | Soft-deletion timestamp |
 | `isActive` | When `false`, blocks all access for that user |
 
-<Callout type="warning">
+<Callout type="warn">
 Create at least one user with `isSuperUser: true` before enabling authentication. By default Arkos requires authentication on all endpoints and only super users have access until permissions are configured.
 </Callout>
 
@@ -189,7 +189,10 @@ Create at least one user with `isSuperUser: true` before enabling authentication
 
 ## Protecting Routes
 
-Before diving into permission modes, any route can be protected with `authentication: true` in your `ArkosRouter` config — this simply requires the user to be logged in, regardless of their role or permissions:
+Before diving into permission modes, any route can be protected with `authentication: true` — this simply requires the user to be logged in, regardless of their role or permissions. For role-based access control, see [Static Mode](/docs/core-concepts/authentication/modes/static/setup) or [Dynamic Mode](/docs/core-concepts/authentication/modes/dynamic/setup).
+
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+<Tab value="ArkosRouter">
 ```ts title="src/modules/post/post.router.ts"
 import { ArkosRouter } from "arkos";
 import postController from "@/src/modules/post/post.controller";
@@ -206,14 +209,12 @@ router.get(
 
 export default router;
 ```
-
-### Protecting Built-in Routes
-
-For auto-generated Prisma model routes, use the `config` export in your `.router.ts` file:
+</Tab>
+<Tab value="RouteHook">
 ```ts title="src/modules/post/post.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
+import { ArkosRouter, RouteHook } from "arkos";
 
-export const config: RouterConfig = {
+export const hook: RouteHook = {
   findMany: { authentication: false }, // public
   createOne: { authentication: true }, // login required
   updateOne: { authentication: true },
@@ -225,11 +226,14 @@ const router = ArkosRouter();
 export default router;
 ```
 
-See [Prisma Model Routes](/docs/core-concepts/prisma-orm/model-routes#authentication), [Authentication Routes](/docs/core-concepts/authentication/customization/interceptors), and [File Upload Routes](/docs/guides/file-upload/authentication) for full configuration options.
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+</Callout>
+</Tab>
+</Tabs>
 
 For role-based or permission-based access control, pick a permission mode:
 
 → [Static Mode](/docs/core-concepts/authentication/modes/static/setup) — define permissions in code via `ArkosPolicy` or `.auth.ts` files
 
 → [Dynamic Mode](/docs/core-concepts/authentication/modes/dynamic/setup) — manage permissions at runtime via database
-
