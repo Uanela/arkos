@@ -46,15 +46,19 @@ router.post(
 );
 ```
 
-### Built-in Routes (RouterConfig)
+### Built-in Routes (RouteHook)
 
-The same `uploads` configuration works for built-in Prisma model routes via `RouterConfig`:
+The same `uploads` configuration works for built-in routes via [RouteHook](/docs/core-concepts/components/route-hook).
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hook) for details.
+</Callout>
 
 ```ts title="src/modules/product/product.router.ts"
-import { ArkosRouter, RouterConfig } from "arkos";
+import { ArkosRouter, RouteHook } from "arkos";
 import z from "zod";
 
-export const config: RouterConfig = {
+export const hook: RouteHook = {
   createOne: {
     validation: {
       body: z.object({
@@ -72,8 +76,9 @@ export const config: RouterConfig = {
   },
 };
 
-const router = ArkosRouter();
-export default router;
+const productRouter = ArkosRouter();
+
+export default productRouter;
 ```
 
 ## What Gets Documented
