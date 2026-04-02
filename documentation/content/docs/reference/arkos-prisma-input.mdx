@@ -1,10 +1,9 @@
 ---
-title: Arkos Prisma Input (new)
+title: Arkos Prisma Input
 ---
 import SmallTag from "@/components/small-tag"
 
-
-> Available from `v1.5.0-beta`
+> Available since `v1.5.0-beta`
 
 A TypeScript utility type that simplifies Prisma relation operations by flattening nested `create`, `connect`, `update`, and `delete` operations into an intuitive array-based format with automatic operation detection.
 
@@ -448,7 +447,7 @@ const processRelation = (rel: any) => {
 
 ## Limitations
 
-1. **No Runtime Transformation**: This is a type-only utility. The actual runtime transformation is handled by Arkos's relation handling system when using [BaseService](/docs/api-reference/base-service) methods.
+1. **No Runtime Transformation**: This is a type-only utility. The actual runtime transformation is handled by Arkos's relation handling system when using [BaseService](/docs/reference/base-service) methods.
 
 2. **Requires Arkos Services**: For the flattened format to work, you must use Arkos's BaseService or custom services that extend it. Direct Prisma Client calls require traditional Prisma format.
 
@@ -466,5 +465,5 @@ const processRelation = (rel: any) => {
 
 - **[Handling Prisma Relation Fields](/docs/advanced-guide/handling-prisma-relations)** - How Arkos handles relations at runtime
 - **[Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares)** - Using with request interceptors
-- **[BaseService Class](/docs/api-reference/base-service)** - Service layer integration
+- **[BaseService Class](/docs/reference/base-service)** - Service layer integration
 - **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Combining with validation schemas
