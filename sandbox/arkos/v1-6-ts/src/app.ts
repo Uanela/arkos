@@ -1,7 +1,11 @@
-import arkos from 'arkos';
+import arkos from "arkos";
 
-const app = arkos()
+const app = arkos();
 
-app.set("trust proxy", 1)
+app.set("trust proxy", 1);
 
-app.listen()
+app.get({ path: "/" }, (req, res) => {
+  res.send("Hello World");
+});
+
+app.listen();
