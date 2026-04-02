@@ -2,4 +2,343 @@
 title: Interceptors
 ---
 
-a
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Interceptors let you run custom logic before, after, or on error of any auto-generated endpoint — Prisma model routes, authentication routes, and file upload routes — without replacing the built-in behavior.
+
+<Callout type="info">
+  Interceptors work alongside [Route Hook](/docs/core-concepts/components/route-hooks) for customizing built-in routes (just like `ArkosRouter`) and give a complete experience when interacting with them.
+</Callout>
+
+## File Structure
+
+```
+src/modules/post/
+├── post.middlewares.ts       # Reusable functions
+└── post.interceptors.ts      # Chains functions to hooks
+```
+
+Scaffold interceptor files with the CLI:
+
+```bash
+npx arkos generate interceptors --module post
+# shorthand
+npx arkos g i -m post
+```
+
+This creates:
+- `src/modules/post/post.interceptors.ts` — empty hook chains
+
+<Callout>
+For authentication and file upload modules, use `--module auth` or `--module file-upload`.
+</Callout>
+
+```ts title="src/modules/post/post.middlewares.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const logCreation = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  console.log("Post created:", res.locals.data.data);
+  next();
+};
+```
+
+```ts title="src/modules/post/post.interceptors.ts"
+import { logCreation } from "./post.middlewares";
+
+export const afterCreateOne = [logCreation];
+```
+
+## Prisma Model Interceptors
+
+Intercept any CRUD operation for prisma model request  — add default values before create, log activity after update, or clean up files when creation fails.
+
+```ts title="src/modules/post/post.interceptors.ts"
+import { setAuthor, logCreation, cleanupImage } from "@/src/modules/post/post.middlewares";
+
+export const beforeCreateOne = [setAuthor];
+export const afterCreateOne = [logCreation];
+export const onCreateOneError = [cleanupImage];
+```
+
+```ts title="src/modules/post/post.middlewares.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { AppError } from "arkos/error-handler";
+
+export const setAuthor = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  req.body.authorId = req.user.id;
+  next();
+};
+
+export const logCreation = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  console.log("Post created:", res.locals.data.data);
+  next();
+};
+
+export const cleanupImage = async (
+  err: any,
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  if (req.body.imageUrl) await deleteFile(req.body.imageUrl);
+  next(err);
+};
+```
+
+### Available Prisma Model Interceptors
+
+All before, after, and error hooks for Prisma model operations — find, create, update, delete, single or bulk.
+
+| Hook | Trigger |
+|------|---------|
+| `beforeFindOne` | Before fetching a single record |
+| `beforeFindMany` | Before fetching multiple records |
+| `beforeCreateOne` | Before creating a record |
+| `beforeCreateMany` | Before creating multiple records |
+| `beforeUpdateOne` | Before updating a record |
+| `beforeUpdateMany` | Before updating multiple records |
+| `beforeDeleteOne` | Before deleting a record |
+| `beforeDeleteMany` | Before deleting multiple records |
+| `afterFindOne` | After fetching a record |
+| `afterFindMany` | After fetching records |
+| `afterCreateOne` | After creating a record |
+| `afterCreateMany` | After creating multiple records |
+| `afterUpdateOne` | After updating a record |
+| `afterUpdateMany` | After updating multiple records |
+| `afterDeleteOne` | After deleting a record |
+| `afterDeleteMany` | After deleting multiple records |
+| `onFindOneError` | When fetching a record fails |
+| `onFindManyError` | When fetching records fails |
+| `onCreateOneError` | When creating a record fails |
+| `onCreateManyError` | When creating multiple records fails |
+| `onUpdateOneError` | When updating a record fails |
+| `onUpdateManyError` | When updating multiple records fails |
+| `onDeleteOneError` | When deleting a record fails |
+| `onDeleteManyError` | When deleting multiple records fails |
+
+## How To Access Data In After Interceptors
+
+After a successful operation, the result is available at `res.locals.data.data`:
+
+```ts title="src/modules/post/post.middlewares.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const afterCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    // The created/updated record
+    const record = res.locals.data.data;
+
+    // For list operations, it's an array
+    const records = res.locals.data.data;
+
+    // For bulk operations, metadata is also available
+    const { total, results } = res.locals.data;
+
+    next();
+  },
+];
+```
+
+## Authentication Interceptors
+
+Intercept login to rate-limit attempts, send welcome emails after signup, or log failed logins for security monitoring.
+
+```ts title="src/modules/auth/auth.interceptors.ts"
+import { trackLoginAttempt, sendWelcomeEmail, logFailedLogin } from "./auth.middlewares";
+
+export const beforeLogin = [trackLoginAttempt];
+export const afterSignup = [sendWelcomeEmail];
+export const onLoginError = [logFailedLogin];
+```
+
+```ts title="src/modules/auth/auth.middlewares.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const trackLoginAttempt = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  await redis.incr(`login:${req.body.email}`);
+  next();
+};
+
+export const sendWelcomeEmail = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  const user = res.locals.data.data;
+  await emailService.sendWelcome(user.email);
+  next();
+};
+
+export const logFailedLogin = async (
+  err: any,
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  console.error(`Failed login for ${req.body.email}: ${err.message}`);
+  next(err);
+};
+```
+
+### Available Authentication Interceptors
+
+Before, after, and error hooks for login, signup, logout, password changes, and user profile endpoints.
+
+| Hook | Trigger |
+|------|---------|
+| `beforeLogin` | Before login |
+| `afterLogin` | After successful login |
+| `onLoginError` | When login fails |
+| `beforeSignup` | Before signup |
+| `afterSignup` | After successful signup |
+| `onSignupError` | When signup fails |
+| `beforeLogout` | Before logout |
+| `afterLogout` | After logout |
+| `onLogoutError` | When logout fails |
+| `beforeUpdatePassword` | Before password update |
+| `afterUpdatePassword` | After password update |
+| `onUpdatePasswordError` | When password update fails |
+| `beforeGetMe` | Before fetching current user |
+| `afterGetMe` | After fetching current user |
+| `onGetMeError` | When fetching current user fails |
+| `beforeUpdateMe` | Before updating current user |
+| `afterUpdateMe` | After updating current user |
+| `onUpdateMeError` | When updating current user fails |
+| `beforeDeleteMe` | Before deleting current user |
+| `afterDeleteMe` | After deleting current user |
+| `onDeleteMeError` | When deleting current user fails |
+
+## File Upload Interceptors
+
+Intercept file uploads to validate references before delete, log upload activity, or check permissions before serving files.
+
+```ts title="src/modules/file-upload/file-upload.interceptors.ts"
+import { checkReferences, logUpload } from "./file-upload.middlewares";
+
+export const beforeDeleteFile = [checkReferences];
+export const afterUploadFile = [logUpload];
+```
+
+```ts title="src/modules/file-upload/file-upload.middlewares.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { AppError } from "arkos/error-handler";
+
+export const checkReferences = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  const { fileName } = req.params;
+  if (await db.isReferenced(fileName)) {
+    throw new AppError("File still in use", 400);
+  }
+  next();
+};
+
+export const logUpload = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  console.log("Uploaded:", res.locals.data.urls);
+  next();
+};
+```
+
+### Available File Upload Interceptors
+
+Before, after, and error hooks for serving, uploading, replacing, and deleting files.
+
+| Hook | Trigger |
+|------|---------|
+| `beforeFindFile` | Before serving a file |
+| `beforeUploadFile` | Before uploading a file |
+| `afterUploadFile` | After successful upload |
+| `beforeUpdateFile` | Before replacing a file |
+| `afterUpdateFile` | After successful replacement |
+| `beforeDeleteFile` | Before deleting a file |
+| `afterDeleteFile` | After successful deletion |
+
+## Passing Data Between Interceptors
+
+Use `res.locals` to pass data between interceptors in the same request:
+
+```ts title="src/modules/post/post.middlewares.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const loadOriginal = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  const post = await postService.findOne({ id: req.params.id });
+  res.locals.originalPost = post;
+  next();
+};
+
+export const notifyChanges = async (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  const original = res.locals.originalPost;
+  const updated = res.locals.data.data;
+  if (original.title !== updated.title) {
+    await emailService.notify(original.authorId, "title changed");
+  }
+  next();
+};
+```
+
+```ts title="src/modules/post/post.interceptors.ts"
+import { loadOriginal, notifyChanges } from "./post.middlewares";
+
+export const beforeUpdateOne = [loadOriginal];
+export const afterUpdateOne = [notifyChanges];
+```
+
+## Type Safety
+
+Use `ArkosRequest` and `ArkosResponse` generics for fully typed interceptors:
+
+```ts title="src/modules/post/post.middlewares.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { Prisma } from "@prisma/client";
+import { ArkosPrismaInput } from "arkos/prisma";
+
+type CreatePostBody = ArkosPrismaInput<Prisma.PostCreateInput>;
+
+export const addDefaults = async (
+  req: ArkosRequest<any, any, CreatePostBody>,
+  res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  if (!req.body.publishedAt) {
+    req.body.publishedAt = new Date();
+  }
+  next();
+};
+```
+
+## Related
+
+- **[Route Hook](/docs/core-concepts/components/route-hooks)** — Configure auto-generated routes
+- **[ArkosRouter](/docs/core-concepts/components/arkos-router)** — Full configuration object reference
+- **[Service Hooks](/docs/core-concepts/components/service-hooks)** — Run logic at the service layer
