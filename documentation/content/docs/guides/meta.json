@@ -2,9 +2,11 @@
   "title": "Guides",
   "collapsible": false,
   "pages": [
+    "global-middlewares",
     "validation",
+    "error-handling",
     "file-upload",
     "open-api-documentation",
-    "error-handling"
+    "migrations"
   ]
 }
