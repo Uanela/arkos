@@ -281,7 +281,7 @@ const arkosConfig: ArkosConfig = {
 export default arkosConfig;
 ```
 
-Learn more about the updated configuration style at [Arkos Configuration Guide](/docs/api-reference/arkos-configuration).
+Learn more about the updated configuration style at [Arkos Configuration Guide](/docs/reference/arkos-configuration).
 
 ### 6. Enhanced CLI Tools
 
@@ -313,7 +313,7 @@ With this you can easily add i18n, custom description and so many more, check it
 npx arkos prisma generate
 ```
 
-This finally bring the `@prisma/client` TS types to the `BaseService` class for better developer experience, check more about it at [Fully Typed Base Service Class](/docs/api-reference/base-service-class).
+This finally bring the `@prisma/client` TS types to the `BaseService` class for better developer experience, check more about it at [Fully Typed Base Service Class](/docs/reference/base-service-class).
 
 ### 7. Better Developer Experience
 
@@ -478,5 +478,5 @@ As always, your feedback drives our development. Try out 1.4.0-beta and let us k
 **Resources:**
 
 - [Full Documentation](https://arkosjs.com/docs)
-- [Arkos Router Api Reference](https://arkosjs.com/docs/api-reference/arkos-router)
+- [Arkos Router Api Reference](https://arkosjs.com/docs/reference/arkos-router)
 - [GitHub Repository](https://github.com/Uanela/arkos)

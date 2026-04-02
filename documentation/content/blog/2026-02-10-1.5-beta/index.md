@@ -146,7 +146,7 @@ export const addDefaults = async (
 };
 ```
 
-Consider checking this NEW TypeScript utility type api reference at [Arkos Prisma Input API Reference Guide](/docs/api-reference/arkos-prisma-input).
+Consider checking this NEW TypeScript utility type api reference at [Arkos Prisma Input API Reference Guide](/docs/reference/arkos-prisma-input).
 
 ### 4. Security by Default - `forbidNonWhitelisted`
 
@@ -195,7 +195,7 @@ export default arkosConfig = {
 
 **Need the old behavior?** Simply set `forbidNonWhitelisted: false` in your config. No breaking changes, just better defaults.
 
-If you forgot you forgot something about arkos configuration, we got your back, check its api reference at [Arkos Configuration API Reference](/docs/api-reference/arkos-configuration).
+If you forgot you forgot something about arkos configuration, we got your back, check its api reference at [Arkos Configuration API Reference](/docs/reference/arkos-configuration).
 
 ### 5. Beautiful, Actionable Error Messages
 
@@ -382,7 +382,7 @@ router.post(
 );
 ```
 
-Refresh your knowledge about `ArkosRouter` by reading it's api reference at [Arkos Router Guide](/docs/api-reference/arkos-router).
+Refresh your knowledge about `ArkosRouter` by reading it's api reference at [Arkos Router Guide](/docs/reference/arkos-router).
 
 **Auto-generated OpenAPI docs:**
 
@@ -493,7 +493,7 @@ We're excited to see what you build with these new capabilities. Your feedback c
 **Resources:**
 
 - [Full Documentation](https://arkosjs.com/docs)
-- [Arkos Router Api Reference](https://arkosjs.com/docs/api-reference/arkos-router)
+- [Arkos Router Api Reference](https://arkosjs.com/docs/reference/arkos-router)
 - [GitHub Repository](https://github.com/Uanela/arkos)
 
 ## Full Changelog
