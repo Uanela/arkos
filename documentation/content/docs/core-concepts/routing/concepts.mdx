@@ -1,0 +1,110 @@
+---
+title: Concepts
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Arkos is built on the observation that most RESTful APIs spend the majority of their code doing the same things — CRUD endpoints for database models, authentication, and file handling. Not because those problems are hard, but because every project starts from scratch and reinvents the same patterns.
+
+Arkos's routing system is the direct answer to that. It gives you two tracks that work together:
+
+- **Custom routes** — For everything else, `ArkosRouter` gives you the full power of Express with a declarative configuration layer on top.
+- **Auto-generated routes** — Arkos reads your Prisma schema, authentication config, and file upload config at boot time and registers a full set of production-ready endpoints automatically. You don't write those routes.
+
+Both tracks share the same configuration model. Whether you're configuring a generated route or writing a custom one, the same options — authentication, validation, rate limiting, and more — work identically in both places.
+
+## Custom Routes with ArkosRouter
+
+For routes that fall outside the generated set, `ArkosRouter` is Arkos's enhanced Express Router. It wraps Express Router with a configuration-first approach — instead of chaining middleware, you declare what a route needs:
+```ts title="src/modules/reports/reports.router.ts"
+import { ArkosRouter } from "arkos";
+import reportsPolicy from "@/src/modules/reports/reports.policy";
+import { GenerateReportSchema } from "@/src/modules/reports/reports.schema";
+import reportsController from "@/src/modules/reports/reports.controller";
+
+const router = ArkosRouter();
+
+router.post(
+  {
+    path: "/reports/generate",
+    authentication: reportsPolicy.Generate,
+    validation: { body: GenerateReportSchema },
+    rateLimit: { windowMs: 60_000, max: 5 },
+  },
+  reportsController.generateReport
+);
+
+export default router;
+```
+
+## Auto-Generated Routes
+
+Every model in your Prisma schema gets a full set of RESTful endpoints the moment Arkos boots — no route definitions, no controllers, no boilerplate. A `Post` model immediately has `GET /api/posts`, `POST /api/posts`, `GET /api/posts/:id`, `PATCH /api/posts/:id`, `DELETE /api/posts/:id`, and bulk variants, all backed by a service layer with filtering, sorting, pagination, and field selection built in.
+
+The same applies to authentication and file uploads. Once configured, login, signup, logout, password update, file upload, replace, and delete endpoints are all registered automatically.
+
+This is Arkos's core philosophy in practice — the things every API needs should not require writing code at all. You configure them, not implement them.
+
+The three categories of auto-generated routes are:
+
+- [Prisma Model Routes](/docs/core-concepts/prisma-orm/routes) — full CRUD for every model in your schema
+- [Authentication Routes](/docs/core-concepts/authentication/routes) — login, signup, logout, password update, and current user endpoints
+- [File Upload Routes](/docs/core-concepts/file-uploads/routes) — upload, replace, retrieve, and delete for standalone file operations
+
+## Configuring Generated Routes
+
+Auto-generated routes are configured through [Route Hook](/docs/core-concepts/components/route-hooks) — a named export from your module's `*.router.ts` file. Each key maps to a built-in operation and accepts the same configuration object as `ArkosRouter`:
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import postPolicy from "@/src/modules/post/post.policy";
+
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+  createOne: { authentication: postPolicy.Create },
+  deleteOne: { disabled: true },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig` introduced in v1.6. The old name still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for the full guide.
+</Callout>
+
+See [ArkosRouter](/docs/core-concepts/components/arkos-router) for the full configuration object reference.
+
+## Intercepting Generated Routes
+
+Every generated endpoint can be intercepted — run logic before or after any operation without replacing the built-in behavior. Arkos looks for an interceptors file next to the router file:
+```ts title="src/modules/auth/auth.interceptors.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const afterSignup = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const user = res.locals.data.data;
+    emailService.sendVerificationEmail(user.email).catch(console.error);
+    next();
+  },
+];
+```
+
+See [Interceptors](/docs/core-concepts/components/interceptors) for the full list of available hooks per route category.
+
+## Boot Order
+
+At boot time, Arkos registers everything in this order:
+
+1. Built-in middleware (body parser, CORS, compression, security headers, etc.)
+2. Your custom routers and middleware
+3. Auto-generated routes (Prisma model, authentication, file upload)
+
+Your custom routes always take precedence over generated ones. If you define `POST /api/posts` in your own router, it will be reached before Arkos's generated version.
+
+## What's Next
+
+- [ArkosRouter](/docs/core-concepts/components/arkos-router) — Full configuration object reference
+- [Route Hook](/docs/core-concepts/components/route-hooks) — Configure auto-generated routes
+- [Interceptors](/docs/core-concepts/components/interceptors) — Hook into generated route lifecycle
