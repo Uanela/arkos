@@ -2,7 +2,7 @@ import "./utils/helpers/arkos-config.helpers"; // just to trigger loading of ark
 import express from "express";
 import setupApp from "./utils/setup-app";
 import { Arkos } from "./types/arkos";
-import initializeApp from "./utils/initialize-app";
+import initializeApp, { addGlobalErrorHandler } from "./utils/initialize-app";
 import { Express } from "express";
 import { logAppStartup } from "./server";
 import { loadPrismaModule } from "./utils/helpers/prisma.helpers";
@@ -71,7 +71,9 @@ export function arkos(): Arkos {
 
   async function loadApp() {
     await Promise.all([loadPrismaModule(), loadAllModuleComponents()]);
-    const _app = initializeApp(app);
+    let _app = initializeApp(app);
+    _app = addGlobalErrorHandler(_app);
+
     if (process.env.CLI_COMMAND) await runtimeCliCommander.handle();
     return _app;
   }

@@ -59,7 +59,7 @@ interface OperationConfig {
  *
  * @param {string} modelName - The Prisma model name this controller handles.
  *
- * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-controller-class}
+ * @see {@link https://www.arkosjs.com/docs/reference/the-base-controller-class}
  *--
  * **See about how Arkos handles routers**
  * @see {@link https://www.arkosjs.com/docs/guide/adding-custom-routers}

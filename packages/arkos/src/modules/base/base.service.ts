@@ -126,7 +126,7 @@ interface ServiceOperationConfig {
  * const userService = new UserService("user");
  * ```
  *
- * @see {@link https://www.arkosjs.com/docs/api-reference/the-base-service-class}
+ * @see {@link https://www.arkosjs.com/docs/reference/the-base-service-class}
  * @see {@link https://www.arkosjs.com/docs/guide/accessing-request-context-in-services}
  */
 export class BaseService<TModelName extends keyof Models = keyof Models> {
