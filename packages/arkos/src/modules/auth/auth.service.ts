@@ -34,9 +34,12 @@ import {
   isUsingAuthentication,
 } from "../../utils/helpers/arkos-config.helpers";
 import {
-  AuthAfterHookHandler,
-  AuthErrorHookHandler,
-  AuthHookHandler,
+  AuthenticateHookHandler,
+  AuthenticateAfterHookHandler,
+  AuthenticateErrorHookHandler,
+  AuthorizeHookHandler,
+  AuthorizeAfterHookHandler,
+  AuthorizeErrorHookHandler,
 } from "../../types/arkos-config/utils";
 
 /**
@@ -51,8 +54,6 @@ export class AuthService {
   /**
    * Runs a chain of `before` hooks in sequence.
    *
-   * Each hook receives `{ req, skip }`.
-   *
    * - If a hook throws — chain aborts, error is forwarded to `onError` hooks.
    * - If a hook calls `skip()` — chain stops, core logic is bypassed, jumps to `after` hooks.
    * - If a hook returns — next hook in chain runs.
@@ -60,8 +61,18 @@ export class AuthService {
    * @returns Promise resolving to `{ skipped, error? }`
    */
   private async runHooks(
-    hooks: AuthHookHandler | AuthHookHandler[] | undefined,
-    req: ArkosRequest
+    hooks:
+      | AuthenticateHookHandler
+      | AuthenticateHookHandler[]
+      | AuthorizeHookHandler
+      | AuthorizeHookHandler[]
+      | undefined,
+    req: ArkosRequest,
+    ctx?: {
+      action?: AccessAction;
+      resource?: string;
+      rule?: string[] | DetailedAccessControlRule | "*";
+    }
   ): Promise<{ skipped: boolean; error?: unknown }> {
     if (!hooks) return { skipped: false };
 
@@ -71,11 +82,12 @@ export class AuthService {
       let skipCalled = false;
 
       try {
-        await hook({
+        await (hook as any)({
           req,
           skip: () => {
             skipCalled = true;
           },
+          ...ctx,
         });
       } catch (err) {
         return { skipped: false, error: err };
@@ -90,16 +102,24 @@ export class AuthService {
   /**
    * Runs a chain of `after` hooks in sequence.
    *
-   * Each hook receives `{ req }` only.
-   *
    * - If a hook throws — chain aborts, error is forwarded to the global error handler.
    * - If a hook returns — next hook in chain runs.
    *
    * @returns Promise resolving to `{ error? }`
    */
   private async runAfterHooks(
-    hooks: AuthAfterHookHandler | AuthAfterHookHandler[] | undefined,
-    req: ArkosRequest
+    hooks:
+      | AuthenticateAfterHookHandler
+      | AuthenticateAfterHookHandler[]
+      | AuthorizeAfterHookHandler
+      | AuthorizeAfterHookHandler[]
+      | undefined,
+    req: ArkosRequest,
+    ctx?: {
+      action?: AccessAction;
+      resource?: string;
+      rule?: string[] | DetailedAccessControlRule | "*";
+    }
   ): Promise<{ error?: unknown }> {
     if (!hooks) return {};
 
@@ -107,7 +127,7 @@ export class AuthService {
 
     for (const hook of hookArray) {
       try {
-        await hook({ req });
+        await (hook as any)({ req, ...ctx });
       } catch (err) {
         return { error: err };
       }
@@ -119,8 +139,6 @@ export class AuthService {
   /**
    * Runs a chain of `onError` hooks in sequence.
    *
-   * Each hook receives `{ req, error, skip }`.
-   *
    * - If a hook throws — chain aborts, error is forwarded to the global error handler.
    * - If a hook calls `skip()` — suppresses the error and jumps to `after` hooks.
    * - If a hook returns — next hook in chain runs.
@@ -128,9 +146,19 @@ export class AuthService {
    * @returns Promise resolving to `{ skipped, error? }`
    */
   private async runErrorHooks(
-    hooks: AuthErrorHookHandler | AuthErrorHookHandler[] | undefined,
+    hooks:
+      | AuthenticateErrorHookHandler
+      | AuthenticateErrorHookHandler[]
+      | AuthorizeErrorHookHandler
+      | AuthorizeErrorHookHandler[]
+      | undefined,
     error: unknown,
-    req: ArkosRequest
+    req: ArkosRequest,
+    ctx?: {
+      action?: AccessAction;
+      resource?: string;
+      rule?: string[] | DetailedAccessControlRule | "*";
+    }
   ): Promise<{ skipped: boolean; error?: unknown }> {
     if (!hooks) return { skipped: false, error };
 
@@ -140,12 +168,13 @@ export class AuthService {
       let skipCalled = false;
 
       try {
-        await hook({
+        await (hook as any)({
           req,
           error,
           skip: () => {
             skipCalled = true;
           },
+          ...ctx,
         });
       } catch (err) {
         return { skipped: false, error: err };
@@ -156,7 +185,6 @@ export class AuthService {
 
     return { skipped: false, error };
   }
-
   /**
    * Signs a JWT token for the user.
    *
@@ -739,15 +767,24 @@ export class AuthService {
       async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         const hooks = getArkosConfig()?.authentication?.hooks?.authorize;
 
-        const before = await this.runHooks(hooks?.before, req);
+        const before = await this.runHooks(hooks?.before, req, {
+          action,
+          resource,
+          rule,
+        });
         if (before.error) {
           const onError = await this.runErrorHooks(
             hooks?.onError,
             before.error,
-            req
+            req,
+            { action, resource, rule }
           );
           if (onError.skipped) {
-            const after = await this.runAfterHooks(hooks?.after, req);
+            const after = await this.runAfterHooks(hooks?.after, req, {
+              action,
+              resource,
+              rule,
+            });
             return after.error ? next(after.error) : next();
           }
           return next(onError.error);
@@ -784,16 +821,28 @@ export class AuthService {
               }
             }
           } catch (err) {
-            const onError = await this.runErrorHooks(hooks?.onError, err, req);
+            const onError = await this.runErrorHooks(hooks?.onError, err, req, {
+              action,
+              resource,
+              rule,
+            });
             if (onError.skipped) {
-              const after = await this.runAfterHooks(hooks?.after, req);
+              const after = await this.runAfterHooks(hooks?.after, req, {
+                action,
+                resource,
+                rule,
+              });
               return after.error ? next(after.error) : next();
             }
             return next(onError.error);
           }
         }
 
-        const after = await this.runAfterHooks(hooks?.after, req);
+        const after = await this.runAfterHooks(hooks?.after, req, {
+          action,
+          resource,
+          rule,
+        });
         if (after.error) return next(after.error);
 
         next();
