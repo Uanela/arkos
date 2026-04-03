@@ -41,7 +41,7 @@ See [Router Upload](/docs/guides/file-upload/router-upload) for the full router 
 Use the `hook` named export in `src/modules/file-upload/file-upload.router.ts` to configure any file upload endpoint. Each key maps to the operation name from the table above.
 
 <Callout type="info">
-  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hook) for details.
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
 </Callout>
 
 ```ts title="src/modules/file-upload/file-upload.router.ts"
@@ -60,7 +60,7 @@ const router = ArkosRouter();
 export default router;
 ```
 
-See the full configuration object reference at [ArkosRouter](/docs/core-concepts/components/arkos-router).
+See the full configuration object reference at [ArkosRouter](/docs/reference/arkos-router).
 
 ## Intercepting file upload requests
 
