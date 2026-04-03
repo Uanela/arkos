@@ -57,7 +57,7 @@ export default postPolicy;
 
 ### Using Permissions in Routes
 
-Permissions wire the same way whether you're on a custom route or a built-in one. For built-in routes (Prisma model, auth, file upload) use a [Route Hook](/docs/core-concepts/components/route-hook) alongside your `ArkosRouter` export.
+Permissions wire the same way whether you're on a custom route or a built-in one. For built-in routes (Prisma model, auth, file upload) use a [Route Hook](/docs/core-concepts/components/route-hooks) alongside your `ArkosRouter` export.
 
 <Tabs items={["ArkosRouter", "RouteHook"]}>
 <Tab value="ArkosRouter">
@@ -99,7 +99,7 @@ export default router;
 ```
 
 <Callout type="info">
-`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
 </Callout>
 </Tab>
 </Tabs>
@@ -231,7 +231,7 @@ export default postAuthConfigs;
 
 ### Using Auth Config Files in Routes
 
-The same auth config file works on both custom and built-in routes. For built-in routes use a [Route Hook](/docs/core-concepts/components/route-hook) alongside your `ArkosRouter` export.
+The same auth config file works on both custom and built-in routes. For built-in routes use a [Route Hook](/docs/core-concepts/components/route-hooks) alongside your `ArkosRouter` export.
 
 <Tabs items={["ArkosRouter", "RouteHook"]}>
 <Tab value="ArkosRouter">
@@ -295,7 +295,7 @@ export default router;
 ```
 
 <Callout type="info">
-`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
 </Callout>
 </Tab>
 </Tabs>
