@@ -5,7 +5,7 @@ title: Router Upload
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
-Router uploads let you attach file handling directly to a route so that the file path is automatically injected into `req.body` before your handler runs — no separate upload step required. This works on both custom routes via [ArkosRouter](/docs/core-concepts/components/arkos-router) and built-in routes via [RouteHook](/docs/core-concepts/components/route-hook).
+Router uploads let you attach file handling directly to a route so that the file path is automatically injected into `req.body` before your handler runs — no separate upload step required. This works on both custom routes via [ArkosRouter](/docs/core-concepts/components/routers) and built-in routes via [RouteHook](/docs/core-concepts/components/route-hooks).
 
 If you need to upload files independently of any route or model operation, see [File Upload Routes](/docs/guides/file-upload/routes) for the standalone approach instead.
 
@@ -48,7 +48,7 @@ export default reportsRouter;
   </Tab>
   <Tab value="RouteHook">
 <Callout type="info">
-  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hook) for details.
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
 </Callout>
 
 ```ts title="src/modules/user/user.router.ts"
@@ -119,7 +119,7 @@ export default galleryRouter;
   </Tab>
   <Tab value="RouteHook">
 <Callout type="info">
-  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hook) for details.
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
 </Callout>
 
 ```ts title="src/modules/product/product.router.ts"
@@ -209,7 +209,7 @@ export default productRouter;
 </Tabs>
 
 <Callout type="info">
-  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hook) for details.
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
 </Callout>
 
 ## Nested fields
