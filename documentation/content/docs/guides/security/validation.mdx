@@ -1,0 +1,136 @@
+---
+title: Validation
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Input validation is your last line of defense before untrusted data reaches your database. Arkos provides several mechanisms to ensure only expected, well-shaped data gets through.
+
+## Unknown Field Rejection
+
+By default Arkos rejects unknown fields on all validated inputs. This prevents mass assignment — a class of vulnerability where an attacker sends extra fields (like `isAdmin: true`) that slip through into a database write.
+
+Both resolvers ship with `forbidNonWhitelisted: true` by default:
+
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  validation: {
+    resolver: "zod",
+    validationOptions: {
+      forbidNonWhitelisted: true, // default — shown for clarity
+    },
+  },
+});
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  validation: {
+    resolver: "class-validator",
+    validationOptions: {
+      whitelist: true,           // strips unknown fields
+      forbidNonWhitelisted: true, // throws instead of stripping
+    },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+Avoid `forbidNonWhitelisted: false` in your applications at all costs. Silently ignoring unknown fields might seem harmless but creates a surface for mass assignment attacks.
+</Callout>
+
+### Class Validator — Full ValidatorOptions
+
+When using `class-validator`, `validationOptions` accepts the full [`ValidatorOptions`](https://github.com/typestack/class-validator#passing-options) interface. Beyond `forbidNonWhitelisted`, useful security-relevant options include:
+
+| Option | Default | Effect |
+|---|---|---|
+| `whitelist` | `true` | Strips properties not decorated with any validator |
+| `forbidNonWhitelisted` | `true` | Throws instead of stripping unknown properties |
+| `forbidUnknownValues` | — | Throws when validating unknown object types |
+| `skipMissingProperties` | `false` | When `false`, missing required properties fail validation |
+
+---
+
+## Strict Route Validation
+
+Strict mode requires every route to explicitly declare its validation intent. Without it, routes with no `validation` config silently accept any input.
+
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  validation: {
+    resolver: "zod",
+    strict: true,
+  },
+});
+```
+
+In strict mode each of `body`, `query`, and `params` must be explicitly declared:
+
+| Value | Behavior |
+|---|---|
+| `ZodSchema` \| `ClassConstructor` | Validates input |
+| `false` | Allows input through without validation |
+| `null` \| `undefined` \| not set | Not allowed — returns 400 |
+
+See [Validation — Setup](/docs/guides/validation/setup) for the full strict mode behavior.
+
+---
+
+## Disabling Unused Endpoints
+
+Arkos auto-generates CRUD endpoints for every Prisma model. In production, exposing endpoints you don't use — especially bulk operations like `deleteMany` — is an unnecessary attack surface.
+
+Use `routers.strict` to control this:
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  routers: {
+    strict: "no-bulk", // disables createMany, updateMany, deleteMany globally
+    // strict: true,   // disables ALL auto-generated endpoints
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  routers: {
+    strict: "no-bulk",
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+| Value | Effect |
+|---|---|
+| `false` | All endpoints enabled (default) |
+| `"no-bulk"` | Bulk operations disabled globally |
+| `true` | All auto-generated endpoints disabled — must enable per model via `RouteHook` |
+
+<Callout type="info">
+`routers.strict: true` combined with explicit `RouteHook` configuration per model gives you the principle of least privilege — no endpoint exists unless you deliberately enabled it.
+</Callout>
+
+For full details on enabling endpoints per model see [Route Hook](/docs/core-concepts/components/route-hooks).

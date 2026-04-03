@@ -1,0 +1,25 @@
+---
+title: Overview
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Security in Arkos is layered. No single config option makes your API secure — it's the combination of transport controls, authentication hardening, input validation, and production configuration working together. This guide walks through each layer and what Arkos gives you to lock it down.
+
+## The Layers
+
+**Infrastructure** — controls what reaches your server at all. CORS decides which origins can talk to your API. Helmet sets security headers on every response. Rate limiting caps how much any single client can send. These run before any of your code touches the request.
+
+**Authentication** — controls who can access protected routes. JWT configuration determines how tokens are signed, how long they live, and how they travel between client and server. Auth rate limiting protects login and signup endpoints specifically.
+
+**Validation** — controls what data gets into your application. Schema validation, unknown field rejection, and route-level strict mode ensure malformed or unexpected input never reaches your business logic.
+
+**Production** — configuration that must be correct before you go live. Missing secrets, open CORS, permissive rate limits, and disabled security headers are the most common causes of production security incidents.
+
+## What's In Each Section
+
+- [Infrastructure](/docs/guides/security/infrastructure) — CORS, Helmet, rate limiting
+- [Authentication](/docs/guides/security/authentication) — JWT hardening, cookie flags, auth rate limiting, superuser risks
+- [Validation](/docs/guides/security/validation) — `forbidNonWhitelisted`, `ValidatorOptions`, strict mode, disabling unused endpoints
+- [Production](/docs/guides/security/production) — startup requirements, environment behavior, production checklist
