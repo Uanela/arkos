@@ -1,0 +1,199 @@
+---
+title: Infrastructure
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Infrastructure security controls what reaches your server before any route handler or business logic runs. Arkos ships CORS, Helment and rate limiting out of the box.
+
+## CORS
+
+CORS controls which origins are allowed to make requests to your API. By default Arkos blocks all origins unless you explicitly allow them.
+
+**Avoid at all cost `allowedOrigins: "*"` in production.** It allows any website to make requests to your API on behalf of your users.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    cors: {
+      allowedOrigins: ["https://myapp.com", "https://admin.myapp.com"],
+      options: { credentials: true },
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    cors: {
+      allowedOrigins: ["https://myapp.com", "https://admin.myapp.com"],
+      options: { credentials: true },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+`credentials: true` is required if your frontend sends cookies or `Authorization` headers. Without it, browsers will block credentialed cross-origin requests even if the origin is allowed.
+</Callout>
+
+For full CORS configuration options see [Global Middlewares — CORS](/docs/guides/global-middlewares#cors).
+
+---
+
+## Helmet
+
+> Available since v1.6.0-beta
+
+Helmet sets HTTP security headers on every response — `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, `Content-Security-Policy`, and others. These headers protect against a wide range of browser-based attacks including clickjacking, MIME sniffing, and cross-site scripting.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    helmet: {},
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+import helmet from "helmet";
+
+const arkosConfig: ArkosConfig = {
+  configureApp: (app) => {
+    app.use(helmet());
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Install helmet first: `npm install helmet` or `pnpm add helmet`.
+</Callout>
+
+See the [helmet npm package](https://www.npmjs.com/package/helmet) for the full list of headers it sets and how to configure each one.
+
+---
+
+## Rate Limiting
+
+Arkos ships two rate limiting layers:
+
+**Global rate limit** — applies to every endpoint. Protects your server from general abuse and scraping.
+
+**Auth rate limit** — applies only to authentication endpoints (`/api/auth/login`, `/api/auth/signup`, etc.). Tighter by default because these endpoints are the primary target for brute force attacks.
+
+### Global Rate Limit
+
+**Default:**
+```ts
+{
+  windowMs: 60 * 1000, // 1 minute
+  limit: 300,
+}
+```
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    rateLimit: {
+      windowMs: 60 * 1000,
+      limit: 100,
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    rateLimit: {
+      windowMs: 60 * 1000,
+      limit: 100,
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+### Auth Rate Limit
+
+**Default:**
+```ts
+{
+  windowMs: 5000, // 5 seconds
+  limit: 10,
+}
+```
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  authentication: {
+    mode: "static",
+    requestRateLimitOptions: {
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      limit: 5,
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    mode: "static",
+    requestRateLimitOptions: {
+      windowMs: 15 * 60 * 1000,
+      limit: 5,
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+You can also set rate limits per route using `ArkosRouter`. See [ArkosRouter](/docs/reference/arkos-router) for details.
+
+<Callout type="warn">
+The default global limit of 300 requests per minute is permissive — tune it down for production based on your expected traffic patterns.
+</Callout>
