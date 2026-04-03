@@ -2,257 +2,176 @@
 title: Create Arkos CLI
 ---
 
-import { Tabs, Tab } from "fumadocs-ui/components/tabs"
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-The official scaffolding tool for Arkos.js projects, providing an interactive setup experience to generate production-ready RESTful APIs with zero configuration. Get up and running with automatic CRUD operations, authentication, validation, and more - all built on top of Express.js and Prisma.
+The official scaffolding tool for Arkos.js projects. It guides you through an interactive setup and generates a production-ready RESTful API with zero configuration — automatic CRUD, authentication, validation, and more, all built on Express.js and Prisma.
 
 ## Quick Start
 
-Get started with a new Arkos.js project in seconds using your preferred package manager:
+<Callout type="info">
+  Node.js 22.9 or higher is required before running the command.
+</Callout>
 
-<Tabs>
-<Tab value="npm" label="npm" default>
-
+<Tabs items={["npm", "yarn", "pnpm"]}>
+<Tab value="npm">
 ```bash
 npm create arkos@latest my-arkos-project
 ```
-
 </Tab>
-<Tab value="yarn" label="Yarn">
-
+<Tab value="yarn">
 ```bash
 yarn create arkos@latest my-arkos-project
 ```
-
 </Tab>
-<Tab value="pnpm" label="pnpm">
-
+<Tab value="pnpm">
 ```bash
 pnpm create arkos@latest my-arkos-project
 ```
-
 </Tab>
 </Tabs>
 
-:::tip
-Make sure you have Node.js 20 or higher installed before running the command.
-:::
+## Interactive Setup
 
-## Interactive Setup Experience
-
-The CLI guides you through an intuitive setup process, asking questions about your project preferences:
+The CLI asks a series of questions to configure your project:
 
 ```bash
 ? Would you like to use TypeScript? Yes
-? What db provider will be used for Prisma? mongodb
+? What db provider will be used for Prisma? postgresql
 ? Would you like to set up Validation? Yes
-? Choose validation library: class-validator
+? Choose validation library: zod
 ? Would you like to set up Authentication? Yes
 ? Choose authentication type: dynamic
 ? Would you like to use authentication with Multiple Roles? Yes
 ? Choose default username field for login: email
+? Would you like to use Strict Routing? No
 ```
-
-Each question is designed to configure your project exactly how you need it and get you up running as fast as it can be with your Arkos.js project doesn't matter whether you are an experienced web developer or a simple beginner.
 
 ## Configuration Options
 
+### TypeScript
+
+The CLI supports both TypeScript and JavaScript projects. If you choose JavaScript, the validation library is automatically set to Zod — class-validator requires TypeScript.
+
 ### Database Providers
 
-Choose from multiple production-ready database options:
+| Provider | Use Case |
+|----------|----------|
+| PostgreSQL | Complex applications with relationships |
+| MongoDB | Flexible schema requirements |
+| MySQL | Traditional web applications |
+| SQLite | Development and small projects |
+| SQL Server | Enterprise environments |
+| CockroachDB | High-scale, distributed applications |
 
-| Provider        | Description                          | Use Case                                |
-| --------------- | ------------------------------------ | --------------------------------------- |
-| **PostgreSQL**  | Production-ready relational database | Complex applications with relationships |
-| **MongoDB**     | NoSQL document database              | Flexible schema requirements            |
-| **MySQL**       | Popular relational database          | Traditional web applications            |
-| **SQLite**      | Lightweight file-based database      | Development and small projects          |
-| **SQL Server**  | Microsoft's enterprise database      | Enterprise environments                 |
-| **CockroachDB** | Distributed SQL database             | High-scale, distributed applications    |
+### Validation
 
-### Validation Libraries
+- **Zod** — TypeScript-first schema validation
+- **class-validator** — Decorator-based validation (TypeScript only)
 
-**Arkos** supports two powerful validation approaches:
+### Authentication
 
-- **class-validator**: Decorator-based validation with TypeScript support - perfect for those who love clean, annotated code
-- **zod**: TypeScript-first schema validation - ideal for functional programming enthusiasts
+- **Static** — File-based roles and permissions, no extra database tables, fast permission checks
+- **Dynamic** — Database-driven permissions via `auth-role` and `auth-permission` tables, scalable for complex applications
+- **Define Later** — Skip authentication setup and configure it when you're ready
 
-### Authentication Types
+When using **dynamic** authentication, you will also be asked whether to support multiple roles per user. This option is not available for SQLite or static authentication.
 
-Choose the authentication strategy that fits your project:
+### Username Field
 
-- **Static**: Uses configuration files for roles and permissions - simple and fast for smaller projects
-- **Dynamic**: Database-level authentication with `auth-role` and `auth-permission` tables - scalable for complex applications
-- **Define Later**: Skip authentication setup during scaffolding - configure it when you're ready
+Choose how users identify themselves at login:
 
-### Username Field Options
+- **Email** — recommended for most applications
+- **Username** — great for social platforms
+- **Define Later** — configure a custom field later
 
-Customize how users log into your application:
+### Strict Routing
 
-- **Email**: Use email as login identifier (recommended for most applications)
-- **Username**: Use username as login identifier (great for social platforms)
-- **Define Later**: Configure custom field later in development
+Enables Express strict routing — `/posts` and `/posts/` are treated as different routes. Disabled by default.
 
 ## Generated Project Structure
-
-**Arkos** creates a well-organized project structure that follows best practices:
 
 ```
 my-arkos-project/
 ├── prisma/
-│   └── schema.prisma          # Database schema with auth tables (if dynamic)
+│   └── schema.prisma
 ├── src/
 │   ├── utils/
 │   │   └── prisma/
-│   │       └── index.ts       # Prisma client configuration
-│   ├── app.ts                 # Main application file
-│   ├── arkos.config.ts        # Arkos framework configuration
-│   └── package.json           # Dependencies and scripts
-├── .env                       # Environment variables
-├── .gitignore                 # Git ignore rules
-├── package.json               # Project configuration
-├── pnpm-lock.yaml            # Lock file (or package-lock.json/yarn.lock)
-└── tsconfig.json             # TypeScript configuration (if TypeScript selected)
+│   │       └── index.ts
+│   ├── app.ts
+│   └── arkos.config.ts
+├── .env
+├── .gitignore
+├── package.json
+├── tsconfig.json
+└── pnpm-lock.yaml
 ```
 
-## Getting Your Project Running
+## Getting Started
 
-After the CLI finishes scaffolding, follow these steps to get your API up and running:
-
-### 1. Navigate to Your Project
+### 1. Navigate to your project
 
 ```bash
 cd my-arkos-project
 ```
 
-### 2. Configure Your Database
+### 2. Configure your database
 
-Edit the `.env` file with your database connection string:
+Edit `.env` with your connection string:
 
-<Tabs>
-<Tab value="postgresql" label="PostgreSQL" default>
-
+<Tabs items={["PostgreSQL", "MongoDB", "MySQL", "SQLite"]}>
+<Tab value="PostgreSQL">
 ```bash
 DATABASE_URL="postgresql://username:password@localhost:5432/mydb"
 ```
-
 </Tab>
-<Tab value="mongodb" label="MongoDB">
-
+<Tab value="MongoDB">
 ```bash
 DATABASE_URL="mongodb://localhost:27017/mydb"
 ```
-
 </Tab>
-<Tab value="mysql" label="MySQL">
-
+<Tab value="MySQL">
 ```bash
 DATABASE_URL="mysql://username:password@localhost:3306/mydb"
 ```
-
 </Tab>
-<Tab value="sqlite" label="SQLite">
-
+<Tab value="SQLite">
 ```bash
 DATABASE_URL="file:./dev.db"
 ```
-
 </Tab>
 </Tabs>
 
-### 3. Set Up Prisma
-
-Initialize your database schema:
+### 3. Set up Prisma
 
 ```bash
 npx prisma generate
 npx prisma db push
-npx prisma generate
 ```
 
-### 4. Start Development
-
-Launch your development server:
+### 4. Start development
 
 ```bash
 npm run dev
 ```
 
-🎉 **Congratulations!** Your Arkos.js API is now running and ready to handle requests.
-
-## Authentication Setup Deep Dive
-
-### Dynamic Authentication
-
-When you choose "dynamic" authentication, **Arkos** generates a complete database-driven auth system:
-
-- **`auth-role` table**: Manages user roles with hierarchical permissions
-- **`auth-permission` table**: Fine-grained permission management
-- **Multiple roles support**: Users can have multiple roles simultaneously
-- **Database-level security**: All permissions stored and validated against the database
-
-This approach is perfect for applications that need:
-
-- User role management interfaces
-- Dynamic permission assignment
-- Scalable multi-tenant systems
-
-### Static Authentication
-
-When you choose "static" authentication, **Arkos** uses configuration-based auth:
-
-- **File-based permissions**: Roles and permissions defined in config files
-- **Simpler deployment**: No additional database tables required
-- **Fast performance**: No database queries for permission checks
-
-This approach works great for:
-
-- Smaller applications with fixed roles
-- APIs with predictable permission patterns
-- Projects where simplicity is preferred over flexibility
-
-## Beyond Scaffolding
-
-Once your project is created, you have access to **Arkos**'s powerful built-in CLI commands for ongoing development. You can generate controllers, services, and other components on-demand. Explore this incredible tool by reading [built-in CLI Guide](/docs/cli/arkos-cli).
-
-## What's Generated Out of the Box
-
-Your scaffolded project includes:
-
-1. **Complete RESTful API**: Automatic CRUD endpoints for all Prisma models
-2. **Authentication System**: Ready-to-use auth with JWT tokens (if selected)
-3. **Validation Pipeline**: Request validation using your chosen library
-4. **Error Handling**: Consistent error responses across all endpoints
-5. **Database Integration**: Fully configured Prisma setup
-6. **Development Scripts**: Hot-reload development server
-7. **Production Ready**: Optimized build configuration
+Your Arkos.js API is now running and ready to handle requests.
 
 ## Environment Variables
 
-The generated `.env` file includes all necessary variables:
-
 ```bash
-# Database connection
+# Database
 DATABASE_URL=your-database-connection-string
 
-# JWT secrets (if authentication enabled)
+# JWT (if authentication enabled)
 JWT_SECRET=your-jwt-secret
 JWT_EXPIRES_IN=90d
 
-# Server configuration
+# Server
 PORT=8000
 ```
 
-## Summary
+## Beyond Scaffolding
 
-The `create-arkos` CLI eliminates the tedious setup process and gets you building features immediately. Whether you're a beginner looking for a guided setup or an expert who wants to skip boilerplate, the interactive CLI adapts to your needs.
-
-Key benefits:
-
-1. **Zero Configuration**: Complete API setup with intelligent defaults
-2. **Flexible Choices**: Multiple database, auth, and validation options
-3. **Best Practices**: Generated code follows industry standards
-4. **Production Ready**: Built-in security, validation, and error handling
-5. **Developer Experience**: Hot-reload, TypeScript support, and clear project structure
-
-Start building your next API project with confidence - **Arkos** handles the foundation so you can focus on what makes your application unique.
+Once your project is created, use the built-in Arkos CLI to generate controllers, services, routers, schemas, and more on demand. See the [CLI guide](/docs/tooling/cli/overview).
