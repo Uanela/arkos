@@ -12,9 +12,12 @@ import nodemailer from "nodemailer";
 import { ModuleComponents } from "../utils/dynamic-loader";
 import { ArkosRequestHandler } from ".";
 import {
-  AuthAfterHookHandler,
-  AuthErrorHookHandler,
-  AuthHookHandler,
+  AuthenticateHookHandler,
+  AuthenticateAfterHookHandler,
+  AuthenticateErrorHookHandler,
+  AuthorizeHookHandler,
+  AuthorizeAfterHookHandler,
+  AuthorizeErrorHookHandler,
 } from "./arkos-config/utils";
 
 /**
@@ -93,20 +96,20 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * before: ({ req, skip }) => {
+         * before: ({ req, skip, action, resource, rule }) => {
          *   req.authContext = { startedAt: Date.now() };
          * }
          * ```
          *
          * @example Skip core logic entirely (e.g. custom auth)
          * ```ts
-         * before: ({ req, skip }) => {
+         * before: ({ req, skip, action, resource, rule }) => {
          *   req.user = myCustomAuth(req);
          *   skip();
          * }
          * ```
          */
-        before?: AuthHookHandler | AuthHookHandler[];
+        before?: AuthenticateHookHandler | AuthenticateHookHandler[];
 
         /**
          * Runs after `req.user` has been set.
@@ -120,7 +123,7 @@ export type ArkosConfig = {
          * }
          * ```
          */
-        after?: AuthAfterHookHandler | AuthAfterHookHandler[];
+        after?: AuthenticateAfterHookHandler | AuthenticateAfterHookHandler[];
 
         /**
          * Runs when authentication throws — invalid token, expired token, user not found, etc.
@@ -128,7 +131,7 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * onError: ({ req, error, skip }) => {
+         * onError: ({ req, error, skip, action, resource, rule }) => {
          *   console.warn(`Auth failed:`, error);
          *   throw error;
          * }
@@ -136,13 +139,13 @@ export type ArkosConfig = {
          *
          * @example Suppress error and continue
          * ```ts
-         * onError: ({ req, skip }) => {
+         * onError: ({ req, skip, action, resource, rule }) => {
          *   req.user = guestUser;
          *   skip();
          * }
          * ```
          */
-        onError?: AuthErrorHookHandler | AuthErrorHookHandler[];
+        onError?: AuthenticateErrorHookHandler | AuthenticateErrorHookHandler[];
       };
 
       authorize?: {
@@ -160,13 +163,13 @@ export type ArkosConfig = {
          *
          * @example Skip permission check entirely
          * ```ts
-         * before: ({ req, skip }) => {
+         * before: ({ req, skip, action, resource, rule }) => {
          *   req.user.role = myCustomRoleResolver(req);
          *   skip();
          * }
          * ```
          */
-        before?: AuthHookHandler | AuthHookHandler[];
+        before?: AuthorizeHookHandler | AuthorizeHookHandler[];
 
         /**
          * Runs after the permission check passes.
@@ -178,7 +181,7 @@ export type ArkosConfig = {
          * }
          * ```
          */
-        after?: AuthAfterHookHandler | AuthAfterHookHandler[];
+        after?: AuthorizeAfterHookHandler | AuthorizeAfterHookHandler[];
 
         /**
          * Runs when the user lacks sufficient permissions (403).
@@ -186,7 +189,7 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * onError: ({ req, error }) => {
+         * onError: ({ req, error, action, resource, rule }) => {
          *   auditLog.record({ userId: req.user?.id, reason: "insufficient_permissions" });
          *   throw error;
          * }
@@ -194,13 +197,13 @@ export type ArkosConfig = {
          *
          * @example Suppress error and continue
          * ```ts
-         * onError: ({ req, skip }) => {
+         * onError: ({ req, skip, action, resource, rule }) => {
          *   req.user.role = "guest";
          *   skip();
          * }
          * ```
          */
-        onError?: AuthErrorHookHandler | AuthErrorHookHandler[];
+        onError?: AuthorizeErrorHookHandler | AuthorizeErrorHookHandler[];
       };
     };
     enabled?: boolean;
