@@ -2,4 +2,268 @@
 title: Routers
 ---
 
-Under development!
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+A router groups related endpoints and mounts them into your application. Arkos uses `ArkosRouter` — an enhanced Express router that adds validation, authentication, rate limiting, and OpenAPI support directly on route definitions.
+
+If you are working with auto-generated routes (Prisma models, auth, file uploads), you configure those through a [Route Hook](/docs/core-concepts/components/route-hooks) instead of defining routes manually.
+
+## Creating a Router
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+
+const postRouter = ArkosRouter();
+
+export default postRouter;
+```
+
+## Registering Routers
+
+Routers must be registered manually. By convention, all routers are imported into `src/router.ts` and passed to your app:
+
+```ts title="src/router.ts"
+import { ArkosRouter } from "arkos";
+import postRouter from "./modules/post/post.router";
+import commentRouter from "./modules/comment/comment.router";
+
+const router = ArkosRouter();
+
+router.use([postRouter, commentRouter]);
+
+export default router;
+```
+
+Then register them under `src/app.ts`:
+
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="src/app.ts"
+import arkos from "arkos";
+import router from "./router";
+
+arkos.init({
+  use: [router],
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="src/app.ts"
+import arkos from "arkos";
+import router from "./router";
+import { json } from "express";
+
+arkos.init({
+  use: [json(), router],
+});
+```
+</Tab>
+<Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+import router from "./router";
+
+arkos.init({
+  routers: {
+    additional: [router],
+  },
+});
+```
+</Tab>
+</Tabs>
+## Defining Routes
+
+`ArkosRouter` accepts a configuration object as the first argument, followed by your handlers:
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import postController from "./post.controller";
+
+const postRouter = ArkosRouter();
+
+postRouter.get(
+  { path: "/api/posts/featured" },
+  postController.getFeatured
+);
+
+postRouter.post(
+  { path: "/api/posts" },
+  postController.create
+);
+
+export default postRouter;
+```
+
+## Scaffold with the CLI
+```bash
+arkos generate router --module post
+arkos g r -m post
+```
+
+## Route Configuration
+
+Every route method accepts a configuration object as its first argument. For the full configuration reference see [ArkosRouter](/docs/reference/arkos-router).
+
+### Authentication
+
+Pass `true` to require a logged-in user, `false` to make the route public, or an `ArkosPolicy` rule for role-based access. For the full authentication guide see [Authentication](/docs/core-concepts/authentication/setup).
+```ts
+import postPolicy from "./post.policy";
+
+postRouter.get(
+  { path: "/api/posts", authentication: false },
+  postController.findMany
+);
+
+postRouter.post(
+  { path: "/api/posts", authentication: postPolicy.Create },
+  postController.create
+);
+
+postRouter.delete(
+  { path: "/api/posts/:id", authentication: postPolicy.Delete },
+  postController.deleteOne
+);
+```
+
+### Validation
+
+Pass Zod schemas or class-validator DTOs to validate `body`, `query`, or `params`. For the full validation guide see [Validation](/docs/guides/validation/usage).
+
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import CreatePostSchema from "./schemas/create-post.schema";
+import QueryPostSchema from "./schemas/query-post.schema";
+import postController from "./post.controller";
+
+const postRouter = ArkosRouter();
+
+postRouter.get(
+  {
+    path: "/api/posts",
+    validation: { query: QueryPostSchema },
+  },
+  postController.findMany
+);
+
+postRouter.post(
+  {
+    path: "/api/posts",
+    validation: { body: CreatePostSchema },
+  },
+  postController.create
+);
+
+export default postRouter;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import CreatePostDto from "./dtos/create-post.dto";
+import QueryPostDto from "./dtos/query-post.dto";
+import postController from "./post.controller";
+
+const postRouter = ArkosRouter();
+
+postRouter.get(
+  {
+    path: "/api/posts",
+    validation: { query: QueryPostDto },
+  },
+  postController.findMany
+);
+
+postRouter.post(
+  {
+    path: "/api/posts",
+    validation: { body: CreatePostDto },
+  },
+  postController.create
+);
+
+export default postRouter;
+```
+</Tab>
+</Tabs>
+
+### Rate Limiting
+
+Limit how frequently a route can be called:
+```ts
+postRouter.post(
+  {
+    path: "/api/posts",
+    rateLimit: { windowMs: 60_000, max: 10 },
+  },
+  postController.create
+);
+```
+
+### Disabling Routes
+
+Set `disabled: true` to turn off a route without removing it:
+```ts
+postRouter.delete(
+  { path: "/api/posts/:id", disabled: true },
+  postController.deleteOne
+);
+```
+
+### OpenAPI
+
+Add OpenAPI metadata directly on the route. For the full OpenAPI guide see [OpenAPI Documentation](/docs/guides/open-api-documentation/usage).
+```ts
+postRouter.get(
+  {
+    path: "/api/posts",
+    openapi: {
+      tags: ["Post"],
+      summary: "List all posts",
+    },
+  },
+  postController.findMany
+);
+```
+
+## Router-Level Options
+
+Pass options to `ArkosRouter()` to apply defaults across all routes in that router:
+```ts
+const postRouter = ArkosRouter({
+  prefix: "posts",
+  openapi: { tags: ["Post"] },
+});
+```
+
+## Auto-Generated Routes
+
+For Prisma model routes, auth routes, and file upload routes, Arkos generates the endpoints automatically. You configure them via a [Route Hook](/docs/core-concepts/components/route-hooks) exported from the same router file:
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import postPolicy from "./post.policy";
+
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+  createOne: { authentication: postPolicy.Create },
+  deleteOne: { disabled: true },
+};
+
+const postRouter = ArkosRouter();
+
+export default postRouter;
+```
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code still works but logs a deprecation warning. See [Route Hooks](/docs/core-concepts/components/route-hooks) for the full reference.
+</Callout>
+
+## Related
+
+- [ArkosRouter Reference](/docs/reference/arkos-router) — Full configuration object reference
+- [Route Hooks](/docs/core-concepts/components/route-hooks) — Configure auto-generated routes
+- [Controllers](/docs/core-concepts/components/controllers) — Handle request logic
+- [Validation](/docs/guides/validation/usage) — Validate request data
+- [Authentication](/docs/core-concepts/authentication/setup) — Protect routes
+- [OpenAPI Documentation](/docs/guides/open-api-documentation/usage) — Document your API
