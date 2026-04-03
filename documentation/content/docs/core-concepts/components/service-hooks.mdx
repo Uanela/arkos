@@ -7,6 +7,64 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
 Service Hooks run logic at the service layer — every time a `BaseService` method is called, whether from an HTTP endpoint or programmatically. Unlike interceptors (HTTP layer), hooks fire for all service calls across your entire application.
 
+## Why Service Hooks?
+
+Interceptors run at the HTTP layer — they only fire when an API endpoint is called. But what about when you call the same service method from a background job, a CLI command, or another service? Those calls would bypass your interceptor logic. Service Hooks solve this. They run at the service layer, every time a `BaseService` method is called — regardless of where the call comes from.
+
+## The Three Hook Types
+
+### Before Service Hooks
+
+Run **before** the main operation. Use them to:
+
+- Modify input data before it hits the database
+- Validate business rules that apply everywhere
+- Add default values (slug, timestamps, etc.)
+
+```ts
+export const beforeCreateOne = [
+  async ({ data }) => {
+    if (!data.slug && data.title) {
+      data.slug = data.title.toLowerCase().replace(/\s+/g, "-");
+    }
+  },
+];
+```
+
+### After Service Hooks
+
+Run **after** the main operation succeeds. Use them to:
+
+- Access the result via `result`
+- Send notifications, emails, or webhooks
+- Update related records
+- Trigger side effects
+
+```ts
+export const afterCreateOne = [
+  async ({ result }) => {
+    await emailService.sendWelcome(result.email);
+  },
+];
+```
+
+### OnError Service Hooks
+
+Run **when** the main operation fails. Use them to:
+
+- Rollback database transactions
+- Clean up temporary data
+- Log errors for monitoring
+
+```ts
+export const onCreateOneError = [
+  async ({ error, data }) => {
+    if (data.tempFile) await deleteFile(data.tempFile);
+    logger.error(error);
+  },
+];
+```
+
 ## File Structure
 
 ```

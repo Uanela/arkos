@@ -4,8 +4,9 @@
     "routers",
     "route-hooks",
     "controllers",
-    "services",
     "interceptors",
-    "service-hooks"
+    "services",
+    "service-hooks",
+    "validators"
   ]
 }
