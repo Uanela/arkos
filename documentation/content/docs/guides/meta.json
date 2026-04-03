@@ -6,7 +6,9 @@
     "validation",
     "error-handling",
     "file-upload",
+    "security",
     "open-api-documentation",
+    "email-service",
     "migrations"
   ]
 }
