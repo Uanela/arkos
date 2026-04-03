@@ -1,14 +1,11 @@
 ---
 title: Quick Start
 ---
+
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-<Callout type="info">
-  This is a quick-start guide to get something running fast. For a more robust project setup with TypeScript, Prisma, and full configuration, see the [Installation Guide](/docs/getting-started/installation).
-</Callout>
-
-Let's build your first Arkos application. You'll create a simple API server with one endpoint that returns "Hello World".
+This is a quick start guide to get something running fast. For a more robust project setup with TypeScript, Prisma, and full configuration, see the [Installation Guide](/docs/getting-started/installation). Let's build your first Arkos application. You'll create a simple API server with one endpoint that returns "Hello World".
 
 ## Installation
 
@@ -23,13 +20,13 @@ pnpm init
 <Tabs items={["pnpm", "npm"]}>
 <Tab value="pnpm">
 ```bash
-pnpm add arkos 
+pnpm add arkos
 pnpm add -D tsx tsx-strict
 ```
 </Tab>
 <Tab value="npm">
 ```bash
-npm install arkos 
+npm install arkos
 npm add -D tsx tsx-strict
 ```
 </Tab>
@@ -62,6 +59,7 @@ import router from "./router";
 const app = arkos();
 
 app.use(router);
+
 app.listen();
 ```
 </Tab>
@@ -124,7 +122,7 @@ arkos.init({
 ## Run It
 
 ```bash
-npx arkos dev 
+npx arkos dev
 ```
 
 Open `http://localhost:8000` — you'll see:
@@ -132,6 +130,8 @@ Open `http://localhost:8000` — you'll see:
 ```json
 { "message": "Hello World" }
 ```
+
+This small app is already running with compression, rate limiting, CORS, JSON body parsing, cookie parsing, query parsing, request logging, and security headers — all on by default. Every one of them is configurable or replaceable through `arkos.config.ts`. See [Global Middlewares](/docs/guides/global-middlewares) for the full list and options.
 
 ## Add Another Route
 
@@ -192,6 +192,8 @@ export default router;
 The `src/app.ts` file stays the same — just add more routes to `src/router.ts` as your app grows.
 
 ## What's Next
+
+This was the minimum. A real Arkos app also auto-generates full CRUD endpoints from your Prisma models, has a built-in authentication system, request validation, file uploads, and a lot more — all with zero boilerplate. The [Installation Guide](/docs/getting-started/installation) walks through setting all of that up properly with TypeScript, Prisma, and a solid project structure. That's the right next step before building anything serious.
 
 - **[Installation](/docs/getting-started/installation)** — Complete setup with TypeScript, Prisma, and configuration
 - **[Project Structure](/docs/getting-started/project-structure)** — Organize your code as it grows
