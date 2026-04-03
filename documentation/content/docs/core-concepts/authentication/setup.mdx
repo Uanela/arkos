@@ -5,7 +5,7 @@ title: Setup
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
-Arkos provides a JWT-based authentication and authorization system with Role-Based Access Control (RBAC) that secures your auto-generated Prisma model routes, built-in auth routes, file upload routes, and custom [ArkosRouter](/docs/core-concepts/components/arkos-router) routes out of the box. This page covers the general authentication setup shared across all permission modes and helps you understand how Arkos handles permissions.
+Arkos provides a JWT-based authentication and authorization system with Role-Based Access Control (RBAC) that secures your auto-generated Prisma model routes, built-in auth routes, file upload routes, and custom [ArkosRouter](/docs/core-concepts/components/routers) routes out of the box. This page covers the general authentication setup shared across all permission modes and helps you understand how Arkos handles permissions.
 
 ## Permission Modes
 
@@ -227,7 +227,7 @@ export default router;
 ```
 
 <Callout type="info">
-`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hook) for full details.
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
 </Callout>
 </Tab>
 </Tabs>
