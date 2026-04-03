@@ -11,6 +11,68 @@ Interceptors let you run custom logic before, after, or on error of any auto-gen
   Interceptors work alongside [Route Hook](/docs/core-concepts/components/route-hooks) for customizing built-in routes (just like `ArkosRouter`) and give a complete experience when interacting with them.
 </Callout>
 
+## Why Interceptors?
+
+Arkos auto-generates routes for your Prisma models, authentication, and file uploads. But most applications need custom business logic — setting default values, logging activity, sending notifications, cleaning up resources on failure. Interceptors are the answer. They let you inject your own logic into the auto-generated flow without rewriting the built-in handlers.
+
+## The Three Hook Types
+
+### Before Interceptors
+
+Run **before** the main operation. Use them to:
+
+- Modify request data (`req.body`, `req.query`, `req.params`)
+- Validate business rules
+- Check permissions beyond role-based access
+- Add default values
+
+```ts
+export const beforeCreateOne = [
+  async (req, res, next) => {
+    req.body.authorId = req.user.id;
+    next();
+  },
+];
+```
+
+### After Interceptors
+
+Run **after** the main operation succeeds. Use them to:
+
+- Access the result via `res.locals.data.data`
+- Send notifications, emails, or webhooks
+- Log successful operations
+- Transform response data
+
+```ts
+export const afterCreateOne = [
+  async (req, res, next) => {
+    const record = res.locals.data.data;
+    await emailService.sendWelcome(record.email);
+    next();
+  },
+];
+```
+
+### OnError Interceptors
+
+Run **when** the main operation fails. Use them to:
+
+- Clean up uploaded files
+- Rollback database transactions
+- Log errors for monitoring
+- Send failure alerts
+
+```ts
+export const onCreateOneError = [
+  async (err, req, res, next) => {
+    if (req.file) await deleteFile(req.file.path);
+    console.error(err.message);
+    next(err);
+  },
+];
+```
+
 ## File Structure
 
 ```
@@ -340,5 +402,5 @@ export const addDefaults = async (
 ## Related
 
 - **[Route Hook](/docs/core-concepts/components/route-hooks)** — Configure auto-generated routes
-- **[ArkosRouter](/docs/core-concepts/components/arkos-router)** — Full configuration object reference
+- **[ArkosRouter](/docs/core-concepts/components/routers)** — Full configuration object reference
 - **[Service Hooks](/docs/core-concepts/components/service-hooks)** — Run logic at the service layer
