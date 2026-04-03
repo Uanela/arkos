@@ -132,7 +132,7 @@ export default router;
 For built-in routes (Prisma models, authentication, file uploads), use the same `openapi` structure inside your `hook` export.
 
 <Callout type="info">
-  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hook) for details.
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
 </Callout>
 ```ts title="src/modules/post/post.router.ts"
 import { ArkosRouter, RouteHook } from "arkos";
