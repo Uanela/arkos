@@ -2,29 +2,23 @@
 title: Configuration
 ---
 
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
-Arkos.js provides a comprehensive configuration system that allows you to customize every aspect of your application. Starting from v1.4.0+, configuration is split between static settings in `arkos.config.ts` and runtime setup in `arkos.init()`.
-
-import { Tabs, Tab } from "fumadocs-ui/components/tabs"
- 
+Arkos provides a comprehensive configuration system that lets you customize every aspect of your application. Since v1.4.0, configuration is split between static settings in `arkos.config.ts` and runtime setup in `src/app.ts`.
 
 ## Configuration Overview
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+In v1.6+, Arkos uses `defineConfig` for full type safety and IDE autocomplete:
 
-In v1.4.0+, Arkos uses a two-file configuration approach:
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
 
-**`arkos.config.ts`** - Static configuration (CORS, validation, authentication, etc.)
-
-```typescript
-import { ArkosConfig } from "arkos";
-
-const arkosConfig: ArkosConfig = {
+export default defineConfig({
   middlewares: {
-    cors: {
-      allowedOrigins: "*",
-    },
+    cors: { allowedOrigins: "*" },
   },
   authentication: {
     mode: "static",
@@ -32,15 +26,42 @@ const arkosConfig: ArkosConfig = {
   validation: {
     resolver: "zod",
   },
-  // ... other static configs
+});
+```
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
+
+const app = arkos();
+
+app.use(analyticsRouter);
+
+app.listen();
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+In v1.4–v1.5, static configuration lives in `arkos.config.ts` and runtime setup in `arkos.init()`:
+
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    cors: { allowedOrigins: "*" },
+  },
+  authentication: {
+    mode: "static",
+  },
+  validation: {
+    resolver: "zod",
+  },
 };
 
 export default arkosConfig;
 ```
 
-**`src/app.ts`** - Runtime setup (custom routers, app/server configuration)
-
-```typescript
+```ts title="src/app.ts"
 import arkos from "arkos";
 import analyticsRouter from "./routers/analytics.router";
 
@@ -54,18 +75,11 @@ arkos.init({
   },
 });
 ```
-
-:::info Why the Split?
-Static configurations are loaded once at startup and benefit from better type checking and validation. Runtime setup allows dynamic registration of routers and middlewares during initialization.
-:::
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
+<Tab value="v1.3">
+In v1.3, all configuration is passed directly to `arkos.init()` in `src/app.ts`:
 
-All configuration is done in `src/app.ts` through the `arkos.init()` method:
-
-```typescript
-// src/app.ts
+```ts title="src/app.ts"
 import arkos from "arkos";
 
 arkos.init({
@@ -74,26 +88,32 @@ arkos.init({
   validation: { resolver: "zod" },
   routers: { additional: [customRouter] },
   middlewares: { additional: [customMiddleware] },
-  // ... all configuration options
 });
 ```
-
 </Tab>
 </Tabs>
 
-:::tip Full API Reference
-For detailed information on all configuration options, see the [Arkos Configuration API Reference](/docs/reference/arkos-configuration).
-:::
+<Callout type="info">
+For the full list of all available configuration options see [Arkos Configuration](/docs/reference/arkos-configuration).
+</Callout>
 
-## Configuration Categories
+## Basic Application Settings
 
-### 1. Basic Application Settings
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-```typescript
-// arkos.config.ts
+export default defineConfig({
+  welcomeMessage: "Welcome to My API",
+  port: 8000,
+  host: "localhost",
+  globalPrefix: "/api",
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
 import { ArkosConfig } from "arkos";
 
 const arkosConfig: ArkosConfig = {
@@ -104,63 +124,30 @@ const arkosConfig: ArkosConfig = {
 
 export default arkosConfig;
 ```
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-```typescript
-// src/app.ts
+<Tab value="v1.3">
+```ts title="src/app.ts"
 arkos.init({
   welcomeMessage: "Welcome to My API",
   port: 8000,
   host: "localhost",
 });
 ```
-
 </Tab>
 </Tabs>
 
-### 2. Authentication
+## Authentication
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
 
-```typescript
-// arkos.config.ts
-import { ArkosConfig } from "arkos";
-
-const arkosConfig: ArkosConfig = {
-  authentication: {
-    mode: "static", // or "dynamic" for permission-based RBAC
-    login: {
-      allowedUsernames: ["email", "username", "profile.nickname"],
-      sendAccessTokenThrough: "both", // "cookie", "body", or "both"
-    },
-    jwt: {
-      secret: process.env.JWT_SECRET,
-      expiresIn: "30d",
-      cookie: {
-        secure: true,
-        httpOnly: true,
-        sameSite: "lax",
-      },
-    },
-  },
-};
-
-export default arkosConfig;
-```
-
-</Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-```typescript
-// src/app.ts
-arkos.init({
+export default defineConfig({
   authentication: {
     mode: "static",
     login: {
-      allowedUsernames: ["email", "username", "profile.nickname"],
+      allowedUsernames: ["email", "username"],
       sendAccessTokenThrough: "both",
     },
     jwt: {
@@ -175,91 +162,130 @@ arkos.init({
   },
 });
 ```
-
 </Tab>
-</Tabs>
-
-### 3. Validation
-
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-```typescript
-// arkos.config.ts
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
 import { ArkosConfig } from "arkos";
 
 const arkosConfig: ArkosConfig = {
-  validation: {
-    resolver: "zod", // or "class-validator"
-    // Only for class-validator
-    validationOptions: {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
+  authentication: {
+    mode: "static",
+    login: {
+      allowedUsernames: ["email", "username"],
+      sendAccessTokenThrough: "both",
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "30d",
+      cookie: {
+        secure: true,
+        httpOnly: true,
+        sameSite: "lax",
+      },
     },
   },
 };
 
 export default arkosConfig;
 ```
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
+<Tab value="v1.3">
+```ts title="src/app.ts"
+arkos.init({
+  authentication: {
+    mode: "static",
+    login: {
+      allowedUsernames: ["email", "username"],
+      sendAccessTokenThrough: "both",
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "30d",
+    },
+  },
+});
+```
+</Tab>
+</Tabs>
 
-```typescript
-// src/app.ts
+See [Authentication Setup](/docs/core-concepts/authentication/setup) for full details.
+
+## Validation
+
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  validation: {
+    resolver: "zod", // or "class-validator"
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  validation: {
+    resolver: "zod",
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+<Tab value="v1.3">
+```ts title="src/app.ts"
 arkos.init({
   validation: {
     resolver: "class-validator",
     validationOptions: {
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true,
     },
   },
 });
 ```
-
 </Tab>
 </Tabs>
 
-### 4. File Upload
+See [Validation Setup](/docs/guides/validation/setup) for full details.
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
+## File Upload
 
-```typescript
-// arkos.config.ts
-import { ArkosConfig } from "arkos";
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
 
-const arkosConfig: ArkosConfig = {
+export default defineConfig({
   fileUpload: {
     baseUploadDir: "./uploads",
     baseRoute: "/api/files",
     restrictions: {
       images: {
         maxCount: 10,
-        maxSize: 5 * 1024 * 1024, // 5MB
+        maxSize: 5 * 1024 * 1024,
         supportedFilesRegex: /\.(jpg|jpeg|png|gif)$/i,
       },
       documents: {
         maxCount: 5,
-        maxSize: 10 * 1024 * 1024, // 10MB
+        maxSize: 10 * 1024 * 1024,
         supportedFilesRegex: /\.(pdf|doc|docx)$/i,
       },
     },
   },
-};
-
-export default arkosConfig;
+});
 ```
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
 
-```typescript
-// src/app.ts
-arkos.init({
+const arkosConfig: ArkosConfig = {
   fileUpload: {
     baseUploadDir: "./uploads",
     baseRoute: "/api/files",
@@ -271,432 +297,283 @@ arkos.init({
       },
     },
   },
-});
+};
+
+export default arkosConfig;
 ```
-
 </Tab>
-</Tabs>
-
-### 5. Security
-
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-```typescript
-// arkos.config.ts
-import { ArkosConfig } from "arkos";
-
-const arkosConfig: ArkosConfig = {
-  middlewares: {
-    rateLimit: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      limit: 100, // Limit each IP to 100 requests per window
-      message: "Too many requests, please try again later",
-    },
-    cors: {
-      allowedOrigins: ["https://example.com", "https://api.example.com"],
-      options: {
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+<Tab value="v1.3">
+```ts title="src/app.ts"
+arkos.init({
+  fileUpload: {
+    baseUploadDir: "./uploads",
+    restrictions: {
+      images: {
+        maxCount: 10,
+        maxSize: 5 * 1024 * 1024,
       },
     },
   },
-};
-
-export default arkosConfig;
+});
 ```
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
+</Tabs>
 
-```typescript
-// src/app.ts
-arkos.init({
-  globalRequestRateLimitOptions: {
-    windowMs: 15 * 60 * 1000,
-    limit: 100,
-  },
-  cors: {
-    allowedOrigins: ["https://example.com", "https://api.example.com"],
-    options: {
-      credentials: true,
+See [File Upload Setup](/docs/guides/file-upload/setup) for full details.
+
+## Middlewares
+
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    rateLimit: { windowMs: 60 * 1000, limit: 100 },
+    cors: {
+      allowedOrigins: ["https://myapp.com"],
+      options: { credentials: true },
     },
+    compression: { level: 6 },
+    expressJson: { limit: "10mb" },
+    requestLogger: false,
   },
 });
 ```
 
+Custom middlewares and routers are registered via `app.use()` in `src/app.ts`:
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import myMiddleware from "./middlewares/my-middleware";
+import analyticsRouter from "./routers/analytics.router";
+
+const app = arkos();
+
+app.use(myMiddleware);
+app.use(analyticsRouter);
+
+app.listen();
+```
 </Tab>
-</Tabs>
-
-### 6. Middleware
-
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-```typescript
-// arkos.config.ts
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
 import { ArkosConfig } from "arkos";
 
 const arkosConfig: ArkosConfig = {
   middlewares: {
-    compression: false, // Disable compression
-    requestLogger: false, // Disable request logger
-    errorHandler: customErrorHandler, // Replace with custom handler
+    rateLimit: { windowMs: 60 * 1000, limit: 100 },
+    cors: {
+      allowedOrigins: ["https://myapp.com"],
+      options: { credentials: true },
+    },
+    compression: { level: 6 },
   },
 };
 
 export default arkosConfig;
-
-// src/app.ts - Register custom middlewares at runtime
-import arkos from "arkos";
-import customMiddleware1 from "./middlewares/custom1";
-import customMiddleware2 from "./middlewares/custom2";
-
-arkos.init({
-  use: [customMiddleware1, customMiddleware2],
-});
 ```
 
-:::info Middleware Registration
-Custom middlewares are now registered via the `use` array in `arkos.init()` rather than `middlewares.additional`. This provides a cleaner API aligned with Express conventions.
-:::
+```ts title="src/app.ts"
+import arkos from "arkos";
+import myMiddleware from "./middlewares/my-middleware";
 
+arkos.init({
+  use: [myMiddleware],
+});
+```
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-```typescript
-// src/app.ts
+<Tab value="v1.3">
+```ts title="src/app.ts"
 arkos.init({
   middlewares: {
-    additional: [customMiddleware1, customMiddleware2],
-    disable: ["request-logger"],
-    replace: {
-      globalErrorHandler: customErrorHandler,
-    },
+    additional: [customMiddleware],
+  },
+  globalRequestRateLimitOptions: {
+    windowMs: 60 * 1000,
+    limit: 100,
+  },
+  cors: {
+    allowedOrigins: ["https://myapp.com"],
   },
 });
 ```
-
 </Tab>
 </Tabs>
 
-### 7. Routers
+See [Global Middlewares](/docs/guides/global-middlewares) for the full list and options.
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
+## Routers
 
-```typescript
-// arkos.config.ts
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  routers: {
+    strict: true,
+    welcomeRoute: false,
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
 import { ArkosConfig } from "arkos";
 
 const arkosConfig: ArkosConfig = {
   routers: {
-    strict: true, // Enable strict mode for enhanced security
-    welcomeRoute: false, // Disable welcome endpoint
+    strict: true,
+    welcomeRoute: false,
   },
 };
 
 export default arkosConfig;
-
-// src/app.ts - Register custom routers at runtime
-import arkos from "arkos";
-import analyticsRouter from "./routers/analytics.router";
-import reportsRouter from "./routers/reports.router";
-
-arkos.init({
-  use: [analyticsRouter, reportsRouter],
-});
 ```
-
-:::info Router Registration
-Custom routers are now registered via the `use` array in `arkos.init()` rather than `routers.additional`. This provides better separation between static configuration and dynamic registration.
-:::
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-```typescript
-// src/app.ts
+<Tab value="v1.3">
+```ts title="src/app.ts"
 arkos.init({
   routers: {
     strict: true,
     additional: [customRouter],
-    disable: ["welcome-endpoint"],
-    replace: {
-      authRouter: customAuthRouter,
-    },
   },
 });
 ```
-
 </Tab>
 </Tabs>
 
-### 8. Advanced Configuration
+## Advanced Runtime Configuration
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
+These options live in `src/app.ts` regardless of version since they require access to the live Express app or HTTP server:
 
-```typescript
-// src/app.ts
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="src/app.ts"
+import arkos from "arkos";
+import helmet from "helmet";
+
+const app = arkos();
+
+app.set("trust proxy", 1);
+app.use(helmet());
+
+app.listen();
+```
+
+For WebSocket support or custom HTTP server access:
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import http from "http";
+import { Server } from "socket.io";
+
+const app = arkos();
+
+async function start() {
+  await app.build();
+
+  const server = http.createServer(app);
+  const io = new Server(server);
+
+  app.listen(server);
+}
+
+start();
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="src/app.ts"
 import arkos from "arkos";
 
 arkos.init({
-  /**
-   * Configure the Express app before Arkos sets up its middleware stack
-   * Useful for setting Express-specific options
-   */
   configureApp: (app) => {
-    // Custom express app configuration
     app.set("trust proxy", 1);
     app.set("view engine", "ejs");
-    app.disable("x-powered-by");
   },
-
-  /**
-   * Configure the HTTP server after it's created
-   * Useful for setting timeouts, WebSocket servers, etc.
-   */
   configureServer: (server) => {
-    // Custom HTTP server configuration
-    server.timeout = 10000;
-    server.keepAliveTimeout = 65000;
+    server.setTimeout(30000);
   },
 });
 ```
-
-:::tip When to Use
-
-- **`configureApp`**: Use when you need to configure Express-specific settings before Arkos middleware stack is loaded
-- **`configureServer`**: Use when you need to configure the HTTP server (timeouts, WebSocket integration, etc.)
-  :::
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
+<Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
 
-```typescript
-// src/app.ts
 arkos.init({
   configureApp: (app) => {
-    // Custom express app configuration
     app.set("trust proxy", 1);
   },
   configureServer: (server) => {
-    // Custom HTTP server configuration
-    server.timeout = 10000;
+    server.setTimeout(30000);
   },
 });
 ```
-
 </Tab>
 </Tabs>
 
-## Environment-Based Configuration
+## Environment Variables
 
-Arkos.js supports environment-specific configuration through environment variables. These work across all versions:
+Arkos picks up several environment variables automatically:
 
-```bash
-# Database connection (required)
+```bash title=".env"
+# Database
 DATABASE_URL=postgresql://username:password@localhost:5432/dbname
 
-# JWT authentication (required if using auth)
-JWT_SECRET="your-super-secret-jwt-key"
-
-# Optional JWT configurations
+# JWT
+JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRES_IN=30d
 JWT_COOKIE_SECURE=true
 JWT_COOKIE_HTTP_ONLY=true
 JWT_COOKIE_SAME_SITE=lax
 
-# Optional Server configuration
+# Server
 PORT=8000
 NODE_ENV=development
 HOST=localhost
 
-# File upload configuration
-MAX_FILE_SIZE=5242880
-UPLOAD_DIR=./uploads
+# Email
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=465
+EMAIL_SECURE=true
+EMAIL_USER=you@example.com
+EMAIL_PASSWORD=your-smtp-password
+EMAIL_NAME=Your App
 ```
-
-### Environment Variable Files
 
 Arkos loads environment variables in this order (highest priority first):
 
-1. **Process environment variables** (system-level)
-2. **`.env`** - Main environment file
-3. **`.env.local`** - Local overrides (not committed)
-4. **`.env.[NODE_ENV].local`** - Environment-specific local overrides
-5. **`.env.[NODE_ENV]`** - Environment-specific variables
-6. **`.env.defaults`** - Default values (lowest priority)
+1. Process environment variables (system-level)
+2. `.env`
+3. `.env.local`
+4. `.env.[NODE_ENV].local`
+5. `.env.[NODE_ENV]`
+6. `.env.defaults`
 
-## Configuration Precedence
+## Complete Example
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
 
-Configuration values are loaded in this order (highest priority first):
-
-1. Values passed directly to `arkos.init()` (runtime setup)
-2. Values in `arkos.config.ts` (static configuration)
-3. Environment variables
-4. Default values provided by Arkos.js
-
-**Example precedence:**
-
-```typescript
-// arkos.config.ts
-const arkosConfig: ArkosConfig = {
-  port: 3000, // This will be used...
-};
-
-export default arkosConfig;
-
-// .env
-PORT = 8000; // ...unless this is set
-
-// Or system environment
-// PORT=9000 npm start // This takes highest priority
-```
-
-</Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-Configuration values are loaded in this order (highest priority first):
-
-1. Values passed directly to `arkos.init()`
-2. Environment variables
-3. Default values provided by Arkos.js
-
-</Tab>
-</Tabs>
-
-## Migration from v1.3.0 to v1.4.0+
-
-If you're upgrading from v1.3.0, here's how to migrate your configuration:
-
-### Step 1: Create `arkos.config.ts`
-
-Create a new `arkos.config.ts` file in your project root and move static configurations:
-
-```typescript
-// arkos.config.ts
-import { ArkosConfig } from "arkos";
-
-const arkosConfig: ArkosConfig = {
-  // Move these from arkos.init():
-  port: 3000,
-  authentication: { mode: "static" },
-  validation: { resolver: "zod" },
-  fileUpload: { baseUploadDir: "./uploads" },
-  middlewares: {
-    cors: { allowedOrigins: ["https://example.com"] },
-    rateLimit: { windowMs: 60000, limit: 100 },
-  },
-  routers: { strict: false },
-};
-
-export default arkosConfig;
-```
-
-### Step 2: Update `src/app.ts`
-
-Keep only runtime configurations in `arkos.init()`:
-
-```typescript
-// src/app.ts
-import arkos from "arkos";
-import customRouter from "./routers/custom.router";
-
-arkos.init({
-  // Replace routers.additional with use array
-  use: [customRouter],
-
-  // Keep configureApp and configureServer
-  configureApp: (app) => {
-    app.set("trust proxy", 1);
-  },
-  configureServer: (server) => {
-    server.timeout = 30000;
-  },
-});
-```
-
-### Step 3: Update Middleware/Router Registration
-
-**Before (v1.3.0):**
-
-```typescript
-arkos.init({
-  middlewares: {
-    additional: [customMiddleware],
-  },
-  routers: {
-    additional: [customRouter],
-  },
-});
-```
-
-**After (v1.4.0+):**
-
-```typescript
-arkos.init({
-  use: [customMiddleware, customRouter],
-});
-```
-
-### Step 4: Update Middleware Configuration
-
-**Before (v1.3.0):**
-
-```typescript
-arkos.init({
-  globalRequestRateLimitOptions: { windowMs: 60000, limit: 100 },
-  jsonBodyParserOptions: { limit: "10mb" },
-  compressionOptions: { level: 6 },
-});
-```
-
-**After (v1.4.0+):**
-
-```typescript
-// arkos.config.ts
-const arkosConfig: ArkosConfig = {
-  middlewares: {
-    rateLimit: { windowMs: 60000, limit: 100 },
-    expressJson: { limit: "10mb" },
-    compression: { level: 6 },
-  },
-};
-```
-
-## Complete Configuration Examples
-
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-```typescript
-// arkos.config.ts
-import { ArkosConfig } from "arkos";
-
-const arkosConfig: ArkosConfig = {
-  port: 3000,
+export default defineConfig({
+  port: 8000,
   host: "0.0.0.0",
   welcomeMessage: "Welcome to Our API",
-
   authentication: {
-    enabled: true,
     mode: "static",
     jwt: {
       secret: process.env.JWT_SECRET,
       expiresIn: "7d",
     },
   },
-
   validation: {
     resolver: "zod",
-    strict: false,
   },
-
   fileUpload: {
     baseUploadDir: "/uploads",
     restrictions: {
@@ -706,24 +583,14 @@ const arkosConfig: ArkosConfig = {
       },
     },
   },
-
   middlewares: {
-    cors: {
-      allowedOrigins: ["https://myapp.com"],
-    },
-    rateLimit: {
-      windowMs: 60000,
-      limit: 500,
-    },
-    compression: {
-      level: 6,
-    },
+    cors: { allowedOrigins: ["https://myapp.com"] },
+    rateLimit: { windowMs: 60000, limit: 500 },
+    compression: { level: 6 },
   },
-
   routers: {
     strict: "no-bulk",
   },
-
   email: {
     host: process.env.EMAIL_HOST,
     auth: {
@@ -731,24 +598,77 @@ const arkosConfig: ArkosConfig = {
       pass: process.env.EMAIL_PASSWORD,
     },
   },
-
   swagger: {
     mode: "zod",
     enableAfterBuild: false,
+  },
+});
+```
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
+
+const app = arkos();
+
+app.set("trust proxy", 1);
+app.use(analyticsRouter);
+
+app.listen();
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  port: 8000,
+  host: "0.0.0.0",
+  welcomeMessage: "Welcome to Our API",
+  authentication: {
+    mode: "static",
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "7d",
+    },
+  },
+  validation: {
+    resolver: "zod",
+  },
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    restrictions: {
+      images: {
+        maxCount: 5,
+        maxSize: 5 * 1024 * 1024,
+      },
+    },
+  },
+  middlewares: {
+    cors: { allowedOrigins: ["https://myapp.com"] },
+    rateLimit: { windowMs: 60000, limit: 500 },
+  },
+  routers: {
+    strict: "no-bulk",
+  },
+  email: {
+    host: process.env.EMAIL_HOST,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
   },
 };
 
 export default arkosConfig;
 ```
 
-```typescript
-// src/app.ts
+```ts title="src/app.ts"
 import arkos from "arkos";
 import analyticsRouter from "./routers/analytics.router";
-import customMiddleware from "./middlewares/custom";
 
 arkos.init({
-  use: [analyticsRouter, customMiddleware],
+  use: [analyticsRouter],
   configureApp: (app) => {
     app.set("trust proxy", 1);
   },
@@ -757,21 +677,15 @@ arkos.init({
   },
 });
 ```
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-```typescript
-// src/app.ts
+<Tab value="v1.3">
+```ts title="src/app.ts"
 import arkos from "arkos";
 import analyticsRouter from "./routers/analytics.router";
-import customMiddleware from "./middlewares/custom";
 
 arkos.init({
-  port: 3000,
-  host: "0.0.0.0",
+  port: 8000,
   welcomeMessage: "Welcome to Our API",
-
   authentication: {
     mode: "static",
     jwt: {
@@ -779,69 +693,18 @@ arkos.init({
       expiresIn: "7d",
     },
   },
-
-  validation: {
-    resolver: "zod",
-  },
-
+  validation: { resolver: "zod" },
   fileUpload: {
     baseUploadDir: "/uploads",
-    restrictions: {
-      images: {
-        maxCount: 5,
-        maxSize: 5 * 1024 * 1024,
-      },
-    },
   },
-
-  globalRequestRateLimitOptions: {
-    windowMs: 60000,
-    limit: 500,
-  },
-
-  cors: {
-    allowedOrigins: ["https://myapp.com"],
-  },
-
   routers: {
     strict: "no-bulk",
     additional: [analyticsRouter],
   },
-
-  middlewares: {
-    additional: [customMiddleware],
-  },
-
-  email: {
-    host: process.env.EMAIL_HOST,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
-    },
-  },
-
-  swagger: {
-    mode: "zod",
-    enableAfterBuild: false,
-  },
-
   configureApp: (app) => {
     app.set("trust proxy", 1);
   },
-
-  configureServer: (server) => {
-    server.setTimeout(30000);
-  },
 });
 ```
-
 </Tab>
 </Tabs>
-
-## Related Documentation
-
-- **[Arkos Configuration API Reference](/docs/reference/arkos-configuration)** - Complete configuration options reference
-- **[Authentication System](/docs/core-concepts/authentication-system)** - Learn about authentication configuration
-- **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Configure validation options
-- **[File Upload Guide](/docs/core-concepts/file-uploads)** - File upload configuration details
-- **[Middleware Stack](/docs/advanced-guide/middleware-stack)** - Understanding middleware execution order
