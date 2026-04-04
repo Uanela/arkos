@@ -1,4 +1,0 @@
-{
-  "title": "Validation",
-  "pages": ["zod", "class-validator", "customization"]
-}

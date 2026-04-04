@@ -1,4 +1,0 @@
-{
-  "title": "File Upload",
-  "pages": ["setup", "endpoints", "router-upload", "interceptor-upload"]
-}
