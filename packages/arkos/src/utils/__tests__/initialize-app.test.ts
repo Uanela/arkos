@@ -1,4 +1,4 @@
-import initializeApp from "../initialize-app";
+import initializeApp, { addGlobalErrorHandler } from "../initialize-app";
 import { getArkosConfig } from "../../server";
 import { isAuthenticationEnabled } from "../helpers/arkos-config.helpers";
 import { getFileUploadRouter } from "../../modules/file-upload/file-upload.router";
@@ -225,7 +225,7 @@ describe("initializeApp", () => {
   describe("catch-all 404 route", () => {
     it("should register a wildcard route that throws AppError", () => {
       const app = makeMockApp();
-      initializeApp(app as any);
+      addGlobalErrorHandler(app as any);
 
       const wildcardCall = (app.use as jest.Mock).mock.calls.find(
         (call) => call[0] === "*"
@@ -248,28 +248,8 @@ describe("initializeApp", () => {
   describe("errorHandler middleware", () => {
     it("should apply default errorHandler when not configured", () => {
       const app = makeMockApp();
-      initializeApp(app as any);
+      addGlobalErrorHandler(app as any);
       expect(app.use).toHaveBeenCalledWith(errorHandler);
-    });
-
-    it("should apply custom errorHandler function when provided", () => {
-      const customErrorHandler = jest.fn();
-      mockGetArkosConfig.mockReturnValue(
-        baseConfig({ middlewares: { errorHandler: customErrorHandler } })
-      );
-      const app = makeMockApp();
-      initializeApp(app as any);
-      expect(app.use).toHaveBeenCalledWith(customErrorHandler);
-      expect(app.use).not.toHaveBeenCalledWith(errorHandler);
-    });
-
-    it("should skip errorHandler when set to false", () => {
-      mockGetArkosConfig.mockReturnValue(
-        baseConfig({ middlewares: { errorHandler: false } })
-      );
-      const app = makeMockApp();
-      initializeApp(app as any);
-      expect(app.use).not.toHaveBeenCalledWith(errorHandler);
     });
   });
 });

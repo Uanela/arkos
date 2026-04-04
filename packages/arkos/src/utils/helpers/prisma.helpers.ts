@@ -1,11 +1,18 @@
 import prismaSchemaParser from "../prisma/prisma-schema-parser";
 import { getArkosConfig } from "./arkos-config.helpers";
 import sheu from "../sheu";
+import { getUserFileExtension } from "./fs.helpers";
 
 export let prismaInstance: any = null;
 
-export async function loadPrismaModule() {
-  return getArkosConfig()?.prisma?.instance;
+export function loadPrismaModule() {
+  const instance = getArkosConfig()?.prisma?.instance;
+  if (!instance)
+    sheu.warn(
+      `Prisma client instance not passed to arkos.config.${getUserFileExtension()}, see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup`,
+      { timestamp: true }
+    );
+  return instance;
 }
 
 export function handlePrismaGet(target: any, prop: string, receiver: any) {

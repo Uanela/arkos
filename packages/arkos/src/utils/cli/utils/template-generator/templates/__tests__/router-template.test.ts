@@ -45,54 +45,53 @@ describe("generateRouterTemplate", () => {
       expect(result).toContain("import { ArkosRouter } from 'arkos'");
     });
 
-    it("should always import RouterConfig in TypeScript", () => {
+    it("should always import RouteHook in TypeScript", () => {
       const result = generateRouterTemplate({ modelName: userModelName });
-      expect(result).toContain("import { RouterConfig } from 'arkos'");
+      expect(result).toContain("import { RouteHook } from 'arkos'");
     });
 
     it("should generate router instance with camelCase name", () => {
       const result = generateRouterTemplate({ modelName: userModelName });
-      expect(result).toContain("const userRouter = ArkosRouter()");
+      expect(result).toContain(`const userRouter = ArkosRouter(`);
+      expect(result).toContain(`openapi: { tags: ["Users"] }`);
       expect(result).toContain("export default userRouter");
     });
 
-    it("should generate prisma RouterConfig type for prisma model", () => {
+    it("should generate prisma RouteHook type for prisma model", () => {
       const result = generateRouterTemplate({ modelName: userModelName });
-      expect(result).toContain(
-        'export const config: RouterConfig<"prisma"> = {'
-      );
+      expect(result).toContain('export const hook: RouteHook<"prisma"> = {');
     });
 
-    it("should generate file-upload RouterConfig type for file-upload module", () => {
+    it("should generate file-upload RouteHook type for file-upload module", () => {
       const result = generateRouterTemplate({ modelName: fileUploadModelName });
       expect(result).toContain(
-        "export const config: RouterConfig<file-upload> = {"
+        `export const hook: RouteHook<"file-upload"> = {`
       );
     });
 
-    it("should generate auth RouterConfig type for auth module", () => {
+    it("should generate auth RouteHook type for auth module", () => {
       const result = generateRouterTemplate({ modelName: authModelName });
-      expect(result).toContain("export const config: RouterConfig<auth> = {");
+      expect(result).toContain(`export const hook: RouteHook<"auth"> = {`);
     });
 
     it("should generate config for prisma model", () => {
       const result = generateRouterTemplate({ modelName: userModelName });
-      expect(result).toContain("export const config");
+      expect(result).toContain("export const hook");
     });
 
     it("should generate config for file-upload module", () => {
       const result = generateRouterTemplate({ modelName: fileUploadModelName });
-      expect(result).toContain("export const config");
+      expect(result).toContain("export const hook");
     });
 
     it("should generate config for auth module", () => {
       const result = generateRouterTemplate({ modelName: authModelName });
-      expect(result).toContain("export const config");
+      expect(result).toContain("export const hook");
     });
 
     it("should not generate config for non-prisma non-special module", () => {
       const result = generateRouterTemplate({ modelName: dashboardModelName });
-      expect(result).not.toContain("export const config");
+      expect(result).not.toContain("export const hook");
     });
 
     it("should handle kebab-case model names", () => {
@@ -103,7 +102,8 @@ describe("generateRouterTemplate", () => {
           kebab: "blog-post",
         },
       });
-      expect(result).toContain("const blogPostRouter = ArkosRouter()");
+      expect(result).toContain(`const blogPostRouter = ArkosRouter(`);
+      expect(result).toContain(`openapi: { tags: ["Blog Posts"] }`);
       expect(result).toContain("export default blogPostRouter");
     });
   });
@@ -113,25 +113,25 @@ describe("generateRouterTemplate", () => {
       mockedGetUserFileExtension.mockReturnValue("js");
     });
 
-    it("should not import RouterConfig in JavaScript", () => {
+    it("should not import RouteHook in JavaScript", () => {
       const result = generateRouterTemplate({ modelName: userModelName });
-      expect(result).not.toContain("import { RouterConfig }");
+      expect(result).not.toContain("import { RouteHook }");
     });
 
     it("should not add type annotation to config in JavaScript", () => {
       const result = generateRouterTemplate({ modelName: userModelName });
-      expect(result).not.toContain("RouterConfig<");
-      expect(result).toContain("export const config = {");
+      expect(result).not.toContain("RouteHook<");
+      expect(result).toContain("export const hook = {");
     });
 
     it("should still generate config for prisma model in JavaScript", () => {
       const result = generateRouterTemplate({ modelName: userModelName });
-      expect(result).toContain("export const config = {");
+      expect(result).toContain("export const hook = {");
     });
 
     it("should not generate config for non-prisma module in JavaScript", () => {
       const result = generateRouterTemplate({ modelName: dashboardModelName });
-      expect(result).not.toContain("export const config");
+      expect(result).not.toContain("export const hook");
     });
 
     it("should always import ArkosRouter in JavaScript", () => {
@@ -147,22 +147,22 @@ describe("generateRouterTemplate", () => {
 
     it("should treat file-upload as normal module", () => {
       const result = generateRouterTemplate({ modelName: fileUploadModelName });
-      expect(result).toContain("export const config");
+      expect(result).toContain("export const hook");
     });
 
     it("should treat auth as normal module", () => {
       const result = generateRouterTemplate({ modelName: authModelName });
-      expect(result).toContain("export const config");
+      expect(result).toContain("export const hook");
     });
 
     it("should treat prisma model as normal module", () => {
       const result = generateRouterTemplate({ modelName: userModelName });
-      expect(result).toContain("export const config");
+      expect(result).toContain("export const hook");
     });
 
     it("should treat non-prisma non-special module as non-normal", () => {
       const result = generateRouterTemplate({ modelName: dashboardModelName });
-      expect(result).not.toContain("export const config");
+      expect(result).not.toContain("export const hook");
     });
   });
 
