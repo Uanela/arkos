@@ -73,7 +73,7 @@ describe("Middleware Utils", () => {
       const truthyValue = "some-string";
       expect(() => safeCatchAsync(truthyValue)).toThrow(undefined);
       expect(sheu.error).toHaveBeenCalledWith(
-        "Validation Error: Invalid interceptor of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+        "Validation Error: Invalid interceptor of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/components/interceptors"
       );
 
       expect(mockedCatchAsync).not.toHaveBeenCalled();
@@ -137,7 +137,7 @@ describe("Middleware Utils", () => {
         expect(() => processMiddleware(middleware)).toThrow(undefined);
 
         expect(sheu.error).toHaveBeenCalledWith(
-          "Validation Error: Invalid interceptor of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+          "Validation Error: Invalid interceptor of type string, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/components/interceptors"
         );
 
         expect(mockedCatchAsync).not.toHaveBeenCalled();
@@ -305,7 +305,7 @@ describe("Middleware Utils", () => {
 
         expect(() => processMiddleware(arrayLike)).toThrow(undefined);
         expect(sheu.error).toHaveBeenCalledWith(
-          "Validation Error: Invalid interceptor of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+          "Validation Error: Invalid interceptor of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/components/interceptors"
         );
 
         expect(mockedCatchAsync).not.toHaveBeenCalled();
@@ -315,7 +315,7 @@ describe("Middleware Utils", () => {
         const objMiddleware = { handler: jest.fn() };
         expect(() => processMiddleware(objMiddleware)).toThrow(undefined);
         expect(sheu.error).toHaveBeenCalledWith(
-          "Validation Error: Invalid interceptor of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares"
+          "Validation Error: Invalid interceptor of type object, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/components/interceptors"
         );
 
         expect(mockedCatchAsync).not.toHaveBeenCalled();
