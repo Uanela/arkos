@@ -3,11 +3,9 @@ slug: 1.2-beta
 title: Announcing Arkos.js 1.2-beta Release
 authors: [uanela]
 tags: [arkosjs, superm7, webpropax]
+date: 2025-07-20
+description: Today I am excited to share the newest beta version of Arkos.js the 1.2-beta, an minor update that at the same times brings with it more efficency, way better developer experience and automation on repetitive tasks.
 ---
-
-Today I am excited to share the newest beta version of Arkos.js the 1.2-beta, an minor update that at the same times brings with it more efficency, way better developer experience and automation on repetitive tasks.
-
-<!-- truncate -->
 
 Why did I not started from 0.x? I am just following Larry Ellison philosophy, no one buys or uses the first version so the first official release will be v2.0, but until there those small minor updates will give you a good taste of what is comming.
 
@@ -77,7 +75,7 @@ const postController = new PostController();
 export default postController;
 ```
 
-See more about the `BaseController` class on practice at [The BaseController Class Guide](/docs/reference/the-base-controller-class).
+See more about the `BaseController` class on practice at [The BaseController Class Guide](/docs/reference/base-controller).
 
 #### 1.2. Routers
 
@@ -112,7 +110,7 @@ postRouter.post(
 export default postRouter;
 ```
 
-You can see more about `adding custom routers` on practice at [Adding Custom Routers Guide](/docs/guide/adding-custom-routers).
+You can see more about `adding custom routers` on practice at [Adding Custom Routers Guide](/docs/core-concepts/routing/setup).
 
 #### 1.3. Services
 
@@ -147,7 +145,7 @@ const postService = new PostService();
 export default postService;
 ```
 
-See more about the `BaseService` by reading [The BaseService Class Guide](/docs/reference/the-base-service-class).
+See more about the `BaseService` by reading [The BaseService Class Guide](/docs/reference/base-service).
 
 #### 1.4. Interceptor Middlewares
 
@@ -163,7 +161,7 @@ npx arkos g m -m post
 
 Creates middleware functions for all CRUD operations under `src/modules/post/post.middlewares.{ts|js}`. Following Arkos's main goal of reducing boilerplate, you no longer need the `catchAsync` wrapper - Arkos adds it automatically.
 
-If you are completely new to Arkos.js, you can understand more about what `Interceptor Middlewares` really are by reading [Interceptors Middlewares Guide](/docs/core-concepts/interceptor-middlewares).
+If you are completely new to Arkos.js, you can understand more about what `Interceptor Middlewares` really are by reading [Interceptors Middlewares Guide](/docs/core-concepts/components/interceptors).
 
 **Output:**
 
@@ -273,7 +271,7 @@ const authQueryOptions: AuthPrismaQueryOptions<typeof prisma.auth> = {
 };
 ```
 
-See more about prisma query options concept reading [Custom Prisma Query Options Advanced Guide](/docs/guide/custom-prisma-query-options).
+See more about prisma query options concept reading [Custom Prisma Query Options Advanced Guide](/docs/core-concepts/prisma-orm/custom-queries).
 
 #### 1.6. Endpoint Authentication Configurations
 
@@ -287,7 +285,7 @@ Or shorthand:
 npx arkos g a -m post
 ```
 
-Creates authentication and authorization configurations under `src/modules/post/post.auth.{ts|js}` to control access to your endpoints, read more about this topic at [Static Role-Based Access Control Guide](/docs/core-concepts/authentication-system#using-auth-config-to-customize-endpoint-behavior).
+Creates authentication and authorization configurations under `src/modules/post/post.auth.{ts|js}` to control access to your endpoints, read more about this topic at [Static Role-Based Access Control Guide](/docs/core-concepts/authentication/setup#using-auth-config-to-customize-endpoint-behavior).
 
 **Output:**
 
@@ -330,7 +328,7 @@ export default postAuthConfigs;
 
 This CLI dramatically reduces the time needed to scaffold new features in your Arkos.js application, allowing you to focus on implementing your business logic rather than writing boilerplate code.
 
-You can a more in depth understanding this new `built-in cli` by reading it's dedicated guide [Clicking Here](/docs/arkos-cli/arkos-cli).
+You can a more in depth understanding this new `built-in cli` by reading it's dedicated guide [Clicking Here](/docs/tooling/cli/overview).
 
 ### 2. New File Watcher For Hot Reload
 
@@ -385,7 +383,7 @@ New middleware system that provides complete control over the file upload reques
 
 The middleware system automatically chains your custom interceptors with the core file upload controller methods, giving you full flexibility to add validation, logging, transformations, or any custom business logic.
 
-Have a good understanding by reading the dedicated section on [File Upload Interceptor Middlewares Section](/docs/core-concepts/interceptor-middlewares#file-upload-interceptor-middlewares).
+Have a good understanding by reading the dedicated section on [File Upload Interceptor Middlewares Section](/docs/core-concepts/components/interceptors#file-upload-interceptor-middlewares).
 
 ### 5. Auto-Update File API Endpoint
 
@@ -399,7 +397,7 @@ This endpoint handles the complete file replacement workflow:
 - Works with all file types (images, videos, documents, general files)
 - Includes proper error handling for missing old files
 
-The endpoint intelligently handles different URL patterns and provides appropriate success messages based on whether it's replacing an existing file or uploading new ones. see other file upload endpoint at [File Upload Guide](docs/core-concepts/file-uploads#basic-usage).
+The endpoint intelligently handles different URL patterns and provides appropriate success messages based on whether it's replacing an existing file or uploading new ones. see other file upload endpoint at [File Upload Guide](/docs/guides/file-uploads/setup#basic-usage).
 
 ### 6. Simplified Naming Conventions
 
@@ -477,7 +475,7 @@ my-arkos-project/
 ├── package.json               # Project configuration
 ```
 
-By using this new cli `create-arkos` you can quickly scaffold a new ready to go Arkos.js project, this way I enforce once again the main goal that is to simply the development of a secure and scalableRESTful API with minial configuration, allowing developers to focus on what really matters for the business logic. you can read more about this new incredible cli at [`create-arkos Cli Guide`](/docs/cli/create-arkos).
+By using this new cli `create-arkos` you can quickly scaffold a new ready to go Arkos.js project, this way I enforce once again the main goal that is to simply the development of a secure and scalableRESTful API with minial configuration, allowing developers to focus on what really matters for the business logic. you can read more about this new incredible cli at [`create-arkos Cli Guide`](/docs/tooling/create-arkos).
 
 ### 9. Exposed Running ArkosConfig
 

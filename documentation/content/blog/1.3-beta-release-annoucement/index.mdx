@@ -3,11 +3,9 @@ slug: 1.3-beta
 title: Announcing Arkos.js 1.3.0-beta Release
 authors: [uanela]
 tags: [arkosjs, superm7, webpropax, finegrained, swagger, servicehooks]
+date: 2025-09-09
+description: Today I am excited to share the newest beta version of Arkos.js, the 1.3.0-beta, a minor update that brings enterprise-grade access control, automatic API documentation, and enhanced service layer capabilities to simplify the development of scalable and secure RESTful APIs.
 ---
-
-Today I am excited to share the newest beta version of Arkos.js, the 1.3.0-beta, a minor update that brings enterprise-grade access control, automatic API documentation, and enhanced service layer capabilities to simplify the development of scalable and secure RESTful APIs.
-
-<!-- truncate -->
 
 Following Larry Ellison's philosophy that no one buys or uses the first version, we continue building toward the official v2.0 release with these substantial improvements that give you an even better taste of what's coming.
 
@@ -66,7 +64,7 @@ Perfect for scenarios like:
 - Users access only their organization's data in multi-tenant systems
 - Managers see team data, directors see department data
 
-Read the complete guide at [Fine-Grained Access Control](/docs/advanced-guide/fine-grained-access-control).
+Read the complete guide at [Fine-Grained Access Control](/docs/core-concepts/authentication/advanced/fine-grained-access-control).
 
 ### 2. Swagger API Documentation
 
@@ -92,7 +90,7 @@ The most powerful feature is automatic synchronization with your Custom Prisma Q
 
 We chose Scalar over traditional Swagger UI for a modern, Postman-like interface that developers actually enjoy using.
 
-Explore the full documentation system at [Swagger API Documentation](/docs/core-concepts/open-api-documentation).
+Explore the full documentation system at [Swagger API Documentation](/docs/guides/open-api-documentation/setup).
 
 ### 3. Service Hooks
 
@@ -130,7 +128,7 @@ export const afterCreateOne = [
 
 Service Hooks run whether you call the API endpoint or use the service programmatically, ensuring your business logic is always applied consistently.
 
-Learn more at [Service Hooks](/docs/guide/service-hooks).
+Learn more at [Service Hooks](/docs/core-concepts/components/service-hooks).
 
 ### 4. Enhanced Interceptor Middlewares
 
