@@ -57,7 +57,7 @@ npx arkos generate model --module new-model-name
 npx arkos g m -m new-model-name
 ```
 
-This creates the Prisma model with basic fields common along all other existing models or simply basic one. See the [Code Generation Guide](/docs/tooling/cli/code-generation) for all options.
+This creates the Prisma model with basic fields common along all other existing models or simply basic one. See the [Code Generation Guide](/docs/tooling/cli/code-generation/core) for all options.
 
 ### 3. Configure Prisma Schema
 
@@ -157,9 +157,9 @@ Creates a migration file and applies it to your database.
 
 Now that Prisma is set up with Arkos:
 
-- **Create modules** — Add a [module directory](/docs/core-concepts/prisma-orm/project-structure#modules-directory) for each model you want to customize
-- **Configure authentication** — Set up [access control](/docs/core-concepts/authentication/static/setup) for your generated routes
-- **Add validation** — Define [Zod schemas or class-validator DTOs](/docs/core-concepts/validation) for request bodies
+- **Create modules** — Add a [module directory](/docs/getting-started/project-structure#modules-directory) for each model you want to customize
+- **Configure authentication** — Set up [access control](/docs/core-concepts/authentication/setup) for your generated routes
+- **Add validation** — Define [Zod schemas or class-validator DTOs](/docs/guides/validation/setup) for request bodies
 - **Customize queries** — Use [default query options](/docs/core-concepts/prisma-orm/custom-queries) to control field selection, includes, and sorting
 - **Intercept operations** — Add [before/after logic](/docs/core-concepts/components/interceptors) to your model endpoints
 
