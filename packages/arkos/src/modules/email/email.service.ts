@@ -84,7 +84,7 @@ export class EmailService {
           "Please configure either arkosConfig.email or environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASSWORD)",
         500,
         {
-          docs: "Read more about emailService at https://www.arkosjs.com/docs/core-concepts/sending-emails",
+          docs: "Read more about emailService at https://www.arkosjs.com/docs/guides/email-service",
         }
       );
     }
