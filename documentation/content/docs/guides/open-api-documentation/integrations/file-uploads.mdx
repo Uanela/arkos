@@ -1,0 +1,190 @@
+---
+title: File Uploads
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+When you configure file uploads on a route, Arkos automatically generates proper `multipart/form-data` OpenAPI documentation — no manual schema writing required.
+
+## Automatic Generation
+
+Define file uploads in your route config, and Arkos handles the rest.
+
+### Custom Routes (ArkosRouter)
+
+```ts title="src/modules/product/product.router.ts"
+import { ArkosRouter } from "arkos";
+import z from "zod";
+
+const router = ArkosRouter();
+
+const CreateProductSchema = z.object({
+  name: z.string(),
+  price: z.number(),
+  description: z.string().optional(),
+});
+
+router.post(
+  {
+    path: "/api/products",
+    validation: {
+      body: CreateProductSchema,
+    },
+    experimental: {
+      uploads: {
+        type: "fields",
+        fields: [
+          { name: "thumbnail", maxCount: 1 },
+          { name: "gallery", maxCount: 5 },
+        ],
+        required: true,
+      },
+    },
+  },
+  productController.create
+);
+```
+
+### Built-in Routes (RouteHook)
+
+The same `uploads` configuration works for built-in routes via [RouteHook](/docs/core-concepts/components/route-hooks).
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
+</Callout>
+
+```ts title="src/modules/product/product.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import z from "zod";
+
+export const hook: RouteHook = {
+  createOne: {
+    validation: {
+      body: z.object({
+        name: z.string(),
+        price: z.number(),
+      }),
+    },
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "image",
+        required: true,
+      },
+    },
+  },
+};
+
+const productRouter = ArkosRouter();
+
+export default productRouter;
+```
+
+## What Gets Documented
+
+Arkos automatically:
+
+- Merges your validation schema with upload fields
+- Generates `multipart/form-data` content type
+- Converts nested validation fields to bracket notation (`user[name]`, `tags[0]`)
+- Marks file fields as `format: binary`
+- Sets `maxItems` for array uploads based on `maxCount`
+
+**Validation schema fields** become form fields with their original types:
+
+| Validation Field | Becomes in OpenAPI |
+|------------------|-------------------|
+| `name: z.string()` | `name` — string field |
+| `price: z.number()` | `price` — number field |
+| `tags: z.array(z.string())` | `tags[0]`, `tags[1]` — array fields |
+
+**Upload fields** become file fields with binary format:
+
+| Upload Config | Becomes in OpenAPI |
+|---------------|-------------------|
+| `field: "thumbnail"` | `thumbnail` — file (binary) |
+| `fields: [{ name: "gallery" }]` | `gallery[]` — array of files |
+
+## Validation Order
+
+<Callout type="warning">
+File validation happens before request body validation. Do **not** include upload field names in your validation schema.
+</Callout>
+
+```ts
+// ✅ CORRECT
+validation: {
+  body: z.object({
+    name: z.string(),     // text field only
+    price: z.number(),
+  }),
+},
+uploads: {
+  type: "single",
+  field: "thumbnail",    // file field — separate from validation
+}
+
+// ❌ INCORRECT
+validation: {
+  body: z.object({
+    name: z.string(),
+    thumbnail: z.any(),  // will fail — file already validated
+  }),
+},
+```
+
+The generated OpenAPI spec shows a unified `multipart/form-data` request body, but at runtime validation is sequential: files first, then text fields.
+
+## Manual Override
+
+For full control over the OpenAPI schema, define `requestBody` manually:
+
+```ts
+router.post(
+  {
+    path: "/api/products",
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "image",
+        required: true,
+      },
+      openapi: {
+        requestBody: {
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["image", "name"],
+                properties: {
+                  name: { type: "string", description: "Product name" },
+                  image: {
+                    type: "string",
+                    format: "binary",
+                    description: "Product image file",
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: ProductSchema,
+        },
+      },
+    },
+  },
+  productController.create
+);
+```
+
+<Callout type="info">
+Arkos validates that your manual `requestBody` matches your uploads configuration. Startup fails with detailed errors if they don't align.
+</Callout>
+
+## Next Steps
+
+- [Authentication Integration](/docs/guides/open-api-documentation/integrations/authentication) — Document auth endpoints and security schemes
+- [Prisma Integration](/docs/guides/open-api-documentation/integrations/prisma) — How query options shape generated schemas
+- [Documenting Routes](/docs/guides/open-api-documentation/usage) — Adding summaries, tags, and custom responses

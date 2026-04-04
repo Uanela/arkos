@@ -1,0 +1,102 @@
+---
+title: Custom Handler (New)
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+> Available since v1.6.0-beta
+
+Arkos registers its global error handler automatically after `app.build()`. You can add your own error middleware right after that call — useful for sending errors to external monitoring services, custom logging sinks, or alerts.
+
+## Adding a Custom Handler
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+const app = arkos();
+
+app.use(myRouter);
+
+await app.build();
+
+// Register your custom error handler here — after build, before listen
+app.use((err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  // Arkos has already sent the response — use this for side effects only
+  console.error("[CustomHandler]", err.message);
+  next(err);
+});
+
+app.listen();
+```
+
+<Callout type="warn">
+Your custom error handler **must** be registered after `await app.build()`. Registering it before `build()` places it before Arkos's error handler in the middleware chain — it will never receive errors from built-in routes since Arkos's handler runs first and sends the response without calling `next(err)`.
+</Callout>
+
+<Callout type="info">
+Arkos's global error handler sends the response and does not call `next(err)`. Your custom handler runs after it purely for side effects — do not call `res.json()` or `res.send()` inside it.
+</Callout>
+
+## Use Cases
+
+### External Monitoring (Sentry)
+
+```ts title="src/app.ts"
+import * as Sentry from "@sentry/node";
+
+await app.build();
+
+app.use((err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  if (!err.isOperational) {
+    // Only report unexpected errors — not 404s, 403s, validation failures
+    Sentry.captureException(err);
+  }
+  next(err);
+});
+
+app.listen();
+```
+
+### Slack Alerts
+
+```ts title="src/app.ts"
+await app.build();
+
+app.use(async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  if (err.statusCode >= 500) {
+    await slackClient.postMessage({
+      channel: "#alerts",
+      text: `[${req.method} ${req.path}] ${err.message}`,
+    });
+  }
+  next(err);
+});
+
+app.listen();
+```
+
+### Custom Logging
+
+```ts title="src/app.ts"
+await app.build();
+
+app.use((err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+  logger.error({
+    message: err.message,
+    code: err.code,
+    statusCode: err.statusCode,
+    path: req.path,
+    method: req.method,
+    userId: req.user?.id,
+  });
+  next(err);
+});
+
+app.listen();
+```
+
+<Callout type="info">
+Always call `next(err)` at the end of your custom handler to keep the Express error chain intact.
+</Callout>

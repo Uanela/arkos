@@ -17,6 +17,7 @@ import { LLMCopyButton, ViewOptions } from "@/components/ai/page-actions";
 
 export const Route = createFileRoute("/docs/$")({
   component: Page,
+  ssr: true,
   loader: async ({ params }) => {
     const slugs = params._splat?.split("/") ?? [];
     const data = await serverLoader({ data: slugs });
@@ -79,7 +80,17 @@ function Page() {
   const data = useFumadocsLoader(Route.useLoaderData());
 
   return (
-    <DocsLayout {...baseOptions()} tree={data.pageTree}>
+    <DocsLayout
+      {...baseOptions()}
+      nav={{ enabled: false }}
+      sidebar={{
+        collapsible: false,
+        footer: false,
+        tabs: false,
+      }}
+      searchToggle={{ enabled: false }}
+      tree={data.pageTree}
+    >
       <Suspense>{clientLoader.useContent(data.path, data)}</Suspense>
     </DocsLayout>
   );

@@ -1,0 +1,101 @@
+---
+title: Prisma
+---
+
+These commands generate files that are tightly tied to your Prisma schema — the model file itself, and the query options that control how Arkos builds Prisma queries for each operation.
+
+## Prisma Model
+
+```bash
+arkos generate model --module product
+arkos g m -m product
+```
+
+**Output:** `prisma/schema/product.prisma`
+
+The generator reads your existing Prisma models to find fields that are common across all of them (typically `id`, `createdAt`, `updatedAt`, and any other timestamp fields you use consistently). It uses those as the starting point for the new model:
+
+```prisma
+model Product {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+If all your existing models use `@@map`, the new model will include a `@@map` directive as well. The output is a starting point — add your own fields after generating.
+
+Use `-p` to write to a custom path:
+
+```bash
+arkos g m -m product -p prisma/modules
+# → prisma/modules/product.prisma
+```
+
+## Query Options
+
+```bash
+arkos generate query-options --module post
+arkos g q -m post
+```
+
+**Output:** `src/modules/post/post.query.ts`
+
+Query options let you customize the Prisma queries Arkos builds for each operation — adding `include`, `select`, `where`, `orderBy`, and any other Prisma options on a per-operation or global basis.
+
+```ts
+import { Prisma } from "@prisma/client";
+import { PrismaQueryOptions } from "arkos/prisma";
+
+const postQueryOptions: PrismaQueryOptions<Prisma.PostDelegate> = {
+  global: {},
+  find: {},
+  findOne: {},
+  findMany: {},
+  update: {},
+  updateMany: {},
+  updateOne: {},
+  create: {},
+  createMany: {},
+  createOne: {},
+  save: {},
+  saveMany: {},
+  saveOne: {},
+  delete: {},
+  deleteMany: {},
+  deleteOne: {},
+}
+
+export default postQueryOptions;
+```
+
+For the `auth` module the generated keys match auth operations instead:
+
+```bash
+arkos g q -m auth
+```
+
+```ts
+import { Prisma } from "@prisma/client";
+import { PrismaQueryOptions } from "arkos/prisma";
+
+const authQueryOptions: PrismaQueryOptions<Prisma.UserDelegate, "auth"> = {
+  getMe: {},
+  updateMe: {},
+  deleteMe: {},
+  login: {},
+  signup: {},
+  updatePassword: {},
+}
+
+export default authQueryOptions;
+```
+
+Query options are only available for known modules — Prisma models, `auth`, and `file-upload`.
+
+## Related Guides
+
+- [Code Generation Overview](/docs/tooling/cli/code-generation/overview)
+- [Core Components](/docs/tooling/cli/code-generation/core)
+- [Validation](/docs/tooling/cli/code-generation/validation)
+- [Authentication](/docs/tooling/cli/code-generation/authentication)

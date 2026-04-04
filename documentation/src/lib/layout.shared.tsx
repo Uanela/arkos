@@ -19,18 +19,7 @@ export function baseOptions(): BaseLayoutProps {
         </div>
       ),
     },
-
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
-
-    // footer: {
-    //   copyright: `Copyright © ${new Date().getFullYear()} SuperM7.com, Lda.`,
-    // },
-
-    // theme: {
-    //   defaultTheme: "dark",
-    //   enableSystem: false,
-    // },
-
     themeSwitch: {
       enabled: false,
       mode: "light-dark",
@@ -38,12 +27,12 @@ export function baseOptions(): BaseLayoutProps {
     links: [
       {
         text: "Learn",
-        url: "/learn/intro",
+        url: "/learn",
         on: "nav",
       },
       {
         text: "Documentation",
-        url: "/docs/intro",
+        url: "/docs",
         on: "nav",
       },
       {
