@@ -36,10 +36,10 @@ export default function Footer() {
               <Image
                 src="/img/arkos-js-logo-dark.svg"
                 alt="Arkos.js"
-                className="h-12 w-auto"
+                className="h-10 w-auto"
               />
             </Link>
-            <p className="text-fd-muted-foreground leading-relaxed max-w-[220px]">
+            <p className="text-sm text-fd-muted-foreground leading-relaxed max-w-[220px]">
               The Express & Prisma RESTful Framework for building secure and
               scalable Node.js APIs.
             </p>
