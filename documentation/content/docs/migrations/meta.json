@@ -1,4 +1,0 @@
-{
-  "title": "Migrations",
-  "pages": ["from-express", "from-fastify", "from-nestjs", "from-hono"]
-}
