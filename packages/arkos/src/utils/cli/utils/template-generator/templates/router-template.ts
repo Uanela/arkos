@@ -3,6 +3,7 @@ import { getUserFileExtension } from "../../../../helpers/fs.helpers";
 import { kebabPrismaModels } from "../../../generate";
 import { TemplateOptions } from "../../template-generators";
 import { pascalCase } from "../../../../helpers/change-case.helpers";
+import { capitalize } from "../../../../helpers/text.helpers";
 
 export function generateRouterTemplate(options: TemplateOptions): string {
   const { modelName } = options;
@@ -27,12 +28,12 @@ export const hook${routerConfigTsType} = { }
 `
     : "";
 
-  return `import { ArkosRouter } from 'arkos';${modelName.kebab === "file-upload" ? "\nimport config from '@/arkos.config'" : ""}
+  return `import { ArkosRouter } from 'arkos';${modelName.kebab === "file-upload" ? "\nimport config from '../../arkos.config'" : ""}
 ${routerConfigTsTypeImport}
 ${routeConfig}
 
 const ${modelName.camel}Router = ArkosRouter({ 
-  openapi: { tags: ["${singular(pascalCase(modelName.kebab.replaceAll("-", " ")))}"] }
+  openapi: { tags: ["${pluralize(capitalize(modelName.kebab.replaceAll("-", " ")))}"] }
 })
 
 export default ${modelName.camel}Router

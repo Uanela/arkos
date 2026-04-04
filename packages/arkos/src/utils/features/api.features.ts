@@ -236,12 +236,6 @@ export default class APIFeatures {
       delete this.searchParams.include;
     }
 
-    if (
-      this.modelName?.toLowerCase?.() === "user" &&
-      Object.keys(finalSelect || {}).length === 0
-    )
-      finalOmit.password = true;
-
     if (Object.keys(finalSelect).length > 0) this.filters.select = finalSelect;
 
     if (Object.keys(finalInclude).length > 0)
