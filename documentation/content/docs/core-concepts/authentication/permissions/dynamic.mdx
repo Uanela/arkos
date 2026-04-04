@@ -104,7 +104,7 @@ arkos.init({
 
 ## Defining Dynamic Permissions
 
-Same `ArkosPolicy` and `.auth.ts` API as [Static mode](/docs/core-concepts/authentication/modes/static) — the only difference is that `roles` inside rules are ignored at enforcement time. Actual enforcement comes from database records instead. Define your policy with names and descriptions for discovery, and skip the roles — or keep `roles: ["*"]` where all authenticated users should have access:
+Same `ArkosPolicy` and `.auth.ts` API as [Static mode](/docs/core-concepts/authentication/permissions/static) — the only difference is that `roles` inside rules are ignored at enforcement time. Actual enforcement comes from database records instead. Define your policy with names and descriptions for discovery, and skip the roles — or keep `roles: ["*"]` where all authenticated users should have access:
 ```ts title="src/modules/post/post.policy.ts"
 import { ArkosPolicy } from "arkos";
 
@@ -117,7 +117,7 @@ const postPolicy = ArkosPolicy("post")
 export default postPolicy;
 ```
 
-Wiring to routes is identical to Static mode — see [Static Mode — Using Permissions in Routes](/docs/core-concepts/authentication/modes/static#using-permissions-in-routes).
+Wiring to routes is identical to Static mode — see [Static Mode — Using Permissions in Routes](/docs/core-concepts/authentication/permissions/static#using-permissions-in-routes).
 
 ## Managing Permissions
 
