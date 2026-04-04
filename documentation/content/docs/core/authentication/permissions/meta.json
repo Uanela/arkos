@@ -1,8 +1,0 @@
-{
-  "title": "Permissions",
-  "pages": [
-    "role-based-access-control",
-    "fine-grained-access-control",
-    "folder-level-access-control"
-  ]
-}

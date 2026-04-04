@@ -1,0 +1,307 @@
+---
+title: Usage
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Documentation happens automatically — validation schemas become OpenAPI schemas, Prisma models fill the gaps. But when you need summaries, descriptions, custom responses, or tags, add an `openapi` config to your route.
+
+Both custom routes (`ArkosRouter`) and built-in routes (`RouterConfig`) use the same `openapi` structure.
+
+## ArkosRouter (Custom Routes)
+
+For custom routes, add `openapi` under `experimental` in your route config:
+
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import z from "zod";
+import postController from "./post.controller";
+
+const router = ArkosRouter();
+
+const PostResponseSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  content: z.string(),
+  published: z.boolean(),
+  author: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+});
+
+const ErrorSchema = z.object({
+  message: z.string(),
+  code: z.number(),
+});
+
+router.get(
+  {
+    path: "/api/posts/:id",
+    validation: {
+      params: z.object({ id: z.string().uuid() }),
+    },
+    experimental: {
+      openapi: {
+        summary: "Get post by ID",
+        description: "Retrieve a specific post with its author details",
+        tags: ["Posts"],
+        responses: {
+          200: PostResponseSchema,
+          404: {
+            content: ErrorSchema,
+            description: "Post not found",
+          },
+          401: {
+            content: ErrorSchema,
+            description: "Authentication required",
+          },
+        },
+      },
+    },
+  },
+  postController.getPost
+);
+
+export default router;
+```
+
+</Tab>
+<Tab value="Class Validator">
+
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import { IsUUID } from "class-validator";
+import postController from "./post.controller";
+
+class PostParamsDto {
+  @IsUUID()
+  id: string;
+}
+
+class PostResponseDto {
+  id: string;
+  title: string;
+  content: string;
+  published: boolean;
+  author: {
+    id: string;
+    name: string;
+  };
+}
+
+router.get(
+  {
+    path: "/api/posts/:id",
+    validation: {
+      params: PostParamsDto,
+    },
+    experimental: {
+      openapi: {
+        summary: "Get post by ID",
+        description: "Retrieve a specific post with its author details",
+        tags: ["Posts"],
+        responses: {
+          200: PostResponseDto,
+          404: {
+            content: class ErrorDto {
+              message: string;
+              code: number;
+            },
+            description: "Post not found",
+          },
+        },
+      },
+    },
+  },
+  postController.getPost
+);
+
+export default router;
+```
+
+</Tab>
+</Tabs>
+
+## RouteHook (Built-in Routes)
+
+For built-in routes (Prisma models, authentication, file uploads), use the same `openapi` structure inside your `hook` export.
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
+</Callout>
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import z from "zod";
+
+export const hook: RouteHook = {
+  findMany: {
+    experimental: {
+      openapi: {
+        summary: "List posts",
+        description: "Get paginated list of posts with filtering options",
+        tags: ["Posts"],
+        responses: {
+          200: z.array(PostResponseSchema),
+        },
+      },
+    },
+  },
+  findOne: {
+    experimental: {
+      openapi: {
+        summary: "Get post",
+        tags: ["Posts"],
+        responses: {
+          200: PostResponseSchema,
+          404: { content: ErrorSchema, description: "Post not found" },
+        },
+      },
+    },
+  },
+  createOne: {
+    experimental: {
+      openapi: {
+        summary: "Create post",
+        tags: ["Posts"],
+        responses: {
+          201: PostResponseSchema,
+          400: { content: ErrorSchema, description: "Validation failed" },
+        },
+      },
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+<Callout type="info">
+  The `openapi` config object is identical for `ArkosRouter` and `RouteHook`. The same structure works across Prisma model routes, authentication routes, and file upload routes.
+</Callout>
+
+## Response Shortcuts
+
+You can pass schemas directly — Arkos converts them to OpenAPI schemas automatically:
+
+```ts
+experimental: {
+  openapi: {
+    responses: {
+      200: UserSchema,                    // Shortcut — schema only
+      201: { content: UserSchema, description: "Created" }, // With description
+      404: ErrorSchema,                   // Shortcut works for any status
+      500: { description: "Server error" }, // No content schema
+    },
+  },
+}
+```
+
+For arrays, wrap in `z.array()`:
+
+```ts
+responses: {
+  200: z.array(UserSchema),
+}
+```
+
+## Authentication & Security
+
+Reference security schemes defined in your OpenAPI config:
+
+```ts
+router.get(
+  {
+    path: "/api/users/me",
+    authentication: true,  // Arkos auth — automatically documented
+    experimental: {
+      openapi: {
+        summary: "Get current user",
+        security: [{ BearerAuth: [] }], // Optional: override or add multiple schemes
+        responses: {
+          200: UserSchema,
+          401: { content: ErrorSchema, description: "Not authenticated" },
+        },
+      },
+    },
+  },
+  userController.getMe
+);
+```
+
+<Callout type="info">
+When using Arkos's built-in `authentication` config, the security scheme is automatically documented. The `security` field is only needed for custom security scenarios.
+</Callout>
+
+## Query & Path Parameters
+
+Parameters from `validation.query` and `validation.params` are automatically documented:
+
+```ts
+router.get(
+  {
+    path: "/api/posts",
+    validation: {
+      query: z.object({
+        published: z.boolean().optional(),
+        authorId: z.string().uuid().optional(),
+        limit: z.coerce.number().min(1).max(100).default(20),
+      }),
+    },
+    experimental: {
+      openapi: {
+        summary: "List posts",
+        tags: ["Posts"],
+        responses: {
+          200: z.array(PostResponseSchema),
+        },
+      },
+    },
+  },
+  postController.listPosts
+);
+```
+
+This generates query parameters in OpenAPI with proper types, descriptions (from Zod's `.describe()`), and default values.
+
+## Request Body
+
+Request bodies from `validation.body` are automatically documented:
+
+```ts
+router.post(
+  {
+    path: "/api/posts",
+    validation: {
+      body: z.object({
+        title: z.string().min(1).describe("Post title"),
+        content: z.string().min(1).describe("Post content"),
+        published: z.boolean().default(false),
+      }),
+    },
+    experimental: {
+      openapi: {
+        summary: "Create post",
+        tags: ["Posts"],
+        responses: {
+          201: PostResponseSchema,
+        },
+      },
+    },
+  },
+  postController.createPost
+);
+```
+
+## Next Steps
+
+- [Prisma Integration](/docs/guides/open-api-documentation/integrations/prisma) — How query options shape generated schemas
+- [File Uploads Integration](/docs/guides/open-api-documentation/integrations/file-uploads) — Automatic multipart/form-data documentation
+- [Authentication Integration (v1.6+)](/docs/guides/open-api-documentation/integrations/authentication) — Document auth endpoints and security schemes
+- [Migration Guide](/docs/guides/open-api-documentation/migration) — Upgrade from JSDoc to ArkosRouter

@@ -18,7 +18,7 @@ import ExitError from "./helpers/exit-error";
  * });
  * ```
  *
- * @see {@link https://www.arkosjs.com/docs/api-reference/define-config}
+ * @see {@link https://www.arkosjs.com/docs/reference/define-config}
  */
 export function defineConfig(config: ArkosConfig): ArkosConfig {
   // if (!config.prisma?.instance && typeof jest === "undefined") {
@@ -74,9 +74,9 @@ export function defineConfig(config: ArkosConfig): ArkosConfig {
     swagger: {
       ...config?.swagger,
       enableAfterBuild: config?.swagger?.enableAfterBuild !== false,
-      requireAuth:
-        typeof config?.swagger?.requireAuth === "boolean"
-          ? config?.swagger?.requireAuth
+      authenticate:
+        typeof config?.swagger?.authenticate === "boolean"
+          ? config?.swagger?.authenticate
           : config?.swagger?.enableAfterBuild !== false
             ? process.env.ARKOS_BUILD === "true"
             : false,

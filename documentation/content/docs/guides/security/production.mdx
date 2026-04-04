@@ -1,0 +1,82 @@
+---
+title: Production
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Before going live, there are a set of security requirements that must be in place. Some of these Arkos enforces automatically — others are your responsibility to configure correctly.
+
+## Environment Behavior
+
+Arkos determines its environment through its CLI commands, not `NODE_ENV`:
+
+- **`npx arkos dev`** — development mode. Full error details exposed including stack traces. Never run this in production.
+- **`npx arkos start`** — production mode. Error responses are sanitized. Stack traces hidden. Non-operational errors return a generic message. PS: it must be ran after `npx arkos build`.
+
+<Callout type="warn">
+Running `npx arkos dev` in a production environment exposes stack traces and internal error details to clients. Always use `npx arkos start` in production.
+</Callout>
+
+---
+
+## JWT Secret
+
+Arkos will **refuse to start** if you've set authentication and `JWT_SECRET` is not set when running `npx arkos start`. This is intentional — a missing secret means every token in your application is insecure.
+
+Set it as an environment variable:
+
+```bash
+JWT_SECRET=your-long-random-secret-here
+```
+
+Or in your config (environment variable is preferred — never commit secrets):
+
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  authentication: {
+    mode: "static",
+    jwt: {
+      secret: process.env.JWT_SECRET,
+    },
+  },
+});
+```
+
+Generate a strong secret:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
+
+---
+
+## Production Checklist
+
+Go through this before every production deployment:
+
+**Infrastructure**
+- [ ] CORS `allowedOrigins` set to specific domains — avoid `"*"`
+- [ ] Global rate limit tuned down from the permissive default
+- [ ] Auth rate limit configured for your login endpoint
+
+**Authentication**
+- [ ] `JWT_SECRET` set as an environment variable — not hardcoded
+- [ ] `jwt.expiresIn` set to an appropriate short duration
+- [ ] `jwt.cookie.httpOnly` is `true`
+- [ ] `jwt.cookie.secure` is `true`
+- [ ] `jwt.cookie.sameSite` is `"strict"` or `"lax"` — not `"none"` unless required
+- [ ] `isSuperUser` is not assignable through any public endpoint
+
+**Validation**
+- [ ] `forbidNonWhitelisted: true` (default — verify it hasn't been disabled)
+- [ ] `routers.strict` set to `"no-bulk"` or `true` if bulk endpoints aren't needed (Must equal development to avoid mismatch)
+- [ ] Strict route validation enabled if your routes should have no unvalidated inputs
+
+**Environment**
+- [ ] Running `npx arkos build` and then `npx arkos start` — not `npx arkos dev`
+- [ ] `DATABASE_URL` set as an environment variable
+- [ ] No secrets committed to source control
+- [ ] `.env` in `.gitignore`

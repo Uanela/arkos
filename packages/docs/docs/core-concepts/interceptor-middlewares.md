@@ -33,42 +33,42 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import { AppError } from "arkos/error-handler";
 
 export const validatePostOwnership = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const post = await postService.findOne({ id: req.params.id });
+    const post = await postService.findOne({ id: req.params.id });
 
-  if (post.authorId !== req.user.id && req.user.role !== "Admin") {
-    throw new AppError("You can only modify your own posts", 403);
-  }
+    if (post.authorId !== req.user.id && req.user.role !== "Admin") {
+        throw new AppError("You can only modify your own posts", 403);
+    }
 
-  res.locals.originalPost = post;
-  next();
+    res.locals.originalPost = post;
+    next();
 };
 
 export const sanitizePostContent = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.body.content) {
-    req.body.content = sanitizeHtml(req.body.content);
-  }
-  next();
+    if (req.body.content) {
+        req.body.content = sanitizeHtml(req.body.content);
+    }
+    next();
 };
 
 export const checkPostQuota = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const count = await postService.count({ authorId: req.user.id });
+    const count = await postService.count({ authorId: req.user.id });
 
-  if (count >= req.user.maxPosts) {
-    throw new AppError("Post quota exceeded", 429);
-  }
-  next();
+    if (count >= req.user.maxPosts) {
+        throw new AppError("Post quota exceeded", 429);
+    }
+    next();
 };
 ```
 
@@ -86,15 +86,15 @@ Chain your middleware functions together:
 ```typescript
 // src/modules/post/post.interceptors.ts
 import {
-  validatePostOwnership,
-  sanitizePostContent,
-  checkPostQuota,
+    validatePostOwnership,
+    sanitizePostContent,
+    checkPostQuota,
 } from "./post.middlewares";
 
 export const beforeUpdateOne = [
-  validatePostOwnership,
-  sanitizePostContent,
-  checkPostQuota,
+    validatePostOwnership,
+    sanitizePostContent,
+    checkPostQuota,
 ];
 
 export const beforeCreateOne = [sanitizePostContent, checkPostQuota];
@@ -218,29 +218,29 @@ It's important to follow the convention above because Arkos expects to find thos
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const generateSlug = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.body.title && !req.body.slug) {
-    req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
-  }
-  next();
+    if (req.body.title && !req.body.slug) {
+        req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
+    }
+    next();
 };
 
 export const notifySubscribers = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const post = res.locals.data.data;
+    const post = res.locals.data.data;
 
-  // Send notification (don't block response)
-  notificationService
-    .notifySubscribers(`New post: ${post.title}`)
-    .catch(console.error);
+    // Send notification (don't block response)
+    notificationService
+        .notifySubscribers(`New post: ${post.title}`)
+        .catch(console.error);
 
-  next();
+    next();
 };
 ```
 
@@ -251,20 +251,20 @@ export const notifySubscribers = async (
 // src/modules/post/post.middlewares.js
 
 export const generateSlug = async (req, res, next) => {
-  if (req.body.title && !req.body.slug) {
-    req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
-  }
-  next();
+    if (req.body.title && !req.body.slug) {
+        req.body.slug = req.body.title.toLowerCase().replace(/\s+/g, "-");
+    }
+    next();
 };
 
 export const notifySubscribers = async (req, res, next) => {
-  const post = res.locals.data.data;
+    const post = res.locals.data.data;
 
-  notificationService
-    .notifySubscribers(`New post: ${post.title}`)
-    .catch(console.error);
+    notificationService
+        .notifySubscribers(`New post: ${post.title}`)
+        .catch(console.error);
 
-  next();
+    next();
 };
 ```
 
@@ -364,15 +364,15 @@ Let's see this in action:
 import { z } from "zod";
 
 export const CreateUserSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  age: z.number().min(18).optional(),
-  profile: z
-    .object({
-      bio: z.string().optional(),
-      isPublic: z.boolean().default(true),
-    })
-    .optional(),
+    name: z.string().min(2),
+    email: z.string().email(),
+    age: z.number().min(18).optional(),
+    profile: z
+        .object({
+            bio: z.string().optional(),
+            isPublic: z.boolean().default(true),
+        })
+        .optional(),
 });
 
 export type CreateUserSchemaType = z.infer<typeof CreateUserSchema>;
@@ -390,63 +390,63 @@ import { AppError } from "arkos/error-handler";
 
 // Combine API validation with Prisma relation handling
 type CreateUserBody = CreateUserSchemaType &
-  ArkosPrismaInput<Prisma.UserCreateInput>;
+    ArkosPrismaInput<Prisma.UserCreateInput>;
 
 type UserParams = { id: string };
 
 export const addDefaultProfile = async (
-  req: ArkosRequest<UserParams, any, CreateUserBody>,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest<UserParams, any, CreateUserBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  // TypeScript knows: req.body.name, req.body.email (from Zod)
-  // TypeScript knows: req.body.posts, req.body.profile (from Prisma)
+    // TypeScript knows: req.body.name, req.body.email (from Zod)
+    // TypeScript knows: req.body.posts, req.body.profile (from Prisma)
 
-  if (!req.body.profile) {
-    req.body.profile = {
-      bio: "New user",
-      isPublic: true,
-    };
-  }
+    if (!req.body.profile) {
+        req.body.profile = {
+            bio: "New user",
+            isPublic: true,
+        };
+    }
 
-  next();
+    next();
 };
 
 export const validateEmailUniqueness = async (
-  req: ArkosRequest<UserParams, any, CreateUserBody>,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest<UserParams, any, CreateUserBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const existing = await prisma.user.findUnique({
-    where: { email: req.body.email },
-  });
+    const existing = await prisma.user.findUnique({
+        where: { email: req.body.email },
+    });
 
-  if (existing) {
-    throw new AppError("Email already registered", 409, "EmailExists");
-  }
+    if (existing) {
+        throw new AppError("Email already registered", 409, "EmailExists");
+    }
 
-  next();
+    next();
 };
 
 export const handleUserPosts = async (
-  req: ArkosRequest<UserParams, any, CreateUserBody>,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest<UserParams, any, CreateUserBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  // ArkosPrismaInput allows intuitive relation handling
-  if (req.body.posts) {
-    // posts can be:
-    // - [{ title: "First" }] → create
-    // - [{ id: 1 }] → connect
-    // - [{ id: 2, title: "Updated" }] → update
+    // ArkosPrismaInput allows intuitive relation handling
+    if (req.body.posts) {
+        // posts can be:
+        // - [{ title: "First" }] → create
+        // - [{ id: 1 }] → connect
+        // - [{ id: 2, title: "Updated" }] → update
 
-    req.body.posts = req.body.posts.map((post) => ({
-      ...post,
-      published: false,
-    }));
-  }
+        req.body.posts = req.body.posts.map((post) => ({
+            ...post,
+            published: false,
+        }));
+    }
 
-  next();
+    next();
 };
 ```
 
@@ -455,15 +455,15 @@ export const handleUserPosts = async (
 ```typescript
 // src/modules/user/user.interceptors.ts
 import {
-  addDefaultProfile,
-  validateEmailUniqueness,
-  handleUserPosts,
+    addDefaultProfile,
+    validateEmailUniqueness,
+    handleUserPosts,
 } from "./user.middlewares";
 
 export const beforeCreateOne = [
-  validateEmailUniqueness,
-  addDefaultProfile,
-  handleUserPosts,
+    validateEmailUniqueness,
+    addDefaultProfile,
+    handleUserPosts,
 ];
 
 export const beforeUpdateOne = [validateEmailUniqueness, handleUserPosts];
@@ -477,40 +477,40 @@ export const beforeUpdateOne = [validateEmailUniqueness, handleUserPosts];
 ```typescript
 // src/modules/user/dtos/create-user.dto.ts
 import {
-  IsString,
-  IsEmail,
-  IsNumber,
-  IsOptional,
-  ValidateNested,
-  Min,
+    IsString,
+    IsEmail,
+    IsNumber,
+    IsOptional,
+    ValidateNested,
+    Min,
 } from "class-validator";
 import { Type } from "class-transformer";
 
 class ProfileDto {
-  @IsString()
-  @IsOptional()
-  bio?: string;
+    @IsString()
+    @IsOptional()
+    bio?: string;
 
-  @IsOptional()
-  isPublic?: boolean;
+    @IsOptional()
+    isPublic?: boolean;
 }
 
 export class CreateUserDto {
-  @IsString()
-  name: string;
+    @IsString()
+    name: string;
 
-  @IsEmail()
-  email: string;
+    @IsEmail()
+    email: string;
 
-  @IsNumber()
-  @Min(18)
-  @IsOptional()
-  age?: number;
+    @IsNumber()
+    @Min(18)
+    @IsOptional()
+    age?: number;
 
-  @ValidateNested()
-  @Type(() => ProfileDto)
-  @IsOptional()
-  profile?: ProfileDto;
+    @ValidateNested()
+    @Type(() => ProfileDto)
+    @IsOptional()
+    profile?: ProfileDto;
 }
 ```
 
@@ -530,47 +530,47 @@ type CreateUserBody = CreateUserDto & ArkosPrismaInput<Prisma.UserCreateInput>;
 type UserParams = { id: string };
 
 export const addDefaultProfile = async (
-  req: ArkosRequest<UserParams, any, CreateUserBody>,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest<UserParams, any, CreateUserBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (!req.body.profile) {
-    req.body.profile = {
-      bio: "New user",
-      isPublic: true,
-    };
-  }
-  next();
+    if (!req.body.profile) {
+        req.body.profile = {
+            bio: "New user",
+            isPublic: true,
+        };
+    }
+    next();
 };
 
 export const validateEmailUniqueness = async (
-  req: ArkosRequest<UserParams, any, CreateUserBody>,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest<UserParams, any, CreateUserBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const existing = await prisma.user.findUnique({
-    where: { email: req.body.email },
-  });
+    const existing = await prisma.user.findUnique({
+        where: { email: req.body.email },
+    });
 
-  if (existing) {
-    throw new AppError("Email already registered", 409, "EmailExists");
-  }
+    if (existing) {
+        throw new AppError("Email already registered", 409, "EmailExists");
+    }
 
-  next();
+    next();
 };
 
 export const handleUserPosts = async (
-  req: ArkosRequest<UserParams, any, CreateUserBody>,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest<UserParams, any, CreateUserBody>,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.body.posts) {
-    req.body.posts = req.body.posts.map((post) => ({
-      ...post,
-      published: false,
-    }));
-  }
-  next();
+    if (req.body.posts) {
+        req.body.posts = req.body.posts.map((post) => ({
+            ...post,
+            published: false,
+        }));
+    }
+    next();
 };
 ```
 
@@ -579,15 +579,15 @@ export const handleUserPosts = async (
 ```typescript
 // src/modules/user/user.interceptors.ts
 import {
-  addDefaultProfile,
-  validateEmailUniqueness,
-  handleUserPosts,
+    addDefaultProfile,
+    validateEmailUniqueness,
+    handleUserPosts,
 } from "./user.middlewares";
 
 export const beforeCreateOne = [
-  validateEmailUniqueness,
-  addDefaultProfile,
-  handleUserPosts,
+    validateEmailUniqueness,
+    addDefaultProfile,
+    handleUserPosts,
 ];
 ```
 
@@ -612,37 +612,37 @@ After interceptors have full type-safe access to response data via `res.locals`:
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const removePassword = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const user = res.locals.data.data;
+    const user = res.locals.data.data;
 
-  // Remove sensitive fields
-  delete user.password;
-  delete user.verificationToken;
+    // Remove sensitive fields
+    delete user.password;
+    delete user.verificationToken;
 
-  // Update the response data
-  res.locals.data.data = user;
+    // Update the response data
+    res.locals.data.data = user;
 
-  next();
+    next();
 };
 
 export const addComputedFields = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const user = res.locals.data.data;
+    const user = res.locals.data.data;
 
-  // Add computed fields
-  res.locals.data.data = {
-    ...user,
-    fullName: `${user.firstName} ${user.lastName}`,
-    age: calculateAge(user.birthdate),
-  };
+    // Add computed fields
+    res.locals.data.data = {
+        ...user,
+        fullName: `${user.firstName} ${user.lastName}`,
+        age: calculateAge(user.birthdate),
+    };
 
-  next();
+    next();
 };
 ```
 
@@ -685,74 +685,74 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import postService from "./post.service";
 
 export const validatePostOwnership = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.user.role === "author") {
-    const post = await postService.findOne({
-      id: req.params.id,
-      authorId: req.user.id,
-    });
-    if (!post) {
-      throw new AppError("You can only update your own posts", 403);
+    if (req.user.role === "author") {
+        const post = await postService.findOne({
+            id: req.params.id,
+            authorId: req.user.id,
+        });
+        if (!post) {
+            throw new AppError("You can only update your own posts", 403);
+        }
+        res.locals.originalPost = post;
     }
-    res.locals.originalPost = post;
-  }
-  next();
+    next();
 };
 
 export const sanitizePostContent = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.body.content) {
-    req.body.content = sanitizeHtml(req.body.content);
-  }
-  next();
+    if (req.body.content) {
+        req.body.content = sanitizeHtml(req.body.content);
+    }
+    next();
 };
 
 export const checkPostQuota = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const count = await postService.count({ authorId: req.user.id });
-  if (count >= req.user.maxPosts) {
-    throw new AppError("Post quota exceeded", 429);
-  }
-  next();
+    const count = await postService.count({ authorId: req.user.id });
+    if (count >= req.user.maxPosts) {
+        throw new AppError("Post quota exceeded", 429);
+    }
+    next();
 };
 
 export const logPostActivity = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  await activityLog.record({
-    userId: req.user.id,
-    action: "update_post",
-    postId: req.params.id,
-  });
-  next();
+    await activityLog.record({
+        userId: req.user.id,
+        action: "update_post",
+        postId: req.params.id,
+    });
+    next();
 };
 ```
 
 ```typescript
 // src/modules/post/post.interceptors.ts
 import {
-  validatePostOwnership,
-  sanitizePostContent,
-  checkPostQuota,
-  logPostActivity,
+    validatePostOwnership,
+    sanitizePostContent,
+    checkPostQuota,
+    logPostActivity,
 } from "./post.middlewares";
 
 export const beforeUpdateOne = [
-  validatePostOwnership,
-  sanitizePostContent,
-  checkPostQuota,
-  logPostActivity,
+    validatePostOwnership,
+    sanitizePostContent,
+    checkPostQuota,
+    logPostActivity,
 ];
 ```
 
@@ -800,82 +800,82 @@ export const afterFindMany = [];
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const removeSensitiveData = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (Array.isArray(res.locals.data.data)) {
-    res.locals.data.data = res.locals.data.data.map((author) => {
-      delete author.email;
-      delete author.phone;
-      return author;
-    });
-  } else {
-    delete res.locals.data.data.email;
-    delete res.locals.data.data.phone;
-  }
-  next();
+    if (Array.isArray(res.locals.data.data)) {
+        res.locals.data.data = res.locals.data.data.map((author) => {
+            delete author.email;
+            delete author.phone;
+            return author;
+        });
+    } else {
+        delete res.locals.data.data.email;
+        delete res.locals.data.data.phone;
+    }
+    next();
 };
 
 export const addComputedFields = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (Array.isArray(res.locals.data.data)) {
-    res.locals.data.data = res.locals.data.data.map((author) => ({
-      ...author,
-      fullName: `${author.firstName} ${author.lastName}`,
-      postCount: author.posts?.length || 0,
-    }));
-  } else {
-    res.locals.data.data = {
-      ...res.locals.data.data,
-      fullName: `${res.locals.data.data.firstName} ${res.locals.data.data.lastName}`,
-      postCount: res.locals.data.data.posts?.length || 0,
-    };
-  }
-  next();
+    if (Array.isArray(res.locals.data.data)) {
+        res.locals.data.data = res.locals.data.data.map((author) => ({
+            ...author,
+            fullName: `${author.firstName} ${author.lastName}`,
+            postCount: author.posts?.length || 0,
+        }));
+    } else {
+        res.locals.data.data = {
+            ...res.locals.data.data,
+            fullName: `${res.locals.data.data.firstName} ${res.locals.data.data.lastName}`,
+            postCount: res.locals.data.data.posts?.length || 0,
+        };
+    }
+    next();
 };
 
 export const formatResponseData = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  res.locals.data.formatted = true;
-  res.locals.data.timestamp = new Date().toISOString();
-  next();
+    res.locals.data.formatted = true;
+    res.locals.data.timestamp = new Date().toISOString();
+    next();
 };
 
 export const logAuthorActivity = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  await analyticsLog.record({
-    operation: "findMany",
-    resource: "author",
-    resultsCount: res.locals.data.data.length,
-  });
-  next();
+    await analyticsLog.record({
+        operation: "findMany",
+        resource: "author",
+        resultsCount: res.locals.data.data.length,
+    });
+    next();
 };
 ```
 
 ```typescript
 // src/modules/author/author.interceptors.ts
 import {
-  removeSensitiveData,
-  addComputedFields,
-  formatResponseData,
-  logAuthorActivity,
+    removeSensitiveData,
+    addComputedFields,
+    formatResponseData,
+    logAuthorActivity,
 } from "./author.middlewares";
 
 export const afterFindMany = [
-  removeSensitiveData,
-  addComputedFields,
-  formatResponseData,
-  logAuthorActivity,
+    removeSensitiveData,
+    addComputedFields,
+    formatResponseData,
+    logAuthorActivity,
 ];
 ```
 
@@ -909,72 +909,72 @@ export const onFindManyError = [];
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const cleanupUploadedFiles = async (
-  err: any,
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.uploadedFiles) {
-    await cleanupFiles(req.uploadedFiles);
-  }
-  next(err);
+    if (req.uploadedFiles) {
+        await cleanupFiles(req.uploadedFiles);
+    }
+    next(err);
 };
 
 export const rollbackTransaction = async (
-  err: any,
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (res.locals.transactionData) {
-    await rollbackDatabaseTransaction(res.locals.transactionData);
-  }
-  next(err);
+    if (res.locals.transactionData) {
+        await rollbackDatabaseTransaction(res.locals.transactionData);
+    }
+    next(err);
 };
 
 export const logUserCreationError = async (
-  err: any,
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  console.error("User creation failed:", err.message);
-  await errorLog.record({
-    operation: "createUser",
-    error: err.message,
-    userId: req.body.email,
-  });
-  next(err);
+    console.error("User creation failed:", err.message);
+    await errorLog.record({
+        operation: "createUser",
+        error: err.message,
+        userId: req.body.email,
+    });
+    next(err);
 };
 
 export const handlePrismaErrors = async (
-  err: any,
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (err.code === "P2002") {
-    // Unique constraint violation
-    console.log("Duplicate entry detected");
-  }
-  next(err);
+    if (err.code === "P2002") {
+        // Unique constraint violation
+        console.log("Duplicate entry detected");
+    }
+    next(err);
 };
 ```
 
 ```typescript
 // src/modules/user/user.interceptors.ts
 import {
-  cleanupUploadedFiles,
-  rollbackTransaction,
-  logUserCreationError,
-  handlePrismaErrors,
+    cleanupUploadedFiles,
+    rollbackTransaction,
+    logUserCreationError,
+    handlePrismaErrors,
 } from "./user.middlewares";
 
 export const onCreateOneError = [
-  cleanupUploadedFiles,
-  rollbackTransaction,
-  handlePrismaErrors,
-  logUserCreationError,
+    cleanupUploadedFiles,
+    rollbackTransaction,
+    handlePrismaErrors,
+    logUserCreationError,
 ];
 ```
 
@@ -1026,39 +1026,39 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import { AppError } from "arkos/error-handler";
 
 export const trackLoginAttempts = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const identifier = req.body.email || req.body.username;
-  const attempts = await getFailedLoginAttempts(identifier);
+    const identifier = req.body.email || req.body.username;
+    const attempts = await getFailedLoginAttempts(identifier);
 
-  if (attempts > 5) {
-    throw new AppError("Too many failed attempts. Try again later.", 429);
-  }
+    if (attempts > 5) {
+        throw new AppError("Too many failed attempts. Try again later.", 429);
+    }
 
-  await logLoginAttempt(identifier, req.ip);
-  next();
+    await logLoginAttempt(identifier, req.ip);
+    next();
 };
 
 export const generateVerificationToken = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  req.body.verificationToken = crypto.randomBytes(32).toString("hex");
-  req.body.verificationTokenExpires = new Date(
-    Date.now() + 24 * 60 * 60 * 1000
-  );
-  next();
+    req.body.verificationToken = crypto.randomBytes(32).toString("hex");
+    req.body.verificationTokenExpires = new Date(
+        Date.now() + 24 * 60 * 60 * 1000
+    );
+    next();
 };
 ```
 
 ```typescript
 // src/modules/auth/auth.interceptors.ts
 import {
-  trackLoginAttempts,
-  generateVerificationToken,
+    trackLoginAttempts,
+    generateVerificationToken,
 } from "./auth.middlewares";
 
 export const beforeLogin = [trackLoginAttempts];
@@ -1071,67 +1071,67 @@ export const beforeSignup = [generateVerificationToken];
 ```typescript
 // src/modules/auth/auth.middlewares.ts
 export const resetFailedAttempts = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const user = res.locals.additional.user;
-  await resetFailedLoginAttempts(user.email);
-  next();
+    const user = res.locals.additional.user;
+    await resetFailedLoginAttempts(user.email);
+    next();
 };
 
 export const updateLastLogin = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const user = res.locals.additional.user;
-  await updateUserLastLogin(user.id);
-  next();
+    const user = res.locals.additional.user;
+    await updateUserLastLogin(user.id);
+    next();
 };
 
 export const logSuccessfulLogin = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const user = res.locals.additional.user;
-  auditLog.info("User login", { userId: user.id, ip: req.ip });
-  next();
+    const user = res.locals.additional.user;
+    auditLog.info("User login", { userId: user.id, ip: req.ip });
+    next();
 };
 
 export const sendVerificationEmail = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const user = res.locals.data.data;
+    const user = res.locals.data.data;
 
-  emailService
-    .sendVerificationEmail(user.email, user.verificationToken)
-    .catch(console.error);
+    emailService
+        .sendVerificationEmail(user.email, user.verificationToken)
+        .catch(console.error);
 
-  delete res.locals.data.data.verificationToken;
-  delete res.locals.data.data.verificationTokenExpires;
+    delete res.locals.data.data.verificationToken;
+    delete res.locals.data.data.verificationTokenExpires;
 
-  res.locals.data.message = "Please check your email to verify your account";
-  next();
+    res.locals.data.message = "Please check your email to verify your account";
+    next();
 };
 ```
 
 ```typescript
 // src/modules/auth/auth.interceptors.ts
 import {
-  resetFailedAttempts,
-  updateLastLogin,
-  logSuccessfulLogin,
-  sendVerificationEmail,
+    resetFailedAttempts,
+    updateLastLogin,
+    logSuccessfulLogin,
+    sendVerificationEmail,
 } from "./auth.middlewares";
 
 export const afterLogin = [
-  resetFailedAttempts,
-  updateLastLogin,
-  logSuccessfulLogin,
+    resetFailedAttempts,
+    updateLastLogin,
+    logSuccessfulLogin,
 ];
 
 export const afterSignup = [sendVerificationEmail];
@@ -1142,52 +1142,52 @@ export const afterSignup = [sendVerificationEmail];
 ```typescript
 // src/modules/auth/auth.middlewares.ts
 export const incrementFailedAttempts = async (
-  err: any,
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const identifier = req.body.email || req.body.username;
-  if (identifier) {
-    await incrementFailedLoginAttempts(identifier);
-  }
-  next(err);
+    const identifier = req.body.email || req.body.username;
+    if (identifier) {
+        await incrementFailedLoginAttempts(identifier);
+    }
+    next(err);
 };
 
 export const logFailedLogin = async (
-  err: any,
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const identifier = req.body.email || req.body.username;
-  securityLog.warn("Failed login attempt", {
-    identifier,
-    ip: req.ip,
-    error: err.message,
-  });
-  next(err);
+    const identifier = req.body.email || req.body.username;
+    securityLog.warn("Failed login attempt", {
+        identifier,
+        ip: req.ip,
+        error: err.message,
+    });
+    next(err);
 };
 
 export const cleanupFailedSignup = async (
-  err: any,
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.body.email && err.code === "P2002") {
-    await cleanupPartialSignup(req.body.email);
-  }
-  next(err);
+    if (req.body.email && err.code === "P2002") {
+        await cleanupPartialSignup(req.body.email);
+    }
+    next(err);
 };
 ```
 
 ```typescript
 // src/modules/auth/auth.interceptors.ts
 import {
-  incrementFailedAttempts,
-  logFailedLogin,
-  cleanupFailedSignup,
+    incrementFailedAttempts,
+    logFailedLogin,
+    cleanupFailedSignup,
 } from "./auth.middlewares";
 
 export const onLoginError = [incrementFailedAttempts, logFailedLogin];
@@ -1202,52 +1202,55 @@ The `/api/users/me` endpoint supports additional interceptors:
 ```typescript
 // src/modules/auth/auth.middlewares.ts
 export const preventPasswordUpdate = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if ("password" in req.body) {
-    throw new AppError("Use /api/auth/update-password to change password", 400);
-  }
-  next();
+    if ("password" in req.body) {
+        throw new AppError(
+            "Use /api/auth/update-password to change password",
+            400
+        );
+    }
+    next();
 };
 
 export const auditProfileChanges = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  res.locals.profileChangeAudit = {
-    userId: req.user.id,
-    changes: Object.keys(req.body),
-    timestamp: new Date(),
-  };
-  next();
+    res.locals.profileChangeAudit = {
+        userId: req.user.id,
+        changes: Object.keys(req.body),
+        timestamp: new Date(),
+    };
+    next();
 };
 
 export const cleanupUserData = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const userId = req.user.id;
+    const userId = req.user.id;
 
-  userCleanupService.cleanup(userId).catch(console.error);
+    userCleanupService.cleanup(userId).catch(console.error);
 
-  emailService
-    .sendAccountDeletionConfirmation(req.user.email)
-    .catch(console.error);
+    emailService
+        .sendAccountDeletionConfirmation(req.user.email)
+        .catch(console.error);
 
-  next();
+    next();
 };
 ```
 
 ```typescript
 // src/modules/auth/auth.interceptors.ts
 import {
-  preventPasswordUpdate,
-  auditProfileChanges,
-  cleanupUserData,
+    preventPasswordUpdate,
+    auditProfileChanges,
+    cleanupUserData,
 } from "./auth.middlewares";
 
 export const beforeUpdateMe = [preventPasswordUpdate, auditProfileChanges];
@@ -1317,26 +1320,26 @@ import { PrismaQueryOptions } from "arkos/prisma";
 import { Prisma } from "@prisma/client";
 
 const userPrismaQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
-  global: {
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      profile: true,
+    global: {
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            profile: true,
+        },
     },
-  },
-  findMany: {
-    orderBy: {
-      createdAt: "desc",
+    findMany: {
+        orderBy: {
+            createdAt: "desc",
+        },
+        take: 50,
     },
-    take: 50,
-  },
-  createOne: {
-    include: {
-      profile: true,
-      posts: true,
+    createOne: {
+        include: {
+            profile: true,
+            posts: true,
+        },
     },
-  },
 };
 
 export default userPrismaQueryOptions;
@@ -1353,69 +1356,69 @@ Use `res.locals` to pass data between interceptors - this is the Express-recomme
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
 export const trackStartTime = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  res.locals.startTime = Date.now();
-  res.locals.clientIP = req.ip;
-  next();
+    res.locals.startTime = Date.now();
+    res.locals.clientIP = req.ip;
+    next();
 };
 
 export const loadOriginalPost = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const post = await postService.findOne({ id: req.params.id });
-  res.locals.originalPost = post;
-  next();
+    const post = await postService.findOne({ id: req.params.id });
+    res.locals.originalPost = post;
+    next();
 };
 
 export const logPerformance = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const duration = Date.now() - res.locals.startTime;
+    const duration = Date.now() - res.locals.startTime;
 
-  await performanceLog.record({
-    operation: "createOne",
-    duration,
-    clientIP: res.locals.clientIP,
-    resourceId: res.locals.data.data.id,
-  });
+    await performanceLog.record({
+        operation: "createOne",
+        duration,
+        clientIP: res.locals.clientIP,
+        resourceId: res.locals.data.data.id,
+    });
 
-  next();
+    next();
 };
 
 export const notifyAuthor = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const originalPost = res.locals.originalPost;
-  const updatedPost = res.locals.data.data;
+    const originalPost = res.locals.originalPost;
+    const updatedPost = res.locals.data.data;
 
-  if (originalPost.title !== updatedPost.title) {
-    await emailService.send({
-      to: originalPost.author.email,
-      subject: "Post title was changed",
-      body: `Your post title was changed from "${originalPost.title}" to "${updatedPost.title}"`,
-    });
-  }
+    if (originalPost.title !== updatedPost.title) {
+        await emailService.send({
+            to: originalPost.author.email,
+            subject: "Post title was changed",
+            body: `Your post title was changed from "${originalPost.title}" to "${updatedPost.title}"`,
+        });
+    }
 
-  next();
+    next();
 };
 ```
 
 ```typescript
 // src/modules/post/post.interceptors.ts
 import {
-  trackStartTime,
-  loadOriginalPost,
-  logPerformance,
-  notifyAuthor,
+    trackStartTime,
+    loadOriginalPost,
+    logPerformance,
+    notifyAuthor,
 } from "./post.middlewares";
 
 export const beforeUpdateOne = [trackStartTime, loadOriginalPost];
@@ -1441,83 +1444,83 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import postService from "./post.service";
 
 export const generateSlug = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.body.title && !req.body.slug) {
-    req.body.slug = req.body.title
-      .toLowerCase()
-      .replace(/[^a-zA-Z0-9\s]/g, "")
-      .replace(/\s+/g, "-");
-  }
-  next();
+    if (req.body.title && !req.body.slug) {
+        req.body.slug = req.body.title
+            .toLowerCase()
+            .replace(/[^a-zA-Z0-9\s]/g, "")
+            .replace(/\s+/g, "-");
+    }
+    next();
 };
 
 export const ensureUniqueSlug = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const existingPost = await postService.findOne({
-    slug: req.body.slug,
-  });
+    const existingPost = await postService.findOne({
+        slug: req.body.slug,
+    });
 
-  if (existingPost) {
-    req.body.slug += `-${Date.now()}`;
-  }
-  next();
+    if (existingPost) {
+        req.body.slug += `-${Date.now()}`;
+    }
+    next();
 };
 
 export const notifyFollowers = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const post = res.locals.data.data;
+    const post = res.locals.data.data;
 
-  notificationService
-    .notifyFollowers(post.authorId, {
-      type: "new_post",
-      postId: post.id,
-      title: post.title,
-    })
-    .catch(console.error);
+    notificationService
+        .notifyFollowers(post.authorId, {
+            type: "new_post",
+            postId: post.id,
+            title: post.title,
+        })
+        .catch(console.error);
 
-  next();
+    next();
 };
 
 export const updateSearchIndex = async (
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  const post = res.locals.data.data;
-  searchService.indexPost(post).catch(console.error);
-  next();
+    const post = res.locals.data.data;
+    searchService.indexPost(post).catch(console.error);
+    next();
 };
 
 export const cleanupFeaturedImage = async (
-  err: any,
-  req: ArkosRequest,
-  res: ArkosResponse,
-  next: ArkosNextFunction
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
 ) => {
-  if (req.body.featuredImage) {
-    await deleteUploadedFile(req.body.featuredImage).catch(console.error);
-  }
-  next(err);
+    if (req.body.featuredImage) {
+        await deleteUploadedFile(req.body.featuredImage).catch(console.error);
+    }
+    next(err);
 };
 ```
 
 ```typescript
 // src/modules/post/post.interceptors.ts
 import {
-  generateSlug,
-  ensureUniqueSlug,
-  notifyFollowers,
-  updateSearchIndex,
-  cleanupFeaturedImage,
+    generateSlug,
+    ensureUniqueSlug,
+    notifyFollowers,
+    updateSearchIndex,
+    cleanupFeaturedImage,
 } from "./post.middlewares";
 
 export const beforeCreateOne = [generateSlug, ensureUniqueSlug];

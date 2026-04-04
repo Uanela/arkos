@@ -1,0 +1,17 @@
+{
+  "title": "Reference",
+  "pages": [
+    "arkos-router",
+    "base-service",
+    "base-controller",
+    "auth-service-object",
+    "catch-async",
+    "app-error",
+    "arkos-configuration",
+    "arkos-prisma-input",
+    "email-service",
+    "file-upload-controller-object",
+    "file-upload-services-function-guide",
+    "request-handling-pipeline"
+  ]
+}

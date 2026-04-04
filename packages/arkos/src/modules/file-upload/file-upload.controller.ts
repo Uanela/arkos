@@ -352,7 +352,13 @@ export class FileUploadController {
 /**
  * Controller instance responsible for handling file upload operations.
  *
- * @see {@link https://www.arkosjs.com/docs/api-reference/file-upload-controller-object}
+ * @remarks
+ * This controller handles various file upload operations including validation,
+ * storage, and response management.
+ *
+ * @instance
+ * @constant
+ * @see {@link https://www.arkosjs.com/docs/reference/file-upload-controller-object}
  */
 const fileUploadController = new FileUploadController();
 

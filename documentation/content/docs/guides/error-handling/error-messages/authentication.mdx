@@ -1,0 +1,50 @@
+---
+title: Authentication
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Arkos maps authentication and JWT failures to consistent error responses automatically. These errors fire during the `authenticate` and `authorize` middleware pipeline — you never need to handle them yourself unless you want to add custom behavior via [authentication hooks](/docs/core-concepts/authentication/hooks).
+
+## Token Errors
+
+These fire when Arkos processes the `Authorization` header or `arkos_access_token` cookie:
+
+| Scenario | Message | Status | Code |
+|---|---|---|---|
+| Token is malformed or tampered | `Invalid token. Please log in again!` | `401` | `InvalidToken` |
+| Token has expired | `Your token has expired, Please log again!` | `401` | `ExpiredToken` |
+| No token present on a protected route | `You are not logged in! Please log in to get access.` | `401` | `LoginRequired` |
+| Token valid but user no longer exists | `The user belonging to this token does no longer exists` | `401` | `UserNoLongerExists` |
+| Password changed after token was issued | `User recently changed password! Please log in again.` | `401` | `PasswordChanged` |
+
+## Login Errors
+
+These fire inside the built-in login endpoint:
+
+| Scenario | Message | Status | Code |
+|---|---|---|---|
+| Missing username or password field | `Please provide both {field} and password` | `400` | `MissingCredentialFields` |
+| Wrong credentials | `Incorrect {field} or password` | `401` | `IncorrectCredentials` |
+
+## Authorization Errors
+
+This fires when an authenticated user lacks the required role or permission for a route:
+
+| Scenario | Message | Status | Code |
+|---|---|---|---|
+| Insufficient permissions | `You do not have permission to perform this action` | `403` | `NotEnoughPermissions` |
+
+## Password Update Errors
+
+These fire inside the built-in update-password endpoint:
+
+| Scenario | Message | Status | Code |
+|---|---|---|---|
+| Missing `currentPassword` or `newPassword` | `currentPassword and newPassword are required` | `400` | `SameCurrentAndNewPassword` |
+| `currentPassword` is wrong | `Current password is incorrect` | `400` | `IncorrentCurrentPassword` |
+
+## Customizing Authentication Error Behavior
+
+If you need to run custom logic when authentication or authorization fails — logging, suppressing errors for guest access, integrating a third-party auth provider — use [authentication hooks](/docs/core-concepts/authentication/hooks). Hooks let you tap into the `authenticate` and `authorize` pipeline without replacing the built-in behavior.

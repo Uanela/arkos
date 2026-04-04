@@ -13,7 +13,6 @@ export default function initializeApp(app: Arkos) {
   const globalPrefix = config.globalPrefix || "/api";
 
   const routersConfig = config?.routers;
-  const middlewaresConfig = config?.middlewares;
 
   if (routersConfig?.welcomeRoute !== false) {
     if (typeof routersConfig?.welcomeRoute === "function") {
@@ -43,6 +42,10 @@ export default function initializeApp(app: Arkos) {
   )
     app.use(globalPrefix, getSwaggerRouter(config, app));
 
+  return app;
+}
+
+export function addGlobalErrorHandler(app: Arkos) {
   app.use("*", (req) => {
     throw new AppError(
       `Route ${req.method} ${req.originalUrl} was not found`,
@@ -52,12 +55,7 @@ export default function initializeApp(app: Arkos) {
     );
   });
 
-  if (middlewaresConfig?.errorHandler !== false) {
-    if (typeof middlewaresConfig?.errorHandler === "function") {
-      app.use(middlewaresConfig.errorHandler);
-    } else {
-      app.use(errorHandler);
-    }
-  }
+  app.use(errorHandler);
+
   return app;
 }

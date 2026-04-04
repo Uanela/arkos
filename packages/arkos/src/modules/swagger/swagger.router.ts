@@ -40,9 +40,9 @@ export function getSwaggerRouter(
   const endpoint = swaggerConfigs!.endpoint!;
 
   const swaggerAuth = arkosConfig?.swagger;
-  const requireAuth = swaggerAuth?.requireAuth !== false;
+  const authenticate = swaggerAuth?.authenticate !== false;
 
-  if (requireAuth) {
+  if (authenticate) {
     swaggerRouter.use(
       endpoint,
       (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {

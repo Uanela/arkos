@@ -1,0 +1,103 @@
+---
+title: Hooks
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+> Available since v1.6.0-beta
+
+Arkos runs a two-step pipeline on every protected route: first it authenticates the request via `authService.authenticate` (extracts and verifies the JWT, sets `req.user`), then it authorizes it via `authService.authorize` (checks the user's role or permissions against the route's access control rules).
+
+These are the same two methods that `ArkosRouter` and `RouteHook` wire under the hood when you pass an `authentication` option to a route. Authentication hooks let you tap into both steps — running logic before the core check, after it passes, or when it fails — without replacing the built-in behavior.
+
+Hooks are defined once in `ArkosConfig` and apply globally to every route that goes through the pipeline, whether that's an auto-generated Prisma model route, a built-in auth endpoint, or a custom `ArkosRouter` route.
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
+</Callout>
+
+## Configuration
+
+<Tabs items={["v1.6", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos";
+import { AppError } from "arkos/error-handler";
+
+export default defineConfig({
+  authentication: {
+    mode: "static",
+    hooks: {
+      authenticate: {
+        before: ({ req, skip }) => { /* runs before JWT verification */ },
+        after: ({ req }) => { /* runs after req.user is set */ },
+        onError: ({ req, error, skip }) => { /* runs when verification fails */ },
+      },
+      authorize: {
+        before: ({ req, action, resource, rule, skip }) => { /* runs before permission check */ },
+        after: ({ req, action, resource, rule }) => { /* runs after check passes */ },
+        onError: ({ req, error, action, resource, rule, skip }) => { /* runs when check fails (403) */ },
+      },
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    mode: "static",
+    hooks: {
+      authenticate: {
+        before: ({ req, skip }) => { /* runs before JWT verification */ },
+        after: ({ req }) => { /* runs after req.user is set */ },
+        onError: ({ req, error, skip }) => { /* runs when verification fails */ },
+      },
+      authorize: {
+        before: ({ req, action, resource, rule, skip }) => { /* runs before permission check */ },
+        after: ({ req, action, resource, rule }) => { /* runs after check passes */ },
+        onError: ({ req, error, action, resource, rule, skip }) => { /* runs when check fails (403) */ },
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+<Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+arkos.init({
+  authentication: {
+    mode: "static",
+    hooks: {
+      authenticate: {
+        before: ({ req, skip }) => { /* runs before JWT verification */ },
+        after: ({ req }) => { /* runs after req.user is set */ },
+        onError: ({ req, error, skip }) => { /* runs when verification fails */ },
+      },
+      authorize: {
+        before: ({ req, action, resource, rule, skip }) => { /* runs before permission check */ },
+        after: ({ req, action, resource, rule }) => { /* runs after check passes */ },
+        onError: ({ req, error, action, resource, rule, skip }) => { /* runs when check fails (403) */ },
+      },
+    },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+Each hook can be a single function or an array of functions. When an array is provided, they run in order — the chain stops if one throws or calls `skip()`.
+
+## authenticate Hooks
+
+These hooks wrap `authService.authenticate` — the JWT extraction and verification step. When this step runs, Arkos reads the token from the `Authorization` header or the `arkos_access_token` cookie, verifies it, fetches the user from the database, and sets `req.user`.
+
+### Execution Flow

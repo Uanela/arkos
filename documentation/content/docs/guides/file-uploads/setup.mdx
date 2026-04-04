@@ -1,0 +1,175 @@
+---
+title: Setup
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Arkos supports two approaches to file uploads: **standalone routes** (`/api/uploads/:fileType`) that handle files independently, and **router uploads** that attach files directly to a route in a single request.
+
+```ts
+// Standalone — upload first, reference the URL later
+const { urls } = await fetch("/api/uploads/images", { method: "POST", body: formData }).then(r => r.json());
+```
+
+See [File Upload Routes](/docs/guides/file-uploads/routes) for the full standalone API.
+
+## Router uploads
+
+Use `experimental.uploads` on any route definition to handle file uploads inline — the file path is automatically attached to `req.body` before your handler runs.
+
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+  <Tab value="ArkosRouter">
+```ts title="src/routers/reports.router.ts"
+reportsRouter.post(
+  {
+    path: "/api/reports/upload",
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "reportFile",
+        uploadDir: "reports",
+        deleteOnError: true,
+      },
+    },
+  },
+  reportsController.processUploadedReport
+);
+```
+  </Tab>
+  <Tab value="RouteHook">
+```ts title="src/modules/user/user.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+
+export const hook: RouteHook = {
+  createOne: {
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "profilePhoto",
+        uploadDir: "user-profiles",
+        deleteOnError: true,
+      },
+    },
+  },
+};
+
+const userRouter = ArkosRouter();
+
+export default userRouter;
+```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
+</Callout>
+
+For all upload types (`single`, `array`, `fields`), nested field notation, and `RouteHook` examples, see [Router Upload](/docs/guides/file-uploads/router-upload).
+
+## Global configuration
+
+All fields are optional and deep-merged with defaults.
+
+| Key | Type | Description | Default |
+|-----|------|-------------|---------|
+| `baseUploadDir` | `string` | Root-relative path where files are saved | `/uploads` |
+| `baseRoute` | `string` | Base route for standalone upload endpoints | `/api/uploads` |
+| `expressStatic` | `object` | Options passed to `express.static()` — deep-merged with defaults | See below |
+| `restrictions.images` | `object` | `maxCount`, `maxSize`, `supportedFilesRegex` for images | - |
+| `restrictions.videos` | `object` | Same shape, for videos | — |
+| `restrictions.documents` | `object` | Same shape, for documents | — |
+| `restrictions.files` | `object` | Same shape, for all other types | — |
+
+`expressStatic` defaults:
+
+```ts
+{
+  maxAge: "1y",
+  etag: true,
+  lastModified: true,
+  dotfiles: "ignore",
+  fallthrough: true,
+  index: false,
+  cacheControl: true,
+}
+```
+
+<Callout type="info">
+  `baseRoute` and `baseUploadDir` are independent — changing one does not affect the other.
+</Callout>
+
+<Tabs items={["v1.6+ (defineConfig)", "v1.4–v1.5", "v1.3"]}>
+  <Tab value="v1.6+ (defineConfig)">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos";
+
+export default defineConfig({
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    expressStatic: {
+      maxAge: "1d",
+    },
+    restrictions: {
+      images: {
+        maxCount: 10,
+        maxSize: 5 * 1024 * 1024,
+        supportedFilesRegex: /\.(jpg|jpeg|png|webp)$/,
+      },
+    },
+  },
+});
+```
+  </Tab>
+  <Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    expressStatic: {
+      maxAge: "1d",
+    },
+    restrictions: {
+      images: {
+        maxCount: 10,
+        maxSize: 5 * 1024 * 1024,
+        supportedFilesRegex: /\.(jpg|jpeg|png|webp)$/,
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+  </Tab>
+  <Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+arkos.init({
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    restrictions: {
+      images: {
+        maxCount: 10,
+        maxSize: 5 * 1024 * 1024,
+        supportedFilesRegex: /\.(jpg|jpeg|png|webp)$/,
+      },
+    },
+  },
+});
+```
+  </Tab>
+</Tabs>
+
+## Related
+
+- [Router Upload](/docs/guides/file-uploads/router-upload) — attaching uploads to custom and built-in routes
+- [File Upload Routes](/docs/guides/file-uploads/routes) — standalone endpoints, request format, image processing params
+- [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) — before/after hooks for any file operation
+- [Validation with file uploads](/docs/guides/validation/usage#validation-with-file-uploads) — how to combine `validation.body` and `experimental.uploads` in the same request
