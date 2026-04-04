@@ -9,17 +9,17 @@ Arkos provides a JWT-based authentication and authorization system with Role-Bas
 
 ## Permission Modes
 
-Once a user is authenticated, Arkos needs to know what they're allowed to do. It handles this through two permission modes — [Static](/docs/core-concepts/authentication/modes/static/setup) and [Dynamic](/docs/core-concepts/authentication/modes/dynamic/setup).
+Once a user is authenticated, Arkos needs to know what they're allowed to do. It handles this through two permission modes — [Static](/docs/core-concepts/authentication/permissions/static) and [Dynamic](/docs/core-concepts/authentication/permissions/dynamic).
 
 ### Static
 
-[Static mode](/docs/core-concepts/authentication/modes/static/setup) defines permissions in code via [`ArkosPolicy`](/docs/core-concepts/authentication/modes/static/setup#arkospolicy) (v1.6+) or [`.auth.ts` files](/docs/core-concepts/authentication/modes/static/setup#auth-files). Roles are assigned directly on the `User` model as an enum field. Use Static when your roles are stable and known at deploy time — most apps start here.
+[Static mode](/docs/core-concepts/authentication/permissions/static) defines permissions in code via [`ArkosPolicy`](/docs/core-concepts/authentication/permissions/static#arkospolicy) (v1.6+) or [`.auth.ts` files](/docs/core-concepts/authentication/permissions/static#auth-files). Roles are assigned directly on the `User` model as an enum field. Use Static when your roles are stable and known at deploy time — most apps start here.
 
 ### Dynamic
 
-[Dynamic mode](/docs/core-concepts/authentication/modes/dynamic/setup) stores permissions in the database via `AuthRole`, `AuthPermission`, and `UserRole` models. Roles and permissions can be created, updated, and assigned at runtime without a redeploy. Use Dynamic when permissions need to be managed at runtime — multi-tenant apps, SaaS platforms, or any system where roles change frequently.
+[Dynamic mode](/docs/core-concepts/authentication/permissions/dynamic) stores permissions in the database via `AuthRole`, `AuthPermission`, and `UserRole` models. Roles and permissions can be created, updated, and assigned at runtime without a redeploy. Use Dynamic when permissions need to be managed at runtime — multi-tenant apps, SaaS platforms, or any system where roles change frequently.
 
-| | [Static](/docs/core-concepts/authentication/modes/static/setup) | [Dynamic](/docs/core-concepts/authentication/modes/dynamic/setup) |
+| | [Static](/docs/core-concepts/authentication/permissions/static) | [Dynamic](/docs/core-concepts/authentication/permissions/dynamic) |
 |---|---|---|
 | Permissions defined in | Code | Database |
 | Role changes require | Redeploy | Database update |
@@ -184,12 +184,12 @@ Create at least one user with `isSuperUser: true` before enabling authentication
 </Callout>
 
 <Callout type="info">
-`role` / `roles` is for [Static mode](/docs/core-concepts/authentication/modes/static/setup) only. [Dynamic mode](/docs/core-concepts/authentication/modes/dynamic/setup) replaces it with database-driven role relations.
+`role` / `roles` is for [Static mode](/docs/core-concepts/authentication/permissions/static) only. [Dynamic mode](/docs/core-concepts/authentication/permissions/dynamic) replaces it with database-driven role relations.
 </Callout>
 
 ## Protecting Routes
 
-Before diving into permission modes, any route can be protected with `authentication: true` — this simply requires the user to be logged in, regardless of their role or permissions. For role-based access control, see [Static Mode](/docs/core-concepts/authentication/modes/static/setup) or [Dynamic Mode](/docs/core-concepts/authentication/modes/dynamic/setup).
+Before diving into permission modes, any route can be protected with `authentication: true` — this simply requires the user to be logged in, regardless of their role or permissions. For role-based access control, see [Static Mode](/docs/core-concepts/authentication/permissions/static) or [Dynamic Mode](/docs/core-concepts/authentication/permissions/dynamic).
 
 <Tabs items={["ArkosRouter", "RouteHook"]}>
 <Tab value="ArkosRouter">
@@ -234,6 +234,6 @@ export default router;
 
 For role-based or permission-based access control, pick a permission mode:
 
-→ [Static Mode](/docs/core-concepts/authentication/modes/static/setup) — define permissions in code via `ArkosPolicy` or `.auth.ts` files
+→ [Static Mode](/docs/core-concepts/authentication/permissions/static) — define permissions in code via `ArkosPolicy` or `.auth.ts` files
 
-→ [Dynamic Mode](/docs/core-concepts/authentication/modes/dynamic/setup) — manage permissions at runtime via database
+→ [Dynamic Mode](/docs/core-concepts/authentication/permissions/dynamic) — manage permissions at runtime via database
