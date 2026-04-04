@@ -730,5 +730,38 @@ describe("parseQueryParamsWithModifiers", () => {
         },
       });
     });
+
+    it("should correctly translate top level AND OR as array", () => {
+      const query = {
+        OR: [
+          {
+            price__gte: 100,
+          },
+        ],
+        AND: [
+          {
+            price__gte: 100,
+          },
+        ],
+      };
+
+      const result = parseQueryParamsWithModifiers(query);
+      expect(result).toEqual({
+        OR: [
+          {
+            price: {
+              gte: 100,
+            },
+          },
+        ],
+        AND: [
+          {
+            price: {
+              gte: 100,
+            },
+          },
+        ],
+      });
+    });
   });
 });
