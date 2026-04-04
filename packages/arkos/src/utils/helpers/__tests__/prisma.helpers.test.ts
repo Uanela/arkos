@@ -2,6 +2,7 @@ import * as dbUtils from "../prisma.helpers";
 import { getArkosConfig } from "../arkos-config.helpers";
 import sheu from "../../sheu";
 import prismaSchemaParser from "../../prisma/prisma-schema-parser";
+import { describe } from "node:test";
 
 jest.mock("../arkos-config.helpers", () => ({
   getArkosConfig: jest.fn(),
@@ -48,7 +49,9 @@ describe("prisma.helpers", () => {
     };
 
     (getArkosConfig as jest.Mock).mockReturnValue(mockConfig);
+  });
 
+  describe("loadPrismaModule", () => {
     it("should log prisma not passed warning when prisma module not passed in config", async () => {
       (getArkosConfig as jest.Mock).mockReturnValue({});
 
