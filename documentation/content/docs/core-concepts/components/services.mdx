@@ -1,0 +1,112 @@
+---
+title: Services
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A service contains your business logic. Controllers call services, and services interact with the database or other external systems. Keeping this separation means your logic stays testable and reusable — the same service method can be called from an HTTP handler, a background job, or another service.
+
+## Creating a Service
+
+If you are working with Prisma model routes, Arkos provides `BaseService` which already implements `findMany`, `findOne`, `createOne`, `updateOne`, `deleteOne`, `createMany`, `updateMany`, `deleteMany`, and `count` — the methods shown above are already built in. See [BaseService for Prisma Models](#baseservice-for-prisma-models).
+
+```ts title="src/modules/post/post.service.ts"
+import postRepository from "./post.repository";
+
+class PostService {
+  async getFeatured() {
+    return postRepository.findMany({ where: { featured: true } });
+  }
+
+  async publish(id: string) {
+    return postRepository.update({
+      where: { id },
+      data: { publishedAt: new Date() },
+    });
+  }
+}
+
+const postService = new PostService();
+
+export default postService;
+```
+
+## BaseService for Prisma Models
+
+When your service maps to a Prisma model, extend `BaseService`. It provides `findMany`, `findOne`, `createOne`, `updateOne`, `deleteOne`, `createMany`, `updateMany`, `deleteMany`, and `count` — all wired to Prisma with built-in support for [Service Hooks](/docs/core-concepts/components/service-hooks).
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
+
+class PostService extends BaseService<"post"> {}
+
+const postService = new PostService("post");
+
+export default postService;
+```
+
+### Adding Custom Methods
+
+Extend with your own methods alongside the built-in ones:
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
+import { Prisma } from "@prisma/client";
+
+class PostService extends BaseService<"post"> {
+  async getFeatured() {
+    return this.findMany({ where: { featured: true } });
+  }
+
+  async publish(id: string) {
+    return this.updateOne(
+      { where: { id } },
+      { data: { publishedAt: new Date() } }
+    );
+  }
+
+  async getStats() {
+    const [total, published] = await Promise.all([
+      this.count(),
+      this.count({ where: { publishedAt: { not: null } } }),
+    ]);
+    return { total, published };
+  }
+}
+
+const postService = new PostService("post");
+
+export default postService;
+```
+
+### Calling Services Programmatically
+
+`BaseService` methods accept an optional context object as their last argument. This context is passed to [Service Hooks](/docs/core-concepts/components/service-hooks) and carries the authenticated user:
+```ts
+const post = await postService.createOne(
+  { title: "Hello", body: "World" },
+  { include: { author: true } },
+  { user: req.user }
+);
+```
+
+### Skipping Hooks
+
+When you need to bypass service hooks for a specific call:
+```ts
+await postService.deleteOne(
+  { where: { id } },
+  {},
+  { skip: ["before", "after"] }
+);
+```
+
+## Scaffold with the CLI
+```bash
+arkos generate service --module post
+arkos g s -m post
+```
+
+## Related
+
+- [Service Hooks](/docs/core-concepts/components/service-hooks) — Run logic on every service call
+- [Controllers](/docs/core-concepts/components/controllers) — Call services from route handlers
+- [Interceptors](/docs/core-concepts/components/interceptors) — Run logic at the HTTP layer

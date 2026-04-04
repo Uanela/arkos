@@ -1,0 +1,132 @@
+---
+title: What's Next
+---
+
+Arkos is already being used in production and we will old the `beta version` label because we're still hearing from community up until the `v2.0` which is already under development already. This page covers what landed in the v2.0 pre-release track and what is still planned.
+
+## v2.0 — In Progress
+
+v2.0 is a significant architectural shift. The core theme is **explicitness over file-based magic** — instead of Arkos scanning your file system for `*.interceptors.ts`, `*.hooks.ts`, `*.auth.ts`, and `*.query.ts` files, you register everything explicitly via `app.load()`.
+
+### Explicit Registration via `app.load()`
+
+The dynamic loader is gone. Arkos no longer discovers components by scanning your module directories. Instead you register route hooks and service hooks directly:
+```ts title="src/loadables.ts"
+import { ArkosRouteHook, ArkosServiceHook } from "arkos";
+import app from "./app";
+
+const userRouteHook = ArkosRouteHook("user")
+  .createOne({ authentication: true })
+  .findMany({ authentication: false });
+
+const userServiceHook = ArkosServiceHook("user")
+  .createOne({
+    before: [async ({ data }) => {
+      data.slug = data.title.toLowerCase().replace(/\s+/g, "-");
+    }],
+  });
+
+app.load(userRouteHook, userServiceHook);
+```
+```ts title="src/app.ts"
+import arkos from "arkos";
+import "./loadables";
+
+const app = arkos();
+
+app.listen();
+```
+
+`app.load()` must be called before `app.build()` or `app.listen()`.
+
+### `ArkosRouteHook` — Fluent Route Configuration
+
+Replaces the `export const hook: RouteHook` file export and the `*.interceptors.ts` file convention. Each operation method accepts the same route config options (authentication, validation, rate limiting) plus `before`, `after`, and `onError` lifecycle arrays — all in one place:
+```ts
+const postRouteHook = ArkosRouteHook("post")
+  .findMany({ authentication: false })
+  .createOne({
+    authentication: postPolicy.Create,
+    validation: { body: CreatePostSchema },
+    before: [setAuthor],
+    after: [notifyFollowers],
+    onError: [cleanupImage],
+  })
+  .deleteOne({ authentication: postPolicy.Delete });
+```
+
+Available for `"auth"` and `"file-upload"` modules too, with operation methods narrowed to what's relevant for each.
+
+### `ArkosServiceHook` — Fluent Service Hook Configuration
+
+Replaces the `*.hooks.ts` file convention. Typed against your Prisma model's actual operation args:
+```ts
+const postServiceHook = ArkosServiceHook("post")
+  .createOne({
+    before: [async ({ data }) => { data.slug = slugify(data.title); }],
+    after: [async ({ result }) => { await index(result); }],
+    onError: [async ({ error }) => { logger.error(error); }],
+  });
+```
+
+### `app.build()` is Now Synchronous
+
+Previously async, `app.build()` is now synchronous. If you need a custom HTTP server for WebSockets or similar, the pattern is:
+```ts title="src/app.ts"
+import arkos from "arkos";
+import http from "http";
+import arkosConfig from "./arkos.config";
+
+const app = arkos();
+
+app.build();
+
+const server = http.createServer(app);
+
+app.listen(server);
+```
+
+### PrismaClient Now Passed Explicitly
+
+Arkos no longer instantiates Prisma internally. You pass your own instance in the config:
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export default defineConfig({
+  prisma: { instance: prisma },
+});
+```
+
+### Dynamic Query Filter Parameters in OpenAPI
+
+The OpenAPI docs for `findMany`, `updateMany`, and `deleteMany` now generate real query filter parameters from your Prisma model fields instead of a generic `filters` string. String fields show `icontains`, numeric fields show `equals`/`gte`/`lte`, DateTime fields follow the same pattern, booleans and enums are handled correctly, and single relations show a filter keyed by the reference field.
+
+### Removed in v2.0
+
+| Removed | Replacement |
+|---------|-------------|
+| `*.interceptors.ts` file convention | `ArkosRouteHook` `before`/`after`/`onError` |
+| `*.hooks.ts` file convention | `ArkosServiceHook` |
+| `*.auth.ts` file convention | `ArkosPolicy` via `ArkosRouteHook` |
+| `*.query.ts` / query options files | `prismaArgs` on `ArkosRouteHook` |
+| `export const hook: RouteHook` in router files | `ArkosRouteHook` via `app.load()` |
+| `arkos generate interceptors` | `arkos generate route-hook` |
+| `arkos generate hooks` | `arkos generate service-hook` |
+| `arkos generate auth-configs` | `arkos generate policy` |
+| `arkos generate query-options` | `prismaArgs` on `ArkosRouteHook` |
+| `swagger.mode` config | `validation.resolver` |
+| Dynamic loader file scanning | `app.load()` explicit registration |
+
+## Planned
+
+- AWS S3 built-in file upload support
+- Video DASH and HLS built-in processing
+- Aggregation queries through auto-generated endpoints
+- ORM support beyond Prisma — Mongoose is high on the list
+
+## Share Your Ideas
+
+Open an issue on [GitHub](https://github.com/uanela/arkos/issues) — the roadmap is shaped by the community.

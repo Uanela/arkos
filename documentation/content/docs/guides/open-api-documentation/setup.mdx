@@ -1,0 +1,136 @@
+---
+title: Setup
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Arkos automatically generates OpenAPI documentation for your API — no manual schemas, no JSDoc blocks, no mode selection. Validation schemas drive the docs, and Prisma models fill in the gaps.
+
+Once configured, visit `/api/docs` to view your interactive documentation.
+
+## Configuration
+
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  swagger: {
+    endpoint: "/api/docs",
+    options: {
+      definition: {
+        openapi: "3.1.0",
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+        servers: [
+          {
+            url: "http://localhost:8000",
+            description: "Development",
+          },
+        ],
+      },
+    },
+  },
+});
+```
+
+</Tab>
+<Tab value="v1.4–v1.5">
+
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  swagger: {
+    endpoint: "/api/docs",
+    options: {
+      definition: {
+        openapi: "3.1.0",
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+
+</Tab>
+<Tab value="v1.3">
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+arkos.init({
+  swagger: {
+    endpoint: "/api/docs",
+    options: {
+      definition: {
+        openapi: "3.1.0",
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+      },
+    },
+  },
+});
+```
+
+</Tab>
+</Tabs>
+
+| Option | Description |
+|--------|-------------|
+| `endpoint` | URL path where documentation is served (default: `/api/docs`) |
+| `options.definition` | Standard OpenAPI specification object |
+| `options.definition.components.securitySchemes` | Define authentication schemes for your API |
+
+## Scalar UI
+
+Arkos uses [Scalar](https://scalar.com) as the API documentation UI. Customize its appearance:
+
+```ts title="arkos.config.ts"
+export default defineConfig({
+  swagger: {
+    // ... other config
+    scalarApiReferenceConfiguration: {
+      theme: "deepSpace",     // or "default", "alternate", "saturn"
+      darkMode: true,
+      layout: "modern",
+      customCss: `
+        .scalar-app {
+          font-family: 'Inter', sans-serif;
+        }
+      `,
+    },
+  },
+});
+```
+
+**Available themes:** `default`, `alternate`, `deepSpace`, `saturn`, `kepler`
+
+## How It Works
+
+Arkos builds your OpenAPI spec from two sources:
+
+1. **Validation schemas** — When you add `validation` to a route (custom or built-in), Arkos converts your Zod schemas or class-validator DTOs to OpenAPI schemas
+2. **Prisma models** — For built-in routes without validation, Arkos generates schemas directly from your Prisma models and [query options](/docs/guides/open-api-documentation/integrations/prisma)
+
+No mode. No manual work. Just configure and go.
+
+## Next Steps
+
+- [Documenting Routes](/docs/guides/open-api-documentation/usage) — Add summaries, descriptions, and custom responses
+- [Prisma Integration](/docs/guides/open-api-documentation/integrations/prisma) — How query options shape generated schemas
+- [File Uploads Integration](/docs/guides/open-api-documentation/integrations/file-uploads) — Automatic multipart/form-data documentation
+- [Authentication Integration](/docs/guides/open-api-documentation/integrations/authentication) — Document auth endpoints and security schemes
+- [Migration Guide](/docs/guides/open-api-documentation/migration) — Upgrade from JSDoc to ArkosRouter

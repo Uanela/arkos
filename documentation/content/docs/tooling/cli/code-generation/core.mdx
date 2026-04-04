@@ -1,0 +1,192 @@
+---
+title: Core Components
+---
+
+These commands generate the structural files that make up an Arkos.js module — the controller, service, router, interceptors, and hooks. All commands follow the same convention: pass the module name with `-m` and the CLI writes the file to `src/modules/<name>/`.
+
+## Controller
+
+```bash
+arkos generate controller --module post
+arkos g c -m post
+```
+
+**Output:** `src/modules/post/post.controller.ts`
+
+```ts
+import { BaseController } from "arkos/controllers";
+
+export class PostController extends BaseController {}
+
+const postController = new PostController("post");
+
+export default postController;
+```
+
+For standard Prisma model modules, the controller extends `BaseController`, which already provides built-in implementations for `createOne`, `createMany`, `findOne`, `findMany`, `updateOne`, `updateMany`, `deleteOne`, and `deleteMany`. Add custom methods directly to the class.
+
+For non-Prisma modules (those not present in your Prisma schema), the generator produces a plain class without extending `BaseController`:
+
+```ts
+export class ReportController {}
+
+const reportController = new ReportController();
+
+export default reportController;
+```
+
+## Service
+
+```bash
+arkos generate service --module post
+arkos g s -m post
+```
+
+**Output:** `src/modules/post/post.service.ts`
+
+```ts
+import { BaseService } from "arkos/services";
+
+export class PostService extends BaseService<"post"> {}
+
+const postService = new PostService("post");
+
+export default postService;
+```
+
+The `--module` flag also accepts the special values `auth` and `file-upload` to generate services for those built-in modules. Not all component types are available for those modules — the CLI will show an error if you request an unsupported combination.
+
+## Router
+
+```bash
+arkos generate router --module post
+arkos g r -m post
+```
+
+**Output:** `src/modules/post/post.router.ts`
+
+```ts
+import { ArkosRouter } from "arkos";
+import { RouteHook } from "arkos";
+
+export const hook: RouteHook<"prisma"> = {}
+
+const postRouter = ArkosRouter({
+  prefix: "posts",
+  openapi: { tags: ["Post"] }
+})
+
+export default postRouter
+```
+
+For `auth` and `file-upload` modules the `RouteHook` type parameter is set accordingly (`"auth"` or `"file-upload"`). The `prefix` for `auth` is `"auth"` and for file upload it is read from your config.
+
+The generated `hook` export is the `RouteHook` — the named export that configures Arkos's built-in routes for this module. You populate its keys to add validation, authentication, rate limiting, and other per-route config. See the [Route Hook](/docs/core-concepts/components/route-hooks) guide for all available keys.
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
+</Callout>
+
+
+## Interceptors
+
+```bash
+arkos generate interceptors --module post
+arkos g i -m post
+```
+
+**Output:** `src/modules/post/post.interceptors.ts`
+
+Interceptors let you hook into the request lifecycle of built-in routes without replacing Arkos's core logic. The generated file exports arrays for every lifecycle position across all operations:
+
+```ts
+export const beforeCreateOne = []
+export const afterCreateOne = []
+export const onCreateOneError = []
+export const beforeFindOne = []
+export const afterFindOne = []
+export const onFindOneError = []
+export const beforeFindMany = []
+export const afterFindMany = []
+export const onFindManyError = []
+export const beforeUpdateOne = []
+export const afterUpdateOne = []
+export const onUpdateOneError = []
+export const beforeDeleteOne = []
+export const afterDeleteOne = []
+export const onDeleteOneError = []
+export const beforeCreateMany = []
+export const afterCreateMany = []
+export const onCreateManyError = []
+export const beforeUpdateMany = []
+export const afterUpdateMany = []
+export const onUpdateManyError = []
+export const beforeDeleteMany = []
+export const afterDeleteMany = []
+export const onDeleteManyError = []
+```
+
+For `auth` modules the exported names match auth operations (`beforeLogin`, `afterSignup`, `onUpdatePasswordError`, etc.). For `file-upload` modules they match file operations (`beforeUploadFile`, `afterDeleteFile`, etc.).
+
+Interceptors are only available for known modules — Prisma models, `auth`, and `file-upload`. Running the command for an unknown module will produce an error.
+
+## Service Hooks
+
+```bash
+arkos generate hooks --module post
+arkos g h -m post
+```
+
+**Output:** `src/modules/post/post.hooks.ts`
+
+Service hooks let you tap into the `BaseService` lifecycle at the service layer, before or after database operations. The generated file imports your service and exports arrays for every operation:
+
+```ts
+import postService from "./post.service";
+
+export const beforeFindOne = [];
+export const afterFindOne = [];
+export const onFindOneError = [];
+export const beforeUpdateOne = [];
+export const afterUpdateOne = [];
+export const onUpdateOneError = [];
+export const beforeCreateOne = [];
+export const afterCreateOne = [];
+export const onCreateOneError = [];
+export const beforeCreateMany = [];
+export const afterCreateMany = [];
+export const onCreateManyError = [];
+export const beforeCount = [];
+export const afterCount = [];
+export const onCountError = [];
+export const beforeFindMany = [];
+export const afterFindMany = [];
+export const onFindManyError = [];
+export const beforeUpdateMany = [];
+export const afterUpdateMany = [];
+export const onUpdateManyError = [];
+export const beforeDeleteOne = [];
+export const afterDeleteOne = [];
+export const onDeleteOneError = [];
+export const beforeDeleteMany = [];
+export const afterDeleteMany = [];
+export const onDeleteManyError = [];
+```
+
+Like interceptors, hooks are only available for known modules.
+
+## Custom Paths
+
+All commands accept `-p` to write to a non-default location:
+
+```bash
+arkos g c -m post -p src/api/modules
+# → src/api/modules/post/post.controller.ts
+```
+
+## Related Guides
+
+- [Code Generation Overview](/docs/tooling/cli/code-generation/overview)
+- [Prisma Components](/docs/tooling/cli/code-generation/prisma)
+- [Validation](/docs/tooling/cli/code-generation/validation)
+- [Authentication](/docs/tooling/cli/code-generation/authentication)

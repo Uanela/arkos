@@ -1,0 +1,142 @@
+---
+title: Authentication
+---
+
+These commands generate the permission and access control files for your modules. In v1.6, the recommended approach is `ArkosPolicy`. The older `auth-configs` command still works but generates a deprecated file format.
+
+## Policy (v1.6+, recommended)
+
+```bash
+arkos generate policy --module post
+arkos g p -m post
+```
+
+**Output:** `src/modules/post/post.policy.ts`
+
+For Prisma model modules, the generator produces a policy with the four standard CRUD rules pre-configured:
+
+```ts
+import { ArkosPolicy } from "arkos";
+
+const postPolicy = ArkosPolicy("post")
+  .rule("Create", {
+    name: "Create Post",
+    description: "Permission to create new post records",
+  })
+  .rule("View", {
+    name: "View Post",
+    description: "Permission to view post records",
+  })
+  .rule("Update", {
+    name: "Update Post",
+    description: "Permission to update existing post records",
+  })
+  .rule("Delete", {
+    name: "Delete Post",
+    description: "Permission to delete post records",
+  });
+
+export default postPolicy;
+```
+
+If your Arkos config has `authentication.mode` set to `"static"`, the generator adds a `roles` array to each rule:
+
+```ts
+.rule("Create", {
+  roles: [],
+  name: "Create Post",
+  description: "Permission to create new post records",
+})
+```
+
+For modules that are not Prisma models, a minimal policy with no rules is generated — add your own rules for whatever operations your custom module exposes.
+
+Once you have a policy file you can reference it in your `RouteHook` to protect individual operations:
+
+```ts
+import postPolicy from "@/src/modules/post/post.policy";
+
+export const hook: RouteHook<"prisma"> = {
+  createOne: { authentication: postPolicy.Create },
+  deleteOne: { authentication: postPolicy.Delete },
+}
+```
+
+See the [Route Hook](/docs/core-concepts/components/route-hooks) guide for full details on the `authentication` key.
+
+## Auth Configs (deprecated)
+
+```bash
+arkos generate auth-configs --module post
+arkos g a -m post
+```
+
+**Output:** `src/modules/post/post.auth.ts`
+
+This command generates a file and immediately prints a deprecation warning directing you to migrate to `ArkosPolicy`. The generated file still works but will be removed in v2.0.
+
+```ts
+import { AuthConfigs } from "arkos/auth";
+import { authService } from "arkos/services";
+
+export const postAccessControl = {
+  Create: {
+    name: "Create Post",
+    description: "Permission to create new post records",
+  },
+  Update: {
+    name: "Update Post",
+    description: "Permission to update existing post records",
+  },
+  Delete: {
+    name: "Delete Post",
+    description: "Permission to delete post records",
+  },
+  View: {
+    name: "View Post",
+    description: "Permission to view post records",
+  },
+} as const satisfies AuthConfigs["accessControl"];
+
+function createPostPermission(action: string) {
+  return authService.permission(action, "post", postAccessControl);
+}
+
+export const postPermissions = {
+  canCreate: createPostPermission("Create"),
+  canUpdate: createPostPermission("Update"),
+  canDelete: createPostPermission("Delete"),
+  canView: createPostPermission("View"),
+};
+
+export const postAuthenticationControl = {
+  Create: true,
+  Update: true,
+  Delete: true,
+  View: true,
+};
+
+const postAuthConfigs: AuthConfigs = {
+  authenticationControl: postAuthenticationControl,
+  accessControl: postAccessControl,
+};
+
+export default postAuthConfigs;
+```
+
+Pass `--advanced` to generate a dynamic permissions object using `Object.keys` instead of the explicit helper function:
+
+```bash
+arkos g a -m post --advanced
+```
+
+## Auth Validation
+
+For generating login, signup, update-me, and update-password schemas and DTOs, see the [Validation](/docs/tooling/cli/code-generation/validation) guide — those commands are scoped to the `auth` module specifically.
+
+## Related Guides
+
+- [Code Generation Overview](/docs/tooling/cli/code-generation/overview)
+- [Core Components](/docs/tooling/cli/code-generation/core)
+- [Validation](/docs/tooling/cli/code-generation/validation)
+- [Route Hook](/docs/core-concepts/components/route-hooks)

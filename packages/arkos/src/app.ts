@@ -2,7 +2,7 @@ import "./utils/helpers/arkos-config.helpers";
 import express, { Express } from "express";
 import setupApp from "./utils/setup-app";
 import { Arkos, ArkosLoadable } from "./types/arkos";
-import initializeApp from "./utils/initialize-app";
+import initializeApp, { addGlobalErrorHandler } from "./utils/initialize-app";
 import { logAppStartup } from "./server";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
 import { IncomingMessage, Server, ServerResponse } from "http";
@@ -81,7 +81,8 @@ export function arkos(): Arkos {
   };
 
   function loadApp() {
-    const _app = initializeApp(app);
+    let _app = initializeApp(app);
+    _app = addGlobalErrorHandler(_app);
     if (process.env.CLI_COMMAND) runtimeCliCommander.handle();
     return _app;
   }

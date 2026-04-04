@@ -1,4 +1,4 @@
-import { RouterConfig } from "../types/router-config";
+import { RouterConfig, RouteHook } from "../types/router-config";
 import { BaseController } from "./../modules/base/base.controller";
 import { getArkosConfig } from "../server";
 import ArkosRouter from "../utils/arkos-router";
@@ -30,6 +30,7 @@ export {
   BaseController,
   ArkosConfig,
   RouterConfig,
+  RouteHook,
   loadEnvironmentVariables,
   getArkosConfig,
   ArkosRouteHook,

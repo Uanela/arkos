@@ -1,22 +1,16 @@
 {
   "title": "Docs",
   "pages": [
-    "intro",
+    "index",
+    "quick-start",
     "how-it-works",
     "getting-started",
-    "core",
-    "authentication",
-    "user-guides",
+    "core-concepts",
+    "guides",
     "testing",
     "tooling",
-    "migrations",
     "roadmap",
-    "core-concepts",
-    "guide",
-    "advanced-guide",
-    "api-reference",
-    "cli",
-    "migrating-to-arkos",
+    "reference",
     "next"
   ]
 }

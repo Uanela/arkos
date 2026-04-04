@@ -20,7 +20,7 @@
 <div align="center">
 
 **[Installation](https://www.arkosjs.com/docs/getting-started/installation)** •
-**[Documentation](https://arkosjs.com/docs/intro)** •
+**[Documentation](https://arkosjs.com/docs)** •
 **[Website](https://arkosjs.com)** •
 **[GitHub](https://github.com/uanela/arkos)** •
 **[Blog](https://www.arkosjs.com/blog)** •
@@ -205,16 +205,16 @@ export const beforeCreateOne = [
 
 ## Documentation
 
-For comprehensive guides, API reference, and examples, visit our [official documentation](https://arkosjs.com/docs/intro).
+For comprehensive guides, API reference, and examples, visit our [official documentation](https://arkosjs.com/docs).
 
 **Quick Links:**
 
-- [Getting Started Guide](https://arkosjs.com/docs/intro)
-- [Authentication Setup](https://arkosjs.com/docs/core-concepts/authentication-system)
+- [Getting Started Guide](https://arkosjs.com/docs)
+- [Authentication Setup](https://arkosjs.com/docs/core-concepts/authentication/setup)
 - [Using Interceptors](https://arkosjs.com/docs/core-concepts/interceptors)
-- [File Uploads](https://arkosjs.com/docs/core-concepts/file-uploads)
-- [Validation](https://arkosjs.com/docs/core-concepts/request-data-validation)
-- [Email Service](https://arkosjs.com/docs/core-concepts/sending-emails)
+- [File Uploads](https://arkosjs.com/docs/guides/file-uploads/setup)
+- [Validation](https://arkosjs.com/docs/guides/validation/setup)
+- [Email Service](https://arkosjs.com/docs/guides/email-service)
 
 ## Getting Nightly Updates
 
@@ -234,7 +234,7 @@ Arkos.js is built on top of industry-leading tools:
 
 ## Support & Contributing
 
-- **Documentation:** [arkosjs.com/docs](https://arkosjs.com/docs/intro)
+- **Documentation:** [arkosjs.com/docs](https://arkosjs.com/docs)
 - **Bug Reports:** [GitHub Issues](https://github.com/uanela/arkos/issues)
 - **Feature Requests:** Open a GitHub issue
 - **Contact:** [uanelaluiswayne@gmail.com](mailto:uanelaluiswayne@gmail.com)
@@ -250,7 +250,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 <div align="center">
 
 **[Installation](https://www.arkosjs.com/docs/getting-started/installation)** •
-**[Documentation](https://arkosjs.com/docs/intro)** •
+**[Documentation](https://arkosjs.com/docs)** •
 **[Website](https://arkosjs.com)** •
 **[GitHub](https://github.com/uanela/arkos)** •
 **[Blog](https://www.arkosjs.com/blog)** •

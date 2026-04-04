@@ -12,9 +12,12 @@ import nodemailer from "nodemailer";
 import { ArkosRequestHandler } from ".";
 import { PrismaClient } from "../generated";
 import {
-  AuthAfterHookHandler,
-  AuthErrorHookHandler,
-  AuthHookHandler,
+  AuthenticateHookHandler,
+  AuthenticateAfterHookHandler,
+  AuthenticateErrorHookHandler,
+  AuthorizeHookHandler,
+  AuthorizeAfterHookHandler,
+  AuthorizeErrorHookHandler,
 } from "./arkos-config/utils";
 
 /**
@@ -26,7 +29,7 @@ export type ArkosConfig = {
    *
    * @default "/api"
    */
-  globalPrefix?: string;
+  readonly globalPrefix?: string;
   /**
    * Allows to configure request configs
    */
@@ -72,7 +75,7 @@ export type ArkosConfig = {
   /**
    * Defines authentication related configurations, by default is undefined.
    *
-   * See [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for details.
+   * See [www.arkosjs.com/docs/core-concepts/authentication/setup](https://www.arkosjs.com/docs/core-concepts/authentication/setup) for details.
    */
   authentication?: {
     /**
@@ -93,41 +96,56 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * before: (ctx) => {
-         *   ctx.req.authContext = { startedAt: Date.now() };
-         *   ctx.next();
+         * before: ({ req, skip, action, resource, rule }) => {
+         *   req.authContext = { startedAt: Date.now() };
+         * }
+         * ```
+         *
+         * @example Skip core logic entirely (e.g. custom auth)
+         * ```ts
+         * before: ({ req, skip, action, resource, rule }) => {
+         *   req.user = myCustomAuth(req);
+         *   skip();
          * }
          * ```
          */
-        before?: AuthHookHandler | AuthHookHandler[];
+        before?: AuthenticateHookHandler | AuthenticateHookHandler[];
 
         /**
          * Runs after `req.user` has been set.
          *
          * @example
          * ```ts
-         * after: (ctx) => {
-         *   if (!ctx.req.user.hasChangedPassword) {
-         *     ctx.next(new AppError("Password change required.", 403, "PasswordChangeRequired"));
+         * after: ({ req }) => {
+         *   if (!req.user.hasChangedPassword) {
+         *     throw new AppError("Password change required.", 403, "PasswordChangeRequired");
          *   }
-         *   ctx.next();
          * }
          * ```
          */
-        after?: AuthAfterHookHandler | AuthAfterHookHandler[];
+        after?: AuthenticateAfterHookHandler | AuthenticateAfterHookHandler[];
 
         /**
-         * Runs when `authService.authenticate` throws — invalid token, expired token, user not found, etc.
+         * Runs when authentication throws — invalid token, expired token, user not found, etc.
+         * Throw to forward to the global error handler, or call `skip()` to suppress and jump to `after` hooks.
          *
          * @example
          * ```ts
-         * onError: (ctx) => {
-         *   console.warn(`Auth failed:`, ctx.error);
-         *   ctx.next(ctx.error);
+         * onError: ({ req, error, skip, action, resource, rule }) => {
+         *   console.warn(`Auth failed:`, error);
+         *   throw error;
+         * }
+         * ```
+         *
+         * @example Suppress error and continue
+         * ```ts
+         * onError: ({ req, skip, action, resource, rule }) => {
+         *   req.user = guestUser;
+         *   skip();
          * }
          * ```
          */
-        onError?: AuthErrorHookHandler | AuthErrorHookHandler[];
+        onError?: AuthenticateErrorHookHandler | AuthenticateErrorHookHandler[];
       };
 
       authorize?: {
@@ -136,48 +154,63 @@ export type ArkosConfig = {
          *
          * @example
          * ```ts
-         * before: (ctx) => {
-         *   if (ctx.req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
-         *     ctx.req.user.role = "admin";
+         * before: ({ req }) => {
+         *   if (req.headers["x-elevated-access"] === process.env.ELEVATION_KEY) {
+         *     req.user.role = "admin";
          *   }
-         *   ctx.next();
+         * }
+         * ```
+         *
+         * @example Skip permission check entirely
+         * ```ts
+         * before: ({ req, skip, action, resource, rule }) => {
+         *   req.user.role = myCustomRoleResolver(req);
+         *   skip();
          * }
          * ```
          */
-        before?: AuthHookHandler | AuthHookHandler[];
+        before?: AuthorizeHookHandler | AuthorizeHookHandler[];
 
         /**
          * Runs after the permission check passes.
          *
          * @example
          * ```ts
-         * after: (ctx) => {
-         *   auditLog.record({ userId: ctx.req.user.id, path: ctx.req.path });
-         *   ctx.next();
+         * after: ({ req }) => {
+         *   auditLog.record({ userId: req.user.id, path: req.path });
          * }
          * ```
          */
-        after?: AuthAfterHookHandler | AuthAfterHookHandler[];
+        after?: AuthorizeAfterHookHandler | AuthorizeAfterHookHandler[];
 
         /**
          * Runs when the user lacks sufficient permissions (403).
+         * Throw to forward to the global error handler, or call `skip()` to suppress and jump to `after` hooks.
          *
          * @example
          * ```ts
-         * onError: (ctx) => {
-         *   auditLog.record({ userId: ctx.req.user?.id, reason: "insufficient_permissions" });
-         *   ctx.next(ctx.error);
+         * onError: ({ req, error, action, resource, rule }) => {
+         *   auditLog.record({ userId: req.user?.id, reason: "insufficient_permissions" });
+         *   throw error;
+         * }
+         * ```
+         *
+         * @example Suppress error and continue
+         * ```ts
+         * onError: ({ req, skip, action, resource, rule }) => {
+         *   req.user.role = "guest";
+         *   skip();
          * }
          * ```
          */
-        onError?: AuthErrorHookHandler | AuthErrorHookHandler[];
+        onError?: AuthorizeErrorHookHandler | AuthorizeErrorHookHandler[];
       };
     };
     enabled?: boolean;
     /**
      * Defines whether to use Static or Dynamic Role-Based Acess Control
      *
-     * Visit [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for more details.
+     * Visit [www.arkosjs.com/docs/core-concepts/authentication/setup](https://www.arkosjs.com/docs/core-concepts/authentication/setup) for more details.
      */
     mode: "static" | "dynamic";
     /**
@@ -200,7 +233,7 @@ export type ArkosConfig = {
        * POST /api/auth/login?usernameField=email
        * ```
        *
-       * See more at [www.arkosjs.com/docs/core-concepts/authentication-system#login-with-different-fileds](https://www.arkosjs.com/docs/core-concepts/authentication-system#login-with-different-fileds)
+       * See more at [www.arkosjs.com/docs/core-concepts/authentication/setup#login-with-different-fileds](https://www.arkosjs.com/docs/core-concepts/authentication/setup#login-with-different-fileds)
        *
        * By specifing here another field for username, for example passing "email", "companyCode" or something else your json will be like:
        *
@@ -306,7 +339,7 @@ export type ArkosConfig = {
    * })
    * ```
    *
-   * @See [www.arkosjs.com/docs/core-concepts/request-data-validation](https://www.arkosjs.com/docs/core-concepts/request-data-validation) for more details.
+   * @See [www.arkosjs.com/docs/guides/validation/setup](https://www.arkosjs.com/docs/guides/validation/setup) for more details.
    */
   validation?: {
     /**
@@ -425,7 +458,7 @@ export type ArkosConfig = {
      * Passing an object without overriding everything will only cause it
      * to be deepmerged with the default options.
      *
-     * See [www.arkosjs.com/docs/api-reference/default-supported-upload-files](https://www.arkosjs.com/docs/api-reference/default-supported-upload-files) for detailed explanation about default values.
+     * See [www.arkosjs.com/docs/reference/default-supported-upload-files](https://www.arkosjs.com/docs/reference/default-supported-upload-files) for detailed explanation about default values.
      * ```
      */
     restrictions?: {
@@ -601,7 +634,7 @@ export type ArkosConfig = {
   /**
    * Allows to configure email configurations for sending emails through `emailService`
    *
-   * See [www.arkosjs.com/docs/core-concepts/sending-emails](https://www.arkosjs.com/docs/core-concepts/sending-emails)
+   * See [www.arkosjs.com/docs/guides/email-service](https://www.arkosjs.com/docs/guides/email-service)
    */
   email?: {
     /**
@@ -664,7 +697,7 @@ export type ArkosConfig = {
    *  }
    * })
    * ```
-   * @see {@link https://www.arkosjs.com/docs/core-concepts/open-api-documentation}
+   * @see {@link https://www.arkosjs.com/docs/guides/open-api-documentation/setup}
    */
   swagger?: {
     /**
@@ -675,7 +708,7 @@ export type ArkosConfig = {
      * Whether to require superUser authentication to access docs in production.
      * Default: true after build
      */
-    requireAuth?: boolean;
+    authenticate?: boolean;
     /**
      * Endpoint where the Swagger UI will be available.
      *

@@ -1,0 +1,10 @@
+{
+  "title": "Security",
+  "pages": [
+    "overview",
+    "infrastructure",
+    "authentication",
+    "validation",
+    "production"
+  ]
+}

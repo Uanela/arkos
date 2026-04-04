@@ -1,13 +1,5 @@
 {
-  "title": "Core Concepts v1",
-  "pages": [
-    "endpoints-generation",
-    "authentication-system",
-    "interceptor-middlewares",
-    "request-data-validation",
-    "open-api-documentation",
-    "file-uploads",
-    "error-handling",
-    "sending-emails"
-  ]
+  "title": "Core Concepts",
+  "collapsible": false,
+  "pages": ["routing", "prisma-orm", "components", "authentication"]
 }

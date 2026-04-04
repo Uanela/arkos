@@ -6,7 +6,7 @@ import ExitError from "./exit-error";
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
   if (middleware && typeof middleware !== "function")
     throw ExitError(
-      `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
+      `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/components/interceptors`
     );
 }
 
@@ -16,7 +16,7 @@ export const safeCatchAsync = (
 ) => {
   if (middleware && typeof middleware !== "function")
     throw ExitError(
-      `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
+      `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/components/interceptors`
     );
 
   return middleware ? catchAsync(middleware, options) : undefined;
