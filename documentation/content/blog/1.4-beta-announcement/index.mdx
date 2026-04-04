@@ -2,13 +2,10 @@
 slug: 1.4-beta
 title: Announcing Arkos.js 1.4.0-beta Release
 authors: [uanela]
-tags:
-  [arkosjs, arkosrouter, openapi, typescript, declarative-config, file-uploads]
+tags: [arkosjs, arkosrouter, openapi, typescript, declarative-config, file-uploads]
+date: 2025-12-01
+description: Today marks a pivotal moment in the Arkos.js journey with the release of 1.4.0-beta - our most ambitious update yet. This release introduces **ArkosRouter**, a complete reimagining of how you build and configure APIs, along with groundbreaking improvements to OpenAPI documentation, file uploads, TypeScript integration, and developer experience.
 ---
-
-Today marks a pivotal moment in the Arkos.js journey with the release of 1.4.0-beta - our most ambitious update yet. This release introduces **ArkosRouter**, a complete reimagining of how you build and configure APIs, along with groundbreaking improvements to OpenAPI documentation, file uploads, TypeScript integration, and developer experience.
-
-<!-- truncate -->
 
 After months of development and over 100 commits, we're excited to share a release that fundamentally transforms how you think about API development. Instead of scattering configuration across middleware chains, validation files, and route handlers, ArkosRouter brings everything together in one declarative, type-safe configuration object.
 
@@ -96,7 +93,7 @@ Without this validation, a request like `?minPrice=abc&limit=999999` would crash
 You could do this before manually that would not kind of taking to much effort (some may say), but something that is so logical and repetitive shall be easier as sleeping.
 :::
 
-You check the docs about this new feature for a fully dive into it [Request Data Validation In `v1.4.0-beta`](/docs/core-concepts/request-data-validatoin).
+You check the docs about this new feature for a fully dive into it [Request Data Validation In `v1.4.0-beta`](/docs/guides/validation/setup).
 
 ### 2. Revolutionary OpenAPI Integration
 
@@ -205,7 +202,7 @@ Arkos automatically parses bracket notation into nested objects in `req.body`, m
 }
 ```
 
-Check the full guide at [File Upload With Arkos Router](docs/core-concepts/file-uploads#auto-generated-routes-with-file-uploads).
+Check the full guide at [File Upload With Arkos Router](/docs/guides/file-uploads/setup#auto-generated-routes-with-file-uploads).
 
 ### 4. Enhanced TypeScript Support
 
@@ -305,7 +302,7 @@ npx arkos generate update-dto --module user
 npx arkos export auth-action
 ```
 
-With this you can easily add i18n, custom description and so many more, check it now [Exporting Auth Actions For Frontend](/docs/core-concepts/authentication-system#exporting-auth-actions-for-frontend)
+With this you can easily add i18n, custom description and so many more, check it now [Exporting Auth Actions For Frontend](/docs/core-concepts/authentication/setup#exporting-auth-actions-for-frontend)
 
 #### Enhanced Prisma integration With Base Service
 
@@ -313,7 +310,7 @@ With this you can easily add i18n, custom description and so many more, check it
 npx arkos prisma generate
 ```
 
-This finally bring the `@prisma/client` TS types to the `BaseService` class for better developer experience, check more about it at [Fully Typed Base Service Class](/docs/reference/base-service-class).
+This finally bring the `@prisma/client` TS types to the `BaseService` class for better developer experience, check more about it at [Fully Typed Base Service Class](/docs/reference/base-service).
 
 ### 7. Better Developer Experience
 

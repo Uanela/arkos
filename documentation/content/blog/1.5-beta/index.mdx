@@ -3,13 +3,11 @@ slug: 1.5-beta
 title: Annoucing Arkos.js v1.5.0-beta
 authors: [uanela]
 tags: [arkosjs, superm7, webpropax, finegrained, swagger, servicehooks]
+date: 2026-02-10
+description: Today we're thrilled to announce **Arkos 1.5.0-beta** - a release that doubles down on type safety, security by default, and developer productivity. With revolutionary code generation, simplified Prisma relations, and enhanced validation, this release makes building production-ready APIs faster and safer than ever.
 ---
 
 ## Type Safety, Security & Developer Experience Revolution
-
-Today we're thrilled to announce **Arkos 1.5.0-beta** - a release that doubles down on type safety, security by default, and developer productivity. With revolutionary code generation, simplified Prisma relations, and enhanced validation, this release makes building production-ready APIs faster and safer than ever.
-
-<!-- truncate -->
 
 After extensive development and community feedback, 1.5.0 delivers the features developers have been asking for: intelligent type utilities, comprehensive code generation, automatic security defaults, and quality-of-life improvements that eliminate boilerplate across your entire codebase.
 
@@ -44,7 +42,7 @@ npx arkos generate query-dto -m post
 
 **Time saved:** From 30+ minutes of manual setup to **5 seconds** ⚡
 
-Read more about code generation at [Arkos CLI Code Generation Guide.](/docs/cli/arkos-cli#code-generation)
+Read more about code generation at [Arkos CLI Code Generation Guide.](/docs/tooling/cli/overview#code-generation)
 
 ### 2. Auto-Login After Password Update
 
@@ -119,7 +117,7 @@ const userData: ArkosPrismaInput<Prisma.UserCreateInput> = {
 - Works recursively for deeply nested relations
 - Perfect for interceptors and custom validation
 
-This pairs perfectly with Arkos's built-in relation handling that's been available since the beginning. Learn more at [Handling Prisma Relation Fields](https://www.arkosjs.com/docs/advanced-guide/handling-prisma-relations).
+This pairs perfectly with Arkos's built-in relation handling that's been available since the beginning. Learn more at [Handling Prisma Relation Fields](https://www.arkosjs.com/docs/core-concepts/prisma-orm/handling-relations).
 
 **Use case example** - Type-safe interceptor:
 
@@ -227,7 +225,7 @@ Validation errors are now **immediately actionable** with clear, developer-frien
 - Consistent format across Zod and class-validator
 - `meta` field still available for deep inspection
 
-No more digging through nested error objects - errors tell you exactly what's wrong and where, catch up fully about this NEW beautiful and improved error messages [Error Handling Guide](/docs/core-concepts/error-handling).
+No more digging through nested error objects - errors tell you exactly what's wrong and where, catch up fully about this NEW beautiful and improved error messages [Error Handling Guide](/docs/guides/error-handling/overview).
 
 ### 6. Separated Authentication & Authorization in Code Generation
 
@@ -388,7 +386,7 @@ Refresh your knowledge about `ArkosRouter` by reading it's api reference at [Ark
 
 When file uploads are defined, Arkos automatically adds `multipart/form-data` request body documentation with proper field definitions - no manual OpenAPI configuration needed.
 
-Learn more: [Swagger API Documentation](https://www.arkosjs.com/docs/core-concepts/open-api-documentation)
+Learn more: [Swagger API Documentation](https://www.arkosjs.com/docs/guides/open-api-documentation/setup)
 
 ### 10. Enhanced Email Service
 
