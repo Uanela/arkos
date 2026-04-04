@@ -7,7 +7,8 @@ import {
 import * as React from "react";
 import appCss from "@/styles/app.css?url";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
-import AnnoucementBanner from "@/components/annoucement-banner";
+import { HomeLayout } from "fumadocs-ui/layouts/home";
+import { baseOptions } from "@/lib/layout.shared";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -70,7 +71,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="flex flex-col min-h-screen">
         <RootProvider>
           {/* <AnnoucementBanner /> */}
-          {children}
+
+          <HomeLayout {...baseOptions()}>{children}</HomeLayout>
         </RootProvider>
         <Scripts />
       </body>
