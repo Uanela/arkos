@@ -24,9 +24,9 @@ A named export from `*.router.ts` that configures auto-generated built-in routes
 
 The three RouteHook variants and their available keys are:
 
-- **Prisma Model Route Hook** — `findMany`, `findOne`, `createOne`, `updateOne`, `deleteOne`, `createMany`, `updateMany`, `deleteMany`. See full details at [Route Hook — Prisma Model Route Hook](/docs/core-concepts/components/route-hooks#prisma-model-route-hook)
-- **Authentication Route Hook** — `login`, `signup`, `logout`, `updatePassword`, `getMe`, `updateMe`, `deleteMe`. See full details at [Route Hook — Authentication Route Hook](/docs/core-concepts/components/route-hooks#authentication-route-hook)
-- **File Upload Route Hook** — `findFile`, `uploadFile`, `updateFile`, `deleteFile`. See full details at [Route Hook — File Upload Route Hook](/docs/core-concepts/components/route-hooks#file-upload-route-hook)
+- **Prisma Model Route Hook** — `findMany`, `findOne`, `createOne`, `updateOne`, `deleteOne`, `createMany`, `updateMany`, `deleteMany`. See full details at [Route Hook — Prisma Model Route Hook](/docs/core-concepts/components/route-hook#prisma-model-route-hook)
+- **Authentication Route Hook** — `login`, `signup`, `logout`, `updatePassword`, `getMe`, `updateMe`, `deleteMe`. See full details at [Route Hook — Authentication Route Hook](/docs/core-concepts/components/route-hook#authentication-route-hook)
+- **File Upload Route Hook** — `findFile`, `uploadFile`, `updateFile`, `deleteFile`. See full details at [Route Hook — File Upload Route Hook](/docs/core-concepts/components/route-hook#file-upload-route-hook)
 
 #### Controllers
 
@@ -95,9 +95,9 @@ const userRouter = ArkosRouter();
 export default userRouter;
 ```
 
-2. Every time `RouteHook` appears with a code example, add a `<Callout type="info">` nearby stating: `RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. Link to the Route Hook guide at `/docs/core-concepts/components/route-hooks`. The `<Callout type="info">` about the `RouteHook` deprecation must always be placed **outside and above** the `<Tabs>` block — never inside a `<Tab value="RouteHook">` or any other tab. It applies to the whole example, not to one tab variant.
+2. Every time `RouteHook` appears with a code example, add a `<Callout type="info">` nearby stating: `RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. Link to the Route Hook guide at `/docs/core-concepts/components/route-hook`. The `<Callout type="info">` about the `RouteHook` deprecation must always be placed **outside and above** the `<Tabs>` block — never inside a `<Tab value="RouteHook">` or any other tab. It applies to the whole example, not to one tab variant.
 
-3. Do not create separate pages for "Validation in Auth Routes", "Authentication in Prisma Routes", or any other feature+component combination. One feature, one page, both components shown.
+3. This applies for the logic that runs the same way on custom routes and built-in routes, such as route configs, auth configs, validation. Do not create separate pages for "Validation in Auth Routes", "Authentication in Prisma Routes", or any other feature+component combination. One feature, one page, both components shown.
 
 4. Do not use aligned spacing on object keys (no `key:          { }` to align values). Each key gets normal single-space formatting: `key: { }`.
 
@@ -115,7 +115,7 @@ createOne: {
 
 6. Never use `getMany` — the correct key is `findMany`. Always verify operation key names against the Route Hook variants listed above before using them.
 
-7. Links to related components must always use the format [Route Hook](/docs/core-concepts/components/route-hooks) and [ArkosRouter](/docs/core-concepts/components/routers).
+7. Links to related components must always use the format [Route Hook](/docs/core-concepts/components/route-hook) and [ArkosRouter](/docs/core-concepts/components/arkos-router).
 
 8. The docs use Fumadocs MDX with these components available: `<Callout type="info|warn|error">`, `<Tabs items={[...]}>` , `<Tab value="...">`. Import them at the top of every file:
 
@@ -128,7 +128,7 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 9. When showing `RouteHook` examples, do not always use the same route category. Mix them — sometimes show a Prisma model route hook example, sometimes an auth route hook example, sometimes a file upload route hook example. The goal is to make it clear to the reader that `RouteHook` works for all built-in route categories, not just one.
 
-10. Any existing page that references "For full RouteHook/RouterConfig options see Prisma Model Routes / Auth Routes / File Upload Routes" must be updated to point to [Route Hook](/docs/core-concepts/components/route-hooks) instead.
+10. Any existing page that references "For full RouteHook/RouterConfig options see Prisma Model Routes / Auth Routes / File Upload Routes" must be updated to point to [Route Hook](/docs/core-concepts/components/route-hook) instead.
 
 11. Any existing page that only exists to show a single feature+component combination (e.g. "Validation in Auth Routes") should be removed and its content merged into the main feature page.
 
@@ -145,3 +145,20 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 - **v1.6+**: imports `defineConfig` from `"arkos/config"` in `arkos.config.ts`, uses `export default defineConfig({ ... })`
 - **v1.4–v1.5**: imports the typed config interface (e.g. `ArkosConfig`) from `"arkos"` in `arkos.config.ts`, assigns `const config: ArkosConfig = { ... }`, then `export default config`
 - **v1.3**: no config file — options are passed directly to `arkos.init({ ... })` inside `src/app.ts`
+
+17. Split Long Guides When Helpful - When a guide becomes lengthy and covers multiple distinct subtopics that can stand alone, split it into smaller, focused sub-guides. This improves navigation, searchability, and readability.
+
+- **When to split:**
+    - The guide covers several independent concepts or advanced patterns
+    - Different sections serve different reader needs (basic vs. advanced usage)
+    - The page requires excessive scrolling to find specific information
+- **When NOT to split:**
+    - The subtopics are rarely used without each other
+    - Splitting would violate the "one feature, one page" principle
+    - The content is inherently cohesive and brief
+- **How to split:**
+    - Create a main overview page introducing the feature with common use cases
+    - Create sub-pages for advanced patterns, edge cases, or specific scenarios
+    - Each sub-page must remain self-contained following all existing rules
+    - Add "Related Guides" navigation links at the bottom of each sub-page
+- **Exception:** Never split solely to increase page count. Prioritize completeness and discoverability over fragmentation.
