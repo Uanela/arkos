@@ -1,0 +1,323 @@
+---
+title: Email Service
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Arkos provides an `EmailService` class built on top of [nodemailer](https://www.npmjs.com/package/nodemailer), giving you a simple unified API for sending emails while keeping full access to nodemailer's configuration when you need it.
+
+## Configuration
+
+The recommended approach is to set email credentials via environment variables:
+
+```text title=".env"
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=465
+EMAIL_SECURE=true
+EMAIL_USER=you@example.com
+EMAIL_PASSWORD=your-smtp-password
+EMAIL_NAME=Your App
+```
+
+Arkos picks these up automatically. If you prefer to be explicit, wire them into your config:
+
+<Tabs items={["v1.6", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos";
+
+export default defineConfig({
+  email: {
+    host: process.env.EMAIL_HOST,
+    port: Number(process.env.EMAIL_PORT),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    name: process.env.EMAIL_NAME,
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  email: {
+    host: process.env.EMAIL_HOST,
+    port: Number(process.env.EMAIL_PORT),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    name: process.env.EMAIL_NAME,
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+<Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+arkos.init({
+  email: {
+    host: process.env.EMAIL_HOST,
+    port: Number(process.env.EMAIL_PORT),
+    secure: process.env.EMAIL_SECURE === "true",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    name: process.env.EMAIL_NAME,
+  },
+});
+```
+</Tab>
+</Tabs>
+
+| Option | Env Variable | Default | Description |
+|---|---|---|---|
+| `host` | `EMAIL_HOST` | — | SMTP server hostname — required |
+| `port` | `EMAIL_PORT` | `465` | SMTP port |
+| `secure` | `EMAIL_SECURE` | `true` | Use TLS/SSL — set to `false` for port `587` |
+| `auth.user` | `EMAIL_USER` | — | SMTP username — required |
+| `auth.pass` | `EMAIL_PASSWORD` | — | SMTP password — required |
+| `name` | `EMAIL_NAME` | — | Display name shown alongside the sender address |
+
+## Basic Usage
+
+Import the default `emailService` instance and call `send()`:
+
+```ts title="src/modules/auth/auth.interceptors.ts"
+import { emailService } from "arkos/services";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const afterSignup = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const user = res.locals.data.data;
+
+    try {
+      const result = await emailService.send({
+        to: user.email,
+        subject: "Welcome to Our Platform",
+        html: "<h1>Welcome!</h1><p>Thank you for registering.</p>",
+      });
+
+      console.log(`Email sent successfully. Message ID: ${result.messageId}`);
+    } catch (error) {
+      console.error("Failed to send welcome email:", error);
+    }
+
+    next();
+  },
+];
+```
+
+### Email Options
+
+```ts
+type EmailOptions = {
+  from?: string;        // Overrides the default sender
+  to: string | string[]; // Single recipient or array of recipients
+  subject: string;
+  text?: string;        // Plain text version — auto-generated from html if omitted
+  html: string;
+};
+```
+
+`send()` returns `Promise<{ success: boolean; messageId?: string }>`.
+
+## Advanced Usage
+
+### Custom SMTP Per Send
+
+Send a one-off email through a different SMTP server without changing the default configuration:
+
+```ts
+await emailService.send(
+  {
+    to: "client@example.com",
+    subject: "Your Invoice",
+    html: "<p>Please find your invoice attached.</p>",
+  },
+  {
+    host: "smtp.yourcompany.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: "billing@yourcompany.com",
+      pass: "billingPassword",
+    },
+  }
+);
+```
+
+### Multiple Instances
+
+If your app needs to send from multiple addresses or SMTP providers, create additional instances:
+
+```ts
+import { EmailService } from "arkos/services";
+
+const marketingEmailService = new EmailService({
+  host: "smtp.marketing-provider.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: "marketing@yourcompany.com",
+    pass: "marketingPassword",
+  },
+});
+
+await marketingEmailService.send({
+  to: "prospects@example.com",
+  subject: "Special Offer",
+  html: "<h1>Limited Time Offer!</h1>",
+});
+```
+
+### Updating Configuration
+
+Switch an existing instance to a different SMTP account at runtime:
+
+```ts
+emailService.updateConfig({
+  host: "smtp.newprovider.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: "new@example.com",
+    pass: "newPassword",
+  },
+});
+```
+
+## Common Use Cases
+
+### Welcome Email After Signup
+
+```ts title="src/modules/auth/auth.interceptors.ts"
+import { emailService } from "arkos/services";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const afterSignup = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const user = res.locals.data.data;
+
+    try {
+      await emailService.send({
+        to: user.email,
+        subject: "Welcome to Our Platform!",
+        html: `
+          <h1>Welcome, ${user.name}!</h1>
+          <p>Thank you for joining our platform.</p>
+          <p>Get started by <a href="https://yourapp.com/onboarding">completing your profile</a>.</p>
+        `,
+      });
+    } catch (error) {
+      console.error("Failed to send welcome email:", error);
+    }
+
+    next();
+  },
+];
+```
+
+### Password Reset Email
+
+```ts title="src/modules/auth/auth.controller.ts"
+import { emailService } from "arkos/services";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+class AuthController {
+  requestPasswordReset = async (
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    const { email } = req.body;
+    const resetToken = generateResetToken();
+
+    await saveResetToken(email, resetToken);
+
+    await emailService.send({
+      to: email,
+      subject: "Password Reset Request",
+      html: `
+        <h2>Password Reset</h2>
+        <p>Click the link below to reset your password:</p>
+        <a href="https://yourapp.com/reset-password?token=${resetToken}">
+          Reset Password
+        </a>
+        <p>This link will expire in 1 hour.</p>
+      `,
+    });
+
+    res.json({ message: "Password reset email sent" });
+  };
+}
+
+export default new AuthController();
+```
+
+### Order Confirmation Email
+
+```ts title="src/modules/order/order.hooks.ts"
+import { AfterCreateOneHookArgs } from "arkos/services";
+import { Prisma } from "@prisma/client";
+import { emailService } from "arkos/services";
+
+export const afterCreateOne = [
+  async ({ result }: AfterCreateOneHookArgs<Prisma.OrderDelegate>) => {
+    try {
+      await emailService.send({
+        to: result.customerEmail,
+        subject: `Order Confirmation #${result.id}`,
+        html: `
+          <h1>Thank You for Your Order!</h1>
+          <p>Order #${result.id} has been confirmed.</p>
+          <h3>Order Details:</h3>
+          <ul>
+            ${result.items
+              .map((item) => `<li>${item.name} - $${item.price}</li>`)
+              .join("")}
+          </ul>
+          <p><strong>Total: $${result.total}</strong></p>
+        `,
+      });
+    } catch (error) {
+      console.error("Failed to send order confirmation:", error);
+    }
+  },
+];
+```
+
+## Best Practices
+
+Always wrap `emailService.send()` in a try-catch. Email failures should not break your application flow — a failed welcome email is not a reason to return a 500 to the user. For the same reason, fire non-critical emails without awaiting them when possible:
+
+```ts
+emailService.send({ to: user.email, subject: "...", html: "..." }).catch(console.error);
+```
+
+For bulk or queued sending, push jobs to a queue rather than sending inline:
+
+```ts
+await emailQueue.add("welcome-email", { to: req.body.email, name: req.body.name });
+```
+
+Never hardcode SMTP credentials. Always use environment variables.
+
+<Callout type="info">
+For testing, use a service like [Ethereal Email](https://ethereal.email) to capture outgoing emails without actually delivering them.
+</Callout>
+
+## Diving Deeper
+
+For the full `EmailService` class API reference see [Email Service](/docs/reference/email-service).

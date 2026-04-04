@@ -1,0 +1,271 @@
+---
+title: Service Hooks
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Service Hooks run logic at the service layer — every time a `BaseService` method is called, whether from an HTTP endpoint or programmatically. Unlike interceptors (HTTP layer), hooks fire for all service calls across your entire application.
+
+## Why Service Hooks?
+
+Interceptors run at the HTTP layer — they only fire when an API endpoint is called. But what about when you call the same service method from a background job, a CLI command, or another service? Those calls would bypass your interceptor logic. Service Hooks solve this. They run at the service layer, every time a `BaseService` method is called — regardless of where the call comes from.
+
+## The Three Hook Types
+
+### Before Service Hooks
+
+Run **before** the main operation. Use them to:
+
+- Modify input data before it hits the database
+- Validate business rules that apply everywhere
+- Add default values (slug, timestamps, etc.)
+
+```ts
+export const beforeCreateOne = [
+  async ({ data }) => {
+    if (!data.slug && data.title) {
+      data.slug = data.title.toLowerCase().replace(/\s+/g, "-");
+    }
+  },
+];
+```
+
+### After Service Hooks
+
+Run **after** the main operation succeeds. Use them to:
+
+- Access the result via `result`
+- Send notifications, emails, or webhooks
+- Update related records
+- Trigger side effects
+
+```ts
+export const afterCreateOne = [
+  async ({ result }) => {
+    await emailService.sendWelcome(result.email);
+  },
+];
+```
+
+### OnError Service Hooks
+
+Run **when** the main operation fails. Use them to:
+
+- Rollback database transactions
+- Clean up temporary data
+- Log errors for monitoring
+
+```ts
+export const onCreateOneError = [
+  async ({ error, data }) => {
+    if (data.tempFile) await deleteFile(data.tempFile);
+    logger.error(error);
+  },
+];
+```
+
+## File Structure
+
+```
+src/modules/post/
+├── post.service.ts       # Extend BaseService
+└── post.hooks.ts         # Hook functions
+```
+
+Generate both with the CLI:
+
+```bash
+npx arkos generate service --module post
+npx arkos generate hooks --module post
+```
+
+Or shorthand:
+
+```bash
+npx arkos g s -m post
+npx arkos g h -m post
+```
+
+## Creating a Service
+
+Extend `BaseService` to add your own methods:
+
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
+
+class PostService extends BaseService<"post"> {
+  async getPublished() {
+    return this.findMany({ where: { published: true } });
+  }
+}
+
+export default new PostService("post");
+```
+
+## Creating Hooks
+
+Each hook exports an array of functions that run before, after, or on error of a service operation:
+
+```ts title="src/modules/post/post.hooks.ts"
+import { BeforeCreateOneHookArgs } from "arkos/services";
+import { Prisma } from "@prisma/client";
+
+export const beforeCreateOne = [
+  async ({ data }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
+    if (!data.slug && data.title) {
+      data.slug = data.title.toLowerCase().replace(/\s+/g, "-");
+    }
+  },
+];
+```
+
+## Available Hooks
+
+All available service hooks.
+
+| Hook | Trigger |
+|------|---------|
+| `beforeFindOne` | Before fetching a single record |
+| `beforeFindMany` | Before fetching multiple records |
+| `beforeCreateOne` | Before creating a record |
+| `beforeCreateMany` | Before creating multiple records |
+| `beforeUpdateOne` | Before updating a record |
+| `beforeUpdateMany` | Before updating multiple records |
+| `beforeDeleteOne` | Before deleting a record |
+| `beforeDeleteMany` | Before deleting multiple records |
+| `beforeCount` | Before counting records |
+| `afterFindOne` | After fetching a record |
+| `afterFindMany` | After fetching records |
+| `afterCreateOne` | After creating a record |
+| `afterCreateMany` | After creating multiple records |
+| `afterUpdateOne` | After updating a record |
+| `afterUpdateMany` | After updating multiple records |
+| `afterDeleteOne` | After deleting a record |
+| `afterDeleteMany` | After deleting multiple records |
+| `afterCount` | After counting records |
+| `onFindOneError` | When fetching fails |
+| `onFindManyError` | When fetching fails |
+| `onCreateOneError` | When creation fails |
+| `onCreateManyError` | When creation fails |
+| `onUpdateOneError` | When update fails |
+| `onUpdateManyError` | When update fails |
+| `onDeleteOneError` | When deletion fails |
+| `onDeleteManyError` | When deletion fails |
+| `onCountError` | When counting fails |
+
+## Hook Arguments
+
+```ts
+// Before hooks
+beforeCreateOne = [
+  async ({ data, context, queryOptions }) => {
+    // Modify data before it hits the database
+  },
+];
+
+// After hooks
+afterCreateOne = [
+  async ({ result, data, context, queryOptions }) => {
+    // Access result after operation
+    const created = result;
+  },
+];
+
+// Error hooks
+onCreateOneError = [
+  async ({ error, data, context, queryOptions }) => {
+    // Clean up when something fails
+    console.error(error);
+  },
+];
+```
+
+**Context contains:**
+- `user` — Authenticated user
+- `accessToken` — JWT token
+- `skip` — Array of hook types to skip
+- `throwOnError` — Whether to re-throw errors
+
+## Passing Context
+
+Pass context when calling services programmatically:
+
+```ts
+import postService from "./post.service";
+
+// Hooks receive this context
+await postService.createOne(
+  { title: "New Post" },
+  { include: { author: true } },  // query options
+  { user: currentUser }           // context — passed to hooks
+);
+```
+
+## Skipping Hooks
+
+Skip specific hook types when needed:
+
+```ts
+await postService.createOne(
+  data,
+  {},
+  {
+    skip: ["before", "after"],  // Skip before and after hooks
+    user: currentUser,
+  }
+);
+```
+
+## Example: User Registration
+
+```ts title="src/modules/user/user.hooks.ts"
+import { BeforeCreateOneHookArgs, AfterCreateOneHookArgs } from "arkos/services";
+import { Prisma } from "@prisma/client";
+import authService from "../auth/auth.service";
+import emailService from "../email/email.service";
+
+export const beforeCreateOne = [
+  async ({ data }: BeforeCreateOneHookArgs<Prisma.UserDelegate>) => {
+    // Hash password
+    if (data.password) {
+      data.password = await authService.hashPassword(data.password);
+    }
+
+    // Generate username from email
+    if (!data.username && data.email) {
+      data.username = data.email.split("@")[0];
+    }
+  },
+];
+
+export const afterCreateOne = [
+  async ({ result }: AfterCreateOneHookArgs<Prisma.UserDelegate>) => {
+    // Create default profile
+    await prisma.profile.create({
+      data: {
+        userId: result.id,
+        displayName: result.username,
+      },
+    });
+
+    // Send welcome email (don't await — non-blocking)
+    emailService.sendWelcome(result.email).catch(console.error);
+  },
+];
+```
+
+## Service Hooks vs Interceptors
+
+| | Service Hooks | Interceptors |
+|---|---|---|
+| **Runs on** | All service calls (API + programmatic) | HTTP endpoints only |
+| **Access to** | Service context, user | Full Express req/res |
+| **Best for** | Business logic, data validation | Request processing, response formatting |
+| **File** | `*.hooks.ts` | `*.interceptors.ts` |
+
+## Related
+
+- **[Interceptors](/docs/core-concepts/components/interceptors)** — Run logic at the HTTP layer
+- **[BaseService](/docs/reference/base-service)** — Full service API reference
+- **[Route Hook](/docs/core-concepts/components/route-hooks)** — Configure auto-generated routes

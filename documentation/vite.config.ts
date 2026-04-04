@@ -26,9 +26,9 @@ export default defineConfig({
     react(),
     // please see https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro for guides on hosting
     nitro({
-      preset: "vercel",
-      vercel: {
-        entryFormat: "node",
+      preset: "node-server",
+      prerender: {
+        failOnError: false,
       },
     }),
   ],
@@ -36,5 +36,9 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "src"),
     },
+  },
+  ssr: {
+    noExternal: [],
+    external: ["node:path", "node:fs", "node:url", "node:os", "fumadocs-mdx"],
   },
 });

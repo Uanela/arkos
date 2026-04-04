@@ -1,0 +1,151 @@
+---
+title: Authentication
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Authentication security in Arkos is about hardening how tokens are created, how long they live, and how they travel between client and server. Getting this right is critical — a weak secret or misconfigured cookie can expose your entire user base.
+
+## JWT Secret
+
+The JWT secret is used to sign and verify every access token in your application. If it's compromised, anyone can forge valid tokens for any user.
+
+**Rules:**
+- Use a long, random string — at least 32 characters, ideally 64+
+- Never commit it to source control
+- Set it via environment variable in production: `JWT_SECRET`
+- Arkos will refuse to start if `JWT_SECRET` is not set when running `npx arkos start`
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  authentication: {
+    mode: "static",
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "15m", // short-lived tokens are safer
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    mode: "static",
+    jwt: {
+      secret: process.env.JWT_SECRET,
+      expiresIn: "15m",
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+The config value takes precedence over the environment variable. If you hardcode the secret in `arkos.config.ts` and commit that file, your secret is exposed regardless of what's in `.env`.
+</Callout>
+
+---
+
+## Token Expiry
+
+Short-lived tokens reduce the window of exposure if a token is stolen. The tradeoff is that users need to re-authenticate more frequently — balance this against your application's UX requirements.
+
+| Use case | Recommended `expiresIn` |
+|---|---|
+| High-security apps (banking, admin) | `15m` – `1h` |
+| Standard web apps | `1d` – `7d` |
+| Mobile apps with refresh tokens | `15m` with refresh flow |
+
+---
+
+## Cookie Flags
+
+When Arkos sends the JWT as a cookie, three flags control its security:
+
+| Flag | Default | What it does |
+|---|---|---|
+| `httpOnly` | `true` | Prevents JavaScript from reading the cookie — blocks XSS token theft |
+| `secure` | `true` in production | Only sends the cookie over HTTPS |
+| `sameSite` | `"lax"` in dev, `"none"` in prod | Controls cross-site cookie sending |
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  authentication: {
+    mode: "static",
+    jwt: {
+      cookie: {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict", // tightest option — only same-site requests
+      },
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  authentication: {
+    mode: "static",
+    jwt: {
+      cookie: {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Use `sameSite: "none"` only if your frontend and API are on different domains and you need cookies to be sent cross-site. It requires `secure: true`.
+</Callout>
+
+---
+
+## Superuser
+
+Arkos's built-in authorization checks are bypassed entirely for users where `isSuperUser === true`. A superuser can perform any action on any resource regardless of their role or the route's access control rules.
+
+Assign `isSuperUser` only to accounts that genuinely need unrestricted access — typically a single system administrator account. Never expose an endpoint that allows users to set this field on themselves.
+
+```ts title="src/modules/user/user.interceptors.ts"
+import { AppError } from "arkos/error-handler";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+// Prevent anyone from setting isSuperUser through the API
+export const beforeUpdateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    if ("isSuperUser" in req.body) {
+      throw new AppError("Field not allowed", 400, "ForbiddenField");
+    }
+    next();
+  },
+];
+```
+
+For full authentication setup see [Authentication — Setup](/docs/core-concepts/authentication/setup).

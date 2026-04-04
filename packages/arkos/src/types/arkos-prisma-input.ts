@@ -299,7 +299,7 @@ type FlattenRelations<T> = {
  * ]}
  * ```
  *
- * @see {@link https://wwww.arkosjs.com/docs/api-reference/arkos-prisma-input}
+ * @see {@link https://wwww.arkosjs.com/docs/reference/arkos-prisma-input}
  * @template T - The Prisma input type (e.g., Prisma.UserCreateInput)
  * @returns A flattened version of the input type with simplified relation handling
  */

@@ -1,0 +1,25 @@
+---
+title: TypeScript
+---
+
+## `arkos prisma generate`
+
+```bash
+arkos prisma generate
+arkos p g
+```
+
+Runs `prisma generate` to produce the Prisma client, then syncs Arkos's internal type system with your current schema. This keeps `BaseService` type parameters, query option types, and other Arkos generics accurate after schema changes.
+
+Run this command whenever you:
+
+- Modify your Prisma schema
+- Pull schema changes from version control
+- See TypeScript errors related to Prisma model types in Arkos files
+
+The CLI detects your project type (TypeScript or JavaScript) and handles the generation accordingly.
+
+## Related Guides
+
+- [CLI Overview](/docs/tooling/cli/overview)
+- [Prisma Components](/docs/tooling/cli/code-generation/prisma)

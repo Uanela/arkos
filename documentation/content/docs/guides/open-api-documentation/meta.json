@@ -1,0 +1,4 @@
+{
+  "title": "OpenAPI Documentation",
+  "pages": ["setup", "usage", "integrations", "migration"]
+}
