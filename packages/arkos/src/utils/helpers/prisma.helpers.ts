@@ -1,5 +1,4 @@
 import fs from "fs";
-import AppError from "../../modules/error-handler/utils/app-error";
 import { crd, getUserFileExtension as ext } from "./fs.helpers";
 import { importModule } from "./global.helpers";
 import prismaSchemaParser from "../prisma/prisma-schema-parser";
@@ -27,11 +26,9 @@ export async function loadPrismaModule() {
         throw new Error("Prisma not found");
     } catch (error: any) {
       if (error.message === "Prisma not found")
-        throw new AppError(
-          `Could not initialize Prisma module. Make sure your prisma instance is exported as default under src/utils/prisma/index.${ext()}, read more about Arkos.js Project Structure under https://www.arkosjs.com/docs/getting-started/project-structure#utilities-directory`,
-          500,
-          {},
-          "PrismaInstanceNotFound"
+        return sheu.warn(
+          `Could not find your prisma instance under src/utils/prisma/index.${ext()}, see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup`,
+          { timestamp: true }
         );
       throw error;
     }
