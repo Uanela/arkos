@@ -78,8 +78,8 @@ export default function errorHandler(
   if (process.env.ARKOS_BUILD !== "true")
     return sendDevelopmentError(
       {
-        ...error,
         message: error.message,
+        ...error,
         stack: err.stack,
         originalError: err,
       },
