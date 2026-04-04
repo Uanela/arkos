@@ -111,9 +111,9 @@ router.post(
 | `rule`     | `{ roles: string[] }` or `string[]` | Array of role names that can perform this action (This only works when using static authentication) |
 
 :::tip
-The `rule` field is required for defining roles when you are using the [Static Authentication Mode](/docs/core-concepts/authentication-system#jwt-configuration--environment-setup). This field can be an object `{ roles: string[] }` and you can add many other descriptive fields to easy your frontend devs lives or it can be a simple array of string `string[]` which will be converted to an object under the hood.
+The `rule` field is required for defining roles when you are using the [Static Authentication Mode](/docs/core-concepts/authentication/setup#jwt-configuration--environment-setup). This field can be an object `{ roles: string[] }` and you can add many other descriptive fields to easy your frontend devs lives or it can be a simple array of string `string[]` which will be converted to an object under the hood.
 
-You can more about detailed access control rules at [Adding Auth Configs File Guide](/docs/core-concepts/authentication-system#auth-config-files---static-rbac).
+You can more about detailed access control rules at [Adding Auth Configs File Guide](/docs/core-concepts/authentication/setup#auth-config-files---static-rbac).
 :::
 
 **Example with Custom Actions:**
@@ -132,7 +132,7 @@ router.post(
 );
 ```
 
-For complete authentication setup and advanced features, see the [Authentication System Guide](/docs/core-concepts/authentication-system).
+For complete authentication setup and advanced features, see the [Authentication System Guide](/docs/core-concepts/authentication/setup).
 
 ## Validation
 
@@ -222,7 +222,7 @@ router.patch(
 | `query`  | `ZodSchema \| ClassValidatorDto` | Validates query parameters |
 | `params` | `ZodSchema \| ClassValidatorDto` | Validates URL parameters   |
 
-For complete validation setup and class-validator usage, see the [Request Data Validation Guide](/docs/core-concepts/request-data-validation).
+For complete validation setup and class-validator usage, see the [Request Data Validation Guide](/docs/guides/validation/setup).
 
 ## Rate Limiting
 
@@ -491,7 +491,7 @@ const files = req.files;
 const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 ```
 
-For complete upload configuration and advanced features, see the [File Upload Guide](/docs/core-concepts/file-uploads).
+For complete upload configuration and advanced features, see the [File Upload Guide](/docs/guides/file-uploads/setup).
 
 ## OpenAPI Documentation
 
@@ -661,7 +661,7 @@ router.get(
 - Documenting responses
 - Endpoints without validation
 
-For complete OpenAPI setup and configuration, see the [Swagger API Documentation Guide](/docs/core-concepts/open-api-documentation).
+For complete OpenAPI setup and configuration, see the [Swagger API Documentation Guide](/docs/guides/open-api-documentation/setup).
 
 ## Query Parsing
 
@@ -761,7 +761,7 @@ router.get(
 | `parseNull`             | `boolean` | Convert "null" string to null                 | `true`  |
 | `parseArray`            | `boolean` | Parse comma-separated values as arrays        | `true`  |
 
-For more examples and advanced filtering options, see the [Request Query Parameters Guide](/docs/guide/request-query-parameters).
+For more examples and advanced filtering options, see the [Request Query Parameters Guide](/docs/core-concepts/prisma-orm/routes#querying).
 
 ## Body Parser
 
@@ -1035,9 +1035,9 @@ export default router;
 
 ## Related Documentation
 
-- **[Adding Custom Routers](/docs/guide/adding-custom-routers)** - How to create and register custom routers
-- **[Authentication System](/docs/core-concepts/authentication-system)** - Complete authentication setup
-- **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Validation with Zod and class-validator
-- **[File Upload Guide](/docs/core-concepts/file-uploads)** - File upload configuration
-- **[Swagger API Documentation](/docs/core-concepts/open-api-documentation)** - OpenAPI documentation setup
-- **[Request Query Parameters](/docs/guide/request-query-parameters)** - Advanced filtering and querying
+- **[Adding Custom Routers](/docs/core-concepts/routing/setup)** - How to create and register custom routers
+- **[Authentication System](/docs/core-concepts/authentication/setup)** - Complete authentication setup
+- **[Request Data Validation](/docs/guides/validation/setup)** - Validation with Zod and class-validator
+- **[File Upload Guide](/docs/guides/file-uploads/setup)** - File upload configuration
+- **[Swagger API Documentation](/docs/guides/open-api-documentation/setup)** - OpenAPI documentation setup
+- **[Request Query Parameters](/docs/core-concepts/prisma-orm/routes#querying)** - Advanced filtering and querying

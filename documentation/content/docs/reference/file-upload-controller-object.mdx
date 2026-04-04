@@ -111,7 +111,7 @@ updateFile(req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction)
 
 ## Error Handling
 
-All controller methods use Arkos's `catchAsync` wrapper, which automatically handles errors and passes them to the error handling middleware. For more information about error handling, see the [catchAsync function documentation](/docs/reference/the-catch-async-function).
+All controller methods use Arkos's `catchAsync` wrapper, which automatically handles errors and passes them to the error handling middleware. For more information about error handling, see the [catchAsync function documentation](/docs/reference/catch-async).
 
 Common error scenarios:
 
@@ -380,7 +380,7 @@ export const afterUpdateOne = catchAsync(
 );
 ```
 
-For more information about interceptor middlewares, see the [Interceptor Middlewares Guide](/docs/core-concepts/interceptor-middlewares).
+For more information about interceptor middlewares, see the [Interceptor Middlewares Guide](/docs/core-concepts/components/interceptors).
 
 ## Authentication & Authorization
 
@@ -432,9 +432,9 @@ For the default file upload endpoints (`/api/uploads/:fileType`), the resource n
 
 ## Related Documentation
 
-- [File Uploads Guide](/docs/core-concepts/file-uploads) - General file upload system overview
-- [Custom Routers Guide](/docs/core-concepts/adding-custom-routers) - Creating custom routes
-- [Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares) - Using middleware with file operations
+- [File Uploads Guide](/docs/guides/file-uploads/setup) - General file upload system overview
+- [Custom Routers Guide](/docs/core-concepts/routing/setup) - Creating custom routes
+- [Interceptor Middlewares](/docs/core-concepts/components/interceptors) - Using middleware with file operations
 - [File Upload Services Function Guide](/docs/reference/file-upload-services-function-guide) - Service layer file operations
-- [Static RBAC Authentication](/docs/core-concepts/authentication-system) - Access control setup
-- [Dynamic RBAC Authentication](/docs/core-concepts/authentication-system#upgrading-to-dynamic-rbac) - Database-driven permissions
+- [Static RBAC Authentication](/docs/core-concepts/authentication/setup) - Access control setup
+- [Dynamic RBAC Authentication](/docs/core-concepts/authentication/setup#upgrading-to-dynamic-rbac) - Database-driven permissions
