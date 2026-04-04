@@ -325,7 +325,7 @@ const userData: ArkosPrismaInput<Prisma.UserCreateInput> = {
 await userService.createOne(userData);
 ```
 
-For more details on how Arkos handles relations, see [Handling Prisma Relation Fields](/docs/advanced-guide/handling-prisma-relations).
+For more details on how Arkos handles relations, see [Handling Prisma Relation Fields](/docs/core-concepts/prisma-orm/handling-relations).
 
 ## Type Safety Features
 
@@ -463,7 +463,7 @@ const processRelation = (rel: any) => {
 
 ## Related Documentation
 
-- **[Handling Prisma Relation Fields](/docs/advanced-guide/handling-prisma-relations)** - How Arkos handles relations at runtime
-- **[Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares)** - Using with request interceptors
+- **[Handling Prisma Relation Fields](/docs/core-concepts/prisma-orm/handling-relations)** - How Arkos handles relations at runtime
+- **[Interceptor Middlewares](/docs/core-concepts/components/interceptors)** - Using with request interceptors
 - **[BaseService Class](/docs/reference/base-service)** - Service layer integration
-- **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Combining with validation schemas
+- **[Request Data Validation](/docs/guides/validation/setup)** - Combining with validation schemas

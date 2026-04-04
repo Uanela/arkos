@@ -9,7 +9,7 @@ The `BaseService` class is a fundamental component that provides standardized CR
 
 - Provide consistent, reusable data access methods across all models
 - Handle common operations like relation management and error handling
-- Support for [Service Hooks](/docs/guide/service-hooks) to execute custom logic
+- Support for [Service Hooks](/docs/core-concepts/components/service-hooks) to execute custom logic
 - Allow for model-specific overrides and extensions
 - Reduce code duplication in service implementations
 - Full TypeScript support with automatic type inference (v1.4.0+)
@@ -170,7 +170,7 @@ async createOne<TOptions>(
 
 - Automatically hashes passwords for User model
 - Handles relation fields (connect, create, connectOrCreate)
-- Executes [before/after/error hooks](/docs/core-concepts/service-hooks)
+- Executes [before/after/error hooks](/docs/core-concepts/components/service-hooks)
 
 **Example:**
 
@@ -892,7 +892,7 @@ const userService = new UserService("user");
 export default userService;
 ```
 
-You can then use [**Service Hooks**](/docs/guide/service-hooks) to customize every|some calls of `createOne` method:
+You can then use [**Service Hooks**](/docs/core-concepts/components/service-hooks) to customize every|some calls of `createOne` method:
 
 ```ts
 // src/modules/user/user.hooks.ts
@@ -1094,9 +1094,9 @@ class PostService extends BaseService<"post"> {
 
 ## Related Documentation
 
-- **[Service Hooks](/docs/guide/service-hooks)** - Execute custom logic during CRUD operations
-- **[Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares)** - HTTP-level request/response processing
-- **[Adding Custom Routers](/docs/guide/adding-custom-routers)** - Create custom API endpoints
+- **[Service Hooks](/docs/core-concepts/components/service-hooks)** - Execute custom logic during CRUD operations
+- **[Interceptor Middlewares](/docs/core-concepts/components/interceptors)** - HTTP-level request/response processing
+- **[Adding Custom Routers](/docs/core-concepts/routing/setup)** - Create custom API endpoints
 - **[Request Handling Pipeline](/docs/reference/request-handling-pipeline)** - Understand how requests flow through Arkos
 
 ## Migration from v1.3.0 to v1.4.0

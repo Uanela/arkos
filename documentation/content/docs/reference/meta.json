@@ -5,7 +5,7 @@
     "base-service",
     "base-controller",
     "auth-service-object",
-    "catch-async-function",
+    "catch-async",
     "app-error",
     "arkos-configuration",
     "arkos-prisma-input",

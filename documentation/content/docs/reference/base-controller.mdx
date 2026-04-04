@@ -23,8 +23,8 @@ constructor(modelName: string)
 - **Parameters**:
     - `modelName`: The name of the model for which this controller will handle operations.
 - **Behavior**:
-    - Initializes a new `BaseService` instance for the specified model, [read more here](/docs/reference/the-base-service-class).
-    - Loads any model-specific interceptor middlewares from the model modules, [see more here](/docs/core-concepts/interceptor-middlewares).
+    - Initializes a new `BaseService` instance for the specified model, [read more here](/docs/reference/base-service).
+    - Loads any model-specific interceptor middlewares from the model modules, [see more here](/docs/core-concepts/components/interceptors).
 
 ### Methods
 
@@ -227,4 +227,4 @@ Be carreful when overriding the defaults controller handlers as shown above, jus
 
 When using `before` or `after` interceptor middlewares defined in the model's module file, they will be automatically loaded and executed after the corresponding operation but before sending the response even for `after` interceptor middlewares, there you can call `next()` and **Arkos** will send the responpse or you can send it youself using the `res` object.
 
-You can read more about those interceptor middlewares [here](/docs/core-concepts/interceptor-middlewares).
+You can read more about those interceptor middlewares [here](/docs/core-concepts/components/interceptors).
