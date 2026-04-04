@@ -17,26 +17,26 @@
   },
   "devDependencies": {
     {{#if typescript}}
-    "typescript": "^5.7.3",
-    "@types/node": "^24.0.12",
-    "@types/express": "^5.0.0",
+    "typescript": "5.7.3",
+    "@types/node": "24.0.12",
+    "@types/express": "5.0.0",
     {{/if}}
-    "tsx-strict": "^0.4.2",
-    "tsx": "^4.21.0",
-    "prisma": "^6.19.2"
+    "tsx-strict": "0.4.2",
+    "tsx": "4.21.0",
+    "prisma": "6.19.2"
   },
   "dependencies": {
-    "arkos": "^1.4.11-beta", 
-    "express": "^4.22.1",
-    "@scalar/express-api-reference": "^0.8.35",
-    "@prisma/client": "^6.19.2"{{#if validation.type}},{{/if}}
+    "arkos": "1.4.12-beta", 
+    "express": "4.22.1",
+    "@scalar/express-api-reference": "0.8.35",
+    "@prisma/client": "6.19.2"{{#if validation.type}},{{/if}}
     {{#if (eq validation.type "class-validator")}}
-    "reflect-metadata": "^0.2.2",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.1"
+    "reflect-metadata": "0.2.2",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.14.1"
     {{/if}}
     {{#if (eq validation.type "zod")}}
-    "zod": "^3.24.2"
+    "zod": "3.24.2"
     {{/if}}
   }
 }
