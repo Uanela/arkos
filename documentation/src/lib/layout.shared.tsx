@@ -28,27 +28,27 @@ export function baseOptions(): BaseLayoutProps {
       {
         text: "Learn",
         url: "/learn",
-        on: "nav",
+        on: "all",
       },
       {
         text: "Documentation",
         url: "/docs",
-        on: "nav",
+        on: "all",
       },
       {
         text: "Blog",
         url: "/blog",
-        on: "nav",
+        on: "all",
       },
       {
         text: "Showcase",
         url: "/showcase",
-        on: "nav",
+        on: "all",
       },
       {
         text: "Sponsors",
         url: "/sponsors",
-        on: "nav",
+        on: "all",
       },
     ],
   };
