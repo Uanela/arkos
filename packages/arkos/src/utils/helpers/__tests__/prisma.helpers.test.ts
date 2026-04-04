@@ -9,6 +9,7 @@ jest.mock("../arkos-config.helpers", () => ({
 
 jest.mock("../../sheu", () => ({
   debug: jest.fn(),
+  warn: jest.fn(),
 }));
 
 jest.mock("../../prisma/prisma-schema-parser", () => ({
@@ -47,6 +48,18 @@ describe("prisma.helpers", () => {
     };
 
     (getArkosConfig as jest.Mock).mockReturnValue(mockConfig);
+
+    it("should log prisma not passed warning when prisma module not passed in config", async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({});
+
+      dbUtils.loadPrismaModule();
+
+      // Assert that the function throws an AppError
+      expect(sheu.warn).toHaveBeenCalledWith(
+        "Prisma client instance not passed to arkos.config.ts, see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup",
+        { timestamp: true }
+      );
+    });
   });
 
   describe("getPrismaInstance", () => {

@@ -23,6 +23,7 @@ jest.mock("../utils/setup-app", () => ({
 jest.mock("../utils/initialize-app", () => ({
   __esModule: true,
   default: jest.fn((app: any) => app),
+  addGlobalErrorHandler: jest.fn((app: any) => app),
 }));
 jest.mock("../server", () => ({ logAppStartup: jest.fn() }));
 jest.mock("../utils/cli/utils/runtime-cli-commander", () => ({

@@ -1,6 +1,6 @@
-import pluralize, { singular } from "pluralize";
+import pluralize from "pluralize";
 import { TemplateOptions } from "../../template-generators";
-import { pascalCase } from "../../../../helpers/change-case.helpers";
+import { capitalize } from "../../../../helpers/text.helpers";
 
 export function generateRouterTemplate(options: TemplateOptions): string {
   const { modelName } = options;
@@ -12,7 +12,7 @@ export function generateRouterTemplate(options: TemplateOptions): string {
 
 const ${modelName.camel}Router = ArkosRouter({ 
 prefix: "${modelName.kebab === "auth" ? "auth" : modelName.kebab === "file-upload" ? `config?.fileUpload?.baseUploadRoute!` : pluralize(modelName.kebab)}",
-  openapi: { tags: ["${singular(pascalCase(modelName.kebab.replaceAll("-", " ")))}"] }
+  openapi: { tags: ["${pluralize(capitalize(modelName.kebab.replaceAll("-", " ")))}"] }
 })
 
 export default ${modelName.camel}Router
