@@ -8,7 +8,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 Route-level permissions answer "can this user access this endpoint?" — that covers most applications. Fine-grained access control goes further: "can this user perform this action on this resource under this condition?" It's what lets you express rules like: only managers can modify a completed order, or a user can only edit their own posts.
 
 <Callout type="info">
-Most apps are well served by route-level permissions alone. Before reaching for FGAC, make sure you have authentication and permissions configured — see [Authentication Setup](/docs/core-concepts/authentication/setup), [Static Mode](/docs/core-concepts/authentication/modes/static), and [Dynamic Mode](/docs/core-concepts/authentication/modes/dynamic).
+Most apps are well served by route-level permissions alone. Before reaching for FGAC, make sure you have authentication and permissions configured — see [Authentication Setup](/docs/core-concepts/authentication/setup), [Static Mode](/docs/core-concepts/authentication/permissions/static), and [Dynamic Mode](/docs/core-concepts/authentication/permissions/dynamic).
 </Callout>
 
 ## The Problem
@@ -47,7 +47,7 @@ arkos g p -m order
 
 ### Static vs Dynamic Mode
 
-`ArkosPolicy` works identically in both [Static](/docs/core-concepts/authentication/modes/static) and [Dynamic](/docs/core-concepts/authentication/modes/dynamic) mode. The only difference is that `roles` inside rules are enforced in Static mode and ignored in Dynamic mode — enforcement comes from the database instead. In Dynamic mode, define your rules without roles:
+`ArkosPolicy` works identically in both [Static](/docs/core-concepts/authentication/permissions/static) and [Dynamic](/docs/core-concepts/authentication/permissions/dynamic) mode. The only difference is that `roles` inside rules are enforced in Static mode and ignored in Dynamic mode — enforcement comes from the database instead. In Dynamic mode, define your rules without roles:
 ```ts title="src/modules/order/order.policy.ts"
 import { ArkosPolicy } from "arkos";
 
@@ -152,8 +152,6 @@ export const beforeUpdateOne = [
 With this in place:
 - **Cacilda** (OrderStaff) tries to update a completed order → `403 CannotUpdateCompletedOrder`
 - **Sheuzia** (OrderManager) updates the same order → passes, order is modified
-
-For further details about fine grained access control in auto-generated see [Prisma Model Routes — Fine-Grained Access Control](/docs/core-concepts/prisma-orm/authentication#fine-grained-access-control) and [File Upload — Fine-Grained Access Control](/docs/guides/file-upload/authentication#fine-grained-access-control) for full guides per route category.
 
 ## Auth Config Files (before v1.6)
 
