@@ -9,12 +9,12 @@ const userQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
  */
 const userQueryOptions = {
 {{/if}}
-  global: {
+
+  global: {},
+  find: {
     omit: {
       password: true,
     }, 
-  },
-  find: {
     {{#if (eq authentication.type "dynamic")}}
     include: {
       {{#if authentication.multipleRoles}}
@@ -69,7 +69,11 @@ const userQueryOptions = {
   createOne: {},
   save: {},
   saveMany: {},
-  saveOne: {},
+  saveOne: {
+    omit: {
+      password: true,
+    }, 
+  },
   delete: {},
   deleteMany: {},
   deleteOne: {},
