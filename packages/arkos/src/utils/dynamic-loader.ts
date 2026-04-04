@@ -2,7 +2,7 @@ import { ZodTypeAny } from "zod";
 import path from "path";
 import { AuthConfigs } from "../types/auth";
 import { killServerChildProcess } from "./cli/utils/cli.helpers";
-import { getArkosConfig, RouterConfig } from "../exports";
+import { getArkosConfig, RouteHook } from "../exports";
 import sheu from "./sheu";
 import {
   applyStrictRoutingRules,
@@ -17,6 +17,7 @@ import debuggerService from "../modules/debugger/debugger.service";
 import { PrismaQueryOptions } from "../types";
 import { ServiceHook } from "../modules/base/utils/service-hooks-manager";
 import { UserArkosConfig } from "./define-config";
+import ExitError from "./helpers/exit-error";
 
 type AppModuleComponent = Awaited<ReturnType<typeof importModuleComponents>>;
 
@@ -176,7 +177,7 @@ type ImportModuleComponentsReturnType = {
   interceptors?: Record<string, Function | Function[]>;
   authConfigs?: AuthConfigs;
   prismaQueryOptions?: PrismaQueryOptions<any>;
-  router?: { config?: RouterConfig<any>; default: RouterConfig };
+  router?: { config?: RouteHook<any>; hook?: RouteHook<any>; default: any };
   dtos?: {
     create?: any;
     update?: any;
@@ -209,26 +210,39 @@ export function assignModuleToResult(
   arkosConfig: UserArkosConfig
 ): void {
   const ext = getUserFileExtension();
+  const filenameTempalte = `${kebabCase(appModule)}.suffix.${ext}`;
 
   if (key === "authConfigs") {
     sheu.warn(
-      `${kebabCase(appModule)}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
+      `${kebabCase(appModule)}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`,
+      { timestamp: true }
     );
   }
 
   if (key === "interceptors") result.interceptors = module;
   else if (key === "router") {
+    if (module?.hook && module?.config)
+      throw ExitError(
+        `Error at ${filenameTempalte.replace("suffix", "router")}, you cannot use both 'export hook' and 'export config' please use only 'export hook' as the other is deprecated`
+      );
+
+    if (!module?.hook && module?.config)
+      sheu.warn(
+        `Found deprecated 'export config' at ${filenameTempalte.replace("suffix", "router")}, please use 'export hook' instead, see https://www.arkosjs.com/docs/core-concepts/components/route-hooks`,
+        { timestamp: true }
+      );
+
     result[key] = {
       ...module,
       config: applyStrictRoutingRules(
         appModule,
         arkosConfig,
-        module?.config || {}
+        module?.hook || module?.config || {}
       ),
     };
     validateRouterConfigConsistency(
       kebabCase(appModule),
-      result[key]?.config || {}
+      result[key]?.hook || result[key]?.config || {}
     );
   } else {
     result[key as keyof typeof result] = module.default || module;
