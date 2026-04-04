@@ -54,10 +54,10 @@ const clientLoader = browserCollections.docs.createClientLoader({
     }
   ) {
     return (
-      <DocsPage toc={toc}>
+      <DocsPage toc={toc} className="pb-24">
         <DocsTitle>{frontmatter.title}</DocsTitle>
         <DocsDescription>{frontmatter.description}</DocsDescription>
-        <div className="flex flex-row gap-2 items-center border-b -mt-4 pb-6">
+        <div className="flex flex-row gap-2 items-center border-b -mt-4 pb-8">
           <LLMCopyButton markdownUrl={`${url}.mdx`} />
           <ViewOptions
             markdownUrl={`${url}.mdx`}
@@ -82,14 +82,20 @@ function Page() {
   return (
     <DocsLayout
       {...baseOptions()}
-      nav={{ enabled: false }}
+      nav={{ title: undefined }}
       sidebar={{
         collapsible: false,
         footer: false,
         tabs: false,
       }}
       searchToggle={{ enabled: false }}
+      links={[]}
       tree={data.pageTree}
+      githubUrl={undefined}
+      containerProps={{
+        className:
+          "h-[calc(100vh-60px)] w-full  top-[56px] fixed overflow-auto",
+      }}
     >
       <Suspense>{clientLoader.useContent(data.path, data)}</Suspense>
     </DocsLayout>
