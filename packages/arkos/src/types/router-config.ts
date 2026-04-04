@@ -97,7 +97,7 @@ type FileUploadRouterConfig = {
 };
 
 /**
- * @deprecated use RouteHook instead
+ * @deprecated use 'import { RouteHook } from "arkos"' instead
  */
 export type RouterConfig<T extends string = string> = T extends "auth"
   ? AuthRouterConfig
