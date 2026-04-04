@@ -177,7 +177,7 @@ export default router;
 Applied on routes that receive URL query strings or path parameters.
 
 <Callout type="info">
-Query and params values arrive as strings from the URL. Use `z.coerce` or `@Type()` to cast them to the correct type — or use the [CLI code generation](/docs/tooling/cli/code-generation#generate-schemas-and-dtos) which handles this automatically.
+Query and params values arrive as strings from the URL. Use `z.coerce` or `@Type()` to cast them to the correct type — or use the [CLI code generation](/docs/tooling/cli/code-generation/core#generate-schemas-and-dtos) which handles this automatically.
 </Callout>
 
 <Tabs items={["ArkosRouter", "RouteHook"]}>
@@ -555,7 +555,7 @@ export default router;
 | `true` | Returns `400` if no file is uploaded |
 | `false` | Proceeds without a file |
 
-See [File Upload guide](/docs/guides/file-upload) for full configuration.
+See [File Upload guide](/docs/guides/file-uploads/setup) for full configuration.
 
 ## Accessing Validated Data
 
