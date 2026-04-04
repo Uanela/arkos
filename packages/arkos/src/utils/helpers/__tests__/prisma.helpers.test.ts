@@ -13,6 +13,7 @@ jest.mock("../arkos-config.helpers", () => ({
 }));
 jest.mock("../../sheu", () => ({
   debug: jest.fn(),
+  warn: jest.fn(),
 }));
 jest.mock("fs");
 jest.mock("../fs.helpers");
@@ -109,17 +110,19 @@ describe("prisma.helpers", () => {
       expect(result).toBe(mockPrismaModule.default);
     });
 
-    it("should throw AppError when prisma module cannot be loaded", async () => {
+    it("should throw log prisma not found warning when prisma module cannot be loaded", async () => {
       // Set up mocks for file existence
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       // Mock import to return object without prisma
       (importModule as jest.Mock).mockResolvedValue({});
 
+      await dbUtils.loadPrismaModule();
+
       // Assert that the function throws an AppError
-      await expect(dbUtils.loadPrismaModule()).rejects.toThrow(AppError);
-      await expect(dbUtils.loadPrismaModule()).rejects.toThrow(
-        "Could not initialize Prisma module."
+      expect(sheu.warn).toHaveBeenCalledWith(
+        "Could not find your prisma instance under src/utils/prisma/index.ts, see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup",
+        { timestamp: true }
       );
     });
 

@@ -50,59 +50,59 @@ const chapters = [
   },
   {
     number: 3,
-    title: "Automatic CRUD Generation",
+    title: "Routing",
     description:
-      "Generate complete RESTful endpoints from your Prisma models with zero boilerplate.",
+      "Build declarative, type-safe routes with authentication, validation and uploads in one config.",
     href: "/docs/core-concepts/routing/setup",
   },
   {
     number: 4,
+    title: "Automatic CRUD Generation",
+    description:
+      "Generate complete RESTful endpoints from your Prisma models with zero boilerplate.",
+    href: "/docs/core-concepts/routing/generated-routes",
+  },
+  {
+    number: 5,
     title: "Authentication System",
     description:
       "Set up JWT-based auth with user management, password hashing and role-based access control.",
     href: "/docs/core-concepts/authentication/setup",
   },
   {
-    number: 5,
+    number: 6,
     title: "Interceptor Middlewares",
     description:
       "Control request and response flows with before and after interceptor middlewares.",
     href: "/docs/core-concepts/components/interceptors",
   },
   {
-    number: 6,
+    number: 7,
     title: "Prisma Query Options",
     description:
       "Customize database queries per operation using Prisma query options.",
     href: "/docs/core-concepts/prisma-orm/custom-queries",
   },
   {
-    number: 7,
+    number: 8,
     title: "Data Validation",
     description:
       "Validate request body, query params and path params using Zod or Class-Validator.",
     href: "/docs/guides/validation/setup",
   },
   {
-    number: 8,
+    number: 9,
     title: "File Uploads",
     description:
       "Handle single, multiple and nested file uploads with declarative configuration.",
     href: "/docs/guides/file-uploads/setup",
   },
   {
-    number: 9,
-    title: "ArkosRouter",
-    description:
-      "Build declarative, type-safe routes with authentication, validation and uploads in one config.",
-    href: "/docs/core-concepts/routing/setup",
-  },
-  {
     number: 10,
     title: "OpenAPI & Swagger",
     description:
       "Auto-generate API documentation from your Zod schemas and route configurations.",
-    href: "/docs/reference/arkos-configuration",
+    href: "/docs/guides/open-api-documentation/setup",
   },
   {
     number: 11,
@@ -244,7 +244,7 @@ function LearnPage() {
             >
               <div className="flex items-center gap-3">
                 <span className="flex items-center justify-center size-7 rounded-full bg-fd-primary text-fd-primary-foreground text-xs font-bold shrink-0">
-                  {chapter.number}
+                  {chapter.number || "!"}
                 </span>
                 <span className="font-semibold text-sm">{chapter.title}</span>
               </div>
