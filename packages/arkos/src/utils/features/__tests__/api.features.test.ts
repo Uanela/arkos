@@ -203,9 +203,6 @@ describe("APIFeatures", () => {
         include: {
           posts: true,
         },
-        omit: {
-          password: true,
-        },
       });
     });
 
@@ -461,7 +458,6 @@ describe("APIFeatures", () => {
 
       expect(apiFeatures.filters).toEqual({
         where: {},
-        omit: { password: true },
         skip: 0,
         take: 30,
       });
