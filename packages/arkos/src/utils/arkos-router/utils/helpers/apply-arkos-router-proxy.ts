@@ -209,7 +209,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             throw Error(
               `Trying to authenticate route ${route} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
 
-For further help see https://www.arkosjs.com/docs/core-concepts/authentication-system.`
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
             );
 
           handlers = [...getMiddlewareStack(config), ...handlers];
