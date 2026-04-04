@@ -1,0 +1,173 @@
+---
+title: Usage
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+The foundation of error handling in Arkos is `AppError` — a structured error class that plugs into the global error handler. Every error you throw in a controller, interceptor, or service should be an `AppError`. Never send error responses manually with `res.json()` or `res.status().json()`.
+
+## AppError
+
+```ts
+import { AppError } from "arkos/error-handler";
+
+throw new AppError(message, statusCode, code?, meta?);
+```
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `message` | `string` | Yes | Human-readable error message shown to the client |
+| `statusCode` | `number` | Yes | HTTP status code (400, 401, 403, 404, 409, 500...) |
+| `code` | `string` | No | Machine-readable code for client-side handling |
+| `meta` | `object` | No | Additional context — avoid sensitive data |
+
+```ts
+throw new AppError(
+  "Email already registered",
+  409,
+  "EmailAlreadyExists",
+  { email: req.body.email }
+);
+```
+
+Response:
+
+```json
+{
+  "status": "fail",
+  "message": "Email already registered",
+  "code": "EmailAlreadyExists",
+  "meta": {
+    "email": "user@example.com"
+  }
+}
+```
+
+## Always Throw, Never Respond
+
+The single most important practice: throw `AppError` instead of writing custom error responses. Manual responses bypass the global error handler, break response consistency, skip `onError` interceptors, and won't be included in future OpenAPI error documentation.
+
+**Don't do this:**
+
+```ts
+import { BaseController } from "arkos/controllers";
+import { ArkosRequest, ArkosResponse } from "arkos";
+import { AppError } from "arkos/error-handler";
+import userService from "./user.service";
+
+class UserController extends BaseController {
+  getUser = async (req: ArkosRequest, res: ArkosResponse) => {
+    const user = await userService.findOne({ id: req.params.id });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" }); // ❌
+    }
+
+    res.json({ data: user });
+  };
+}
+
+export default new UserController();
+```
+
+**Do this:**
+
+```ts
+import { BaseController } from "arkos/controllers";
+import { ArkosRequest, ArkosResponse } from "arkos";
+import { AppError } from "arkos/error-handler";
+import userService from "./user.service";
+
+class UserController extends BaseController {
+  getUser = async (req: ArkosRequest, res: ArkosResponse) => {
+    const user = await userService.findOne({ id: req.params.id });
+
+    if (!user) {
+      throw new AppError(`User not found with id: ${req.params.id}`, 404, "NotFound"); // ✅
+    }
+
+    res.json({ data: user });
+  };
+}
+
+export default new UserController(userService);
+```
+
+Because `ArkosRouter` wraps all handlers with `catchAsync` automatically, you never need to wrap handlers or call `next(err)` manually for thrown errors — just throw.
+
+## In-Route Error Handlers
+
+For cases where you need to catch an error locally — for instance to add context before re-throwing, or to handle a third-party call that throws its own error type — use a standard Express error handler (4-param middleware) registered on the route itself. Always rethrow as `AppError` so the global handler receives a normalized error:
+
+```ts title="src/modules/payment/payment.router.ts"
+import { ArkosRouter } from "arkos";
+import { AppError } from "arkos/error-handler";
+import paymentController from "./payment.controller";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+const paymentRouter = ArkosRouter();
+
+paymentRouter.post(
+  { path: "/api/payments" },
+  paymentController.charge,
+  // in-route error handler — catches errors from paymentController.charge
+  (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    // Normalize third-party Stripe errors into AppError before forwarding
+    if (err?.type === "StripeCardError") {
+      return next(new AppError(err.message, 402, "PaymentFailed", { declineCode: err.decline_code }));
+    }
+    next(err); // anything else goes straight to the global handler
+  }
+);
+
+export default paymentRouter;
+```
+
+<Callout type="info">
+In-route error handlers must have exactly 4 parameters `(err, req, res, next)` — Express uses the parameter count to identify them as error handlers. See [Express error handling docs](https://expressjs.com/en/guide/error-handling.html) for more.
+</Callout>
+
+## In-Route Error Handling For Built-in Routes
+
+```ts title="src/modules/post/post.interceptors.ts"
+// For built-in routes, use interceptor error handlers instead of in-route handlers
+export const onCreateOneError = [
+  async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    if (req.uploadedImageUrl) await deleteFromS3(req.uploadedImageUrl);
+    next(err);
+  },
+];
+```
+Read more at [Interceptors — Handling Errors](/docs/core-concepts/components/interceptors#onerror-interceptors)
+
+
+## In-Line Error Handling For Service Layer
+
+```ts title="src/modules/post/post.hooks.ts"
+// For service-level errors
+export const onCreateOneError = [
+  async ({ error, data }) => {
+    console.error("Service error:", error.message);
+  },
+];
+```
+Read more at [Service Hooks — Handling Errors](/docs/core-concepts/components/service-hooks#onerror-service-hooks)
+
+## Common Status Codes
+
+| Code | When to use |
+|---|---|
+| `400` | Invalid input, bad request |
+| `401` | Not authenticated |
+| `403` | Authenticated but not authorized |
+| `404` | Resource not found |
+| `409` | Conflict — duplicate entry, constraint violation |
+| `500` | Unexpected server error |
+
+## Error Hooks
+
+If you need to run cleanup or rollback logic when an operation fails — uploaded files, reserved inventory, database transactions — use `onError` interceptors or service hook error handlers rather than try/catch blocks in your controllers:
+
+- `onXxxError` in `*.interceptors.ts` — runs at the HTTP layer. See [Interceptors — Handling Errors](/docs/core-concepts/components/interceptors#handling-errors-in-interceptors).
+- `onXxxError` in `*.hooks.ts` — runs at the service layer for all calls. See [Service Hooks — Handling Errors](/docs/core-concepts/components/service-hooks#handling-errors-in-service-hooks).

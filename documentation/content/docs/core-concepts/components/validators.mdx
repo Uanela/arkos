@@ -1,0 +1,252 @@
+---
+title: Validators
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Validators ensure incoming request data is correct before it reaches your controller or service. Arkos supports two validation libraries — **Zod** and **class-validator** — and integrates them directly into route definitions so validation runs automatically.
+
+## How Validation Works
+
+You attach a schema or DTO to a route's `validation` config. Arkos validates the request against it before calling your handler. If validation fails, Arkos responds with a `400` error automatically — your handler never runs.
+```ts
+postRouter.post(
+  {
+    path: "/api/posts",
+    validation: { body: CreatePostSchema },
+  },
+  postController.createOne
+);
+```
+
+The `validation` object accepts three optional keys: `body`, `query`, and `params`.
+
+## Zod
+
+<Tabs items={["Body", "Query", "Params"]}>
+<Tab value="Body">
+```ts title="src/modules/post/schemas/create-post.schema.ts"
+import { z } from "zod";
+
+const CreatePostSchema = z.object({
+  title: z.string().min(1),
+  body: z.string().min(1),
+  published: z.boolean().optional(),
+});
+
+export type CreatePostSchemaType = z.infer<typeof CreatePostSchema>;
+
+export default CreatePostSchema;
+```
+</Tab>
+<Tab value="Query">
+```ts title="src/modules/post/schemas/query-post.schema.ts"
+import { z } from "zod";
+
+const QueryPostSchema = z.object({
+  page: z.coerce.number().optional(),
+  limit: z.coerce.number().max(100).optional(),
+  sort: z.string().optional(),
+});
+
+export type QueryPostSchemaType = z.infer<typeof QueryPostSchema>;
+
+export default QueryPostSchema;
+```
+</Tab>
+<Tab value="Params">
+```ts title="src/modules/post/schemas/post-params.schema.ts"
+import { z } from "zod";
+
+const PostParamsSchema = z.object({
+  id: z.string().min(1),
+});
+
+export default PostParamsSchema;
+```
+</Tab>
+</Tabs>
+
+## Class Validator
+
+<Tabs items={["Body", "Query", "Params"]}>
+<Tab value="Body">
+```ts title="src/modules/post/dtos/create-post.dto.ts"
+import { IsString, IsNotEmpty, IsBoolean, IsOptional } from "class-validator";
+
+export default class CreatePostDto {
+  @IsNotEmpty()
+  @IsString()
+  title!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  body!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+}
+```
+</Tab>
+<Tab value="Query">
+```ts title="src/modules/post/dtos/query-post.dto.ts"
+import { IsOptional, IsNumber, IsString, Max } from "class-validator";
+import { Transform } from "class-transformer";
+
+export default class QueryPostDto {
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => (value ? Number(value) : undefined))
+  page?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Max(100)
+  @Transform(({ value }) => (value ? Number(value) : undefined))
+  limit?: number;
+
+  @IsOptional()
+  @IsString()
+  sort?: string;
+}
+```
+</Tab>
+<Tab value="Params">
+```ts title="src/modules/post/dtos/post-params.dto.ts"
+import { IsNotEmpty, IsString } from "class-validator";
+
+export default class PostParamsDto {
+  @IsNotEmpty()
+  @IsString()
+  id!: string;
+}
+```
+</Tab>
+</Tabs>
+
+## Attaching to Routes
+
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import CreatePostSchema from "./schemas/create-post.schema";
+import QueryPostSchema from "./schemas/query-post.schema";
+import postController from "./post.controller";
+
+const postRouter = ArkosRouter();
+
+postRouter.get(
+  {
+    path: "/api/posts",
+    validation: { query: QueryPostSchema },
+  },
+  postController.findMany
+);
+
+postRouter.post(
+  {
+    path: "/api/posts",
+    validation: { body: CreatePostSchema },
+  },
+  postController.createOne
+);
+
+export default postRouter;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import CreatePostDto from "./dtos/create-post.dto";
+import QueryPostDto from "./dtos/query-post.dto";
+import postController from "./post.controller";
+
+const postRouter = ArkosRouter();
+
+postRouter.get(
+  {
+    path: "/api/posts",
+    validation: { query: QueryPostDto },
+  },
+  postController.findMany
+);
+
+postRouter.post(
+  {
+    path: "/api/posts",
+    validation: { body: CreatePostDto },
+  },
+  postController.createOne
+);
+
+export default postRouter;
+```
+</Tab>
+</Tabs>
+
+## Validation on Built-in Routes
+
+For auto-generated routes, attach validation through a [Route Hook](/docs/core-concepts/components/route-hooks):
+
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import CreatePostSchema from "./schemas/create-post.schema";
+import UpdatePostSchema from "./schemas/update-post.schema";
+
+export const hook: RouteHook = {
+  createOne: { validation: { body: CreatePostSchema } },
+  updateOne: { validation: { body: UpdatePostSchema } },
+};
+
+const postRouter = ArkosRouter();
+
+export default postRouter;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import CreatePostDto from "./dtos/create-post.dto";
+import UpdatePostDto from "./dtos/update-post.dto";
+
+export const hook: RouteHook = {
+  createOne: { validation: { body: CreatePostDto } },
+  updateOne: { validation: { body: UpdatePostDto } },
+};
+
+const postRouter = ArkosRouter();
+
+export default postRouter;
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code still works but logs a deprecation warning. See [Route Hooks](/docs/core-concepts/components/route-hooks) for details.
+</Callout>
+
+## Scaffold with the CLI
+
+Generate schemas or DTOs from your Prisma model automatically:
+```bash
+# Zod
+arkos generate create-schema --module post
+arkos generate update-schema --module post
+arkos generate query-schema --module post
+
+# class-validator
+arkos generate create-dto --module post
+arkos generate update-dto --module post
+arkos generate query-dto --module post
+```
+
+## Related
+
+- [Routers](/docs/core-concepts/components/routers) — Attach validators to routes
+- [Route Hooks](/docs/core-concepts/components/route-hooks) — Attach validators to auto-generated routes
+- [CLI — Validation](/docs/tooling/cli/code-generation/validation) — Generate schemas and DTOs from your Prisma schema

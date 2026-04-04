@@ -9,7 +9,6 @@ import {
 } from "../../../utils/helpers/arkos-config.helpers";
 import AppError from "../../error-handler/utils/app-error";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
-// import { AuthService } from "../auth.service";
 
 const authService: any = authServiceImport;
 
@@ -891,7 +890,7 @@ describe("AuthService", () => {
     describe("before hooks", () => {
       it("should run before hook and continue if nothing is called", async () => {
         const before = jest.fn(async (_ctx) => {
-          // does not call ctx.next or ctx.skip
+          // just returns
         });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
@@ -911,30 +910,11 @@ describe("AuthService", () => {
         expect(mockNext).toHaveBeenCalledWith();
       });
 
-      it("should stop pipeline and call next() if before hook calls ctx.next()", async () => {
-        const before = jest.fn((ctx) => ctx.next());
-
-        (getArkosConfig as jest.Mock).mockReturnValue({
-          authentication: {
-            mode: "static",
-            hooks: { authenticate: { before } },
-          },
-        });
-
-        const getAuthenticatedUser = jest
-          .spyOn(authService, "getAuthenticatedUser")
-          .mockResolvedValue({ id: "1" } as any);
-
-        await authService.authenticate(mockReq, mockRes, mockNext);
-
-        expect(before).toHaveBeenCalledTimes(1);
-        expect(getAuthenticatedUser).not.toHaveBeenCalled();
-        expect(mockNext).toHaveBeenCalledWith();
-      });
-
-      it("should stop pipeline and forward error if before hook calls ctx.next(err)", async () => {
+      it("should stop pipeline and forward error to onError if before hook throws", async () => {
         const err = new AppError("Before hook error", 400, "BeforeHookError");
-        const before = jest.fn((ctx) => ctx.next(err));
+        const before = jest.fn(() => {
+          throw err;
+        });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: {
@@ -974,8 +954,11 @@ describe("AuthService", () => {
         expect(order).toEqual([1, 2]);
       });
 
-      it("should stop hook chain if first before hook calls ctx.next()", async () => {
-        const before1 = jest.fn((ctx) => ctx.next());
+      it("should stop hook chain if first before hook throws", async () => {
+        const err = new AppError("Before hook error", 400, "BeforeHookError");
+        const before1 = jest.fn(() => {
+          throw err;
+        });
         const before2 = jest.fn();
 
         (getArkosConfig as jest.Mock).mockReturnValue({
@@ -994,9 +977,9 @@ describe("AuthService", () => {
 
     describe("ctx.skip", () => {
       it("should skip built-in auth logic if ctx.skip() is called in before hook", async () => {
-        const before = jest.fn((ctx) => {
-          ctx.req.user = { id: "custom-user" };
-          ctx.skip();
+        const before = jest.fn(({ req, skip }) => {
+          req.user = { id: "custom-user" };
+          skip();
         });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
@@ -1020,8 +1003,8 @@ describe("AuthService", () => {
     describe("after hooks", () => {
       it("should run after hook once req.user is set", async () => {
         const user = { id: "1" };
-        const after = jest.fn(async (ctx) => {
-          expect(ctx.req.user).toEqual(user);
+        const after = jest.fn(async ({ req }) => {
+          expect(req.user).toEqual(user);
         });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
@@ -1041,9 +1024,11 @@ describe("AuthService", () => {
         expect(mockNext).toHaveBeenCalledWith();
       });
 
-      it("should stop pipeline and forward error if after hook calls ctx.next(err)", async () => {
+      it("should stop pipeline and forward error if after hook throws", async () => {
         const err = new AppError("After hook error", 403, "AfterHookError");
-        const after = jest.fn((ctx) => ctx.next(err));
+        const after = jest.fn(() => {
+          throw err;
+        });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: {
@@ -1063,9 +1048,11 @@ describe("AuthService", () => {
     });
 
     describe("onError hooks", () => {
-      it("should run onError hook and forward original error if hook does not replace it", async () => {
+      it("should run onError hook and forward original error if hook rethrows", async () => {
         const originalErr = new AppError("Invalid token", 401, "InvalidToken");
-        const onError = jest.fn((ctx) => ctx.next(ctx.error));
+        const onError = jest.fn(({ error }) => {
+          throw error;
+        });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: {
@@ -1084,10 +1071,12 @@ describe("AuthService", () => {
         expect(mockNext).toHaveBeenCalledWith(originalErr);
       });
 
-      it("should forward replaced error if onError hook calls ctx.next(newErr)", async () => {
+      it("should forward replaced error if onError hook throws a new error", async () => {
         const originalErr = new AppError("Invalid token", 401, "InvalidToken");
         const replacedErr = new AppError("Custom error", 400, "CustomError");
-        const onError = jest.fn((ctx) => ctx.next(replacedErr));
+        const onError = jest.fn(() => {
+          throw replacedErr;
+        });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: {
@@ -1108,7 +1097,7 @@ describe("AuthService", () => {
       it("should suppress error and run after hooks if onError calls ctx.skip()", async () => {
         const originalErr = new AppError("Invalid token", 401, "InvalidToken");
         const after = jest.fn((_ctx) => {});
-        const onError = jest.fn((ctx) => ctx.skip());
+        const onError = jest.fn(({ skip }) => skip());
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: {
@@ -1127,12 +1116,27 @@ describe("AuthService", () => {
         expect(after).toHaveBeenCalledTimes(1);
         expect(mockNext).toHaveBeenCalledWith();
       });
+
+      it("should forward original error if no onError hook is defined", async () => {
+        const originalErr = new AppError("Invalid token", 401, "InvalidToken");
+
+        (getArkosConfig as jest.Mock).mockReturnValue({
+          authentication: { mode: "static", hooks: {} },
+        });
+
+        jest
+          .spyOn(authService, "getAuthenticatedUser")
+          .mockRejectedValue(originalErr);
+
+        await authService.authenticate(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalledWith(originalErr);
+      });
     });
   });
 
   describe("authorize", () => {
     const adminUser = { id: "1", isSuperUser: false, role: "admin" };
-    // const superUser = { id: "2", isSuperUser: true };
 
     describe("before hooks", () => {
       it("should run before hook and continue if nothing is called", async () => {
@@ -1143,7 +1147,7 @@ describe("AuthService", () => {
         });
 
         const req = { ...mockReq, user: adminUser };
-        await authService.authorize("product", "View", ["admin"])(
+        await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
           mockNext
@@ -1153,16 +1157,18 @@ describe("AuthService", () => {
         expect(mockNext).toHaveBeenCalledWith();
       });
 
-      it("should stop pipeline if before hook calls ctx.next(err)", async () => {
+      it("should stop pipeline and forward error to onError if before hook throws", async () => {
         const err = new AppError("Before error", 400, "BeforeError");
-        const before = jest.fn((ctx) => ctx.next(err));
+        const before = jest.fn(() => {
+          throw err;
+        });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: { mode: "static", hooks: { authorize: { before } } },
         });
 
         const req = { ...mockReq, user: adminUser };
-        await authService.authorize("product", "View", ["admin"])(
+        await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
           mockNext
@@ -1174,9 +1180,9 @@ describe("AuthService", () => {
 
     describe("ctx.skip", () => {
       it("should skip built-in authorization if ctx.skip() is called in before hook", async () => {
-        const before = jest.fn((ctx) => {
-          ctx.req.authorized = true;
-          ctx.skip();
+        const before = jest.fn(({ req, skip }) => {
+          req.authorized = true;
+          skip();
         });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
@@ -1193,7 +1199,7 @@ describe("AuthService", () => {
           user: { id: "1", isSuperUser: false, role: "viewer" },
         };
 
-        await authService.authorize("product", "View", ["admin"])(
+        await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
           mockNext
@@ -1206,8 +1212,10 @@ describe("AuthService", () => {
     });
 
     describe("onError hooks", () => {
-      it("should run onError hook and forward original error", async () => {
-        const onError = jest.fn((ctx) => ctx.next(ctx.error));
+      it("should run onError hook and forward original error if hook rethrows", async () => {
+        const onError = jest.fn(({ error }) => {
+          throw error;
+        });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: {
@@ -1221,7 +1229,7 @@ describe("AuthService", () => {
           user: { id: "1", isSuperUser: false, role: "viewer" },
         };
 
-        await authService.authorize("product", "Delete", ["admin"])(
+        await authService.authorize("Delete", "product", ["admin"])(
           req,
           mockRes,
           mockNext
@@ -1232,9 +1240,11 @@ describe("AuthService", () => {
         );
       });
 
-      it("should forward replaced error if onError hook calls ctx.next(newErr)", async () => {
+      it("should forward replaced error if onError hook throws a new error", async () => {
         const replacedErr = new AppError("Custom 403", 403, "CustomForbidden");
-        const onError = jest.fn((ctx) => ctx.next(replacedErr));
+        const onError = jest.fn(() => {
+          throw replacedErr;
+        });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: {
@@ -1248,7 +1258,7 @@ describe("AuthService", () => {
           user: { id: "1", isSuperUser: false, role: "viewer" },
         };
 
-        await authService.authorize("product", "Delete", ["admin"])(
+        await authService.authorize("Delete", "product", ["admin"])(
           req,
           mockRes,
           mockNext
@@ -1259,7 +1269,7 @@ describe("AuthService", () => {
 
       it("should suppress error and run after hooks if onError calls ctx.skip()", async () => {
         const after = jest.fn((_ctx) => {});
-        const onError = jest.fn((ctx) => ctx.skip());
+        const onError = jest.fn(({ skip }) => skip());
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: {
@@ -1273,7 +1283,7 @@ describe("AuthService", () => {
           user: { id: "1", isSuperUser: false, role: "viewer" },
         };
 
-        await authService.authorize("product", "Delete", ["admin"])(
+        await authService.authorize("Delete", "product", ["admin"])(
           req,
           mockRes,
           mockNext
@@ -1281,6 +1291,27 @@ describe("AuthService", () => {
 
         expect(after).toHaveBeenCalledTimes(1);
         expect(mockNext).toHaveBeenCalledWith();
+      });
+
+      it("should forward original error if no onError hook is defined", async () => {
+        (getArkosConfig as jest.Mock).mockReturnValue({
+          authentication: { mode: "static", hooks: {} },
+        });
+
+        const req = {
+          ...mockReq,
+          user: { id: "1", isSuperUser: false, role: "viewer" },
+        };
+
+        await authService.authorize("Delete", "product", ["admin"])(
+          req,
+          mockRes,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(
+          expect.objectContaining({ statusCode: 403 })
+        );
       });
     });
 
@@ -1293,7 +1324,7 @@ describe("AuthService", () => {
         });
 
         const req = { ...mockReq, user: adminUser };
-        await authService.authorize("product", "View", ["admin"])(
+        await authService.authorize("View", "product", ["admin"])(
           req,
           mockRes,
           mockNext
@@ -1302,21 +1333,38 @@ describe("AuthService", () => {
         expect(after).toHaveBeenCalledTimes(1);
         expect(mockNext).toHaveBeenCalledWith();
       });
+
+      it("should forward error if after hook throws", async () => {
+        const err = new AppError("After hook error", 500, "AfterHookError");
+        const after = jest.fn(() => {
+          throw err;
+        });
+
+        (getArkosConfig as jest.Mock).mockReturnValue({
+          authentication: { mode: "static", hooks: { authorize: { after } } },
+        });
+
+        const req = { ...mockReq, user: adminUser };
+        await authService.authorize("View", "product", ["admin"])(
+          req,
+          mockRes,
+          mockNext
+        );
+
+        expect(mockNext).toHaveBeenCalledWith(err);
+      });
     });
+
     describe("authorize - correct parameter order (action, resource, rule)", () => {
       it("should call authorize with correct order: action first, then resource, then rule", async () => {
-        // Setup
         const authorizeSpy = jest.spyOn(authService, "authorize");
         const user = { id: "user-123", role: "admin", isSuperUser: false };
         mockReq.user = user;
 
-        // Execute - note the correct order: action, resource, rule
         const middleware = authService.authorize("View", "product", ["admin"]);
 
-        // Verify the method was called with correct parameters
         expect(authorizeSpy).toHaveBeenCalledWith("View", "product", ["admin"]);
 
-        // Test the middleware execution
         await middleware(mockReq, mockRes, mockNext);
         expect(mockNext).toHaveBeenCalled();
 
@@ -1324,13 +1372,11 @@ describe("AuthService", () => {
       });
 
       it("should pass rule as wildcard '*' when provided", async () => {
-        // Setup
         const authorizeSpy = jest.spyOn(authService, "authorize");
         const user = { id: "user-123", role: "admin", isSuperUser: false };
         mockReq.user = user;
         mockConfig.authentication.mode = "static";
 
-        // Execute with wildcard rule
         const middleware = authService.authorize("Delete", "user", "*");
 
         expect(authorizeSpy).toHaveBeenCalledWith("Delete", "user", "*");
@@ -1342,7 +1388,6 @@ describe("AuthService", () => {
       });
 
       it("should pass rule as DetailedAccessControlRule when provided", async () => {
-        // Setup
         const authorizeSpy = jest.spyOn(authService, "authorize");
         const user = { id: "user-123", role: "admin", isSuperUser: false };
         mockReq.user = user;
@@ -1354,7 +1399,6 @@ describe("AuthService", () => {
           description: "Allows deleting products from the system",
         };
 
-        // Execute with detailed rule
         const middleware = authService.authorize(
           "Delete",
           "product",
@@ -1374,26 +1418,22 @@ describe("AuthService", () => {
       });
 
       it("should correctly pass action as string and resource as string", async () => {
-        // Setup
         const authorizeSpy = jest.spyOn(authService, "authorize");
         const action = "Create";
         const resource = "cart-item";
         const rule = ["admin", "customer"];
 
-        // Execute
         authService.authorize(action, resource, rule);
 
-        // Verify parameter order and values
         expect(authorizeSpy).toHaveBeenCalledWith(action, resource, rule);
-        expect(authorizeSpy.mock.calls[0][0]).toBe("Create"); // action
-        expect(authorizeSpy.mock.calls[0][1]).toBe("cart-item"); // resource
-        expect(authorizeSpy.mock.calls[0][2]).toEqual(["admin", "customer"]); // rule
+        expect(authorizeSpy.mock.calls[0][0]).toBe("Create");
+        expect(authorizeSpy.mock.calls[0][1]).toBe("cart-item");
+        expect(authorizeSpy.mock.calls[0][2]).toEqual(["admin", "customer"]);
 
         authorizeSpy.mockRestore();
       });
 
       it("should work with different action types", async () => {
-        // Setup
         const actions = [
           "View",
           "Create",
@@ -1404,18 +1444,13 @@ describe("AuthService", () => {
 
         actions.forEach((action) => {
           const authorizeSpy = jest.spyOn(authService, "authorize");
-          const resource = "order";
-          const rule = ["admin"];
-
-          authService.authorize(action, resource, rule);
-
-          expect(authorizeSpy).toHaveBeenCalledWith(action, resource, rule);
+          authService.authorize(action, "order", ["admin"]);
+          expect(authorizeSpy).toHaveBeenCalledWith(action, "order", ["admin"]);
           authorizeSpy.mockRestore();
         });
       });
 
       it("should work with kebab-case resources", async () => {
-        // Setup
         const authorizeSpy = jest.spyOn(authService, "authorize");
         const resources = [
           "user",
@@ -1438,23 +1473,18 @@ describe("AuthService", () => {
       });
 
       it("should handle missing rule parameter (undefined)", async () => {
-        // Setup
         const authorizeSpy = jest.spyOn(authService, "authorize");
         const user = { id: "user-123", role: "admin", isSuperUser: false };
         mockReq.user = user;
         mockConfig.authentication.mode = "static";
 
-        // Execute with undefined rule
         const middleware = authService.authorize("View", "product");
 
         expect(authorizeSpy).toHaveBeenCalledWith("View", "product");
 
-        // This might fail authorization since no rule is provided
         await middleware(mockReq, mockRes, mockNext);
         expect(mockNext).toHaveBeenCalledWith(
-          expect.objectContaining({
-            statusCode: 403,
-          })
+          expect.objectContaining({ statusCode: 403 })
         );
 
         authorizeSpy.mockRestore();

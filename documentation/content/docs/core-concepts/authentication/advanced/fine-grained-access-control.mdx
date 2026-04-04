@@ -1,0 +1,197 @@
+---
+title: Fine-Grained Access Control
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Route-level permissions answer "can this user access this endpoint?" — that covers most applications. Fine-grained access control goes further: "can this user perform this action on this resource under this condition?" It's what lets you express rules like: only managers can modify a completed order, or a user can only edit their own posts.
+
+<Callout type="info">
+Most apps are well served by route-level permissions alone. Before reaching for FGAC, make sure you have authentication and permissions configured — see [Authentication Setup](/docs/core-concepts/authentication/setup), [Static Mode](/docs/core-concepts/authentication/permissions/static), and [Dynamic Mode](/docs/core-concepts/authentication/permissions/dynamic).
+</Callout>
+
+## The Problem
+
+Consider `PATCH /api/orders/:id`. Regular staff can update pending orders — straightforward route-level access. But what if an order is already completed and someone made a mistake? Not all staff should be able to touch it. Only managers should. That's a condition route-level auth can't express — that's where FGAC comes in.
+
+## Defining Permissions
+
+<Callout type="info">
+**v1.6+**: Use `ArkosPolicy` — the recommended API. It replaces the previous `authService.permission()` pattern from `.auth.ts` files. Both are supported, but `ArkosPolicy` is the current design, but your `.auth.ts` files still work, nothing breaks — see [Auth Config Files](#auth-config-files-before-v16) below.
+</Callout>
+
+Define granular named permissions for your module using `ArkosPolicy`:
+```ts title="src/modules/order/order.policy.ts"
+import { ArkosPolicy } from "arkos";
+
+const orderPolicy = ArkosPolicy("order")
+  .rule("Update", { roles: ["OrderStaff", "OrderManager", "Admin"], name: "Update Orders" })
+  .rule("UpdateCompleted", { roles: ["OrderManager", "Admin"], name: "Update Completed Orders", description: "Modify orders already marked as completed — restricted" })
+  .rule("Complete", { roles: ["OrderManager", "Admin"], name: "Complete Orders" })
+  .rule("Delete", { roles: ["Admin"], name: "Delete Orders" });
+
+export default orderPolicy;
+```
+
+<Callout type="warning">
+Policy definitions must live at module level — never inside request handlers. Arkos discovers all permissions at startup to expose them through `/api/auth-actions`. This is how frontend developers know what actions exist in your system.
+</Callout>
+
+Generate a policy file with the CLI:
+```bash
+arkos generate policy --module order
+# or
+arkos g p -m order
+```
+
+### Static vs Dynamic Mode
+
+`ArkosPolicy` works identically in both [Static](/docs/core-concepts/authentication/permissions/static) and [Dynamic](/docs/core-concepts/authentication/permissions/dynamic) mode. The only difference is that `roles` inside rules are enforced in Static mode and ignored in Dynamic mode — enforcement comes from the database instead. In Dynamic mode, define your rules without roles:
+```ts title="src/modules/order/order.policy.ts"
+import { ArkosPolicy } from "arkos";
+
+const orderPolicy = ArkosPolicy("order")
+  .rule("Update", { name: "Update Orders" })
+  .rule("UpdateCompleted", { name: "Update Completed Orders", description: "Modify orders already marked as completed — restricted" })
+  .rule("Complete", { name: "Complete Orders" })
+  .rule("Delete", { name: "Delete Orders" });
+
+export default orderPolicy;
+```
+
+## Fine Grained Access Control In Custom Routes
+
+For custom `ArkosRouter` routes, call `can*` methods directly inside your handler or middleware:
+
+```ts title="src/modules/order/order.router.ts"
+import { ArkosRouter } from "arkos";
+import orderPolicy from "@/src/modules/order/order.policy";
+import orderController from "@/src/modules/order/order.controller";
+import orderService from "@/src/modules/order/order.service";
+import { AppError } from "arkos/error-handler";
+
+const router = ArkosRouter();
+
+router.patch(
+  {
+    path: "/api/orders/:id",
+    authentication: orderPolicy.Update,
+  },
+  async (req, res, next) => {
+    const order = await orderService.findOne({ id: req.params.id });
+    if (!order) throw new AppError("Order not found", 404);
+
+    if (order.status === "Completed") {
+      const canUpdateCompleted = await orderPolicy.canUpdateCompleted(req.user);
+      if (!canUpdateCompleted)
+        throw new AppError(
+          "You don't have permission to modify completed orders. Contact your manager.",
+          403,
+          "CannotUpdateCompletedOrder"
+        );
+    }
+
+    next();
+  },
+  orderController.updateOne
+);
+
+export default router;
+```
+
+## Fine Grained Access Control In Interceptors For Built-in Routes
+
+For built-in routes the condition logic of fine grained access control lives in interceptor middlewares. For auto-generated routes this is the primary pattern — fetch the record, check the condition, branch on permissions:
+
+```ts title="src/modules/order/order.interceptors.ts"
+import { AppError } from "arkos/error-handler";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import orderPolicy from "@/src/modules/order/order.policy";
+import orderService from "@/src/modules/order/order.service";
+
+export const beforeUpdateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const order = await orderService.findOne({ id: req.params.id });
+    if (!order) throw new AppError("Order not found", 404);
+
+    req.locals = { order };
+    next();
+  },
+
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const { order } = req.locals;
+    const user = req.user;
+
+    if (order.status === "Completed") {
+      const canUpdateCompleted = await orderPolicy.canUpdateCompleted(user);
+      if (!canUpdateCompleted)
+        throw new AppError(
+          "You don't have permission to modify completed orders. Contact your manager.",
+          403,
+          "CannotUpdateCompletedOrder"
+        );
+    }
+
+    if (req.body.status === "Completed" && order.status !== "Completed") {
+      const canComplete = await orderPolicy.canComplete(user);
+      if (!canComplete)
+        throw new AppError(
+          "You don't have permission to mark orders as completed.",
+          403
+        );
+
+      req.body.completedAt = new Date();
+    }
+
+    next();
+  },
+];
+```
+
+With this in place:
+- **Cacilda** (OrderStaff) tries to update a completed order → `403 CannotUpdateCompletedOrder`
+- **Sheuzia** (OrderManager) updates the same order → passes, order is modified
+
+## Auth Config Files (before v1.6)
+
+Before `ArkosPolicy`, fine-grained permissions were defined via `authService.permission()` inside `.auth.ts` files. This is still fully supported — nothing breaks. New projects should use `ArkosPolicy`.
+```ts title="src/modules/order/order.auth.ts"
+import { AuthConfigs } from "arkos/auth";
+import { authService } from "arkos/services";
+
+const orderAccessControl = {
+    Update: { roles: ["OrderStaff", "OrderManager", "Admin"], name: "Update Orders" },
+    UpdateCompleted: { roles: ["OrderManager", "Admin"], name: "Update Completed Orders" },
+    Complete: { roles: ["OrderManager", "Admin"], name: "Complete Orders" },
+    Delete: { roles: ["Admin"], name: "Delete Orders" },
+  }
+
+export const orderPermissions = {
+  canUpdate: authService.permission("Update", "order", orderAccessControl),
+  canUpdateCompleted: authService.permission("UpdateCompleted", "order", orderAccessControl),
+  canComplete: authService.permission("Complete", "order", orderAccessControl),
+  canDelete: authService.permission("Delete", "order", orderAccessControl),
+};
+
+const orderAuthConfigs: AuthConfigs = {
+  authenticationControl: {
+    Update: true,
+    UpdateCompleted: true,
+    Complete: true,
+    Delete: true,
+  },
+  accessControl: orderAccessControl,
+};
+
+export default orderAuthConfigs;
+```
+
+Then use `orderPermissions.canUpdateCompleted(user)` in your middlewares, services and interceptors exactly as shown [above examples](#fine-grained-access-control-in-custom-routes) with `orderPolicy.canUpdateCompleted(user)` — the usage is identical.
+
+Generate an auth config file:
+```bash
+arkos generate auth-configs --module order
+# or
+arkos g a -m order
+```

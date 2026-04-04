@@ -1,0 +1,177 @@
+---
+title: Create Arkos CLI
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+The official scaffolding tool for Arkos.js projects. It guides you through an interactive setup and generates a production-ready RESTful API with zero configuration — automatic CRUD, authentication, validation, and more, all built on Express.js and Prisma.
+
+## Quick Start
+
+<Callout type="info">
+  Node.js 22.9 or higher is required before running the command.
+</Callout>
+
+<Tabs items={["npm", "yarn", "pnpm"]}>
+<Tab value="npm">
+```bash
+npm create arkos@latest my-arkos-project
+```
+</Tab>
+<Tab value="yarn">
+```bash
+yarn create arkos@latest my-arkos-project
+```
+</Tab>
+<Tab value="pnpm">
+```bash
+pnpm create arkos@latest my-arkos-project
+```
+</Tab>
+</Tabs>
+
+## Interactive Setup
+
+The CLI asks a series of questions to configure your project:
+
+```bash
+? Would you like to use TypeScript? Yes
+? What db provider will be used for Prisma? postgresql
+? Would you like to set up Validation? Yes
+? Choose validation library: zod
+? Would you like to set up Authentication? Yes
+? Choose authentication type: dynamic
+? Would you like to use authentication with Multiple Roles? Yes
+? Choose default username field for login: email
+? Would you like to use Strict Routing? No
+```
+
+## Configuration Options
+
+### TypeScript
+
+The CLI supports both TypeScript and JavaScript projects. If you choose JavaScript, the validation library is automatically set to Zod — class-validator requires TypeScript.
+
+### Database Providers
+
+| Provider | Use Case |
+|----------|----------|
+| PostgreSQL | Complex applications with relationships |
+| MongoDB | Flexible schema requirements |
+| MySQL | Traditional web applications |
+| SQLite | Development and small projects |
+| SQL Server | Enterprise environments |
+| CockroachDB | High-scale, distributed applications |
+
+### Validation
+
+- **Zod** — TypeScript-first schema validation
+- **class-validator** — Decorator-based validation (TypeScript only)
+
+### Authentication
+
+- **Static** — File-based roles and permissions, no extra database tables, fast permission checks
+- **Dynamic** — Database-driven permissions via `auth-role` and `auth-permission` tables, scalable for complex applications
+- **Define Later** — Skip authentication setup and configure it when you're ready
+
+When using **dynamic** authentication, you will also be asked whether to support multiple roles per user. This option is not available for SQLite or static authentication.
+
+### Username Field
+
+Choose how users identify themselves at login:
+
+- **Email** — recommended for most applications
+- **Username** — great for social platforms
+- **Define Later** — configure a custom field later
+
+### Strict Routing
+
+Enables Express strict routing — `/posts` and `/posts/` are treated as different routes. Disabled by default.
+
+## Generated Project Structure
+
+```
+my-arkos-project/
+├── prisma/
+│   └── schema.prisma
+├── src/
+│   ├── utils/
+│   │   └── prisma/
+│   │       └── index.ts
+│   ├── app.ts
+│   └── arkos.config.ts
+├── .env
+├── .gitignore
+├── package.json
+├── tsconfig.json
+└── pnpm-lock.yaml
+```
+
+## Getting Started
+
+### 1. Navigate to your project
+
+```bash
+cd my-arkos-project
+```
+
+### 2. Configure your database
+
+Edit `.env` with your connection string:
+
+<Tabs items={["PostgreSQL", "MongoDB", "MySQL", "SQLite"]}>
+<Tab value="PostgreSQL">
+```bash
+DATABASE_URL="postgresql://username:password@localhost:5432/mydb"
+```
+</Tab>
+<Tab value="MongoDB">
+```bash
+DATABASE_URL="mongodb://localhost:27017/mydb"
+```
+</Tab>
+<Tab value="MySQL">
+```bash
+DATABASE_URL="mysql://username:password@localhost:3306/mydb"
+```
+</Tab>
+<Tab value="SQLite">
+```bash
+DATABASE_URL="file:./dev.db"
+```
+</Tab>
+</Tabs>
+
+### 3. Set up Prisma
+
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+### 4. Start development
+
+```bash
+npm run dev
+```
+
+Your Arkos.js API is now running and ready to handle requests.
+
+## Environment Variables
+
+```bash
+# Database
+DATABASE_URL=your-database-connection-string
+
+# JWT (if authentication enabled)
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRES_IN=90d
+
+# Server
+PORT=8000
+```
+
+## Beyond Scaffolding
+
+Once your project is created, use the built-in Arkos CLI to generate controllers, services, routers, schemas, and more on demand. See the [CLI guide](/docs/tooling/cli/overview).

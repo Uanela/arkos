@@ -1,0 +1,5 @@
+{
+  "title": "Permissions",
+  "collapsible": true,
+  "pages": ["static", "dynamic"]
+}

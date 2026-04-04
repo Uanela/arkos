@@ -1,0 +1,531 @@
+---
+title: Validation
+---
+
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+Arkos supports two validation libraries — Zod and class-validator. Both have equivalent generation commands, and both generate files from your Prisma schema automatically. The generated schemas and DTOs are ready to pass directly into a `RouteHook` or `ArkosRouter` route config.
+
+Schemas are generated to `src/modules/<n>/schemas/` and DTOs to `src/modules/<n>/dtos/`.
+
+## Model Validation
+
+These commands generate validation for standard Prisma model routes. They read your Prisma schema and produce typed schemas or DTOs that match your model's fields, automatically handling optional fields, relations, enums, and composite types.
+
+### Create
+
+<Tabs items={["Zod", "Class Validator"]}>
+  <Tab value="Zod">
+```bash
+arkos generate create-schema --module post
+arkos g cs -m post
+```
+
+**Output:** `src/modules/post/schemas/create-post.schema.ts`
+
+Fields marked as `@id`, timestamps (`createdAt`, `updatedAt`, `deletedAt`), and foreign key columns are excluded. Relation fields are converted to nested objects containing just the reference field (e.g. `{ id: z.string() }`). Optional fields and fields with defaults get `.optional()`. Enum fields use `z.nativeEnum()`.
+
+```ts
+import { z } from "zod";
+
+const CreatePostSchema = z.object({
+  title: z.string(),
+  content: z.string().optional(),
+  published: z.boolean().optional(),
+  author: z.object({ id: z.string().min(1) }),
+});
+
+export default CreatePostSchema;
+
+export type CreatePostSchemaType = z.infer<typeof CreatePostSchema>;
+```
+  </Tab>
+  <Tab value="Class Validator">
+```bash
+arkos generate create-dto --module post
+arkos g cd -m post
+```
+
+**Output:** `src/modules/post/dtos/create-post.dto.ts`
+
+The same field exclusion and relation logic applies. Each field gets the appropriate class-validator decorators. Only the decorators actually needed for the model are imported.
+
+```ts
+import { IsNotEmpty, IsOptional, IsString, IsBoolean, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
+
+class AuthorForCreatePostDto {
+  @IsNotEmpty()
+  @IsString()
+  id!: string;
+}
+
+export default class CreatePostDto {
+  @IsNotEmpty()
+  @IsString()
+  title!: string;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  content?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AuthorForCreatePostDto)
+  author?: AuthorForCreatePostDto;
+}
+```
+  </Tab>
+</Tabs>
+
+### Update
+
+<Tabs items={["Zod", "Class Validator"]}>
+  <Tab value="Zod">
+```bash
+arkos generate update-schema --module post
+arkos g us -m post
+```
+
+**Output:** `src/modules/post/schemas/update-post.schema.ts`
+
+All fields are made optional for patch semantics. The same relation and enum handling applies.
+
+```ts
+import { z } from "zod";
+
+const UpdatePostSchema = z.object({
+  title: z.string().optional(),
+  content: z.string().optional(),
+  published: z.boolean().optional(),
+  author: z.object({ id: z.string().min(1) }).optional(),
+});
+
+export default UpdatePostSchema;
+
+export type UpdatePostSchemaType = z.infer<typeof UpdatePostSchema>;
+```
+  </Tab>
+  <Tab value="Class Validator">
+```bash
+arkos generate update-dto --module post
+arkos g ud -m post
+```
+
+**Output:** `src/modules/post/dtos/update-post.dto.ts`
+
+Every field gets `@IsOptional()`. All other decorators still apply.
+
+```ts
+import { IsOptional, IsNotEmpty, IsString, IsBoolean, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
+
+class AuthorForUpdatePostDto {
+  @IsNotEmpty()
+  @IsString()
+  id!: string;
+}
+
+export default class UpdatePostDto {
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  content?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AuthorForUpdatePostDto)
+  author?: AuthorForUpdatePostDto;
+}
+```
+  </Tab>
+</Tabs>
+
+### Query
+
+<Tabs items={["Zod", "Class Validator"]}>
+  <Tab value="Zod">
+```bash
+arkos generate query-schema --module post
+arkos g qs -m post
+```
+
+**Output:** `src/modules/post/schemas/query-post.schema.ts`
+
+Includes `page`, `limit`, `sort`, and `fields` pagination fields, then adds filter schemas per field type — string fields get `icontains`, number fields get `equals/gte/lte`, datetime fields get `equals/gte/lte`.
+
+```ts
+import { z } from "zod";
+
+const StringFilterSchema = z.object({
+  icontains: z.string().optional()
+});
+
+const QueryPostSchema = z.object({
+  page: z.coerce.number().optional(),
+  limit: z.coerce.number().max(100).optional(),
+  sort: z.string().optional(),
+  fields: z.string().optional(),
+  title: StringFilterSchema.optional(),
+  content: StringFilterSchema.optional(),
+  published: z.boolean().optional(),
+  createdAt: StringFilterSchema.optional(),
+  updatedAt: StringFilterSchema.optional(),
+});
+
+export default QueryPostSchema;
+
+export type QueryPostSchemaType = z.infer<typeof QueryPostSchema>;
+```
+  </Tab>
+  <Tab value="Class Validator">
+```bash
+arkos generate query-dto --module post
+arkos g qd -m post
+```
+
+**Output:** `src/modules/post/dtos/query-post.dto.ts`
+
+Same structure, using class-validator filter classes instead of Zod filter schemas.
+
+```ts
+import { IsOptional, IsString, IsNumber, IsBoolean, ValidateNested, Max, IsNotEmpty } from "class-validator";
+import { Type, Transform } from "class-transformer";
+
+class StringFilter {
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  icontains?: string;
+}
+
+export default class PostQueryDto {
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => (value ? Number(value) : undefined))
+  page?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Max(100)
+  @Transform(({ value }) => (value ? Number(value) : undefined))
+  limit?: number;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  sort?: string;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  fields?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => StringFilter)
+  title?: StringFilter;
+
+  @IsOptional()
+  @IsBoolean()
+  published?: boolean;
+}
+```
+  </Tab>
+</Tabs>
+
+### Base
+
+The base schema/DTO includes all fields from the model without create or update semantics — useful as a reference type or for response shapes.
+
+<Tabs items={["Zod", "Class Validator"]}>
+  <Tab value="Zod">
+```bash
+arkos generate schema --module post
+arkos g sc -m post
+```
+
+**Output:** `src/modules/post/schemas/post.schema.ts`
+
+Relation fields are excluded. All other fields are included as-is with their optionality from the Prisma schema.
+  </Tab>
+  <Tab value="Class Validator">
+```bash
+arkos generate dto --module post
+arkos g d -m post
+```
+
+**Output:** `src/modules/post/dtos/post.dto.ts`
+  </Tab>
+</Tabs>
+
+## Auth Validation
+
+These commands generate validation specifically for the authentication routes (`login`, `signup`, `updateMe`, `updatePassword`). They are always scoped to the `auth` module and always write to `src/modules/auth/schemas/` or `src/modules/auth/dtos/`.
+
+All commands require `-m auth`:
+
+```bash
+arkos g ls -m auth   # login-schema
+arkos g ss -m auth   # signup-schema
+arkos g ums -m auth  # update-me-schema
+arkos g ups -m auth  # update-password-schema
+```
+
+### Login
+
+<Tabs items={["Zod", "Class Validator"]}>
+  <Tab value="Zod">
+```bash
+arkos generate login-schema -m auth
+arkos g ls -m auth
+```
+
+**Output:** `src/modules/auth/schemas/login.schema.ts`
+
+The generated username fields are driven by your `authentication.login.allowedUsernames` config. If you allow multiple username fields (e.g. `email` and `username`) each is generated as optional, with a comment indicating at least one is required. Defaults to `username` if not configured.
+
+```ts
+import { z } from "zod";
+
+// At least one of: email, username is required
+const LoginSchema = z.object({
+  email: z.string().email().optional(),
+  username: z.string().min(1).optional(),
+  password: z.string().min(8)
+});
+
+export default LoginSchema;
+
+export type LoginSchemaType = z.infer<typeof LoginSchema>;
+```
+  </Tab>
+  <Tab value="Class Validator">
+```bash
+arkos generate login-dto -m auth
+arkos g ld -m auth
+```
+
+**Output:** `src/modules/auth/dtos/login.dto.ts`
+
+```ts
+import { IsOptional, IsEmail, IsString, IsNotEmpty, MinLength, Matches } from "class-validator";
+
+export default class LoginDto {
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(8)
+  @Matches(/[a-z]/, { message: "Must contain lowercase" })
+  @Matches(/[A-Z]/, { message: "Must contain uppercase" })
+  @Matches(/[0-9]/, { message: "Must contain number" })
+  password!: string;
+}
+```
+  </Tab>
+</Tabs>
+
+### Signup
+
+<Tabs items={["Zod", "Class Validator"]}>
+  <Tab value="Zod">
+```bash
+arkos generate signup-schema -m auth
+arkos g ss -m auth
+```
+
+**Output:** `src/modules/auth/schemas/signup.schema.ts`
+
+Generated from your `User` Prisma model. Restricted fields (`roles`, `isActive`, `isStaff`, `isSuperUser`, `passwordChangedAt`, and similar internal fields) are excluded. The `password` field always gets strong regex validation.
+
+```ts
+import { z } from "zod";
+
+const SignupSchema = z.object({
+  username: z.string(),
+  email: z.string().email(),
+  password: z.string().min(8)
+    .regex(/[a-z]/, "Must contain lowercase")
+    .regex(/[A-Z]/, "Must contain uppercase")
+    .regex(/[0-9]/, "Must contain number"),
+});
+
+export default SignupSchema;
+
+export type SignupSchemaType = z.infer<typeof SignupSchema>;
+```
+  </Tab>
+  <Tab value="Class Validator">
+```bash
+arkos generate signup-dto -m auth
+arkos g sd -m auth
+```
+
+**Output:** `src/modules/auth/dtos/signup.dto.ts`
+
+```ts
+import { IsNotEmpty, IsString, IsEmail, MinLength, Matches } from "class-validator";
+
+export default class SignupDto {
+  @IsNotEmpty()
+  @IsString()
+  username!: string;
+
+  @IsNotEmpty()
+  @IsEmail()
+  email!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(8)
+  @Matches(/[a-z]/, { message: "Must contain lowercase" })
+  @Matches(/[A-Z]/, { message: "Must contain uppercase" })
+  @Matches(/[0-9]/, { message: "Must contain number" })
+  password!: string;
+}
+```
+  </Tab>
+</Tabs>
+
+### Update Me
+
+<Tabs items={["Zod", "Class Validator"]}>
+  <Tab value="Zod">
+```bash
+arkos generate update-me-schema -m auth
+arkos g ums -m auth
+```
+
+**Output:** `src/modules/auth/schemas/update-me.schema.ts`
+
+Like signup but all fields are optional, and `password` is excluded (password changes go through the dedicated `updatePassword` route).
+
+```ts
+import { z } from "zod";
+
+const UpdateMeSchema = z.object({
+  username: z.string().optional(),
+  email: z.string().email().optional(),
+});
+
+export default UpdateMeSchema;
+
+export type UpdateMeSchemaType = z.infer<typeof UpdateMeSchema>;
+```
+  </Tab>
+  <Tab value="Class Validator">
+```bash
+arkos generate update-me-dto -m auth
+arkos g umd -m auth
+```
+
+**Output:** `src/modules/auth/dtos/update-me.dto.ts`
+
+```ts
+import { IsOptional, IsNotEmpty, IsString, IsEmail } from "class-validator";
+
+export default class UpdateMeDto {
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  username?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+```
+  </Tab>
+</Tabs>
+
+### Update Password
+
+<Tabs items={["Zod", "Class Validator"]}>
+  <Tab value="Zod">
+```bash
+arkos generate update-password-schema -m auth
+arkos g ups -m auth
+```
+
+**Output:** `src/modules/auth/schemas/update-password.schema.ts`
+
+```ts
+import { z } from "zod";
+
+const UpdatePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8)
+    .regex(/[a-z]/, "Must contain lowercase")
+    .regex(/[A-Z]/, "Must contain uppercase")
+    .regex(/[0-9]/, "Must contain number")
+});
+
+export default UpdatePasswordSchema;
+
+export type UpdatePasswordSchemaType = z.infer<typeof UpdatePasswordSchema>;
+```
+  </Tab>
+  <Tab value="Class Validator">
+```bash
+arkos generate update-password-dto -m auth
+arkos g upd -m auth
+```
+
+**Output:** `src/modules/auth/dtos/update-password.dto.ts`
+
+```ts
+import { IsNotEmpty, IsString, MinLength, Matches } from "class-validator";
+
+export default class UpdatePasswordDto {
+  @IsNotEmpty()
+  @IsString()
+  currentPassword!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(8)
+  @Matches(/[a-z]/, { message: "Must contain lowercase" })
+  @Matches(/[A-Z]/, { message: "Must contain uppercase" })
+  @Matches(/[0-9]/, { message: "Must contain number" })
+  newPassword!: string;
+}
+```
+  </Tab>
+</Tabs>
+
+## Notes
+
+Model validation commands (`create-schema`, `update-schema`, etc.) are only available for modules that exist in your Prisma schema. Running them for an unknown module produces an error.
+
+Auth validation commands are only available with `-m auth`.
+
+All generated files use the field types, optionality, and enum values from your actual Prisma schema — regenerate after schema changes.
+
+## Related Guides
+
+- [Code Generation Overview](/docs/tooling/cli/code-generation/overview)
+- [Core Components](/docs/tooling/cli/code-generation/core)
+- [Authentication](/docs/tooling/cli/code-generation/authentication)
