@@ -75,7 +75,7 @@ export type ArkosConfig = {
   /**
    * Defines authentication related configurations, by default is undefined.
    *
-   * See [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for details.
+   * See [www.arkosjs.com/docs/core-concepts/authentication/setup](https://www.arkosjs.com/docs/core-concepts/authentication/setup) for details.
    */
   authentication?: {
     /**
@@ -210,7 +210,7 @@ export type ArkosConfig = {
     /**
      * Defines whether to use Static or Dynamic Role-Based Acess Control
      *
-     * Visit [www.arkosjs.com/docs/core-concepts/authentication-system](https://www.arkosjs.com/docs/core-concepts/authentication-system) for more details.
+     * Visit [www.arkosjs.com/docs/core-concepts/authentication/setup](https://www.arkosjs.com/docs/core-concepts/authentication/setup) for more details.
      */
     mode: "static" | "dynamic";
     /**
@@ -233,7 +233,7 @@ export type ArkosConfig = {
        * POST /api/auth/login?usernameField=email
        * ```
        *
-       * See more at [www.arkosjs.com/docs/core-concepts/authentication-system#login-with-different-fileds](https://www.arkosjs.com/docs/core-concepts/authentication-system#login-with-different-fileds)
+       * See more at [www.arkosjs.com/docs/core-concepts/authentication/setup#login-with-different-fileds](https://www.arkosjs.com/docs/core-concepts/authentication/setup#login-with-different-fileds)
        *
        * By specifing here another field for username, for example passing "email", "companyCode" or something else your json will be like:
        *
@@ -339,7 +339,7 @@ export type ArkosConfig = {
    * })
    * ```
    *
-   * @See [www.arkosjs.com/docs/core-concepts/request-data-validation](https://www.arkosjs.com/docs/core-concepts/request-data-validation) for more details.
+   * @See [www.arkosjs.com/docs/guides/validation/setup](https://www.arkosjs.com/docs/guides/validation/setup) for more details.
    */
   validation?: {
     /**
@@ -634,7 +634,7 @@ export type ArkosConfig = {
   /**
    * Allows to configure email configurations for sending emails through `emailService`
    *
-   * See [www.arkosjs.com/docs/core-concepts/sending-emails](https://www.arkosjs.com/docs/core-concepts/sending-emails)
+   * See [www.arkosjs.com/docs/guides/email-service](https://www.arkosjs.com/docs/guides/email-service)
    */
   email?: {
     /**
@@ -697,7 +697,7 @@ export type ArkosConfig = {
    *  }
    * })
    * ```
-   * @see {@link https://www.arkosjs.com/docs/core-concepts/open-api-documentation}
+   * @see {@link https://www.arkosjs.com/docs/guides/open-api-documentation/setup}
    */
   swagger?: {
     /**
