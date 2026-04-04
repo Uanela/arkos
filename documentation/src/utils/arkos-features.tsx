@@ -57,7 +57,7 @@ export const arkosFeatures = [
     iconColor: "#50a496",
     outline: "hover:outline-indigo-500/50",
     titleHover: "group-hover:text-indigo-500/80",
-    to: "/docs/guide/custom-prisma-query-options",
+    to: "/docs/core-concepts/prisma-orm/custom-queries",
     sideContent: (
       <div className="">
         <Image
@@ -91,7 +91,7 @@ export const arkosFeatures = [
     iconColor: "#f43f5e",
     outline: "hover:outline-green-500/50",
     titleHover: "group-hover:text-green-500/80",
-    to: "/docs/core-concepts/authentication-system",
+    to: "/docs/core-concepts/authentication/setup",
     sideContent: (
       <div className="">
         <Image
@@ -144,7 +144,7 @@ export const arkosFeatures = [
     iconColor: "#a855f7",
     outline: "hover:outline-purple-500/50",
     titleHover: "group-hover:text-purple-500/80",
-    to: "/docs/core-concepts/request-data-validation",
+    to: "/docs/guides/validation/setup",
     sideContent: (
       <div className="">
         <Image
@@ -184,7 +184,7 @@ export const arkosFeatures = [
     iconColor: "#eab308",
     outline: "hover:outline-yellow-500/50",
     titleHover: "group-hover:text-yellow-500/80",
-    to: "/docs/core-concepts/open-api-documentation",
+    to: "/docs/guides/open-api-documentation/setup",
     sideContent: (
       <div className="">
         <Image
@@ -216,7 +216,7 @@ export const arkosFeatures = [
     iconColor: "#fb7185",
     outline: "hover:outline-rose-500/50",
     titleHover: "group-hover:text-rose-500/80",
-    to: "/docs/core-concepts/file-uploads",
+    to: "/docs/guides/file-uploads/setup",
     sideContent: (
       <div className="">
         <Image
@@ -247,7 +247,7 @@ export const arkosFeatures = [
     iconColor: "#06b6d4",
     outline: "hover:outline-cyan-500/50",
     titleHover: "group-hover:text-cyan-500/80",
-    to: "/docs/core-concepts/sending-emails",
+    to: "/docs/guides/email-service",
     sideContent: (
       <div className="">
         <Image
