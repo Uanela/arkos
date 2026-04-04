@@ -77,6 +77,16 @@ function parseKey(
   key: string,
   value: any
 ): { fields: string[]; operator: string | null; value: any }[] {
+  if ((key === "AND" || key === "OR") && Array.isArray(value)) {
+    return [
+      {
+        fields: [key],
+        operator: null,
+        value: value,
+      },
+    ];
+  }
+
   if (value && typeof value === "object" && !Array.isArray(value)) {
     if (key.includes("__")) {
       const parsedKey = parseKeyString(key);
@@ -236,6 +246,23 @@ function buildNestedObject(
   value: any,
   fieldConfig: FieldConfig
 ): any {
+  // Handle top-level AND/OR arrays
+  if (
+    (fields[0] === "AND" || fields[0] === "OR") &&
+    Array.isArray(value) &&
+    fields.length === 1
+  ) {
+    // Process each condition in the array
+    const processedConditions = value.map((condition: any) => {
+      const tempResult = parseQueryParamsWithModifiers(condition, fieldConfig);
+      return tempResult;
+    });
+
+    return {
+      [fields[0]]: processedConditions,
+    };
+  }
+
   if (fields.length === 0) return {};
 
   const firstField = fields[0];
