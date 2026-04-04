@@ -1,0 +1,148 @@
+---
+title: Helper Functions
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Arkos provides two helper functions for manual validation outside the declarative `validation` config — useful in interceptors, services, or anywhere you need to validate arbitrary data imperatively.
+
+## validateSchema
+
+Validates data against a Zod schema.
+
+<Tabs items={["Controller", "Interceptor"]}>
+<Tab value="Interceptor">
+```ts title="src/modules/post/post.interceptors.ts"
+import { validateSchema } from "arkos/validation";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import z from "zod";
+
+const BulkImportSchema = z.array(
+  z.object({
+    title: z.string().min(1),
+    content: z.string().min(1),
+    authorEmail: z.string().email(),
+  })
+);
+
+export const beforeCreateMany = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const validated = await validateSchema(BulkImportSchema, req.body);
+
+    req.body = validated;
+    next();
+  },
+];
+```
+</Tab>
+<Tab value="Controller">
+```ts title="src/modules/post/post.controller.ts"
+import { validateSchema } from "arkos/validation";
+import { ArkosRequest, ArkosResponse } from "arkos";
+import { BaseController } from "arkos";
+import z from "zod";
+import postService from "./post.service";
+
+const BulkImportSchema = z.array(
+  z.object({
+    title: z.string().min(1),
+    content: z.string().min(1),
+    authorEmail: z.string().email(),
+  })
+);
+
+class PostController extends BaseController {
+  async bulkImport(req: ArkosRequest, res: ArkosResponse) {
+    const validated = await validateSchema(BulkImportSchema, req.body);
+
+    // validated is now fully typed and safe
+    req.body = validated;
+  }
+}
+
+export default new PostController(postService);
+```
+</Tab>
+</Tabs>
+
+**Return value:** Returns the validated data (type-safe, with transformations applied). Throws a validation error if validation fails.
+
+## validateDto
+
+Validates data against a class-validator DTO.
+
+<Tabs items={["Controller" ,"Interceptor"]}>
+<Tab value="Interceptor">
+```ts title="src/modules/user/user.interceptors.ts"
+import { validateDto } from "arkos/validation";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import CreateUserDto from "./dtos/create-user.dto";
+
+export const beforeCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const validated = await validateDto(CreateUserDto, req.body);
+
+    req.body = validated;
+    next();
+  },
+];
+```
+</Tab>
+<Tab value="Controller">
+```ts title="src/modules/user/user.controller.ts"
+import { validateDto } from "arkos/validation";
+import { ArkosRequest, ArkosResponse } from "arkos";
+import { BaseController } from "arkos";
+import CreateUserDto from "./dtos/create-user.dto";
+import userService from "./user.service";
+
+class UserController extends BaseController {
+  async createUser(req: ArkosRequest, res: ArkosResponse) {
+    const validated = await validateDto(CreateUserDto, req.body);
+
+    req.body = validated;
+  }
+}
+
+export default new UserController(userService);
+```
+</Tab>
+</Tabs>
+
+**Return value:** Returns the validated DTO instance (with transformed properties). Throws a validation error if validation fails.
+
+## Error Handling
+
+Both helpers throw validation errors with the same structure as declarative validation:
+```json
+{
+  "status": "error",
+  "message": "Invalid Data",
+  "code": 400,
+  "errors": [
+    {
+      "property": "email",
+      "constraints": {
+        "isEmail": "email must be an email"
+      }
+    }
+  ]
+}
+```
+
+You can let them propagate to Arkos's global error handler, or catch them explicitly:
+```ts
+import { validateSchema } from "arkos/validation";
+
+try {
+  const validated = await validateSchema(Schema, data);
+} catch (error) {
+  // validation error — already structured, rethrow or handle
+  throw error;
+}
+```
+
+## Related
+- [Setup](/docs/guides/validation/setup) — Enable validation and choose a resolver
+- [Usage](/docs/guides/validation/usage) — Declarative validation with [ArkosRouter](/docs/core-concepts/components/routers) and [Route Hook](/docs/core-concepts/components/route-hooks)

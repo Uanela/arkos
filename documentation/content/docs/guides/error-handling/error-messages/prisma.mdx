@@ -1,0 +1,54 @@
+---
+title: Prisma
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Arkos intercepts Prisma client errors and maps them to clean HTTP responses automatically. You never need to catch Prisma errors manually — throw them and the global error handler does the rest.
+
+## Connection and Infrastructure Errors
+
+These fire when Arkos cannot reach or initialize the database:
+
+| Prisma Code | Message | Status | Code |
+|---|---|---|---|
+| `P1000` | `Authentication failed against the database server. Please check your credentials.` | `401` | `Unknown` |
+| `P1001` | `The database server is not reachable. Verify your connection string or ensure the server is online.` | `503` | `Unknown` |
+| `P1002` | `Connection to the database timed out. Please check server performance or network connectivity.` | `504` | `Unknown` |
+| `P1003` | `The specified database does not exist on the server.` | `404` | `Unknown` |
+
+## Data Errors
+
+These fire during query and mutation operations:
+
+| Prisma Code | Message | Status | Code |
+|---|---|---|---|
+| `P2000` | `The value for the field "{field}" is too large. Please provide a smaller value.` | `400` | `Unknown` |
+| `P2001` | `No record found for the given query. Ensure the query parameters are correct.` | `404` | `Unknown` |
+| `P2002` | `Duplicate value detected for the unique field(s): {field}. Please use a different value.` | `409` | `{Model}{Field}UniqueConstraint` |
+| `P2003` | `Foreign key constraint violation. Ensure that the referenced record exists.` | `400` | `Unknown` |
+| `P2004` | `A database constraint "{constraint}" failed. Please review your input data.` | `400` | `Unknown` |
+| `P2025` | Cause from Prisma meta, or `Operation could not be completed as some required record was not found` | `400` or `404` | `InlineRecordNotFound` or `RecordNotFound` |
+
+## Migration Errors
+
+These fire during schema migration operations:
+
+| Prisma Code | Message | Status | Code |
+|---|---|---|---|
+| `P3000` | `Failed to create the database schema. Verify the schema definition and try again.` | `500` | `Unknown` |
+| `P3001` | `The migration "{name}" has already been applied to the database.` | `409` | `Unknown` |
+| `P3002` | `The migration script "{name}" failed. Review the script and resolve any issues.` | `500` | `Unknown` |
+| `P3003` | `Version mismatch: The database schema and migration versions are inconsistent.` | `400` | `Unknown` |
+
+## Validation Errors
+
+| Error Type | Message | Status |
+|---|---|---|
+| `PrismaClientValidationError` | Last line of Prisma's validation message | `400` |
+| `PrismaClientInitializationError` | `Service temporarily unavailable` | `503` |
+
+<Callout type="info">
+For the full list of Prisma error codes and what triggers them, see the [Prisma error reference](https://www.prisma.io/docs/orm/reference/error-reference).
+</Callout>

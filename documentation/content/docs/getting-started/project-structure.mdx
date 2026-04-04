@@ -2,111 +2,82 @@
 title: Project Structure
 ---
 
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
-Arkos.js follows a thoughtfully designed architecture that emphasizes simplicity, convention over configuration, and developer productivity. The structure is designed to scale from simple APIs to complex enterprise applications while maintaining clarity and organization.
+Arkos follows a file-based convention system. Certain files with specific naming patterns are automatically discovered and integrated by the framework at boot time. This page covers the required structure and explains what each file type does.
 
-:::info
-Is worth mentioning that on this section you'll find some folders/files that are required for Arkos.js to be able to automatically find those folders/files and do it's jobs with it. You will also find some folders/files that are simply considered best practices around the Server-Side JavaScript Community, those that are required will be marked with `required`.
-:::
+<Callout type="info">
+Files and folders marked as **required** must exist at the specified paths for Arkos to function correctly. Everything else follows community best practices but is flexible.
+</Callout>
 
-## Architecture Philosophy
-
-The project structure is built on three core principles:
-
-- **File-based conventions** - Special files with specific naming patterns (`.router.ts`, `.auth.ts`) automatically integrate (automatically loaded) with the framework 
-- **Module-centric organization** - Each Prisma model gets its own module directory containing all related components
-- **Zero-configuration defaults** - Sensible defaults with the flexibility to customize when needed
-
-## Root Directory Structure
+## Root Directory
 
 ```
 my-arkos-project/
 ├── prisma/
 │   └── schema/
-│       └── schema.prisma          # Database schema definition
-├── src/                           # Application source code (required)
-│   ├── modules/                   # Feature modules (one per Prisma model)
-│   ├── utils/                     # Shared utilities and configurations (required)
-│   └── app.ts                     # Application entry point (required)
-├── uploads/                       # File storage directory
-├── .env                          # Environment variables
-├── package.json                  # Project dependencies and scripts
-└── arkos.config.ts               # Framework configuration (v1.4.0+)
+│       └── schema.prisma        # Database schema (required)
+├── src/
+│   ├── modules/                 # Feature modules (required)
+│   ├── utils/
+│   │   └── prisma/
+│   │       └── index.ts         # Prisma client export (required)
+│   └── app.ts                   # Application entry point (required)
+├── uploads/                     # File storage directory
+├── .env
+├── package.json
+└── arkos.config.ts              # Framework configuration (v1.4.0+)
 ```
 
-## The `/src` Directory
+## Application Entry Point
 
-The source directory contains all your application logic, organized into distinct areas of responsibility:
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+```ts title="src/app.ts"
+import arkos from "arkos";
+import analyticsRouter from "@/src/modules/analytics/analytics.router";
 
-### Application Entry Point
+const app = arkos();
 
-import { Tabs, Tab } from "fumadocs-ui/components/tabs"
- 
+app.use(analyticsRouter);
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-**`src/app.ts`** - Your application's main configuration file:
-
-```typescript
-import arkos from 'arkos';
-import analyticsRouter from './routers/analytics.router';
-
-arkos.init({
-  use: [analyticsRouter], // Custom routers and middlewares
-  configureApp: (app) => {
-    // Express app customization
-    app.set('trust proxy', 1);
-  },
-  configureServer: (server) => {
-    // HTTP server customization
-    server.setTimeout(30000);
-  }
-});
+app.listen();
 ```
-
-:::info Configuration Changes
-In v1.4.0+, most configuration has moved to `arkos.config.ts`. The `arkos.init()` method now focuses on runtime setup - registering custom routers, configuring the Express app, and customizing the HTTP server.
-:::
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-**`src/app.ts`** - Your application's main configuration file:
-
-```typescript
-import arkos from 'arkos';
-import analyticsRouter from './routers/analytics.router';
+<Tab value="v1.4–v1.5">
+```ts title="src/app.ts"
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
 
 arkos.init({
-  cors: {
-    allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "https://yoursite.com"
+  use: [analyticsRouter],
+  configureApp: (app) => {
+    app.set("trust proxy", 1);
   },
-  routers: {
-    additional: [analyticsRouter]
-  },
-  // All configuration options here
 });
 ```
+</Tab>
+<Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+import analyticsRouter from "./routers/analytics.router";
 
+arkos.init({
+  cors: { allowedOrigins: "*" },
+  routers: {
+    additional: [analyticsRouter],
+  },
+});
+```
 </Tab>
 </Tabs>
 
-### Utilities Directory
+## Prisma Client — Required
 
-**`src/utils/`** - Contains shared utilities and the required Prisma client:
+Arkos dynamically imports your Prisma client to power auto-generated endpoints and the [BaseService](/docs/reference/base-service) class. It must be exported as default from exactly this path:
 
-```
-src/utils/
-├── prisma/
-│   └── index.ts                   # Prisma client instance (required)
-├── helpers/                       # Shared helper functions
-└── types/                         # TypeScript type definitions
-```
-
-**Critical requirement**: Your Prisma client must be exported as default from `src/utils/prisma/index.ts`:
-
-```typescript
+```ts title="src/utils/prisma/index.ts"
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -114,344 +85,209 @@ const prisma = new PrismaClient();
 export default prisma;
 ```
 
-### Modules Directory
+## Modules Directory
 
-**`src/modules/`** - The heart of your application. Each Prisma model gets its own module directory:
-
-```
-src/modules/
-├── auth/                          # Built-in authentication module
-│   ├── dtos/                      # Data Transfer Objects (required for class-validator)
-│   ├── schemas/                   # Or Zod validation schemas (required for Zod)
-│   └── utils/                     # Authentication utilities
-├── user/                          # User model module
-├── post/                          # Post model module
-└── product/                       # Product model module
-```
-
-## Module Structure
-
-Each module directory follows a consistent structure. Here's an example for a `post` module:
+Each Prisma model gets its own module directory under `src/modules/`. Here's the full set of files a module can have:
 
 ```
 src/modules/post/
-├── post.controller.ts             # Custom controller logic
-├── post.service.ts                # Business logic and data operations
-├── post.router.ts                 # Custom route definitions
-├── post.interceptors.ts           # Request interceptors (v1.4.0+)
-├── post.middlewares.ts            # Legacy name (still supported)
-├── post.auth.ts                   # Authentication and authorization rules
-├── post.query.ts                  # Default Prisma query configurations
-├── post.hooks.ts                  # Lifecycle hooks (before/after operations)
-├── dtos/                          # Class-validator DTOs
+├── post.controller.ts       # Custom controller logic
+├── post.service.ts          # Business logic and data operations
+├── post.router.ts           # Route definitions and RouteHook config
+├── post.interceptors.ts     # Before/after hooks for built-in routes
+├── post.auth.ts             # Auth config files (pre-v1.6, still supported)
+├── post.policy.ts           # ArkosPolicy (v1.6+, recommended)
+├── post.query.ts            # Default Prisma query options
+├── post.hooks.ts            # Service-layer hooks
+├── dtos/                    # Class-validator DTOs
 │   ├── create-post.dto.ts
 │   └── update-post.dto.ts
-├── schemas/                       # Zod validation schemas
-│   ├── create-post.schema.ts
-│   └── update-post.schema.ts
-└── utils/                         # Module-specific utilities
+└── schemas/                 # Zod schemas
+    ├── create-post.schema.ts
+    └── update-post.schema.ts
 ```
 
-:::info File Naming Change
-In v1.4.0+, `*.middlewares.ts` has been renamed to `*.interceptors.ts` to better reflect their purpose. The old naming still works for backward compatibility.
-:::
+<Callout type="info">
+Module directory names must be **kebab-case** and match the Prisma model name (`user-profile`, not `userProfile` or `UserProfile`). Arkos uses these names to match modules to their models.
+</Callout>
 
-### File Types Explained
+### Controller (`*.controller.ts`)
 
-#### Controller Files (`*.controller.ts`)
-Define custom business logic and handle complex operations beyond basic CRUD:
+For Prisma model routes, extend `BaseController` which already provides `createOne`, `findMany`, `findOne`, `updateOne`, `updateMany`, `deleteOne`, `deleteMany`, and `createMany`. Add custom methods on top:
 
-```typescript
-import { ArkosRequest, ArkosResponse } from "arkos";
-import { BaseController } from "arkos/controllers"
+```ts title="src/modules/post/post.controller.ts"
+import { BaseController } from "arkos";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import postService from "./post.service";
 
 class PostController extends BaseController {
-    async getPostAnalytics (req: ArkosRequest, res: ArkosResponse) {
-        // Custom analytics logic
-        res.json({ data: analytics });
-      }
+  getAnalytics = async (
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    const analytics = await postService.getAnalytics();
+    res.json({ status: "success", data: analytics });
+  };
 }
 
-const postController = new PostController("post")
-
-export default postController
+export default new PostController(postService);
 ```
 
-#### Service Files (`*.service.ts`)
+### Service (`*.service.ts`)
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
+Extend `BaseService` to add business logic on top of the built-in CRUD methods:
 
-Extend the base service with custom business logic. In v1.4.0+, `BaseService` uses kebab-case model names for better type inference:
-
-```typescript
-import { BaseService } from "arkos/service";
+<Tabs items={["v1.4+", "v1.3"]}>
+<Tab value="v1.4+">
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
 
 class PostService extends BaseService<"post"> {
-  async getPostsByAuthor(authorId: string) {
-    return this.findMany(
-       { authorId },
-       { include: { author: true } }
-    );
+  async getPublished() {
+    return this.findMany({ where: { published: true } });
+  }
+
+  async getAnalytics() {
+    return this.findMany({
+      where: { published: true },
+      select: { id: true, title: true, views: true },
+    });
   }
 }
 
-const postService = new PostService("post");
-
-export default postService
+export default new PostService("post");
 ```
-
-:::tip Type Inference
-The kebab-case model name (`"post"`) enables automatic type inference after running `npx arkos prisma generate`. This command generates enhanced type definitions from your Prisma schema.
-:::
-
 </Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-```typescript
-import { BaseService } from "arkos/service";
+<Tab value="v1.3">
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
 import { Prisma } from "@prisma/client";
 
 class PostService extends BaseService<Prisma.PostDelegate> {
-  async getPostsByAuthor(authorId: string) {
-    return this.findMany(
-       { authorId },
-       { include: { author: true } }
-    );
+  async getPublished() {
+    return this.findMany({ where: { published: true } });
   }
 }
 
-const postService = new PostService("post");
-
-export default postService
+export default new PostService("post");
 ```
-
 </Tab>
 </Tabs>
 
-#### Router Files (`*.router.ts`)
+### Router (`*.router.ts`)
 
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
+Defines custom routes and configures built-in auto-generated routes via `RouteHook`:
 
-Define custom routes with declarative configuration. ArkosRouter automatically handles async errors:
-
-```typescript
-import { ArkosRouter } from "arkos";
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import postPolicy from "./post.policy";
 import postController from "./post.controller";
+
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+  createOne: { authentication: postPolicy.Create },
+  deleteOne: { authentication: postPolicy.Delete },
+};
 
 const postRouter = ArkosRouter();
 
 postRouter.get(
-  {
-    path: "/analytics",
-    authentication: {
-      resource: "post",
-      action: "ViewAnalytics",
-      rule: { roles: ["Admin", "Manager"] }
+  { path: "/posts/analytics", authentication: postPolicy.View },
+  postController.getAnalytics
+);
+
+export default postRouter;
+```
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
+</Callout>
+
+### Interceptors (`*.interceptors.ts`)
+
+Run logic before or after auto-generated route operations without replacing the built-in behavior. For custom routes, this logic lives in the controller instead:
+
+```ts title="src/modules/post/post.interceptors.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const beforeCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    req.body.authorId = req.user.id;
+    next();
+  },
+];
+
+export const afterCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    const created = res.locals.data.data;
+    console.log("Post created:", created.id);
+    next();
+  },
+];
+
+export const onCreateOneError = [
+  async (
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    next(err);
+  },
+];
+```
+
+See [Interceptors](/docs/core-concepts/components/interceptors) for the full list of available hooks.
+
+### Policy (`*.policy.ts`)
+
+Defines permissions for a module using `ArkosPolicy` (v1.6+, recommended):
+
+```ts title="src/modules/post/post.policy.ts"
+import { ArkosPolicy } from "arkos";
+
+const postPolicy = ArkosPolicy("post")
+  .rule("Create", { roles: ["Admin", "Editor"], name: "Create Post" })
+  .rule("Update", { roles: ["Admin", "Editor"], name: "Update Post" })
+  .rule("Delete", { roles: ["Admin"], name: "Delete Post" })
+  .rule("View", { roles: ["*"] });
+
+export default postPolicy;
+```
+
+See [Static Mode](/docs/core-concepts/authentication/permissions/static) for full details. For projects using the older `.auth.ts` approach, see [Auth Config Files](/docs/core-concepts/authentication/permissions/static#auth-config-files).
+
+### Service Hooks (`*.hooks.ts`)
+
+Run logic at the service layer — fires on every `BaseService` call, whether from an HTTP endpoint or programmatically:
+
+```ts title="src/modules/post/post.hooks.ts"
+import { BeforeCreateOneHookArgs, AfterCreateOneHookArgs } from "arkos/services";
+import { Prisma } from "@prisma/client";
+
+export const beforeCreateOne = [
+  async ({ data }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
+    if (!data.slug && data.title) {
+      data.slug = data.title.toLowerCase().replace(/\s+/g, "-");
     }
   },
-  postController.getPostAnalytics
-);
+];
 
-postRouter.post(
-  {
-    path: "/bulk-import",
-    authentication: true
+export const afterCreateOne = [
+  async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
+    console.log("Post created via service:", result.id);
   },
-  postController.bulkImportPosts
-);
-
-export default postRouter;
-```
-
-:::info No catchAsync Needed
-ArkosRouter automatically wraps handlers with error handling, so you don't need `catchAsync` anymore.
-:::
-
-</Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-```typescript
-import { Router } from "express";
-import postController from "./post.controller";
-import { authService } from "arkos/services";
-import { catchAsync } from "arkos/error-handler"
-
-const postRouter = Router();
-
-postRouter.get(
-  "/analytics",
-  authService.authenticate, 
-  authService.handleAccessControl("ViewAnalytics", "post"),
-  catchAsync(postController.getPostAnalytics)
-);
-
-postRouter.post(
-  "/bulk-import", 
-  catchAsync(postController.bulkImportPosts)
-);
-
-export default postRouter;
-```
-
-</Tab>
-</Tabs>
-
-#### Interceptor Files (`*.interceptors.ts`)
-
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-Intercept requests to auto-generated endpoints. All interceptors must be wrapped in arrays:
-
-```typescript
-// src/modules/post/post.interceptors.ts
-import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
-import { AppError } from "arkos/error-handler";
-
-export const beforeCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Add author ID from authenticated user
-    req.body.authorId = req.user.id;
-    next();
-  }
-];
-
-export const onCreateOneError = [
-  async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Handle validation manually
-    if (err.name === 'ValidationError') 
-      throw new AppError("Invalid data, please check your data", 400)
-
-    // Handle conflict errors with custom messages
-    if (err.code === 11000) 
-      throw new AppError("A post with this title already exists", 409)
-    
-    // Let the Arkos.js global error handler handle
-    next(err);
-  }
-];
-
-export const afterFindMany = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    // Transform response data
-    res.locals.data = res.locals.data.map(post => ({
-      ...post,
-      readingTime: calculateReadingTime(post.content)
-    }));
-    next();
-  }
 ];
 ```
 
+See [Service Hooks](/docs/core-concepts/components/service-hooks) for the full list of available hooks and how they differ from interceptors.
 
+### Prisma Query Options (`*.query.ts`)
 
-</Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
+Define default query parameters that Arkos applies automatically to auto-generated endpoints:
 
-```typescript
-// src/modules/post/post.middlewares.ts
-import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
-import { AppError } from "arkos/error-handler";
-
-// Still using .middlewares.ts filename
-export const beforeCreateOne = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    req.body.authorId = req.user.id;
-    next();
-  }
-];
-
-export const onCreateOneError = [
-  async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    if (err.name === 'ValidationError') 
-      throw new AppError("Invalid data, please check your data", 400)
-    
-    if (err.code === 11000) 
-      throw new AppError("A post with this title already exists", 409)
-    
-    next(err);
-  }
-];
-
-export const afterFindMany = [
-  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    res.locals.data = res.locals.data.map(post => ({
-      ...post,
-      readingTime: calculateReadingTime(post.content)
-    }));
-    next();
-  }
-];
-```
-
-</Tab>
-</Tabs>
-
-:::info Array Wrapping
-Since v1.3.0 is recommended that all interceptors and hooks must be exported as arrays. This allows you to compose multiple handlers for the same lifecycle event.
-:::
-
-#### Authentication Configuration (`*.auth.ts`)
-
-Control access to auto-generated endpoints with role-based and permission-based rules:
-
-```typescript
-import { AuthConfigs } from "arkos/auth";
-import { authService } from "arkos/services";
-
-// Define reusable permissions
-export const postPermissions = {
-  canCreate: authService.permission("Create", "post"),
-  canUpdate: authService.permission("Update", "post"),
-  canDelete: authService.permission("Delete", "post"),
-  canView: authService.permission("View", "post"),
-};
-
-const postAuthConfigs: AuthConfigs = {
-  authenticationControl: {
-    View: false,          // Public endpoint
-    Create: true,         // Requires authentication
-    Update: true,
-    Delete: true,
-  },
-  accessControl: {
-    // Simple role-based access
-    // Create: ["Author", "Admin"],
-    // Update: ["Author", "Admin"],
-    // Delete: ["Admin"],
-    
-    // Or fine-grained permission-based access
-    Create: {
-      roles: ["Author", "Admin"],
-      name: "Create Post",
-      description: "Permission to create new post records"
-    },
-    Update: {
-      roles: ["Author", "Admin"],
-      name: "Update Post",
-      description: "Permission to update existing post records"
-    },
-    Delete: {
-      roles: ["Admin"],
-      name: "Delete Post",
-      description: "Permission to delete post records"
-    },
-  },
-};
-
-export default postAuthConfigs;
-```
-
-:::tip Permission Objects
-The permission object syntax allows for more granular control and better documentation of what each permission does. This is especially useful when integrating with permission management systems.
-:::
-
-#### Prisma Query Options (`*.query.ts`)
-Define default query parameters for consistent data fetching:
-
-```typescript
+```ts title="src/modules/post/post.query.ts"
 import { Prisma } from "@prisma/client";
 import { PrismaQueryOptions } from "arkos/prisma";
 
@@ -459,25 +295,17 @@ const postPrismaQueryOptions: PrismaQueryOptions<Prisma.PostDelegate> = {
   findMany: {
     include: {
       author: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        }
+        select: { id: true, name: true },
       },
       tags: true,
     },
     orderBy: { createdAt: "desc" },
-    take: 20,
   },
   findOne: {
     include: {
       author: true,
       tags: true,
       comments: {
-        include: {
-          author: true,
-        },
         orderBy: { createdAt: "desc" },
       },
     },
@@ -487,39 +315,25 @@ const postPrismaQueryOptions: PrismaQueryOptions<Prisma.PostDelegate> = {
 export default postPrismaQueryOptions;
 ```
 
-#### Hooks (`*.hooks.ts`)
+### Validation
 
-Execute custom logic before or after service operations. All hooks must be wrapped in arrays:
+**Zod schemas** (`schemas/*.schema.ts`):
 
-```typescript
-import { BeforeCreateOneHookArgs, AfterCreateOneHookArgs } from "arkos/services";
-import { emailService } from "../email/email.service"
-import { Prisma } from "@prisma/client"
-import postService from "./post.service"
+```ts title="src/modules/post/schemas/create-post.schema.ts"
+import z from "zod";
 
-export const beforeCreateOne = [
-  async ({ data }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
-    // Generate slug from title
-    data.slug = postService.generateSlug(data.title);
-  }
-];
+const CreatePostSchema = z.object({
+  title: z.string().max(200),
+  content: z.string().min(10),
+  excerpt: z.string().optional(),
+});
 
-export const afterCreateOne = [
-  async (args: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
-    // Send notification email
-    await emailService.notifyFollowers(args.result);
-  },
-  async (args: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
-    // Update search index
-    await searchService.indexPost(args.result);
-  }
-];
+export default CreatePostSchema;
 ```
 
-#### Validation (DTOs and Schemas)
+**Class-validator DTOs** (`dtos/*.dto.ts`):
 
-**Class-Validator DTOs** (`dtos/*.dto.ts`):
-```typescript
+```ts title="src/modules/post/dtos/create-post.dto.ts"
 import { IsString, IsOptional, MaxLength } from "class-validator";
 
 export default class CreatePostDto {
@@ -536,167 +350,18 @@ export default class CreatePostDto {
 }
 ```
 
-**Zod Schemas** (`schemas/*.schema.ts`):
-```typescript
-import z from "zod";
+## Package.json Scripts
 
-const CreatePostSchema = z.object({
-  title: z.string().max(200),
-  content: z.string().min(10),
-  excerpt: z.string().optional(),
-});
+<Callout type="info">
+`"type": "module"` is only required for JavaScript projects. Remove it if you are using TypeScript.
+</Callout>
 
-export default CreatePostSchema;
-```
-
-## Special Directories
-
-### Database Schema
-
-**`prisma/schema/schema.prisma`** (required) - Your database schema definition:
-
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model User {
-  id    String @id @default(cuid())
-  email String @unique
-  name  String
-  posts Post[]
-}
-
-model Post {
-  id       String @id @default(cuid())
-  title    String
-  content  String
-  author   User   @relation(fields: [authorId], references: [id])
-  authorId String
-}
-```
-
-### File Uploads
-
-**`uploads/`** - Organized file storage:
-
-```
-uploads/
-├── images/                        # Image files
-├── documents/                     # PDF, DOC files  
-├── videos/                        # Video files
-└── files/                         # Other file types
-```
-
-## Configuration Files
-
-### Framework Configuration (v1.4.0+)
-
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-**`arkos.config.ts`** - Main framework configuration:
-
-```typescript
-import { ArkosConfig } from "arkos/config";
-
-const arkosConfig: ArkosConfig = {
-  middlewares: {
-    cors: {
-      allowedOrigins: process.env.NODE_ENV !== "production" 
-        ? "*" 
-        : "https://yoursite.com"
-    },
-  },
-  authentication: {
-    jwt: {
-      secret: process.env.JWT_SECRET,
-      expiresIn: "7d"
-    }
-  },
-};
-
-export default arkosConfig
-```
-
-:::info Configuration Migration
-In v1.4.0+, most configuration has moved from `arkos.init()` to `arkos.config.ts`. This separation makes configuration more maintainable and enables usability of the config on CLI tools.
-:::
-
-</Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-All configuration is done in `src/app.ts` through the `arkos.init()` method. There is no separate `arkos.config.ts` file.
-
-</Tab>
-</Tabs>
-
-### Environment Configuration
-
-ArkosJS loads environment variables in this order (highest priority first):
-
-1. **Process environment variables** (system-level)
-2. **`.env`** - Main environment file
-3. **`.env.local`** - Local overrides (not committed)
-4. **`.env.[NODE_ENV].local`** - Environment-specific local overrides
-5. **`.env.[NODE_ENV]`** - Environment-specific variables
-6. **`.env.defaults`** - Default values (lowest priority)
-
-#### Required Environment Variables
-
-```bash
-# Database connection (required)
-DATABASE_URL="postgresql://username:password@localhost:5432/dbname"
-
-# JWT authentication (required if using auth)
-JWT_SECRET="your-super-secret-jwt-key"
-
-# Server configuration
-PORT=8000
-NODE_ENV=development
-```
-
-## Package.json Configuration
-
-Essential scripts for ArkosJS development:
-
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-```json
-{
-  "type": "module", // JavaScript only required
-  "scripts": {
-    "dev": "arkos dev",
-    "build": "arkos build", 
-    "start": "arkos start",
-    "arkos": "arkos",
-    "prisma:generate": "arkos prisma generate"
-  },
-  "prisma": {
-    "schema": "prisma/schema/"
-  }
-}
-```
-
-:::tip Enhanced Type Generation
-The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitions that enable better type inference in `BaseService` and other framework components.
-:::
-
-</Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-```json
+```json title="package.json"
 {
   "type": "module",
   "scripts": {
     "dev": "arkos dev",
-    "build": "arkos build", 
+    "build": "arkos build",
     "start": "arkos start",
     "arkos": "arkos"
   },
@@ -706,49 +371,13 @@ The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitio
 }
 ```
 
-</Tab>
-</Tabs>
+## Naming Conventions
 
-## Best Practices
-
-### Module Organization
-- **One module per Prisma model** (required) - Keep related functionality together. It is required if you want to harness some of Arkos.js built-in features that you will find across other sections.
-- **Use kebab-case** (required) - for module directory names (`user-profile`, not `userProfile` nor `user-profiles`).
-- **Consistent file naming** (required partially) - Always use the pattern `model-name.file-type.ts`.
-
-### File Structure Guidelines
-- **Keep modules focused** - Each module should have a single, clear responsibility
-- **Use type-safe imports** - Leverage TypeScript for better developer experience
-- **Organize utilities** (required only for prisma client) - Shared code goes in `/src/utils`, module-specific code in module's `/utils`
-- **Wrap in arrays** - All interceptors, middlewares, and hooks must be exported as arrays
-
-### Development Workflow
-
-<Tabs groupId="version">
-<Tab value="v1.4" label="v1.4.0+ (Recommended)" default>
-
-1. **Define your Prisma schema** first
-2. **Generate enhanced types** with `npx arkos prisma generate`
-3. **Create module directories** for each model you want to customize
-4. **Add authentication configs** to control access (use permission objects for fine-grained control)
-5. **Implement custom logic** in controllers, interceptors and services as needed
-
-</Tab>
-<Tab value="v1.3" label="v1.3.0 and earlier">
-
-1. **Define your Prisma schema** first
-2. **Generate Prisma client** with `npx prisma generate`
-3. **Create module directories** for each model you want to customize
-4. **Add authentication configs** to control access
-5. **Implement custom logic** in controllers, middlewares and services as needed
-
-</Tab>
-</Tabs>
-
-### Configuration Tips
-- **Environment-specific configs** - Use `.env.development`, `.env.production`
-- **Keep secrets secure** - Never commit `.env` files with sensitive data
-- **Use meaningful names** - Choose descriptive module and file names
-- **Centralize configuration** (v1.4.0+) - Use `arkos.config.ts` for framework settings
-
-This structure provides the perfect balance of convention and flexibility, allowing you to build powerful APIs quickly while maintaining the ability to customize every aspect of your application when needed.
+| Convention | Rule |
+|---|---|
+| Module directories | kebab-case matching Prisma model name — `user-profile`, `order-item` |
+| File naming | `model-name.file-type.ts` — `post.controller.ts`, `post.service.ts` |
+| Controller export | Always a class singleton — `export default new PostController(postService)` |
+| Service export | Always a class singleton — `export default new PostService("post")` |
+| Interceptors | Always arrays — `export const beforeCreateOne = [...]` |
+| Service hooks | Always arrays — `export const beforeCreateOne = [...]` |

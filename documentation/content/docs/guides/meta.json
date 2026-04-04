@@ -1,0 +1,14 @@
+{
+  "title": "Guides",
+  "collapsible": false,
+  "pages": [
+    "global-middlewares",
+    "validation",
+    "error-handling",
+    "file-uploads",
+    "security",
+    "open-api-documentation",
+    "email-service",
+    "migrations"
+  ]
+}

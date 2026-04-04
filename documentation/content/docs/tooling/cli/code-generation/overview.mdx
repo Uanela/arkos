@@ -1,0 +1,132 @@
+---
+title: Overview
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The `arkos generate` command (alias `arkos g`) creates boilerplate files that follow Arkos.js conventions. Instead of writing the same scaffolding by hand for every module, you describe what you want and the CLI generates it — correctly named, correctly typed, and ready to customize.
+
+## Generating Multiple Components at Once
+
+The most powerful entry point is `generate components`. It lets you generate any combination of components for one or more modules in a single command.
+
+```bash
+arkos generate components [options]
+arkos g co [options]
+```
+
+**Options specific to this command:**
+
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `--all` | | Generate all available components for the module |
+| `--names <names>` | `-n` | Comma-separated list of components to generate |
+| `--modules <names>` | `--ms` | Comma-separated list of module names |
+
+### Generate Everything for a Module
+
+```bash
+arkos generate components --module post --all
+arkos g co -m post --all
+```
+
+This generates the full set of files for the `post` module:
+
+```
+src/modules/post/
+├── post.controller.ts
+├── post.service.ts
+├── post.router.ts
+├── post.interceptors.ts
+├── post.hooks.ts
+├── post.policy.ts
+├── post.query.ts
+├── schemas/
+│   ├── post.schema.ts
+│   ├── create-post.schema.ts
+│   ├── update-post.schema.ts
+│   └── query-post.schema.ts
+└── dtos/
+    ├── post.dto.ts
+    ├── create-post.dto.ts
+    ├── update-post.dto.ts
+    └── query-post.dto.ts
+prisma/schema/post.prisma
+```
+
+### Generate Specific Components
+
+Pass a comma-separated list of component names or their aliases with `-n`:
+
+```bash
+arkos generate components --module post --names service,controller,router
+arkos g co -m post -n s,c,r
+```
+
+You can mix full names and aliases freely:
+
+```bash
+arkos g co -m post -n service,c,router,sc,dto
+```
+
+### Generate Components for Multiple Modules at Once
+
+Use `--modules` (or `--ms`) to run the same generation across several modules:
+
+```bash
+arkos generate components --modules post,user,comment --all
+arkos g co --ms post,user,comment --all
+
+# Or specific components across multiple modules
+arkos g co --ms post,user -n s,c,r
+```
+
+<Callout type="info">
+  When using multiple modules, use `--modules` / `--ms`. Passing a comma-separated list to `-m` / `--module` is not supported and will throw an error.
+</Callout>
+
+## Available Components
+
+| Full Name | Alias | What It Generates | Guide |
+|-----------|-------|-------------------|-------|
+| `controller` | `c` | Controller class extending `BaseController` | [Core](/docs/tooling/cli/code-generation/core) |
+| `service` | `s` | Service class extending `BaseService` | [Core](/docs/tooling/cli/code-generation/core) |
+| `router` | `r` | Router file with `RouteHook` export | [Core](/docs/tooling/cli/code-generation/core) |
+| `interceptors` | `i` | Interceptor middleware arrays | [Core](/docs/tooling/cli/code-generation/core) |
+| `hooks` | `h` | Service hook arrays | [Core](/docs/tooling/cli/code-generation/core) |
+| `query-options` | `q` | Prisma query options config | [Prisma](/docs/tooling/cli/code-generation/prisma) |
+| `model` | `m` | Prisma model file | [Prisma](/docs/tooling/cli/code-generation/prisma) |
+| `schema` | `sc` | Base Zod schema | [Validation](/docs/tooling/cli/code-generation/validation) |
+| `create-schema` | `cs` | Create Zod schema | [Validation](/docs/tooling/cli/code-generation/validation) |
+| `update-schema` | `us` | Update Zod schema | [Validation](/docs/tooling/cli/code-generation/validation) |
+| `query-schema` | `qs` | Query Zod schema | [Validation](/docs/tooling/cli/code-generation/validation) |
+| `dto` | `d` | Base class-validator DTO | [Validation](/docs/tooling/cli/code-generation/validation) |
+| `create-dto` | `cd` | Create DTO | [Validation](/docs/tooling/cli/code-generation/validation) |
+| `update-dto` | `ud` | Update DTO | [Validation](/docs/tooling/cli/code-generation/validation) |
+| `query-dto` | `qd` | Query DTO | [Validation](/docs/tooling/cli/code-generation/validation) |
+| `policy` | `p` | `ArkosPolicy` file | [Authentication](/docs/tooling/cli/code-generation/authentication) |
+| `auth-configs` | `a` | Auth config file (deprecated) | [Authentication](/docs/tooling/cli/code-generation/authentication) |
+
+## Overwriting Existing Files
+
+By default the CLI refuses to overwrite an existing file. Pass `-o` or `--overwrite` to force it:
+
+```bash
+arkos g co -m post --all --overwrite
+```
+
+## Custom Output Path
+
+Override the default `src/modules` location with `-p`:
+
+```bash
+arkos g co -m post --all -p src/api
+# Results in: src/api/post/post.controller.ts, etc.
+```
+
+## Related Guides
+
+- [Core Components](/docs/tooling/cli/code-generation/core)
+- [Prisma Components](/docs/tooling/cli/code-generation/prisma)
+- [Validation](/docs/tooling/cli/code-generation/validation)
+- [Authentication](/docs/tooling/cli/code-generation/authentication)

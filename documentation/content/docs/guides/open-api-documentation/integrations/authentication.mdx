@@ -1,0 +1,83 @@
+---
+title: Authentication
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { ImageZoom } from 'fumadocs-ui/components/image-zoom';
+
+Arkos integrates directly with its authentication system to secure your OpenAPI documentation in production. When enabled, it provides a built-in login UI that respects your `login.allowedUsernames` configuration.
+
+## Configuration
+
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos";
+
+export default defineConfig({
+  authentication: {
+    login: {
+      allowedUsernames: ["email", "staffCode"], // or ["username"], ["email"]
+    },
+  },
+  swagger: {
+    endpoint: "/api/docs",
+    authenticate: true,   // Require login to access docs (default: true in production, false in development)
+    enableAfterBuild: true, // Keep docs available after build (default: true)
+  },
+});
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `authenticate` | `true` in production, `false` in development | Require authentication to access docs |
+| `enableAfterBuild` | `true` | Keep documentation available after `npm run build` |
+
+## Built-in Login UI
+
+When authentication is enabled, Arkos serves a login page at `/api/docs/auth/login` that:
+
+- Automatically generates fields based on your `allowedUsernames` configuration
+- Supports multiple login field types via a dropdown selector
+- Matches your Scalar theme colors
+- Redirects back to documentation after successful login
+
+<ImageZoom
+  alt="Arkos OpenAPI login screen"
+  sources={{
+    light: '/images/arkos-scalar-login.jpeg',
+    dark: '/images/arkos-scalar-login.jpeg',
+  }}
+/>
+
+The login page adapts to your auth configuration:
+
+- **Single field** — shows one input with the formatted field label (e.g., "Email", "Staff Code")
+- **Multiple fields** — adds a dropdown to select which field to log in with
+
+## Production Behavior
+
+After `npm run build`:
+
+1. Documentation endpoint is disabled by default (`enableAfterBuild: false`)
+2. If enabled and `authenticate: true`, only superusers can access docs
+3. Unauthenticated users are redirected to the built-in login page
+
+## Manual Access Control
+
+For custom authentication requirements, override the default behavior:
+
+```ts title="arkos.config.ts"
+export default defineConfig({
+  swagger: {
+    authenticate: false,      // Disable built-in auth
+    enableAfterBuild: true,   // Keep docs available after build
+  },
+});
+```
+
+Then implement your own middleware to protect the `/api/docs` route.
+
+## Next Steps
+
+- [File Uploads Integration](/docs/guides/open-api-documentation/integrations/file-uploads) — Automatic multipart/form-data documentation
+- [Prisma Integration](/docs/guides/open-api-documentation/integrations/prisma) — How query options shape generated schemas
+- [Documenting Routes](/docs/guides/open-api-documentation/usage) — Adding summaries, tags, and custom responses

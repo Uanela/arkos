@@ -1,0 +1,4 @@
+{
+  "title": "Code Generation",
+  "pages": ["overview", "core", "authentication", "validation", "prisma"]
+}
