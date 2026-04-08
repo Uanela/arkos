@@ -6,9 +6,10 @@ const arkosConfig = defineConfig({
     login: {
       allowedUsernames: ["username"],
     },
+    // enabled: false,
     hooks: {
       authenticate: {
-        before: async ({ req, next, skip }) => {
+        before: async ({ req, skip }) => {
           console.log("hello");
           // throw new Error("Error bro");
         },
@@ -17,11 +18,10 @@ const arkosConfig = defineConfig({
         },
       },
       authorize: {
-        before: ({ req, skip, next }) => {
+        before: ({ req, skip }) => {
           console.log("bwua");
-          next();
         },
-        after: ({ req, next }) => {
+        after: ({ req }) => {
           console.log("after dude...");
           // skip();
         },
