@@ -60,10 +60,10 @@ export function handleRecordNotFoundError(_: AppError) {
   return new AppError(message, 404);
 }
 
-export function handleUniqueConstraintError(err: AppError) {
-  const field = err?.meta?.target || "unknown field";
-  const message = `Duplicate value detected for the unique field(s): ${field}. Please use a different value.`;
-  return new AppError(message, 409, "DuplicatedRecords");
+export function handleUniqueConstraintError(err: any) {
+  const field = err?.meta?.target?.[0] || "unknown";
+  const message = `Duplicate unique field(s) '${field}'`;
+  return new AppError(message, 409, "DuplicateRecords");
 }
 
 export function handleForeignKeyConstraintError(_: AppError) {
