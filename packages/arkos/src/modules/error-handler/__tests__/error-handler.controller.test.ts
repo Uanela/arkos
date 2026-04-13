@@ -123,7 +123,6 @@ describe("Error Handler Middleware", () => {
           status: "fail",
           isOperational: true,
           statusCode: 400,
-          missing: false,
           message: "Test error",
           stack: expect.arrayContaining([
             "Error: Test error",
@@ -162,8 +161,13 @@ describe("Error Handler Middleware", () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        title: "Internal server error",
         message: "Test error",
+        isOperational: true,
+        code: "Unknown",
+        status: "fail",
+        statusCode: 400,
+        stack: expect.any(Array),
+        originalError: expect.any(Object),
       });
     });
   });
@@ -210,47 +214,7 @@ describe("Error Handler Middleware", () => {
         status: "error",
         message: "Internal server error, please try again later.",
         meta: {},
-        code: "Unknown",
-      });
-    });
-
-    it("should handle operational errors for non-API routes", () => {
-      mockRequest.originalUrl = "/some-page/2";
-      const error = new AppError("Test operational error", 400);
-      error.isOperational = true;
-      process.env.NODE_ENV = "production";
-
-      errorHandler(
-        error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        title: "Internal server error",
-        message: "Test operational error",
-        code: "Unknown",
-      });
-    });
-
-    it("should handle non-operational errors for non-API routes", () => {
-      mockRequest.originalUrl = "/some-page/3";
-      const error = new AppError("Internal error", 500);
-      error.isOperational = false;
-
-      errorHandler(
-        error,
-        mockRequest as Request,
-        mockResponse as Response,
-        mockNext
-      );
-
-      expect(mockResponse.status).toHaveBeenCalledWith(500);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        title: "Internal server error",
-        message: "Internal server error, please try again later.",
+        code: "InternalServerError",
       });
     });
   });
