@@ -11,7 +11,6 @@ describe("AppError", () => {
       expect(error.statusCode).toBe(400);
       expect(error.status).toBe("fail");
       expect(error.isOperational).toBe(true);
-      expect(error.missing).toBe(false);
       expect(error.code).toBe("Unknown");
       expect(error.meta).toBeUndefined();
       expect(error.stack).toBeDefined();
@@ -35,7 +34,6 @@ describe("AppError", () => {
       expect(error.statusCode).toBe(400);
       expect(error.status).toBe("fail");
       expect(error.isOperational).toBe(true);
-      expect(error.missing).toBe(false);
       expect(error.code).toBe("VALIDATION_ERROR");
       expect(error.meta).toEqual(meta);
     });

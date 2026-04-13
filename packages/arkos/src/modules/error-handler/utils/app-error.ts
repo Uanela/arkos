@@ -5,7 +5,6 @@
  *
  * @property {number} statusCode - HTTP status code of the error.
  * @property {string} status - Status message derived from the status code (`fail` for 4xx, `error` for 5xx).
- * @property {boolean} [missing=false] - Flag to indicate if a resource is missing.
  * @property {boolean} isOperational - Indicates if the error is operational (intended for client visibility).
  * @property {string} [code] - Optional error code for categorization.
  * @property {Record<string, any>} [meta] - Additional metadata related to the error.
@@ -33,7 +32,6 @@
 class AppError extends Error {
   statusCode: number;
   status: string;
-  public missing?: boolean;
   public isOperational: boolean;
   code?: string = "Unknown";
   meta?: Record<string, any>;
@@ -72,8 +70,6 @@ class AppError extends Error {
     if (typeof meta === "string") this.code = meta || "Unknown";
     if (typeof meta === "object") this.meta = meta;
     if (!code) this.code = "Unknown";
-
-    this.missing = false;
 
     Error.captureStackTrace(this, this.constructor);
   }
