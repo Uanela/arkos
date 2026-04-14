@@ -20,10 +20,13 @@ import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import ArkosRouter from "../../utils/arkos-router";
 import authOpenAPIGenerator from "./utils/auth-openapi-generator";
 import { AuthRouterEndpoint, RouterConfig } from "../../types/router-config";
+import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 
 const router = ArkosRouter();
 
 export function getAuthRouter(arkosConfig: ArkosConfig) {
+  if (!getPrismaInstance()) return router;
+
   const {
     interceptors,
     dtos,

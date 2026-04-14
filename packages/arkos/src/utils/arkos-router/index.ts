@@ -203,6 +203,8 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication-s
   }) as IArkosRouter;
 }
 
+const hasDuplicatedPath = (path: string) => /^(\/.+)\1/.test(path);
+
 export function generateOpenAPIFromApp(app: any) {
   const routes = extractArkosRoutes(app);
   const arkosConfig = getArkosConfig();
@@ -213,7 +215,8 @@ export function generateOpenAPIFromApp(app: any) {
   > = {};
 
   routes.forEach(({ path, method, config }) => {
-    if (config?.experimental?.openapi === false) return;
+    if (config?.experimental?.openapi === false || hasDuplicatedPath(path))
+      return;
     const originalPath = path;
 
     const pathParatemersFromRoutePath = extractPathParams(path);
