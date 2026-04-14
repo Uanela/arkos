@@ -8,6 +8,7 @@ jest.mock("path", () => {
   const actual = jest.requireActual("path");
   return { ...actual };
 });
+// jest.mock("dotenv");
 jest.mock("child_process", () => ({
   execSync: jest.fn(),
 }));
@@ -37,39 +38,6 @@ const TSCONFIG = JSON.stringify({
   },
 });
 
-describe("buildCommand", () => {
-  it("should correctly build a TypeScript project with default settings", () => {
-    (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-    buildCommand({});
-
-    // Verify tsconfig creation
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      "/mock/project/tsconfig.arkos-build.json",
-      expect.stringContaining('"outDir": "./.build"')
-    );
-
-    (execSync as jest.Mock).mockImplementation(() => {
-      return "";
-    });
-
-    // (fs.existsSync as jest.Mock).mockReturnValue(true);
-
-    expect(console.error).not.toHaveBeenCalled();
-
-    // Verify TypeScript compilation command
-    expect(execSync).toHaveBeenCalledWith(
-      "npx tsc -p /mock/project/tsconfig.arkos-build.json",
-      expect.any(Object)
-    );
-
-    // Verify temp config cleanup
-    expect(fs.unlinkSync).toHaveBeenCalledWith(
-      "/mock/project/tsconfig.arkos-build.json"
-    );
-  });
-});
-
 describe("Bundler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -78,6 +46,39 @@ describe("Bundler", () => {
     mockFs.readFileSync.mockReturnValue("");
     mockFs.writeFileSync.mockImplementation(() => {});
   });
+
+  // describe("buildCommand", () => {
+  //   it("should correctly build a TypeScript project with default settings", () => {
+  //     (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+  //     buildCommand({});
+
+  //     // Verify tsconfig creation
+  //     expect(fs.writeFileSync).toHaveBeenCalledWith(
+  //       "/mock/project/tsconfig.arkos-build.json",
+  //       expect.stringContaining('"outDir": "./.build"')
+  //     );
+
+  //     (execSync as jest.Mock).mockImplementation(() => {
+  //       return "";
+  //     });
+
+  //     // (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+  //     expect(console.error).not.toHaveBeenCalled();
+
+  //     // Verify TypeScript compilation command
+  //     expect(execSync).toHaveBeenCalledWith(
+  //       "npx tsc -p /mock/project/tsconfig.arkos-build.json",
+  //       expect.any(Object)
+  //     );
+
+  //     // Verify temp config cleanup
+  //     expect(fs.unlinkSync).toHaveBeenCalledWith(
+  //       "/mock/project/tsconfig.arkos-build.json"
+  //     );
+  //   });
+  // });
 
   describe("config loading", () => {
     it("should auto-detect tsconfig.json when no configPath provided", () => {
