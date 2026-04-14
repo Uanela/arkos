@@ -120,27 +120,17 @@ export default function errorHandler(
  * the stack trace and the complete error message.
  *
  * @param {AppError} err - The error object.
- * @param {Request} req - The Express request object.
+ * @param {Request} _ - The Express request object.
  * @param {Response} res - The Express response object.
  *
  * @returns {void} - Sends the response with the error details to the client.
  */
-function sendDevelopmentError(err: any, req: Request, res: Response): void {
-  if (req.originalUrl.startsWith("/api")) {
-    const { message, code, ...rest } = err;
-
-    res.status(err.statusCode).json({
-      message:
-        err.message?.split?.("\n")[err.message?.split?.("\n").length - 1],
-      code: code || "Unknown",
-      ...rest,
-      stack: err?.originalError?.stack?.split?.("\n"),
-    });
-  } else
-    res.status(err.statusCode).json({
-      title: "Internal server error",
-      message: err.message,
-    });
+function sendDevelopmentError(err: any, _: Request, res: Response): void {
+  res.status(err.statusCode).json({
+    ...err,
+    message: err.message?.split?.("\n")[err.message?.split?.("\n").length - 1],
+    stack: err?.originalError?.stack?.split?.("\n"),
+  });
 }
 
 /**
@@ -150,44 +140,26 @@ function sendDevelopmentError(err: any, req: Request, res: Response): void {
  * to the client. Only operational errors are shown with a generic message.
  *
  * @param {AppError} err - The error object.
- * @param {Request} req - The Express request object.
+ * @param {Request} _ - The Express request object.
  * @param {Response} res - The Express response object.
  *
  * @returns {void} - Sends the response with the error details to the client.
  */
-function sendProductionError(err: AppError, req: Request, res: Response): void {
-  if (req.originalUrl.startsWith("/api")) {
-    if (err.isOperational)
-      res.status(err.statusCode).json({
-        status: err.status,
-        message: err.message,
-        meta: err.meta || {},
-        code: err.code || "Unknown",
-      });
-    else
-      res.status(500).json({
-        status: "error",
-        message: "Internal server error, please try again later.",
-        code: "Unknown",
-        meta: {},
-      });
-
-    return;
-  }
-
-  if (err.isOperational) {
+function sendProductionError(err: AppError, _: Request, res: Response): void {
+  if (err.isOperational)
     res.status(err.statusCode).json({
-      title: "Internal server error",
+      status: err.status,
       message: err.message,
-      code: "Unknown",
+      meta: err.meta || {},
+      code: err.code || "Unknown",
     });
-    return;
-  }
-
-  res.status(err.statusCode).json({
-    title: "Internal server error",
-    message: "Internal server error, please try again later.",
-  });
+  else
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error, please try again later.",
+      code: "InternalServerError",
+      meta: {},
+    });
 }
 
 /**
