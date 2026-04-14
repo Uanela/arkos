@@ -21,7 +21,8 @@ export interface ProjectConfig {
       | "sqlite"
       | "sqlserver"
       | "cockroachdb"
-      | "mongodb";
+      | "mongodb"
+      | "none";
     idDatabaseType: string;
     defaultDBurl: string;
   };
@@ -141,6 +142,7 @@ class ProjectConfigInquirer {
           "sqlite",
           "sqlserver",
           "cockroachdb",
+          "none",
         ],
       },
     ]);
@@ -226,6 +228,11 @@ class ProjectConfigInquirer {
   }
 
   private async promptAuthentication() {
+    if (this.config.prisma.provider === "none")
+      return console.info(
+        `Skipping authentication setup as it requires prisma.`
+      );
+
     const { useAuthentication } = await inquirer.prompt([
       {
         type: "confirm",
