@@ -58,7 +58,7 @@ describe("Error Handlers", () => {
       const result = errorHandlers.handlePrismaClientValidationError(err);
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(400);
-      expect(result.message).toBe("An error occurred, try again!");
+      expect(result.message).toBe("Invalid query arguments");
       expect(result.isOperational).toBe(true);
     });
   });
@@ -423,6 +423,7 @@ describe("Error Handlers", () => {
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
       expect(result.code).toBe("ServiceUnavailable");
+      expect(result.meta).toEqual({});
       expect(result.isOperational).toBe(true);
     });
 
@@ -438,6 +439,7 @@ describe("Error Handlers", () => {
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
       expect(result.code).toBe("ServiceUnavailable");
+      expect(result.meta).toEqual({});
       expect(result.isOperational).toBe(true);
     });
 
@@ -449,6 +451,7 @@ describe("Error Handlers", () => {
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
       expect(result.code).toBe("ServiceUnavailable");
+      expect(result.meta).toEqual({});
       expect(result.isOperational).toBe(true);
     });
 
@@ -460,6 +463,7 @@ describe("Error Handlers", () => {
       expect(result.statusCode).toBe(503);
       expect(result.message).toBe("Service temporarily unavailable");
       expect(result.code).toBe("ServiceUnavailable");
+      expect(result.meta).toEqual({});
       expect(result.isOperational).toBe(true);
     });
   });
@@ -476,7 +480,7 @@ describe("Error Handlers", () => {
         expect(result).toBeInstanceOf(AppError);
         expect(result.statusCode).toBe(400);
         // When message is undefined, split will fail, so we expect undefined
-        expect(result.message).toBe("An error occurred, try again!");
+        expect(result.message).toBe("Invalid query arguments");
       });
 
       it("should handle null message", () => {
@@ -487,7 +491,7 @@ describe("Error Handlers", () => {
         const result = errorHandlers.handlePrismaClientValidationError(err);
         expect(result).toBeInstanceOf(AppError);
         expect(result.statusCode).toBe(400);
-        expect(result.message).toBe("An error occurred, try again!");
+        expect(result.message).toBe("Invalid query arguments");
       });
     });
 
