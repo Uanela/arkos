@@ -126,7 +126,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
 
   try {
     removeDir(BUILD_DIR);
-    execSync(`npx tsc -p ${tempTsconfigPath}`, {
+    execSync(`tsc -p ${tempTsconfigPath}`, {
       stdio: "inherit",
       cwd: process.cwd(),
     });
