@@ -32,7 +32,6 @@ export async function bootstrap(
   initConfig: ArkosInitConfig
 ): Promise<express.Express> {
   const arkosConfig = getArkosConfig();
-  validateArkosConfig();
 
   await Promise.all([
     loadPrismaModule(),
@@ -40,6 +39,7 @@ export async function bootstrap(
     initConfig?.configureApp && (await initConfig?.configureApp(app)),
   ]);
 
+  validateArkosConfig();
   const middlewaresConfig = arkosConfig?.middlewares;
 
   if (middlewaresConfig?.compression !== false) {

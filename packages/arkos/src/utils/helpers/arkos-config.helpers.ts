@@ -2,6 +2,7 @@ import deepmerge from "./deepmerge.helper";
 import { ArkosConfig } from "../../types/new-arkos-config";
 import sheu from "../sheu";
 import * as fsHelpers from "./fs.helpers";
+import { getPrismaInstance } from "./prisma.helpers";
 ("ReplaceWithNeededImportsForArkosConfig"); // This will be filled by post build script
 
 let definedArkosConfig: any = {};
@@ -84,14 +85,20 @@ export function isProduction() {
 
 export function validateArkosConfig() {
   const config = getArkosConfig();
+  const authenticationEnabled = isAuthenticationEnabled();
 
   if (
-    isAuthenticationEnabled() &&
+    authenticationEnabled &&
     isProduction() &&
     !process.env.JWT_SECRET &&
     !config.authentication?.jwt?.secret
   )
     throw Error(
       `Missing jwt secret in production, see https://www.arkosjs.com/docs/core-concepts/authentication/setup#configuration`
+    );
+
+  if (authenticationEnabled && !getPrismaInstance())
+    throw Error(
+      `Arkos' authentication system relies on prisma instance, please disabled your authentication or see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup to setup a prisma instance`
     );
 }
