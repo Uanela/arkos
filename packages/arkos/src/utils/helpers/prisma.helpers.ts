@@ -1,7 +1,6 @@
 import fs from "fs";
 import { crd, getUserFileExtension as ext } from "./fs.helpers";
 import { importModule } from "./global.helpers";
-import prismaSchemaParser from "../prisma/prisma-schema-parser";
 import { getArkosConfig } from "./arkos-config.helpers";
 import sheu from "../sheu";
 
@@ -45,9 +44,7 @@ export async function loadPrismaModule() {
 export function handlePrismaGet(target: any, prop: string, receiver: any) {
   const originalProperty = Reflect.get(target, prop, receiver);
 
-  const isModel = prismaSchemaParser
-    .getModelsAsArrayOfStrings()
-    .find((m) => m.toLowerCase() === (prop as string)?.toLowerCase?.());
+  const isModel = "findMany" in originalProperty;
 
   if (isModel && originalProperty) {
     return new Proxy(originalProperty, {
