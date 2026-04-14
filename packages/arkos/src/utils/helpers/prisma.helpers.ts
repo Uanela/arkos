@@ -42,7 +42,7 @@ export async function loadPrismaModule() {
 }
 
 export function handlePrismaGet(target: any, prop: string, receiver: any) {
-  const originalProperty = Reflect.get(target, prop, receiver);
+  const originalProperty = (Reflect.get(target, prop, receiver) || {}) as any;
 
   const isModel = "findMany" in originalProperty;
 
