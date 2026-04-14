@@ -9,6 +9,9 @@ import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser
 import { getArkosConfig } from "../../../../../server";
 import z from "zod";
 
+jest.mock("../../../../../utils/helpers/prisma.helpers", () => ({
+  getPrismaInstance: jest.fn(() => ({})),
+}));
 jest.mock("../../model-openapi-generator", () => ({
   __esModule: true,
   default: { getOpenApiConfig: jest.fn().mockReturnValue({}) },

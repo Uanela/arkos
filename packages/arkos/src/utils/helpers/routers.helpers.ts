@@ -11,7 +11,6 @@ import {
   RouterEndpoint,
 } from "../../types/router-config";
 import { isEndpointDisabled } from "../../modules/base/utils/helpers/base.router.helpers";
-import deepmerge from "./deepmerge.helper";
 import { ArkosRouteConfig } from "../arkos-router/types";
 import { ArkosConfig } from "../../exports";
 
