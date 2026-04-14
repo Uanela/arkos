@@ -27,7 +27,7 @@ import modelOpenAPIGenerator from "../model-openapi-generator";
 import { getPrismaInstance } from "../../../../utils/helpers/prisma.helpers";
 
 export function setupRouters(router: IArkosRouter, arkosConfig: ArkosConfig) {
-  if (!getPrismaInstance()) return;
+  if (!getPrismaInstance()) return [];
 
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
