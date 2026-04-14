@@ -80,6 +80,25 @@ class TemplateCompiler {
       "user.auth.ts.hbs",
     ];
 
+    if (config.prisma?.provider === "none")
+      files.push(
+        ...authSharedPrismaFiles,
+        ...dynamicAuthPrismaFiles,
+        "schema.prisma.hbs",
+        ...sharedAuthZodSchemaFiles,
+        ...dynamicAuthZodSchemaFiles,
+        ...sharedAuthClassValidatorDtoFiles,
+        ...dynamicAuthClassValidatorDtoFiles,
+        ...userModuleComponents,
+        ...authModuleComponents,
+        ...authPermissionModuleComponents,
+        ...authRoleModuleComponents,
+        ...userZodSchemaFiles,
+        ...userClassValidatorDtoFiles,
+        "file-upload.auth.ts.hbs",
+        "index.ts.hbs"
+      );
+
     if (
       !config.authentication?.type ||
       config.authentication?.type === "define later"

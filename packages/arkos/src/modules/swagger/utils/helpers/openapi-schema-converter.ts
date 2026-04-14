@@ -14,7 +14,7 @@ class OpenAPIchemaConverter {
 
   constructor() {
     this.validatorToJsonSchema = (schema: any) => {
-      const validationResolver = getArkosConfig().validation?.resolver;
+      const validationResolver = getArkosConfig()?.validation?.resolver;
       const fn =
         validationResolver === "zod"
           ? zodToJsonSchema
