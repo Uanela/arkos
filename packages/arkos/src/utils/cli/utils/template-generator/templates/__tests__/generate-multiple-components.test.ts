@@ -224,7 +224,7 @@ describe("generateMultipleComponents", () => {
   describe("multiple modules — --modules", () => {
     it("should generate components for each module", async () => {
       await generateMultipleComponents({
-        modules: "user,post",
+        module: "user,post",
         names: "s,c",
       });
 
@@ -241,7 +241,7 @@ describe("generateMultipleComponents", () => {
 
     it("should generate --all for each module with correct filtering", async () => {
       await generateMultipleComponents({
-        modules: "user,auth",
+        module: "user,auth",
         all: true,
       });
 
@@ -271,7 +271,7 @@ describe("generateMultipleComponents", () => {
 
     it("should trim whitespace from module names", async () => {
       await generateMultipleComponents({
-        modules: "user, post , order",
+        module: "user, post , order",
         names: "s",
       });
 
@@ -293,7 +293,7 @@ describe("generateMultipleComponents", () => {
         .mockRejectedValueOnce(new Error("Disk Full")); // post fails
 
       await expect(
-        generateMultipleComponents({ modules: "user,post", names: "s" })
+        generateMultipleComponents({ module: "user,post", names: "s" })
       ).rejects.toThrow("process.exit(1)");
 
       expect(generateCommand.service).toHaveBeenCalledTimes(2);
@@ -308,13 +308,13 @@ describe("generateMultipleComponents", () => {
       );
 
       await expect(
-        generateMultipleComponents({ modules: "user,post", names: "s" })
+        generateMultipleComponents({ module: "user,post", names: "s" })
       ).rejects.toThrow("process.exit(1)");
     });
 
     it("should show done message listing all modules", async () => {
       await generateMultipleComponents({
-        modules: "user,post",
+        module: "user,post",
         names: "s",
       });
       expect(sheu.done).toHaveBeenCalledWith(expect.stringContaining("user"));

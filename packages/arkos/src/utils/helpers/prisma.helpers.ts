@@ -1,7 +1,6 @@
 import fs from "fs";
 import { crd, getUserFileExtension as ext } from "./fs.helpers";
 import { importModule } from "./global.helpers";
-import prismaSchemaParser from "../prisma/prisma-schema-parser";
 import { getArkosConfig } from "./arkos-config.helpers";
 import sheu from "../sheu";
 
@@ -25,11 +24,17 @@ export async function loadPrismaModule() {
       if (!prismaInstance || typeof prismaInstance?.["$connect"] !== "function")
         throw new Error("Prisma not found");
     } catch (error: any) {
-      if (error.message === "Prisma not found")
-        return sheu.warn(
-          `Could not find your prisma instance under src/utils/prisma/index.${ext()}, see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup`,
-          { timestamp: true }
-        );
+      if (error.message === "Prisma not found") {
+        if (
+          getArkosConfig()?.warnings?.suppress?.prisma?.noInstanceFound !== true
+        )
+          sheu.warn(
+            `Could not find your prisma instance under src/utils/prisma/index.${ext()}, see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup`,
+            { timestamp: true }
+          );
+
+        return;
+      }
       throw error;
     }
   }
@@ -37,11 +42,9 @@ export async function loadPrismaModule() {
 }
 
 export function handlePrismaGet(target: any, prop: string, receiver: any) {
-  const originalProperty = Reflect.get(target, prop, receiver);
+  const originalProperty = (Reflect.get(target, prop, receiver) || {}) as any;
 
-  const isModel = prismaSchemaParser
-    .getModelsAsArrayOfStrings()
-    .find((m) => m.toLowerCase() === (prop as string)?.toLowerCase?.());
+  const isModel = "findMany" in originalProperty;
 
   if (isModel && originalProperty) {
     return new Proxy(originalProperty, {

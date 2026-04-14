@@ -26,11 +26,14 @@ import { IArkosRouter } from "../../../../utils/arkos-router/types";
 import { UserArkosConfig } from "../../../../utils/define-config";
 import ExitError from "../../../../utils/helpers/exit-error";
 import modelOpenAPIGenerator from "../model-openapi-generator";
+import { getPrismaInstance } from "../../../../utils/helpers/prisma.helpers";
 
 export function setupRouters(
   router: IArkosRouter,
   arkosConfig: UserArkosConfig
 ) {
+  if (!getPrismaInstance()) return [];
+
   return prismaSchemaParser.getModelsAsArrayOfStrings().map(async (model) => {
     const modelNameInKebab = kebabCase(model);
     const modelModules = getModuleComponents(modelNameInKebab) || {};

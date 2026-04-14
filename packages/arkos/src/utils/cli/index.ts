@@ -35,12 +35,11 @@ const generate = program
   .command("generate")
   .alias("g")
   .description("Generate arkos components")
-  .option("-m, --module <name>", "Module name")
-  .option("--model <name>", "Module name (alias for --module)")
   .option(
-    "--ms, --modules <names>",
-    "Comma-separated module names for bulk generation"
+    "-m, --module <name>",
+    "Module name (comma-separated for bulk: post,user,auth)"
   )
+  .option("--model <name>", "Module name (alias for --module)")
   .option("-p, --path <path>", "Custom path for the component")
   .option("-o, --overwrite", "Overwrites all the content on the existing file");
 
@@ -301,7 +300,7 @@ generate
   .command("components")
   .alias("co")
   .description(
-    "Generate multiple components for one or more modules. Use comma-separated module names for multiple modules (e.g., -m post,user,auth)"
+    "Generate multiple components for one or more modules. Use -m post,user,auth for multiple modules"
   )
   .option("-a, --all", "Generate all components")
   .option(
@@ -330,6 +329,28 @@ program
     "src/modules/auth/utils"
   )
   .action(exportAuthActionCommand);
+
+// To resolve arkos g r,c,service -m post
+generate.on("command:*", ([unknownCmd]) => {
+  if (unknownCmd.includes(",") && !unknownCmd.includes(" ")) {
+    const generateOptions = generate.opts();
+    generateCommand.multipleComponents({
+      ...generateOptions,
+      names: unknownCmd,
+    });
+  } else {
+    console.error(`Unknown command: ${unknownCmd}`);
+    process.exit(1);
+  }
+});
+
+generate
+  .command("all")
+  .description("Generate all components for a module")
+  .action(() => {
+    const opts = generate.opts();
+    generateCommand.multipleComponents({ ...opts, all: true });
+  });
 
 program.parse(process.argv);
 

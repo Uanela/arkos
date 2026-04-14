@@ -26,7 +26,6 @@ export type GenerateOptions = {
   path?: string;
   model?: string;
   module?: string;
-  modules?: string;
   overwrite?: boolean;
   shouldExit?: boolean;
   shouldPrintError?: boolean;
@@ -49,20 +48,21 @@ const generateFile = async (
   options: GenerateOptions,
   config: GenerateConfig
 ) => {
-  if (options.modules) {
-    const moduleNames = options.modules
+  const rawName = options.module || options.model;
+
+  if (rawName?.includes(",")) {
+    const moduleNames = rawName
       .split(",")
       .map((m: string) => m.trim())
       .filter(Boolean);
-
     let totalFail = 0;
     for (const moduleName of moduleNames) {
       try {
         await generateFile(
-          { ...options, modules: undefined, module: moduleName },
+          { ...options, module: moduleName, model: undefined },
           config
         );
-      } catch (err: any) {
+      } catch {
         totalFail++;
       }
     }
@@ -70,17 +70,12 @@ const generateFile = async (
     return;
   }
 
-  const modelName = options.module || options.model;
-  if (modelName?.includes(","))
-    throw ExitError(
-      "Multiple modules are not supported with -m/--module. Use -ms/--modules instead.\n" +
-        "Example: arkos g router -ms post,user,auth"
-    );
-
   if (options.module && options.model)
     throw ExitError(
       "You must either pass --module or --model, prefer --module to align with future updates."
     );
+
+  const modelName = rawName;
 
   if (!modelName?.trim()) throw new Error("Module name is required!");
 

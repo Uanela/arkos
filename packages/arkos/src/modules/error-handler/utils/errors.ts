@@ -67,7 +67,6 @@ export class NotFoundError extends AppError {
     meta?: Record<string, any>
   ) {
     super(message, 404, code, meta);
-    this.missing = true;
   }
 }
 
