@@ -925,4 +925,27 @@ export type ArkosConfig = {
       };
     };
   };
+  /**
+   * Allows to suppress specific warnings emitted by Arkos at startup or runtime.
+   */
+  warnings?: {
+    /**
+     * Suppresses specific warning messages.
+     */
+    suppress?: {
+      /**
+       * Suppresses Prisma-related warnings.
+       */
+      prisma?: {
+        /**
+         * Suppresses the warning emitted when no Prisma instance is found.
+         */
+        noInstanceFound?: boolean;
+        /**
+         * Suppresses the warning emitted when no Prisma schema is found.
+         */
+        noSchemaFound?: boolean;
+      };
+    };
+  };
 };

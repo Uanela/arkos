@@ -14,6 +14,9 @@ import { isEndpointDisabled } from "../../base/utils/helpers/base.router.helpers
 import authOpenAPIGenerator from "../utils/auth-openapi-generator";
 import routerValidator from "../../base/utils/router-validator";
 
+jest.mock("../../../utils/helpers/prisma.helpers", () => ({
+  getPrismaInstance: jest.fn(() => ({})),
+}));
 jest.mock("../../error-handler/utils/catch-async");
 jest.mock("fs");
 jest.mock("../../../utils/arkos-router", () => {
@@ -57,7 +60,9 @@ jest.mock("../auth.service", () => ({
 jest.mock("express-rate-limit");
 jest.mock("../../../utils/dynamic-loader");
 jest.mock("../../../utils/helpers/deepmerge.helper");
-jest.mock("../../../server");
+jest.mock("../../../server", () => ({
+  getArkosConfig: jest.fn(),
+}));
 jest.mock("../../base/base.middlewares", () => ({
   ...jest.requireActual("../../base/base.middlewares"),
   handleRequestBodyValidationAndTransformation: jest.fn(() => () => {}),

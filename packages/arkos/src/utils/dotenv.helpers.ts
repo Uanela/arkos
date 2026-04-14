@@ -51,18 +51,5 @@ export function loadEnvironmentVariables() {
 
   Object.assign(process.env, expanded.parsed || mergedParsed);
 
-  const requiredVars = ["DATABASE_URL"];
-  const missingVars = requiredVars.filter((varName) => !process.env[varName]);
-
-  if (missingVars.length > 0) {
-    console.error(
-      "Missing required environment variables:",
-      missingVars.join(", ")
-    );
-    throw new Error(
-      `Missing required environment variables: ${missingVars.join(", ")}`
-    );
-  }
-
   return existingEnvFiles.reverse();
 }

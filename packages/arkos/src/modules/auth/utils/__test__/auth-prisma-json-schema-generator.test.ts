@@ -4,7 +4,9 @@ import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import prismaJsonSchemaGenerator from "../../../../utils/prisma/prisma-json-schema-generator";
 import authPrismaJsonSchemaGenerator from "../auth-prisma-json-schema-generator";
 
-// Mock all dependencies
+jest.mock("../../../../utils/helpers/arkos-config.helpers", () => ({
+  getArkosConfig: jest.fn(),
+}));
 jest.mock("../../../../utils/prisma/prisma-json-schema-generator");
 jest.mock("../../../../exports/prisma", () => ({
   prismaSchemaParser: {
