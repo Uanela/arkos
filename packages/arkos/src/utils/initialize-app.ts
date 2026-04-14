@@ -10,6 +10,7 @@ import errorHandler from "../modules/error-handler/error-handler.controller";
 import { getArkosConfig } from "../server";
 import { isAuthenticationEnabled } from "./helpers/arkos-config.helpers";
 import { getSwaggerRouter } from "../modules/swagger/swagger.router";
+import { lenientDecode } from "./helpers/url-helpers";
 
 export default function initializeApp(app: Arkos) {
   const config = getArkosConfig();
@@ -52,14 +53,14 @@ export default function initializeApp(app: Arkos) {
 
 export function addGlobalErrorHandler(app: Arkos) {
   app.use("*", (req) => {
+    const url = lenientDecode(req.originalUrl);
     throw new AppError(
-      `Route ${req.method} ${req.originalUrl} was not found`,
+      `Route ${req.method.toUpperCase()} ${url} was not found`,
       404,
-      { route: `${req.method} ${req.originalUrl}` },
+      { route: `${req.method.toUpperCase()} ${url}` },
       "RouteNotFound"
     );
   });
-
   app.use(errorHandler);
 
   return app;
