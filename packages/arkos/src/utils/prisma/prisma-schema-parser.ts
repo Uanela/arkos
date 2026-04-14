@@ -3,6 +3,7 @@ import { PrismaSchema, PrismaModel, PrismaEnum, PrismaField } from "./types";
 import { camelCase, pascalCase } from "../helpers/change-case.helpers";
 import fs from "fs";
 import sheu from "../sheu";
+import { getArkosConfig } from "../helpers/arkos-config.helpers";
 
 interface SchemaConfig {
   generatorProvider: string;
@@ -35,6 +36,7 @@ export class PrismaSchemaParser {
   prismaSchemasContent: string = "";
   parsed: boolean = false;
   config: SchemaConfig;
+  warningNotLogged = true;
 
   constructor() {
     this.parse();
@@ -366,9 +368,16 @@ export class PrismaSchemaParser {
 
       return fileList;
     } catch {
-      sheu.warn("No prisma folder was found in order to load models", {
-        timestamp: true,
-      });
+      if (
+        getArkosConfig().warnings?.suppress?.prisma?.noSchemaFound !== true &&
+        this.warningNotLogged &&
+        process.env.NO_CLI === "true"
+      ) {
+        sheu.warn("No prisma folder was found in order to load models", {
+          timestamp: true,
+        });
+        this.warningNotLogged = false;
+      }
       return [];
     }
   }
