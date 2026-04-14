@@ -170,18 +170,14 @@ describe("Error Handlers", () => {
       const result = errorHandlers.handleUniqueConstraintError(err);
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(409);
-      expect(result.message).toBe(
-        "Duplicate value detected for the unique field(s): email. Please use a different value."
-      );
+      expect(result.message).toBe("Duplicate unique field(s) 'email'");
       expect(result.isOperational).toBe(true);
     });
 
     it("should handle case when field name is not specified", () => {
       const err = {} as any;
       const result = errorHandlers.handleUniqueConstraintError(err);
-      expect(result.message).toBe(
-        "Duplicate value detected for the unique field(s): unknown field. Please use a different value."
-      );
+      expect(result.message).toBe("Duplicate unique field(s) 'unknown'");
     });
 
     it("should handle array of target fields", () => {
@@ -193,7 +189,7 @@ describe("Error Handlers", () => {
       expect(result).toBeInstanceOf(AppError);
       expect(result.statusCode).toBe(409);
       expect(result.message).toBe(
-        "Duplicate value detected for the unique field(s): email,username. Please use a different value."
+        "Duplicate unique field(s) 'email', 'username'"
       );
     });
   });
@@ -503,7 +499,7 @@ describe("Error Handlers", () => {
         expect(result1.message).toContain("undefined");
 
         const result2 = errorHandlers.handleUniqueConstraintError(err);
-        expect(result2.message).toContain("unknown field");
+        expect(result2.message).toContain("unknown");
 
         const result3 = errorHandlers.handleConstraintFailedError(err);
         expect(result3.message).toContain("unknown constraint");
@@ -522,7 +518,7 @@ describe("Error Handlers", () => {
         expect(result1.message).toContain("null");
 
         const result2 = errorHandlers.handleUniqueConstraintError(err);
-        expect(result2.message).toContain("unknown field");
+        expect(result2.message).toContain("unknown");
 
         const result3 = errorHandlers.handleConstraintFailedError(err);
         expect(result3.message).toContain("unknown constraint");
@@ -557,7 +553,9 @@ describe("Error Handlers", () => {
         } as any;
 
         const result = errorHandlers.handleUniqueConstraintError(err);
-        expect(result.message).toContain("field1,field2,field3");
+        expect(result.message).toContain(
+          "Duplicate unique field(s) 'field1', 'field2', 'field3'"
+        );
       });
     });
   });
