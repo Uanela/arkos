@@ -27,7 +27,7 @@ export async function loadPrismaModule() {
     } catch (error: any) {
       if (error.message === "Prisma not found") {
         if (
-          getArkosConfig().warnings?.suppress?.prisma?.noInstanceFound !== true
+          getArkosConfig()?.warnings?.suppress?.prisma?.noInstanceFound !== true
         )
           sheu.warn(
             `Could not find your prisma instance under src/utils/prisma/index.${ext()}, see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup`,
