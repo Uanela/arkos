@@ -14,6 +14,9 @@ jest.mock("../../../../../utils/helpers/exit-error", () => ({
   default: jest.fn(),
 }));
 
+jest.mock("../../../../../utils/helpers/prisma.helpers", () => ({
+  getPrismaInstance: jest.fn(() => ({})),
+}));
 jest.mock("../../model-openapi-generator", () => ({
   __esModule: true,
   default: { getOpenApiConfig: jest.fn().mockReturnValue({}) },
