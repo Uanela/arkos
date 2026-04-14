@@ -77,3 +77,21 @@ export function getArkosConfig(): ArkosConfig {
 
   return config;
 }
+
+export function isProduction() {
+  return process.env.ARKOS_BUILD === "true";
+}
+
+export function validateArkosConfig() {
+  const config = getArkosConfig();
+
+  if (
+    isAuthenticationEnabled() &&
+    isProduction() &&
+    !process.env.JWT_SECRET &&
+    !config.authentication?.jwt?.secret
+  )
+    throw Error(
+      `Missing jwt secret in production, see https://www.arkosjs.com/docs/core-concepts/authentication/setup#configuration`
+    );
+}
