@@ -41,7 +41,11 @@ export async function devCommand(options: DevOptions = {}) {
       process.cwd(),
       `node_modules/@arkosjs/types/base.service.d.ts`
     );
-    if (fileExt === "ts" && !fs.existsSync(baseServiceTypesPath)) {
+    if (
+      fileExt === "ts" &&
+      !fs.existsSync(baseServiceTypesPath) &&
+      fs.existsSync(path.resolve(path.join(process.cwd(), "prisma")))
+    ) {
       const answer = await new Promise<boolean>((resolve) => {
         sheu.warn(
           'Missing base services types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client'
