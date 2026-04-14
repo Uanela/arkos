@@ -65,8 +65,8 @@ export function handleRecordNotFoundError(_: AppError) {
 }
 
 export function handleUniqueConstraintError(err: any) {
-  const field = err?.meta?.target?.[0] || "unknown";
-  const message = `Duplicate unique field(s) '${field}'`;
+  const field = err?.meta?.target || "unknown";
+  const message = `Duplicate unique field(s) ${Array.isArray(field) ? field.map((f) => `'${f}'`).join(", ") : `'${field}'`}`;
   return new AppError(message, 409, "DuplicateRecords");
 }
 
@@ -128,7 +128,8 @@ export function handlePrismaClientInitializationError(_: any) {
   return new AppError(
     "Service temporarily unavailable",
     503,
-    "ServiceUnavailable"
+    "ServiceUnavailable",
+    {}
   );
 }
 
