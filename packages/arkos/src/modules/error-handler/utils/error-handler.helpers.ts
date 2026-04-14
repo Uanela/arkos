@@ -21,8 +21,13 @@ export function handleJWTExpired() {
 
 export function handlePrismaClientValidationError(err: AppError) {
   const message =
-    err?.message?.split("\n")[err?.message?.split("\n").length - 1];
-  return new AppError(message, 400);
+    err?.message?.split("\n")[err?.message?.split("\n").length - 1] ||
+    "Invalid query arguments";
+  return new AppError(
+    message.split(". Did you")[0],
+    400,
+    "InvalidQueryArgument"
+  );
 }
 
 export function handleAuthenticationError(_: AppError) {
@@ -59,22 +64,16 @@ export function handleRecordNotFoundError(_: AppError) {
   return new AppError(message, 404);
 }
 
-export function handleUniqueConstraintError(err: AppError) {
-  const field = err?.meta?.target || "unknown field";
-  const message = `Duplicate value detected for the unique field(s): ${field}. Please use a different value.`;
-  return new AppError(
-    message,
-    409,
-    (err.meta?.modelName &&
-      `${pascalCase(err.meta?.modelName)}${pascalCase(err.meta?.target?.[0])}UniqueConstraint`) ||
-      "Unknown"
-  );
+export function handleUniqueConstraintError(err: any) {
+  const field = err?.meta?.target?.[0] || "unknown";
+  const message = `Duplicate unique field(s) '${field}'`;
+  return new AppError(message, 409, "DuplicateRecords");
 }
 
 export function handleForeignKeyConstraintError(_: AppError) {
   const message =
     "Foreign key constraint violation. Ensure that the referenced record exists.";
-  return new AppError(message, 400);
+  return new AppError(message, 400, "ForeignKeyViolation");
 }
 
 export function handleConstraintFailedError(err: AppError) {
