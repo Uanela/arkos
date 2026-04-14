@@ -20,7 +20,11 @@ import { AppError } from "./exports/error-handler";
 import debuggerService from "./modules/debugger/debugger.service";
 import { getArkosConfig } from "./exports";
 import { ArkosInitConfig } from "./types/arkos-config";
-import { isAuthenticationEnabled } from "./utils/helpers/arkos-config.helpers";
+import {
+  isAuthenticationEnabled,
+  validateArkosConfig,
+} from "./utils/helpers/arkos-config.helpers";
+import { lenientDecode } from "./utils/helpers/url-helpers";
 export const app: express.Express = express();
 const knowModulesRouter = Router();
 
@@ -35,6 +39,7 @@ export async function bootstrap(
     initConfig?.configureApp && (await initConfig?.configureApp(app)),
   ]);
 
+  validateArkosConfig();
   const middlewaresConfig = arkosConfig?.middlewares;
 
   if (middlewaresConfig?.compression !== false) {
@@ -198,10 +203,11 @@ export async function bootstrap(
     app.use("/api", await getSwaggerRouter(arkosConfig, app));
 
   app.use("*", (req) => {
+    const url = lenientDecode(req.originalUrl);
     throw new AppError(
-      `Route ${req.method.toUpperCase()} ${req.originalUrl} was not found`,
+      `Route ${req.method.toUpperCase()} ${url} was not found`,
       404,
-      { route: `${req.method.toUpperCase()} ${req.originalUrl}` },
+      { route: `${req.method.toUpperCase()} ${url}` },
       "RouteNotFound"
     );
   });
