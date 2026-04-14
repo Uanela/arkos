@@ -38,7 +38,17 @@ const config = {
     cors: {
       allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
     },
-  }
+  },
+  {{#if (eq prisma.provider "none")}}
+  warnings: {
+    suppress: {
+      prisma: {
+        noInstanceFound: true,
+        noSchemaFound: true,
+      },
+    },
+  },
+  {{/if}}
 }
 
 export default config
