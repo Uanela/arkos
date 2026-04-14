@@ -369,7 +369,7 @@ export class PrismaSchemaParser {
       return fileList;
     } catch {
       if (
-        getArkosConfig().warnings?.suppress?.prisma?.noSchemaFound !== true &&
+        getArkosConfig()?.warnings?.suppress?.prisma?.noSchemaFound !== true &&
         this.warningNotLogged &&
         process.env.NO_CLI === "true"
       ) {
