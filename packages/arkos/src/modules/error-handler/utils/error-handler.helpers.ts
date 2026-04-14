@@ -1,15 +1,5 @@
-import {
-  kebabCase,
-  pascalCase,
-} from "../../../utils/helpers/change-case.helpers";
+import { pascalCase } from "../../../utils/helpers/change-case.helpers";
 import AppError from "./app-error";
-
-export interface PrismaError {
-  code?: string;
-  message: string;
-  meta?: Record<string, any>;
-  name?: string;
-}
 
 export function handleJWTError() {
   return new AppError("Invalid token. Please log in again!", 401);
@@ -130,17 +120,5 @@ export function handlePrismaClientInitializationError(_: any) {
     503,
     "ServiceUnavailable",
     {}
-  );
-}
-
-export function handleRequiredRelationViolationError(err: AppError) {
-  const modelA = err?.meta?.model_a_name || "Record";
-  const modelB = err?.meta?.model_b_name || "another record";
-  const message = `This operation violates a required relationship between ${kebabCase(modelA).replaceAll("-", " ")} and ${kebabCase(modelB).replaceAll("-", " ")}.`;
-
-  return new AppError(
-    message,
-    400,
-    `${pascalCase(modelA || "")}RelationViolation`
   );
 }

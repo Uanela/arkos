@@ -1,0 +1,361 @@
+---
+title: Migration Guide
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+This guide covers migrating from JSDoc-based OpenAPI documentation (v1.3 and earlier) to the declarative `openapi` config approach introduced in v1.4.
+
+## Why Migrate
+
+| JSDoc Approach | Declarative Approach |
+|----------------|---------------------|
+| Manual JSDoc comments | Type-safe config objects |
+| String-based references | Direct schema references |
+| No validation integration | Reuses validation schemas |
+| Error-prone | Compile-time checking |
+| Separate from route logic | Co-located with route config |
+
+## Migration Steps
+
+### 1. Update Configuration
+
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6+">
+
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  swagger: {
+    endpoint: "/api/docs",
+    options: {
+      definition: {
+        openapi: "3.1.0",
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+      },
+    },
+  },
+});
+```
+
+</Tab>
+<Tab value="v1.4–v1.5">
+
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  swagger: {
+    endpoint: "/api/docs",
+    options: {
+      definition: {
+        openapi: "3.1.0",
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+      },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+
+</Tab>
+<Tab value="v1.3">
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+arkos.init({
+  swagger: {
+    endpoint: "/api/docs",
+    options: {
+      definition: {
+        openapi: "3.1.0",
+        info: {
+          title: "My API",
+          version: "1.0.0",
+        },
+      },
+    },
+  },
+});
+```
+
+</Tab>
+</Tabs>
+
+### 2. Migrate Custom Routes
+
+**Before (JSDoc):**
+
+```ts title="src/routers/user.router.ts"
+import { Router } from "express";
+
+const router = Router();
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get("/api/users/:id", userController.getUser);
+
+export default router;
+```
+
+**After (ArkosRouter):**
+
+```ts title="src/modules/user/user.router.ts"
+import { ArkosRouter } from "arkos";
+import z from "zod";
+import userController from "./user.controller";
+
+const router = ArkosRouter();
+
+const UserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+});
+
+const ErrorSchema = z.object({
+  message: z.string(),
+});
+
+router.get(
+  {
+    path: "/api/users/:id",
+    validation: {
+      params: z.object({ id: z.string().uuid() }),
+    },
+    experimental: {
+      openapi: {
+        summary: "Get user by ID",
+        tags: ["Users"],
+        responses: {
+          200: UserSchema,
+          404: {
+            content: ErrorSchema,
+            description: "User not found",
+          },
+        },
+      },
+    },
+  },
+  userController.getUser
+);
+
+export default router;
+```
+
+### 3. Migrate Built-in Route Documentation
+
+**Before (JSDoc):**
+
+```ts title="src/modules/user/user.router.ts"
+import { Router } from "express";
+import { RouteHook } from "arkos";
+
+export const config: RouteHook = {
+  // configuration
+};
+
+const router = Router();
+
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: List users
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: Users retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ */
+router.get("/api/users", userController.list);
+
+export default router;
+```
+
+**After (RouteHook):**
+```ts title="src/modules/user/user.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import z from "zod";
+
+export const hook: RouteHook = {
+  findMany: {
+    experimental: {
+      openapi: {
+        summary: "List users",
+        tags: ["Users"],
+        responses: {
+          200: z.array(UserSchema),
+        },
+      },
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+### 4. Migrate Authentication Endpoints
+
+**Before (JSDoc):**
+
+```ts
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: User login
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *       401:
+ *         description: Invalid credentials
+ */
+```
+
+**After (RouterConfig):**
+
+```ts title="src/modules/auth/auth.router.ts"
+import { ArkosRouter, RouterConfig } from "arkos";
+import z from "zod";
+
+export const config: RouterConfig<"auth"> = {
+  login: {
+    validation: {
+      body: z.object({
+        email: z.string().email(),
+        password: z.string().min(6),
+      }),
+    },
+    experimental: {
+      openapi: {
+        summary: "User login",
+        tags: ["Authentication"],
+        responses: {
+          200: {
+            content: z.object({ token: z.string() }),
+            description: "Login successful",
+          },
+          401: {
+            content: z.object({ message: z.string() }),
+            description: "Invalid credentials",
+          },
+        },
+      },
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+## Key Differences
+
+| Feature | JSDoc | Declarative |
+|---------|-------|-------------|
+| Schema definition | `$ref` or manual properties | Direct Zod/class-validator schemas |
+| Parameter docs | Manual `parameters` array | Auto from `validation.query/params` |
+| Request body | Manual `requestBody` | Auto from `validation.body` |
+| Responses | Manual schema references | Direct schema objects |
+| Security | Manual `security` array | Auto from `authentication` config |
+| Type safety | None | Full TypeScript inference |
+
+## Breaking Changes
+
+1. **Schemas must be defined inline or imported** — No more `$ref` strings
+2. **Route config replaces JSDoc** — All documentation moves into `experimental.openapi`
+3. **ArkosRouter required** — Custom routes must use `ArkosRouter` instead of Express `Router`
+4. **Validation schemas drive input docs** — Request body, query, and params are documented from `validation` config
+
+## Rollback
+
+If you need to revert, keep both approaches temporarily:
+
+```ts
+// Can co-exist during migration
+router.get(
+  {
+    path: "/api/users/:id",
+    experimental: {
+      openapi: { /* new way */ },
+    },
+  },
+  userController.getUser
+);
+
+// Old JSDoc still works alongside
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: List users
+ */
+router.get("/api/users", userController.list);
+```
+
+Once all routes are migrated, remove the JSDoc comments and update your config.
+
+## Related Guides
+
+- [Documenting Routes](/docs/guides/open-api-documentation/usage) — Full reference for the declarative approach
+- [Prisma Integration](/docs/guides/open-api-documentation/integrations/prisma) — Auto-generating docs from models
+- [File Uploads Integration](/docs/guides/open-api-documentation/integrations/file-uploads) — Documenting multipart forms
+- [Authentication Integration](/docs/guides/open-api-documentation/integrations/authentication) — Securing your docs

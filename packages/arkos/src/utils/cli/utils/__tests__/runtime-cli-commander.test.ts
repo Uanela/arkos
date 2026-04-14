@@ -7,12 +7,14 @@ import { importModule } from "../../../helpers/global.helpers";
 import deepmerge from "../../../helpers/deepmerge.helper";
 import { killDevelopmentServerChildProcess } from "../../dev";
 import runtimeCliCommander from "../runtime-cli-commander";
+import { getArkosConfig } from "../../../helpers/arkos-config.helpers";
 
 jest.mock("../../../../exports/services");
 jest.mock("fs", () => ({
   readdirSync: jest.fn(),
 }));
 jest.mock("fs/promises");
+jest.mock("../../../helpers/arkos-config.helpers");
 jest.mock("path");
 jest.mock("../../../sheu");
 jest.mock("../../../helpers/fs.helpers", () => ({
@@ -30,6 +32,10 @@ describe("RuntimeCliCommander", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    (getArkosConfig as jest.Mock).mockReturnValue({
+      authentication: { mode: "static" },
+    });
     process.env = { ...originalEnv };
   });
 
@@ -255,6 +261,15 @@ describe("RuntimeCliCommander", () => {
         2
       )} as const;
 
+type AuthActionsArray = typeof authActions;
+
+export type AuthResource = AuthActionsArray[number]["resource"];
+
+export type AuthAction<R extends AuthResource = AuthResource> = Extract<
+  AuthActionsArray[number],
+  { resource: R }
+>["action"];
+
 export default authActions;
 `;
       expect(fs.writeFile).toHaveBeenCalledWith(
@@ -326,6 +341,37 @@ export default authActions;
         mockStdoutWrite.mockRestore();
         mockStdinOnce.mockRestore();
         mockStdinPause.mockRestore();
+      });
+
+      it("should detect role changes and NOT warn user when auth dynamic", async () => {
+        process.env.CLI_COMMAND_OPTIONS = JSON.stringify({ overwrite: false });
+
+        const existingActions = [
+          { action: "Login", resource: "auth", roles: ["user"] },
+        ];
+
+        (importModule as jest.Mock).mockResolvedValue({
+          default: existingActions,
+        });
+
+        mockStdinOnce.mockImplementation((event, callback) => {
+          callback(Buffer.from("y\n"));
+          return process.stdin;
+        });
+
+        (getArkosConfig as jest.Mock).mockReturnValueOnce({
+          authentication: { mode: "dynamic" },
+        });
+        await runtimeCliCommander.exportAuthAction();
+
+        expect(sheu.warn).not.toHaveBeenCalledWith(
+          expect.stringContaining(
+            "Roles for the following permissions will be updated"
+          )
+        );
+        expect(sheu.warn).not.toHaveBeenCalledWith(
+          expect.stringContaining("Login:auth: [user] → [admin, user]")
+        );
       });
 
       it("should detect role changes and warn user", async () => {
@@ -506,6 +552,10 @@ export default authActions;
 
       it("should not prompt when no role changes detected", async () => {
         process.env.CLI_COMMAND_OPTIONS = JSON.stringify({ overwrite: false });
+
+        (getArkosConfig as jest.Mock).mockReturnValueOnce({
+          authentication: { mode: "static" },
+        });
 
         const existingActions = [
           { action: "Login", resource: "auth", roles: ["admin", "user"] },
@@ -775,9 +825,15 @@ export default authActions;
         await runtimeCliCommander.exportAuthAction();
 
         const writeCall = (fs.writeFile as jest.Mock).mock.calls[0][1];
-        expect(writeCall).toMatch(
-          /const authActions = \[[\s\S]*\] as const;\n\nexport default authActions;\n/
+        expect(writeCall).toContain("const authActions = [");
+        expect(writeCall).toContain("] as const;");
+        expect(writeCall).toContain(
+          "type AuthActionsArray = typeof authActions;"
         );
+        expect(writeCall).toContain(
+          'export type AuthResource = AuthActionsArray[number]["resource"];'
+        );
+        expect(writeCall).toContain("export default authActions;");
       });
     });
   });

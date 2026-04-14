@@ -75,7 +75,9 @@ export function extractArkosRoutes(
   return routes;
 }
 
-export function getMiddlewareStack(config: ArkosRouteConfig) {
+export function getMiddlewareStack(
+  config: ArkosRouteConfig | Omit<ArkosRouteConfig, "path">
+) {
   const middlewares = [];
 
   if (config.authentication) middlewares.push(authService.authenticate);
@@ -86,10 +88,10 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
     config.authentication.resource
   )
     middlewares.push(
-      authService.handleAccessControl(
+      authService.authorize(
         config.authentication.action,
         config.authentication.resource,
-        { [config.authentication.action]: config.authentication?.rule }
+        config.authentication?.rule
       )
     );
 
@@ -118,12 +120,12 @@ export function getMiddlewareStack(config: ArkosRouteConfig) {
     middlewares.push(uploadManager.handleUpload(uploadConfig));
     middlewares.push(uploadManager.validateRequiredFiles(uploadConfig));
 
-    middlewares.push(validateRequestInputs(config));
+    middlewares.push(validateRequestInputs(config as ArkosRouteConfig));
 
     middlewares.push(
       uploadManager.handlePostUpload(config.experimental.uploads)
     );
-  } else middlewares.push(validateRequestInputs(config));
+  } else middlewares.push(validateRequestInputs(config as ArkosRouteConfig));
 
   return middlewares;
 }

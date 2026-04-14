@@ -1,0 +1,450 @@
+---
+title: Global Middlewares
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Arkos ships a set of global middlewares that run on every request before any route handler. They are enabled by default with sensible defaults and can be customized, replaced, or disabled through `arkos.config.ts`.
+
+## Configuration Pattern
+
+Every built-in middleware follows the same three-way pattern under `middlewares.*`:
+
+| Value | Behavior |
+|---|---|
+| omitted | Runs with Arkos defaults |
+| options object | Deep-merged into the defaults |
+| `ArkosRequestHandler` function | Your middleware runs instead — Arkos's is removed |
+| `false` | Middleware is disabled entirely |
+
+<Callout type="warn">
+Replacing or disabling middlewares like `cors`, `express-json`, or `global-error-handler` can break your application. Do it only if you know what you're replacing them with.
+</Callout>
+
+## Middlewares
+
+### Compression
+
+Compresses response bodies using the `compression` npm package.
+
+**Default:** enabled with no options.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    compression: { level: 6, threshold: 1024 }, // options
+    // compression: myMiddleware,                // replace
+    // compression: false,                       // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    compression: { level: 6, threshold: 1024 },
+    // compression: myMiddleware,
+    // compression: false,
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+See [compression npm package](https://www.npmjs.com/package/compression) for all available options.
+ 
+
+### Rate Limit
+
+Limits the number of requests per IP across all endpoints using `express-rate-limit`.
+
+**Default:**
+```ts
+{
+  windowMs: 60 * 1000,
+  limit: 300,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+}
+```
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    rateLimit: { windowMs: 60 * 1000, limit: 100 }, // options — deep-merged
+    // rateLimit: myMiddleware,                       // replace
+    // rateLimit: false,                              // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    rateLimit: { windowMs: 60 * 1000, limit: 100 },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Authentication endpoints have their own separate rate limit configured under `authentication.requestRateLimitOptions`. See [Authentication — Setup](/docs/core-concepts/authentication/setup) for details.
+</Callout>
+
+See [express-rate-limit npm package](https://www.npmjs.com/package/express-rate-limit) for all available options.
+ 
+
+### CORS
+
+Controls cross-origin resource sharing using the `cors` npm package.
+
+**Default:** all origins blocked unless `allowedOrigins` is set.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    cors: {
+      allowedOrigins: ["https://myapp.com", "https://admin.myapp.com"],
+      // allowedOrigins: "*",           // allow all
+      options: { credentials: true },
+      // customHandler: myCorsDelegate, // replace cors logic only
+    },
+    // cors: myMiddleware, // replace the entire middleware
+    // cors: false,        // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    cors: {
+      allowedOrigins: ["https://myapp.com", "https://admin.myapp.com"],
+      options: { credentials: true },
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+See [cors npm package](https://www.npmjs.com/package/cors) for all available options.
+ 
+
+### JSON Body Parser
+
+Parses incoming `application/json` request bodies using `express.json()`.
+
+**Default:** enabled with no options.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    expressJson: { limit: "10mb" }, // options
+    // expressJson: myMiddleware,   // replace
+    // expressJson: false,          // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    expressJson: { limit: "10mb" },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+ 
+
+### Cookie Parser
+
+Parses `Cookie` headers using the `cookie-parser` npm package.
+
+**Default:** enabled with no parameters.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    cookieParser: ["mySecretSigningKey"], // parameters array
+    // cookieParser: myMiddleware,        // replace
+    // cookieParser: false,               // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    cookieParser: ["mySecretSigningKey"],
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+See [cookie-parser npm package](https://www.npmjs.com/package/cookie-parser) for all available options.
+ 
+
+### Query Parser
+
+Automatically coerces query string values from strings into their correct types — `null`, `undefined`, `boolean`, and `number`.
+
+**Default:**
+```ts
+{
+  parseNull: true,
+  parseUndefined: true,
+  parseBoolean: true,
+  parseNumber: true,
+}
+```
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    queryParser: { parseNull: true, parseBoolean: true, parseNumber: false }, // options
+    // queryParser: myMiddleware, // replace
+    // queryParser: false,        // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    queryParser: { parseNull: true, parseBoolean: true, parseNumber: false },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+`parseNumber` is enabled by default. Any query string field containing only digits will be converted to a number — including fields you may intend to keep as strings. Disable it if that causes issues in your app.
+</Callout>
+ 
+
+### Request Logger
+
+Logs incoming requests. Useful for debugging and monitoring.
+
+**Default:** enabled.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    requestLogger: myLoggerMiddleware, // replace
+    // requestLogger: false,           // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    requestLogger: myLoggerMiddleware,
+    // requestLogger: false,
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+ 
+
+### Helmet
+
+> Available since v1.6.0-beta
+
+Sets security-related HTTP response headers using the `helmet` npm package.
+
+**Default:** enabled with no options.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    helmet: {}, // options
+    // helmet: myMiddleware, // replace
+    // helmet: false,        // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+import helmet from "helmet";
+
+const arkosConfig: ArkosConfig = {
+  configureApp: (app) => {
+    app.use(helmet());
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+<Callout type="info">
+Install helmet first: `npm install helmet` or `pnpm add helmet`.
+</Callout>
+
+See [helmet npm package](https://www.npmjs.com/package/helmet) for all available options.
+ 
+
+### Global Error Handler
+
+Arkos registers its global error handler automatically. You can replace it entirely or disable it.
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    errorHandler: myErrorHandler, // replace
+    // errorHandler: false,        // disable
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  middlewares: {
+    errorHandler: myErrorHandler,
+    // errorHandler: false,
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+<Callout type="warn">
+Replacing the global error handler means you take full responsibility for formatting and sending error responses. See [Error Handling — Overview](/docs/guides/error-handling/overview) for what Arkos's handler does by default.
+
+If you want to run additional logic **alongside** Arkos's error handler rather than replacing it, use a [Custom Handler](/docs/guides/error-handling/custom-handler) instead.
+</Callout>
+
+## Additional Middlewares
+
+To inject custom middlewares into the global stack:
+
+<Tabs items={["v1.6+", "v1.4–v1.5"]}>
+<Tab value="v1.6+">
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+const app = arkos();
+
+app.use(myCustomMiddleware);
+
+app.listen();
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  configureApp: (app) => {
+    app.use(myCustomMiddleware);
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+</Tabs>
+
+## Execution Order
+
+The global middleware stack runs in this order on every request:
+
+1. `compression`
+2. `rateLimit`
+3. `cors`
+4. `expressJson`
+5. `cookieParser`
+6. `queryParser`
+7. `requestLogger`
+8. `additional` middlewares
+9. Routers (file upload, auth, prisma models, custom)
+10. Catch-all 404
+11. `errorHandler`

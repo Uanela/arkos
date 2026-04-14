@@ -1,0 +1,78 @@
+---
+title: Overview
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Arkos ships a global error handler that sits at the end of the Express middleware chain and processes every error thrown or passed via `next(err)` across your application. It normalizes errors into a consistent response shape, maps known error types (Prisma, JWT, validation) to human-readable messages, and adjusts the level of detail it exposes based on the current environment.
+
+You never register this handler yourself — Arkos wires it in automatically.
+
+## How It Works
+
+When any middleware, interceptor, service hook, or controller throws an error or calls `next(err)`, Express forwards it to the global error handler. From there:
+
+1. The error is matched against known types — Prisma errors, JWT errors, validation errors — and mapped to a friendly message and status code.
+2. The response is shaped based on the environment.
+3. The response is sent to the client.
+
+Because `ArkosRouter` wraps all handlers with `catchAsync` automatically, you never need to wrap your own handlers — thrown errors are always caught and forwarded correctly.
+
+## Environments
+
+Arkos determines the environment through its own CLI commands, not through `NODE_ENV`:
+
+- **Development** — run with `npx arkos dev`. Full error details are exposed including stack traces, useful for debugging.
+- **Production** — run with `npx arkos start`. Responses are sanitized. Stack traces are hidden. Non-operational errors return a generic message.
+
+### Development Response
+
+```json
+{
+  "message": "User not found with id: 123",
+  "code": "NotFound",
+  "statusCode": 404,
+  "status": "fail",
+  "isOperational": true,
+  "meta": {},
+  "stack": [
+    "AppError: User not found with id: 123",
+    "    at findOne (/src/modules/base/base.controller.ts:25:11)"
+  ]
+}
+```
+
+### Production Response
+
+Operational errors (expected failures like 404, 403, 400) include the message:
+
+```json
+{
+  "status": "fail",
+  "message": "User not found with id: 123",
+  "code": "NotFound",
+  "meta": {}
+}
+```
+
+Non-operational errors (programming errors, unexpected failures) return a generic message to avoid leaking internals:
+
+```json
+{
+  "status": "error",
+  "message": "Internal server error, please try again later.",
+  "code": "Unknown",
+  "meta": {}
+}
+```
+
+<Callout type="info">
+`NODE_ENV` does not control Arkos's error response behavior. Use `npx arkos dev` for development and `npx arkos start` for production.
+</Callout>
+
+## What's Next
+
+- [Usage](/docs/guides/error-handling/usage) — throwing errors correctly with `AppError`
+- [Error Messages](/docs/guides/error-handling/error-messages/validation) — how Arkos formats validation, authentication, and Prisma errors
+- [Custom Handler](/docs/guides/error-handling/custom-handler) — adding your own error handler after Arkos's

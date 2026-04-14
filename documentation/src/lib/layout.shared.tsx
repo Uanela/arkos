@@ -19,18 +19,7 @@ export function baseOptions(): BaseLayoutProps {
         </div>
       ),
     },
-
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
-
-    // footer: {
-    //   copyright: `Copyright © ${new Date().getFullYear()} SuperM7.com, Lda.`,
-    // },
-
-    // theme: {
-    //   defaultTheme: "dark",
-    //   enableSystem: false,
-    // },
-
     themeSwitch: {
       enabled: false,
       mode: "light-dark",
@@ -38,28 +27,28 @@ export function baseOptions(): BaseLayoutProps {
     links: [
       {
         text: "Learn",
-        url: "/learn/intro",
-        on: "nav",
+        url: "/learn",
+        on: "all",
       },
       {
         text: "Documentation",
-        url: "/docs/intro",
-        on: "nav",
+        url: "/docs",
+        on: "all",
       },
       {
         text: "Blog",
         url: "/blog",
-        on: "nav",
+        on: "all",
       },
       {
         text: "Showcase",
         url: "/showcase",
-        on: "nav",
+        on: "all",
       },
       {
         text: "Sponsors",
         url: "/sponsors",
-        on: "nav",
+        on: "all",
       },
     ],
   };

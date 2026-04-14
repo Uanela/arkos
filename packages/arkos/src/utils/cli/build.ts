@@ -22,6 +22,7 @@ interface BuildOptions {
  * Main build function for the arkos CLI
  */
 export function buildCommand(options: BuildOptions = {}) {
+  process.env.NO_CLI = "true";
   const fileExt = getUserFileExtension();
   if (process.env.NODE_ENV === "test" || !process.env.NODE_ENV)
     process.env.NODE_ENV = "production";
@@ -34,13 +35,6 @@ export function buildCommand(options: BuildOptions = {}) {
     watermarkStamper.stamp({
       envFiles,
     });
-    // console.info("");
-    // console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-    // console.info(
-    //   `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-    //     .replaceAll(`${process.cwd()}/`, "")
-    //     .replaceAll("/", "")}`
-    // );
 
     console.info(`\n  Creating an optimized production build...`);
 

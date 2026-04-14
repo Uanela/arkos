@@ -12,7 +12,6 @@ class LoadedComponentsLogger {
     authConfigs: `{{module-name}}.auth.${this.ext}`,
     prismaQueryOptions: `{{module-name}}.query.${this.ext}`,
     interceptors: `{{module-name}}.interceptors.${this.ext}`,
-    interceptorsOld: `{{module-name}}.middlewares.${this.ext}`,
     router: `{{module-name}}.router.${this.ext}`,
     hooks: `{{module-name}}.hooks.${this.ext}`,
     dtos: {

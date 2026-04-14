@@ -41,10 +41,10 @@ export default function HeroSection(): ReactElement {
           </p>
           <div className="flex justify-center  z-10 flex-col items-center gap-2 md:flex-row">
             <Link
-              to="/docs/intro"
+              to="/docs"
               className="bg-sky-500 hover:bg-sky-600 text-white font-medium py-2 px-6 rounded-md w-[285px] md:w-[180px] flex items-center gap-2 justify-center z-10 hover:text-white"
             >
-              <span>Learn More</span>
+              <span>See Docs</span>
               <FontAwesomeIcon icon={faBook} className="size-[17px]" />
             </Link>
             <Link

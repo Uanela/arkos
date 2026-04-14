@@ -62,13 +62,19 @@ class TemplateCompiler {
     ];
 
     const authPermissionModuleComponents = [
-      "auth-permission.auth.ts.hbs",
+      "auth-permission.router.ts.hbs",
+      "auth-permission.policy.ts.hbs",
+      "auth-permission.query.ts.hbs",
+
       "auth-permission.query.ts.hbs",
       "auth-permission.service.ts.hbs",
     ];
 
     const authRoleModuleComponents = [
-      "auth-role.auth.ts.hbs",
+      "auth-role.router.ts.hbs",
+      "auth-role.policy.ts.hbs",
+      "auth-role.query.ts.hbs",
+
       "auth-role.query.ts.hbs",
       "auth-role.service.ts.hbs",
     ];
@@ -77,7 +83,8 @@ class TemplateCompiler {
       "user.interceptors.ts.hbs",
       "user.query.ts.hbs",
       "user.service.ts.hbs",
-      "user.auth.ts.hbs",
+      "user.router.ts.hbs",
+      "user.policy.ts.hbs",
     ];
 
     if (config.prisma?.provider === "none")
@@ -116,7 +123,8 @@ class TemplateCompiler {
         ...authRoleModuleComponents,
         ...userZodSchemaFiles,
         ...userClassValidatorDtoFiles,
-        "file-upload.auth.ts.hbs"
+        "file-upload.router.ts.hbs",
+        "file-upload.policy.ts.hbs"
       );
 
     if (config.authentication?.type === "static")

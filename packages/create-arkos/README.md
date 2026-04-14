@@ -204,7 +204,7 @@ pnpm create arkos@canary my-project
 
 ## Learn More
 
-- **Documentation:** [arkosjs.com/docs](https://arkosjs.com/docs/intro)
+- **Documentation:** [arkosjs.com/docs](https://arkosjs.com/docs)
 - **Main Framework:** [github.com/uanela/arkos](https://github.com/uanela/arkos)
 - **Community:** [Join our WhatsApp group](https://chat.whatsapp.com/EJ8cjb9hxau0EcOnI4fdpD)
 - **Examples:** [arkosjs.com/docs/examples](https://arkosjs.com/docs/examples)
@@ -223,7 +223,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
-**[Documentation](https://arkosjs.com/docs/intro)** •
+**[Documentation](https://arkosjs.com/docs)** •
 **[Website](https://arkosjs.com)** •
 **[GitHub](https://github.com/uanela/arkos)** •
 **[npm](https://www.npmjs.com/package/create-arkos)**

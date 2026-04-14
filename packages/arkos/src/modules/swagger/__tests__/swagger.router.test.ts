@@ -2,6 +2,7 @@ import swaggerJsdoc from "swagger-jsdoc";
 import { getSwaggerRouter } from "../../../../src/modules/swagger/swagger.router";
 import getSwaggerDefaultConfig from "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs";
 import express from "express";
+import { Arkos } from "../../../types/arkos";
 
 jest.mock("fs", () => ({
   __esModule: true,
@@ -64,7 +65,7 @@ describe("getSwaggerRouter", () => {
     _router: {
       stack: [],
     },
-  } as any as express.Express;
+  } as any as Arkos;
 
   const mockSwaggerSpec = { openapi: "3.0.0" };
 
@@ -79,12 +80,12 @@ describe("getSwaggerRouter", () => {
   });
 
   it("should return a router instance", async () => {
-    const router = await getSwaggerRouter(mockConfig, mockApp);
+    const router = getSwaggerRouter(mockConfig, mockApp);
     expect(router).toHaveProperty("use");
   });
 
   it("should merge default and user configs", async () => {
-    await getSwaggerRouter(mockConfig, mockApp);
+    getSwaggerRouter(mockConfig, mockApp);
 
     expect(getSwaggerDefaultConfig).toHaveBeenCalledWith(
       expect.objectContaining({})
@@ -92,7 +93,7 @@ describe("getSwaggerRouter", () => {
   });
 
   it("should generate OpenAPI specification", async () => {
-    await getSwaggerRouter(mockConfig, mockApp);
+    getSwaggerRouter(mockConfig, mockApp);
 
     expect(swaggerJsdoc).toHaveBeenCalledWith({
       definition: mockConfig.swagger.options?.definition,
@@ -100,18 +101,9 @@ describe("getSwaggerRouter", () => {
     });
   });
 
-  it("should setup Scalar API reference", async () => {
-    await getSwaggerRouter(mockConfig, mockApp);
-
-    expect(mockApiReference).toHaveBeenCalledWith({
-      content: mockSwaggerSpec,
-      ...mockConfig.swagger.scalarApiReferenceConfiguration,
-    });
-  });
-
   it("should handle missing swagger config", async () => {
     const config = { ...mockConfig, swagger: undefined };
-    const router = await getSwaggerRouter(config, mockApp);
+    const router = getSwaggerRouter(config, mockApp);
     expect(router).toHaveProperty("use");
     // expect(swaggerJsdoc).not.toHaveBeenCalled();
   });
@@ -124,9 +116,7 @@ describe("getSwaggerRouter", () => {
     const originalFunction = global.Function;
     (global as any).Function = jest.fn().mockImplementation(() => mockImport);
 
-    await expect(getSwaggerRouter(mockConfig, mockApp)).resolves.toHaveProperty(
-      "use"
-    );
+    expect(getSwaggerRouter(mockConfig, mockApp)).toHaveProperty("use");
 
     (global as any).Function = originalFunction;
     console.error = originalError;

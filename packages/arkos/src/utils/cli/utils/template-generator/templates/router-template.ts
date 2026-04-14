@@ -1,60 +1,40 @@
-import {
-  checkFileExists,
-  getUserFileExtension,
-} from "../../../../helpers/fs.helpers";
+import pluralize, { singular } from "pluralize";
+import { getUserFileExtension } from "../../../../helpers/fs.helpers";
+import { kebabPrismaModels } from "../../../generate";
 import { TemplateOptions } from "../../template-generators";
+import { pascalCase } from "../../../../helpers/change-case.helpers";
+import { capitalize } from "../../../../helpers/text.helpers";
 
 export function generateRouterTemplate(options: TemplateOptions): string {
-  const { modelName, imports } = options;
+  const { modelName } = options;
 
   if (!modelName)
     throw new Error("Module name is required for router template");
 
+  const isNormalModule = [...kebabPrismaModels, "file-upload", "auth"].includes(
+    modelName.kebab
+  );
   const ext = getUserFileExtension();
-  const controllerPath =
-    imports?.controller || `./${modelName.kebab}.controller.${ext}`;
 
   const routerConfigTsType =
     ext === "ts"
-      ? `: RouterConfig<${["file-upload", "auth"].includes(modelName.kebab) ? modelName.kebab : '"prisma"'}>`
+      ? `: RouteHook<${["file-upload", "auth"].includes(modelName.kebab) ? `"${modelName.kebab}"` : '"prisma"'}>`
       : "";
   const routerConfigTsTypeImport =
-    ext === "ts" ? "import { RouterConfig } from 'arkos'" : "";
+    ext === "ts" ? "import { RouteHook } from 'arkos'" : "";
+  const routeConfig = isNormalModule
+    ? `
+export const hook${routerConfigTsType} = { }
+`
+    : "";
 
-  const controllerExists = checkFileExists(controllerPath);
-
-  const controllerImportLine = controllerExists
-    ? `import ${modelName.camel}Controller from "${
-        imports?.controller ||
-        `./${modelName.kebab}.controller${ext === "js" ? "." + "js" : ""}`
-      }"`
-    : `import ${modelName.camel}Controller from "${
-        imports?.controller ||
-        `./${modelName.kebab}.controller${ext === "js" ? "." + "js" : ""}`
-      }"`;
-
-  const controllerHandlerLine = `${modelName.camel}Controller.someHandler`;
-
-  return `import { ArkosRouter } from 'arkos'
-${controllerImportLine}
+  return `import { ArkosRouter } from 'arkos';${modelName.kebab === "file-upload" ? "\nimport config from '../../arkos.config'" : ""}
 ${routerConfigTsTypeImport}
+${routeConfig}
 
-export const config${routerConfigTsType} = { }
-
-const ${modelName.camel}Router = ArkosRouter()
-
-${modelName.camel}Router.get(
-  {
-    path: "/custom-endpoint",
-    authentication: { action: "CustomAction", resource: "${modelName.kebab}" },
-    validation: {},
-    experimental: {
-      openapi: {},
-      // uploads: {}
-    }
-  },
-  ${controllerHandlerLine}
-)
+const ${modelName.camel}Router = ArkosRouter({ 
+  openapi: { tags: ["${pluralize(capitalize(modelName.kebab.replaceAll("-", " ")))}"] }
+})
 
 export default ${modelName.camel}Router
 `;

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isEndpointDisabled, setupRouters } from "../base.router.helpers";
+import { isEndpointDisabled, setupRouters } from "../base.router.helpers"; // Adjust the import path
 import * as importHelpers from "../../../../../utils/dynamic-loader";
 import { BaseController } from "../../../base.controller";
 import pluralize from "pluralize";
@@ -8,6 +8,11 @@ import routerValidator from "../../router-validator";
 import prismaSchemaParser from "../../../../../utils/prisma/prisma-schema-parser";
 import { getArkosConfig } from "../../../../../server";
 import z from "zod";
+
+jest.mock("../../../../../utils/helpers/exit-error", () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
 
 jest.mock("../../../../../utils/helpers/prisma.helpers", () => ({
   getPrismaInstance: jest.fn(() => ({})),
@@ -111,7 +116,7 @@ describe("setupRouters", () => {
     setupRouters(router, {
       validation: { resolver: "zod" },
       authentication: { mode: "static" },
-    });
+    } as any as any);
 
     expect(router.post).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -209,7 +214,7 @@ describe("setupRouters", () => {
       },
     });
 
-    setupRouters(router, { authentication: { mode: "static" } });
+    setupRouters(router, { authentication: { mode: "static" } } as any as any);
 
     expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -253,7 +258,7 @@ describe("setupRouters", () => {
       },
     });
 
-    setupRouters(router, { authentication: { mode: "static" } });
+    setupRouters(router, { authentication: { mode: "static" } } as any);
 
     expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -299,7 +304,7 @@ describe("setupRouters", () => {
       },
     });
 
-    setupRouters(router, { authentication: { mode: "static" } });
+    setupRouters(router, { authentication: { mode: "static" } } as any);
 
     expect(router.get).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -354,7 +359,7 @@ describe("setupRouters", () => {
       router: undefined,
     });
 
-    setupRouters(router, {});
+    setupRouters(router, {} as any);
 
     expect(router.get).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -380,7 +385,8 @@ describe("setupRouters", () => {
       router: undefined,
     });
 
-    setupRouters(router, { authentication: { mode: "static" } });
+    // Call the function
+    setupRouters(router, { authentication: { mode: "static" } } as any);
 
     expect(router.get).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -421,7 +427,7 @@ describe("setupRouters", () => {
       mockModuleComponents
     );
 
-    setupRouters(router, {});
+    setupRouters(router, {} as any);
 
     expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
     expect(router.post).toHaveBeenCalledWith(
@@ -463,7 +469,7 @@ describe("setupRouters", () => {
 
     const setupPromises = setupRouters(router, {
       authentication: { mode: "static" },
-    });
+    } as any);
     await Promise.all(await setupPromises);
 
     expect(pluralize.plural).toHaveBeenCalledWith("user");
@@ -497,7 +503,7 @@ describe("setupRouters", () => {
 
     const setupPromises = setupRouters(router, {
       authentication: { mode: "static" },
-    });
+    } as any);
     await Promise.all(await setupPromises);
 
     expect(pluralize.plural).toHaveBeenCalledWith("post");
@@ -532,7 +538,7 @@ describe("setupRouters", () => {
     try {
       const setupPromises = setupRouters(router, {
         authentication: { mode: "static" },
-      });
+      } as any);
       await Promise.all(await setupPromises);
 
       expect(setupRouters).toThrow(
@@ -588,7 +594,7 @@ describe("setupRouters", () => {
     it("should handle when getModuleComponents returns falsy value", () => {
       (importHelpers.getModuleComponents as jest.Mock).mockReturnValue(null);
 
-      setupRouters(router, {});
+      setupRouters(router, {} as any);
 
       expect(router.post).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -785,7 +791,7 @@ describe("setupRouters", () => {
 
       const setupPromises = setupRouters(router, {
         authentication: { mode: "static" },
-      });
+      } as any);
       await Promise.all(await setupPromises);
 
       expect(router.post).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -811,7 +817,7 @@ describe("setupRouters", () => {
 
       const setupPromises = setupRouters(router, {
         authentication: { mode: "static" },
-      });
+      } as any);
       await Promise.all(await setupPromises);
 
       expect(router.get).not.toHaveBeenCalledWith("/users", expect.anything());
@@ -835,7 +841,7 @@ describe("setupRouters", () => {
         },
       });
 
-      setupRouters(router, { authentication: { mode: "static" } });
+      setupRouters(router, { authentication: { mode: "static" } } as any);
 
       expect(router.patch).not.toHaveBeenCalledWith(
         "/users",
@@ -861,7 +867,7 @@ describe("setupRouters", () => {
         },
       });
 
-      setupRouters(router, { authentication: { mode: "static" } });
+      setupRouters(router, { authentication: { mode: "static" } } as any);
 
       expect(router.delete).not.toHaveBeenCalledWith(
         "/users",

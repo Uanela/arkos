@@ -1,0 +1,112 @@
+---
+title: Overview
+---
+
+The Arkos.js CLI is a built-in command-line tool available inside any Arkos.js project. It handles your development server, production builds, and all code generation — giving you a consistent, convention-driven workflow without repetitive boilerplate.
+
+Unlike `create-arkos`, which bootstraps new projects, this CLI lives inside your project and is used day-to-day.
+
+```bash
+arkos [command] [options]
+```
+
+## Command Reference
+
+### Server Commands
+
+| Command | Description |
+|---------|-------------|
+| `arkos dev` | Start development server with hot-reload |
+| `arkos build` | Compile an optimized production build |
+| `arkos start` | Run the production build |
+
+### Code Generation Commands
+
+| Command | Alias | Description | Since |
+|---------|-------|-------------|-------|
+| `arkos generate controller` | `arkos g c` | Controller class | v1.3 |
+| `arkos generate service` | `arkos g s` | Service class | v1.3 |
+| `arkos generate router` | `arkos g r` | Router with `RouteHook` | v1.3 |
+| `arkos generate interceptors` | `arkos g i` | Interceptors file | v1.3 |
+| `arkos generate hooks` | `arkos g h` | Service hooks file | v1.3 |
+| `arkos generate schema` | `arkos g sc` | Base Zod schema | v1.5 |
+| `arkos generate create-schema` | `arkos g cs` | Create Zod schema | v1.4 |
+| `arkos generate update-schema` | `arkos g us` | Update Zod schema | v1.4 |
+| `arkos generate query-schema` | `arkos g qs` | Query Zod schema | v1.5 |
+| `arkos generate dto` | `arkos g d` | Base class-validator DTO | v1.5 |
+| `arkos generate create-dto` | `arkos g cd` | Create DTO | v1.4 |
+| `arkos generate update-dto` | `arkos g ud` | Update DTO | v1.4 |
+| `arkos generate query-dto` | `arkos g qd` | Query DTO | v1.5 |
+| `arkos generate query-options` | `arkos g q` | Prisma query options | v1.3 |
+| `arkos generate model` | `arkos g m` | Prisma model file | v1.5 |
+| `arkos generate policy` | `arkos g p` | ArkosPolicy file | v1.6 |
+| `arkos generate auth-configs` | `arkos g a` | Auth config file (deprecated) | v1.3 |
+| `arkos generate login-schema` | `arkos g ls` | Login Zod schema | v1.6 |
+| `arkos generate signup-schema` | `arkos g ss` | Signup Zod schema | v1.6 |
+| `arkos generate update-me-schema` | `arkos g ums` | Update-me Zod schema | v1.6 |
+| `arkos generate update-password-schema` | `arkos g ups` | Update-password Zod schema | v1.6 |
+| `arkos generate login-dto` | `arkos g ld` | Login DTO | v1.6 |
+| `arkos generate signup-dto` | `arkos g sd` | Signup DTO | v1.6 |
+| `arkos generate update-me-dto` | `arkos g umd` | Update-me DTO | v1.6 |
+| `arkos generate update-password-dto` | `arkos g upd` | Update-password DTO | v1.6 |
+| `arkos generate components` | `arkos g co` | Generate multiple components at once | v1.5 |
+
+### TypeScript Commands
+
+| Command | Alias | Description | Since |
+|---------|-------|-------------|-------|
+| `arkos prisma generate` | `arkos p g` | Generate Prisma client and sync Arkos types | v1.4 |
+
+## Common Flags
+
+All `generate` commands share these flags:
+
+| Flag | Description |
+|------|-------------|
+| `-m, --module <name>` | Module name (recommended) |
+| `--model <name>` | Module name — deprecated alias, use `--module` |
+| `--modules <names>` | Comma-separated module names for multi-module generation |
+| `-p, --path <path>` | Custom output path (default: `src/modules`) |
+| `-o, --overwrite` | Overwrite existing files |
+
+## Project Structure
+
+Generated files follow a consistent layout:
+
+```
+src/modules/
+└── post/
+    ├── post.controller.ts
+    ├── post.service.ts
+    ├── post.router.ts
+    ├── post.interceptors.ts
+    ├── post.hooks.ts
+    ├── post.policy.ts
+    ├── post.query.ts
+    ├── schemas/
+    │   ├── post.schema.ts
+    │   ├── create-post.schema.ts
+    │   ├── update-post.schema.ts
+    │   └── query-post.schema.ts
+    └── dtos/
+        ├── post.dto.ts
+        ├── create-post.dto.ts
+        ├── update-post.dto.ts
+        └── query-post.dto.ts
+```
+
+## Naming Conventions
+
+| Style | Used for | Example |
+|-------|----------|---------|
+| kebab-case | Files, routes | `user-profile.controller.ts` |
+| camelCase | Variables, instances | `userProfileController` |
+| PascalCase | Classes, types | `UserProfileController` |
+
+The CLI detects whether your project uses TypeScript or JavaScript and generates files with the correct extension and type annotations automatically.
+
+## Related Guides
+
+- [Development](/docs/tooling/cli/development)
+- [Components Generation](/docs/tooling/cli/code-generation/overview)
+- [TypeScript](/docs/tooling/cli/typescript)

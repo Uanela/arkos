@@ -1,0 +1,200 @@
+---
+title: Quick Start
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+This is a quick start guide to get something running fast. For a more robust project setup with TypeScript, Prisma, and full configuration, see the [Installation Guide](/docs/getting-started/installation). Let's build your first Arkos application. You'll create a simple API server with one endpoint that returns "Hello World".
+
+## Installation
+
+Create a new directory and install Arkos:
+
+```bash
+mkdir my-arkos-app
+cd my-arkos-app
+pnpm init
+```
+
+<Tabs items={["pnpm", "npm"]}>
+<Tab value="pnpm">
+```bash
+pnpm add arkos
+pnpm add -D tsx tsx-strict
+```
+</Tab>
+<Tab value="npm">
+```bash
+npm install arkos
+npm add -D tsx tsx-strict
+```
+</Tab>
+</Tabs>
+
+## Hello World
+
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3 and below"]}>
+<Tab value="v1.6+">
+Create `src/router.ts`:
+
+```ts title="src/router.ts"
+import { ArkosRouter } from "arkos";
+
+const router = ArkosRouter();
+
+router.get({ path: "/" }, (req, res) => {
+  res.json({ message: "Hello World" });
+});
+
+export default router;
+```
+
+Then create `src/app.ts`:
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import router from "./router";
+
+const app = arkos();
+
+app.use(router);
+
+app.listen();
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+Create `src/router.ts`:
+
+```ts title="src/router.ts"
+import { ArkosRouter } from "arkos";
+
+const router = ArkosRouter();
+
+router.get({ path: "/" }, (req, res) => {
+  res.json({ message: "Hello World" });
+});
+
+export default router;
+```
+
+Then create `src/app.ts`:
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import router from "./router";
+
+arkos.init({
+  use: [router],
+});
+```
+</Tab>
+<Tab value="v1.3 and below">
+Create `src/router.ts`:
+
+```ts title="src/router.ts"
+import { Router } from "express";
+
+const router = Router();
+
+router.get("/", (req, res) => {
+  res.json({ message: "Hello World" });
+});
+
+export default router;
+```
+
+Then create `src/app.ts`:
+
+```ts title="src/app.ts"
+import arkos from "arkos";
+import router from "./router";
+
+arkos.init({
+  routers: {
+    additional: [router],
+  },
+});
+```
+</Tab>
+</Tabs>
+
+## Run It
+
+```bash
+npx arkos dev
+```
+
+Open `http://localhost:8000` — you'll see:
+
+```json
+{ "message": "Hello World" }
+```
+
+This small app is already running with compression, rate limiting, CORS, JSON body parsing, cookie parsing, query parsing, request logging, and security headers — all on by default. Every one of them is configurable or replaceable through `arkos.config.ts`. See [Global Middlewares](/docs/guides/global-middlewares) for the full list and options.
+
+## Add Another Route
+
+<Tabs items={["v1.6+", "v1.4–v1.5", "v1.3 and below"]}>
+<Tab value="v1.6+">
+```ts title="src/router.ts"
+import { ArkosRouter } from "arkos";
+
+const router = ArkosRouter();
+
+router.get({ path: "/" }, (req, res) => {
+  res.json({ message: "Hello World" });
+});
+
+router.get({ path: "/ping" }, (req, res) => {
+  res.json({ pong: true });
+});
+
+export default router;
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="src/router.ts"
+import { ArkosRouter } from "arkos";
+
+const router = ArkosRouter();
+
+router.get({ path: "/" }, (req, res) => {
+  res.json({ message: "Hello World" });
+});
+
+router.get({ path: "/ping" }, (req, res) => {
+  res.json({ pong: true });
+});
+
+export default router;
+```
+</Tab>
+<Tab value="v1.3 and below">
+```ts title="src/router.ts"
+import { Router } from "express";
+
+const router = Router();
+
+router.get("/", (req, res) => {
+  res.json({ message: "Hello World" });
+});
+
+router.get("/ping", (req, res) => {
+  res.json({ pong: true });
+});
+
+export default router;
+```
+</Tab>
+</Tabs>
+
+The `src/app.ts` file stays the same — just add more routes to `src/router.ts` as your app grows.
+
+## What's Next
+
+This was the minimum. A real Arkos app also auto-generates full CRUD endpoints from your Prisma models, has a built-in authentication system, request validation, file uploads, and a lot more — all with zero boilerplate. The [Installation Guide](/docs/getting-started/installation) walks through setting all of that up properly with TypeScript, Prisma, and a solid project structure. That's the right next step before building anything serious.
+
+- **[Installation](/docs/getting-started/installation)** — Complete setup with TypeScript, Prisma, and configuration
+- **[Project Structure](/docs/getting-started/project-structure)** — Organize your code as it grows
+- **[Routing Concepts](/docs/core-concepts/routing/concepts)** — Custom routes vs auto-generated routes

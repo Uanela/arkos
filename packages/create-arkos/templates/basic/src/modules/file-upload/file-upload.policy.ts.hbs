@@ -1,0 +1,33 @@
+import { ArkosPolicy } from "arkos";
+
+const fileUploadPolicy = ArkosPolicy("file-upload")
+  .rule("Create", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Upload File",
+    description: "Permission to upload new files",
+  })
+  .rule("View", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "View File",
+    description: "Permission to view uploaded files",
+  })
+  .rule("Update", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Update File",
+    description: "Permission to update file metadata",
+  })
+  .rule("Delete", {
+    {{#if (eq authentication.type "static")}}
+    roles: [],
+    {{/if}}
+    name: "Delete File",
+    description: "Permission to delete uploaded files",
+  });
+
+export default fileUploadPolicy;

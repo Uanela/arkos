@@ -1,0 +1,4 @@
+{
+  "title": "Testing",
+  "pages": ["setup", "unit", "integration", "e2e"]
+}

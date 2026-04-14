@@ -32,7 +32,7 @@ export type SMTPConnectionOptions = {
 /**
  * A service class to handle email-related tasks, including sending emails.
  *
- * See the api reference [www.arkosjs.com/docs/api-reference/the-email-service-class](https://www.arkosjs.com/docs/api-reference/the-email-service-class)
+ * See the api reference [www.arkosjs.com/docs/reference/the-email-service-class](https://www.arkosjs.com/docs/reference/the-email-service-class)
  */
 export class EmailService {
   transporter: Transporter | null = null;
@@ -84,7 +84,7 @@ export class EmailService {
           "Please configure either arkosConfig.email or environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASSWORD)",
         500,
         {
-          docs: "Read more about emailService at https://www.arkosjs.com/docs/core-concepts/sending-emails",
+          docs: "Read more about emailService at https://www.arkosjs.com/docs/guides/email-service",
         }
       );
     }

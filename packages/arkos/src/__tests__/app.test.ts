@@ -1,396 +1,269 @@
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import compression from "compression";
-import { rateLimit } from "express-rate-limit";
-import { bootstrap, app } from "../app";
-import { queryParser } from "../utils/helpers/query-parser.helpers";
-import { loadPrismaModule } from "../utils/helpers/prisma.helpers";
-import errorHandler from "../modules/error-handler/error-handler.controller";
-import { getAuthRouter } from "../modules/auth/auth.router";
-import {
-  getPrismaModelsRouter,
-  getAvailableResourcesAndRoutesRouter,
-} from "../modules/base/base.router";
-import { getFileUploadRouter } from "../modules/file-upload/file-upload.router";
-import deepmerge from "../utils/helpers/deepmerge.helper";
-import { getArkosConfig } from "../exports";
-import { isAuthenticationEnabled } from "../utils/helpers/arkos-config.helpers";
+import * as runtimeCliCommanderModule from "../utils/cli/utils/runtime-cli-commander";
 
-jest.mock("../utils/helpers/arkos-config.helpers");
-jest.mock("fs", () => ({
-  ...jest.requireActual("fs"),
-  readdirSync: jest.fn(),
-  readFileSync: jest.fn(),
+jest.mock("../utils/helpers/arkos-config.helpers", () => ({
+  getArkosConfig: jest.fn(() => ({})),
+  validateArkosConfig: jest.fn(() => ({})),
 }));
+let mockListenFn: jest.Mock;
 
-// Mock dependencies
 jest.mock("express", () => {
-  const mockRouter = {
-    get: jest.fn().mockReturnThis(),
-    post: jest.fn().mockReturnThis(),
-    put: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    use: jest.fn().mockReturnThis(),
-  };
-
-  const mockExpress = jest.fn(() => ({
-    get: jest.fn(),
+  const mockListen = jest.fn();
+  const app: any = {
+    listen: mockListen,
     use: jest.fn(),
-    listen: jest.fn(),
-    set: jest.fn(),
-    static: jest.fn().mockReturnThis(),
-  }));
-
-  (mockExpress as any).static = jest.fn(() => mockRouter);
-  (mockExpress as any).Router = jest.fn(() => mockRouter);
-  (mockExpress as any).json = jest.fn(() => "express.json");
-
-  return mockExpress;
+    _events: {},
+  };
+  const express = jest.fn(() => app);
+  (express as any).__mockApp = app;
+  (express as any).__mockListen = mockListen;
+  return express;
 });
-
-jest.mock("cors", () => jest.fn(() => "cors"));
-jest.mock("cookie-parser", () => jest.fn(() => "cookieParser"));
-jest.mock("compression", () => jest.fn(() => "compression"));
-jest.mock("express-rate-limit", () => ({
-  rateLimit: jest.fn(() => "rateLimit"),
+jest.mock("../utils/setup-app", () => ({
+  __esModule: true,
+  default: jest.fn(),
 }));
-jest.mock("dotenv", () => ({
-  config: jest.fn(),
+jest.mock("../utils/initialize-app", () => ({
+  __esModule: true,
+  default: jest.fn((app: any) => app),
+  addGlobalErrorHandler: jest.fn((app: any) => app),
 }));
-
-jest.mock("../utils/helpers/deepmerge.helper", () =>
-  jest.fn((target, source) => ({ ...target, ...source }))
-);
-
+jest.mock("../server", () => ({ logAppStartup: jest.fn() }));
 jest.mock("../utils/helpers/prisma.helpers", () => ({
   loadPrismaModule: jest.fn().mockResolvedValue(undefined),
-  checkDatabaseConnection: jest
-    .fn()
-    .mockImplementation((_, _1, next) => next()),
+}));
+jest.mock("../utils/dynamic-loader", () => ({
+  loadAllModuleComponents: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock("../utils/cli/utils/runtime-cli-commander", () => ({
+  __esModule: true,
+  default: { handle: jest.fn().mockResolvedValue(undefined) },
+}));
+jest.mock("../utils/helpers/exit-error", () => ({
+  __esModule: true,
+  default: (_msg: string) => {
+    process.exit(1);
+  },
 }));
 
-jest.mock("../utils/helpers/query-parser.helpers", () => ({
-  queryParser: jest.fn(() => "queryParser"),
-}));
+describe("arkos()", () => {
+  let arkos: typeof import("../app").arkos;
+  let getAppServer: typeof import("../app").getAppServer;
+  let mockExpressApp: any;
+  let mockServer: any;
+  let prismaHelpers: typeof import("../utils/helpers/prisma.helpers");
+  let dynamicLoader: typeof import("../utils/dynamic-loader");
+  let initializeAppModule: typeof import("../utils/initialize-app");
+  let serverModule: typeof import("../server");
+  let runtimeCliCommander: typeof runtimeCliCommanderModule;
 
-jest.mock("../modules/base/base.middlewares", () => ({
-  handleRequestLogs: jest.fn().mockImplementation((_, _1, next) => next()),
-}));
-
-jest.mock("../modules/error-handler/error-handler.controller", () =>
-  jest
-    .fn()
-    .mockImplementation((err, _, res, _1) =>
-      res.status(500).json({ error: err.message })
-    )
-);
-
-jest.mock("../modules/auth/auth.router", () => ({
-  getAuthRouter: jest.fn().mockResolvedValue(jest.fn()),
-}));
-
-jest.mock("../modules/base/base.router", () => ({
-  getPrismaModelsRouter: jest.fn().mockResolvedValue(jest.fn()),
-  getAvailableResourcesAndRoutesRouter: jest.fn().mockReturnValue(jest.fn()),
-}));
-
-jest.mock("../modules/file-upload/file-upload.router", () => ({
-  getFileUploadRouter: jest.fn().mockResolvedValue(jest.fn()),
-}));
-jest.mock("../server", () => ({
-  getArkosConfig: jest.fn(() => ({})),
-}));
-
-describe("App Bootstrap", () => {
   beforeEach(() => {
+    jest.resetModules();
     jest.clearAllMocks();
+
+    delete process.env.CLI_COMMAND;
+    delete process.env.PORT;
+    delete process.env.__PORT;
+    delete process.env.HOST;
+    delete process.env.__HOST;
+
+    mockServer = { listen: jest.fn().mockReturnThis() };
+
+    const expressMock = require("express");
+    mockExpressApp = expressMock.__mockApp;
+    mockListenFn = expressMock.__mockListen;
+    mockListenFn.mockReturnValue(mockServer);
+
+    arkos = require("../app").arkos;
+    getAppServer = require("../app").getAppServer;
+    prismaHelpers = require("../utils/helpers/prisma.helpers");
+    dynamicLoader = require("../utils/dynamic-loader");
+    initializeAppModule = require("../utils/initialize-app");
+    serverModule = require("../server");
+    runtimeCliCommander = require("../utils/cli/utils/runtime-cli-commander");
+
+    jest.spyOn(process, "exit").mockImplementation((code?: any) => {
+      throw new Error(`process.exit(${code})`);
+    });
   });
 
-  it("loads Prisma module on startup", async () => {
-    await bootstrap({});
-
-    expect(loadPrismaModule).toHaveBeenCalled();
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it("calls configureApp if provided in ArkosConfig", async () => {
-    const configureApp = jest.fn();
-
-    await bootstrap({
-      configureApp,
+  describe("arkos() instantiation", () => {
+    it("should create app successfully on first call", () => {
+      expect(() => arkos()).not.toThrow();
     });
 
-    expect(configureApp).toHaveBeenCalledWith(expect.any(Object));
+    it("should throw if arkos() called twice", () => {
+      arkos();
+      expect(() => arkos()).toThrow("process.exit(1)");
+    });
   });
 
-  describe("Middleware Configuration", () => {
-    it("registers default middlewares", async () => {
-      await bootstrap({});
-
-      expect(compression).toHaveBeenCalled();
-      expect(rateLimit).toHaveBeenCalled();
-      expect(cors).toHaveBeenCalled();
-      expect(express.json).toHaveBeenCalled();
-      expect(cookieParser).toHaveBeenCalled();
-      expect(queryParser).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledTimes(12);
+  describe("app.build()", () => {
+    it("should build successfully on first call", async () => {
+      const app = arkos();
+      await expect(app.build()).resolves.not.toThrow();
+      expect(prismaHelpers.loadPrismaModule).toHaveBeenCalledTimes(1);
+      expect(dynamicLoader.loadAllModuleComponents).toHaveBeenCalledTimes(1);
+      expect(initializeAppModule.default).toHaveBeenCalledTimes(1);
     });
 
-    it("skips disabled middlewares", async () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        middlewares: { compression: false, cors: false, cookieParser: false },
-      });
-
-      await bootstrap({
-        use: [],
-      });
-
-      expect(compression).not.toHaveBeenCalled();
-      expect(cors).not.toHaveBeenCalled();
-      expect(cookieParser).not.toHaveBeenCalled();
-
-      // These should still be called
-      expect(rateLimit).toHaveBeenCalled();
-      expect(express.json).toHaveBeenCalled();
-      expect(queryParser).toHaveBeenCalled();
+    it("should throw if build() called twice", async () => {
+      const app = arkos();
+      await app.build();
+      await expect(app.build()).rejects.toThrow("process.exit(1)");
     });
 
-    it("uses replaced middlewares", async () => {
-      const customCompressionMiddleware = jest.fn();
-      const customCorsMiddleware = jest.fn();
-
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        middlewares: {
-          compression: customCompressionMiddleware as any,
-          cors: customCorsMiddleware as any,
-        },
-      });
-
-      await bootstrap({});
-
-      expect(compression).not.toHaveBeenCalled();
-      expect(cors).not.toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledWith(customCompressionMiddleware);
-      expect(app.use).toHaveBeenCalledWith(customCorsMiddleware);
+    it("should throw if build() called while building", async () => {
+      const app = arkos();
+      const buildPromise = app.build();
+      await expect(app.build()).rejects.toThrow("process.exit(1)");
+      await buildPromise;
     });
 
-    it("registers additional custom middlewares", async () => {
-      const customMiddleware1 = jest.fn().mockReturnValue("customMiddleware1");
-      const customMiddleware2 = jest.fn().mockReturnValue("customMiddleware2");
-
-      await bootstrap({
-        use: [customMiddleware1(), customMiddleware2()],
-      });
-
-      expect(customMiddleware1).toHaveBeenCalled();
-      expect(customMiddleware2).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledWith("customMiddleware1");
-      expect(app.use).toHaveBeenCalledWith("customMiddleware2");
+    it("should throw if build() called after listen()", async () => {
+      const app = arkos();
+      await app.listen();
+      await expect(app.build()).rejects.toThrow("process.exit(1)");
     });
 
-    it("passes correct options to compression middleware", async () => {
-      const compressionOptions = { level: 6, threshold: 1024 };
-
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        middlewares: {
-          compression: compressionOptions,
-        },
-      });
-      await bootstrap({});
-
-      expect(compression).toHaveBeenCalledWith(compressionOptions);
+    it("should handle CLI_COMMAND env var", async () => {
+      process.env.CLI_COMMAND = "some-command";
+      const app = arkos();
+      await app.build();
+      expect(runtimeCliCommander.default.handle).toHaveBeenCalledTimes(1);
     });
 
-    it("passes correct options to rate limit middleware", async () => {
-      const rateLimitOptions = { windowMs: 30000, limit: 500 };
+    it("should not call CLI handler without CLI_COMMAND", async () => {
+      const app = arkos();
+      await app.build();
+      expect(runtimeCliCommander.default.handle).not.toHaveBeenCalled();
+    });
+  });
 
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        middlewares: {
-          rateLimit: rateLimitOptions,
-        },
-      });
-
-      await bootstrap({});
-
-      expect(deepmerge).toHaveBeenCalledWith(
-        expect.objectContaining({
-          windowMs: 60 * 1000,
-          limit: 300,
-        }),
-        rateLimitOptions
+  describe("app.listen()", () => {
+    it("should listen successfully without prior build", async () => {
+      const app = arkos();
+      await app.listen();
+      expect(prismaHelpers.loadPrismaModule).toHaveBeenCalledTimes(1);
+      expect(mockListenFn).toHaveBeenCalledWith(
+        8000,
+        "0.0.0.0",
+        expect.any(Function)
       );
     });
 
-    it('configures cors with all origins when "*" is specified', async () => {
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        middlewares: {
-          cors: { allowedOrigins: "*" },
-        },
-      });
-      await bootstrap({});
+    it("should listen successfully after build", async () => {
+      const app = arkos();
+      await app.build();
+      await app.listen();
+      expect(prismaHelpers.loadPrismaModule).toHaveBeenCalledTimes(1);
+      expect(mockListenFn).toHaveBeenCalled();
+    });
 
-      expect(cors).toHaveBeenCalledWith(
-        expect.objectContaining({
-          origin: expect.any(Function),
-        })
+    it("should throw if listen() called twice", async () => {
+      const app = arkos();
+      await app.listen();
+      await expect(app.listen()).rejects.toThrow("process.exit(1)");
+    });
+
+    it("should throw if listen() called while building", async () => {
+      const app = arkos();
+      const buildPromise = app.build();
+      await expect(app.listen()).rejects.toThrow("process.exit(1)");
+      await buildPromise;
+    });
+
+    it("should use PORT env var", async () => {
+      process.env.PORT = "3000";
+      const app = arkos();
+      await app.listen();
+      expect(mockListenFn).toHaveBeenCalledWith(
+        3000,
+        "0.0.0.0",
+        expect.any(Function)
       );
-
-      // Test the origin callback
-      const originCallback = (cors as jest.Mock).mock.calls[0][0].origin;
-      const mockCallback = jest.fn();
-
-      originCallback("https://example.com", mockCallback);
-      expect(mockCallback).toHaveBeenCalledWith(null, true);
     });
 
-    it("configures cors with specific origins", async () => {
-      const allowedOrigins = ["https://example.com", "https://test.com"];
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        middlewares: {
-          cors: { allowedOrigins },
-        },
-      });
-
-      await bootstrap({});
-
-      expect(cors).toHaveBeenCalledWith(
-        expect.objectContaining({
-          origin: expect.any(Function),
-        })
+    it("should use __PORT over PORT", async () => {
+      process.env.PORT = "3000";
+      process.env.__PORT = "4000";
+      const app = arkos();
+      await app.listen();
+      expect(mockListenFn).toHaveBeenCalledWith(
+        4000,
+        "0.0.0.0",
+        expect.any(Function)
       );
-
-      // Test the origin callback
-      const originCallback = (cors as jest.Mock).mock.calls[0][0].origin;
-      const mockCallback = jest.fn();
-
-      originCallback("https://example.com", mockCallback);
-      expect(mockCallback).toHaveBeenCalledWith(null, true);
-
-      originCallback("https://not-allowed.com", mockCallback);
-      expect(mockCallback).toHaveBeenCalledWith(null, false);
     });
 
-    it("uses custom CORS handler if provided", async () => {
-      const customHandler = jest.fn((_, callback) => callback(null, true));
+    it("should use HOST env var", async () => {
+      process.env.HOST = "localhost";
+      const app = arkos();
+      await app.listen();
+      expect(mockListenFn).toHaveBeenCalledWith(
+        8000,
+        "localhost",
+        expect.any(Function)
+      );
+    });
 
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        middlewares: {
-          cors: customHandler,
-        },
-      });
-      const app = await bootstrap({});
+    it("should use __HOST over HOST", async () => {
+      process.env.HOST = "localhost";
+      process.env.__HOST = "127.0.0.1";
+      const app = arkos();
+      await app.listen();
+      expect(mockListenFn).toHaveBeenCalledWith(
+        8000,
+        "127.0.0.1",
+        expect.any(Function)
+      );
+    });
 
-      expect(app.use).toHaveBeenCalledWith(customHandler);
+    it("should accept a callback as first arg", async () => {
+      const app = arkos();
+      const cb = jest.fn();
+      await app.listen(cb);
+      expect(mockListenFn).toHaveBeenCalledWith(8000, "0.0.0.0", cb);
+    });
+
+    it("should accept a custom http.Server as first arg", async () => {
+      const app = arkos();
+      const customServer = { listen: jest.fn().mockReturnThis() };
+      await app.listen(customServer as any);
+      expect(customServer.listen).toHaveBeenCalledWith(
+        8000,
+        "0.0.0.0",
+        expect.any(Function)
+      );
+    });
+
+    it("should accept a custom server with a callback", async () => {
+      const app = arkos();
+      const customServer = { listen: jest.fn().mockReturnThis() };
+      const cb = jest.fn();
+      await app.listen(customServer as any, cb);
+      expect(customServer.listen).toHaveBeenCalledWith(8000, "0.0.0.0", cb);
+    });
+
+    it("should log app startup", async () => {
+      const app = arkos();
+      await app.listen();
+      expect(serverModule.logAppStartup).toHaveBeenCalledWith(8000, "0.0.0.0");
     });
   });
 
-  describe("Router Configuration", () => {
-    it("registers default routers", async () => {
-      await bootstrap({});
-
-      expect(app.get).toHaveBeenCalledWith("/api", expect.any(Function));
-      expect(getFileUploadRouter).toHaveBeenCalled();
-      expect(getPrismaModelsRouter).toHaveBeenCalled();
-      expect(getAvailableResourcesAndRoutesRouter).toHaveBeenCalled();
+  describe("getAppServer()", () => {
+    it("should return undefined before listen", () => {
+      expect(getAppServer()).toBeUndefined();
     });
 
-    it("registers auth router when authentication is configured", async () => {
-      (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
-      await bootstrap({});
-
-      expect(getAuthRouter).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledWith("/api", expect.any(Function));
+    it("should return the server after listen", async () => {
+      const app = arkos();
+      await app.listen();
+      expect(getAppServer()).toBe(mockServer);
     });
-
-    it("registers additional custom routers", async () => {
-      const customRouter1 = "Router1";
-      const customRouter2 = "Router2";
-
-      await bootstrap({
-        use: [customRouter1, customRouter2] as any,
-      });
-
-      expect(app.use).toHaveBeenCalledWith(customRouter1);
-      expect(app.use).toHaveBeenCalledWith(customRouter2);
-    });
-
-    it("correctly handles welcome endpoint", async () => {
-      const welcomeMessage = "Custom Welcome Message";
-
-      (getArkosConfig as jest.Mock).mockReturnValue({
-        welcomeMessage,
-      });
-      await bootstrap({});
-
-      // Get the welcome handler function
-      const getHandler = (app.get as jest.Mock).mock.calls.find(
-        (call) => call[0] === "/api"
-      )[1];
-
-      const req = {};
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
-
-      // Call the handler
-      getHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ message: welcomeMessage });
-    });
-
-    // it("allows replacing the auth router", async () => {
-    //   const customAuthRouter = jest.fn().mockResolvedValue("customAuthRouter");
-    //   (getArkosConfig as jest.Mock).mockReturnValue({
-    //     authentication: {
-    //       mode: "static",
-    //       jwt: {
-    //         secret: "test-secret",
-    //       },
-    //     },
-    //   });
-
-    //   await bootstrap({
-    //   });
-
-    //   expect(getAuthRouter).not.toHaveBeenCalled();
-    //   expect(customAuthRouter).toHaveBeenCalledWith(
-    //     expect.objectContaining({
-    //       authentication: expect.objectContaining({
-    //         mode: "static",
-    //       }),
-    //     })
-    //   );
-    // });
-  });
-
-  it("registers error handler as last but one", async () => {
-    await bootstrap({});
-
-    const useCalls = (app.use as jest.Mock).mock.calls;
-    const lastCall = useCalls[useCalls.length - 1];
-
-    expect(lastCall[0]).toBe(errorHandler);
-  });
-
-  // it("registers not found last", async () => {
-  //   await bootstrap({
-  //     welcomeMessage: "Test API",
-  //     port: 3000,
-  //   });
-
-  //   // Mock app.use to capture the calls
-  //   const useCalls = (app.use as jest.Mock).mock.calls;
-  //   const lastUseCall = useCalls[useCalls.length - 1];
-
-  //   // Check if the last middleware is the error handler
-  //   expect(lastUseCall[0]).toBe(any.Function);
-  // });
-
-  it("returns the configured express app", async () => {
-    const result = await bootstrap({});
-
-    expect(result).toBe(app);
   });
 });

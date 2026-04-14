@@ -12,12 +12,13 @@ import {
 } from "../../types/router-config";
 import { isEndpointDisabled } from "../../modules/base/utils/helpers/base.router.helpers";
 import { ArkosRouteConfig } from "../arkos-router/types";
-import { ArkosConfig } from "../../exports";
+import { UserArkosConfig } from "../define-config";
+import ExitError from "./exit-error";
 
 function throwErrorIfInterceptorIsNotAFunction(middleware: any) {
   if (middleware && typeof middleware !== "function")
-    throw Error(
-      `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
+    throw ExitError(
+      `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/components/interceptors`
     );
 }
 
@@ -26,8 +27,8 @@ export const safeCatchAsync = (
   options: { type: "error" | "normal" } = { type: "normal" }
 ) => {
   if (middleware && typeof middleware !== "function")
-    throw Error(
-      `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/interceptor-middlewares`
+    throw ExitError(
+      `Validation Error: Invalid interceptor of type ${typeof middleware}, they must be a function or an array of function. checkout https://arkosjs.com/docs/core-concepts/components/interceptors`
     );
 
   return middleware ? catchAsync(middleware, options) : undefined;
@@ -103,7 +104,7 @@ export function getAuthenticationConfig(
  * @returns Route configuration object
  */
 export function createRouteConfig(
-  arkosConfig: ArkosConfig,
+  arkosConfig: UserArkosConfig,
   endpoint: RouterEndpoint | AuthRouterEndpoint | FileUploadRouterEndpoint,
   routeName: string,
   path: string,

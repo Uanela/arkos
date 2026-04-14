@@ -8,6 +8,7 @@ import generateHooksTemplate from "./template-generator/templates/hooks-template
 import classValidatorDtoGenerator from "./template-generator/templates/class-validator-dto-generator";
 import zodSchemaGenerator from "./template-generator/templates/zod-schema-generator";
 import prismaSchemaParser from "../../prisma/prisma-schema-parser";
+import { generatePolicyTemplate } from "./template-generator/templates/policy-template";
 
 interface ModelName {
   pascal: string;
@@ -46,6 +47,8 @@ export function generateTemplate(
       return generateMiddlewaresTemplate(options);
     case "hooks":
       return generateHooksTemplate(options);
+    case "policy":
+      return generatePolicyTemplate(options);
 
     case "create-schema":
       return zodSchemaGenerator.generateCreateSchema(options);
@@ -67,6 +70,23 @@ export function generateTemplate(
 
     case "prisma-model":
       return prismaSchemaParser.generatePrismaModel(options);
+
+    case "login-schema":
+      return zodSchemaGenerator.generateLoginSchema(options);
+    case "signup-schema":
+      return zodSchemaGenerator.generateSignupSchema(options);
+    case "update-me-schema":
+      return zodSchemaGenerator.generateUpdateMeSchema(options);
+    case "update-password-schema":
+      return zodSchemaGenerator.generateUpdatePasswordSchema(options);
+    case "login-dto":
+      return classValidatorDtoGenerator.generateLoginDto(options);
+    case "signup-dto":
+      return classValidatorDtoGenerator.generateSignupDto(options);
+    case "update-me-dto":
+      return classValidatorDtoGenerator.generateUpdateMeDto(options);
+    case "update-password-dto":
+      return classValidatorDtoGenerator.generateUpdatePasswordDto(options);
 
     default:
       throw new Error(`Unknown template type: ${type}`);
