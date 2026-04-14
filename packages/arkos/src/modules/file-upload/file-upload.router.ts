@@ -14,13 +14,13 @@ import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
-import { ArkosConfig } from "../../exports";
 import path from "path";
 import ArkosRouter from "../../utils/arkos-router";
+import { UserArkosConfig } from "../../utils/define-config";
 import { FileUploadRouterEndpoint } from "../../types/router-config";
 import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-generator";
 
-export function getFileUploadRouter(arkosConfig: ArkosConfig) {
+export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
   const router = ArkosRouter();
   const { fileUpload } = arkosConfig;
 

@@ -11,10 +11,16 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as homeRouteRouteImport } from './routes/(home)/route'
+import { Route as homeIndexRouteImport } from './routes/(home)/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
+import { Route as homeSponsorsRouteImport } from './routes/(home)/sponsors'
+import { Route as homeShowcaseRouteImport } from './routes/(home)/showcase'
+import { Route as homeLearnRouteImport } from './routes/(home)/learn'
+import { Route as homeBlogIndexRouteImport } from './routes/(home)/blog/index'
 import { Route as LlmsDotmdxDocsSplatRouteImport } from './routes/llms[.]mdx.docs.$'
+import { Route as homeBlogSlugRouteImport } from './routes/(home)/blog/$slug'
 
 const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
   id: '/llms.txt',
@@ -26,10 +32,14 @@ const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
   path: '/llms-full.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const homeRouteRoute = homeRouteRouteImport.update({
+  id: '/(home)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const homeIndexRoute = homeIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => homeRouteRoute,
 } as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
   id: '/docs/$',
@@ -41,66 +51,123 @@ const ApiSearchRoute = ApiSearchRouteImport.update({
   path: '/api/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const homeSponsorsRoute = homeSponsorsRouteImport.update({
+  id: '/sponsors',
+  path: '/sponsors',
+  getParentRoute: () => homeRouteRoute,
+} as any)
+const homeShowcaseRoute = homeShowcaseRouteImport.update({
+  id: '/showcase',
+  path: '/showcase',
+  getParentRoute: () => homeRouteRoute,
+} as any)
+const homeLearnRoute = homeLearnRouteImport.update({
+  id: '/learn',
+  path: '/learn',
+  getParentRoute: () => homeRouteRoute,
+} as any)
+const homeBlogIndexRoute = homeBlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => homeRouteRoute,
+} as any)
 const LlmsDotmdxDocsSplatRoute = LlmsDotmdxDocsSplatRouteImport.update({
   id: '/llms.mdx/docs/$',
   path: '/llms.mdx/docs/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const homeBlogSlugRoute = homeBlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => homeRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/learn': typeof homeLearnRoute
+  '/showcase': typeof homeShowcaseRoute
+  '/sponsors': typeof homeSponsorsRoute
   '/api/search': typeof ApiSearchRoute
   '/docs/$': typeof DocsSplatRoute
+  '/': typeof homeIndexRoute
+  '/blog/$slug': typeof homeBlogSlugRoute
   '/llms.mdx/docs/$': typeof LlmsDotmdxDocsSplatRoute
+  '/blog/': typeof homeBlogIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/learn': typeof homeLearnRoute
+  '/showcase': typeof homeShowcaseRoute
+  '/sponsors': typeof homeSponsorsRoute
   '/api/search': typeof ApiSearchRoute
   '/docs/$': typeof DocsSplatRoute
+  '/': typeof homeIndexRoute
+  '/blog/$slug': typeof homeBlogSlugRoute
   '/llms.mdx/docs/$': typeof LlmsDotmdxDocsSplatRoute
+  '/blog': typeof homeBlogIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/(home)': typeof homeRouteRouteWithChildren
   '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/llms.txt': typeof LlmsDottxtRoute
+  '/(home)/learn': typeof homeLearnRoute
+  '/(home)/showcase': typeof homeShowcaseRoute
+  '/(home)/sponsors': typeof homeSponsorsRoute
   '/api/search': typeof ApiSearchRoute
   '/docs/$': typeof DocsSplatRoute
+  '/(home)/': typeof homeIndexRoute
+  '/(home)/blog/$slug': typeof homeBlogSlugRoute
   '/llms.mdx/docs/$': typeof LlmsDotmdxDocsSplatRoute
+  '/(home)/blog/': typeof homeBlogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/llms-full.txt'
     | '/llms.txt'
+    | '/learn'
+    | '/showcase'
+    | '/sponsors'
     | '/api/search'
     | '/docs/$'
+    | '/'
+    | '/blog/$slug'
     | '/llms.mdx/docs/$'
+    | '/blog/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/llms-full.txt'
     | '/llms.txt'
+    | '/learn'
+    | '/showcase'
+    | '/sponsors'
     | '/api/search'
     | '/docs/$'
+    | '/'
+    | '/blog/$slug'
     | '/llms.mdx/docs/$'
+    | '/blog'
   id:
     | '__root__'
-    | '/'
+    | '/(home)'
     | '/llms-full.txt'
     | '/llms.txt'
+    | '/(home)/learn'
+    | '/(home)/showcase'
+    | '/(home)/sponsors'
     | '/api/search'
     | '/docs/$'
+    | '/(home)/'
+    | '/(home)/blog/$slug'
     | '/llms.mdx/docs/$'
+    | '/(home)/blog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  homeRouteRoute: typeof homeRouteRouteWithChildren
   LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
   LlmsDottxtRoute: typeof LlmsDottxtRoute
   ApiSearchRoute: typeof ApiSearchRoute
@@ -124,12 +191,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LlmsFullDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/(home)': {
+      id: '/(home)'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof homeRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(home)/': {
+      id: '/(home)/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof homeIndexRouteImport
+      parentRoute: typeof homeRouteRoute
     }
     '/docs/$': {
       id: '/docs/$'
@@ -145,6 +219,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(home)/sponsors': {
+      id: '/(home)/sponsors'
+      path: '/sponsors'
+      fullPath: '/sponsors'
+      preLoaderRoute: typeof homeSponsorsRouteImport
+      parentRoute: typeof homeRouteRoute
+    }
+    '/(home)/showcase': {
+      id: '/(home)/showcase'
+      path: '/showcase'
+      fullPath: '/showcase'
+      preLoaderRoute: typeof homeShowcaseRouteImport
+      parentRoute: typeof homeRouteRoute
+    }
+    '/(home)/learn': {
+      id: '/(home)/learn'
+      path: '/learn'
+      fullPath: '/learn'
+      preLoaderRoute: typeof homeLearnRouteImport
+      parentRoute: typeof homeRouteRoute
+    }
+    '/(home)/blog/': {
+      id: '/(home)/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof homeBlogIndexRouteImport
+      parentRoute: typeof homeRouteRoute
+    }
     '/llms.mdx/docs/$': {
       id: '/llms.mdx/docs/$'
       path: '/llms.mdx/docs/$'
@@ -152,11 +254,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LlmsDotmdxDocsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(home)/blog/$slug': {
+      id: '/(home)/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof homeBlogSlugRouteImport
+      parentRoute: typeof homeRouteRoute
+    }
   }
 }
 
+interface homeRouteRouteChildren {
+  homeLearnRoute: typeof homeLearnRoute
+  homeShowcaseRoute: typeof homeShowcaseRoute
+  homeSponsorsRoute: typeof homeSponsorsRoute
+  homeIndexRoute: typeof homeIndexRoute
+  homeBlogSlugRoute: typeof homeBlogSlugRoute
+  homeBlogIndexRoute: typeof homeBlogIndexRoute
+}
+
+const homeRouteRouteChildren: homeRouteRouteChildren = {
+  homeLearnRoute: homeLearnRoute,
+  homeShowcaseRoute: homeShowcaseRoute,
+  homeSponsorsRoute: homeSponsorsRoute,
+  homeIndexRoute: homeIndexRoute,
+  homeBlogSlugRoute: homeBlogSlugRoute,
+  homeBlogIndexRoute: homeBlogIndexRoute,
+}
+
+const homeRouteRouteWithChildren = homeRouteRoute._addFileChildren(
+  homeRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  homeRouteRoute: homeRouteRouteWithChildren,
   LlmsFullDottxtRoute: LlmsFullDottxtRoute,
   LlmsDottxtRoute: LlmsDottxtRoute,
   ApiSearchRoute: ApiSearchRoute,

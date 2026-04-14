@@ -88,9 +88,9 @@ jest.mock("../../debugger/debugger.service", () => ({
   default: { logModuleFinalRouter: jest.fn() },
 }));
 jest.mock("../../../utils/helpers/routers.helpers", () => ({
-  processMiddleware: jest.fn((fn, opts) => (fn ? [fn] : [])),
+  processMiddleware: jest.fn((fn, _) => (fn ? [fn] : [])),
   createRouteConfig: jest.fn(
-    (arkosConfig, endpoint, resource, path, routerConfig, module, auth) => ({
+    (_, endpoint, resource, path, routerConfig, _1, auth) => ({
       path: `/${resource}${path}`,
       disabled: false,
       authentication: auth,
@@ -374,7 +374,7 @@ describe("Auth Router", () => {
       prismaQueryOptions: mockPrismaQueryOptions,
     });
 
-    getAuthRouter({ authentication: { mode: "static" } });
+    getAuthRouter({ authentication: { mode: "static" } } as any);
 
     expect(mockRouter.get).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/users/me", authentication: true }),
@@ -441,8 +441,7 @@ describe("Auth Router", () => {
       },
       prismaQueryOptions: mockPrismaQueryOptions,
     });
-
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
     expect(mockRouter.get).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/users/me" }),
@@ -513,8 +512,7 @@ describe("Auth Router", () => {
       },
       prismaQueryOptions: mockPrismaQueryOptions,
     });
-
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
     expect(mockRouter.get).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/users/me" }),
@@ -599,8 +597,7 @@ describe("Auth Router", () => {
       },
       prismaQueryOptions: mockPrismaQueryOptions,
     });
-
-    await getAuthRouter(mockArkosConfig);
+    getAuthRouter(mockArkosConfig);
 
     expect(mockRouter.get).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/users/me" }),
@@ -717,7 +714,7 @@ describe("Auth Router", () => {
 
   test("should skip disabled endpoints based on isEndpointDisabled", () => {
     (isEndpointDisabled as jest.Mock).mockImplementation(
-      (config, endpoint) => endpoint === "login" || endpoint === "signup"
+      (_, endpoint) => endpoint === "login" || endpoint === "signup"
     );
 
     getAuthRouter(mockArkosConfig);
@@ -734,7 +731,7 @@ describe("Auth Router", () => {
   });
 
   test("should skip rate limiting when all auth endpoints are disabled", () => {
-    (isEndpointDisabled as jest.Mock).mockImplementation((config, endpoint) =>
+    (isEndpointDisabled as jest.Mock).mockImplementation((_, endpoint) =>
       ["login", "logout", "signup", "updatePassword"].includes(endpoint)
     );
 
@@ -745,7 +742,7 @@ describe("Auth Router", () => {
 
   test("should apply rate limiting when at least one auth endpoint is enabled", () => {
     (isEndpointDisabled as jest.Mock).mockImplementation(
-      (config, endpoint) => endpoint !== "login"
+      (_, endpoint) => endpoint !== "login"
     );
 
     getAuthRouter(mockArkosConfig);
@@ -836,7 +833,7 @@ describe("Auth Router", () => {
   });
 
   test("should use default rate limit values when no custom rateLimit config is provided", () => {
-    getAuthRouter({ authentication: { mode: "static" } });
+    getAuthRouter({ authentication: { mode: "static" } } as any);
 
     expect(deepmerge).toHaveBeenCalledWith(
       expect.objectContaining({ windowMs: 5000, limit: 10 }),

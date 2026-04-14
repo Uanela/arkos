@@ -1,5 +1,9 @@
 import { generateControllerTemplate } from "../generate-controller-template";
 
+jest.mock("../../../../generate", () => ({
+  kebabPrismaModels: ["test", "user-profile", "file-upload", "order"],
+}));
+
 describe("generateControllerTemplate", () => {
   const baseOptions = {
     modelName: {
@@ -139,5 +143,23 @@ describe("generateControllerTemplate", () => {
     expect(result).toContain(
       'const userProfileController = new UserProfileController("user-profile");'
     );
+  });
+
+  it("should generate empty controller for non-prisma non-special module", () => {
+    const options = {
+      modelName: {
+        camel: "dashboard",
+        pascal: "Dashboard",
+        kebab: "dashboard",
+      },
+      imports: {},
+    };
+    const result = generateControllerTemplate(options);
+    expect(result).not.toContain("import {");
+    expect(result).toContain("class DashboardController {}");
+    expect(result).toContain(
+      'const dashboardController = new DashboardController("dashboard");'
+    );
+    expect(result).toContain("export default dashboardController;");
   });
 });

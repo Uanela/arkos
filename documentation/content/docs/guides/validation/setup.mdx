@@ -1,0 +1,270 @@
+---
+title: Setup
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+Arkos ships a validation system that plugs into both [ArkosRouter](/docs/core-concepts/components/routers) and [RouteHook](/docs/core-concepts/components/route-hooks) declaratively — validate `req.body`, `req.query`, and `req.params` with zero boilerplate, with automatic OpenAPI spec generation from your schemas.
+
+## Configuration
+
+<Tabs items={["v1.6", "v1.4–v1.5", "v1.3"]}>
+<Tab value="v1.6">
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos";
+
+export default defineConfig({
+  validation: {
+    resolver: "zod", // or "class-validator"
+    validationOptions: {
+      whitelist: true,
+    },
+  },
+});
+```
+</Tab>
+<Tab value="v1.4–v1.5">
+```ts title="arkos.config.ts"
+import { ArkosConfig } from "arkos";
+
+const arkosConfig: ArkosConfig = {
+  validation: {
+    resolver: "zod",
+    validationOptions: {
+      whitelist: true,
+    },
+  },
+};
+
+export default arkosConfig;
+```
+</Tab>
+<Tab value="v1.3">
+```ts title="src/app.ts"
+import arkos from "arkos";
+
+arkos.init({
+  validation: {
+    resolver: "zod",
+    validationOptions: {
+      whitelist: true,
+    },
+  },
+});
+```
+</Tab>
+</Tabs>
+
+| Option | Values | Description |
+|---|---|---|
+| `resolver` | `"zod"` \| `"class-validator"` | Validation library to use |
+| `validationOptions` | object | Options passed directly to the resolver |
+| `strict` | `boolean` | Enables strict mode — see below |
+
+<Callout type="warn">
+Validation is disabled by default. Without a `resolver` set, no validation runs on any route.
+</Callout>
+
+## Quick Example
+
+Validation works the same way whether you're on a custom route or a built-in one.
+
+<Tabs items={["ArkosRouter", "RouteHook"]}>
+<Tab value="ArkosRouter">
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/report/report.router.ts"
+import { ArkosRouter } from "arkos";
+import z from "zod";
+import reportController from "./report.controller";
+
+const router = ArkosRouter();
+
+router.post(
+  {
+    path: "/api/reports",
+    validation: {
+      body: z.object({
+        title: z.string().min(1),
+        type: z.enum(["sales", "inventory"]),
+      }),
+      query: z.object({
+        notify: z.coerce.boolean().optional(),
+      }),
+    },
+  },
+  reportController.createReport
+);
+
+export default router;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/report/report.router.ts"
+import { ArkosRouter } from "arkos";
+import { IsString, IsEnum, IsBoolean, IsOptional, MinLength } from "class-validator";
+import { Type } from "class-transformer";
+import reportController from "./report.controller";
+
+const router = ArkosRouter();
+
+class CreateReportBodyDto {
+  @IsString()
+  @MinLength(1)
+  title: string;
+
+  @IsEnum(["sales", "inventory"])
+  type: string;
+}
+
+class CreateReportQueryDto {
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  notify?: boolean;
+}
+
+router.post(
+  {
+    path: "/api/reports",
+    validation: {
+      body: CreateReportBodyDto,
+      query: CreateReportQueryDto,
+    },
+  },
+  reportController.createReport
+);
+
+export default router;
+```
+</Tab>
+</Tabs>
+</Tab>
+<Tab value="RouteHook">
+<Tabs items={["Zod", "Class Validator"]}>
+<Tab value="Zod">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import z from "zod";
+
+const CreatePostSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().min(1),
+  published: z.boolean().optional(),
+  authorId: z.string().uuid(),
+});
+
+export const hook: RouteHook = {
+  createOne: {
+    validation: {
+      body: CreatePostSchema,
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+<Tab value="Class Validator">
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import { IsString, IsBoolean, IsUUID, IsOptional, MinLength } from "class-validator";
+
+class CreatePostDto {
+  @IsString()
+  @MinLength(1)
+  title: string;
+
+  @IsString()
+  @MinLength(1)
+  content: string;
+
+  @IsBoolean()
+  @IsOptional()
+  published?: boolean;
+
+  @IsUUID()
+  authorId: string;
+}
+
+export const hook: RouteHook = {
+  createOne: {
+    validation: {
+      body: CreatePostDto,
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+</Tab>
+</Tabs>
+</Tab>
+</Tabs>
+
+<Callout type="info">
+`RouteHook` is the new name for `export const config: RouterConfig`. If you have existing code using the old name it still works but will log a deprecation warning. See [Route Hook](/docs/core-concepts/components/route-hooks) for full details.
+</Callout>
+
+
+## Strict Mode
+
+By default, routes without a `validation` config let all input through unvalidated. Strict mode inverts this — every route must explicitly declare its validation intent.
+
+Enable it in your config:
+```ts
+defineConfig({
+  validation: {
+    resolver: "zod",
+    strict: true,
+  },
+});
+```
+
+In strict mode, each of `body`, `query`, and `params` follows the same rule:
+
+| Value | Behavior |
+|---|---|
+| `ZodSchema` \| `ClassConstructor` | Validates the input against the schema |
+| `false` | Allows input through without validation |
+| `null` | Prohibits the input entirely — returns `400` |
+| `undefined` / not set | Prohibits the input entirely — returns `400` |
+
+Without strict mode, omitting a key simply skips validation for that target.
+```ts
+router.get(
+  {
+    path: "/api/reports",
+    validation: {
+      query: ReportQuerySchema, // validated
+      body: false,              // explicitly allowed through
+      params: null,             // prohibited — 400 RequestParamsNotAllowed
+    },
+  },
+  reportController.getReports
+);
+```
+
+<Callout type="warn">
+Passing validators on a route without a `resolver` set throws at startup:
+```
+Trying to pass validators into route GET /api/reports config validation option
+without choosing a validation resolver under arkos.config.ts
+```
+
+In strict mode, routes missing explicit validation intent also throw at startup.
+</Callout>
+
+## OpenAPI Integration
+
+Schemas and DTOs passed to `validation` automatically generate OpenAPI parameters and request body definitions — no extra configuration needed. See [OpenAPI Documentation](/docs/guides/open-api-documentation/setup) for details.
+
+## What's Next
+
+- [Usage](/docs/guides/validation/usage) — validate `body`, `query`, and `params` on your routes
+- [Customization](/docs/guides/validation/customization/helper-functions) — `validateDto` / `validateSchema` helpers for manual validation

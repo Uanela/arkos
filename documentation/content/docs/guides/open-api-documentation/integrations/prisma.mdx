@@ -1,0 +1,145 @@
+---
+title: Prisma
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+For built-in Prisma model routes without explicit validation schemas, Arkos generates OpenAPI schemas directly from your Prisma models. Custom query options shape what fields appear in the documentation.
+
+## How It Works
+
+When you don't provide a validation schema for a Prisma model route, Arkos introspects your model and generates a schema based on:
+
+1. **The model structure** — all scalar fields from your Prisma schema
+2. **Query options** — `select` and `include` from your `[model].query.ts` file
+3. **Relations** — nested related models when included via `include`
+
+## Query Options Integration
+
+Your `[model].query.ts` file controls both runtime behavior and OpenAPI documentation:
+
+```ts title="src/modules/post/post.query.ts"
+import { PrismaQueryOptions } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
+
+const postQueryOptions: PrismaQueryOptions<Prisma.PostDelegate> = {
+  findMany: {
+    select: {
+      id: true,
+      title: true,
+      excerpt: true,
+      publishedAt: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      tags: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    where: { published: true },
+    orderBy: { publishedAt: "desc" },
+  },
+  findOne: {
+    include: {
+      author: true,
+      comments: {
+        where: { approved: true },
+        orderBy: { createdAt: "asc" },
+        include: {
+          author: true,
+        },
+      },
+      tags: true,
+    },
+  },
+};
+
+export default postQueryOptions;
+```
+
+The generated OpenAPI schema for `GET /api/posts` will show only the fields selected in `findMany.select` — exactly what your API returns. For `GET /api/posts/:id`, it shows the full `include` structure with nested relations.
+
+## Schema Generation Rules
+
+| Source | What Gets Documented |
+|--------|---------------------|
+| No validation, no query options | All scalar fields from the Prisma model |
+| Validation schema present | The validation schema (full control) |
+| Query options with `select` | Only selected fields |
+| Query options with `include` | Selected fields + included relations |
+
+<Callout type="info">
+Query options affect documentation **only for built-in routes without validation schemas**. If you provide a validation schema, it takes precedence for both validation and documentation.
+</Callout>
+
+## Relations in Documentation
+
+When your query options include relations, Arkos documents the full nested structure:
+
+```ts
+// Response schema in OpenAPI will show:
+{
+  id: string,
+  title: string,
+  author: {
+    id: string,
+    name: string,
+    email: string
+  },
+  tags: [
+    { id: string, name: string }
+  ]
+}
+```
+
+## Overriding Generated Schemas
+
+To take full control of documentation for a specific endpoint, add a validation schema and `openapi` config:
+
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import z from "zod";
+
+export const hook: RouteHook = {
+  findMany: {
+    validation: {
+      query: z.object({
+        published: z.boolean().optional(),
+        tag: z.string().optional(),
+      }),
+    },
+    experimental: {
+      openapi: {
+        summary: "List published posts",
+        description: "Get paginated list of posts with optional tag filtering",
+        responses: {
+          200: z.array(CustomPostSchema),
+        },
+      },
+    },
+  },
+};
+
+const router = ArkosRouter();
+
+export default router;
+```
+
+<Callout type="info">
+  `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
+</Callout>
+
+Once you add `validation` or `openapi.responses`, Arkos uses your definitions instead of generating from query options.
+
+## Next Steps
+
+- [File Uploads Integration](/docs/guides/open-api-documentation/integrations/file-uploads) — Automatic multipart/form-data documentation
+- [Authentication Integration](/docs/guides/open-api-documentation/integrations/authentication) — Document auth endpoints and security schemes
+- [Documenting Routes](/docs/guides/open-api-documentation/usage) — Adding summaries, tags, and custom responses

@@ -424,7 +424,7 @@ export class FileUploadController {
  *
  * @instance
  * @constant
- * @see {@link https://www.arkosjs.com/docs/api-reference/file-upload-controller-object}
+ * @see {@link https://www.arkosjs.com/docs/reference/file-upload-controller-object}
  */
 const fileUploadController = new FileUploadController();
 

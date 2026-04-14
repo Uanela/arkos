@@ -1,4 +1,10 @@
-import { defineConfig, defineDocs } from "fumadocs-mdx/config";
+import {
+  defineCollections,
+  defineConfig,
+  defineDocs,
+  frontmatterSchema,
+} from "fumadocs-mdx/config";
+import z from "zod";
 
 export const docs = defineDocs({
   dir: "content/docs",
@@ -9,18 +15,19 @@ export const docs = defineDocs({
   },
 });
 
-export default defineConfig();
-
-import { defineCollections } from "fumadocs-mdx/config";
-import { pageSchema } from "fumadocs-core/source/schema";
-// import { z } from 'zod';
+export default defineConfig({});
 
 export const blogPosts = defineCollections({
-  type: "doc",
   dir: "content/blog",
-  // add required frontmatter properties
-  // schema: pageSchema.extend({
-  //   author: z.string(),
-  //   date: z.string().date().or(z.date()),
-  // }),
+  type: "doc",
+  // includeProcessedMarkdown: true,
+  // async: true,
+  schema: () =>
+    frontmatterSchema.extend({
+      title: z.string(),
+      description: z.string().optional(),
+      date: z.date(),
+      authors: z.array(z.string()),
+      tags: z.array(z.string()).optional(),
+    }),
 });

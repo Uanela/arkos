@@ -6,7 +6,6 @@ import {
   addPrismaQueryOptionsToRequest,
   sendResponse,
 } from "../base/base.middlewares";
-import { ArkosConfig } from "../../types/new-arkos-config";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { AuthPrismaQueryOptions } from "../../types";
 import {
@@ -18,13 +17,14 @@ import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import ArkosRouter from "../../utils/arkos-router";
+import { UserArkosConfig } from "../../utils/define-config";
 import authOpenAPIGenerator from "./utils/auth-openapi-generator";
 import { AuthRouterEndpoint, RouterConfig } from "../../types/router-config";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 
 const router = ArkosRouter();
 
-export function getAuthRouter(arkosConfig: ArkosConfig) {
+export function getAuthRouter(arkosConfig: UserArkosConfig) {
   if (!getPrismaInstance()) return router;
 
   const {

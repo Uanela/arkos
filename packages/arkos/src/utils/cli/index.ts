@@ -35,7 +35,10 @@ const generate = program
   .command("generate")
   .alias("g")
   .description("Generate arkos components")
-  .option("-m, --module <name>", "Module name")
+  .option(
+    "-m, --module <name>",
+    "Module name (comma-separated for bulk: post,user,auth)"
+  )
   .option("--model <name>", "Module name (alias for --module)")
   .option("-p, --path <path>", "Custom path for the component")
   .option("-o, --overwrite", "Overwrites all the content on the existing file");
@@ -195,9 +198,92 @@ generate
   });
 
 generate
+  .command("policy")
+  .alias("p")
+  .description("Generate a new policy")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.policy({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("login-schema")
+  .alias("ls")
+  .description("Generate zod login schema for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.loginSchema({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("signup-schema")
+  .alias("ss")
+  .description("Generate zod signup schema for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.signupSchema({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("update-me-schema")
+  .alias("ums")
+  .description("Generate zod update-me schema for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updateMeSchema({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("update-password-schema")
+  .alias("ups")
+  .description("Generate zod update-password schema for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updatePasswordSchema({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("login-dto")
+  .alias("ld")
+  .description("Generate class-validator login dto for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.loginDto({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("signup-dto")
+  .alias("sd")
+  .description("Generate class-validator signup dto for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.signupDto({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("update-me-dto")
+  .alias("umd")
+  .description("Generate class-validator update-me dto for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updateMeDto({ ...generateOptions, ...options });
+  });
+
+generate
+  .command("update-password-dto")
+  .alias("upd")
+  .description("Generate class-validator update-password dto for auth module")
+  .action((options) => {
+    const generateOptions = generate.opts();
+    generateCommand.updatePasswordDto({ ...generateOptions, ...options });
+  });
+
+generate
   .command("components")
   .alias("co")
-  .description("Generate multiple components for a module")
+  .description(
+    "Generate multiple components for one or more modules. Use -m post,user,auth for multiple modules"
+  )
   .option("-a, --all", "Generate all components")
   .option(
     "-n, --names <names>",
@@ -225,6 +311,28 @@ program
     "src/modules/auth/utils"
   )
   .action(exportAuthActionCommand);
+
+// To resolve arkos g r,c,service -m post
+generate.on("command:*", ([unknownCmd]) => {
+  if (unknownCmd.includes(",") && !unknownCmd.includes(" ")) {
+    const generateOptions = generate.opts();
+    generateCommand.multipleComponents({
+      ...generateOptions,
+      names: unknownCmd,
+    });
+  } else {
+    console.error(`Unknown command: ${unknownCmd}`);
+    process.exit(1);
+  }
+});
+
+generate
+  .command("all")
+  .description("Generate all components for a module")
+  .action(() => {
+    const opts = generate.opts();
+    generateCommand.multipleComponents({ ...opts, all: true });
+  });
 
 program.parse(process.argv);
 

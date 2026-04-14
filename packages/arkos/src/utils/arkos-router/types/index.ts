@@ -1,4 +1,10 @@
-import { IRoute, IRouter, Locals } from "express";
+import {
+  IRoute,
+  IRouter,
+  IRouterHandler,
+  IRouterMatcher,
+  Locals,
+} from "express";
 import { z, ZodSchema } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
@@ -8,6 +14,18 @@ import compression from "compression";
 import { OpenApiConfig } from "./openapi-config";
 import { UploadConfig } from "./upload-config";
 import { BodyParserConfig } from "./body-parser-config";
+
+export type ArkosUseConfig = Pick<
+  ArkosRouteConfig,
+  | "authentication"
+  | "rateLimit"
+  | "compression"
+  | "queryParser"
+  | "bodyParser"
+  | "disabled"
+> & {
+  path?: PathParams; // optional unlike ArkosRouteConfig where path is required
+};
 
 type InferValidationType<T, Fallback> = T extends ZodSchema
   ? z.infer<T>
@@ -29,83 +47,84 @@ export type ArkosAnyRequestHandler =
  * @param {...(ArkosRequestHandler | ArkosErrorRequestHandler)[]} handlers - Request and error handlers for the route.
  * @returns {IRouter} The Express router instance.
  */
-type RouterMethodHandler<T> = {
-  (config: PathParams, ...handlers: Array<ArkosAnyRequestHandler>): T;
-  <
-    TQuery extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | false
-      | undefined = any,
-    TBody extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | false
-      | undefined = any,
-    TParams extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | false
-      | undefined = any,
-  >(
-    config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
-    ...handlers: Array<
-      | ArkosRequestHandler<
-          InferValidationType<TParams, Record<string, string>>,
-          any,
-          InferValidationType<TBody, any>,
-          InferValidationType<TQuery, qs.ParsedQs>,
-          any
-        >
-      | Array<
-          ArkosRequestHandler<
+type RouterMethodHandler<T> = IRouterHandler<T> &
+  IRouterMatcher<T> & {
+    (config: PathParams, ...handlers: Array<ArkosAnyRequestHandler>): T;
+    <
+      TQuery extends
+        | ZodSchema
+        | (new (...args: any[]) => object)
+        | false
+        | undefined = any,
+      TBody extends
+        | ZodSchema
+        | (new (...args: any[]) => object)
+        | false
+        | undefined = any,
+      TParams extends
+        | ZodSchema
+        | (new (...args: any[]) => object)
+        | false
+        | undefined = any,
+    >(
+      config: ArkosRouteConfig<TQuery, TBody, TParams>,
+      ...handlers: Array<
+        | ArkosRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
             any,
             InferValidationType<TBody, any>,
             InferValidationType<TQuery, qs.ParsedQs>,
             any
           >
-        >
-    >
-  ): T;
-  <
-    TQuery extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | false
-      | undefined = any,
-    TBody extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | false
-      | undefined = any,
-    TParams extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | false
-      | undefined = any,
-  >(
-    config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
-    ...handlers: Array<
-      | ArkosErrorRequestHandler<
-          InferValidationType<TParams, Record<string, string>>,
-          any,
-          InferValidationType<TBody, any>,
-          InferValidationType<TQuery, qs.ParsedQs>,
-          any
-        >
-      | Array<
-          ArkosErrorRequestHandler<
+        | Array<
+            ArkosRequestHandler<
+              InferValidationType<TParams, Record<string, string>>,
+              any,
+              InferValidationType<TBody, any>,
+              InferValidationType<TQuery, qs.ParsedQs>,
+              any
+            >
+          >
+      >
+    ): T;
+    <
+      TQuery extends
+        | ZodSchema
+        | (new (...args: any[]) => object)
+        | false
+        | undefined = any,
+      TBody extends
+        | ZodSchema
+        | (new (...args: any[]) => object)
+        | false
+        | undefined = any,
+      TParams extends
+        | ZodSchema
+        | (new (...args: any[]) => object)
+        | false
+        | undefined = any,
+    >(
+      config: ArkosRouteConfig<TQuery, TBody, TParams>,
+      ...handlers: Array<
+        | ArkosErrorRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
             any,
             InferValidationType<TBody, any>,
             InferValidationType<TQuery, qs.ParsedQs>,
             any
           >
-        >
-    >
-  ): T;
-};
+        | Array<
+            ArkosErrorRequestHandler<
+              InferValidationType<TParams, Record<string, string>>,
+              any,
+              InferValidationType<TBody, any>,
+              InferValidationType<TQuery, qs.ParsedQs>,
+              any
+            >
+          >
+      >
+    ): T;
+  };
 
 export type ArkosRouteMethodHandler<T> = {
   (
@@ -193,6 +212,28 @@ export type ArkosRouteMethodHandler<T> = {
   ): T;
 };
 
+/**
+ * Handler function for `use` that accepts route configuration and middleware handlers.
+ *
+ * @param {ArkosUseConfig} config - The use configuration object or path.
+ * @param {...ArkosAnyRequestHandler} handlers - Middleware handlers.
+ * @returns {T} The router instance.
+ */
+
+export type UseMethodHandler<T> = IRouterHandler<T> &
+  IRouterMatcher<T> & {
+    (
+      config: ArkosUseConfig,
+      ...handlers: Array<ArkosRequestHandler | Array<ArkosRequestHandler>>
+    ): T;
+    (
+      config: ArkosUseConfig,
+      ...handlers: Array<
+        ArkosErrorRequestHandler | Array<ArkosErrorRequestHandler>
+      >
+    ): T;
+  };
+
 export interface IArkosRoute extends IRoute {
   /** GET method handler with route configuration support */
   get: ArkosRouteMethodHandler<this>;
@@ -257,6 +298,7 @@ export interface IArkosRouter extends IRouter {
   trace: RouterMethodHandler<this>;
   /** ALL methods handler with route configuration support */
   all: RouterMethodHandler<this>;
+  use: UseMethodHandler<this>;
 
   route<T extends string>(prefix: T): IArkosRoute;
   route(prefix: PathParams): IArkosRoute;

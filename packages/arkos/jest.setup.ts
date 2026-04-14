@@ -43,4 +43,10 @@ jest.mock("@scalar/express-api-reference", () => ({
   apiReference: jest.fn(),
 }));
 
+jest.mock("./src/utils/arkos-router", () => ({
+  __esModule: true,
+  ...jest.requireActual("./src/utils/arkos-router"),
+  default: jest.fn(),
+}));
+
 jest.spyOn(console, "warn").mockImplementation(jest.fn());

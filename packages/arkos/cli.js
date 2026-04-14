@@ -1,26 +1,39 @@
 #!/usr/bin/env node
 (async () => {
-  try {
-    const { join } = await import("path");
-    const { existsSync, readFileSync } = await import("fs");
+  const { join } = await import("path");
+  const { existsSync, readFileSync } = await import("fs");
+  const { spawn } = await import("child_process");
 
-    let useEsm = false;
+  const pkgPath = join(process.cwd(), "package.json");
+  let useEsm = false;
 
-    try {
-      const pkgPath = join(process.cwd(), "package.json");
-      if (existsSync(pkgPath)) {
-        const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-        useEsm = pkg.type === "module";
-      }
-    } catch (err) {
-      console.error("Error checking package.json:", err);
-    }
-
-    process.env.NO_CLI = "false";
-    if (useEsm) await import("./dist/esm/utils/cli/index.js");
-    else await import("./dist/cjs/utils/cli/index.js");
-  } catch (err) {
-    console.error("Failed to load CLI:", err);
-    process.exit(1);
+  if (existsSync(pkgPath)) {
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+    useEsm = pkg.type === "module";
   }
+
+  const tsSrc = join(process.cwd(), "tsconfig.json");
+  const entryPoint = join(
+    __dirname,
+    `dist/${useEsm ? "esm" : "cjs"}/utils/cli/index.js`
+  );
+  const useTs = existsSync(tsSrc);
+
+  const args = [
+    ...(useTs ? ["--experimental-strip-types"] : []),
+    entryPoint,
+    ...process.argv.slice(2),
+  ];
+
+  process.env.NO_CLI = "true";
+  process.env.FORCE_COLOR = "3";
+  const child = spawn(process.execPath, args, {
+    stdio: ["inherit", "inherit", "pipe"],
+  });
+  child.stderr.on("data", (data) => {
+    const str = data.toString();
+    if (!str.includes("ExperimentalWarning: Type Stripping is an experimental"))
+      process.stderr.write(data);
+  });
+  child.on("exit", (code) => process.exit(code ?? 0));
 })();

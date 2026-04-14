@@ -5,6 +5,7 @@ import sheu from "../../sheu";
 import { fullCleanCwd, getUserFileExtension } from "../../helpers/fs.helpers";
 import { importModule } from "../../helpers/global.helpers";
 import { killDevelopmentServerChildProcess } from "../dev";
+import { getArkosConfig } from "../../helpers/arkos-config.helpers";
 
 /**
  * Runtime CLI Commander class for handling command-line interface commands
@@ -115,8 +116,11 @@ class RuntimeCliCommander {
           }
         }
 
-        if (rolesChanges.length > 0) {
-          const warningMessage = `Roles for the following permissions will be updated:\n${rolesChanges.join("\n")}`;
+        if (
+          rolesChanges.length > 0 &&
+          !(getArkosConfig()?.authentication?.mode !== "static")
+        ) {
+          const warningMessage = `${getArkosConfig()?.authentication?.mode}Roles for the following permissions will be updated:\n${rolesChanges.join("\n")}`;
 
           sheu.warn(warningMessage);
 
@@ -150,12 +154,15 @@ npx arkos export auth-action --overwrite
             );
 
             if (existingAction) {
-              return {
+              newAction = {
                 ...newAction,
                 ...existingAction,
                 roles: newAction.roles,
               };
             }
+
+            if (getArkosConfig()?.authentication?.mode !== "static")
+              delete newAction.roles;
 
             return newAction;
           }
@@ -166,7 +173,20 @@ npx arkos export auth-action --overwrite
     }
 
     const fileContent = `const authActions = ${JSON.stringify(finalAuthActions, null, 2)}${ext === "ts" ? " as const" : ""};
+${
+  ext === "ts"
+    ? `
+type AuthActionsArray = typeof authActions;
 
+export type AuthResource = AuthActionsArray[number]["resource"];
+
+export type AuthAction<R extends AuthResource = AuthResource> = Extract<
+  AuthActionsArray[number],
+  { resource: R }
+>["action"];
+`
+    : ""
+}
 export default authActions;
 `;
 

@@ -3,7 +3,7 @@ import path from "path";
 import { generateTemplate } from "../utils/template-generators";
 import { ensureDirectoryExists } from "../utils/cli.helpers";
 import { generateCommand } from "../generate";
-import { getUserFileExtension, fullCleanCwd } from "../../helpers/fs.helpers";
+import { getUserFileExtension } from "../../helpers/fs.helpers";
 import sheu from "../../sheu";
 
 // Mock all dependencies
@@ -258,10 +258,6 @@ describe("generateCommand", () => {
           camel: "order",
           kebab: "order",
         },
-        imports: {
-          baseRouter: "arkos",
-          controller: "./order.controller",
-        },
       });
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
         `${mockCwd}/src/modules/order/order.router.ts`,
@@ -473,10 +469,6 @@ describe("generateCommand", () => {
           camel: "veryLongModelNameWithManyParts",
           kebab: longModelName,
         },
-        imports: {
-          baseRouter: "arkos",
-          controller: `./${longModelName}.controller`,
-        },
       });
     });
 
@@ -545,6 +537,160 @@ describe("generateCommand", () => {
       expect(mockedEnsureDirectoryExists).toHaveBeenCalledWith(
         `${customCwd}/src/modules/user`
       );
+    });
+  });
+
+  describe("--modules flag (multi-module)", () => {
+    it("should generate controller for multiple modules", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      await generateCommand.controller({ module: "user,product,order" });
+
+      expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(3);
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("user.controller.ts"),
+        mockTemplateContent
+      );
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("product.controller.ts"),
+        mockTemplateContent
+      );
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("order.controller.ts"),
+        mockTemplateContent
+      );
+    });
+
+    it("should generate service for multiple modules", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      await generateCommand.service({ module: "user,product" });
+
+      expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(2);
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("user.service.ts"),
+        mockTemplateContent
+      );
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("product.service.ts"),
+        mockTemplateContent
+      );
+    });
+
+    it("should generate router for multiple modules", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      await generateCommand.router({ module: "user,order" });
+
+      expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(2);
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("user.router.ts"),
+        mockTemplateContent
+      );
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("order.router.ts"),
+        mockTemplateContent
+      );
+    });
+
+    it("should trim whitespace from module names", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      await generateCommand.controller({ module: "user, product , order" });
+
+      expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(3);
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("user.controller.ts"),
+        mockTemplateContent
+      );
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("product.controller.ts"),
+        mockTemplateContent
+      );
+    });
+
+    it("should call process.exit(1) when at least one module fails", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+      mockedFs.writeFileSync
+        .mockImplementationOnce(() => {}) // user succeeds
+        .mockImplementationOnce(() => {
+          throw new Error("Permission denied");
+        }); // product fails
+
+      await generateCommand.controller({ module: "user,product" });
+
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("should continue generating remaining modules when one fails", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+      mockedFs.writeFileSync
+        .mockImplementationOnce(() => {
+          throw new Error("Permission denied");
+        }) // user fails
+        .mockImplementationOnce(() => {}); // product succeeds
+
+      await generateCommand.controller({ module: "user,product" });
+
+      expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(2);
+    });
+
+    it("should handle single module in --modules flag", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      await generateCommand.controller({ module: "user" });
+
+      expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(1);
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("user.controller.ts"),
+        mockTemplateContent
+      );
+    });
+  });
+
+  describe("comma in --module validation", () => {
+    it("should error when -m contains comma for controller", async () => {
+      try {
+        await generateCommand.controller({ module: "post,user" });
+      } catch {}
+
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Use -ms/--modules instead")
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("should error when -m contains comma for service", async () => {
+      try {
+        await generateCommand.service({ module: "post,user" });
+      } catch {}
+
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Use -ms/--modules instead")
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("should error when -m contains comma for router", async () => {
+      try {
+        await generateCommand.router({ module: "post,user" });
+      } catch {}
+
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Use -ms/--modules instead")
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it("should error when --model contains comma", async () => {
+      try {
+        await generateCommand.controller({ model: "post,user" });
+      } catch {}
+
+      expect(sheuErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Use -ms/--modules instead")
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
 });

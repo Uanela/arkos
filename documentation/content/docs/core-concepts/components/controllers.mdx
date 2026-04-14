@@ -1,0 +1,155 @@
+---
+title: Controllers
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+A controller handles the request/response logic for a route. In Arkos, controllers are classes exported as singletons. Each method receives an `ArkosRequest` and `ArkosResponse` and is responsible for calling the appropriate service and sending a response.
+
+Because `ArkosRouter` wraps all handlers with `catchAsync` automatically, you never need try/catch blocks or to call `next(err)` manually — just throw an `AppError` and the global error handler takes care of the rest. See [Error Handling](/docs/guides/error-handling/usage) for the full guide.
+
+## Creating a Controller
+
+If you are working with Prisma model routes, Arkos provides `BaseController` which already implements `findMany`, `findOne`, `createOne`, `updateOne`, `deleteOne`, `createMany`, `updateMany`, and `deleteMany` — the methods shown above are already built in. See [BaseController for Prisma Model Routes](#basecontroller-for-prisma-model-routes).
+
+
+```ts title="src/modules/post/post.controller.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { AppError } from "arkos/error-handler";
+import postService from "./post.service";
+
+class PostController {
+  async findMany(req: ArkosRequest, res: ArkosResponse) {
+    const posts = await postService.findMany();
+
+    res.status(200).json({ status: "success", data: posts });
+  }
+
+  async createOne(req: ArkosRequest, res: ArkosResponse) {
+    const post = await postService.createOne(req.body);
+
+    res.status(201).json({ status: "success", data: post });
+  }
+
+  async findOne(req: ArkosRequest, res: ArkosResponse) {
+    const post = await postService.findOne({ where: { id: req.params.id } });
+
+    if (!post) throw new AppError("Post not found", 404, "NotFound");
+
+    res.status(200).json({ status: "success", data: post });
+  }
+}
+
+const postController = new PostController();
+
+export default postController;
+```
+
+Wire it up in your router:
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter } from "arkos";
+import postController from "./post.controller";
+
+const postRouter = ArkosRouter();
+
+postRouter.get({ path: "/api/posts" }, postController.findMany);
+postRouter.get({ path: "/api/posts/:id" }, postController.findOne);
+postRouter.post({ path: "/api/posts" }, postController.createOne);
+
+export default postRouter;
+```
+
+## Scaffold with the CLI
+```bash
+arkos generate controller --module post
+arkos g c -m post
+```
+
+## BaseController for Prisma Model Routes
+
+When working with Prisma model routes, Arkos auto-generates the CRUD handlers. Your controller extends `BaseController`, which already implements `findMany`, `findOne`, `createOne`, `updateOne`, `deleteOne`, `createMany`, `updateMany`, and `deleteMany`.
+```ts title="src/modules/post/post.controller.ts"
+import { BaseController } from "arkos/controllers";
+import postService from "./post.service";
+
+class PostController extends BaseController {}
+
+const postController = new PostController();
+
+export default postController;
+```
+
+You only need to add methods for behavior beyond the built-in CRUD. The generated routes call these methods automatically.
+
+### Overriding Built-in Methods
+
+Override any `BaseController` method to replace the default behavior entirely:
+```ts title="src/modules/post/post.controller.ts"
+import { BaseController } from "arkos/controllers";
+import { ArkosRequest, ArkosResponse } from "arkos";
+import postService from "./post.service";
+
+class PostController extends BaseController {
+  async createOne(req: ArkosRequest, res: ArkosResponse) {
+    req.body.authorId = req.user.id;
+
+    const post = await postService.createOne(req.body);
+
+    res.status(201).json({ status: "success", data: post });
+  }
+}
+
+const postController = new PostController(postService);
+
+export default postController;
+```
+
+<Callout type="info">
+  If you only need to run logic before or after a built-in operation without replacing it entirely, use [Interceptors](/docs/core-concepts/components/interceptors) instead. Overriding a `BaseController` method drops all built-in behavior for that operation.
+</Callout>
+
+### Adding Custom Methods
+
+Add any method beyond the built-in CRUD and mount it on a custom route:
+```ts title="src/modules/post/post.controller.ts"
+import { BaseController } from "arkos/controllers";
+import { ArkosRequest, ArkosResponse } from "arkos";
+import postService from "./post.service";
+
+class PostController extends BaseController {
+  async getFeatured(req: ArkosRequest, res: ArkosResponse) {
+    const posts = await postService.findMany({ where: { featured: true } });
+
+    res.status(200).json({ status: "success", data: posts });
+  }
+}
+
+const postController = new PostController(postService);
+
+export default postController;
+```
+```ts title="src/modules/post/post.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import postController from "./post.controller";
+
+export const hook: RouteHook = {
+  findMany: { authentication: false },
+};
+
+const postRouter = ArkosRouter();
+
+postRouter.get(
+  { path: "/api/posts/featured", authentication: false },
+  postController.getFeatured
+);
+
+export default postRouter;
+```
+
+## Related
+
+- [Routers](/docs/core-concepts/components/routers) — Mount controller methods on routes
+- [Interceptors](/docs/core-concepts/components/interceptors) — Hook into built-in route logic without overriding
+- [Services](/docs/core-concepts/components/services) — Business logic layer
+- [Error Handling](/docs/guides/error-handling/usage) — How errors flow through Arkos

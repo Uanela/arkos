@@ -1,6 +1,9 @@
 import { getUserFileExtension } from "../../../../helpers/fs.helpers";
 import { capitalize } from "../../../../helpers/text.helpers";
+import sheu from "../../../../sheu";
+import { kebabPrismaModels } from "../../../generate";
 import { TemplateOptions } from "../../template-generators";
+import { getArkosConfig } from "../../../../helpers/arkos-config.helpers";
 
 export function generateAuthConfigsTemplate(
   options: TemplateOptions & { advanced?: boolean }
@@ -8,9 +11,18 @@ export function generateAuthConfigsTemplate(
   const { modelName, advanced = false } = options;
   const ext = getUserFileExtension();
   const isTypeScript = ext === "ts";
+  const arkosConfig = getArkosConfig();
+
+  sheu.warn(
+    `The file ${modelName?.kebab || ""}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy, see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`
+  );
 
   if (!modelName)
     throw new Error("Module name is required for auth config template");
+
+  const isNormalModule = [...kebabPrismaModels, "file-upload"].includes(
+    modelName.kebab
+  );
 
   const modelNameCapitalized = capitalize(modelName.kebab.replaceAll("-", " "));
   const modelNameSpaced = modelName.kebab.replaceAll("-", " ");
@@ -18,24 +30,25 @@ export function generateAuthConfigsTemplate(
   const imports = isTypeScript
     ? `import { AuthConfigs } from 'arkos/auth';\n`
     : "";
-
   const typeSatisfies = isTypeScript
     ? ` as const satisfies AuthConfigs["accessControl"]`
     : "";
 
-  const helperFunction = advanced
-    ? ``
-    : `
+  const helperFunction =
+    isNormalModule && !advanced
+      ? `
 function create${modelName.pascal}Permission(action${isTypeScript ? ": string" : ""}) {
   return authService.permission(action, "${modelName.kebab}", ${modelName.camel}AccessControl);
-}`;
+}`
+      : "";
 
-  const permissions = advanced
-    ? `
+  const permissions = !isNormalModule
+    ? ""
+    : advanced
+      ? `
 ${
   isTypeScript
     ? `type ${modelName.pascal}PermissionName = \`can\${keyof typeof ${modelName.camel}AccessControl & string}\`;
-
 `
     : "\n"
 }export const ${modelName.camel}Permissions = Object.keys(${modelName.camel}AccessControl).reduce(
@@ -49,52 +62,49 @@ ${
   },
   {} ${isTypeScript ? `as Record<${modelName.pascal}PermissionName, ReturnType<typeof authService.permission>>` : ""}
 );`
-    : `export const ${modelName.camel}Permissions = {
+      : `export const ${modelName.camel}Permissions = {
   canCreate: create${modelName.pascal}Permission("Create"),
   canUpdate: create${modelName.pascal}Permission("Update"),
   canDelete: create${modelName.pascal}Permission("Delete"),
   canView: create${modelName.pascal}Permission("View"),
 };`;
 
-  return `${imports}import { authService } from "arkos/services";
+  if (!isNormalModule) {
+    return `${imports}export const ${modelName.camel}AccessControl${isTypeScript ? `: AuthConfigs["accessControl"]` : ""} = {};
+`;
+  }
 
+  return `${imports}import { authService } from "arkos/services";
 export const ${modelName.camel}AccessControl = {
   Create: {
-    roles: [],
-    name: "Create ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n    " : ""}name: "Create ${modelNameCapitalized}",
     description: "Permission to create new ${modelNameSpaced} records",
   },
   Update: {
-    roles: [],
-    name: "Update ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n    " : ""}name: "Update ${modelNameCapitalized}",
     description: "Permission to update existing ${modelNameSpaced} records",
   },
   Delete: {
-    roles: [],
-    name: "Delete ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n    " : ""}name: "Delete ${modelNameCapitalized}",
     description: "Permission to delete ${modelNameSpaced} records",
   },
   View: {
-    roles: [],
-    name: "View ${modelNameCapitalized}",
+    ${arkosConfig?.authentication?.mode === "static" ? "roles: []\n    " : ""}name: "View ${modelNameCapitalized}",
     description: "Permission to view ${modelNameSpaced} records",
   },
 }${typeSatisfies};
 ${helperFunction}
 ${permissions}
-
 export const ${modelName.camel}AuthenticationControl = {
   Create: true,
   Update: true,
   Delete: true,
   View: true,
 };
-
 const ${modelName.camel}AuthConfigs${isTypeScript ? ": AuthConfigs" : ""} = {
   authenticationControl: ${modelName.camel}AuthenticationControl,
   accessControl: ${modelName.camel}AccessControl,
 };
-
 export default ${modelName.camel}AuthConfigs;
 `;
 }

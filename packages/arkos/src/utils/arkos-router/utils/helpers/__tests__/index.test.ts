@@ -192,6 +192,7 @@ describe("getMiddlewareStack", () => {
     // Setup auth service mock
     (authService.authenticate as jest.Mock) = jest.fn();
     (authService.handleAccessControl as jest.Mock) = jest.fn(() => jest.fn());
+    (authService.authorize as jest.Mock) = jest.fn(() => jest.fn());
 
     // Setup other mocks
     (rateLimit as jest.Mock).mockReturnValue(jest.fn());
@@ -463,10 +464,10 @@ describe("getMiddlewareStack", () => {
 
       getMiddlewareStack(config);
 
-      expect(authService.handleAccessControl).toHaveBeenCalledWith(
+      expect(authService.authorize).toHaveBeenCalledWith(
         "read",
         "users",
-        { read: "own" }
+        "own"
       );
     });
 

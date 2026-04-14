@@ -198,6 +198,27 @@ export interface ArkosRequest<
   Query extends Record<string, any> = any,
 > extends Request<P, ResBody, ReqBody, Query> {
   /**
+   * Request signals used to control Arkos's built-in request handling pipeline.
+   *
+   * @since v1.6.0-beta
+   */
+  signals?: {
+    /**
+     * When set to `true` in a `before` hook, Arkos skips its built-in logic for the current pipeline step (e.g. CRUD, authentication, authorization).
+     * Automatically reset to `false` after the step completes.
+     *
+     * @example
+     * ```ts
+     * before: (req, res, next) => {
+     *   req.user = myCustomAuth(req);
+     *   req.signals.skip = true;
+     *   next();
+     * }
+     * ```
+     */
+    skip?: boolean;
+  };
+  /**
    * Authenticated user
    */
   user?: User;
@@ -207,6 +228,7 @@ export interface ArkosRequest<
   file?: Express.Multer.File;
   /**
    * Uploaded files, populated when using `multer.array()` or `multer.fields()`.
+   *
    */
   files?: Express.Multer.File[] | Record<string, Express.Multer.File[]>;
 

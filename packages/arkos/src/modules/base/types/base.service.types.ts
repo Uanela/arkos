@@ -61,9 +61,6 @@ export type FindByIdOptions<T extends ModelDelegate> = Omit<
   "where"
 >;
 
-export type FindByIdResult<T extends ModelDelegate> =
-  T["findUnique"] extends (args: { where: any }) => infer R ? R : any;
-
 export type FindOneFilters<T extends ModelDelegate> = Parameters<
   T["findFirst"]
 >[0] extends { where?: infer W; [x: string]: any }
