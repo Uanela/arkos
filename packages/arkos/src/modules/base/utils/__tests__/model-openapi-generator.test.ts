@@ -7,7 +7,10 @@ jest.mock("../../../../utils/prisma/prisma-json-schema-generator");
 jest.mock("../../../../exports/prisma", () => ({
   prismaSchemaParser: { models: [] },
 }));
-jest.mock("../../../../utils/helpers/arkos-config.helpers");
+jest.mock("../../../../utils/helpers/arkos-config.helpers", () => ({
+  getArkosConfig: jest.fn(),
+  isAuthenticationEnabled: jest.fn(),
+}));
 
 describe("ModelOpenAPIGenerator", () => {
   const mockUserProfileModel = {
