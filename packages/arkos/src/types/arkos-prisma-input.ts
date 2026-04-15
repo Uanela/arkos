@@ -237,38 +237,31 @@ type FlattenObjectRelation<T> =
         }
       : never);
 type StripPrismaFilters<T> = T extends
-  | {
-      equals?: any;
-    }
-  | {
-      in?: any;
-    }
-  | {
-      notIn?: any;
-    }
-  | {
-      lt?: any;
-    }
-  | {
-      lte?: any;
-    }
-  | {
-      gt?: any;
-    }
-  | {
-      gte?: any;
-    }
-  | {
-      AND?: any;
-    }
-  | {
-      OR?: any;
-    }
-  | {
-      NOT?: any;
-    }
-  ? never
+  | { equals?: any }
+  | { in?: any }
+  | { notIn?: any }
+  | { lt?: any }
+  | { lte?: any }
+  | { gt?: any }
+  | { gte?: any }
+  | { AND?: any }
+  | { OR?: any }
+  | { NOT?: any }
+  ? Omit<
+      T,
+      | "equals"
+      | "in"
+      | "notIn"
+      | "lt"
+      | "lte"
+      | "gt"
+      | "gte"
+      | "AND"
+      | "OR"
+      | "NOT"
+    >
   : T;
+
 type FlattenRelations<T> = {
   [K in keyof T]: IsArrayRelation<T[K]> extends true
     ? FlattenArrayRelation<T[K]> | undefined
