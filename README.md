@@ -30,8 +30,6 @@
 
 ```bash
 pnpm create arkos@latest my-project
-cd my-project
-pnpm dev
 ```
 
 Your new project already has JWT auth, CRUD routes, Swagger docs at `/api/docs`, file uploads, validation, and a full security middleware stack. No configuration needed to get started.
