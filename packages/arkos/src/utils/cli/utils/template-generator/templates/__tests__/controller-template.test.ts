@@ -128,7 +128,9 @@ describe("generateControllerTemplate", () => {
       };
 
       const result = generateControllerTemplate(options);
-
+      expect(result).not.toContain(
+        'import { FileUploadController } from "arkos/controllers"'
+      );
       expect(result).toContain("class FileUploadController {}");
       expect(result).toContain(
         "const fileUploadController = new FileUploadController();"
