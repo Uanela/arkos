@@ -21,6 +21,7 @@ import { capitalize } from "../../utils/helpers/text.helpers";
 import { isClass, isZodSchema } from "../../utils/dynamic-loader";
 import errorPrettifier from "./utils/error-prettifier";
 import { lenientDecode } from "../../utils/helpers/url-helpers";
+import { pascalCase } from "../../exports/utils";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -370,7 +371,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
             throw new AppError(
               error.message,
               400,
-              error.code,
+              `InvalidRequest${pascalCase(key)}`,
               isZod ? err.format() : err
             );
           }
