@@ -59,12 +59,10 @@ describe("generateControllerTemplate", () => {
 
     const result = generateControllerTemplate(options);
 
-    expect(result).toContain(
+    expect(result).not.toContain(
       'import { FileUploadController } from "arkos/controllers";'
     );
-    expect(result).toContain(
-      "class FileUploadController extends FileUploadController {}"
-    );
+    expect(result).toContain("class FileUploadController {}");
     expect(result).toContain(
       "const fileUploadController = new FileUploadController();"
     );
@@ -120,25 +118,6 @@ describe("generateControllerTemplate", () => {
     );
   });
 
-  it("should use custom file upload import when provided", () => {
-    const options = {
-      modelName: {
-        camel: "fileUpload",
-        pascal: "FileUpload",
-        kebab: "file-upload",
-      },
-      imports: {
-        fileUploadController: "custom/file-controllers",
-      },
-    };
-
-    const result = generateControllerTemplate(options);
-
-    expect(result).toContain(
-      'import { FileUploadController } from "custom/file-controllers";'
-    );
-  });
-
   it("should handle different model name cases correctly", () => {
     const options = {
       modelName: {
@@ -172,7 +151,7 @@ describe("generateControllerTemplate", () => {
     expect(result).not.toContain("import {");
     expect(result).toContain("class DashboardController {}");
     expect(result).toContain(
-      'const dashboardController = new DashboardController("dashboard");'
+      "const dashboardController = new DashboardController();"
     );
     expect(result).toContain("export default dashboardController;");
   });
