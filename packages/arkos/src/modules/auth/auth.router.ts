@@ -19,7 +19,7 @@ import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import ArkosRouter from "../../utils/arkos-router";
 import { UserArkosConfig } from "../../utils/define-config";
 import authOpenAPIGenerator from "./utils/auth-openapi-generator";
-import { AuthRouterEndpoint, RouterConfig } from "../../types/router-config";
+import { AuthRouterEndpoint, RouteHook } from "../../types/router-config";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 
 const router = ArkosRouter();
@@ -36,13 +36,13 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
     authConfigs,
   } = getModuleComponents("auth") || {};
 
-  const routerConfig: RouterConfig<"auth"> =
+  const routerConfig: RouteHook<"auth"> =
     (customRouterModule?.config as any) || {};
   const customRouter = customRouterModule?.default as Router;
 
   if (customRouter && customRouterModule) {
     if (routerValidator.isExpressRouter(customRouter))
-      router.use(`/auth`, customRouter);
+      router.use({ path: "auth" }, customRouter);
     else
       throw Error(
         `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express or arkos Router.`
@@ -187,7 +187,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
     !isEndpointDisabled(routerConfig, "updatePassword")
   ) {
     router.use(
-      "/auth",
+      { path: "/auth" },
       rateLimit(
         deepmerge(
           {
