@@ -2,6 +2,16 @@ import { pascalCase } from "../../../../../helpers/change-case.helpers";
 import { TemplateOptions } from "../../../template-generators";
 import { generateControllerTemplate } from "../generate-controller-template";
 
+jest.mock("../../../../../prisma/prisma-schema-parser", () => ({
+  __esModule: true,
+  default: {
+    getModelsAsArrayOfStrings: jest.fn(() => {
+      return ["user", "user-profile", "product", "order", "blog-post", "post"];
+    }),
+    parse: jest.fn(),
+  },
+}));
+
 describe("generateControllerTemplate", () => {
   describe("Error Handling", () => {
     it("should throw error when modelName is not provided", () => {
@@ -258,7 +268,7 @@ describe("generateControllerTemplate", () => {
       const result = generateControllerTemplate(options);
 
       expect(result).toContain("class AController extends BaseController {}");
-      expect(result).toContain('const aController = new AController("a");');
+      expect(result).toContain("const aController = new AController();");
     });
 
     it("should handle very long model names", () => {
@@ -276,7 +286,7 @@ describe("generateControllerTemplate", () => {
         "class VeryLongModelNameWithManyWordsController extends BaseController {}"
       );
       expect(result).toContain(
-        'const veryLongModelNameWithManyWordsController = new VeryLongModelNameWithManyWordsController("very-long-model-name-with-many-words");'
+        "const veryLongModelNameWithManyWordsController = new VeryLongModelNameWithManyWordsController();"
       );
     });
 
@@ -295,7 +305,7 @@ describe("generateControllerTemplate", () => {
         "class Post2023Controller extends BaseController {}"
       );
       expect(result).toContain(
-        'const post2023Controller = new Post2023Controller("post-2023");'
+        "const post2023Controller = new Post2023Controller();"
       );
     });
   });
