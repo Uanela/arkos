@@ -8,7 +8,7 @@ export function generateControllerTemplate(options: TemplateOptions): string {
   if (!modelName)
     throw new Error("Module name is required for controller template");
 
-  const camelName = modelName.camel.toLowerCase();
+  const camelName = modelName.camel;
   let controllerType: "fileUpload" | "auth" | "email" | "base" | "custom";
   let controllerName: string;
   let controllerImport: string;
@@ -41,7 +41,10 @@ export function generateControllerTemplate(options: TemplateOptions): string {
 
   const controllerClassImport = `import { ${controllerName} } from "${controllerImport}";`;
 
-  if (["email", "auth"].includes(camelName))
+  if (
+    ["email", "auth", "fileUpload"].includes(camelName) &&
+    !models.includes(modelName.kebab)
+  )
     return `class ${modelName.pascal}Controller {}
 
 const ${modelName.camel}Controller = new ${modelName.pascal}Controller(${controllerType === "base" ? `"${modelName.kebab}"` : ""});
