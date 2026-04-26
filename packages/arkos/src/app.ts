@@ -42,6 +42,14 @@ export async function bootstrap(
   validateArkosConfig();
   const middlewaresConfig = arkosConfig?.middlewares;
 
+  if (middlewaresConfig?.requestLogger !== false) {
+    if (typeof middlewaresConfig?.requestLogger === "function") {
+      app.use(middlewaresConfig.requestLogger);
+    } else {
+      app.use(handleRequestLogs);
+    }
+  }
+
   if (middlewaresConfig?.compression !== false) {
     if (typeof middlewaresConfig?.compression === "function") {
       app.use(middlewaresConfig.compression);
@@ -151,14 +159,6 @@ export async function bootstrap(
           )
         )
       );
-    }
-  }
-
-  if (middlewaresConfig?.requestLogger !== false) {
-    if (typeof middlewaresConfig?.requestLogger === "function") {
-      app.use(middlewaresConfig.requestLogger);
-    } else {
-      app.use(handleRequestLogs);
     }
   }
 
