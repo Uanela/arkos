@@ -1,4 +1,6 @@
 import { TemplateOptions } from "../../template-generators";
+import prismaSchemaParser from "../../../../prisma/prisma-schema-parser";
+import { kebabCase } from "../../../../helpers/change-case.helpers";
 
 export function generateControllerTemplate(options: TemplateOptions): string {
   const { modelName, imports } = options;
@@ -7,9 +9,13 @@ export function generateControllerTemplate(options: TemplateOptions): string {
     throw new Error("Module name is required for controller template");
 
   const camelName = modelName.camel.toLowerCase();
-  let controllerType: "fileUpload" | "auth" | "email" | "base";
+  let controllerType: "fileUpload" | "auth" | "email" | "base" | "custom";
   let controllerName: string;
   let controllerImport: string;
+
+  const models = prismaSchemaParser
+    .getModelsAsArrayOfStrings()
+    .map((val) => kebabCase(val));
 
   if (camelName === "fileupload") {
     controllerType = "fileUpload";
@@ -23,8 +29,12 @@ export function generateControllerTemplate(options: TemplateOptions): string {
     controllerType = "email";
     controllerName = "EmailController";
     controllerImport = imports?.emailController || "arkos/controllers";
-  } else {
+  } else if (models.includes(modelName.kebab)) {
     controllerType = "base";
+    controllerName = "BaseController";
+    controllerImport = imports?.baseController || "arkos/controllers";
+  } else {
+    controllerType = "custom";
     controllerName = "BaseController";
     controllerImport = imports?.baseController || "arkos/controllers";
   }

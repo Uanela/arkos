@@ -13,6 +13,21 @@ const mockedGetUserFileExtension = getUserFileExtension as jest.MockedFunction<
 const mockedCheckFileExits = checkFileExists as jest.MockedFunction<
   typeof checkFileExists
 >;
+jest.mock("../../../prisma/prisma-schema-parser", () => ({
+  __esModule: true,
+  default: {
+    getModelsAsArrayOfStrings: jest.fn(() => {
+      return [
+        "user",
+        "very-long-model-name-with-many-parts",
+        "user-profile",
+        "product",
+        "order",
+      ];
+    }),
+    parse: jest.fn(),
+  },
+}));
 
 describe("generateTemplate", () => {
   const mockModelName = {
