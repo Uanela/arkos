@@ -274,6 +274,7 @@ type FlattenRelations<T> = {
             ? T[K]
             : FlattenRelations<StripPrismaFilters<T[K]>> | undefined
           : StripPrismaFilters<T[K]>;
+};
 /**
  * Flattens Prisma relation inputs into a simpler, developer-friendly format
  *
