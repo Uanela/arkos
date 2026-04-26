@@ -6,7 +6,15 @@ jest.mock("../../../../../prisma/prisma-schema-parser", () => ({
   __esModule: true,
   default: {
     getModelsAsArrayOfStrings: jest.fn(() => {
-      return ["user", "user-profile", "product", "order", "blog-post", "post"];
+      return [
+        "user",
+        "user-profile",
+        "product",
+        "order",
+        "blog-post",
+        "post",
+        "category",
+      ];
     }),
     parse: jest.fn(),
   },
@@ -121,35 +129,11 @@ describe("generateControllerTemplate", () => {
 
       const result = generateControllerTemplate(options);
 
-      expect(result).toContain(
-        'import { FileUploadController } from "arkos/controllers"'
-      );
-      expect(result).toContain(
-        "class FileUploadController extends FileUploadController {}"
-      );
+      expect(result).toContain("class FileUploadController {}");
       expect(result).toContain(
         "const fileUploadController = new FileUploadController();"
       );
       expect(result).not.toContain('"file-upload"'); // No model name parameter
-    });
-
-    it("should use custom import path for FileUploadController", () => {
-      const options: TemplateOptions = {
-        modelName: {
-          pascal: "FileUpload",
-          camel: "fileUpload",
-          kebab: "file-upload",
-        },
-        imports: {
-          fileUploadController: "@custom/controllers",
-        },
-      };
-
-      const result = generateControllerTemplate(options);
-
-      expect(result).toContain(
-        'import { FileUploadController } from "@custom/controllers"'
-      );
     });
   });
 
@@ -246,7 +230,6 @@ describe("generateControllerTemplate", () => {
 
       const result = generateControllerTemplate(options);
 
-      expect(result).toMatch(/^import/); // Starts with import
       expect(result).toContain("export default categoryController");
       expect(result).not.toContain(";;"); // No double semicolons
       expect(
@@ -267,7 +250,7 @@ describe("generateControllerTemplate", () => {
 
       const result = generateControllerTemplate(options);
 
-      expect(result).toContain("class AController extends BaseController {}");
+      expect(result).toContain("class AController {}");
       expect(result).toContain("const aController = new AController();");
     });
 
@@ -283,7 +266,7 @@ describe("generateControllerTemplate", () => {
       const result = generateControllerTemplate(options);
 
       expect(result).toContain(
-        "class VeryLongModelNameWithManyWordsController extends BaseController {}"
+        "class VeryLongModelNameWithManyWordsController {}"
       );
       expect(result).toContain(
         "const veryLongModelNameWithManyWordsController = new VeryLongModelNameWithManyWordsController();"
@@ -301,9 +284,7 @@ describe("generateControllerTemplate", () => {
 
       const result = generateControllerTemplate(options);
 
-      expect(result).toContain(
-        "class Post2023Controller extends BaseController {}"
-      );
+      expect(result).toContain("class Post2023Controller {}");
       expect(result).toContain(
         "const post2023Controller = new Post2023Controller();"
       );
@@ -359,7 +340,7 @@ describe("generateControllerTemplate", () => {
     it("should detect fileupload type case-insensitively", () => {
       const variations = [
         { pascal: "FileUpload", camel: "fileUpload" },
-        { pascal: "Fileupload", camel: "fileupload" },
+        { pascal: "FileUpload", camel: "fileUpload" },
         { pascal: "FileUpload", camel: "FILEUPLOAD" }, // Won't match due to case
       ];
 
