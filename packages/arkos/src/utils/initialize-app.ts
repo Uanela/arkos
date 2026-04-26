@@ -33,26 +33,26 @@ export default function initializeApp(app: Arkos) {
 
   if (isAuthenticationEnabled()) {
     const authRouter = getAuthRouter(config);
-    app.use(globalPrefix, authRouter);
+    app.use({ path: globalPrefix }, authRouter);
   }
 
   const modelsRouter = getPrismaModelsRouter(config);
-  app.use(globalPrefix, modelsRouter);
+  app.use({ path: globalPrefix }, modelsRouter);
 
-  app.use(globalPrefix, getAvailableResourcesAndRoutesRouter());
+  app.use({ path: globalPrefix }, getAvailableResourcesAndRoutesRouter());
 
   if (
     config.swagger &&
     (process.env.ARKOS_BUILD !== "true" ||
       config.swagger.enableAfterBuild === true)
   )
-    app.use(globalPrefix, getSwaggerRouter(config, app));
+    app.use({ path: globalPrefix }, getSwaggerRouter(config, app));
 
   return app;
 }
 
 export function addGlobalErrorHandler(app: Arkos) {
-  app.use("*", (req) => {
+  app.use({ path: "*" }, (req) => {
     const url = lenientDecode(req.originalUrl);
     throw new AppError(
       `Route ${req.method.toUpperCase()} ${url} was not found`,
