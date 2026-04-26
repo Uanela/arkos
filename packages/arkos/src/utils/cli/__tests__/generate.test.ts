@@ -3,7 +3,7 @@ import path from "path";
 import { generateTemplate } from "../utils/template-generators";
 import { ensureDirectoryExists } from "../utils/cli.helpers";
 import { generateCommand } from "../generate";
-import { getUserFileExtension, fullCleanCwd } from "../../helpers/fs.helpers";
+import { getUserFileExtension } from "../../helpers/fs.helpers";
 import sheu from "../../sheu";
 
 // Mock all dependencies
