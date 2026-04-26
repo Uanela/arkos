@@ -19,11 +19,6 @@ jest.mock("../global.helpers");
 jest.mock("../../../modules/error-handler/utils/catch-async", () => {
   return (fn: Function) => fn;
 });
-jest.mock("../../prisma/prisma-schema-parser", () => ({
-  models: [{ name: "User" }],
-  getModelsAsArrayOfStrings: jest.fn().mockReturnValue(["User", "Post"]),
-}));
-
 // Set up mock values
 const mockedCwd = "/mock/project";
 const mockFileExtension = "ts";
@@ -46,6 +41,7 @@ const mockPrismaModule = {
 jest.spyOn(require("../fs.helpers"), "crd").mockReturnValue(mockedCwd);
 
 describe("prisma.helpers", () => {
+  let mockReflectGet: any;
   // Set up mocks before each test
   beforeEach(() => {
     // Reset module state
@@ -56,7 +52,8 @@ describe("prisma.helpers", () => {
 
     // Set up mocks for filesystem helpers
     (getUserFileExtension as jest.Mock).mockReturnValue(mockFileExtension);
-
+    jest.spyOn(Reflect, "get").mockReturnValue({});
+    mockReflectGet = jest.spyOn(Reflect, "get");
     // Mock process.cwd to return a consistent path
     jest.spyOn(process, "cwd").mockReturnValue(mockedCwd);
   });
@@ -211,6 +208,11 @@ describe("prisma.helpers", () => {
 
       mockReceiver = {};
 
+      mockReflectGet.mockImplementation(
+        jest.fn((target, prop, _) => {
+          return target[prop];
+        })
+      );
       mockConfig = {
         debugging: {
           requests: {
@@ -256,7 +258,6 @@ describe("prisma.helpers", () => {
         mockReceiver
       );
       const queryArgs = { where: { id: 1 } };
-
       await proxiedModel.findMany(queryArgs);
 
       expect(sheu.debug).toHaveBeenCalledWith(
