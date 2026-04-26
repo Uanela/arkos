@@ -121,35 +121,14 @@ describe("generateControllerTemplate", () => {
 
       const result = generateControllerTemplate(options);
 
-      expect(result).toContain(
+      expect(result).not.toContain(
         'import { FileUploadController } from "arkos/controllers"'
       );
-      expect(result).toContain(
-        "class FileUploadController extends FileUploadController {}"
-      );
+      expect(result).toContain("class FileUploadController {}");
       expect(result).toContain(
         "const fileUploadController = new FileUploadController();"
       );
       expect(result).not.toContain('"file-upload"'); // No model name parameter
-    });
-
-    it("should use custom import path for FileUploadController", () => {
-      const options: TemplateOptions = {
-        modelName: {
-          pascal: "FileUpload",
-          camel: "fileUpload",
-          kebab: "file-upload",
-        },
-        imports: {
-          fileUploadController: "@custom/controllers",
-        },
-      };
-
-      const result = generateControllerTemplate(options);
-
-      expect(result).toContain(
-        'import { FileUploadController } from "@custom/controllers"'
-      );
     });
   });
 
