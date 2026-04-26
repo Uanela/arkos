@@ -237,51 +237,43 @@ type FlattenObjectRelation<T> =
         }
       : never);
 type StripPrismaFilters<T> = T extends
-  | {
-      equals?: any;
-    }
-  | {
-      in?: any;
-    }
-  | {
-      notIn?: any;
-    }
-  | {
-      lt?: any;
-    }
-  | {
-      lte?: any;
-    }
-  | {
-      gt?: any;
-    }
-  | {
-      gte?: any;
-    }
-  | {
-      AND?: any;
-    }
-  | {
-      OR?: any;
-    }
-  | {
-      NOT?: any;
-    }
-  ? never
+  | { equals?: any }
+  | { in?: any }
+  | { notIn?: any }
+  | { lt?: any }
+  | { lte?: any }
+  | { gt?: any }
+  | { gte?: any }
+  | { AND?: any }
+  | { OR?: any }
+  | { NOT?: any }
+  ? Omit<
+      T,
+      | "equals"
+      | "in"
+      | "notIn"
+      | "lt"
+      | "lte"
+      | "gt"
+      | "gte"
+      | "AND"
+      | "OR"
+      | "NOT"
+    >
   : T;
+
 type FlattenRelations<T> = {
   [K in keyof T]: IsArrayRelation<T[K]> extends true
-    ? FlattenArrayRelation<T[K]>
+    ? FlattenArrayRelation<T[K]> | undefined
     : IsObjectRelation<T[K]> extends true
-      ? XOR<FlattenObjectRelation<T[K]>, T[K]>
+      ? XOR<FlattenObjectRelation<T[K]> | undefined, T[K]>
       : StripPrismaFilters<T[K]> extends never
         ? never
         : T[K] extends object
           ? T[K] extends Date | null | undefined
             ? T[K]
-            : FlattenRelations<StripPrismaFilters<T[K]>>
+            : FlattenRelations<StripPrismaFilters<T[K]>> | undefined
           : StripPrismaFilters<T[K]>;
-};
 /**
  * Flattens Prisma relation inputs into a simpler, developer-friendly format
  *
