@@ -9,7 +9,7 @@ export function generateControllerTemplate(options: TemplateOptions): string {
   if (!modelName)
     throw new Error("Module name is required for controller template");
 
-  const camelName = modelName.camel.toLowerCase();
+  const camelName = modelName.camel;
   let controllerType: "fileUpload" | "auth" | "email" | "base" | "custom";
   let controllerName: string;
   let controllerImport: string;
@@ -18,7 +18,7 @@ export function generateControllerTemplate(options: TemplateOptions): string {
     .getModelsAsArrayOfStrings()
     .map((val) => kebabCase(val));
 
-  if (camelName === "fileupload") {
+  if (camelName === "fileUpload") {
     controllerType = "fileUpload";
     controllerName = "FileUploadController";
     controllerImport = imports?.fileUploadController || "arkos/controllers";
@@ -43,7 +43,7 @@ export function generateControllerTemplate(options: TemplateOptions): string {
   const controllerClassImport = `import { ${controllerName} } from "${controllerImport}";`;
 
   if (
-    ["email", "auth"].includes(camelName) ||
+    ["email", "auth", "fileUpload"].includes(camelName) ||
     !kebabPrismaModels.includes(modelName.kebab)
   )
     return `export class ${modelName.pascal}Controller {}
