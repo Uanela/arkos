@@ -53,7 +53,7 @@ export function getFileUploadRouter(arkosConfig: UserArkosConfig) {
 
   if (customRouter && customRouterModule) {
     if (routerValidator.isExpressRouter(customRouter))
-      router.use(basePathname, customRouter);
+      router.use({ path: basePathname }, customRouter);
     else
       throw Error(
         `ValidationError: The exported router from file-upload.router.${getUserFileExtension()} is not a valid express or arkos Router.`
