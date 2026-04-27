@@ -101,7 +101,7 @@ class TemplateCompiler {
 
     if (
       !config.authentication?.type ||
-      config.authentication?.type === "define later"
+      config.authentication?.type === "none"
     )
       files.push(
         ...authSharedPrismaFiles,
