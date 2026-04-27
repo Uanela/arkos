@@ -9,8 +9,6 @@ import catchAsync from "../error-handler/utils/catch-async";
 import { getArkosConfig } from "../../server";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
-import { MulterError } from "multer";
-import { pascalCase } from "../../exports/utils";
 import loadableRegistry from "../../components/arkos-loadable-registry";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
 
@@ -18,18 +16,6 @@ import { routeHookReader } from "../../components/arkos-route-hook/reader";
  * Handles file uploads and allows to be extended via route hooks.
  */
 export class FileUploadController {
-  private handleUploadError(err: any, next: ArkosNextFunction) {
-    if (err instanceof MulterError)
-      return next(
-        new AppError(
-          err.message,
-          400,
-          pascalCase(err.code || "FileUploadError")
-        )
-      );
-    else return next(err);
-  }
-
   private getRouteHook() {
     return loadableRegistry.getItem("ArkosRouteHook", "file-upload");
   }
@@ -95,7 +81,7 @@ export class FileUploadController {
       }
 
       uploader.handleMultipleUpload()(req, res, async (err) => {
-        if (err) return this.handleUploadError(err, next);
+        if (err) throw err;
 
         let data;
         if (req.files && Array.isArray(req.files) && req.files.length > 0) {
@@ -271,7 +257,7 @@ export class FileUploadController {
       }
 
       uploader.handleMultipleUpload()(req, res, async (err) => {
-        if (err) return this.handleUploadError(err, next);
+        if (err) throw err;
 
         if (
           !req.file &&

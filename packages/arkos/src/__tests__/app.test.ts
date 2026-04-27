@@ -1,7 +1,9 @@
 import * as runtimeCliCommanderModule from "../utils/cli/utils/runtime-cli-commander";
 
-jest.mock("../utils/helpers/arkos-config.helpers", () => ({}));
-
+jest.mock("../utils/helpers/arkos-config.helpers", () => ({
+  getArkosConfig: jest.fn(() => ({})),
+  validateArkosConfig: jest.fn(() => ({})),
+}));
 let mockListenFn: jest.Mock;
 
 jest.mock("express", () => {

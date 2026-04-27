@@ -7,6 +7,21 @@ jest.mock("../../../helpers/fs.helpers");
 const mockedGetUserFileExtension = getUserFileExtension as jest.MockedFunction<
   typeof getUserFileExtension
 >;
+jest.mock("../../../prisma/prisma-schema-parser", () => ({
+  __esModule: true,
+  default: {
+    getModelsAsArrayOfStrings: jest.fn(() => {
+      return [
+        "user",
+        "very-long-model-name-with-many-parts",
+        "user-profile",
+        "product",
+        "order",
+      ];
+    }),
+    parse: jest.fn(),
+  },
+}));
 
 describe("generateTemplate", () => {
   beforeEach(() => {

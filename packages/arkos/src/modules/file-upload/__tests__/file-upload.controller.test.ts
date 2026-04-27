@@ -111,57 +111,6 @@ describe("FileUploadController", () => {
     jest.clearAllMocks();
   });
 
-  describe("handleUploadError (private)", () => {
-    let controller: FileUploadController;
-    let next: jest.Mock;
-
-    const callHandleUploadError = (
-      controller: FileUploadController,
-      err: any,
-      next: jest.Mock
-    ) => (controller as any).handleUploadError(err, next);
-
-    beforeEach(() => {
-      controller = new FileUploadController();
-      next = jest.fn();
-    });
-
-    it("should call next with AppError(400) when err is a MulterError", () => {
-      const multerErr = new MulterError("LIMIT_FILE_SIZE");
-      callHandleUploadError(controller, multerErr, next);
-      const err = next.mock.calls[0][0];
-      expect(err).toBeInstanceOf(AppError);
-      expect(err.statusCode).toBe(400);
-      expect(err.message).toBe(multerErr.message);
-    });
-
-    it("should use MulterError.code as the AppError code when present", () => {
-      const multerErr = new MulterError("LIMIT_FILE_COUNT");
-      callHandleUploadError(controller, multerErr, next);
-      expect(next.mock.calls[0][0].code).toBe("LimitFileCount");
-    });
-
-    it("should fall back to 'FileUploadError' when MulterError.code is falsy", () => {
-      const multerErr = new MulterError("LIMIT_FILE_SIZE");
-      (multerErr as any).code = undefined;
-      callHandleUploadError(controller, multerErr, next);
-      expect(next.mock.calls[0][0].code).toBe("FileUploadError");
-    });
-
-    it("should forward non-MulterError errors directly to next", () => {
-      const genericErr = new Error("something went wrong");
-      callHandleUploadError(controller, genericErr, next);
-      expect(next).toHaveBeenCalledWith(genericErr);
-      expect(next.mock.calls[0][0]).toBe(genericErr);
-    });
-
-    it("should forward an existing AppError directly without double-wrapping", () => {
-      const appErr = new AppError("Forbidden", 403, "ForbiddenError");
-      callHandleUploadError(controller, appErr, next);
-      expect(next).toHaveBeenCalledWith(appErr);
-    });
-  });
-
   describe("uploadFile", () => {
     it("should upload a single file successfully", async () => {
       mockReq.params = { fileType: "files" };
@@ -259,19 +208,6 @@ describe("FileUploadController", () => {
       expect(mockNext).toHaveBeenCalledWith(expect.any(AppError));
     });
 
-    it("should handle upload errors", async () => {
-      mockReq.params = { fileType: "files" };
-      const uploadError = new Error("Upload failed");
-
-      mockUploader.handleMultipleUpload.mockReturnValue(
-        jest.fn((_: any, _1: any, cb: any) => cb(uploadError))
-      );
-
-      await fileUploadController.uploadFile(mockReq, mockRes, mockNext);
-
-      expect(mockNext).toHaveBeenCalledWith(uploadError);
-    });
-
     it("should create upload directory if it does not exist", async () => {
       mockReq.params = { fileType: "files" };
       mockReq.file = { path: "/tmp/files/test.txt" };
@@ -333,36 +269,6 @@ describe("FileUploadController", () => {
         success: true,
         data: ["http://localhost:3000/api/uploads/files/test1.txt"],
         message: "1 files uploaded successfully",
-      });
-    });
-
-    describe("handleUploadError behavior during upload", () => {
-      it("should call next with AppError(400) when multer emits MulterError", async () => {
-        const multerErr = new MulterError("LIMIT_FILE_SIZE");
-        mockReq.params = { fileType: "images" };
-
-        mockUploader.handleMultipleUpload.mockReturnValue(
-          jest.fn((_: any, _1: any, cb: any) => cb(multerErr))
-        );
-
-        await fileUploadController.uploadFile(mockReq, mockRes, mockNext);
-
-        const err = mockNext.mock.calls[0][0];
-        expect(err).toBeInstanceOf(AppError);
-        expect(err.statusCode).toBe(400);
-      });
-
-      it("should forward generic Error directly to next", async () => {
-        const genericErr = new Error("Disk full");
-        mockReq.params = { fileType: "images" };
-
-        mockUploader.handleMultipleUpload.mockReturnValue(
-          jest.fn((_: any, _1: any, cb: any) => cb(genericErr))
-        );
-
-        await fileUploadController.uploadFile(mockReq, mockRes, mockNext);
-
-        expect(mockNext.mock.calls[0][0]).toBe(genericErr);
       });
     });
   });
@@ -572,36 +478,6 @@ describe("FileUploadController", () => {
       expect(mockReq.responseStatus).toBe(200);
       expect(mockReq.responseData).toBeDefined();
       expect(mockNext).toHaveBeenCalledWith();
-    });
-
-    describe("handleUploadError behavior during update", () => {
-      it("should call next with AppError(400) when multer emits MulterError", async () => {
-        const multerErr = new MulterError("LIMIT_FILE_SIZE");
-        mockReq.params = { fileType: "images", fileName: "old.jpg" };
-
-        mockUploader.handleMultipleUpload.mockReturnValue(
-          jest.fn((_: any, _1: any, cb: any) => cb(multerErr))
-        );
-
-        await fileUploadController.updateFile(mockReq, mockRes, mockNext);
-
-        const err = mockNext.mock.calls[0][0];
-        expect(err).toBeInstanceOf(AppError);
-        expect(err.statusCode).toBe(400);
-      });
-
-      it("should forward generic Error directly to next", async () => {
-        const genericErr = new Error("Storage unavailable");
-        mockReq.params = { fileType: "images", fileName: "old.jpg" };
-
-        mockUploader.handleMultipleUpload.mockReturnValue(
-          jest.fn((_: any, _1: any, cb: any) => cb(genericErr))
-        );
-
-        await fileUploadController.updateFile(mockReq, mockRes, mockNext);
-
-        expect(mockNext.mock.calls[0][0]).toBe(genericErr);
-      });
     });
   });
 

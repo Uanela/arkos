@@ -389,7 +389,7 @@ describe("generateCommand", () => {
     it("should generate controller for multiple modules", async () => {
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
 
-      await generateCommand.controller({ modules: "user,product,order" });
+      await generateCommand.controller({ module: "user,product,order" });
 
       expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(3);
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
@@ -409,7 +409,7 @@ describe("generateCommand", () => {
     it("should generate service for multiple modules", async () => {
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
 
-      await generateCommand.service({ modules: "user,product" });
+      await generateCommand.service({ module: "user,product" });
 
       expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(2);
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
@@ -425,7 +425,7 @@ describe("generateCommand", () => {
     it("should generate router for multiple modules", async () => {
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
 
-      await generateCommand.router({ modules: "user,order" });
+      await generateCommand.router({ module: "user,order" });
 
       expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(2);
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
@@ -441,7 +441,7 @@ describe("generateCommand", () => {
     it("should trim whitespace from module names", async () => {
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
 
-      await generateCommand.controller({ modules: "user, product , order" });
+      await generateCommand.controller({ module: "user, product , order" });
 
       expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(3);
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
@@ -462,7 +462,7 @@ describe("generateCommand", () => {
           throw new Error("Permission denied");
         }); // product fails
 
-      await generateCommand.controller({ modules: "user,product" });
+      await generateCommand.controller({ module: "user,product" });
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
@@ -475,7 +475,7 @@ describe("generateCommand", () => {
         }) // user fails
         .mockImplementationOnce(() => {}); // product succeeds
 
-      await generateCommand.controller({ modules: "user,product" });
+      await generateCommand.controller({ module: "user,product" });
 
       expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(2);
     });
@@ -483,59 +483,13 @@ describe("generateCommand", () => {
     it("should handle single module in --modules flag", async () => {
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
 
-      await generateCommand.controller({ modules: "user" });
+      await generateCommand.controller({ module: "user" });
 
       expect(mockedFs.writeFileSync).toHaveBeenCalledTimes(1);
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
         expect.stringContaining("user.controller.ts"),
         mockTemplateContent
       );
-    });
-  });
-
-  describe("comma in --module validation", () => {
-    it("should error when -m contains comma for controller", async () => {
-      try {
-        await generateCommand.controller({ module: "post,user" });
-      } catch {}
-
-      expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Use -ms/--modules instead")
-      );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
-    });
-
-    it("should error when -m contains comma for service", async () => {
-      try {
-        await generateCommand.service({ module: "post,user" });
-      } catch {}
-
-      expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Use -ms/--modules instead")
-      );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
-    });
-
-    it("should error when -m contains comma for router", async () => {
-      try {
-        await generateCommand.router({ module: "post,user" });
-      } catch {}
-
-      expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Use -ms/--modules instead")
-      );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
-    });
-
-    it("should error when --model contains comma", async () => {
-      try {
-        await generateCommand.controller({ model: "post,user" });
-      } catch {}
-
-      expect(sheuErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Use -ms/--modules instead")
-      );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
 });

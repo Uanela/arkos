@@ -67,10 +67,20 @@ class TemplateCompiler {
       "user.policy.ts.hbs",
     ];
 
-    if (
-      !config.authentication?.type ||
-      config.authentication?.type === "define later"
-    )
+    if (config.prisma?.provider === "none")
+      files.push(
+        ...authSharedPrismaFiles,
+        ...dynamicAuthPrismaFiles,
+        "schema.prisma.hbs",
+        ...userModuleComponents,
+        ...authModuleComponents,
+        ...authPermissionModuleComponents,
+        ...authRoleModuleComponents,
+        "file-upload.auth.ts.hbs",
+        "index.ts.hbs"
+      );
+
+    if (!config.authentication?.type || config.authentication?.type === "none")
       files.push(
         ...authSharedPrismaFiles,
         ...dynamicAuthPrismaFiles,
@@ -96,7 +106,8 @@ class TemplateCompiler {
       files.push(
         ...sharedAuthDtoFiles,
         ...dynamicAuthDtoFiles,
-        ...userDtoFiles
+        ...userDtoFiles,
+        "api-actions.hbs.ts"
       );
 
     // Ignoring typescript related files when typescript false

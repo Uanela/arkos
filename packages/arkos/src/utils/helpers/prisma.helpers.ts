@@ -1,4 +1,3 @@
-import prismaSchemaParser from "../prisma/prisma-schema-parser";
 import { getArkosConfig } from "./arkos-config.helpers";
 import sheu from "../sheu";
 import { getUserFileExtension } from "./fs.helpers";
@@ -16,11 +15,9 @@ export function loadPrismaModule() {
 }
 
 export function handlePrismaGet(target: any, prop: string, receiver: any) {
-  const originalProperty = Reflect.get(target, prop, receiver);
+  const originalProperty = (Reflect.get(target, prop, receiver) || {}) as any;
 
-  const isModel = prismaSchemaParser
-    .getModelsAsArrayOfStrings()
-    .find((m) => m.toLowerCase() === (prop as string)?.toLowerCase?.());
+  const isModel = "findMany" in originalProperty;
 
   if (isModel && originalProperty) {
     return new Proxy(originalProperty, {

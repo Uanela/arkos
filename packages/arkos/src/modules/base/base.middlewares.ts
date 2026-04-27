@@ -20,6 +20,8 @@ import { ArkosRouteConfig } from "../../utils/arkos-router/types";
 import { capitalize } from "../../utils/helpers/text.helpers";
 import { isClass, isZodSchema } from "../../utils/dynamic-loader";
 import errorPrettifier from "./utils/error-prettifier";
+import { lenientDecode } from "../../utils/helpers/url-helpers";
+import { pascalCase } from "../../exports/utils";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -194,7 +196,7 @@ export function handleRequestLogs(
     console.info(
       `[\x1b[36mInfo\x1b[0m] \x1b[90m${time}\x1b[0m ${methodColor}${
         req.method
-      }\x1b[0m ${decodeURIComponent(req.originalUrl)} ${statusColor}${
+      }\x1b[0m ${lenientDecode(req.originalUrl)} ${statusColor}${
         res.statusCode
       }\x1b[0m \x1b[35m${duration}ms\x1b[0m`
     );
@@ -369,7 +371,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
             throw new AppError(
               error.message,
               400,
-              error.code,
+              `InvalidRequest${pascalCase(key)}`,
               isZod ? err.format() : err
             );
           }

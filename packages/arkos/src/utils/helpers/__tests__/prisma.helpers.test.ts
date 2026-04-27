@@ -94,13 +94,11 @@ describe("prisma.helpers", () => {
         mockReceiver
       );
       expect(result).toBe(mockTarget.$connect);
-      expect(prismaSchemaParser.getModelsAsArrayOfStrings).toHaveBeenCalled();
     });
 
     it("should return proxied model for valid model names", () => {
       const result = dbUtils.handlePrismaGet(mockTarget, "user", mockReceiver);
       expect(result).not.toBe(mockTarget.user);
-      expect(prismaSchemaParser.getModelsAsArrayOfStrings).toHaveBeenCalled();
     });
 
     it("should handle case-insensitive model name matching", () => {
@@ -115,7 +113,6 @@ describe("prisma.helpers", () => {
         mockReceiver
       );
       const queryArgs = { where: { id: 1 } };
-
       await proxiedModel.findMany(queryArgs);
 
       expect(sheu.debug).toHaveBeenCalledWith(

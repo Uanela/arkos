@@ -9,6 +9,7 @@ import { IncomingMessage, Server, ServerResponse } from "http";
 import ExitError from "./utils/helpers/exit-error";
 import loadableRegistry from "./components/arkos-loadable-registry";
 import { applyArkosRouterProxy } from "./utils/arkos-router/utils/helpers/apply-arkos-router-proxy";
+import { validateArkosConfig } from "./utils/helpers/arkos-config.helpers";
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
 const docsLink =
@@ -125,6 +126,8 @@ export function arkos(): Arkos {
       state = "listening";
       loadApp();
     }
+
+    validateArkosConfig();
 
     const port = Number(process.env.__PORT || process.env.PORT || "8000");
     const host = process.env.__HOST! || process.env.HOST || "0.0.0.0";

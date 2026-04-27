@@ -38,16 +38,10 @@ const prismaOnlyComponents = new Set([
 export default async function generateMultipleComponents(
   options: MultipleComponentsGenerateOptions
 ) {
-  const moduleInput = options.modules || options.module || options.model;
+  const moduleInput = options.module || options.model;
 
   if (!moduleInput)
     throw ExitError("Module name is required. Use -m or --module flag.");
-
-  if (!options.modules && moduleInput?.includes(","))
-    throw ExitError(
-      "Multiple modules are not supported with -m/--module. Use -ms/--modules instead.\n" +
-        "Example: arkos g components -ms post,user,auth --names s,sc"
-    );
 
   const moduleNames = moduleInput
     .split(",")
@@ -239,7 +233,8 @@ export default async function generateMultipleComponents(
     }
 
     if (isMultipleModules) {
-      sheu.info(`\n→ ${readableName}`);
+      console.log("");
+      sheu.info(`Module ${readableName}`);
     } else {
       console.log("");
       sheu.info(`Generating components for ${readableName}`);
