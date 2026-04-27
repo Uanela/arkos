@@ -110,7 +110,7 @@ describe("ProjectConfigInquirer", () => {
         prisma: {
           provider: "postgresql",
           idDatabaseType: "@id @default(uuid())",
-          defaultDBurl:
+          defaultDatabaseUrl:
             "postgresql://username:password@localhost:5432/test-project",
         },
         projectPath: expect.stringContaining("test-project"),
@@ -284,7 +284,7 @@ describe("ProjectConfigInquirer", () => {
       expect(config.prisma).toEqual({
         provider: "mongodb",
         idDatabaseType: '@id @default(auto()) @map("_id") @db.ObjectId',
-        defaultDBurl: "mongodb://localhost:27017/test-project",
+        defaultDatabaseUrl: "mongodb://localhost:27017/test-project",
       });
     });
 
@@ -301,7 +301,7 @@ describe("ProjectConfigInquirer", () => {
       expect(config.prisma).toEqual({
         provider: "sqlite",
         idDatabaseType: "@id @default(cuid())",
-        defaultDBurl: "file:../../file.db",
+        defaultDatabaseUrl: "file:../../file.db",
       });
     });
 
@@ -318,7 +318,7 @@ describe("ProjectConfigInquirer", () => {
       expect(config.prisma).toEqual({
         provider: "mysql",
         idDatabaseType: "@id @default(uuid())",
-        defaultDBurl: "mysql://username:password@localhost:3306/test-project",
+        defaultDatabaseUrl: "mysql://username:password@localhost:3306/test-project",
       });
     });
 
@@ -335,7 +335,7 @@ describe("ProjectConfigInquirer", () => {
       expect(config.prisma).toEqual({
         provider: "sqlserver",
         idDatabaseType: "@id @default(uuid())",
-        defaultDBurl:
+        defaultDatabaseUrl:
           "sqlserver://localhost:1433;database=test-project;username=sa;password=password;encrypt=DANGER_PLAINTEXT",
       });
     });
@@ -353,7 +353,7 @@ describe("ProjectConfigInquirer", () => {
       expect(config.prisma).toEqual({
         provider: "cockroachdb",
         idDatabaseType: "@id @default(uuid())",
-        defaultDBurl:
+        defaultDatabaseUrl:
           "postgresql://username:password@localhost:26257/test-project?sslmode=require",
       });
     });
@@ -455,7 +455,7 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ useValidation: false })
         .mockResolvedValueOnce({ useAuthentication: true })
         .mockResolvedValueOnce({ authenticationType: "static" })
-        .mockResolvedValueOnce({ usernameField: "define later" })
+        .mockResolvedValueOnce({ usernameField: "none" })
         .mockResolvedValueOnce({ multipleRoles: false });
 
       const config = await projectConfigInquirer.run();
@@ -483,13 +483,13 @@ describe("ProjectConfigInquirer", () => {
       expect(config.authentication?.multipleRoles).toBe(false);
     });
 
-    it("should skip multiple roles for define later auth", async () => {
+    it("should skip multiple roles for none auth", async () => {
       mockedInquirer.prompt
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "postgresql" })
         .mockResolvedValueOnce({ useValidation: false })
         .mockResolvedValueOnce({ useAuthentication: true })
-        .mockResolvedValueOnce({ authenticationType: "define later" })
+        .mockResolvedValueOnce({ authenticationType: "none" })
         .mockResolvedValueOnce({ usernameField: "email" })
         .mockResolvedValueOnce({ strictRouting: false });
 
@@ -563,7 +563,7 @@ describe("ProjectConfigInquirer", () => {
 
         expect(config.prisma.provider).toBe(provider);
         expect(config.prisma.idDatabaseType).toBeDefined();
-        expect(config.prisma.defaultDBurl).toBeDefined();
+        expect(config.prisma.defaultDatabaseUrl).toBeDefined();
 
         vi.clearAllMocks();
         mockedInquirer.prompt.mockClear();
