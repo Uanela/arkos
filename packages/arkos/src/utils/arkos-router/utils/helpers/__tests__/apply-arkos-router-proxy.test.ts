@@ -1,4 +1,3 @@
-// src/utils/arkos-router/__tests__/apply-arkos-router-proxy.test.ts
 import { applyArkosRouterProxy } from "../apply-arkos-router-proxy";
 import { Router } from "express";
 import RouteConfigRegistry from "../../../route-config-registry";
@@ -62,15 +61,12 @@ describe("applymakeRouterProxy", () => {
   });
 
   it("should throw an error when path is passed", () => {
-    const router = Router();
     const proxied = makeRouter() as any;
-
-    proxied.__router__ = router;
     try {
       proxied.get("/normal", jest.fn());
-    } catch (err: any) {
-      expect(err.message).toBe(
-        "First argument of ArkosRouter().get() must be a valid ArkosRouteConfig object with path field, but recevied /normal"
+    } catch {
+      expect(ExitError).toHaveBeenCalledWith(
+        "First argument of router.get() must be a valid ArkosRouteConfig object with path field, but recevied /normal"
       );
     }
   });
@@ -118,7 +114,7 @@ describe("applymakeRouterProxy", () => {
       const proxied = makeRouter() as any;
       proxied.get({ path: "/api/cacilda" });
     } catch (err: any) {
-      expect(err.message).toBe(
+      expect(ExitError).toHaveBeenCalledWith(
         "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
       );
     }
@@ -142,8 +138,10 @@ describe("applymakeRouterProxy", () => {
       const proxied = makeRouter() as any;
       proxied.get({ path: "/api/cacilda", authentication: {} });
     } catch (err: any) {
-      expect(err.message).toContain(
-        "Trying to authenticate route GET /api/cacilda without choosing an authentication mode under arkos.config.js"
+      expect(ExitError).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "Trying to authenticate route GET /api/cacilda without choosing an authentication mode under arkos.config.js"
+        )
       );
     }
   });
@@ -163,11 +161,11 @@ describe("applymakeRouterProxy", () => {
       expect(ExitError).not.toHaveBeenCalled();
     });
 
-    it("should fall through to native express use when passed a path string", () => {
+    it("should NOT fall through to native express use when passed a path string", () => {
       const proxied = makeRouter() as any;
       const middleware = jest.fn();
-      expect(() => proxied.use("/api", middleware)).not.toThrow();
-      expect(ExitError).not.toHaveBeenCalled();
+      expect(() => proxied.use("/api", middleware)).toThrow();
+      expect(ExitError).toHaveBeenCalled();
     });
 
     it("should apply middleware stack when passed ArkosUseConfig", () => {
