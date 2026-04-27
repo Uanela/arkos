@@ -6,7 +6,7 @@ const config: ArkosConfig = {
 /** @type {import('arkos').ArkosConfig} */
 const config = {
 {{/if}}
-  {{#if authentication.type}}
+  {{#if (neq authentication.type "none")}}
   authentication: {
     mode: '{{authentication.type}}',
     login: {
