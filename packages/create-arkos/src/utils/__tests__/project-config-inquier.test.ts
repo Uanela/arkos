@@ -455,7 +455,7 @@ describe("ProjectConfigInquirer", () => {
         .mockResolvedValueOnce({ useValidation: false })
         .mockResolvedValueOnce({ useAuthentication: true })
         .mockResolvedValueOnce({ authenticationType: "static" })
-        .mockResolvedValueOnce({ usernameField: "define later" })
+        .mockResolvedValueOnce({ usernameField: "none" })
         .mockResolvedValueOnce({ multipleRoles: false });
 
       const config = await projectConfigInquirer.run();
@@ -483,13 +483,13 @@ describe("ProjectConfigInquirer", () => {
       expect(config.authentication?.multipleRoles).toBe(false);
     });
 
-    it("should skip multiple roles for define later auth", async () => {
+    it("should skip multiple roles for none auth", async () => {
       mockedInquirer.prompt
         .mockResolvedValueOnce({ typescript: false })
         .mockResolvedValueOnce({ prismaProvider: "postgresql" })
         .mockResolvedValueOnce({ useValidation: false })
         .mockResolvedValueOnce({ useAuthentication: true })
-        .mockResolvedValueOnce({ authenticationType: "define later" })
+        .mockResolvedValueOnce({ authenticationType: "none" })
         .mockResolvedValueOnce({ usernameField: "email" })
         .mockResolvedValueOnce({ strictRouting: false });
 
