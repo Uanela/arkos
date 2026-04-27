@@ -10,25 +10,11 @@ import { getArkosConfig } from "../../server";
 import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 import { getModuleComponents } from "../../utils/dynamic-loader";
-import { MulterError } from "multer";
-import { pascalCase } from "../../exports/utils";
 
 /**
  * Handles files uploads and allow to be extended
  */
 export class FileUploadController {
-  private handleUploadError(err: any, next: ArkosNextFunction) {
-    if (err instanceof MulterError)
-      return next(
-        new AppError(
-          err.message,
-          400,
-          pascalCase(err.code || "FileUploadError")
-        )
-      );
-    else return next(err);
-  }
-
   /**
    * Model-specific interceptors loaded from model modules
    * @private
@@ -92,7 +78,7 @@ export class FileUploadController {
       }
 
       uploader.handleMultipleUpload()(req, res, async (err) => {
-        if (err) return this.handleUploadError(err, next);
+        if (err) throw err;
 
         let data;
         if (req.files && Array.isArray(req.files) && req.files.length > 0) {
@@ -279,7 +265,7 @@ export class FileUploadController {
       }
 
       uploader.handleMultipleUpload()(req, res, async (err) => {
-        if (err) return this.handleUploadError(err, next);
+        if (err) throw err;
 
         if (
           !req.file &&

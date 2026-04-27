@@ -318,6 +318,27 @@ describe("handleRelationFieldsInBody", () => {
       });
     });
 
+    it("should handle create operation for list relation items without ids without apiAction", () => {
+      const body = {
+        title: "My Post",
+        tags: [{ slug: "javaScript" }],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "tags", type: "Tag", isRelation: true, isArray: true }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        title: "My Post",
+        tags: {
+          create: body.tags,
+        },
+      });
+    });
+
     it("should handle connect operation for list relation items with only ids", () => {
       const body = {
         title: "My Post",

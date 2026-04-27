@@ -27,7 +27,7 @@ describe("UserRole model template rendering", () => {
     // Test case 2: Define later authentication
     const context2 = {
       authentication: {
-        type: "define later",
+        type: "none",
         multipleRoles: false,
       },
       prisma: {
