@@ -24,7 +24,7 @@ export interface ProjectConfig {
       | "mongodb"
       | "none";
     idDatabaseType: string;
-    defaultDBurl: string;
+    defaultDatabaseUrl: string;
   };
   projectPath: string;
   routing?: {
@@ -55,6 +55,13 @@ class ProjectConfigInquirer {
         process.cwd(),
         this.config.projectName
       );
+
+    if (this.config.prisma.defaultDatabaseUrl)
+      this.config.prisma.defaultDatabaseUrl =
+        this.config.prisma.defaultDatabaseUrl.replaceAll(
+          "{{projectName}}",
+          this.config.projectName
+        );
 
     return this.config;
   }
@@ -149,42 +156,42 @@ class ProjectConfigInquirer {
 
     // Set the correct idDatabaseType based on provider
     let idDatabaseType: string;
-    let defaultDBurl: string;
+    let defaultDatabaseUrl: string;
 
     switch (prismaProvider) {
       case "mongodb":
         idDatabaseType = '@id @default(auto()) @map("_id") @db.ObjectId';
-        defaultDBurl = `mongodb://localhost:27017/${this.config.projectName}`;
+        defaultDatabaseUrl = `mongodb://localhost:27017/{{projectName}}`;
         break;
       case "sqlite":
         idDatabaseType = "@id @default(cuid())";
-        defaultDBurl = "file:../../file.db";
+        defaultDatabaseUrl = "file:../../file.db";
         break;
       case "mysql":
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `mysql://username:password@localhost:3306/${this.config.projectName}`;
+        defaultDatabaseUrl = `mysql://username:password@localhost:3306/{{projectName}}`;
         break;
       case "postgresql":
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `postgresql://username:password@localhost:5432/${this.config.projectName}`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:5432/{{projectName}}`;
         break;
       case "sqlserver":
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `sqlserver://localhost:1433;database=${this.config.projectName};username=sa;password=password;encrypt=DANGER_PLAINTEXT`;
+        defaultDatabaseUrl = `sqlserver://localhost:1433;database={{projectName}};username=sa;password=password;encrypt=DANGER_PLAINTEXT`;
         break;
       case "cockroachdb":
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `postgresql://username:password@localhost:26257/${this.config.projectName}?sslmode=require`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:26257/{{projectName}}?sslmode=require`;
         break;
       default:
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `postgresql://username:password@localhost:5432/${this.config.projectName}`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:5432/{{projectName}}`;
     }
 
     this.config.prisma = {
       provider: prismaProvider,
       idDatabaseType: idDatabaseType,
-      defaultDBurl: defaultDBurl,
+      defaultDatabaseUrl: defaultDatabaseUrl,
     };
   }
 
