@@ -99,10 +99,7 @@ class TemplateCompiler {
         "index.ts.hbs"
       );
 
-    if (
-      !config.authentication?.type ||
-      config.authentication?.type === "none"
-    )
+    if (!config.authentication?.type || config.authentication?.type === "none")
       files.push(
         ...authSharedPrismaFiles,
         ...dynamicAuthPrismaFiles,
@@ -132,7 +129,8 @@ class TemplateCompiler {
       files.push(
         ...sharedAuthZodSchemaFiles,
         ...dynamicAuthZodSchemaFiles,
-        ...userZodSchemaFiles
+        ...userZodSchemaFiles,
+        "api-actions.hbs.ts"
       );
 
     // Ignore class-validator related files when validation is zod
