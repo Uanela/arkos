@@ -10,6 +10,7 @@ import errorHandler from "../modules/error-handler/error-handler.controller";
 import { getArkosConfig } from "../server";
 import { isAuthenticationEnabled } from "./helpers/arkos-config.helpers";
 import { getSwaggerRouter } from "../modules/swagger/swagger.router";
+import { lenientDecode } from "./helpers/url-helpers";
 
 export default function initializeApp(app: Arkos) {
   const config = getArkosConfig();
@@ -32,34 +33,34 @@ export default function initializeApp(app: Arkos) {
 
   if (isAuthenticationEnabled()) {
     const authRouter = getAuthRouter(config);
-    app.use(globalPrefix, authRouter);
+    app.use({ path: globalPrefix }, authRouter);
   }
 
   const modelsRouter = getPrismaModelsRouter(config);
-  app.use(globalPrefix, modelsRouter);
+  app.use({ path: globalPrefix }, modelsRouter);
 
-  app.use(globalPrefix, getAvailableResourcesAndRoutesRouter());
+  app.use({ path: globalPrefix }, getAvailableResourcesAndRoutesRouter());
 
   if (
     config.swagger &&
     (process.env.ARKOS_BUILD !== "true" ||
       config.swagger.enableAfterBuild === true)
   )
-    app.use(globalPrefix, getSwaggerRouter(config, app));
+    app.use({ path: globalPrefix }, getSwaggerRouter(config, app));
 
   return app;
 }
 
 export function addGlobalErrorHandler(app: Arkos) {
-  app.use("*", (req) => {
+  app.use({ path: "*" }, (req) => {
+    const url = lenientDecode(req.originalUrl);
     throw new AppError(
-      `Route ${req.method} ${req.originalUrl} was not found`,
+      `Route ${req.method.toUpperCase()} ${url} was not found`,
       404,
-      { route: `${req.method} ${req.originalUrl}` },
+      { route: `${req.method.toUpperCase()} ${url}` },
       "RouteNotFound"
     );
   });
-
   app.use(errorHandler);
 
   return app;

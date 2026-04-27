@@ -20,6 +20,7 @@ export class PrismaJsonSchemaGenerator {
    * Generate create schema (excludes ID, includes relation IDs only)
    */
   generateCreateSchema(model: PrismaModel): JsonSchema {
+    if (!model) return { type: "object" };
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const required: string[] = [];
     const restrictedFields = ["createdAt", "updatedAt", "deletedAt", "id"];
@@ -36,7 +37,7 @@ export class PrismaJsonSchemaGenerator {
         "lastLoginAt"
       );
 
-    for (const field of model.fields) {
+    for (const field of model?.fields) {
       const isForeignKey = model.fields.some(
         (_field) => _field.foreignKeyField === field.name
       );
@@ -92,10 +93,11 @@ export class PrismaJsonSchemaGenerator {
    * Generate update schema (all fields optional, includes relation IDs only)
    */
   generateUpdateSchema(model: PrismaModel): JsonSchema {
+    if (!model) return { type: "object" };
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const autoFillFields = ["createdAt", "updatedAt", "deletedAt", "id"];
 
-    for (const field of model.fields) {
+    for (const field of model?.fields) {
       const isForeignKey = model.fields.some(
         (_field) => _field.foreignKeyField === field.name
       );
@@ -143,6 +145,7 @@ export class PrismaJsonSchemaGenerator {
     model: PrismaModel,
     options: Record<string, any>
   ): JsonSchema {
+    if (!model) return { type: "object" };
     const properties: { [key: string]: JsonSchemaProperty } = {};
     const required: string[] = [];
 
@@ -157,7 +160,7 @@ export class PrismaJsonSchemaGenerator {
       );
     }
 
-    for (const field of model.fields) {
+    for (const field of model?.fields) {
       // Skip password fields
       if (field.name === "password") continue;
 
@@ -229,7 +232,7 @@ export class PrismaJsonSchemaGenerator {
       );
     }
 
-    for (const field of model.fields) {
+    for (const field of model?.fields) {
       // Skip password fields
       if (field.name.toLowerCase().includes("password")) {
         continue;
@@ -292,7 +295,7 @@ export class PrismaJsonSchemaGenerator {
         (t) => t.name === field.type
       )!;
       const nestedProperties: { [key: string]: JsonSchemaProperty } = {};
-      for (const nestedField of compositeType.fields) {
+      for (const nestedField of compositeType?.fields) {
         nestedProperties[nestedField.name] =
           this.convertFieldToJsonSchema(nestedField);
       }
@@ -393,7 +396,7 @@ export class PrismaJsonSchemaGenerator {
         }
       );
 
-    for (const field of model.fields) {
+    for (const field of model?.fields) {
       if (restrictedFields.includes(field.name)) continue;
 
       const isForeignKey = model.fields.some(

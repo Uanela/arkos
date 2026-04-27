@@ -1,5 +1,5 @@
 import { Router, RouterOptions } from "express";
-import { IArkosRouter, ArkosRouteConfig } from "./types";
+import { IArkosRouter } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import { extractArkosRoutes, extractPathParams } from "./utils/helpers";
 import { getArkosConfig } from "../../exports";
@@ -31,7 +31,7 @@ import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy"
  *
  * @returns {IArkosRouter} A proxied Express Router instance with enhanced OpenAPI capabilities
  *
- * @see {@link ArkosRouteConfig} for configuration options
+ * @see {@link https://www.arkosjs.com/docs/reference/arkos-router} for configuration options
  */
 export default function ArkosRouter(
   options?: RouterOptions & {
@@ -43,6 +43,8 @@ export default function ArkosRouter(
   return applyArkosRouterProxy(router, options) as IArkosRouter;
 }
 
+const hasDuplicatedPath = (path: string) => /^(\/.+)\1/.test(path);
+
 export function generateOpenAPIFromApp(app: any) {
   const routes = extractArkosRoutes(app);
   const arkosConfig = getArkosConfig();
@@ -53,7 +55,8 @@ export function generateOpenAPIFromApp(app: any) {
   > = {};
 
   routes.forEach(({ path, method, config }) => {
-    if (config?.experimental?.openapi === false) return;
+    if (config?.experimental?.openapi === false || hasDuplicatedPath(path))
+      return;
     const originalPath = path;
 
     const pathParatemersFromRoutePath = extractPathParams(path);

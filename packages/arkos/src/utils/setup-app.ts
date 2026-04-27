@@ -15,6 +15,14 @@ export default function setupApp(app: Arkos) {
 
   const middlewaresConfig = config?.middlewares;
 
+  if (middlewaresConfig?.requestLogger !== false) {
+    if (typeof middlewaresConfig?.requestLogger === "function") {
+      app.use(middlewaresConfig.requestLogger);
+    } else {
+      app.use(handleRequestLogs);
+    }
+  }
+
   if (middlewaresConfig?.compression !== false) {
     if (typeof middlewaresConfig?.compression === "function") {
       app.use(middlewaresConfig.compression);
@@ -124,14 +132,6 @@ export default function setupApp(app: Arkos) {
           )
         )
       );
-    }
-  }
-
-  if (middlewaresConfig?.requestLogger !== false) {
-    if (typeof middlewaresConfig?.requestLogger === "function") {
-      app.use(middlewaresConfig.requestLogger);
-    } else {
-      app.use(handleRequestLogs);
     }
   }
 
