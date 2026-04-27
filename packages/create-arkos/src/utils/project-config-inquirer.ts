@@ -129,7 +129,7 @@ class ProjectConfigInquirer {
         type: "confirm",
         name: "typescript",
         message: `Would you like to use ${chalk.cyan("TypeScript")}?`,
-        default: false,
+        default: true,
       },
     ]);
     this.config.typescript = typescript;
