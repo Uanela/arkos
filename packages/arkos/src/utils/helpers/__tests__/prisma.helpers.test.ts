@@ -1,11 +1,9 @@
 import fs from "fs";
 import * as dbUtils from "../prisma.helpers";
-import AppError from "../../../modules/error-handler/utils/app-error";
 import { getUserFileExtension } from "../fs.helpers";
 import { importModule } from "../global.helpers";
 import { getArkosConfig } from "../arkos-config.helpers";
 import sheu from "../../sheu";
-import prismaSchemaParser from "../../prisma/prisma-schema-parser";
 
 // Mock external dependencies
 jest.mock("../arkos-config.helpers", () => ({
@@ -21,11 +19,6 @@ jest.mock("../global.helpers");
 jest.mock("../../../modules/error-handler/utils/catch-async", () => {
   return (fn: Function) => fn;
 });
-jest.mock("../../prisma/prisma-schema-parser", () => ({
-  models: [{ name: "User" }],
-  getModelsAsArrayOfStrings: jest.fn().mockReturnValue(["User", "Post"]),
-}));
-
 // Set up mock values
 const mockedCwd = "/mock/project";
 const mockFileExtension = "ts";
@@ -48,6 +41,7 @@ const mockPrismaModule = {
 jest.spyOn(require("../fs.helpers"), "crd").mockReturnValue(mockedCwd);
 
 describe("prisma.helpers", () => {
+  let mockReflectGet: any;
   // Set up mocks before each test
   beforeEach(() => {
     // Reset module state
@@ -58,7 +52,8 @@ describe("prisma.helpers", () => {
 
     // Set up mocks for filesystem helpers
     (getUserFileExtension as jest.Mock).mockReturnValue(mockFileExtension);
-
+    jest.spyOn(Reflect, "get").mockReturnValue({});
+    mockReflectGet = jest.spyOn(Reflect, "get");
     // Mock process.cwd to return a consistent path
     jest.spyOn(process, "cwd").mockReturnValue(mockedCwd);
   });
@@ -213,6 +208,11 @@ describe("prisma.helpers", () => {
 
       mockReceiver = {};
 
+      mockReflectGet.mockImplementation(
+        jest.fn((target, prop, _) => {
+          return target[prop];
+        })
+      );
       mockConfig = {
         debugging: {
           requests: {
@@ -223,10 +223,6 @@ describe("prisma.helpers", () => {
 
       (getArkosConfig as jest.Mock).mockReturnValue(mockConfig);
       (sheu.debug as jest.Mock).mockClear();
-
-      // (global as any).prismaSchemaParser =prismaSchemaParser;
-      // (global as any).getArkosConfig = jest.fn().mockReturnValue(mockConfig);
-      // (global as any).sheu = sheu;
     });
 
     afterEach(() => {
@@ -241,21 +237,18 @@ describe("prisma.helpers", () => {
       );
 
       expect(result).toBe(mockTarget.$connect);
-      expect(prismaSchemaParser.getModelsAsArrayOfStrings).toHaveBeenCalled();
     });
 
     it("should return proxied model for valid model names", () => {
       const result = dbUtils.handlePrismaGet(mockTarget, "user", mockReceiver);
 
       expect(result).not.toBe(mockTarget.user);
-      expect(prismaSchemaParser.getModelsAsArrayOfStrings).toHaveBeenCalled();
     });
 
     it("should handle case-insensitive model name matching", () => {
       const result = dbUtils.handlePrismaGet(mockTarget, "USER", mockReceiver);
 
       expect(result).not.toBe(mockTarget.user);
-      expect(prismaSchemaParser.getModelsAsArrayOfStrings).toHaveBeenCalled();
     });
 
     it("should log query args when debug level is 3 or higher", async () => {
@@ -265,7 +258,6 @@ describe("prisma.helpers", () => {
         mockReceiver
       );
       const queryArgs = { where: { id: 1 } };
-
       await proxiedModel.findMany(queryArgs);
 
       expect(sheu.debug).toHaveBeenCalledWith(
