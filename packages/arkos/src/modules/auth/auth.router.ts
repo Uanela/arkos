@@ -121,7 +121,6 @@ export function getAuthRouter() {
       });
     },
   };
-
   // POST /auth/login - Login
   {
     const { before, after, onError, prismaArgs, routeConfig } = op("login");

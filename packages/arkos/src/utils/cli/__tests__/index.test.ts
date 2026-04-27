@@ -22,6 +22,7 @@ jest.mock("commander", () => {
     parse: jest.fn().mockReturnThis(),
     alias: jest.fn().mockReturnThis(),
     requiredOption: jest.fn().mockReturnThis(),
+    on: jest.fn(),
   };
   return {
     Command: jest.fn().mockImplementation(() => mockCommand),

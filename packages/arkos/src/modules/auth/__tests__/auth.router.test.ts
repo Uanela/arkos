@@ -8,6 +8,9 @@ import {
 import ArkosRouter from "../../../utils/arkos-router";
 import authOpenAPIGenerator from "../utils/auth-openapi-generator";
 
+jest.mock("../../../utils/helpers/prisma.helpers", () => ({
+  getPrismaInstance: jest.fn(() => ({})),
+}));
 jest.mock("fs");
 jest.mock("../../../utils/dynamic-loader");
 
