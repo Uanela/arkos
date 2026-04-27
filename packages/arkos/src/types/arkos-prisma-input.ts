@@ -262,6 +262,16 @@ type StripPrismaFilters<T> = T extends
     >
   : T;
 
+type StripToScalar<T> = T extends
+  | string
+  | number
+  | boolean
+  | Date
+  | null
+  | undefined
+  ? T
+  : never;
+
 type FlattenRelations<T> = {
   [K in keyof T]: IsArrayRelation<T[K]> extends true
     ? FlattenArrayRelation<T[K]> | undefined
@@ -273,7 +283,10 @@ type FlattenRelations<T> = {
           ? T[K] extends Date | null | undefined
             ? T[K]
             : FlattenRelations<StripPrismaFilters<T[K]>> | undefined
-          : StripPrismaFilters<T[K]>;
+          : StripToScalar<T[K]> extends never
+            ? StripPrismaFilters<T[K]>
+            : StripToScalar<T[K]>;
+};
 /**
  * Flattens Prisma relation inputs into a simpler, developer-friendly format
  *

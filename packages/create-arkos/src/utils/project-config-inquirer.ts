@@ -10,8 +10,8 @@ export interface ProjectConfig {
     type?: "zod" | "class-validator";
   };
   authentication?: {
-    type?: "static" | "dynamic" | "define later";
-    usernameField?: "username" | "email" | "custom";
+    type?: "static" | "dynamic" | "none";
+    usernameField?: string;
     multipleRoles: boolean;
   };
   prisma: {
@@ -24,7 +24,7 @@ export interface ProjectConfig {
       | "mongodb"
       | "none";
     idDatabaseType: string;
-    defaultDBurl: string;
+    defaultDatabaseUrl: string;
   };
   projectPath: string;
   routing?: {
@@ -58,6 +58,12 @@ class ProjectConfigInquirer {
       );
 
     if (process?.argv?.includes?.("--advanced")) this.config.advanced = true;
+    if (this.config.prisma.defaultDatabaseUrl)
+      this.config.prisma.defaultDatabaseUrl =
+        this.config.prisma.defaultDatabaseUrl.replaceAll(
+          "{{projectName}}",
+          this.config.projectName
+        );
 
     return this.config;
   }
@@ -78,7 +84,6 @@ class ProjectConfigInquirer {
       ]);
       projectName = result.projectName;
     } else {
-      // Validate the project name from command line args
       const validation = this.validateProjectName(projectName);
       if (validation !== true) {
         console.error(chalk.red(`\nError: ${validation}`));
@@ -126,7 +131,7 @@ class ProjectConfigInquirer {
         type: "confirm",
         name: "typescript",
         message: `Would you like to use ${chalk.cyan("TypeScript")}?`,
-        default: false,
+        default: true,
       },
     ]);
     this.config.typescript = typescript;
@@ -150,150 +155,133 @@ class ProjectConfigInquirer {
       },
     ]);
 
-    // Set the correct idDatabaseType based on provider
     let idDatabaseType: string;
-    let defaultDBurl: string;
+    let defaultDatabaseUrl: string;
 
     switch (prismaProvider) {
       case "mongodb":
         idDatabaseType = '@id @default(auto()) @map("_id") @db.ObjectId';
-        defaultDBurl = `mongodb://localhost:27017/${this.config.projectName}`;
+        defaultDatabaseUrl = `mongodb://localhost:27017/{{projectName}}`;
         break;
       case "sqlite":
         idDatabaseType = "@id @default(cuid())";
-        defaultDBurl = "file:../../file.db";
+        defaultDatabaseUrl = "file:../../file.db";
         break;
       case "mysql":
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `mysql://username:password@localhost:3306/${this.config.projectName}`;
+        defaultDatabaseUrl = `mysql://username:password@localhost:3306/{{projectName}}`;
         break;
       case "postgresql":
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `postgresql://username:password@localhost:5432/${this.config.projectName}`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:5432/{{projectName}}`;
         break;
       case "sqlserver":
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `sqlserver://localhost:1433;database=${this.config.projectName};username=sa;password=password;encrypt=DANGER_PLAINTEXT`;
+        defaultDatabaseUrl = `sqlserver://localhost:1433;database={{projectName}};username=sa;password=password;encrypt=DANGER_PLAINTEXT`;
         break;
       case "cockroachdb":
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `postgresql://username:password@localhost:26257/${this.config.projectName}?sslmode=require`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:26257/{{projectName}}?sslmode=require`;
         break;
       default:
         idDatabaseType = "@id @default(uuid())";
-        defaultDBurl = `postgresql://username:password@localhost:5432/${this.config.projectName}`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:5432/{{projectName}}`;
     }
 
     this.config.prisma = {
       provider: prismaProvider,
-      idDatabaseType: idDatabaseType,
-      defaultDBurl: defaultDBurl,
+      idDatabaseType,
+      defaultDatabaseUrl,
     };
   }
 
   private async promptValidation() {
-    const { useValidation } = await inquirer.prompt([
+    // For JS projects, class-validator is not supported — skip the choice
+    const choices = this.config.typescript
+      ? ["zod", "class-validator", "none"]
+      : ["zod", "none"];
+
+    const { validationType } = await inquirer.prompt([
       {
-        type: "confirm",
-        name: "useValidation",
-        message: `Would you like to set up ${chalk.cyan("Validation")}?`,
-        default: true,
+        type: "list",
+        name: "validationType",
+        message: `Which ${chalk.cyan("Validation")} library would you like to use?`,
+        choices,
+        default: "zod",
       },
     ]);
 
-    if (useValidation) {
-      let validationTypeResponse: {
-        validationType: "zod" | "class-validator";
-      } = { validationType: "zod" };
-
-      if (this.config.typescript)
-        validationTypeResponse = await inquirer.prompt([
-          {
-            type: "list",
-            name: "validationType",
-            message: "Choose validation library:",
-            choices: ["zod", "class-validator"],
-          },
-        ]);
-      else {
-        console.info(
-          chalk.bold(
-            `${chalk.greenBright("?")} Validation library set to zod (class-validator is not supported on JavaScript):`
-          ),
-          chalk.cyan("zod")
-        );
-      }
+    if (validationType !== "none") {
       this.config.validation = {
-        type: validationTypeResponse.validationType,
+        type: validationType as "zod" | "class-validator",
       };
-    } else if (!this.config.typescript) {
     }
+    // validation stays undefined when "none" is chosen — matches original behaviour
   }
 
   private async promptAuthentication() {
-    if (this.config.prisma.provider === "none")
-      return console.info(
-        `Skipping authentication setup as it requires prisma.`
-      );
+    if (this.config.prisma.provider === "none") {
+      console.info(`Skipping authentication setup as it requires prisma.`);
+      return;
+    }
 
-    const { useAuthentication } = await inquirer.prompt([
+    const { authenticationType } = await inquirer.prompt([
       {
-        type: "confirm",
-        name: "useAuthentication",
-        message: `Would you like to set up ${chalk.cyan("Authentication")}?`,
-        default: true,
+        type: "list",
+        name: "authenticationType",
+        message: `Which ${chalk.cyan("Authentication")} mode would you like to use?`,
+        choices: ["static", "dynamic", "none"],
+        default: "static",
       },
     ]);
 
-    if (useAuthentication) {
-      const { authenticationType } = await inquirer.prompt([
-        {
-          type: "list",
-          name: "authenticationType",
-          message: "Choose authentication type:",
-          choices: ["static", "dynamic"],
-        },
-      ]);
+    if (authenticationType === "none") {
+      this.config.authentication = { type: "none", multipleRoles: false };
+      return;
+    }
 
-      const { usernameField } = await inquirer.prompt([
+    const { usernameField } = await inquirer.prompt([
+      {
+        type: "input",
+        name: "usernameField",
+        message: "Enter the Prisma field name to use as the login username:",
+        default: "email",
+        validate: (input: string) => {
+          if (!input || input.length === 0) return "Field name cannot be empty";
+          if (!/^[a-z][a-zA-Z0-9]*$/.test(input))
+            return "Must be a valid Prisma field name (camelCase, starts with lowercase, letters and numbers only)";
+          return true;
+        },
+      },
+    ]);
+
+    this.config.authentication = {
+      type: authenticationType as "static" | "dynamic",
+      usernameField,
+      multipleRoles: false,
+    };
+
+    if (
+      authenticationType !== "static" &&
+      this.config.prisma.provider !== "sqlite"
+    ) {
+      const { multipleRoles } = await inquirer.prompt([
         {
-          type: "list",
-          name: "usernameField",
-          message: "Choose default username field for login:",
-          choices: ["email", "username", "define later"],
+          type: "confirm",
+          name: "multipleRoles",
+          default: true,
+          message: `Would you like to use authentication with ${chalk.cyan("Multiple Roles")}?`,
         },
       ]);
 
       this.config.authentication = {
-        type: authenticationType,
-        usernameField:
-          usernameField === "define later" ? "custom" : usernameField,
-        multipleRoles: false,
+        ...this.config.authentication,
+        multipleRoles,
       };
-
-      if (
-        authenticationType !== "define later" &&
-        this.config.prisma.provider !== "sqlite" &&
-        authenticationType !== "static"
-      ) {
-        const { multipleRoles } = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "multipleRoles",
-            default: true,
-            message: `Would you like to use authentication with ${chalk.cyan("Multiple Roles")}?`,
-          },
-        ]);
-
-        this.config.authentication = {
-          ...this.config.authentication,
-          multipleRoles,
-        };
-      } else if (this.config.prisma.provider === "sqlite") {
-        console.info(
-          `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
-        );
-      }
+    } else if (this.config.prisma.provider === "sqlite") {
+      console.info(
+        `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
+      );
     }
   }
 
