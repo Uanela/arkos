@@ -22,7 +22,7 @@ export function applyArkosRouterProxy<T extends object>(
     prefix?: string | RegExp | Array<string | RegExp>;
     openapi?: { tags?: string[] };
   },
-  name: "app" | "ArkosRouter()" = "ArkosRouter()"
+  name: "app" | "router" = "router"
 ): T {
   return new Proxy(target, {
     get(target, prop, receiver) {
@@ -45,21 +45,25 @@ export function applyArkosRouterProxy<T extends object>(
           config: ArkosUseConfig | PathParams | ArkosAnyRequestHandler,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
-          // if not an ArkosUseConfig object, fall through to native Express use
-          if (
+          // normalize function/router to ArkosUseConfig
+          if (typeof config === "function" || Array.isArray(config)) {
+            handlers = [config as ArkosAnyRequestHandler, ...handlers];
+            config = {} as ArkosUseConfig;
+          } else if (
             !config ||
             typeof config !== "object" ||
-            Array.isArray(config) ||
-            typeof config === "function"
-          )
-            return originalMethod.call(target, config, ...handlers);
+            typeof config === "string" ||
+            config instanceof RegExp
+          ) {
+            throw ExitError(
+              `First argument of ${name}.use() must be a valid ArkosRouteConfig object or a middleware function, but received ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}.`
+            );
+          }
 
           if ((config as ArkosUseConfig).disabled) return;
 
           const useConfig = config as ArkosUseConfig;
-          const path = useConfig.path
-            ? applyPrefix(options?.prefix, useConfig.path)
-            : undefined;
+          const path = applyPrefix(options?.prefix, useConfig.path ?? "/");
 
           const arkosConfig = getArkosConfig();
           const authenticationConfig = arkosConfig.authentication;
@@ -72,12 +76,9 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             );
 
           const middlewareStack = getMiddlewareStack(useConfig);
-
           const allHandlers = [...middlewareStack, ...handlers];
 
-          return path
-            ? originalMethod.call(target, path, ...allHandlers)
-            : originalMethod.call(target, ...allHandlers);
+          return originalMethod.call(target, path, ...allHandlers);
         };
       }
 
@@ -90,20 +91,17 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               config: ArkosAnyRequestHandler | Omit<ArkosRouteConfig, "path">,
               ...handlers: ArkosAnyRequestHandler[]
             ) {
+              if (typeof config === "function" || Array.isArray(config))
+                throw ExitError(
+                  `First argument of ${name}.route("${path}").${method}() must be a valid ArkosRouteConfig object without path field, but received ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
+                );
+
               const fullConfig: ArkosRouteConfig = {
                 ...config,
-                ...(options?.openapi
-                  ? {
-                      experimental: {
-                        openapi: options.openapi,
-                      },
-                    }
-                  : {}),
                 path,
               };
 
               receiver[method](fullConfig, ...handlers);
-
               return routeChain as IArkosRoute;
             };
           });
@@ -120,7 +118,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           if (config.disabled) return;
 
           if (!RouteConfigValidator.isArkosRouteConfig(config))
-            throw Error(
+            throw ExitError(
               `First argument of ${name}.${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
 
@@ -143,13 +141,13 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           };
 
           if ([null, undefined].includes(path as any))
-            throw Error(
+            throw ExitError(
               "Please pass valid value for path field to use in your route"
             );
 
           const method = prop as string;
           const UndefinedHandlerError = (handler: any) =>
-            Error(
+            ExitError(
               `Wrong value for handler in route ${method.toUpperCase()} ${path}, recevied ${handler}.`
             );
 
@@ -193,7 +191,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
                 !config.validation &&
                 config.validation !== undefined))
           )
-            throw Error(
+            throw ExitError(
               "When using strict validation you must either pass { validation: false } in order to explicitly tell that no input will be received, or pass `undefined` for each input type e.g { validation: { query: undefined } } in order to deny the input of given request input."
             );
 
@@ -201,18 +199,23 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             !validationConfig?.resolver &&
             Object.keys(config.validation || {}).length > 0
           )
-            throw Error(
+            throw ExitError(
               `Trying to pass validators into route ${route} config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })`
             );
 
           if (config.authentication && !authenticationConfig?.mode)
-            throw Error(
+            throw ExitError(
               `Trying to authenticate route ${route} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
 
 For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
             );
 
           handlers = [...getMiddlewareStack(config), ...handlers];
+
+          if (handlers.length === 0)
+            throw ExitError(
+              `No handlers provided for route ${method.toUpperCase()} ${path}.`
+            );
 
           if (
             config.experimental?.uploads &&

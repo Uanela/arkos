@@ -50,9 +50,9 @@ describe("TemplateCompiler", () => {
   });
 
   describe("filesToBeSkipped", () => {
-    it('should skip all auth files when authentication type is "define later"', () => {
+    it('should skip all auth files when authentication type is "none"', () => {
       const config: ProjectConfig = {
-        authentication: { type: "define later" },
+        authentication: { type: "none" },
         validation: { type: "zod" },
         typescript: true,
       } as ProjectConfig;
@@ -191,7 +191,7 @@ describe("TemplateCompiler", () => {
       const config: ProjectConfig = {
         projectPath: "/output",
         typescript: true,
-        authentication: { type: "define later" },
+        authentication: { type: "none" },
         validation: { type: "zod" },
       } as ProjectConfig;
 
@@ -370,11 +370,11 @@ describe("TemplateCompiler", () => {
       expect(skippedFiles).not.toContain("tsconfig.json.hbs");
     });
 
-    it("should handle complete class-validator + javascript + define later auth scenario", () => {
+    it("should handle complete class-validator + javascript + none auth scenario", () => {
       const config: ProjectConfig = {
         projectPath: "/output",
         typescript: false,
-        authentication: { type: "define later" },
+        authentication: { type: "none" },
         validation: { type: "class-validator" },
       } as ProjectConfig;
 
