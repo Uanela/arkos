@@ -237,50 +237,55 @@ type FlattenObjectRelation<T> =
         }
       : never);
 type StripPrismaFilters<T> = T extends
-  | {
-      equals?: any;
-    }
-  | {
-      in?: any;
-    }
-  | {
-      notIn?: any;
-    }
-  | {
-      lt?: any;
-    }
-  | {
-      lte?: any;
-    }
-  | {
-      gt?: any;
-    }
-  | {
-      gte?: any;
-    }
-  | {
-      AND?: any;
-    }
-  | {
-      OR?: any;
-    }
-  | {
-      NOT?: any;
-    }
-  ? never
+  | { equals?: any }
+  | { in?: any }
+  | { notIn?: any }
+  | { lt?: any }
+  | { lte?: any }
+  | { gt?: any }
+  | { gte?: any }
+  | { AND?: any }
+  | { OR?: any }
+  | { NOT?: any }
+  ? Omit<
+      T,
+      | "equals"
+      | "in"
+      | "notIn"
+      | "lt"
+      | "lte"
+      | "gt"
+      | "gte"
+      | "AND"
+      | "OR"
+      | "NOT"
+    >
   : T;
+
+type StripToScalar<T> = T extends
+  | string
+  | number
+  | boolean
+  | Date
+  | null
+  | undefined
+  ? T
+  : never;
+
 type FlattenRelations<T> = {
   [K in keyof T]: IsArrayRelation<T[K]> extends true
-    ? FlattenArrayRelation<T[K]>
+    ? FlattenArrayRelation<T[K]> | undefined
     : IsObjectRelation<T[K]> extends true
-      ? XOR<FlattenObjectRelation<T[K]>, T[K]>
+      ? XOR<FlattenObjectRelation<T[K]> | undefined, T[K]>
       : StripPrismaFilters<T[K]> extends never
         ? never
         : T[K] extends object
           ? T[K] extends Date | null | undefined
             ? T[K]
-            : FlattenRelations<StripPrismaFilters<T[K]>>
-          : StripPrismaFilters<T[K]>;
+            : FlattenRelations<StripPrismaFilters<T[K]>> | undefined
+          : StripToScalar<T[K]> extends never
+            ? StripPrismaFilters<T[K]>
+            : StripToScalar<T[K]>;
 };
 /**
  * Flattens Prisma relation inputs into a simpler, developer-friendly format
@@ -299,7 +304,7 @@ type FlattenRelations<T> = {
  * ]}
  * ```
  *
- * @see {@link https://wwww.arkosjs.com/docs/api-reference/arkos-prisma-input}
+ * @see {@link https://wwww.arkosjs.com/docs/reference/arkos-prisma-input}
  * @template T - The Prisma input type (e.g., Prisma.UserCreateInput)
  * @returns A flattened version of the input type with simplified relation handling
  */
