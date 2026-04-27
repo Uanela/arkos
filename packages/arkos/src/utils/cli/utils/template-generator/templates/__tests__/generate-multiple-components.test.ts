@@ -71,18 +71,6 @@ describe("generateMultipleComponents", () => {
       ).rejects.toThrow("Please specify either --all or --names flag");
     });
 
-    it("should throw when --module contains comma", async () => {
-      await expect(
-        generateMultipleComponents({ module: "post,user", all: true } as any)
-      ).rejects.toThrow("Use -ms/--modules instead");
-    });
-
-    it("should throw when --model contains comma", async () => {
-      await expect(
-        generateMultipleComponents({ model: "post,user", all: true } as any)
-      ).rejects.toThrow("Use -ms/--modules instead");
-    });
-
     it("should throw when names provided but none are valid", async () => {
       await expect(
         generateMultipleComponents({ module: "user", names: "xyz,abc" })

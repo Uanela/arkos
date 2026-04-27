@@ -78,7 +78,7 @@ export function setupRouters(
 
     if (customRouter && customRouterModule) {
       if (routerValidator.isExpressRouter(customRouter))
-        router.use(`/${routeName}`, customRouter);
+        router.use({ path: `/${routeName}` }, customRouter);
       else
         throw ExitError(
           `ValidationError: The exported router from ${modelNameInKebab}.router.${getUserFileExtension()} is not a valid express Router.`

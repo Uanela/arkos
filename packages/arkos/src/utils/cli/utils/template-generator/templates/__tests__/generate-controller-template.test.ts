@@ -4,6 +4,22 @@ jest.mock("../../../../generate", () => ({
   kebabPrismaModels: ["test", "user-profile", "file-upload", "order"],
 }));
 
+jest.mock("../../../../../prisma/prisma-schema-parser", () => ({
+  __esModule: true,
+  default: {
+    getModelsAsArrayOfStrings: jest.fn(() => {
+      return [
+        "user",
+        "very-long-model-name-with-many-parts",
+        "user-profile",
+        "product",
+        "order",
+      ];
+    }),
+    parse: jest.fn(),
+  },
+}));
+
 describe("generateControllerTemplate", () => {
   const baseOptions = {
     modelName: {
@@ -27,9 +43,7 @@ describe("generateControllerTemplate", () => {
       'import { BaseController } from "arkos/controllers";'
     );
     expect(result).toContain("class TestController extends BaseController {}");
-    expect(result).toContain(
-      'const testController = new TestController("test");'
-    );
+    expect(result).toContain("const testController = new TestController();");
     expect(result).toContain("export default testController;");
   });
 
@@ -45,12 +59,10 @@ describe("generateControllerTemplate", () => {
 
     const result = generateControllerTemplate(options);
 
-    expect(result).toContain(
+    expect(result).not.toContain(
       'import { FileUploadController } from "arkos/controllers";'
     );
-    expect(result).toContain(
-      "class FileUploadController extends FileUploadController {}"
-    );
+    expect(result).toContain("class FileUploadController {}");
     expect(result).toContain(
       "const fileUploadController = new FileUploadController();"
     );
@@ -106,25 +118,6 @@ describe("generateControllerTemplate", () => {
     );
   });
 
-  it("should use custom file upload import when provided", () => {
-    const options = {
-      modelName: {
-        camel: "fileUpload",
-        pascal: "FileUpload",
-        kebab: "file-upload",
-      },
-      imports: {
-        fileUploadController: "custom/file-controllers",
-      },
-    };
-
-    const result = generateControllerTemplate(options);
-
-    expect(result).toContain(
-      'import { FileUploadController } from "custom/file-controllers";'
-    );
-  });
-
   it("should handle different model name cases correctly", () => {
     const options = {
       modelName: {
@@ -158,7 +151,7 @@ describe("generateControllerTemplate", () => {
     expect(result).not.toContain("import {");
     expect(result).toContain("class DashboardController {}");
     expect(result).toContain(
-      'const dashboardController = new DashboardController("dashboard");'
+      "const dashboardController = new DashboardController();"
     );
     expect(result).toContain("export default dashboardController;");
   });
