@@ -36,7 +36,7 @@ const config = {
   },
   middlewares: {
     cors: {
-      allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+      allowedOrigins: "*"
     },
   },
   {{#if (eq prisma.provider "none")}}
