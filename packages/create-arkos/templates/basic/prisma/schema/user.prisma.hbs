@@ -1,4 +1,4 @@
-{{#if (neq authentication.type "define later")}}
+{{#if (neq authentication.type "none")}}
 model User {
   id                   String    {{{prisma.idDatabaseType}}}
   {{authentication.usernameField}}  String   @unique

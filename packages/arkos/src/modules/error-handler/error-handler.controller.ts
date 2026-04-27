@@ -2,6 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import AppError from "./utils/app-error";
 import * as errorControllerHelper from "./utils/error-handler.helpers";
 import { server } from "../../server";
+import multerErrorHandler from "./utils/multer-error-handler";
+import { MulterError } from "multer";
 
 /**
  * Error handling middleware for Express.
@@ -36,6 +38,9 @@ export default function errorHandler(
   };
 
   if (process.env.ARKOS_BUILD === "true") delete error?.stack;
+
+  if (err.name === "MulterError" || err instanceof MulterError)
+    error = multerErrorHandler.handle(err as unknown as MulterError);
 
   if (err.name === "JsonWebTokenError")
     error = errorControllerHelper.handleJWTError();
