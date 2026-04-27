@@ -6,7 +6,7 @@ const config: ArkosConfig = {
 /** @type {import('arkos').ArkosConfig} */
 const config = {
 {{/if}}
-  {{#if authentication.type}}
+  {{#if (neq authentication.type "none")}}
   authentication: {
     mode: '{{authentication.type}}',
     login: {
@@ -36,7 +36,7 @@ const config = {
   },
   middlewares: {
     cors: {
-      allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+      allowedOrigins: "*"
     },
   },
   {{#if (eq prisma.provider "none")}}
