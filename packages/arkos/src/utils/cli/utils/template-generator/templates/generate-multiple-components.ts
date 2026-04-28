@@ -1,3 +1,4 @@
+import path from "path";
 import {
   camelCase,
   kebabCase,
@@ -42,6 +43,11 @@ export default async function generateMultipleComponents(
 
   if (!moduleInput)
     throw ExitError("Module name is required. Use -m or --module flag.");
+
+  if (options.path && path.extname(options.path) !== "")
+    throw ExitError(
+      "--path or -p must be a directory when generating multiple components or modules."
+    );
 
   const moduleNames = moduleInput
     .split(",")
@@ -255,7 +261,7 @@ export default async function generateMultipleComponents(
           ...options,
           module: moduleName,
           model: undefined,
-          path: defaultPaths[componentName],
+          path: options.path || defaultPaths[componentName],
           shouldExit: false,
           shouldPrintError: false,
           isBulk: true,
