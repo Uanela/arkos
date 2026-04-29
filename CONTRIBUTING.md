@@ -142,36 +142,130 @@ DATABASE_URL="file:./dev.db"
 ## Project Structure
 
 ```
-packages/arkos/
+packages/
+├── arkos/                    # Core framework package
+│   ├── src/
+│   │   ├── exports/          # Public API exports
+│   │   │   ├── auth/         # Authentication module exports
+│   │   │   ├── controllers/  # Base controller exports
+│   │   │   ├── services/     # Base service exports
+│   │   │   ├── middlewares/  # Middleware exports
+│   │   │   ├── validation/   # Validation helpers
+│   │   │   ├── error-handler/# Error handling exports
+│   │   │   ├── prisma/       # Prisma utilities
+│   │   │   └── utils/        # General utilities
+│   │   ├── modules/          # Internal modules
+│   │   │   ├── base/         # Base classes and helpers
+│   │   │   ├── auth/         # Auth implementation
+│   │   │   ├── email/        # Email service
+│   │   │   ├── file-upload/  # File upload service
+│   │   │   ├── swagger/      # API documentation
+│   │   │   ├── debugger/     # Debugging utilities
+│   │   │   └── error-handler/# Error handling
+│   │   ├── components/       # Shared components
+│   │   │   └── arkos-policy/ # RBAC policy system
+│   │   ├── types/            # TypeScript type definitions
+│   │   ├── utils/            # Utility functions
+│   │   │   ├── arkos-router/ # Enhanced Express router
+│   │   │   ├── cli/          # CLI tools (dev, build, generate)
+│   │   │   ├── features/     # Feature management
+│   │   │   ├── prisma/       # Prisma schema parsing
+│   │   │   └── helpers/      # Internal helpers
+│   │   ├── generated.ts      # Auto-generated exports
+│   │   ├── app.ts            # Main app factory
+│   │   └── server.ts         # Server bootstrap
+│   ├── scripts/              # Build and utility scripts
+│   │   ├── generate-post-build-types.ts
+│   │   ├── write-correction-version-after-build.ts
+│   │   └── fix-esm-imports.ts
+│   ├── coverage/             # Test coverage reports (gitignored)
+│   ├── dist/                 # Build output (gitignored)
+│   ├── .github/workflows/    # CI/CD pipelines
+│   ├── jest.config.ts        # Jest test configuration
+│   ├── tsconfig.json         # TypeScript configuration
+│   ├── package.json
+│   └── cli.js                # CLI entry point
+│
+├── create-arkos/             # Project scaffolding tool
+│   ├── src/
+│   │   ├── index.ts          # CLI entry point
+│   │   ├── utils/
+│   │   │   ├── project-config-inquirer.ts
+│   │   │   ├── template-compiler.ts
+│   │   │   └── helpers/
+│   │   └── __tests__/
+│   ├── templates/            # Project templates
+│   │   └── basic/            # Basic template files (.hbs)
+│   │       ├── prisma/schema/    # Prisma schema templates
+│   │       ├── src/modules/      # Module templates
+│   │       └── __tests__/        # Template tests
+│   ├── scripts/              # Post-build scripts
+│   ├── package.json
+│   └── tsconfig.json
+│
+└── shared/                   # Shared utilities between packages
+    ├── src/
+    │   └── utils/helpers/
+    └── package.json
+
+documentation/                # Website and docs (separate repository)
 ├── src/
-│   ├── exports/           # Public API exports
-│   │   ├── auth/          # Authentication module
-│   │   ├── controllers/   # Base controller classes
-│   │   ├── services/      # Base service classes
-│   │   ├── middlewares/   # Middleware utilities
-│   │   ├── validation/    # Validation helpers
-│   │   ├── error-handler/ # Error handling
-│   │   ├── prisma/        # Prisma utilities
-│   │   └── utils/         # General utilities
-│   ├── modules/           # Internal modules
-│   │   ├── base/          # Base classes and helpers
-│   │   ├── auth/          # Auth implementation
-│   │   ├── email/         # Email service
-│   │   ├── file-upload/   # File upload service
-│   │   ├── swagger/       # API documentation
-│   │   └── error-handler/ # Error handling
-│   └── __tests__/         # Unit tests
-├── .github/               # GitHub workflows and templates
-├── scripts/               # Build and utility scripts
-└── dist/                  # Build output (gitignored)
+│   ├── components/           # React components
+│   ├── routes/               # Page routes
+│   ├── lib/                  # Utilities
+│   └── styles/               # CSS styles
+├── content/blog/             # Blog posts
+├── public/img/               # Static images
+├── package.json
+└── vite.config.ts
+
+.github/                      # GitHub configuration
+├── workflows/                # GitHub Actions
+└── ISSUE_TEMPLATE/           # Issue templates
+
+LICENSE
+package.json                  # Root package.json (workspace)
 ```
 
-### Key Directories:
+### Key Directories Explained:
 
-- **`src/exports/`**: Public-facing API that gets exported to users
-- **`src/modules/`**: Internal implementation details
-- **`src/__tests__/`**: Unit tests (mirroring src structure)
-- **`scripts/`**: Build scripts and automation
+| Directory                                    | Purpose                                           |
+| -------------------------------------------- | ------------------------------------------------- |
+| **`packages/arkos/src/exports/`**            | Public API - everything here is user-facing       |
+| **`packages/arkos/src/modules/`**            | Internal implementation (not directly exported)   |
+| **`packages/arkos/src/components/`**         | Reusable internal components like `arkos-policy`  |
+| **`packages/arkos/src/utils/`**              | Utility functions and helpers                     |
+| **`packages/arkos/src/utils/arkos-router/`** | Enhanced Express router with OpenAPI support      |
+| **`packages/arkos/src/utils/cli/`**          | CLI commands: `dev`, `build`, `generate`, `start` |
+| **`packages/arkos/src/utils/prisma/`**       | Prisma schema parsing and JSON schema generation  |
+| **`packages/arkos/scripts/`**                | Build scripts (type generation, ESM/CJS handling) |
+| **`packages/create-arkos/templates/`**       | Handlebars templates for new projects             |
+| **`packages/shared/`**                       | Code shared between `arkos` and `create-arkos`    |
+
+### Important Files:
+
+| File                                 | Purpose                                        |
+| ------------------------------------ | ---------------------------------------------- |
+| `packages/arkos/src/app.ts`          | Main `arkos()` factory function                |
+| `packages/arkos/src/server.ts`       | Server bootstrap and initialization            |
+| `packages/arkos/src/generated.ts`    | Auto-generated exports (models, configs)       |
+| `packages/arkos/cli.js`              | CLI entry point (symlinked to `arkos` command) |
+| `packages/create-arkos/src/index.ts` | `create-arkos` CLI entry point                 |
+
+### Testing Structure:
+
+Tests live alongside the code they test in `__tests__/` directories:
+
+```
+src/modules/auth/
+├── auth.service.ts
+├── auth.controller.ts
+├── auth.router.ts
+└── __tests__/
+    ├── auth.service.test.ts
+    ├── auth.controller.test.ts
+    └── auth.router.test.ts
+```
 
 ## Coding Standards
 

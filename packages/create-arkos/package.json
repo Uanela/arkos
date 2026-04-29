@@ -1,6 +1,6 @@
 {
   "name": "create-arkos",
-  "version": "1.6.0-canary.55",
+  "version": "1.6.0-canary.62",
   "type": "module",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
@@ -27,9 +27,14 @@
     "url": "https://github.com/uanela/arkos/issues"
   },
   "homepage": "https://www.arkosjs.com/docs/tooling/create-arkos",
-  "files": ["dist", "templates", "cli.js", "README.md"],
+  "files": [
+    "dist",
+    "templates",
+    "cli.js",
+    "README.md"
+  ],
   "devDependencies": {
-    "@types/inquirer": "8.1.0",
+    "@types/inquirer": "9.0.9",
     "@types/node": "16.18.126",
     "@vitest/coverage-v8": "3.2.4",
     "rimraf": "6.1.3",

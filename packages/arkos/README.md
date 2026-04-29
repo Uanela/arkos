@@ -63,15 +63,15 @@ import postPolicy from "@/src/modules/post/post.policy"; // Authorization compon
 const postRouter = ArkosRouter({ prefix: "/api/posts" });
 
 postRouter.post(
-    {
-        path: "/", // auto registered into openapi
-        authentication: postPolicy.Create, // Authentication and authorization with RBAC
-        validation: { body: CreatePostSchema }, // auto documented into openapi requestBody
-    },
-    async (req, res) => {
-        const post = await postService.createOne(req.body); // no error handling need, arkos already handles it
-        res.json({ data: post });
-    }
+  {
+    path: "/", // auto registered into openapi
+    authentication: postPolicy.Create, // Authentication and authorization with RBAC
+    validation: { body: CreatePostSchema }, // auto documented into openapi requestBody
+  },
+  async (req, res) => {
+    const post = await postService.createOne(req.body); // no error handling need, arkos already handles it
+    res.json({ data: post });
+  }
 );
 
 export default postRouter;
@@ -132,13 +132,13 @@ import postPolicy from "@/src/modules/post/post.policy";
 import UpdatePostSchema from "@/src/modules/post/post.schema";
 
 export const hook: RouteHook<"prisma"> = {
-    findMany: { authentication: false }, // Making GET /api/posts public
-    createOne: { authentication: postPolicy.Create },
-    updateOne: {
-        authentication: postPolicy.Update,
-        validation: { body: UpdatePostSchema },
-    },
-    deleteOne: { authentication: postPolicy.Delete },
+  findMany: { authentication: false }, // Making GET /api/posts public
+  createOne: { authentication: postPolicy.Create },
+  updateOne: {
+    authentication: postPolicy.Update,
+    validation: { body: UpdatePostSchema },
+  },
+  deleteOne: { authentication: postPolicy.Delete },
 };
 
 const postRouter = ArkosRouter({ prefix: "/api/posts" });
@@ -156,14 +156,14 @@ import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 import { BadRequestError } from "arkos/error-handler";
 
 export const beforeCreateOne = [
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-        if (req.body.title.length < 5)
-            throw new BadRequestError("Title is too short", "TitleTooShort");
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    if (req.body.title.length < 5)
+      throw new BadRequestError("Title is too short", "TitleTooShort");
 
-        req.body.slug = req.body.title.toLowerCase().replace(/\s/g, "-");
-        req.body.authorId = req.user.id;
-        next();
-    },
+    req.body.slug = req.body.title.toLowerCase().replace(/\s/g, "-");
+    req.body.authorId = req.user.id;
+    next();
+  },
 ];
 ```
 
