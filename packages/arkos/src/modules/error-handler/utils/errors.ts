@@ -6,7 +6,7 @@ import AppError from "./app-error";
  */
 export class BadRequestError extends AppError {
   constructor(
-    message = "Bad Request",
+    message = "Bad request",
     code = "BadRequest",
     meta?: Record<string, any>
   ) {
@@ -34,7 +34,7 @@ export class UnauthorizedError extends AppError {
  */
 export class PaymentRequiredError extends AppError {
   constructor(
-    message = "Payment Required",
+    message = "Payment required",
     code = "PaymentRequired",
     meta?: Record<string, any>
   ) {
@@ -62,7 +62,7 @@ export class ForbiddenError extends AppError {
  */
 export class NotFoundError extends AppError {
   constructor(
-    message = "Not Found",
+    message = "Not found",
     code = "NotFound",
     meta?: Record<string, any>
   ) {
@@ -76,7 +76,7 @@ export class NotFoundError extends AppError {
  */
 export class MethodNotAllowedError extends AppError {
   constructor(
-    message = "Method Not Allowed",
+    message = "Method not allowed",
     code = "MethodNotAllowed",
     meta?: Record<string, any>
   ) {
@@ -90,7 +90,7 @@ export class MethodNotAllowedError extends AppError {
  */
 export class NotAcceptableError extends AppError {
   constructor(
-    message = "Not Acceptable",
+    message = "Not acceptable",
     code = "NotAcceptable",
     meta?: Record<string, any>
   ) {
@@ -104,7 +104,7 @@ export class NotAcceptableError extends AppError {
  */
 export class RequestTimeoutError extends AppError {
   constructor(
-    message = "Request Timeout",
+    message = "Request timeout",
     code = "RequestTimeout",
     meta?: Record<string, any>
   ) {
@@ -142,7 +142,7 @@ export class GoneError extends AppError {
  */
 export class LengthRequiredError extends AppError {
   constructor(
-    message = "Length Required",
+    message = "Length required",
     code = "LengthRequired",
     meta?: Record<string, any>
   ) {
@@ -156,7 +156,7 @@ export class LengthRequiredError extends AppError {
  */
 export class PreconditionFailedError extends AppError {
   constructor(
-    message = "Precondition Failed",
+    message = "Precondition failed",
     code = "PreconditionFailed",
     meta?: Record<string, any>
   ) {
@@ -170,7 +170,7 @@ export class PreconditionFailedError extends AppError {
  */
 export class PayloadTooLargeError extends AppError {
   constructor(
-    message = "Payload Too Large",
+    message = "Payload too large",
     code = "PayloadTooLarge",
     meta?: Record<string, any>
   ) {
@@ -184,7 +184,7 @@ export class PayloadTooLargeError extends AppError {
  */
 export class UriTooLongError extends AppError {
   constructor(
-    message = "URI Too Long",
+    message = "URi too long",
     code = "UriTooLong",
     meta?: Record<string, any>
   ) {
@@ -198,7 +198,7 @@ export class UriTooLongError extends AppError {
  */
 export class UnsupportedMediaTypeError extends AppError {
   constructor(
-    message = "Unsupported Media Type",
+    message = "Unsupported media type",
     code = "UnsupportedMediaType",
     meta?: Record<string, any>
   ) {
@@ -212,7 +212,7 @@ export class UnsupportedMediaTypeError extends AppError {
  */
 export class RangeNotSatisfiableError extends AppError {
   constructor(
-    message = "Range Not Satisfiable",
+    message = "Range not satisfiable",
     code = "RangeNotSatisfiable",
     meta?: Record<string, any>
   ) {
@@ -226,7 +226,7 @@ export class RangeNotSatisfiableError extends AppError {
  */
 export class ExpectationFailedError extends AppError {
   constructor(
-    message = "Expectation Failed",
+    message = "Expectation failed",
     code = "ExpectationFailed",
     meta?: Record<string, any>
   ) {
@@ -254,7 +254,7 @@ export class ImATeapotError extends AppError {
  */
 export class UnprocessableContentError extends AppError {
   constructor(
-    message = "Unprocessable Content",
+    message = "Unprocessable content",
     code = "UnprocessableContent",
     meta?: Record<string, any>
   ) {
@@ -268,7 +268,7 @@ export class UnprocessableContentError extends AppError {
  */
 export class TooManyRequestsError extends AppError {
   constructor(
-    message = "Too Many Requests",
+    message = "Too many requests",
     code = "TooManyRequests",
     meta?: Record<string, any>
   ) {
@@ -282,7 +282,7 @@ export class TooManyRequestsError extends AppError {
  */
 export class InternalServerError extends AppError {
   constructor(
-    message = "Internal Server Error",
+    message = "Internal server error",
     code = "InternalServer",
     meta?: Record<string, any>
   ) {
@@ -296,7 +296,7 @@ export class InternalServerError extends AppError {
  */
 export class NotImplementedError extends AppError {
   constructor(
-    message = "Not Implemented",
+    message = "Not implemented",
     code = "NotImplemented",
     meta?: Record<string, any>
   ) {
@@ -310,7 +310,7 @@ export class NotImplementedError extends AppError {
  */
 export class BadGatewayError extends AppError {
   constructor(
-    message = "Bad Gateway",
+    message = "Bad gateway",
     code = "BadGateway",
     meta?: Record<string, any>
   ) {
@@ -324,7 +324,7 @@ export class BadGatewayError extends AppError {
  */
 export class ServiceUnavailableError extends AppError {
   constructor(
-    message = "Service Unavailable",
+    message = "Service unavailable",
     code = "ServiceUnavailable",
     meta?: Record<string, any>
   ) {
@@ -338,7 +338,7 @@ export class ServiceUnavailableError extends AppError {
  */
 export class GatewayTimeoutError extends AppError {
   constructor(
-    message = "Gateway Timeout",
+    message = "Gateway timeout",
     code = "GatewayTimeout",
     meta?: Record<string, any>
   ) {

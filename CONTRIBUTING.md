@@ -14,6 +14,7 @@ Thank you for your interest in contributing to Arkos.js! We're building a framew
 - [Commit Guidelines](#commit-guidelines)
 - [Pull Request Process](#pull-request-process)
 - [Branch Strategy](#branch-strategy)
+- [Version Support Policy](#version-support-policy)
 - [Communication](#communication)
 - [Recognition](#recognition)
 
@@ -188,10 +189,10 @@ We use strict TypeScript settings:
 - **Formatter**: Prettier (automatically formats on save)
 - **Linter**: ESLint with TypeScript plugin
 - **Naming Conventions**:
-    - `camelCase` for variables and functions
-    - `PascalCase` for classes, types, interfaces and enums
-    - `SCREAMING_SNAKE_CASE` for constants
-    - Files match their export: `base.service.ts` exports `BaseService`
+  - `camelCase` for variables and functions
+  - `PascalCase` for classes, types, interfaces and enums
+  - `SCREAMING_SNAKE_CASE` for constants
+  - Files match their export: `base.service.ts` exports `BaseService`
 
 ### Documentation Requirements
 
@@ -216,7 +217,7 @@ We use strict TypeScript settings:
  * ```
  */
 export function init(configs: ArkosConfig) {
-    // implementation
+  // implementation
 }
 ````
 
@@ -263,15 +264,15 @@ We use **Jest** for testing:
 import { AuthService } from "../auth.service";
 
 describe("AuthService", () => {
-    describe("generateToken", () => {
-        it("should generate a valid JWT token", () => {
-            const authService = new AuthService();
-            const token = authService.signJwtToken({ userId: 1 });
+  describe("generateToken", () => {
+    it("should generate a valid JWT token", () => {
+      const authService = new AuthService();
+      const token = authService.signJwtToken({ userId: 1 });
 
-            expect(token).toBeDefined();
-            expect(typeof token).toBe("string");
-        });
+      expect(token).toBeDefined();
+      expect(typeof token).toBe("string");
     });
+  });
 });
 ```
 
@@ -461,6 +462,11 @@ Closes #123
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
 
+## Version Compatibility Check
+
+- [ ] This fix can be applied to the previous supported minor version (if applicable)
+- [ ] This is a major version change (requires different approach)
+
 ## Testing
 
 - [ ] Added unit tests
@@ -505,19 +511,77 @@ Closes #123
 - **`main`**: Stable releases only (production-ready)
 - **`canary`**: Active development (default branch)
 
-### Contributing
+### Version Branches
 
-1. **Fork from `canary`** (not `main`)
-2. **Create feature branch** from `canary`:
-    ```bash
-    git checkout -b feature/my-feature canary
-    ```
-3. **Submit PR to `canary`** (not `main`)
+We maintain long-lived branches for version lines:
 
-### Branch Naming
+- **`canary-1.x`**: Support branch for v1.x series (receives patches and critical fixes)
+- **`canary-2.x`**: Support branch for v2.x series (receives patches and critical fixes)
+- **`canary-3.x`**: Active development branch for next major version
 
-- `feature/feature-name` - New features
-- `fix/bug-description` - Bug fixes
+### Version Support Policy
+
+Arkos.js follows a **2 majors, 2 minors** support policy:
+
+- **2 major versions** are supported simultaneously
+- **2 minor versions** within each supported major are maintained
+
+#### Major Version Support
+
+- Major versions receive **patches only** (no minor releases)
+- Each major version is supported for its lifecycle
+- When a new major is released, the oldest supported major enters maintenance mode (patches only)
+
+#### Minor Version Support
+
+- Within each supported major, we maintain **current + previous** minor versions
+- The **current minor** receives both features and fixes
+- The **previous minor** receives only:
+  - **Bug fixes**
+  - **Small features that resemble fixes** (e.g., missing config options that should be there)
+  - Security patches
+  - Documentation updates
+
+### Backporting Contributions
+
+When contributing a **fix** or **small feature that behaves like a fix**:
+
+1. **Target `canary`** (current development branch) first
+2. **Determine if it should be backported** to the previous supported minor:
+   - ✅ **Yes**: Bug fixes that affect users
+   - ✅ **Yes**: Missing configuration options
+   - ✅ **Yes**: Small DX improvements
+   - ❌ **No**: New features requiring API changes
+   - ❌ **No**: Breaking changes
+   - ❌ **No**: Performance optimizations requiring refactoring
+
+3. **If backporting is appropriate**:
+   - The maintainer will check if the change applies cleanly
+   - Backports are applied to the `canary-{major}.x` branch (e.g., `canary-1.x` for v1 support)
+   - You may be asked to create a separate PR against the version branch
+
+**Example flow:**
+
+```
+User reports missing config option in v1.4.2
+  ↓
+Contributor fixes on canary (v1.5)
+  ↓
+Maintainer checks if fix applies to v1.4 (previous minor)
+  ↓
+If yes → Backport to canary-1.x branch
+  ↓
+Patch releases: v1.4.3 and v1.5.1
+```
+
+### Branch Naming Conventions
+
+- `canary` - Active development (default)
+- `canary-1.x` - Support branch for v1.x (patches only after v1.5)
+- `canary-2.x` - Support branch for v2.x
+- `feature/feature-name` - New features (target canary)
+- `fix/bug-description` - Bug fixes (target canary)
+- `backport/fix-description` - Backports to version branches
 - `docs/what-changed` - Documentation
 - `refactor/what-refactored` - Refactoring
 - `test/what-tested` - Tests only
@@ -526,7 +590,40 @@ Examples:
 
 - `feature/oauth-providers`
 - `fix/windows-path-handling`
+- `backport/missing-config-option`
 - `docs/contributing-guide`
+
+### Which Branch Should You Target?
+
+| Change Type                             | Target Branch | Backport Needed?                 |
+| --------------------------------------- | ------------- | -------------------------------- |
+| New feature                             | `canary`      | No (will be in next minor/major) |
+| Breaking change                         | `canary`      | No (major version)               |
+| Bug fix                                 | `canary`      | Sometimes (to previous minor)    |
+| Missing config option (small, fix-like) | `canary`      | Yes (to previous minor)          |
+| Security patch                          | `canary`      | Yes (to all supported versions)  |
+| Documentation                           | `canary`      | Maybe (docs often cross-version) |
+| Performance optimization (non-breaking) | `canary`      | Rarely                           |
+| Tests only                              | `canary`      | No                               |
+
+### When You Need to Backport
+
+If your PR has the "backport" label or a maintainer asks:
+
+1. **Create a separate branch** from the target version branch:
+
+   ```bash
+   git checkout -b backport/your-fix canary-1.x
+   ```
+
+2. **Cherry-pick or re-apply your changes**:
+
+   ```bash
+   git cherry-pick <commit-hash-from-canary>
+   # Or manually apply if conflicts exist
+   ```
+
+3. **Open PR against the version branch** (e.g., `canary-1.x`)
 
 ### Release Process
 
@@ -534,22 +631,55 @@ Examples:
 
 1. Changes merged to `canary`
 2. Testing and validation
-3. Version bump and CHANGELOG update
-4. Merge `canary` → `main`
-5. Publish to npm
+3. Version bump and CHANGELOG update based on semver
+4. Patch releases to version branches as needed
+5. Merge `canary` → `main` for major/minor releases
+6. Publish to npm with appropriate dist-tags
+
+## Version Support Policy
+
+### Summary Table
+
+| Version                                       | Status           | Receives                             |
+| --------------------------------------------- | ---------------- | ------------------------------------ |
+| Current major + 2 minors (e.g., v1.5)         | Active (current) | Features + fixes                     |
+| Current major + 1 previous minor (e.g., v1.4) | Maintenance      | Fixes only + small fix-like features |
+| Current major + older minors (e.g., v1.3)     | End of life      | Nothing (upgrade required)           |
+| Previous major (e.g., v0.x)                   | End of life      | Nothing (upgrade required)           |
+
+### Example Timeline
+
+```
+v1.5 released (current)
+├── v1.5.x: Features + fixes
+├── v1.4.x: Fixes + small fix-like features only
+└── v1.3.x and below: End of life
+
+When v1.6 releases:
+├── v1.6.x: Features + fixes (new current)
+├── v1.5.x: Fixes + small fix-like features only (moves to maintenance)
+└── v1.4.x: End of life
+```
+
+### Why This Policy?
+
+- **Stability**: Users can stay one minor behind without missing critical fixes
+- **Innovation**: New features can move forward without waiting
+- **Practicality**: Most bug fixes apply cleanly to the previous minor
+- **User-friendly**: Teams don't feel forced to upgrade every week
 
 ## Communication
 
 ### Where to Ask Questions
 
 - **GitHub Discussions**: General questions, ideas, showcase
-    - Link: [Discussions](https://github.com/Uanela/arkos/discussions)
+  - Link: [Discussions](https://github.com/Uanela/arkos/discussions)
 - **GitHub Issues**: Bug reports, feature requests, QOL improvements
-    - Use issue templates
+  - Use issue templates
 - **WhatsApp Community**: Real-time chat with community
-    - Link: https://chat.whatsapp.com/EJ8cjb9hxau0EcOnI4fdpD
+  - Link: https://chat.whatsapp.com/EJ8cjb9hxau0EcOnI4fdpD
 - **Email**: Security issues only
-    - uanela.como@formulawebpromax.com
+  - uanela.como@formulawebpromax.com
 
 ### During Development
 

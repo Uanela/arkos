@@ -14,6 +14,7 @@ jest.mock("../../../../../prisma/prisma-schema-parser", () => ({
         "user-profile",
         "product",
         "order",
+        "test",
       ];
     }),
     parse: jest.fn(),
@@ -43,7 +44,9 @@ describe("generateControllerTemplate", () => {
       'import { BaseController } from "arkos/controllers";'
     );
     expect(result).toContain("class TestController extends BaseController {}");
-    expect(result).toContain("const testController = new TestController();");
+    expect(result).toContain(
+      `const testController = new TestController("test");`
+    );
     expect(result).toContain("export default testController;");
   });
 

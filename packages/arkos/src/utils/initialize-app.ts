@@ -11,6 +11,9 @@ import { getArkosConfig } from "../server";
 import { isAuthenticationEnabled } from "./helpers/arkos-config.helpers";
 import { getSwaggerRouter } from "../modules/swagger/swagger.router";
 import { lenientDecode } from "./helpers/url-helpers";
+import path from "path";
+import express from "express";
+import { userRequire } from "./helpers/global.helpers";
 
 export default function initializeApp(app: Arkos) {
   const config = getArkosConfig();
@@ -45,8 +48,15 @@ export default function initializeApp(app: Arkos) {
     config.swagger &&
     (process.env.ARKOS_BUILD !== "true" ||
       config.swagger.enableAfterBuild === true)
-  )
+  ) {
+    const scalarDistPath = path.dirname(
+      userRequire.resolve("@scalar/api-reference")
+    );
+
+    app.use({ path: "/scalar-api-reference" }, express.static(scalarDistPath));
+
     app.use({ path: globalPrefix }, getSwaggerRouter(config, app));
+  }
 
   return app;
 }

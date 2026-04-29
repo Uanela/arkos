@@ -1,4 +1,3 @@
-import { kebabPrismaModels } from "../../../generate";
 import { TemplateOptions } from "../../template-generators";
 import prismaSchemaParser from "../../../../prisma/prisma-schema-parser";
 import { kebabCase } from "../../../../helpers/change-case.helpers";
@@ -43,7 +42,7 @@ export function generateControllerTemplate(options: TemplateOptions): string {
   const controllerClassImport = `import { ${controllerName} } from "${controllerImport}";`;
 
   if (
-    ["email", "auth", "fileUpload"].includes(camelName) &&
+    ["email", "auth", "fileUpload"].includes(camelName) ||
     !models.includes(modelName.kebab)
   )
     return `class ${modelName.pascal}Controller {}
