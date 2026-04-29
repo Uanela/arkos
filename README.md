@@ -1,4 +1,4 @@
-![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=3)
+![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=4)
 
 <div align="center">
 
