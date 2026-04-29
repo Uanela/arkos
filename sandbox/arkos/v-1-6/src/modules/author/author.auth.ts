@@ -2,22 +2,22 @@ import { AuthConfigs } from 'arkos/auth';
 import { authService } from "arkos/services";
 export const authorAccessControl = {
   Create: {
-    roles: []
+    roles: [],
     name: "Create Author",
     description: "Permission to create new author records",
   },
   Update: {
-    roles: []
+    roles: [],
     name: "Update Author",
     description: "Permission to update existing author records",
   },
   Delete: {
-    roles: []
+    roles: [],
     name: "Delete Author",
     description: "Permission to delete author records",
   },
   View: {
-    roles: []
+    roles: [],
     name: "View Author",
     description: "Permission to view author records",
   },
