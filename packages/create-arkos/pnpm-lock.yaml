@@ -9,44 +9,44 @@ importers:
   .:
     dependencies:
       '@clack/prompts':
-        specifier: ^0.11.0
+        specifier: 0.11.0
         version: 0.11.0
       '@inquirer/prompts':
-        specifier: ^7.6.0
+        specifier: 7.6.0
         version: 7.6.0(@types/node@16.18.126)
       chalk:
-        specifier: ^5.4.1
+        specifier: 5.4.1
         version: 5.4.1
       handlebars:
-        specifier: ^4.7.8
-        version: 4.7.8
+        specifier: ^4.7.9
+        version: 4.7.9
       inquirer:
-        specifier: ^8.2.6
+        specifier: 8.2.6
         version: 8.2.6
     devDependencies:
       '@types/inquirer':
-        specifier: ^8.1.0
-        version: 8.2.10
+        specifier: 8.1.0
+        version: 8.1.0
       '@types/node':
-        specifier: ^16.18.126
+        specifier: 16.18.126
         version: 16.18.126
       '@vitest/coverage-v8':
         specifier: 3.2.4
         version: 3.2.4(vitest@3.2.4(@types/node@16.18.126)(tsx@4.21.0))
       rimraf:
-        specifier: ^6.1.3
+        specifier: 6.1.3
         version: 6.1.3
       ts-node:
-        specifier: ^10.9.2
+        specifier: 10.9.2
         version: 10.9.2(@types/node@16.18.126)(typescript@4.9.5)
       tsx:
-        specifier: ^4.21.0
+        specifier: 4.21.0
         version: 4.21.0
       typescript:
-        specifier: ^4.9.5
+        specifier: 4.9.5
         version: 4.9.5
       vitest:
-        specifier: ^3.2.4
+        specifier: 3.2.4
         version: 3.2.4(@types/node@16.18.126)(tsx@4.21.0)
 
 packages:
@@ -525,8 +525,8 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
-  '@types/inquirer@8.2.10':
-    resolution: {integrity: sha512-IdD5NmHyVjWM8SHWo/kPBgtzXatwPkfwzyP3fN1jF2g9BWt5WO+8hL2F4o2GKIYsU40PpqeevuUWvkS/roXJkA==}
+  '@types/inquirer@8.1.0':
+    resolution: {integrity: sha512-FqQ0zoCqh5dLQnrY+GE9d5B8wNiXSuEZo9YLIGhVOkJRBTTnYUDJ5maGzzTGE5nihSnGajdMP6RmbzV1oWgflQ==}
 
   '@types/node@16.18.126':
     resolution: {integrity: sha512-OTcgaiwfGFBKacvfwuHzzn1KLxH/er8mluiy8/uM3sGXHaRe73RrSIj01jow9t4kJEW633Ov+cOexXeiApTyAw==}
@@ -776,8 +776,8 @@ packages:
     resolution: {integrity: sha512-Wjlyrolmm8uDpm/ogGyXZXb1Z+Ca2B8NbJwqBVg0axK9GbBeoS7yGV6vjXnYdGm6X53iehEuxxbyiKp8QmN4Vw==}
     engines: {node: 18 || 20 || >=22}
 
-  handlebars@4.7.8:
-    resolution: {integrity: sha512-vafaFqs8MZkRrSX7sFVUdo3ap/eNiLnb4IakshzvP56X5Nr1iGKAIqdX6tMlm6HcNRIkr6AxO5jFEoJzzpT8aQ==}
+  handlebars@4.7.9:
+    resolution: {integrity: sha512-4E71E0rpOaQuJR2A3xDZ+GM1HyWYv1clR58tC8emQNeQe3RH7MAzSbat+V0wG78LQBo6m6bzSG/L4pBuCsgnUQ==}
     engines: {node: '>=0.4.7'}
     hasBin: true
 
@@ -1588,7 +1588,7 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
-  '@types/inquirer@8.2.10':
+  '@types/inquirer@8.1.0':
     dependencies:
       '@types/through': 0.0.33
       rxjs: 7.8.2
@@ -1860,7 +1860,7 @@ snapshots:
       minipass: 7.1.3
       path-scurry: 2.0.2
 
-  handlebars@4.7.8:
+  handlebars@4.7.9:
     dependencies:
       minimist: 1.2.8
       neo-async: 2.6.2
