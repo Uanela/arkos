@@ -2,22 +2,22 @@ import { ArkosPolicy } from "arkos";
 
 const authorPolicy = ArkosPolicy("author")
   .rule("Create", {
-    roles: []
+    roles: [],
 name: "Create Author",
     description: "Permission to create new author records",
   })
   .rule("View", {
-    roles: []
+    roles: [],
 name: "View Author",
     description: "Permission to view author records",
   })
   .rule("Update", {
-    roles: []
+    roles: [],
 name: "Update Author",
     description: "Permission to update existing author records",
   })
   .rule("Delete", {
-    roles: []
+    roles: [],
 name: "Delete Author",
     description: "Permission to delete author records",
   });

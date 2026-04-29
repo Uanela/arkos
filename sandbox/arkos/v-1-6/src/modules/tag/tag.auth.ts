@@ -1,23 +1,23 @@
-import { AuthConfigs } from 'arkos/auth';
+import { AuthConfigs } from "arkos/auth";
 import { authService } from "arkos/services";
 export const tagAccessControl = {
   Create: {
-    roles: []
+    roles: [],
     name: "Create Tag",
     description: "Permission to create new tag records",
   },
   Update: {
-    roles: []
+    roles: [],
     name: "Update Tag",
     description: "Permission to update existing tag records",
   },
   Delete: {
-    roles: []
+    roles: [],
     name: "Delete Tag",
     description: "Permission to delete tag records",
   },
   View: {
-    roles: []
+    roles: [],
     name: "View Tag",
     description: "Permission to view tag records",
   },

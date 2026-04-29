@@ -2,22 +2,22 @@ import { AuthConfigs } from 'arkos/auth';
 import { authService } from "arkos/services";
 export const postAccessControl = {
   Create: {
-    roles: []
+    roles: [],
     name: "Create Post",
     description: "Permission to create new post records",
   },
   Update: {
-    roles: []
+    roles: [],
     name: "Update Post",
     description: "Permission to update existing post records",
   },
   Delete: {
-    roles: []
+    roles: [],
     name: "Delete Post",
     description: "Permission to delete post records",
   },
   View: {
-    roles: []
+    roles: [],
     name: "View Post",
     description: "Permission to view post records",
   },
