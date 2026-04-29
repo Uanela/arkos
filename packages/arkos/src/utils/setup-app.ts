@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import { queryParser } from "./helpers/query-parser.helpers";
 import { handleRequestLogs } from "../modules/base/base.middlewares";
 import debuggerService from "../modules/debugger/debugger.service";
+import { catchAsync, TooManyRequestsError } from "../exports/error-handler";
 
 export default function setupApp(app: Arkos) {
   const config = getArkosConfig();
@@ -43,11 +44,9 @@ export default function setupApp(app: Arkos) {
               limit: 300,
               standardHeaders: "draft-7",
               legacyHeaders: false,
-              handler: (_, res) => {
-                res.status(429).json({
-                  message: "Too many requests, please try again later",
-                });
-              },
+              handler: catchAsync(() => {
+                throw new TooManyRequestsError();
+              }),
             },
             middlewaresConfig?.rateLimit || {}
           )

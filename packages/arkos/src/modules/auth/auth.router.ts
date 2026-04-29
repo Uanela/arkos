@@ -42,7 +42,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
 
   if (customRouter && customRouterModule) {
     if (routerValidator.isExpressRouter(customRouter))
-      router.use({ path: "auth" }, customRouter);
+      router.use({ path: "/auth" }, customRouter);
     else
       throw Error(
         `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express or arkos Router.`
