@@ -26,7 +26,7 @@
   "bugs": {
     "url": "https://github.com/uanela/arkos/issues"
   },
-  "homepage": "https://www.arkosjs.com/docs/tooling/cli/overviewcreate-arkos",
+  "homepage": "https://www.arkosjs.com/docs/tooling/create-arkos",
   "files": ["dist", "templates", "cli.js", "README.md"],
   "devDependencies": {
     "@types/inquirer": "8.1.0",
@@ -42,7 +42,7 @@
     "@clack/prompts": "0.11.0",
     "@inquirer/prompts": "7.6.0",
     "chalk": "5.4.1",
-    "handlebars": "4.7.8",
+    "handlebars": "^4.7.9",
     "inquirer": "8.2.6"
   }
 }
