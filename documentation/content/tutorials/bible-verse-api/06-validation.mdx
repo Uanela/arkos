@@ -1,0 +1,80 @@
+---
+title: Validation
+description: Generate Zod schemas from your Prisma model and wire them to your routes.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+## Generate schemas from the Prisma model
+
+The Arkos CLI reads your Prisma schema and generates typed Zod schemas automatically. Run the generators for `FavouriteVerse`:
+
+```bash
+npx arkos generate create-schema -m favourite-verse
+npx arkos generate update-schema -m favourite-verse
+```
+
+The files land at `src/modules/favourite-verse/schemas/`. Open `create-favourite-verse.schema.ts`:
+
+```ts title="src/modules/favourite-verse/schemas/create-favourite-verse.schema.ts"
+import { z } from "zod";
+
+const CreateFavouriteVerseSchema = z.object({
+  note: z.string().optional(),
+  verse: z.object({ id: z.number().int() }),
+});
+
+export default CreateFavouriteVerseSchema;
+
+export type CreateFavouriteVerseSchemaType = z.infer<typeof CreateFavouriteVerseSchema>;
+```
+
+The generator automatically excluded `id`, timestamps, and the `userId` scalar because your interceptor sets the user from the JWT. The `verseId` scalar is replaced by the nested `verse: { id }` shape that Arkos expects.
+
+<Callout type="info">
+  If the generator includes a field you don't want clients to send, just remove it from the generated file. The generated schemas are yours to edit.
+</Callout>
+
+## Wire the schema to the route hook
+
+Open `favourite-verse.router.ts` and add `validation` to `createOne`:
+
+```ts title="src/modules/favourite-verse/favourite-verse.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import favouriteVersePolicy from "@/src/modules/favourite-verse/favourite-verse.policy";
+import CreateFavouriteVerseSchema from "@/src/modules/favourite-verse/schemas/create-favourite-verse.schema";
+
+export const hook: RouteHook = {
+  findMany:  { authentication: favouriteVersePolicy.View },
+  findOne:   { authentication: favouriteVersePolicy.View },
+  createOne: {
+    authentication: favouriteVersePolicy.Create,
+    validation: { body: CreateFavouriteVerseSchema },
+  },
+  deleteOne: { authentication: favouriteVersePolicy.Delete },
+};
+
+const favouriteVerseRouter = ArkosRouter();
+export default favouriteVerseRouter;
+```
+
+Arkos validates the request body before the interceptor runs. If validation fails, the client gets a structured 400 response — your interceptor and handler never execute.
+
+## Validating query parameters
+
+You can also validate query params and route params the same way using `validation.query` and `validation.params`. You'll see `validation.query` in action in the next chapter when you build the passage lookup endpoint.
+
+## Using class-validator instead
+
+If you prefer class-validator DTOs, the workflow is identical — just use a different generator command:
+
+```bash
+npx arkos generate create-dto -m favourite-verse
+```
+
+Pass the DTO class to `validation.body` instead of a Zod schema. Everything else — the `RouteHook` shape, how validation errors are reported, OpenAPI doc generation — stays exactly the same.
+
+<Callout type="info">
+  Both Zod schemas and class-validator DTOs feed Arkos's OpenAPI generator automatically. Your validation logic and your API docs stay in sync without any extra work.
+</Callout>

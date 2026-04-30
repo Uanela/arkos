@@ -1,0 +1,104 @@
+---
+title: Interceptors
+description: Inject business logic before or after any auto-generated operation using controller interceptors.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## What interceptors are
+
+Interceptors let you run code before or after any auto-generated CRUD operation without replacing the built-in handler. In Arkos you define them as arrays of middleware directly on the controller class, naming them after the operation they target.
+
+The three slots available on every operation are:
+
+| Hook | When it runs | Typical use |
+|------|-------------|-------------|
+| `before<Operation>` | Before the built-in handler | Mutate `req.body`, validate existence, guard ownership |
+| `after<Operation>` | After a successful response | Audit logs, cache invalidation, send emails |
+| `onError<Operation>` | After a failure | Clean up uploaded files, structured logging |
+
+Available operations are: `CreateOne`, `UpdateOne`, `DeleteOne`, `FindOne`, `FindMany`.
+
+## Auto-fill userId and validate the verse
+
+When a user saves a favourite, the `userId` must come from the JWT — not from the client body. We also want to confirm the verse exists before inserting.
+
+Generate the controller stub first:
+
+```bash
+npx arkos generate controller -m favourite-verse
+```
+
+Then open the generated file and fill it in:
+
+```ts title="src/modules/favourite-verse/favourite-verse.controller.ts"
+import { BaseController } from "arkos";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { AppError } from "arkos/error-handler";
+import favouriteVerseService from "@/src/modules/favourite-verse/favourite-verse.service";
+import prisma from "@/src/utils/prisma";
+
+class FavouriteVerseController extends BaseController {
+  beforeCreateOne = [
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      req.body.user = { id: req.user.id };
+
+      const verse = await prisma.verse.findUnique({
+        where: { id: req.body.verse.id },
+      });
+      if (!verse) throw new AppError("Verse not found", 404);
+
+      next();
+    },
+  ];
+}
+
+export default new FavouriteVerseController(favouriteVerseService);
+```
+
+<Callout type="info">
+  Always use the relation object shape — `req.body.user = { id: req.user.id }` — rather than a scalar foreign key like `req.body.userId`. Arkos expects nested relation objects in the request body, not raw IDs.
+</Callout>
+
+## Log when a book is deleted
+
+This shows `afterDeleteOne` — the deleted record is available at `res.locals.data.data` after the built-in handler runs.
+
+```bash
+npx arkos generate controller -m book
+```
+
+```ts title="src/modules/book/book.controller.ts"
+import { BaseController } from "arkos";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import bookService from "@/src/modules/book/book.service";
+
+class BookController extends BaseController {
+  afterDeleteOne = [
+    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+      const deleted = res.locals.data.data;
+      console.log(`Book deleted: ${deleted.name} (id: ${deleted.id})`);
+      next();
+    },
+  ];
+}
+
+export default new BookController(bookService);
+```
+
+## Handling errors with onError
+
+If you need to clean up side effects when an operation fails — for example deleting an uploaded file — use `onError<Operation>`. Always call `next(error)` at the end so Arkos can send the error response.
+
+```ts
+onErrorCreateOne = [
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction, error: Error) => {
+    console.error("Create failed:", error.message);
+    next(error);
+  },
+];
+```
+
+<Callout type="info">
+  Each hook slot is an array, so you can chain multiple middleware functions just like Express. They run in order and each must call `next()` to continue.
+</Callout>
