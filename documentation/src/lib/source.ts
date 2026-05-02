@@ -1,5 +1,5 @@
 import { InferPageType, loader } from "fumadocs-core/source";
-import { docs, blogPosts } from ".source/server";
+import { docs, blogPosts, tutorialColletions } from ".source/server";
 import { lucideIconsPlugin } from "fumadocs-core/source/lucide-icons";
 import { toFumadocsSource } from "fumadocs-mdx/runtime/server";
 
@@ -20,4 +20,9 @@ ${processed}`;
 export const blog = loader({
   baseUrl: "/blog",
   source: toFumadocsSource(blogPosts, []),
+});
+
+export const tutorials = loader({
+  baseUrl: "/learn/tutorials",
+  source: toFumadocsSource(tutorialColletions, []),
 });

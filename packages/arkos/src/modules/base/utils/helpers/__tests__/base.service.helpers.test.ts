@@ -1370,4 +1370,232 @@ describe("handleRelationFieldsInBody with pre-formatted relations", () => {
       });
     });
   });
+
+  describe("apiAction field should override automatic detection", () => {
+    it("should use connect with all fields when apiAction: 'connect' is set", () => {
+      const body = {
+        name: "Transaction",
+        amount: 100,
+        currencyExchangeRate: {
+          id: "2826b35b-2732-41fe-94af-1c35b86bbf4e",
+          from: "USD",
+          to: "MZN",
+          apiAction: "connect",
+        },
+      };
+
+      const relationFields: any = {
+        singular: [
+          { name: "currencyExchangeRate", type: "CurrencyExchangeRate" },
+        ],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "Transaction",
+        amount: 100,
+        currencyExchangeRate: {
+          connect: {
+            id: "2826b35b-2732-41fe-94af-1c35b86bbf4e",
+            from: "USD",
+            to: "MZN",
+          },
+        },
+      });
+    });
+
+    it("should use update when apiAction: 'update' is set", () => {
+      const body = {
+        name: "Transaction",
+        currencyExchangeRate: {
+          id: "2826b35b-2732-41fe-94af-1c35b86bbf4e",
+          from: "EUR",
+          to: "USD",
+          apiAction: "update",
+        },
+      };
+
+      const relationFields: any = {
+        singular: [
+          { name: "currencyExchangeRate", type: "CurrencyExchangeRate" },
+        ],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "Transaction",
+        currencyExchangeRate: {
+          update: {
+            where: { id: "2826b35b-2732-41fe-94af-1c35b86bbf4e" },
+            data: {
+              from: "EUR",
+              to: "USD",
+            },
+          },
+        },
+      });
+    });
+
+    it("should use delete when apiAction: 'delete' is set", () => {
+      const body = {
+        name: "Transaction",
+        currencyExchangeRate: {
+          id: "2826b35b-2732-41fe-94af-1c35b86bbf4e",
+          from: "USD",
+          to: "MZN",
+          apiAction: "delete",
+        },
+      };
+
+      const relationFields: any = {
+        singular: [
+          { name: "currencyExchangeRate", type: "CurrencyExchangeRate" },
+        ],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "Transaction",
+        currencyExchangeRate: {
+          delete: true,
+        },
+      });
+    });
+
+    it("should use disconnect when apiAction: 'disconnect' is set", () => {
+      const body = {
+        name: "Transaction",
+        currencyExchangeRate: {
+          id: "2826b35b-2732-41fe-94af-1c35b86bbf4e",
+          from: "USD",
+          to: "MZN",
+          apiAction: "disconnect",
+        },
+      };
+
+      const relationFields: any = {
+        singular: [
+          { name: "currencyExchangeRate", type: "CurrencyExchangeRate" },
+        ],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "Transaction",
+        currencyExchangeRate: {
+          disconnect: true,
+        },
+      });
+    });
+
+    it("should use create when apiAction: 'create' is set even with id present", () => {
+      const body = {
+        name: "Transaction",
+        currencyExchangeRate: {
+          id: "2826b35b-2732-41fe-94af-1c35b86bbf4e",
+          from: "USD",
+          to: "MZN",
+          apiAction: "create",
+        },
+      };
+
+      const relationFields: any = {
+        singular: [
+          { name: "currencyExchangeRate", type: "CurrencyExchangeRate" },
+        ],
+        list: [],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        name: "Transaction",
+        currencyExchangeRate: {
+          create: {
+            id: "2826b35b-2732-41fe-94af-1c35b86bbf4e",
+            from: "USD",
+            to: "MZN",
+          },
+        },
+      });
+    });
+
+    it("should use connect for list items when apiAction: 'connect' is set", () => {
+      const body = {
+        title: "My Post",
+        tags: [
+          {
+            id: "1",
+            name: "JavaScript",
+            popularity: 100,
+            apiAction: "connect",
+          },
+        ],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "tags", type: "Tag" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        title: "My Post",
+        tags: {
+          connect: [
+            {
+              id: "1",
+              name: "JavaScript",
+              popularity: 100,
+            },
+          ],
+        },
+      });
+    });
+
+    it("should use update for list items when apiAction: 'update' is set", () => {
+      const body = {
+        title: "My Post",
+        tags: [
+          {
+            id: "1",
+            name: "Updated JavaScript",
+            popularity: 150,
+            apiAction: "update",
+          },
+        ],
+      };
+
+      const relationFields: any = {
+        singular: [],
+        list: [{ name: "tags", type: "Tag" }],
+      };
+
+      const result = handleRelationFieldsInBody(body, relationFields);
+
+      expect(result).toEqual({
+        title: "My Post",
+        tags: {
+          update: [
+            {
+              where: { id: "1" },
+              data: {
+                name: "Updated JavaScript",
+                popularity: 150,
+              },
+            },
+          ],
+        },
+      });
+    });
+  });
 });
