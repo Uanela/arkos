@@ -1,0 +1,92 @@
+---
+title: Data Modeling
+description: Define the Prisma schema for the Bible API and push it to PostgreSQL.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## The schema
+
+Replace the contents of `prisma/schema/schema.prisma` with the schema below. It defines five models: `User`, `Book`, `Chapter`, `Verse`, and `FavouriteVerse`.
+
+```prisma title="prisma/schema/schema.prisma"
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  password        String
+  name            String
+  role            String           @default("Member")
+  favouriteVerses FavouriteVerse[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Book {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  testament String
+  chapters  Chapter[]
+}
+
+model Chapter {
+  id      Int     @id @default(autoincrement())
+  number  Int
+  bookId  Int
+  book    Book    @relation(fields: [bookId], references: [id])
+  verses  Verse[]
+
+  @@unique([bookId, number])
+}
+
+model Verse {
+  id              Int              @id @default(autoincrement())
+  number          Int
+  text            String
+  audioUrl        String?
+  chapterId       Int
+  chapter         Chapter          @relation(fields: [chapterId], references: [id])
+  favouriteVerses FavouriteVerse[]
+
+  @@unique([chapterId, number])
+}
+
+model FavouriteVerse {
+  id        String   @id @default(uuid())
+  note      String?
+  userId    String
+  verseId   Int
+  user      User     @relation(fields: [userId], references: [id])
+  verse     Verse    @relation(fields: [verseId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, verseId])
+}
+```
+
+## Push the schema and generate types
+
+```bash
+npx prisma db push
+npx arkos prisma generate
+```
+
+<Callout type="info">
+  `npx arkos prisma generate` generates enhanced TypeScript types so you get full autocomplete on `BaseService` methods. Run it every time you change your Prisma schema.
+</Callout>
+
+## What each model does
+
+`Book` and `Chapter` are the structural backbone — Old and New Testament books broken into numbered chapters. `Verse` stores the text for each verse and an optional `audioUrl` for spoken-word recordings (you'll add upload support in Chapter 8).
+
+`FavouriteVerse` is the user-owned join table. The `@@unique([userId, verseId])` constraint ensures a user can only save any given verse once. It holds an optional personal `note`.
+
+`User` is already managed by the auth module — you won't touch it directly.
