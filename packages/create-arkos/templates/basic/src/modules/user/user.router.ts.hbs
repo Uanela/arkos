@@ -1,7 +1,7 @@
-import { ArkosRouter{{#if typescript}}, RouterConfig{{/if}} } from "arkos";
+import { ArkosRouter{{#if typescript}}, RouteHook{{/if}} } from "arkos";
 import userPolicy from "@/src/modules/user/user.policy";
 
-export const config{{#if typescript}}: RouterConfig{{/if}} = {
+export const hook{{#if typescript}}: RouteHook{{/if}} = {
   createOne: { authentication: userPolicy.Create },
   findMany: { authentication: userPolicy.View },
   findOne: { authentication: userPolicy.View },

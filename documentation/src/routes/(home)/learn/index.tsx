@@ -275,6 +275,6 @@ function LearnPage() {
   );
 }
 
-export const Route = createFileRoute("/(home)/learn")({
+export const Route = createFileRoute("/(home)/learn/")({
   component: LearnPage,
 });
