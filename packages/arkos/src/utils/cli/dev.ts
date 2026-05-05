@@ -37,6 +37,8 @@ export async function devCommand(options: DevOptions = {}) {
       return process.exit(1);
     }
 
+    const entryPointRelative = path.relative(process.cwd(), entryPoint);
+
     const baseServiceTypesPath = path.resolve(
       process.cwd(),
       `node_modules/@arkosjs/generated/cjs/index.js`
@@ -102,7 +104,7 @@ export async function devCommand(options: DevOptions = {}) {
       const env = getEnv();
 
       if (fileExt === "ts") {
-        child = spawn("npx", ["tsx-strict", "--watch", entryPoint], {
+        child = spawn("npx", ["tsx-strict", "--watch", entryPointRelative], {
           stdio: "inherit",
           env,
           shell: true,
@@ -111,7 +113,7 @@ export async function devCommand(options: DevOptions = {}) {
         env.TSX_TSCONFIG_PATH = "./jsconfig.json";
         child = spawn(
           "npx",
-          ["tsx-strict", "--no-type-check", "--watch", entryPoint],
+          ["tsx-strict", "--no-type-check", "--watch", entryPointRelative],
           {
             stdio: "inherit",
             env,
