@@ -20,8 +20,6 @@ export default defineConfig({});
 export const blogPosts = defineCollections({
   dir: "content/blog",
   type: "doc",
-  // includeProcessedMarkdown: true,
-  // async: true,
   schema: () =>
     frontmatterSchema.extend({
       title: z.string(),
@@ -29,5 +27,17 @@ export const blogPosts = defineCollections({
       date: z.date(),
       authors: z.array(z.string()),
       tags: z.array(z.string()).optional(),
+    }),
+});
+
+export const tutorialColletions = defineCollections({
+  dir: "content/tutorials",
+  type: "doc",
+  schema: () =>
+    frontmatterSchema.extend({
+      title: z.string(),
+      description: z.string().optional(),
+      // date: z.date(),
+      // authors: z.array(z.string()).optional(),
     }),
 });

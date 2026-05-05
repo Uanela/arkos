@@ -27,6 +27,8 @@ export default async function exportAuthActionCommand(options: {
       process.exit(1);
     }
 
+    const entryPointRelative = path.relative(process.cwd(), entryPoint);
+
     const getEnv = () =>
       ({
         NODE_ENV: "development",
@@ -42,7 +44,7 @@ export default async function exportAuthActionCommand(options: {
 
       const env = getEnv();
 
-      child = spawn("npx", ["tsx-strict", "--no-type-check", entryPoint], {
+      child = spawn("npx", ["tsx-strict", "--no-type-check", entryPointRelative], {
         stdio: "inherit",
         env,
         shell: true,

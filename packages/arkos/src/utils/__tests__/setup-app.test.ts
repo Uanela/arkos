@@ -8,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import cors from "cors";
 import express from "express";
 import cookieParser from "cookie-parser";
+import { TooManyRequestsError } from "../../exports/error-handler";
 
 jest.mock("../helpers/arkos-config.helpers");
 jest.mock("../helpers/query-parser.helpers", () => ({
@@ -123,18 +124,17 @@ describe("setupApp", () => {
       expect(rateLimit).not.toHaveBeenCalled();
     });
 
-    it("default handler should return 429 with message", () => {
+    it("default handler should return 429 with message", async () => {
       const app = makeMockApp();
       setupApp(app as any);
 
       const rateLimitCall = (rateLimit as jest.Mock).mock.calls[0][0];
       const mockRes = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-      rateLimitCall.handler({}, mockRes);
+      const mockNext = jest.fn();
 
-      expect(mockRes.status).toHaveBeenCalledWith(429);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        message: "Too many requests, please try again later",
-      });
+      await rateLimitCall.handler({}, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(TooManyRequestsError));
     });
   });
 

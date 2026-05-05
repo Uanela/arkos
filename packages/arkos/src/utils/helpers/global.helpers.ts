@@ -20,7 +20,7 @@ export function isEsm() {
 }
 
 // When importing user modules: mainly on ESM environment
-const userRequire = createRequire(
+export const userRequire = createRequire(
   pathToFileURL(process.cwd() + "/package.json")
 );
 

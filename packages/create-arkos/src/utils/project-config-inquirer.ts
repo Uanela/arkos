@@ -279,9 +279,9 @@ class ProjectConfigInquirer {
         multipleRoles,
       };
     } else if (this.config.prisma.provider === "sqlite") {
-      console.info(
-        `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
-      );
+      // console.info(
+      //   `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
+      // );
     }
   }
 

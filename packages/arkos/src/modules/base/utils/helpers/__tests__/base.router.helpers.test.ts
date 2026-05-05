@@ -507,7 +507,10 @@ describe("setupRouters", () => {
     await Promise.all(await setupPromises);
 
     expect(pluralize.plural).toHaveBeenCalledWith("post");
-    expect(router.use).toHaveBeenCalledWith(`/posts`, expect.any(Function));
+    expect(router.use).toHaveBeenCalledWith(
+      { path: `/posts` },
+      expect.any(Function)
+    );
     expect(
       (router.get as jest.Mock).mock.calls.length +
         (router.post as jest.Mock).mock.calls.length +
