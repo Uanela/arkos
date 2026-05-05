@@ -24,9 +24,10 @@
     {{/if}}
   },
   "dependencies": {
-    "arkos": "1.6.0-canary.55", 
+    "arkos": "1.6.0-beta", 
     "express": "4.22.1",
     "@scalar/express-api-reference": "0.8.35",
+    "@scalar/api-reference": "1.50.0",
     {{#if (neq prisma.provider "none")}}
     "@prisma/client": "6.19.2"{{#if validation.type}},{{/if}}
     {{/if}}

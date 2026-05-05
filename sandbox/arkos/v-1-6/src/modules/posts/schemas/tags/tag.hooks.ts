@@ -1,5 +1,3 @@
-import tagService from "./tag.service";
-
 export const beforeFindOne = [];
 
 export const afterFindOne = [];

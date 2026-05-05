@@ -232,6 +232,7 @@ export type UseMethodHandler<T> = IRouterHandler<T> &
         ArkosErrorRequestHandler | Array<ArkosErrorRequestHandler>
       >
     ): T;
+    (...handlers: Array<ArkosRequestHandler | Array<ArkosRequestHandler>>): T;
   };
 
 export interface IArkosRoute extends IRoute {

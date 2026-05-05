@@ -1,0 +1,262 @@
+---
+slug: 1.6-beta
+title: "Announcing Arkos.js v1.6-beta"
+authors: [uanela]
+tags: [arkosjs, policy, routehook, authentication, openapi, cli]
+date: 2026-05-10
+description: v1.6-beta brings ArkosPolicy — a fluent permission builder that replaces scattered .auth.ts files — alongside RouteHook, a reworked app initialization model, OpenAPI-first authentication for your docs, and a much smarter CLI.
+---
+
+v1.6 is our biggest DX release since `ArkosRouter` in 1.4. The theme is explicitness: fewer files auto-loaded by magic, more things you wire yourself — and better tools to wire them fast. Here's what's new.
+
+## ArkosPolicy — define permissions once, use them everywhere
+
+The old way of protecting routes required creating a `.auth.ts` file per module, exporting a structured object, and then manually referencing it in route configs. It worked, but the indirection added up quickly.
+
+`ArkosPolicy` replaces that with a fluent builder you define in a `.policy.ts` file:
+
+```ts
+// src/modules/post/post.policy.ts
+import { ArkosPolicy } from "arkos";
+
+const postPolicy = ArkosPolicy("post")
+  .rule("Create", { roles: ["Admin", "Editor"], name: "Create Post" })
+  .rule("Update", { roles: ["Admin", "Editor"], name: "Update Post" })
+  .rule("Delete", { roles: ["Admin"], name: "Delete Post" })
+  .rule("View", "*"); // all authenticated users
+
+export default postPolicy;
+```
+
+Pass a rule to any route:
+
+```ts
+postRouter.post(
+  { path: "/api/posts", authentication: postPolicy.Create },
+  postController.createOne
+);
+```
+
+Or check imperatively anywhere in your code:
+
+```ts
+if (await postPolicy.canDelete(req.user)) { ... }
+```
+
+The same object works in `ArkosRouter`, `RouteHook`, services, interceptors — anywhere. No duplication, no drift.
+
+`ArkosPolicy` fully supports both Static and Dynamic permission modes. In Static mode, roles are enforced from the rule definition. In Dynamic mode, roles come from the database — just define rules with names and descriptions and leave `roles` out.
+
+Generate a policy file with the CLI:
+
+```bash
+arkos generate policy --module post
+arkos g p -m post
+```
+
+### What happens to `.auth.ts` files?
+
+They still work. Nothing breaks. But they log a deprecation warning at startup and will be removed in v2.0. The [migration guide](/blog/how-migrate-from-auth-files-to-arkos-policy) walks through the conversion — it's usually a five-minute change per module.
+
+---
+
+## RouteHook — the new name for RouterConfig
+
+`export const config: RouterConfig` has been renamed to `export const hook: RouteHook`. The old name still works and produces a deprecation warning:
+
+```
+[Warn] 10:35:09 `export const config: RouterConfig` in post.router.ts is deprecated.
+Use `export const hook: RouteHook` instead.
+```
+
+The migration is one line per file:
+
+```ts
+// before
+export const config: RouterConfig = { ... };
+
+// after
+export const hook: RouteHook = { ... };
+```
+
+`RouteHook` now accepts the same configuration object as `ArkosRouter` route definitions — authentication, validation, rate limiting, disabled — across all three built-in route categories (Prisma model routes, auth routes, file upload routes). See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for the full reference.
+
+---
+
+## New app initialization model
+
+`arkos()` now returns an Express app directly — no `.init()` call needed:
+
+```ts
+import arkos from "arkos";
+import postRouter from "@/src/modules/post/post.router";
+
+const app = arkos();
+
+app.use(postRouter);
+app.listen();
+```
+
+Everything you already know about Express works on `app`. It's enhanced with Arkos lifecycle methods, but it is Express under the hood. The old `arkos.init()` API is deprecated for v1.6+ but still works for v1.4–v1.5.
+
+### globalPrefix
+
+All built-in routes are now prefixed automatically and customizable. The default is `/api`. Configure it in `arkos.config.ts`:
+
+```ts
+export default defineConfig({
+  globalPrefix: "/api/v1",
+});
+```
+
+### WebSocket support
+
+Access the underlying HTTP server before listening via `app.build()` for WebSocket setups and similar use cases.
+
+---
+
+## Authentication hooks
+
+Run custom logic at every step of the auth pipeline — before JWT verification, after the user is set, or when a check fails — configured once in `arkos.config.ts` and applied globally:
+
+```ts
+export default defineConfig({
+  authentication: {
+    mode: "static",
+    hooks: {
+      authenticate: {
+        before: ({ req, skip }) => { /* before JWT verification */ },
+        after: ({ req }) => { /* after req.user is set */ },
+        onError: ({ req, error, skip }) => { /* when verification fails */ },
+      },
+      authorize: {
+        before: ({ req, action, resource, rule, skip }) => { ... },
+        after: ({ req, action, resource, rule }) => { ... },
+        onError: ({ req, error, action, resource, rule, skip }) => { ... },
+      },
+    },
+  },
+});
+```
+
+Each hook accepts a single function or an array. `skip()` lets a before hook bypass the core step and jump directly to after hooks.
+
+---
+
+## OpenAPI: authenticated docs in production
+
+The Swagger/Scalar docs at `/api/docs` are now gated by super user authentication in production. Only users with `isSuperUser: true` can access them — no configuration required. A themed login page is served at `/docs/auth/login` with support for any `allowedUsernames` field you've configured.
+
+To opt out:
+
+```ts
+export default defineConfig({
+  swagger: { authenticate: false },
+});
+```
+
+### Dynamic OpenAPI filter parameters
+
+`GET /api/posts` in your OpenAPI docs now shows the actual filterable fields derived from your Prisma schema — not a generic `filters: string` parameter. String fields show `icontains`, numeric fields show `equals / gte / lte`, booleans show as boolean, enums show allowed values. Pagination and sorting parameters (`page`, `limit`, `sort`, `fields`) are included automatically on `findMany`.
+
+---
+
+## Built-in HTTP error classes
+
+A full suite of typed error classes is now exported from `arkos/error-handler`, covering the full 4xx/5xx range:
+
+```ts
+import {
+  BadRequestError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  ConflictError,
+  TooManyRequestsError,
+  InternalServerError,
+} from "arkos/error-handler";
+
+throw new NotFoundError("Post not found", "PostNotFound");
+```
+
+No more constructing `new AppError("...", 404, "PostNotFound")` manually for common cases.
+
+### File upload error handling
+
+Multer errors are now caught globally and mapped to clean HTTP responses:
+
+| Multer error | Status | Code |
+|---|---|---|
+| `LIMIT_FILE_SIZE` | 413 | `FileTooLarge` |
+| `LIMIT_UNEXPECTED_FILE` | 400 | `UnexpectedFileField` |
+| `LIMIT_FILE_COUNT` | 400 | `TooManyFiles` |
+| `MISSING_FIELD_NAME` | 400 | `MissingFieldName` |
+
+---
+
+## CLI improvements
+
+### Multi-module generation
+
+Generate components for multiple modules in a single command:
+
+```bash
+arkos g controller -m post,user,author
+arkos g r,c,s -m post          # router, controller, service for post
+arkos g all -m post            # everything for post
+```
+
+### Auth schema and DTO generation
+
+New commands scaffold validation files for all built-in auth endpoints:
+
+```bash
+arkos g login-schema -m auth
+arkos g signup-schema -m auth
+arkos g update-me-dto -m auth
+arkos g update-password-dto -m auth
+```
+
+### Custom path support
+
+The `--path` flag now works correctly for all generation commands, including bulk generation.
+
+---
+
+## Prisma-optional mode
+
+Arkos can now run without a Prisma instance. When no instance is found, the framework emits a warning and skips auth route setup and CRUD router registration gracefully. Suppress the warning if you're running without Prisma intentionally:
+
+```ts
+export default defineConfig({
+  warnings: {
+    suppress: {
+      prisma: { noInstanceFound: true, noSchemaFound: true },
+    },
+  },
+});
+```
+
+`create-arkos` now supports `none` as a database provider option, generating a project without Prisma or authentication boilerplate.
+
+---
+
+## How to try it
+
+```bash
+pnpm create arkos@canary my-project
+```
+
+Or upgrade an existing project:
+
+```bash
+pnpm install arkos@canary
+```
+
+The [documentation](https://arkosjs.com/docs) has been fully restructured alongside this release — new sections for Core Concepts, Guides, Reference, and Tooling, with every page updated to reflect v1.6 APIs.
+
+**Resources:**
+- [Full documentation](https://arkosjs.com/docs)
+- [Migration: auth files to ArkosPolicy](/blog/how-migrate-from-auth-files-to-arkos-policy)
+- [GitHub repository](https://github.com/uanela/arkos)
+- [Release notes](https://github.com/Uanela/arkos/releases/tag/v1.6.0-beta)
