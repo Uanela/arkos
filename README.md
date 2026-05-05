@@ -1,4 +1,4 @@
-![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=3)
+![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=4)
 
 <div align="center">
 
@@ -30,7 +30,7 @@
 ## Quick Start
 
 ```bash
-pnpm create arkos@latest my-project
+npm create arkos@latest my-project
 ```
 
 Your new project already has JWT auth, customizable CRUD routes, Swagger docs at `/api/docs`, file uploads, validation, and a full security middleware stack. Understand the generated [Project Structure](https://www.arkosjs.com/docs/getting-started/project-structure).

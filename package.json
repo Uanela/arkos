@@ -4,10 +4,9 @@
   "private": true,
   "description": "The Express & Prisma Framework For RESTful API",
   "scripts": {
-    "build:arkos": "",
-    "publish:arkos": "",
-    "build:create-arkos": "",
-    "publish:create-arkos": ""
+    "publish:arkos": "cd packages/arkos && npm publish --tag $npm_config_tag",
+    "publish:create-arkos": "cd packages/create-arkos && npm publish --tag $npm_config_tag",
+    "publish:all": "pnpm publish:arkos && pnpm publish:create-arkos"
   },
   "license": "MIT",
   "engines": {
