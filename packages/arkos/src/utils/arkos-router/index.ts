@@ -202,16 +202,14 @@ export function generateOpenAPIFromApp(app: any) {
             })(),
           },
         }),
-      ...(convertedOpenAPI?.requestBody?.content?.["application/json"]
-        ?.schema &&
-        !multipartFormSchema &&
+      ...(!multipartFormSchema &&
         !(config as any)?.validation?.body &&
         hasUploadFields && {
           requestBody: {
             content: (() => {
               const schema =
                 convertedOpenAPI?.requestBody?.content?.["application/json"]
-                  ?.schema;
+                  ?.schema || {};
 
               return {
                 "multipart/form-data": {
