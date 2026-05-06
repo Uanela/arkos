@@ -534,6 +534,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["avatar"],
         };
 
         const uploadConfig: UploadConfig = {
@@ -723,6 +724,7 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+          required: ["photos"],
         };
 
         const uploadConfig: UploadConfig = {
@@ -929,6 +931,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "fields",
           fields: [{ name: "avatar" }, { name: "resume" }],
+          required: false,
         };
 
         expect(() =>
@@ -1157,7 +1160,6 @@ describe("arkosRouterOpenApiManager", () => {
           Error(
             `ValidationError: Invalid multipart/form-data schema for route '/users/profile':
   - Upload field 'avatar' must have type 'array', got 'string'
-  - Upload field 'avatar' is not required in config but marked as required in schema
   - Missing upload field 'resume' in multipart/form-data schema`
           )
         );
@@ -1255,6 +1257,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "single",
           field: "avatar",
+          required: false,
         };
 
         expect(() =>
@@ -1279,6 +1282,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 10,
             },
           },
+          required: ["photos"],
         };
 
         const uploadConfig: UploadConfig = {
