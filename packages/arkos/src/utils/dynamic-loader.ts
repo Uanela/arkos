@@ -423,54 +423,55 @@ const DEPRECATION_GROUPS = [
     key: "authConfigs",
     fileKey: (moduleName: string, ext: string) => `${moduleName}.auth.${ext}`,
     label: "Auth Config Files (.auth.ts)",
-    migration: "https://www.arkosjs.com/docs/migration/auth-to-policy",
-  },
-  {
-    key: "interceptors",
-    fileKey: (moduleName: string, ext: string) =>
-      `${moduleName}.interceptors.${ext}`,
-    label: "Interceptors (.interceptors.ts)",
     migration:
-      "https://www.arkosjs.com/docs/migration/interceptors-to-route-hook",
+      "https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy",
   },
-  {
-    key: "hooks",
-    fileKey: (moduleName: string, ext: string) => `${moduleName}.hooks.${ext}`,
-    label: "Service Hooks (.hooks.ts)",
-    migration: "https://www.arkosjs.com/docs/migration/hooks-to-service-hook",
-  },
-  {
-    key: "prismaQueryOptions",
-    fileKey: (moduleName: string, ext: string) => `${moduleName}.query.${ext}`,
-    label: "Query Options (.query.ts)",
-    migration: "https://www.arkosjs.com/docs/migration/query-to-route-hook",
-  },
+  // {
+  //   key: "interceptors",
+  //   fileKey: (moduleName: string, ext: string) =>
+  //     `${moduleName}.interceptors.${ext}`,
+  //   label: "Interceptors (.interceptors.ts)",
+  //   migration:
+  //     "https://www.arkosjs.com/blog/interceptors-to-route-hook",
+  // },
+  // {
+  //   key: "hooks",
+  //   fileKey: (moduleName: string, ext: string) => `${moduleName}.hooks.${ext}`,
+  //   label: "Service Hooks (.hooks.ts)",
+  //   migration: "https://www.arkosjs.com/blog/hooks-to-service-hook",
+  // },
+  // {
+  //   key: "prismaQueryOptions",
+  //   fileKey: (moduleName: string, ext: string) => `${moduleName}.query.${ext}`,
+  //   label: "Query Options (.query.ts)",
+  //   migration: "https://www.arkosjs.com/blog/query-to-route-hook",
+  // },
   {
     key: "dtos",
     fileKey: (moduleName: string, ext: string) => `${moduleName}/dtos/`,
     label: "DTOs (dtos/ folder)",
-    migration: "https://www.arkosjs.com/docs/migration/dtos-to-route-hook",
+    migration: "https://www.arkosjs.com/blog/migrate-validators-to-route-hook",
   },
   {
     key: "schemas",
     fileKey: (moduleName: string, ext: string) => `${moduleName}/schemas/`,
     label: "Zod Schemas (schemas/ folder)",
-    migration: "https://www.arkosjs.com/docs/migration/schemas-to-route-hook",
+    migration: "https://www.arkosjs.com/blog/migrate-validators-to-route-hook",
   },
-  {
-    key: "routerConfig",
-    fileKey: (moduleName: string, ext: string) =>
-      `${moduleName}.router.${ext} (config export)`,
-    label: "Router Config (router.config)",
-    migration:
-      "https://www.arkosjs.com/docs/migration/router-config-to-route-hook",
-  },
-  {
-    key: "autoLoadedRouter",
-    fileKey: (moduleName: string, ext: string) => `${moduleName}.router.${ext}`,
-    label: "Auto-loaded Routers (auth, file-upload, prisma models)",
-    migration: "https://www.arkosjs.com/docs/migration/auto-routers-to-app-use",
-  },
+  // {
+  //   key: "routerConfig",
+  //   fileKey: (moduleName: string, ext: string) =>
+  //     `${moduleName}.router.${ext} (config export)`,
+  //   label: "Router Config (router.config)",
+  //   migration:
+  //     "https://www.arkosjs.com/blog/router-config-to-route-hook",
+  // },
+  // {
+  //   key: "autoLoadedRouter",
+  //   fileKey: (moduleName: string, ext: string) => `${moduleName}.router.${ext}`,
+  //   label: "Auto-loaded Routers (auth, file-upload, prisma models)",
+  //   migration: "https://www.arkosjs.com/blog/auto-routers-to-app-use",
+  // },
 ];
 
 export function warnDeprecatedModuleComponents(
