@@ -20,6 +20,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["avatar"],
         });
       });
 
