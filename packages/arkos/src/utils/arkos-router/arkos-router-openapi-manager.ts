@@ -80,7 +80,10 @@ class ArkosRouterOpenAPIManager {
       }
     } else if (uploadConfig.type === "fields") {
       for (const field of uploadConfig.fields) {
-        uploadSchema.properties[field.name] = this.buildFieldSchema(field);
+        uploadSchema.properties[field.name] = this.buildFieldSchema(
+          field,
+          uploadConfig
+        );
 
         // legacy shape has no type and no required — default to required
         const isRequired =
@@ -104,14 +107,22 @@ class ArkosRouterOpenAPIManager {
    * Builds the OpenAPI property schema for a single field entry.
    * Legacy entries (no type) are treated as array.
    */
-  private buildFieldSchema(field: UploadConfigFieldEntry): object {
+  private buildFieldSchema(
+    field: UploadConfigFieldEntry,
+    config: ArkosRouterBaseUploadConfig
+  ): object {
     if (field.type === "single") {
       return {
         type: "string",
         format: "binary",
-        ...(field.maxSize && {
-          description: `Max size: ${field.maxSize} bytes`,
-        }),
+        ...(field.maxSize &&
+          !config.maxSize && {
+            description: `Max size: ${field.maxSize} bytes`,
+          }),
+        ...(config.maxSize &&
+          !field.maxSize && {
+            description: `Max size: ${config.maxSize} bytes`,
+          }),
         ...(field.description && { description: field.description }),
       };
     }
@@ -126,10 +137,14 @@ class ArkosRouterOpenAPIManager {
       ...(field.maxCount && { maxItems: field.maxCount }),
       ...(field.type === "array" &&
         field.minCount && { minItems: field.minCount }),
-      ...(field.type === "array" &&
-        field.maxSize && {
+      ...((field.maxSize &&
+        !config.maxSize && {
           description: `Max size per file: ${field.maxSize} bytes`,
-        }),
+        }) ||
+        (config.maxSize &&
+          !field.maxSize && {
+            description: `Max size per file: ${config.maxSize} bytes`,
+          })),
       ...(field.type === "array" &&
         field.description && {
           description: field.description,
