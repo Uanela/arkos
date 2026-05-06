@@ -16,7 +16,7 @@ export type UploadConfig =
    */
   | ({
       type: "single";
-      /** Name of the multipart form field to process */
+      /** Name of the multipart form field to process. Supports bracket notation, including nested array paths (e.g. "banners[][image]") */
       field: string;
     } & ArkosRouterBaseUploadConfig)
   /**
@@ -39,12 +39,12 @@ export type UploadConfig =
    */
   | ({
       type: "array";
-      /** Shared name of the multipart form fields to process */
+      /** Shared name of the multipart form fields to process. Supports bracket notation, including nested array paths (e.g. "banners[][images]") */
       field: string;
       /** Maximum number of files to process (defaults to framework config) */
       maxCount?: number;
       /** Minimum number of files required */
-      // minCount?: number;
+      minCount?: number;
     } & ArkosRouterBaseUploadConfig)
   /**
    * Creates middleware that processes multiple files associated with the
@@ -54,17 +54,25 @@ export type UploadConfig =
    * maps each field name to an array of the associated file information
    * objects.
    *
-   * @throws `MulterError('LIMIT_UNEXPECTED_FILE')` if more than `maxCount` files are associated with `fieldName` for any field
+   * Each field entry is a full single or array upload config with a `name`
+   * property. Field names support bracket notation, including nested array
+   * paths (e.g. "banners[][images]").
    *
    * @example
    * uploads: {
    *   type: "fields",
    *   fields: [
-   *     { field: "avatar", maxCount: 1, uploadDir: "images" },
-   *     { field: "resume", maxCount: 1, uploadDir: "documents" }
+   *     { name: "avatar", type: "single", uploadDir: "images" },
+   *     { name: "resume", type: "single", uploadDir: "documents" },
+   *     { name: "banners[][images]", type: "array", maxCount: 5, uploadDir: "banners" }
    *   ]
    * }
    */
+  | ({
+      type: "fields";
+      /** Array of field configurations describing multipart form fields to process */
+      fields: UploadConfigFieldEntry[];
+    } & Pick<ArkosRouterBaseUploadConfig, "deleteOnError">)
   | ({
       type: "fields";
       /** Array of field configurations describing multipart form fields to process */
@@ -77,6 +85,52 @@ export type UploadConfig =
         // minCount?: number;
       }[];
     } & ArkosRouterBaseUploadConfig);
+
+/**
+ * A single field entry inside a `fields` upload config.
+ * Each entry is a full single or array upload config with an additional
+ * `name` property identifying the form field.
+ *
+ * Field names support bracket notation, including nested array paths
+ * (e.g. "banners[][images]"). For nested array paths, multer validation
+ * is bypassed and constraints (allowedFileTypes, maxSize, minCount, maxCount)
+ * are enforced per group after upload.
+ */
+export type UploadConfigFieldEntry =
+  /**
+   * A single-file field entry.
+   *
+   * @example
+   * { name: "avatar", type: "single", uploadDir: "images", required: true }
+   *
+   * @example
+   * // nested array path — one image per banner
+   * { name: "banners[][image]", type: "single", uploadDir: "banners" }
+   */
+  | ({
+      /** Name of the form field. Supports bracket notation including nested array paths. */
+      name: string;
+      type: "single";
+    } & Omit<ArkosRouterBaseUploadConfig, "deleteOnError">)
+  /**
+   * A multi-file field entry.
+   *
+   * @example
+   * { name: "gallery", type: "array", maxCount: 6, uploadDir: "gallery" }
+   *
+   * @example
+   * // nested array path — multiple images per banner, min 1 max 5
+   * { name: "banners[][images]", type: "array", minCount: 1, maxCount: 5, uploadDir: "banners" }
+   */
+  | ({
+      /** Name of the form field. Supports bracket notation including nested array paths. */
+      name: string;
+      type?: "array";
+      /** Maximum number of files for this field (defaults to framework config) */
+      maxCount?: number;
+      /** Minimum number of files required for this field */
+      minCount?: number;
+    } & Omit<ArkosRouterBaseUploadConfig, "deleteOnError">); /**
 
 /**
  * Base configuration options for file uploads.

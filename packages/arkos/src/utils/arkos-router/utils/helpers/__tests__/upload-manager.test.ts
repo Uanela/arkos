@@ -726,7 +726,7 @@ describe("UploadManager", () => {
         const error = mockNext.mock.calls[0][0];
         expect(error.message).toBe("Required upload field 'avatar' is missing");
         expect(error.statusCode).toBe(400);
-        expect(error.code).toBe("MissingAvatarFileField");
+        expect(error.code).toBe("MissingUploadField");
         expect(error.meta.errors).toEqual([
           "Required upload field 'avatar' is missing",
         ]);
@@ -745,7 +745,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingUserProfileAvatarFileField");
+        expect(error.code).toBe("MissingUploadField");
       });
 
       it("should handle snake_case field names", () => {
@@ -761,7 +761,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingProfilePhotoFileField");
+        expect(error.code).toBe("MissingUploadField");
       });
     });
 
@@ -813,7 +813,7 @@ describe("UploadManager", () => {
         expect(error.message).toBe(
           "Required upload field 'photos' is missing or empty"
         );
-        expect(error.code).toBe("MissingPhotosFileField");
+        expect(error.code).toBe("MissingUploadFields");
       });
 
       it("should throw error when required array files is not an array", () => {
@@ -850,7 +850,7 @@ describe("UploadManager", () => {
         expect(error.message).toBe(
           "Required upload field 'attachments' is missing or empty"
         );
-        expect(error.code).toBe("MissingAttachmentsFileField");
+        expect(error.code).toBe("MissingUploadFields");
       });
     });
 
@@ -896,8 +896,8 @@ describe("UploadManager", () => {
         const config = {
           type: "fields" as const,
           fields: [
-            { name: "avatar", maxCount: 1 },
             { name: "resume", maxCount: 1 },
+            { name: "avatar", maxCount: 1 },
           ],
           required: true,
         };
@@ -909,11 +909,12 @@ describe("UploadManager", () => {
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
         expect(error.message).toBe(
-          "Required upload fields are missing. Expected an object with fields: avatar, resume"
+          "Required upload field 'resume' is missing or empty"
         );
-        expect(error.code).toBe("MissingAvatarFileField");
+        expect(error.code).toBe("MissingUploadFields");
         expect(error.meta.errors).toEqual([
-          "Required upload fields are missing. Expected an object with fields: avatar, resume",
+          "Required upload field 'resume' is missing or empty",
+          "Required upload field 'avatar' is missing or empty",
         ]);
       });
 
@@ -933,15 +934,17 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.message).toContain("Required upload fields are missing");
+        expect(error.message).toContain(
+          "Required upload field 'avatar' is missing or empty"
+        );
       });
 
       it("should throw error when one field is missing", () => {
         const config = {
           type: "fields" as const,
           fields: [
-            { name: "avatar", maxCount: 1 },
             { name: "resume", maxCount: 1 },
+            { name: "avatar", maxCount: 1 },
           ],
           required: true,
         };
@@ -957,7 +960,7 @@ describe("UploadManager", () => {
         expect(error.message).toBe(
           "Required upload field 'resume' is missing or empty"
         );
-        expect(error.code).toBe("MissingResumeFileField");
+        expect(error.code).toBe("MissingUploadFields");
         expect(error.meta.errors).toEqual([
           "Required upload field 'resume' is missing or empty",
         ]);
@@ -967,8 +970,8 @@ describe("UploadManager", () => {
         const config = {
           type: "fields" as const,
           fields: [
-            { name: "avatar", maxCount: 1 },
             { name: "resume", maxCount: 1 },
+            { name: "avatar", maxCount: 1 },
           ],
           required: true,
         };
@@ -991,8 +994,8 @@ describe("UploadManager", () => {
         const config = {
           type: "fields" as const,
           fields: [
-            { name: "avatar", maxCount: 1 },
             { name: "resume", maxCount: 1 },
+            { name: "avatar", maxCount: 1 },
           ],
           required: true,
         };
@@ -1006,9 +1009,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.message).toBe(
-          "Required upload field 'resume' is missing or empty"
-        );
+        expect(error.message).toBe("Malformed upload field 'resume'");
       });
 
       it("should collect multiple missing fields", () => {
@@ -1031,13 +1032,11 @@ describe("UploadManager", () => {
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
         expect(error.meta.errors).toHaveLength(2);
-        expect(error.meta.errors).toContain(
-          "Required upload field 'resume' is missing or empty"
-        );
-        expect(error.meta.errors).toContain(
-          "Required upload field 'cover_letter' is missing or empty"
-        );
-        expect(error.code).toBe("MissingResumeFileField");
+        expect(error.meta.errors).toEqual([
+          "Required upload field 'resume' is missing or empty",
+          "Required upload field 'cover_letter' is missing or empty",
+        ]);
+        expect(error.code).toBe("MissingUploadFields");
       });
 
       it("should handle snake_case field names in fields", () => {
@@ -1053,7 +1052,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingIdFrontFileField");
+        expect(error.code).toBe("MissingUploadFields");
       });
     });
 
@@ -1071,7 +1070,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingAvatarFileField");
+        expect(error.code).toBe("MissingUploadField");
       });
 
       it("should generate proper PascalCase error code from snake_case", () => {
@@ -1087,7 +1086,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingProfilePhotoFileField");
+        expect(error.code).toBe("MissingUploadField");
       });
 
       it("should generate proper PascalCase error code from kebab-case", () => {
@@ -1103,7 +1102,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingProfilePhotoFileField");
+        expect(error.code).toBe("MissingUploadField");
       });
 
       it("should handle brackets in field names", () => {
@@ -1119,7 +1118,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingUserProfilePhotoFileField");
+        expect(error.code).toBe("MissingUploadField");
       });
 
       it("should handle array notation in field names", () => {
@@ -1135,7 +1134,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingItems0FileFileField");
+        expect(error.code).toBe("MissingUploadField");
       });
 
       it("should use first missing field for error code when multiple fields missing", () => {
@@ -1155,7 +1154,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toBe("MissingResumeFileField");
+        expect(error.code).toBe("MissingUploadFields");
       });
     });
 
@@ -1200,8 +1199,7 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
         const error = mockNext.mock.calls[0][0];
-        expect(error.code).toContain("Missing");
-        expect(error.code).toContain("FileField");
+        expect(error.code).toContain("MissingUploadField");
       });
 
       it("should handle empty fields array", () => {
@@ -1267,6 +1265,370 @@ describe("UploadManager", () => {
 
         expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
       });
+    });
+  });
+
+  describe("handlePostUpload (nested array paths)", () => {
+    it("should reconstruct nested array path for single type", () => {
+      const config = {
+        type: "single" as const,
+        field: "banners[][image]",
+        attachToBody: "url" as const,
+      };
+      mockReq.files = {
+        "banners[0][image]": [{ path: "/uploads/banner0.jpg" }],
+        "banners[1][image]": [{ path: "/uploads/banner1.jpg" }],
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockReq.body).toBeDefined();
+    });
+
+    it("should reconstruct nested array path for array type", () => {
+      const config = {
+        type: "array" as const,
+        field: "banners[][images]",
+        attachToBody: "url" as const,
+      };
+      mockReq.files = {
+        "banners[0][images]": [
+          { path: "/uploads/b0img1.jpg" },
+          { path: "/uploads/b0img2.jpg" },
+        ],
+        "banners[1][images]": [{ path: "/uploads/b1img1.jpg" }],
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockReq.body).toBeDefined();
+    });
+
+    it("should skip nested array path for single when files is an array", () => {
+      const config = {
+        type: "single" as const,
+        field: "banners[][image]",
+        attachToBody: "url" as const,
+      };
+      mockReq.files = [{ path: "/uploads/banner.jpg" }];
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("should skip nested array path for array type when files is a flat array", () => {
+      const config = {
+        type: "array" as const,
+        field: "banners[][images]",
+        attachToBody: "url" as const,
+      };
+      mockReq.files = [{ path: "/uploads/banner.jpg" }];
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("should handle nested array path in fields entries", () => {
+      const config = {
+        type: "fields" as const,
+        fields: [
+          { name: "thumbnail", maxCount: 1 },
+          { name: "banners[][images]", type: "array" as const, maxCount: 5 },
+        ],
+        attachToBody: "url" as const,
+      };
+      mockReq.files = {
+        thumbnail: [{ path: "/uploads/thumb.jpg" }],
+        "banners[0][images]": [{ path: "/uploads/b0.jpg" }],
+        "banners[1][images]": [{ path: "/uploads/b1.jpg" }],
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("should handle fields with single-type entry", () => {
+      const config = {
+        type: "fields" as const,
+        fields: [
+          { name: "avatar", type: "single" as const, uploadDir: "images" },
+        ],
+        attachToBody: "url" as const,
+      };
+      mockReq.files = {
+        avatar: [{ path: "/uploads/avatar.jpg" }],
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("should skip fields entry when no files uploaded for that field", () => {
+      const config = {
+        type: "fields" as const,
+        fields: [
+          { name: "avatar", maxCount: 1 },
+          { name: "resume", maxCount: 1 },
+        ],
+        attachToBody: "url" as const,
+      };
+      mockReq.files = {
+        avatar: [{ path: "/uploads/avatar.jpg" }],
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("should throw AppError when post-upload processing fails", () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        attachToBody: "url" as const,
+      };
+      mockReq.file = { path: "/uploads/file.jpg" };
+
+      // Force an error inside the try block
+      mockDeepmerge.mockImplementation(() => {
+        throw new Error("merge failed");
+      });
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      const error = mockNext.mock.calls[0][0];
+      expect(error.message).toContain("File uploads post processing failed");
+      expect(error.statusCode).toBe(500);
+      expect(error.code).toBe("FileUploadPostProcessError");
+    });
+  });
+
+  describe("validateRequiredFiles (nested array paths)", () => {
+    it("should pass when nested array field has files in all groups", () => {
+      const config = {
+        type: "single" as const,
+        field: "banners[][image]",
+        required: true,
+      };
+      mockReq.files = {
+        "banners[0][image]": [
+          { path: "/uploads/b0.jpg", originalname: "b0.jpg", size: 100 },
+        ],
+        "banners[1][image]": [
+          { path: "/uploads/b1.jpg", originalname: "b1.jpg", size: 100 },
+        ],
+      };
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+    });
+
+    it("should throw when required nested array field has no matching files", () => {
+      const config = {
+        type: "single" as const,
+        field: "banners[][image]",
+        required: true,
+      };
+      mockReq.files = {};
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      const error = mockNext.mock.calls[0][0];
+      expect(error.message).toContain("banners[][image]");
+    });
+
+    it("should throw when required nested array field has files=undefined", () => {
+      const config = {
+        type: "array" as const,
+        field: "banners[][images]",
+        required: true,
+      };
+      mockReq.files = undefined;
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it("should throw when nested array single group has more than 1 file", () => {
+      const config = {
+        type: "single" as const,
+        field: "banners[][image]",
+        required: true,
+      };
+      mockReq.files = {
+        "banners[0][image]": [
+          { path: "/uploads/a.jpg", originalname: "a.jpg", size: 100 },
+          { path: "/uploads/b.jpg", originalname: "b.jpg", size: 100 },
+        ],
+      };
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      const error = mockNext.mock.calls[0][0];
+      expect(error.message).toContain("must have exactly 1 file");
+    });
+
+    it("should throw when nested array group has fewer files than minCount", () => {
+      const config = {
+        type: "array" as const,
+        field: "banners[][images]",
+        required: true,
+        minCount: 3,
+      };
+      mockReq.files = {
+        "banners[0][images]": [
+          { path: "/uploads/a.jpg", originalname: "a.jpg", size: 100 },
+        ],
+      };
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      const error = mockNext.mock.calls[0][0];
+      expect(error.message).toContain("requires at least 3 files");
+    });
+
+    it("should throw when nested array group exceeds maxCount", () => {
+      const config = {
+        type: "array" as const,
+        field: "banners[][images]",
+        required: true,
+        maxCount: 2,
+      };
+      mockReq.files = {
+        "banners[0][images]": [
+          { path: "/uploads/a.jpg", originalname: "a.jpg", size: 100 },
+          { path: "/uploads/b.jpg", originalname: "b.jpg", size: 100 },
+          { path: "/uploads/c.jpg", originalname: "c.jpg", size: 100 },
+        ],
+      };
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      const error = mockNext.mock.calls[0][0];
+      expect(error.message).toContain("allows at most 2 files");
+    });
+
+    it("should throw when nested array file fails allowedFileTypes check", () => {
+      const config = {
+        type: "array" as const,
+        field: "banners[][images]",
+        required: true,
+        allowedFileTypes: [".jpg", ".png"],
+      };
+      mockReq.files = {
+        "banners[0][images]": [
+          { path: "/uploads/doc.pdf", originalname: "doc.pdf", size: 100 },
+        ],
+      };
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      const error = mockNext.mock.calls[0][0];
+      expect(error.message).toContain("not allowed");
+    });
+
+    it("should throw when nested array file exceeds maxSize", () => {
+      const config = {
+        type: "array" as const,
+        field: "banners[][images]",
+        required: true,
+        maxSize: 100,
+      };
+      mockReq.files = {
+        "banners[0][images]": [
+          { path: "/uploads/big.jpg", originalname: "big.jpg", size: 9999 },
+        ],
+      };
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      const error = mockNext.mock.calls[0][0];
+      expect(error.message).toContain("exceeds the maximum allowed size");
+    });
+
+    it("should pass when nested array field is not required and has no files", () => {
+      const config = {
+        type: "array" as const,
+        field: "banners[][images]",
+        required: false,
+      };
+      mockReq.files = {};
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
+    });
+  });
+
+  describe("validateRequiredFiles (minCount on array type)", () => {
+    it("should throw when array files count is below minCount", () => {
+      const config = {
+        type: "array" as const,
+        field: "photos",
+        required: true,
+        minCount: 3,
+      };
+      mockReq.files = [
+        { path: "/uploads/photo1.jpg" },
+        { path: "/uploads/photo2.jpg" },
+      ];
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      const error = mockNext.mock.calls[0][0];
+      expect(error.message).toContain("requires at least 3 files");
+    });
+
+    it("should pass when array files count meets minCount", () => {
+      const config = {
+        type: "array" as const,
+        field: "photos",
+        required: true,
+        minCount: 2,
+      };
+      mockReq.files = [
+        { path: "/uploads/photo1.jpg" },
+        { path: "/uploads/photo2.jpg" },
+      ];
+
+      const middleware = uploadManager.validateRequiredFiles(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalledWith();
     });
   });
 });
