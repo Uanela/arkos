@@ -51,6 +51,7 @@ describe("exportAuthActionCommand", () => {
     ]);
     (getUserFileExtension as jest.Mock).mockReturnValue("ts");
     (path.resolve as jest.Mock).mockReturnValue("/project/src/app.ts");
+    (path.relative as jest.Mock).mockReturnValue("/project/src/app.ts");
     (fs.existsSync as jest.Mock).mockReturnValue(true);
     (watermarkStamper.stamp as jest.Mock).mockImplementation();
 

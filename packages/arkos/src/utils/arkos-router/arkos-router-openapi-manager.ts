@@ -119,20 +119,20 @@ class ArkosRouterOpenAPIManager {
     if (uploadConfig?.type === "single") {
       expectedFields.push({
         name: uploadConfig.field,
-        required: uploadConfig.required || false,
+        required: uploadConfig.required !== false,
         expectedType: "single",
       });
     } else if (uploadConfig?.type === "array") {
       expectedFields.push({
         name: uploadConfig.field,
-        required: uploadConfig.required || false,
+        required: uploadConfig.required !== false,
         expectedType: "array",
       });
     } else if (uploadConfig?.type === "fields") {
       for (const field of uploadConfig.fields) {
         expectedFields.push({
           name: field.name,
-          required: uploadConfig.required || false,
+          required: uploadConfig.required !== false,
           expectedType: "array",
         });
       }
