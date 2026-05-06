@@ -85,7 +85,7 @@ class ArkosRouterOpenAPIManager {
         // legacy shape has no type and no required — default to required
         const isRequired =
           (field as any).type === undefined
-            ? true
+            ? (uploadConfig as any).required !== false
             : (field as any).required !== false;
 
         if (isRequired) {

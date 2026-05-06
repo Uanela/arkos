@@ -42,6 +42,7 @@ describe("arkosRouterOpenApiManager", () => {
               description: "Max size: 5242880 bytes",
             },
           },
+          required: ["avatar"],
         });
       });
 
@@ -110,6 +111,8 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+
+          required: ["gallery"],
         });
       });
 
@@ -134,6 +137,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 10,
             },
           },
+          required: ["photos"],
         });
       });
 
@@ -142,6 +146,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "array",
           field: "images",
           maxSize: 2097152,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
@@ -217,6 +222,7 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+          required: ["avatar", "resume"],
         });
       });
 
@@ -251,6 +257,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 3,
             },
           },
+          required: ["photos", "documents"],
         });
       });
 
@@ -259,6 +266,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "fields",
           fields: [{ name: "avatar" }, { name: "cover" }],
           maxSize: 5242880,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
@@ -362,6 +370,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "single",
           field: "avatar",
+          required: false,
         };
 
         const existingSchema: any = {
@@ -430,6 +439,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "array",
           field: "files",
           maxCount: 3,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(
@@ -468,6 +478,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["photo"],
         });
       });
     });
@@ -477,6 +488,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "fields",
           fields: [{ name: "single_file" }],
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
