@@ -202,15 +202,15 @@ function resolveFieldEntry(
   const isLegacy = !("type" in field) || field.type === undefined;
   if (isLegacy) {
     return {
+      ...config,
       name: field.name,
       type: "array",
       required: true,
-      minCount: undefined,
+      minCount: field.minCount,
       maxCount: field.maxCount,
-      allowedFileTypes: undefined,
-      maxSize: undefined,
-      attachToBody: undefined,
-      ...config,
+      allowedFileTypes: config.allowedFileTypes,
+      maxSize: config.maxSize,
+      attachToBody: config.attachToBody,
     };
   }
 
@@ -287,6 +287,18 @@ class UploadManager {
           "uploadDir" in config ? config.uploadDir : undefined;
         middleware(req, res, async (err) => {
           if (err) return next(err);
+
+          // .any() gives req.files as File[] — normalize to { [fieldname]: File[] }
+          // so groupFilesByPattern works correctly for nested array paths
+          if (configHasNestedArrayPaths(config) && Array.isArray(req.files)) {
+            const normalized: { [fieldname: string]: Express.Multer.File[] } =
+              {};
+            for (const file of req.files) {
+              if (!normalized[file.fieldname]) normalized[file.fieldname] = [];
+              normalized[file.fieldname].push(file);
+            }
+            req.files = normalized;
+          }
 
           if (oldFilePath) {
             const { fileUpload: configs } = getArkosConfig();
