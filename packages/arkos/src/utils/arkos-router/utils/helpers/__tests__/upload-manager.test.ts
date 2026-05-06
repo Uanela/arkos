@@ -1631,4 +1631,70 @@ describe("UploadManager", () => {
       expect(mockNext).toHaveBeenCalledWith();
     });
   });
+
+  describe("handlePostUpload (shared bodyUpdate for nested fields)", () => {
+    it("should merge multiple nested array patterns into the same array index", () => {
+      const config = {
+        type: "fields" as const,
+        fields: [
+          { name: "slides[][mobileImage]", type: "single" as const },
+          { name: "slides[][tabletImage]", type: "single" as const },
+          { name: "slides[][desktopImage]", type: "single" as const },
+        ],
+        attachToBody: "pathname" as const,
+      };
+      mockReq.files = {
+        "slides[0][mobileImage]": [
+          { path: "/uploads/mobile0.jpg", originalname: "mobile0.jpg" },
+        ],
+        "slides[0][tabletImage]": [
+          { path: "/uploads/tablet0.jpg", originalname: "tablet0.jpg" },
+        ],
+        "slides[0][desktopImage]": [
+          { path: "/uploads/desktop0.jpg", originalname: "desktop0.jpg" },
+        ],
+        "slides[1][mobileImage]": [
+          { path: "/uploads/mobile1.jpg", originalname: "mobile1.jpg" },
+        ],
+        "slides[1][tabletImage]": [
+          { path: "/uploads/tablet1.jpg", originalname: "tablet1.jpg" },
+        ],
+        "slides[1][desktopImage]": [
+          { path: "/uploads/desktop1.jpg", originalname: "desktop1.jpg" },
+        ],
+      };
+
+      mockDeepmerge.mockImplementation((a: any, b: any) => {
+        // real merge behavior for arrays
+        const result = { ...a };
+        for (const key of Object.keys(b)) {
+          if (Array.isArray(result[key]) && Array.isArray(b[key])) {
+            result[key] = result[key].map((item: any, i: number) => ({
+              ...item,
+              ...(b[key][i] || {}),
+            }));
+          } else {
+            result[key] = b[key];
+          }
+        }
+        return result;
+      });
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockNext).toHaveBeenCalled();
+      // deepmerge called once with the combined bodyUpdate, not 3 separate times
+      const mergeCall = mockDeepmerge.mock.calls[0];
+      const bodyUpdate = mergeCall[1];
+
+      expect(Array.isArray(bodyUpdate.slides)).toBe(true);
+      expect(bodyUpdate.slides[0]).toHaveProperty("mobileImage");
+      expect(bodyUpdate.slides[0]).toHaveProperty("tabletImage");
+      expect(bodyUpdate.slides[0]).toHaveProperty("desktopImage");
+      expect(bodyUpdate.slides[1]).toHaveProperty("mobileImage");
+      expect(bodyUpdate.slides[1]).toHaveProperty("tabletImage");
+      expect(bodyUpdate.slides[1]).toHaveProperty("desktopImage");
+    });
+  });
 });

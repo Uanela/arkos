@@ -205,7 +205,7 @@ function resolveFieldEntry(
       ...config,
       name: field.name,
       type: "array",
-      required: true,
+      required: !!config.required,
       minCount: field.minCount,
       maxCount: field.maxCount,
       allowedFileTypes: config.allowedFileTypes,
@@ -599,17 +599,34 @@ class UploadManager {
           current[lastKey] = value;
         };
 
+        /**
+         * Reconstructs nested array structure from grouped files.
+         *
+         * Pattern: "banners[][images]"
+         * Groups: { "0": [file1, file2], "1": [file3] }
+         *
+         * Result in req.body:
+         * banners: [
+         *   { images: ["path1", "path2"] },
+         *   { images: ["path3"] }
+         * ]
+         */
         const reconstructNestedArrayPath = (
           pattern: string,
           filesObj: { [fieldname: string]: Express.Multer.File[] },
           attachToBody: ArkosRouterBaseUploadConfig["attachToBody"],
-          type: "single" | "array"
+          type: "single" | "array",
+          sharedBodyUpdate?: any
         ) => {
           const groups = groupFilesByPattern(filesObj, pattern);
           if (groups.size === 0) return;
 
+          // Parse the pattern to build the reconstruction path.
+          // Split into segments: static keys and [] markers.
+          // e.g. "banners[][images]" → ["banners", "[]", "images"]
           const segments = pattern.match(/[^\[\]]+|\[\]/g) || [];
 
+          // Sort group keys so indices are in order
           const sortedGroups = [...groups.entries()].sort((a, b) => {
             const ai = a[0].split(",").map(Number);
             const bi = b[0].split(",").map(Number);
@@ -619,12 +636,13 @@ class UploadManager {
             return 0;
           });
 
-          const bodyUpdate: any = {};
+          const bodyUpdate = sharedBodyUpdate ?? {};
 
           for (const [groupKey, groupFiles] of sortedGroups) {
             const indices = groupKey.split(",").map(Number);
             let indexCounter = 0;
 
+            // Build the concrete path for this group by replacing [] with actual indices
             const concretePath = segments
               .map((seg) => {
                 if (seg === "[]") return `[${indices[indexCounter++]}]`;
@@ -646,7 +664,9 @@ class UploadManager {
             setNestedValue(bodyUpdate, concretePath, valueToSet);
           }
 
-          req.body = deepmerge(req.body || {}, bodyUpdate);
+          if (!sharedBodyUpdate) {
+            req.body = deepmerge(req.body || {}, bodyUpdate);
+          }
         };
 
         try {
@@ -712,7 +732,8 @@ class UploadManager {
                   resolved.name,
                   filesObj,
                   resolved.attachToBody ?? configAttachToBody,
-                  resolved.type
+                  resolved.type,
+                  bodyUpdate
                 );
               } else {
                 const files = filesObj[resolved.name];
