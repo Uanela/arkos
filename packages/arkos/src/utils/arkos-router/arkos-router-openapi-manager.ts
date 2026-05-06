@@ -42,7 +42,7 @@ class ArkosRouterOpenAPIManager {
           description: `Max size: ${uploadConfig.maxSize} bytes`,
         }),
       };
-      if (uploadConfig.required) {
+      if (uploadConfig.required !== false) {
         uploadSchema.required.push(uploadConfig.field);
       }
     } else if (uploadConfig.type === "array") {
@@ -57,7 +57,7 @@ class ArkosRouterOpenAPIManager {
           description: `Max size per file: ${uploadConfig.maxSize} bytes`,
         }),
       };
-      if (uploadConfig.required) {
+      if (uploadConfig.required !== false) {
         uploadSchema.required.push(uploadConfig.field);
       }
     } else if (uploadConfig.type === "fields") {
@@ -73,7 +73,7 @@ class ArkosRouterOpenAPIManager {
             description: `Max size per file: ${uploadConfig.maxSize} bytes`,
           }),
         };
-        if (uploadConfig.required) {
+        if (uploadConfig.required !== false) {
           uploadSchema.required.push(field.name);
         }
       }
