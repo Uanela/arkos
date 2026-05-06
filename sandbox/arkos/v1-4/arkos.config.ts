@@ -18,6 +18,9 @@ const config: ArkosConfig = {
   swagger: {
     mode: "zod",
     strict: false,
+    scalarApiReferenceConfiguration: {
+      cdn: "https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.50.0",
+    },
   },
   middlewares: {
     cors: {
