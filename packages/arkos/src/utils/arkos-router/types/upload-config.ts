@@ -82,7 +82,7 @@ export type UploadConfig =
         /** Maximum number of files for this field (defaults to framework config) */
         maxCount?: number;
         // /** Minimum number of files required for this field */
-        // minCount?: number;
+        minCount?: number;
       }[];
     } & ArkosRouterBaseUploadConfig);
 
