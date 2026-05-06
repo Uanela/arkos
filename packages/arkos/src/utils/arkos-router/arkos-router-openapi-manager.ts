@@ -42,7 +42,7 @@ class ArkosRouterOpenAPIManager {
           description: `Max size: ${uploadConfig.maxSize} bytes`,
         }),
       };
-      if (uploadConfig.required) {
+      if (uploadConfig.required !== false) {
         uploadSchema.required.push(uploadConfig.field);
       }
     } else if (uploadConfig.type === "array") {
@@ -57,7 +57,7 @@ class ArkosRouterOpenAPIManager {
           description: `Max size per file: ${uploadConfig.maxSize} bytes`,
         }),
       };
-      if (uploadConfig.required) {
+      if (uploadConfig.required !== false) {
         uploadSchema.required.push(uploadConfig.field);
       }
     } else if (uploadConfig.type === "fields") {
@@ -73,7 +73,7 @@ class ArkosRouterOpenAPIManager {
             description: `Max size per file: ${uploadConfig.maxSize} bytes`,
           }),
         };
-        if (uploadConfig.required) {
+        if (uploadConfig.required !== false) {
           uploadSchema.required.push(field.name);
         }
       }
@@ -119,20 +119,20 @@ class ArkosRouterOpenAPIManager {
     if (uploadConfig?.type === "single") {
       expectedFields.push({
         name: uploadConfig.field,
-        required: uploadConfig.required || false,
+        required: uploadConfig.required !== false,
         expectedType: "single",
       });
     } else if (uploadConfig?.type === "array") {
       expectedFields.push({
         name: uploadConfig.field,
-        required: uploadConfig.required || false,
+        required: uploadConfig.required !== false,
         expectedType: "array",
       });
     } else if (uploadConfig?.type === "fields") {
       for (const field of uploadConfig.fields) {
         expectedFields.push({
           name: field.name,
-          required: uploadConfig.required || false,
+          required: uploadConfig.required !== false,
           expectedType: "array",
         });
       }

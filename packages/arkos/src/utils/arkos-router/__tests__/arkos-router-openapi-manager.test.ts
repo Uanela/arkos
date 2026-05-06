@@ -20,6 +20,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["avatar"],
         });
       });
 
@@ -41,6 +42,7 @@ describe("arkosRouterOpenApiManager", () => {
               description: "Max size: 5242880 bytes",
             },
           },
+          required: ["avatar"],
         });
       });
 
@@ -109,6 +111,8 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+
+          required: ["gallery"],
         });
       });
 
@@ -133,6 +137,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 10,
             },
           },
+          required: ["photos"],
         });
       });
 
@@ -141,6 +146,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "array",
           field: "images",
           maxSize: 2097152,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
@@ -216,6 +222,7 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+          required: ["avatar", "resume"],
         });
       });
 
@@ -250,6 +257,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 3,
             },
           },
+          required: ["photos", "documents"],
         });
       });
 
@@ -258,6 +266,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "fields",
           fields: [{ name: "avatar" }, { name: "cover" }],
           maxSize: 5242880,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
@@ -361,6 +370,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "single",
           field: "avatar",
+          required: false,
         };
 
         const existingSchema: any = {
@@ -429,6 +439,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "array",
           field: "files",
           maxCount: 3,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(
@@ -467,6 +478,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["photo"],
         });
       });
     });
@@ -476,6 +488,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "fields",
           fields: [{ name: "single_file" }],
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
@@ -521,6 +534,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["avatar"],
         };
 
         const uploadConfig: UploadConfig = {
@@ -710,6 +724,7 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+          required: ["photos"],
         };
 
         const uploadConfig: UploadConfig = {
@@ -916,6 +931,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "fields",
           fields: [{ name: "avatar" }, { name: "resume" }],
+          required: false,
         };
 
         expect(() =>
@@ -1144,7 +1160,6 @@ describe("arkosRouterOpenApiManager", () => {
           Error(
             `ValidationError: Invalid multipart/form-data schema for route '/users/profile':
   - Upload field 'avatar' must have type 'array', got 'string'
-  - Upload field 'avatar' is not required in config but marked as required in schema
   - Missing upload field 'resume' in multipart/form-data schema`
           )
         );
@@ -1242,6 +1257,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "single",
           field: "avatar",
+          required: false,
         };
 
         expect(() =>
@@ -1266,6 +1282,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 10,
             },
           },
+          required: ["photos"],
         };
 
         const uploadConfig: UploadConfig = {
