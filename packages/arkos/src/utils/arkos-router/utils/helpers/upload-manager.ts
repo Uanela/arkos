@@ -753,7 +753,15 @@ class UploadManager {
             }
 
             if (Object.keys(bodyUpdate).length > 0) {
-              req.body = deepmerge(req.body || {}, bodyUpdate);
+              req.body = deepmerge(req.body || {}, bodyUpdate, {
+                arrayMerge: (target, source) => {
+                  const result = [...target];
+                  source.forEach((item, i) => {
+                    result[i] = result[i] ? deepmerge(result[i], item) : item;
+                  });
+                  return result;
+                },
+              });
             }
           }
         } catch (err: any) {
