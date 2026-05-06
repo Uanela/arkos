@@ -7,6 +7,9 @@ import {
 } from "./types/upload-config";
 
 class ArkosRouterOpenAPIManager {
+  private resolveSchemaFieldName(name: string): string {
+    return name.replace(/\[\]/g, "[0]");
+  }
   /**
    * Generates OpenAPI schema for file upload fields in multipart/form-data requests.
    * Converts upload configuration into OpenAPI-compliant schema and merges with existing body schema.
@@ -46,7 +49,8 @@ class ArkosRouterOpenAPIManager {
     };
 
     if (uploadConfig.type === "single") {
-      uploadSchema.properties[uploadConfig.field] = {
+      const schemaKey = this.resolveSchemaFieldName(uploadConfig.field);
+      uploadSchema.properties[schemaKey] = {
         type: "string",
         format: "binary",
         ...(uploadConfig.maxSize && {
@@ -57,10 +61,11 @@ class ArkosRouterOpenAPIManager {
         }),
       };
       if (uploadConfig.required !== false) {
-        uploadSchema.required.push(uploadConfig.field);
+        uploadSchema.required.push(schemaKey);
       }
     } else if (uploadConfig.type === "array") {
-      uploadSchema.properties[uploadConfig.field] = {
+      const schemaKey = this.resolveSchemaFieldName(uploadConfig.field);
+      uploadSchema.properties[schemaKey] = {
         type: "array",
         items: {
           type: "string",
@@ -76,14 +81,12 @@ class ArkosRouterOpenAPIManager {
         }),
       };
       if (uploadConfig.required !== false) {
-        uploadSchema.required.push(uploadConfig.field);
+        uploadSchema.required.push(schemaKey);
       }
     } else if (uploadConfig.type === "fields") {
       for (const field of uploadConfig.fields) {
-        uploadSchema.properties[field.name] = this.buildFieldSchema(
-          field,
-          uploadConfig
-        );
+        uploadSchema.properties[this.resolveSchemaFieldName(field.name)] =
+          this.buildFieldSchema(field, uploadConfig);
 
         // legacy shape has no type and no required — default to required
         const isRequired =
@@ -92,7 +95,7 @@ class ArkosRouterOpenAPIManager {
             : (field as any).required !== false;
 
         if (isRequired) {
-          uploadSchema.required.push(field.name);
+          uploadSchema.required.push(this.resolveSchemaFieldName(field.name));
         }
       }
     }
@@ -220,7 +223,8 @@ class ArkosRouterOpenAPIManager {
     }
 
     for (const { name, required, expectedType } of expectedFields) {
-      const fieldSchema = properties[name];
+      const schemaKey = this.resolveSchemaFieldName(name);
+      const fieldSchema = properties[schemaKey];
 
       if (!fieldSchema) {
         errors.push(
@@ -254,7 +258,7 @@ class ArkosRouterOpenAPIManager {
           );
       }
 
-      const isMarkedRequired = requiredFields.includes(name);
+      const isMarkedRequired = requiredFields.includes(schemaKey);
       if (required && !isMarkedRequired)
         errors.push(
           `Upload field '${name}' is required in config but not marked as required in schema`
