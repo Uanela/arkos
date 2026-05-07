@@ -179,7 +179,7 @@ export class BaseController {
           const [records, total] = await Promise.all([
             result,
             this.service.count(where, {
-              user: req?.user,
+              user: req?.user!,
               accessToken: req?.accessToken,
             }),
           ]);
