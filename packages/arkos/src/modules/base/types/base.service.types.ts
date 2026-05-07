@@ -148,7 +148,7 @@ export interface ServiceBaseContext {
   /**
    * The authenticated user making the request
    */
-  user?: User;
+  user?: User | null;
 
   /**
    * The access token from the request for authorization
