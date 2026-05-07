@@ -15,14 +15,24 @@ export async function getSwaggerRouter(
   app: express.Express
 ): Promise<Router> {
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
+  const defaultSwaggerConfig = getSwaggerDefaultConfig({
+    ...pathsFromCustomArkosRouters,
+    ...getSystemJsonSchemaPaths(),
+  })!;
 
   const swaggerConfigs = deepmerge(
-    getSwaggerDefaultConfig({
-      ...pathsFromCustomArkosRouters,
-      ...getSystemJsonSchemaPaths(),
-    }) || {},
+    defaultSwaggerConfig,
     arkosConfig.swagger || {}
   ) as ArkosConfig["swagger"];
+
+  if (arkosConfig.swagger?.options?.definition?.servers && swaggerConfigs) {
+    swaggerConfigs!.options!.definition!.servers =
+      arkosConfig.swagger.options.definition.servers;
+
+    swaggerConfigs!.options!.definition!.servers.push(
+      defaultSwaggerConfig.options.definition.servers[0]
+    );
+  }
 
   const { definition, ...options } = swaggerConfigs?.options!;
 

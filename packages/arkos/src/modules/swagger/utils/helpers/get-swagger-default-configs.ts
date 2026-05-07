@@ -1,4 +1,3 @@
-import { ArkosConfig } from "../../../../exports";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
 
 export default function getSwaggerDefaultConfig(
@@ -70,5 +69,5 @@ transform: none !important;
 border-radius: 0 !important;
 }`,
     },
-  } as ArkosConfig["swagger"];
+  };
 }
