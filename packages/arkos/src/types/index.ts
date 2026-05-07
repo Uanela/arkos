@@ -221,7 +221,7 @@ export interface ArkosRequest<
   /**
    * Authenticated user
    */
-  user?: User;
+  user?: User | null;
   /**
    * Single uploaded file, populated when using `multer.single()`
    */
