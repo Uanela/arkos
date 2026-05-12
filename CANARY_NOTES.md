@@ -161,6 +161,7 @@
 
 - added minCount into array field upload config in ArkosRouter|RouteHook
 - made upload config type: fields work idenpentily to type: single or array with back compat to default array
+- allow passing req.query.orderBy to be used in prisma
 
 ### Change
 
