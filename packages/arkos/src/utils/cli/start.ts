@@ -17,7 +17,7 @@ let envFiles: string[] | undefined;
 /**
  * Production start command for the arkos CLI
  */
-export function startCommand(options: StartOptions = {}) {
+export async function startCommand(options: StartOptions = {}) {
   process.env.NO_CLI = "true";
 
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
@@ -28,7 +28,14 @@ export function startCommand(options: StartOptions = {}) {
   try {
     const { port, host } = options;
 
-    const entryPoint = path.join(process.cwd(), ".build", "src", "app.js");
+    const { getArkosConfig } = await import("../../server");
+    const config = getArkosConfig();
+
+    const entryPoint = path.join(
+      process.cwd(),
+      ".build",
+      config.source?.entryPoint!.replace(".ts", ".js")!
+    );
 
     if (!fs.existsSync(path.join(entryPoint))) {
       sheu.error(

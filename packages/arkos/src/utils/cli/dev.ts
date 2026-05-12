@@ -1,5 +1,5 @@
 import { spawn, ChildProcess, execSync } from "child_process";
-import { getUserFileExtension } from "../helpers/fs.helpers";
+import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import fs from "fs";
 import path from "path";
@@ -29,13 +29,19 @@ export async function devCommand(options: DevOptions = {}) {
   try {
     const { port, host } = options;
 
-    const fileExt = getUserFileExtension();
-    const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
+    const { getArkosConfig } = await import("../../server");
+    const config = getArkosConfig();
+
+    const entryPoint = path.resolve(process.cwd(), config.source?.entryPoint!);
 
     if (!fs.existsSync(entryPoint)) {
-      console.error(`Could not find application entry point at ${entryPoint}`);
+      console.error(
+        `Could not find application entry point at ${fullCleanCwd(entryPoint).replaceAll(/^\/+/g, "")}`
+      );
       return process.exit(1);
     }
+
+    const fileExt = getUserFileExtension();
 
     const entryPointRelative = path.relative(process.cwd(), entryPoint);
 
