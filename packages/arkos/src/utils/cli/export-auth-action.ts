@@ -1,6 +1,5 @@
 import { ChildProcess, spawn } from "child_process";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
-import { getUserFileExtension } from "../helpers/fs.helpers";
 import path from "path";
 import fs from "fs";
 import watermarkStamper from "./utils/watermark-stamper";
@@ -19,8 +18,10 @@ export default async function exportAuthActionCommand(options: {
   let child: ChildProcess | null = null;
 
   try {
-    const fileExt = getUserFileExtension();
-    const entryPoint = path.resolve(process.cwd(), `src/app.${fileExt}`);
+    const { getArkosConfig } = await import("../../server");
+    const config = getArkosConfig();
+
+    const entryPoint = path.resolve(process.cwd(), config.source?.entryPoint!);
 
     if (!fs.existsSync(entryPoint)) {
       console.error(`Could not find application entry point at ${entryPoint}`);
@@ -44,11 +45,15 @@ export default async function exportAuthActionCommand(options: {
 
       const env = getEnv();
 
-      child = spawn("npx", ["tsx-strict", "--no-type-check", entryPointRelative], {
-        stdio: "inherit",
-        env,
-        shell: true,
-      });
+      child = spawn(
+        "npx",
+        ["tsx-strict", "--no-type-check", entryPointRelative],
+        {
+          stdio: "inherit",
+          env,
+          shell: true,
+        }
+      );
 
       if (child)
         child.on("error", (error) => {
