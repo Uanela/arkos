@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import path from "node:path";
+import fs from "node:fs";
 
 export const crd = () =>
   process.env.ARKOS_BUILD === "true"
@@ -31,28 +31,27 @@ export let userFileExtension: "ts" | "js" | undefined;
  * Returns 'ts' when TypeScript config exists and not in build mode, otherwise 'js'
  * @returns 'ts' | 'js'
  */
-export const getUserFileExtension = (): "ts" | "js" => {
+export const getUserFileExtension = (root = process.cwd()): "ts" | "js" => {
   if (userFileExtension) return userFileExtension;
+  const tsconfigPath = path.join(root, "tsconfig.json");
 
-  try {
-    const currentDir = process.cwd();
+  function isTs() {
+    if (fs.existsSync(tsconfigPath)) return true;
 
-    const hasTsConfig = fs.existsSync(path.join(currentDir, "tsconfig.json"));
+    const packageJsonPath = path.join(root, "package.json");
 
-    const hasAppTs = fs.existsSync(path.join(currentDir, "src", "app.ts"));
-    const hasAppJs = fs.existsSync(path.join(currentDir, "src", "app.js"));
+    if (!fs.existsSync(packageJsonPath)) return false;
 
-    const isBuildMode = process.env.ARKOS_BUILD === "true";
+    const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 
-    if (isBuildMode) userFileExtension = "js";
-    else if (hasTsConfig && hasAppTs) userFileExtension = "ts";
-    else if (hasAppTs && !hasAppJs) userFileExtension = "ts";
-    else if (hasAppJs) userFileExtension = "js";
-    else userFileExtension = "js";
+    const dependencies = {
+      ...pkg.dependencies,
+      ...pkg.devDependencies,
+      ...pkg.peerDependencies,
+    };
 
-    return userFileExtension;
-  } catch (e) {
-    userFileExtension = "js";
-    return userFileExtension;
+    return Boolean(dependencies.typescript);
   }
+
+  return isTs() && process.env.ARKOS_BUILD !== "true" ? "ts" : "js";
 };

@@ -53,7 +53,10 @@ export default function initializeApp(app: Arkos) {
       userRequire.resolve("@scalar/api-reference")
     );
 
-    app.use({ path: "/scalar-api-reference" }, express.static(scalarDistPath));
+    app.use(
+      { path: `${config.globalPrefix}/scalar-api-reference` },
+      express.static(scalarDistPath)
+    );
 
     app.use({ path: globalPrefix }, getSwaggerRouter(config, app));
   }

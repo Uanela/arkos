@@ -296,10 +296,13 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         openapi.parameters?.some(
           (parameter: any) => parameter.in === validationToParameterMapping[key]
         ) &&
-        validators[key]
+        validators?.[key]
       ) {
         throw Error(
-          `Error in ${routeConfig.path}: when usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+          `Error in ${routeConfig.path}: when usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.
+
+Read more about strict validation at https://www.arkosjs.com/docs/guides/validation/setup#strict-mode.
+`
         );
       }
 
@@ -307,7 +310,7 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         openapi &&
         typeof openapi === "object" &&
         openapi.requestBody &&
-        validators[key] &&
+        validators?.[key] &&
         key === "body"
       ) {
         throw Error(
@@ -315,15 +318,11 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
         );
       }
 
-      if (strictValidation && !(key in validators))
-        throw Error(
-          `No { validation: { ${key}: ${validatorNameType} } } was found, while using strict validation you will need to pass undefined into ${key} in order to deny any request ${key} input.`
-        );
-
       if (
-        key in validators &&
+        key in (validators || {}) &&
         validators?.[key] !== undefined &&
         validators?.[key] !== false &&
+        validators?.[key] !== null &&
         !isValidValidator(validators[key])
       )
         throw Error(
@@ -343,15 +342,17 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
           { [key]: req[key] }
         );
 
-        if (
-          ((typeof validators === "boolean" && validators === false) ||
-            validator === false) &&
-          reqInput
-        )
+        // null explicitly set → always prohibit input
+        if (validator === null && reqInput) throw notAllowedInputError;
+
+        // strict mode + key not declared or set to undefined → prohibit input
+        if (strictValidation && validator === undefined && reqInput)
           throw notAllowedInputError;
 
-        if (strictValidation && !validator && reqInput)
-          throw notAllowedInputError;
+        // false explicitly set → allow input through without validation
+        if (validator === false) continue;
+
+        // a schema/dto was provided → validate
         if (validator)
           try {
             req[key] = await validatorFn(
