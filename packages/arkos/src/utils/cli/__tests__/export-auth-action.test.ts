@@ -128,7 +128,7 @@ describe("exportAuthActionCommand", () => {
 
       await exportAuthActionCommand({});
 
-      expect(getUserFileExtension).toHaveBeenCalledTimes(1);
+      expect(getUserFileExtension).toHaveBeenCalledTimes(2);
       expect(path.resolve).toHaveBeenCalledWith(process.cwd(), "src/app.js");
     });
 

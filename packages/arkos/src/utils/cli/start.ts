@@ -5,6 +5,7 @@ import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { fullCleanCwd } from "../helpers/fs.helpers";
 import watermarkStamper from "./utils/watermark-stamper";
 import sheu from "../sheu";
+import { getArkosConfig } from "../helpers/arkos-config.helpers";
 
 interface StartOptions {
   port?: string;
@@ -28,7 +29,6 @@ export async function startCommand(options: StartOptions = {}) {
   try {
     const { port, host } = options;
 
-    const { getArkosConfig } = await import("../../server");
     const config = getArkosConfig();
 
     const entryPoint = path.join(

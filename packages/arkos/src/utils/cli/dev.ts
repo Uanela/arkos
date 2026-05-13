@@ -6,6 +6,7 @@ import path from "path";
 import sheu from "../sheu";
 import portAndHostAllocator from "../features/port-and-host-allocator";
 import watermarkStamper from "./utils/watermark-stamper";
+import { getArkosConfig } from "../helpers/arkos-config.helpers";
 
 interface DevOptions {
   port?: string;
@@ -29,7 +30,6 @@ export async function devCommand(options: DevOptions = {}) {
   try {
     const { port, host } = options;
 
-    const { getArkosConfig } = await import("../../server");
     const config = getArkosConfig();
 
     const entryPoint = path.resolve(process.cwd(), config.source?.entryPoint!);
