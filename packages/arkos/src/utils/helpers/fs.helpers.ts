@@ -36,15 +36,11 @@ export const getUserFileExtension = (root = process.cwd()): "ts" | "js" => {
   const tsconfigPath = path.join(root, "tsconfig.json");
 
   function isTs() {
-    if (fs.existsSync(tsconfigPath)) {
-      return true;
-    }
+    if (fs.existsSync(tsconfigPath)) return true;
 
     const packageJsonPath = path.join(root, "package.json");
 
-    if (!fs.existsSync(packageJsonPath)) {
-      return false;
-    }
+    if (!fs.existsSync(packageJsonPath)) return false;
 
     const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 

@@ -3,6 +3,7 @@ import { loadEnvironmentVariables } from "../dotenv.helpers";
 import path from "path";
 import fs from "fs";
 import watermarkStamper from "./utils/watermark-stamper";
+import { getArkosConfig } from "../helpers/arkos-config.helpers";
 
 export default async function exportAuthActionCommand(options: {
   overwrite?: boolean;
@@ -18,7 +19,6 @@ export default async function exportAuthActionCommand(options: {
   let child: ChildProcess | null = null;
 
   try {
-    const { getArkosConfig } = await import("../../server");
     const config = getArkosConfig();
 
     const entryPoint = path.resolve(process.cwd(), config.source?.entryPoint!);

@@ -2,9 +2,9 @@ import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";
 import { startCommand } from "../start";
-import { importModule } from "../../helpers/global.helpers";
 import portAndHostAllocator from "../../features/port-and-host-allocator";
 import sheu from "../../sheu";
+import { getArkosConfig } from "../../helpers/arkos-config.helpers";
 
 jest.mock("../../sheu", () => ({
   error: jest.fn(),
@@ -37,11 +37,18 @@ const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
   return "" as never;
 });
 
-jest.mock("../../../server", () => ({
+const source = {
+  entryPoint: "src/app.js",
+};
+
+jest.mock("../../helpers/arkos-config.helpers", () => ({
   getArkosConfig: jest.fn().mockReturnValue({
     available: true,
     port: "4000",
     host: "localhost",
+    source: {
+      entryPoint: "src/app.js",
+    },
   }),
 }));
 
@@ -138,8 +145,7 @@ describe("startCommand", () => {
     expect(path.join).toHaveBeenCalledWith(
       process.cwd(),
       ".build",
-      "src",
-      "app.js"
+      "src/app.js"
     );
 
     // Check fs.existsSync was called with full path
@@ -179,8 +185,7 @@ describe("startCommand", () => {
     expect(path.join).toHaveBeenCalledWith(
       process.cwd(),
       ".build",
-      "src",
-      "app.js"
+      "src/app.js"
     );
 
     // Check fs.existsSync was called with full path
@@ -222,14 +227,8 @@ describe("startCommand", () => {
   });
 
   it("should use default options when none are provided", async () => {
-    jest
-      .spyOn(require("../../../server"), "getArkosConfig")
-      .mockResolvedValue({ getArkosConfig: () => ({ available: true }) });
-
-    (importModule as jest.Mock).mockImplementation(async () => {
-      return {
-        getArkosConfig: () => ({ available: true }),
-      };
+    (getArkosConfig as jest.Mock).mockImplementation(() => {
+      return { available: true, source };
     });
 
     (
