@@ -75,12 +75,12 @@ model FavouriteVerse {
 ## Push the schema and generate types
 
 ```bash
-npx prisma db push
-npx arkos prisma generate
+pnpm prisma db push
+pnpm arkos prisma generate
 ```
 
 <Callout type="info">
-  `npx arkos prisma generate` generates enhanced TypeScript types so you get full autocomplete on `BaseService` methods. Run it every time you change your Prisma schema.
+  `pnpm arkos prisma generate` generates enhanced TypeScript types so you get full autocomplete on `BaseService` methods. Run it every time you change your Prisma schema.
 </Callout>
 
 ## What each model does

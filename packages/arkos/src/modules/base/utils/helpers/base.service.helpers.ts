@@ -238,6 +238,21 @@ export function handleRelationFieldsInBody(
 
     if (relationData?.apiAction === "delete") {
       mutableBody[field.name] = { delete: true };
+    } else if (relationData?.apiAction === "create") {
+      const { apiAction, ...cleanedData } = relationData;
+      throwErrorIfApiActionIsInvalid(apiAction);
+
+      let dataToCreate = cleanedData;
+      if (nestedRelations?.singular || nestedRelations?.list) {
+        dataToCreate = handleRelationFieldsInBody(
+          dataToCreate,
+          nestedRelations,
+          ignoreActions,
+          true,
+          "create"
+        );
+      }
+      mutableBody[field.name] = { create: dataToCreate };
     } else if (relationData?.apiAction === "disconnect") {
       mutableBody[field.name] = { disconnect: true };
     } else if (
