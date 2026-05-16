@@ -30,6 +30,7 @@ export default class APIFeatures {
     "prismaQueryOptions",
     "ignoredFields",
     "select",
+    "orderBy",
     "omit",
   ];
 
@@ -158,6 +159,8 @@ export default class APIFeatures {
   }
 
   sort() {
+    const reqOrderBy = this.req?.query.orderBy;
+    const reqOrderByIsArray = Array.isArray(reqOrderBy);
     if (this.searchParams.sort) {
       const sortBy = this.searchParams?.sort
         ?.split(",")
@@ -165,8 +168,13 @@ export default class APIFeatures {
           [field.startsWith("-") ? field.substring(1) : field]:
             field.startsWith("-") ? "desc" : "asc",
         }));
-      this.filters = deepmerge(this.filters, { orderBy: sortBy });
-    }
+      this.filters = deepmerge(this.filters, {
+        orderBy: deepmerge(
+          reqOrderByIsArray ? [sortBy] : sortBy,
+          reqOrderBy || {}
+        ),
+      });
+    } else this.filters.orderBy = reqOrderBy;
 
     return this;
   }
