@@ -184,17 +184,22 @@ export function handleRequestLogs(
   };
 
   res.on("finish", () => {
+    const isProduction = process.env.ARKOS_BUILD == "true";
     const duration = Date.now() - startTime;
 
     const now = new Date();
+
+    const date = now.toISOString().split("T")[0];
     const time = now.toTimeString().split(" ")[0];
+
+    const timestamp = isProduction ? `${date} ${time}` : time;
 
     const methodColor =
       methodColors[req.method as keyof typeof methodColors] || "\x1b[0m";
     const statusColor = getStatusColor(res.statusCode);
 
     console.info(
-      `[\x1b[36mInfo\x1b[0m] \x1b[90m${time}\x1b[0m ${methodColor}${
+      `[\x1b[36mInfo\x1b[0m] \x1b[90m${timestamp}\x1b[0m ${methodColor}${
         req.method
       }\x1b[0m ${lenientDecode(req.originalUrl)} ${statusColor}${
         res.statusCode
