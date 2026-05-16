@@ -44,7 +44,10 @@ export async function loadPrismaModule() {
 export function handlePrismaGet(target: any, prop: string, receiver: any) {
   const originalProperty = (Reflect.get(target, prop, receiver) || {}) as any;
 
-  const isModel = "findMany" in originalProperty;
+  const isModel =
+    typeof originalProperty === "object"
+      ? "findMany" in originalProperty
+      : false;
 
   if (isModel && originalProperty) {
     return new Proxy(originalProperty, {
