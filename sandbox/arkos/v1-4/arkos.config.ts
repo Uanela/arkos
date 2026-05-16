@@ -9,7 +9,7 @@ const config: ArkosConfig = {
     // jwt: {
     //   secret: "Hello",
     // },
-    enabled: true,
+    enabled: false,
   },
   routers: {},
   validation: {

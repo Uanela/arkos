@@ -1,6 +1,7 @@
 import { ArkosRouter } from "arkos";
 // import userController from "./user.controller"
 import { RouterConfig } from "arkos";
+import userService from "./user.service";
 
 export const config: RouterConfig<"prisma"> = {};
 
@@ -17,6 +18,8 @@ userRouter.get(
     },
   },
   (req, res) => {
+    console.log(userService.prisma.post);
+    console.log(userService.prisma);
     res.json({ crazy: "yeah" });
   }
 );
