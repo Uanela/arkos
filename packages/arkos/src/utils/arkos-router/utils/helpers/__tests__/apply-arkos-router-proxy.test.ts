@@ -140,7 +140,7 @@ describe("applymakeRouterProxy", () => {
     } catch (err: any) {
       expect(ExitError).toHaveBeenCalledWith(
         expect.stringContaining(
-          "Trying to authenticate route GET /api/cacilda without choosing an authentication mode under arkos.config.js"
+          "Trying to authenticate route GET /api/cacilda without choosing an authentication mode under arkos.config"
         )
       );
     }

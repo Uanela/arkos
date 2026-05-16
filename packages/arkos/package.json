@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.7.0-canary.12",
+  "version": "1.7.0-canary.13",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -174,7 +174,7 @@
   },
   "peerDependencies": {
     "@prisma/client": "6.19.2",
-    "@scalar/api-reference": "1.50.0",
+    "@scalar/api-reference": "1.55.3",
     "@scalar/express-api-reference": "0.8.35",
     "bcryptjs": "3.0.2",
     "class-transformer": "0.5.1",

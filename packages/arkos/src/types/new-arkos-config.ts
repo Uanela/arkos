@@ -25,6 +25,41 @@ import {
  */
 export type ArkosConfig = {
   /**
+   * Configuration for resolving your Arkos application's source files at runtime.
+   *
+   * @since 1.6.1-canary.2
+   *
+   */
+  source?: {
+    /**
+     * The entry point file of your Arkos application, resolved at runtime.
+     *
+     * This should point to the file where `app.listen()` or `app.listen(server)`
+     * is called to start the HTTP server.
+     *
+     * Supports both TypeScript and JavaScript projects.
+     *
+     * @type {string}
+     *
+     * @default "src/app.ts" (TypeScript) | "src/app.js" (JavaScript)
+     *
+     * @since 1.6.1-canary.2
+     *
+     * @example
+     * ```ts
+     * // TypeScript project
+     * entryPoint: "src/app.ts"
+     *
+     * // JavaScript project
+     * entryPoint: "src/app.js"
+     *
+     * // Custom path
+     * entryPoint: "src/server/main.ts"
+     * ```
+     */
+    entryPoint?: string;
+  };
+  /**
    * The global prefixer for the whole application
    *
    * @default "/api"
@@ -927,6 +962,8 @@ export type ArkosConfig = {
   };
   /**
    * Allows to suppress specific warnings emitted by Arkos at startup or runtime.
+   *
+   * @since 1.5.10-beta
    */
   warnings?: {
     /**
