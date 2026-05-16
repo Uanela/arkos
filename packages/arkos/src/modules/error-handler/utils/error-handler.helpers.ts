@@ -73,7 +73,7 @@ export function handleUniqueConstraintError(err: any) {
 export function handleForeignKeyConstraintError(_: AppError) {
   const message =
     "Foreign key constraint violation. Ensure that the referenced record exists.";
-  return new AppError(message, 400, "ForeignKeyViolation");
+  return new AppError(message, 409, "ForeignKeyViolation");
 }
 
 export function handleConstraintFailedError(err: AppError) {
