@@ -77,7 +77,7 @@ postRouter.post(
 export default postRouter;
 ```
 
-See more about the enhaced express-based router (ArkosRouter) at [ArkosRouter Guide](https://www.arkosjs.com/docs/core-concepts/components/routers).
+See more about the enhanced express-based router (ArkosRouter) at [ArkosRouter Guide](https://www.arkosjs.com/docs/core-concepts/components/routers).
 
 ## Define Permissions Once, Guard Everywhere
 

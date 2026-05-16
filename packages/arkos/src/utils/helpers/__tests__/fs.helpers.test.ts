@@ -1,10 +1,10 @@
-import fs from "fs";
+import fs from "node:fs";
 import { getUserFileExtension } from "../fs.helpers";
 import * as fsHelpers from "../fs.helpers";
-import path from "path";
+import path from "node:path";
 
 // Mock the fs module
-jest.mock("fs", () => ({
+jest.mock("node:fs", () => ({
   ...jest.requireActual("fs"),
   stat: jest.fn(),
   access: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock("fs", () => ({
   },
 }));
 
-jest.mock("path");
+jest.mock("node:path");
 
 describe("fs.helpers", () => {
   beforeEach(() => {
@@ -67,8 +67,10 @@ describe("fs.helpers", () => {
 
     it('should return "ts" when tsconfig.json exists and ARKOS_BUILD is not "true"', () => {
       // Mock fs.existsSync to return true for tsconfig.json
+
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
+      process.env.ARKOS_BUILD = "false";
       const result = getUserFileExtension();
 
       expect(result).toBe("ts");

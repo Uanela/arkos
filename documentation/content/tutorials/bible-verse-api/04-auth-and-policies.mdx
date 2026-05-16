@@ -8,11 +8,17 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 ## How Arkos auth works
 
-Every auto-generated route is open by default. You lock it down by exporting a `RouteHook` from the router file and passing either `false` (public) or an `ArkosPolicy` rule (authenticated + role-checked) to the `authentication` key of each operation.
+Every auto-generated route requires authentication and authorization by default. You customize it down by exporting a `RouteHook` from the router file and passing either `false` (public) or an `ArkosPolicy` rule (authenticated + role-checked) to the `authentication` key of each operation.
 
 ## Book, Chapter, and Verse policies
 
-Scripture should be publicly readable. Only admins should be able to create, update, or delete records.
+Scripture should be publicly readable. Only admins should be able to create, update, or delete records. You can use the following command to generate ArkosPolicy and ArkosRouter which comes with RouteHook for each of the models.
+
+```bash
+pnpm arkos generate policy,router --module book,chapter,verse
+```
+
+After running the above command arkos will generate a set of ArkosPolicy and router files for each module. Next step is to go on each file and customize it, to apply the required authentication and authorization rules.
 
 <Tabs items={["Book", "Chapter", "Verse"]}>
   <Tab value="Book">
@@ -131,6 +137,7 @@ export const hook: RouteHook = {
 };
 
 const favouriteVerseRouter = ArkosRouter();
+
 export default favouriteVerseRouter;
 ```
 
@@ -144,7 +151,7 @@ Once the server is running, register and log in via the user module to get a tok
 
 ```bash
 # Register
-POST /api/users/auth/register
+POST /api/auth/signup
 { "name": "Admin", "email": "admin@bible.api", "password": "secret", "role": "Admin" }
 
 # Login

@@ -11,37 +11,50 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 Run `create-arkos` and answer the prompts exactly as shown below:
 
 ```bash
-pnpm create arkos@latest
+pnpm create arkos@latest bible-api
 ```
 
 ```
-? What is the name of your project? › bible-api
 ? Would you like to use TypeScript? › Yes
-? What db provider will be used for Prisma? › postgresql
-? Would you like to set up Validation? › Yes
+? What db provider will be used for Prisma? › sqlite
+? Which Validation library would you like to use? › zod
 ? Choose validation library › zod
-? Would you like to set up Authentication? › Yes
-? Choose authentication type › static
-? Choose default username field for login › email
+? Which Authentication mode would you like to use? › static
+? Enter the Prisma field name to use as login username › email
 ? Would you like to use authentication with Multiple Roles? › Yes
+? Would you like to use Strict Routing? › No
+? Which Entry Point would you like to use? > src/app.ts
 ```
 
-`create-arkos` creates the project folder, installs dependencies, and runs `prisma generate` automatically.
+`create-arkos` creates the project folder and installs dependencies automatically.
+
+## Enter the projects' folder
+
+```bash
+cd bible-api
+```
 
 ## Environment variables
 
 Open `.env` and fill in your database URL and a random JWT secret:
 
 ```bash title=".env"
-DATABASE_URL=postgresql://user:pass@localhost:5432/bible_api
+DATABASE_URL=file:../../file.db
 JWT_SECRET=change-me-to-something-long-and-random
 PORT=8000
+```
+
+## Setup Prisma
+
+
+```bash
+pnpm prisma db push
+pnpm arkos prisma generate
 ```
 
 ## Start the dev server
 
 ```bash
-cd bible-api
 pnpm run dev
 ```
 
