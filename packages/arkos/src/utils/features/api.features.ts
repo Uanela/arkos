@@ -30,7 +30,6 @@ export default class APIFeatures {
     "prismaQueryOptions",
     "ignoredFields",
     "select",
-    "orderBy",
     "omit",
   ];
 
