@@ -52,13 +52,10 @@ let instanciated = false;
  *
  * app.use(reportsRouter);
  *
- * async function start() {
- *  await app.build();
+ * await app.build();
  *
- *  const server = http.createServer(app);
- *  app.listen(server)
- * }
- * main()
+ * const server = http.createServer(app);
+ * app.listen(server)
  * ```
  *
  * @see {@link https://www.arkosjs.com/docs/core-concepts/routing/setup}
@@ -66,7 +63,7 @@ let instanciated = false;
 export function arkos(): Arkos {
   if (process.env.__ARKOS_CLI !== "true")
     throw ExitError(
-      `Arkos.js application must be started the built-in cli ${isProduction() ? "'arkos start' in production" : '"arkos dev" in development'} see https://www.arkosjs.com/docs/getting-started/installation#7-set-up-packagejson-scripts`
+      `Arkos.js application must be started the built-in cli ${isProduction() ? "'arkos start' in production" : `'arkos dev' in development`} see https://www.arkosjs.com/docs/getting-started/installation#7-set-up-packagejson-scripts`
     );
 
   if (instanciated)

@@ -9,6 +9,11 @@ import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-
 import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy";
 
+export type ArkosRouterOptions = {
+  prefix?: string | RegExp | Array<string | RegExp>;
+  openapi?: { tags?: string[] };
+};
+
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
  *
@@ -34,10 +39,7 @@ import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy"
  * @see {@link https://www.arkosjs.com/docs/reference/arkos-router} for configuration options
  */
 export default function ArkosRouter(
-  options?: RouterOptions & {
-    prefix?: string | RegExp | Array<string | RegExp>;
-    openapi?: { tags?: string[] };
-  }
+  options?: RouterOptions & ArkosRouterOptions
 ): IArkosRouter {
   const router = Router(options);
   return applyArkosRouterProxy(router, options) as IArkosRouter;
