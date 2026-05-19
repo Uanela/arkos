@@ -164,10 +164,11 @@ export async function bootstrap(
     if (typeof middlewaresConfig?.cookieParser === "function") {
       app.use(middlewaresConfig.cookieParser);
     } else {
-      const params = Array.isArray(middlewaresConfig?.cookieParser)
-        ? middlewaresConfig.cookieParser
-        : [];
-      app.use(cookieParser(...(params as any))); // FIXME: check types correctly
+      const params =
+        typeof middlewaresConfig?.cookieParser == "object"
+          ? middlewaresConfig.cookieParser
+          : { secret: undefined, options: undefined };
+      app.use(cookieParser(params.secret, params.options));
     }
   }
 
