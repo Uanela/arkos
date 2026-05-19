@@ -86,7 +86,7 @@ export async function bootstrap(
   }
 
   if (middlewaresConfig?.cors !== false) {
-    const corsConfig = middlewaresConfig?.cors!;
+    const corsConfig = middlewaresConfig?.cors || {};
 
     if ("customHandler" in corsConfig)
       sheu.warn(
@@ -119,24 +119,20 @@ export async function bootstrap(
       }
     } else if (
       middlewaresConfig?.cors &&
-      typeof middlewaresConfig.cors === "object" &&
-      "customHandler" in middlewaresConfig.cors
+      typeof corsConfig === "object" &&
+      "customHandler" in corsConfig
     ) {
       // { customHandler } shape — delegate entirely to user's handler
-      app.use(cors(middlewaresConfig.cors.customHandler));
+      app.use(cors(corsConfig.customHandler));
     } else if (
       middlewaresConfig?.cors &&
-      typeof middlewaresConfig.cors === "object" &&
-      !("allowedOrigins" in middlewaresConfig.cors)
+      typeof corsConfig === "object" &&
+      !("allowedOrigins" in corsConfig)
     ) {
       // Plain cors.CorsOptions passed directly at top level
-      app.use(
-        cors(
-          deepmerge(defaultOptions, middlewaresConfig.cors as cors.CorsOptions)
-        )
-      );
+      app.use(cors(deepmerge(defaultOptions, corsConfig as cors.CorsOptions)));
     } else {
-      const { allowedOrigins, options } = middlewaresConfig?.cors as {
+      const { allowedOrigins, options } = corsConfig as {
         allowedOrigins?: string | string[] | "*";
         options?: cors.CorsOptions;
       };

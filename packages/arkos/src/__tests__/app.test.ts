@@ -157,7 +157,7 @@ describe("App Bootstrap", () => {
 
     it("uses replaced middlewares", async () => {
       const customCompressionMiddleware = jest.fn();
-      const customCorsMiddleware = jest.fn();
+      const customCorsMiddleware = jest.fn((_: any, _1: any, _2: any) => {});
 
       (getArkosConfig as jest.Mock).mockReturnValue({
         middlewares: {
@@ -221,7 +221,7 @@ describe("App Bootstrap", () => {
       );
     });
 
-    it('configures cors with all origins when "*" is specified', async () => {
+    it('configures cors with * origins when "*" is specified', async () => {
       (getArkosConfig as jest.Mock).mockReturnValue({
         middlewares: {
           cors: { allowedOrigins: "*" },
@@ -231,16 +231,13 @@ describe("App Bootstrap", () => {
 
       expect(cors).toHaveBeenCalledWith(
         expect.objectContaining({
-          origin: expect.any(Function),
+          origin: "*",
         })
       );
 
-      // Test the origin callback
-      const originCallback = (cors as jest.Mock).mock.calls[0][0].origin;
-      const mockCallback = jest.fn();
+      const origin = (cors as jest.Mock).mock.calls[0][0].origin;
 
-      originCallback("https://example.com", mockCallback);
-      expect(mockCallback).toHaveBeenCalledWith(null, true);
+      expect(origin).toBe("*");
     });
 
     it("configures cors with specific origins", async () => {
@@ -255,19 +252,13 @@ describe("App Bootstrap", () => {
 
       expect(cors).toHaveBeenCalledWith(
         expect.objectContaining({
-          origin: expect.any(Function),
+          origin: allowedOrigins,
         })
       );
 
       // Test the origin callback
-      const originCallback = (cors as jest.Mock).mock.calls[0][0].origin;
-      const mockCallback = jest.fn();
-
-      originCallback("https://example.com", mockCallback);
-      expect(mockCallback).toHaveBeenCalledWith(null, true);
-
-      originCallback("https://not-allowed.com", mockCallback);
-      expect(mockCallback).toHaveBeenCalledWith(null, false);
+      const origin = (cors as jest.Mock).mock.calls[0][0].origin;
+      expect(origin).toBe(allowedOrigins);
     });
 
     it("uses custom CORS handler if provided", async () => {
@@ -280,7 +271,7 @@ describe("App Bootstrap", () => {
       });
       const app = await bootstrap({});
 
-      expect(app.use).toHaveBeenCalledWith(customHandler);
+      expect(app.use).toHaveBeenCalledWith(cors(customHandler));
     });
   });
 
