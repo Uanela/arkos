@@ -450,9 +450,11 @@ export type ArkosConfig = {
      */
     cookieParser?:
       | false
-      | Parameters<typeof cookieParser>
-      | ArkosRequestHandler;
-    /**
+      | {
+          secret?: string | string[];
+          options?: Parameters<typeof cookieParser>[1];
+        }
+      | ArkosRequestHandler /**
    * Options to define how query must be parsed.
    *
    * #### for example:
@@ -476,7 +478,7 @@ export type ArkosConfig = {
    * numbers to query pay attention to this.
    * 
    * Soon a feature to converted the query to the end prisma type will be added.
-   */
+   */;
     queryParser?: false | QueryParserOptions | ArkosRequestHandler;
     /**
      * Configuration for request logger middleware.
