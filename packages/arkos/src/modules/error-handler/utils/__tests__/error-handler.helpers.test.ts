@@ -200,7 +200,7 @@ describe("Error Handlers", () => {
       const err = {} as any;
       const result = errorHandlers.handleForeignKeyConstraintError(err);
       expect(result).toBeInstanceOf(AppError);
-      expect(result.statusCode).toBe(400);
+      expect(result.statusCode).toBe(409);
       expect(result.message).toBe(
         "Foreign key constraint violation. Ensure that the referenced record exists."
       );

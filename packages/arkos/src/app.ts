@@ -18,13 +18,15 @@ import { getSwaggerRouter } from "./modules/swagger/swagger.router";
 import { loadAllModuleComponents } from "./utils/dynamic-loader";
 import { AppError } from "./exports/error-handler";
 import debuggerService from "./modules/debugger/debugger.service";
-import { getArkosConfig } from "./exports";
+import { ArkosRequestHandler, getArkosConfig } from "./exports";
 import { ArkosInitConfig } from "./types/arkos-config";
 import {
   isAuthenticationEnabled,
+  isProduction,
   validateArkosConfig,
 } from "./utils/helpers/arkos-config.helpers";
 import { lenientDecode } from "./utils/helpers/url-helpers";
+import sheu from "./utils/sheu";
 export const app: express.Express = express();
 const knowModulesRouter = Router();
 
@@ -84,40 +86,63 @@ export async function bootstrap(
   }
 
   if (middlewaresConfig?.cors !== false) {
-    if (typeof middlewaresConfig?.cors === "function") {
-      app.use(middlewaresConfig.cors);
+    const corsConfig = middlewaresConfig?.cors || {};
+
+    if ("customHandler" in corsConfig)
+      sheu.warn(
+        "cors.customHandler is deprecated. Pass the handler directly: `cors: myHandler`. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+      );
+
+    if ("allowedOrigins" in corsConfig)
+      sheu.warn(
+        "cors.allowedOrigins is deprecated. Use `cors: { origin: '...' }` directly instead. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+      );
+
+    if ("options" in corsConfig)
+      sheu.warn(
+        "cors.options is deprecated. Pass cors.CorsOptions directly instead. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+      );
+
+    const defaultOptions = {
+      origin: isProduction() ? "*" : true,
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "Connection"],
+      credentials: isProduction() ? false : true,
+    };
+
+    if (typeof corsConfig === "function") {
+      if (corsConfig.length >= 3) {
+        app.use(corsConfig as ArkosRequestHandler);
+      } else {
+        // cors.CorsOptionsDelegate — (req, cb)
+        app.use(cors(corsConfig as cors.CorsOptionsDelegate));
+      }
+    } else if (
+      middlewaresConfig?.cors &&
+      typeof corsConfig === "object" &&
+      "customHandler" in corsConfig
+    ) {
+      // { customHandler } shape — delegate entirely to user's handler
+      app.use(cors(corsConfig.customHandler));
+    } else if (
+      middlewaresConfig?.cors &&
+      typeof corsConfig === "object" &&
+      !("allowedOrigins" in corsConfig)
+    ) {
+      // Plain cors.CorsOptions passed directly at top level
+      app.use(cors(deepmerge(defaultOptions, corsConfig as cors.CorsOptions)));
     } else {
+      const { allowedOrigins, options } = corsConfig as {
+        allowedOrigins?: string | string[] | "*";
+        options?: cors.CorsOptions;
+      };
+
       app.use(
         cors(
-          middlewaresConfig?.cors?.customHandler
-            ? middlewaresConfig.cors.customHandler
-            : deepmerge(
-                {
-                  origin: (
-                    origin: string,
-                    cb: (err: Error | null, allow?: boolean) => void
-                  ) => {
-                    const allowed = (middlewaresConfig?.cors as any)
-                      ?.allowedOrigins;
-
-                    if (allowed === "*") cb(null, true);
-                    else if (Array.isArray(allowed))
-                      cb(null, !origin || allowed?.includes?.(origin));
-                    else if (typeof allowed === "string")
-                      cb(null, !origin || allowed === origin);
-                    else cb(null, false);
-                  },
-
-                  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-                  allowedHeaders: [
-                    "Content-Type",
-                    "Authorization",
-                    "Connection",
-                  ],
-                  credentials: true,
-                },
-                middlewaresConfig?.cors?.options || {}
-              )
+          deepmerge(defaultOptions, {
+            origin: allowedOrigins ?? defaultOptions.origin,
+            ...(options || {}),
+          })
         )
       );
     }
@@ -135,10 +160,11 @@ export async function bootstrap(
     if (typeof middlewaresConfig?.cookieParser === "function") {
       app.use(middlewaresConfig.cookieParser);
     } else {
-      const params = Array.isArray(middlewaresConfig?.cookieParser)
-        ? middlewaresConfig.cookieParser
-        : [];
-      app.use(cookieParser(...(params as any))); // FIXME: check types correctly
+      const params =
+        typeof middlewaresConfig?.cookieParser == "object"
+          ? middlewaresConfig.cookieParser
+          : { secret: undefined, options: undefined };
+      app.use(cookieParser(params.secret, params.options));
     }
   }
 

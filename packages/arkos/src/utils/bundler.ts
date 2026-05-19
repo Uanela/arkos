@@ -184,7 +184,7 @@ export class Bundler {
    * @param filePath - Absolute path to the JSON file
    * @returns Parsed object, or empty object if parsing fails
    */
-  private readJsonWithComments(filePath: string): any {
+  readJsonWithComments(filePath: string): any {
     const raw = fs.readFileSync(filePath, "utf8");
     return JSON.parse(
       raw
