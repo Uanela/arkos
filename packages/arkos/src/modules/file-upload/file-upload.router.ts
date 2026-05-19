@@ -24,6 +24,8 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const router = ArkosRouter();
   const { fileUpload } = arkosConfig;
 
+  if (!fileUpload?.enabled === false) return router;
+
   const moduleComponents = getModuleComponents("file-upload");
   let {
     interceptors = {} as any,

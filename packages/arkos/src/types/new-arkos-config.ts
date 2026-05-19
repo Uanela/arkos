@@ -187,12 +187,16 @@ export type ArkosConfig = {
          * Expiry date of the cookie in GMT. If not specified (undefined), creates a session cookie.
          *
          * @default `now() + authentication.jwt.expireIn | JWT_EXPIRES_IN`
+         *
+         * @since 1.5.11-beta
          */
         expires?: Date | undefined;
         /**
          * Domain for the cookie. Use a leading dot (e.g. `.example.com`) to include all subdomains.
          *
          * @env `JWT_COOKIE_DOMAIN`
+         *
+         * @since 1.5.11-beta
          */
         domain?: string | undefined;
       } & Omit<
@@ -271,9 +275,15 @@ export type ArkosConfig = {
   /**
    * Defines file upload configurations
    *
-   * See [www.arkosjs.com/docs/core-concepts/file-upload#costum-configurations](https://www.arkosjs.com/docs/core-concepts/file-upload#costum-configurations)
+   * See {@link https://www.arkosjs.com/docs/guides/file-uploads/setup}
    */
   fileUpload?: {
+    /**
+     * Disables built-in file upload
+     *
+     * @since 1.5.11-beta
+     */
+    enabled?: boolean;
     /**
      * Defiens the base file upload directory, default is set to /uploads (on root directory)
      *
