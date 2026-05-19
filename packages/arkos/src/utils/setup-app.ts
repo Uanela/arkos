@@ -9,12 +9,23 @@ import cookieParser from "cookie-parser";
 import { queryParser } from "./helpers/query-parser.helpers";
 import { handleRequestLogs } from "../modules/base/base.middlewares";
 import debuggerService from "../modules/debugger/debugger.service";
-import { catchAsync, TooManyRequestsError } from "../exports/error-handler";
+import { catchAsync } from "../exports/error-handler";
+import { TooManyRequestsError } from "../modules/error-handler/utils/errors";
+import ExitError from "./helpers/exit-error";
 
 export default function setupApp(app: Arkos) {
   const config = getArkosConfig();
 
   const middlewaresConfig = config?.middlewares;
+
+  app.use((_, _1, next) => {
+    if (process.env.__ARKOS_SERVER_LISTENER !== "arkos")
+      throw ExitError(
+        "If you are using a custom server, you must call the listen method like 'app.listen(server)'. See https://www.arkosjs.com/docs/core-concepts/routing/setup#custom-server-access-and-websockets"
+      );
+
+    next();
+  });
 
   if (middlewaresConfig?.requestLogger !== false) {
     if (typeof middlewaresConfig?.requestLogger === "function") {
@@ -69,8 +80,11 @@ export default function setupApp(app: Arkos) {
                     origin: string,
                     cb: (err: Error | null, allow?: boolean) => void
                   ) => {
-                    const allowed = (middlewaresConfig?.cors as any)
-                      ?.allowedOrigins;
+                    const allowed = (
+                      middlewaresConfig?.cors as {
+                        allowedOrigins: string | string[];
+                      }
+                    )?.allowedOrigins;
 
                     if (allowed === "*") cb(null, true);
                     else if (Array.isArray(allowed))
@@ -107,10 +121,11 @@ export default function setupApp(app: Arkos) {
     if (typeof middlewaresConfig?.cookieParser === "function") {
       app.use(middlewaresConfig.cookieParser);
     } else {
-      const params = Array.isArray(middlewaresConfig?.cookieParser)
-        ? middlewaresConfig.cookieParser
-        : [];
-      app.use(cookieParser(...(params as any))); // FIXME: check types correctly
+      const params =
+        typeof middlewaresConfig?.cookieParser === "object"
+          ? middlewaresConfig.cookieParser
+          : { secret: undefined, options: undefined };
+      app.use(cookieParser(params.secret, params.options));
     }
   }
 
