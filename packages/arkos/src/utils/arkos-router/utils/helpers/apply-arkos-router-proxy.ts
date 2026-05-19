@@ -22,7 +22,7 @@ export function applyArkosRouterProxy<T extends object>(
     prefix?: string | RegExp | Array<string | RegExp>;
     openapi?: { tags?: string[] };
   },
-  name: "app" | "router" = "router"
+  component: "app" | "router" = "router"
 ): T {
   return new Proxy(target, {
     get(target, prop, receiver) {
@@ -56,7 +56,7 @@ export function applyArkosRouterProxy<T extends object>(
             config instanceof RegExp
           ) {
             throw ExitError(
-              `First argument of ${name}.use() must be a valid ArkosRouteConfig object or a middleware function, but received ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}.`
+              `First argument of ${component}.use() must be a valid ArkosRouteConfig object or a middleware function, but received ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}.`
             );
           }
 
@@ -93,7 +93,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             ) {
               if (typeof config === "function" || Array.isArray(config))
                 throw ExitError(
-                  `First argument of ${name}.route("${path}").${method}() must be a valid ArkosRouteConfig object without path field, but received ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
+                  `First argument of ${component}.route("${path}").${method}() must be a valid ArkosRouteConfig object without path field, but received ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
                 );
 
               const fullConfig: ArkosRouteConfig = {
@@ -115,12 +115,12 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
-          if (config.disabled) return;
-
-          if (!RouteConfigValidator.isArkosRouteConfig(config))
+          if (!config || !RouteConfigValidator.isArkosRouteConfig(config))
             throw ExitError(
-              `First argument of ${name}.${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
+              `First argument of ${component}.${prop as string}() must be a valid ArkosRouteConfig object with path field, but recevied ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
             );
+
+          if (config?.disabled) return;
 
           const path = applyPrefix(options?.prefix, config.path);
 
@@ -141,7 +141,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           };
 
           if ([null, undefined].includes(path as any))
-            throw ExitError(
+            throw new Error(
               "Please pass valid value for path field to use in your route"
             );
 
@@ -165,9 +165,8 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             handlers = flatHandlers.map((handler: ArkosAnyRequestHandler) => {
               if (!handler) throw UndefinedHandlerError(handler);
 
-              if (typeof handler !== "function") {
+              if (typeof handler !== "function")
                 throw UndefinedHandlerError(handler);
-              }
 
               return catchAsync(handler, {
                 type: handler.length > 3 ? "error" : "normal",
