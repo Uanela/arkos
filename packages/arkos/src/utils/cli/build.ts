@@ -101,7 +101,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
   try {
     if (fs.existsSync(tsconfigPath)) {
       const tsconfigContent = fs.readFileSync(tsconfigPath, "utf8");
-      tsconfig = JSON.parse(tsconfigContent);
+      tsconfig = bundler.readJsonWithComments(tsconfigContent);
     }
   } catch (error) {
     console.error("❌ Error reading tsconfig.json:", error);
