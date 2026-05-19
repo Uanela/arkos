@@ -1,5 +1,5 @@
 import cors from "cors";
-import express from "express";
+import express, { CookieOptions } from "express";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import compression from "compression";
@@ -157,7 +157,6 @@ export type ArkosConfig = {
        * Defaults to "30d" if not provided.
        */
       expiresIn?: MsDuration | number;
-
       /**
        * Configuration for the JWT cookie sent to the client
        */
@@ -165,22 +164,45 @@ export type ArkosConfig = {
         /**
          * Whether the cookie should be marked as secure (sent only over HTTPS).
          * Defaults to `true` in production and `false` in development.
+         *
+         * @env `JWT_COOKIE_SECURE`
          */
         secure?: boolean;
-
         /**
          * Whether the cookie should be marked as HTTP-only.
          * Default is `true` to prevent access via JavaScript.
+         *
+         * @env `JWT_COOKIE_HTTP_ONLY`
          */
         httpOnly?: boolean;
-
         /**
          * Controls the SameSite attribute of the cookie.
          * Defaults to "none" in production and "lax" in development.
          * Options: "lax" | "strict" | "none"
+         *
+         * @env `JWT_COOKIE_SAME_SITE`
          */
         sameSite?: "lax" | "strict" | "none";
-      };
+        /**
+         * Expiry date of the cookie in GMT. If not specified (undefined), creates a session cookie.
+         *
+         * @default `now() + authentication.jwt.expireIn | JWT_EXPIRES_IN`
+         *
+         * @since 1.5.11-beta
+         */
+        expires?: Date | undefined;
+        /**
+         * Domain for the cookie. Use a leading dot (e.g. `.example.com`) to include all subdomains.
+         *
+         * @env `JWT_COOKIE_DOMAIN`
+         *
+         * @since 1.5.11-beta
+         */
+        domain?: string | undefined;
+      } & Omit<
+        CookieOptions,
+        "secure" | "httpOnly" | "sameSite" | "expires" | "domain"
+      >;
     };
   };
   /** Allows to customize and toggle the built-in validation, by default it is set to `false`. If true is passed it will use validation with the default resolver set to `class-validator` if you intend to change the resolver to `zod` do the following:
@@ -253,9 +275,15 @@ export type ArkosConfig = {
   /**
    * Defines file upload configurations
    *
-   * See [www.arkosjs.com/docs/core-concepts/file-upload#costum-configurations](https://www.arkosjs.com/docs/core-concepts/file-upload#costum-configurations)
+   * See {@link https://www.arkosjs.com/docs/guides/file-uploads/setup}
    */
   fileUpload?: {
+    /**
+     * Disables built-in file upload
+     *
+     * @since 1.5.11-beta
+     */
+    enabled?: boolean;
     /**
      * Defiens the base file upload directory, default is set to /uploads (on root directory)
      *
@@ -369,27 +397,39 @@ export type ArkosConfig = {
     /**
      * Configuration for CORS (Cross-Origin Resource Sharing).
      *
-     * @property {string | string[] | "all"} [allowedOrigins] - List of allowed origins. If set to `"all"`, all origins are accepted.
-     * @property {import('cors').CorsOptions} [options] - Additional CORS options passed directly to the `cors` middleware.
-     * @property {import('cors').CorsOptionsDelegate} [customHandler] - A custom middleware function that overrides the default behavior.
+     * Accepts:
+     * - `false` — disables CORS middleware entirely.
+     * - `cors.CorsOptions` — passed directly to the `cors` middleware.
+     * - `cors.CorsOptionsDelegate` — a delegate function passed directly to the `cors` middleware.
+     * - `ArkosRequestHandler` — a full Express middleware that replaces the cors middleware entirely.
+     * - An object with deprecated `allowedOrigins`, `options`, and `customHandler` properties.
      *
-     * @remarks
-     * If `customHandler` is provided, both `allowedOrigins` and `options` will be ignored in favor of the custom logic.
+     * In development, defaults to `origin: true, credentials: true`.
+     * In production, defaults to `origin: "*"` (equivalent to plain `cors()`).
      *
      * See https://www.npmjs.com/package/cors
      */
     cors?:
       | false
+      | cors.CorsOptions
+      | cors.CorsOptionsDelegate
       | {
           /**
-           * Defines allowed origins to acess the API.
+           * Defines allowed origins to access the API.
+           *
+           * @deprecated Use `cors: { origin: string | string[] }` (cors.CorsOptions) directly instead.
            */
-          allowedOrigins?: string | string[] | "*";
+          allowedOrigins?: string | string[] | "*" | true;
+          /**
+           * Additional cors options.
+           *
+           * @deprecated Pass cors.CorsOptions directly instead: `cors: { origin: "...", credentials: true }`.
+           */
           options?: cors.CorsOptions;
           /**
-           * If you would like to override the entire middleware
+           * If you would like to override the entire middleware.
            *
-           * see
+           * @deprecated Pass the handler directly instead: `cors: myCorsHandler`.
            */
           customHandler?: cors.CorsOptionsDelegate;
         }
@@ -410,9 +450,11 @@ export type ArkosConfig = {
      */
     cookieParser?:
       | false
-      | Parameters<typeof cookieParser>
-      | ArkosRequestHandler;
-    /**
+      | {
+          secret?: string | string[];
+          options?: Parameters<typeof cookieParser>[1];
+        }
+      | ArkosRequestHandler /**
    * Options to define how query must be parsed.
    *
    * #### for example:
@@ -436,7 +478,7 @@ export type ArkosConfig = {
    * numbers to query pay attention to this.
    * 
    * Soon a feature to converted the query to the end prisma type will be added.
-   */
+   */;
     queryParser?: false | QueryParserOptions | ArkosRequestHandler;
     /**
      * Configuration for request logger middleware.
