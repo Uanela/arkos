@@ -1,0 +1,199 @@
+---
+title: Rethinking CORS Defaults in Arkos.js
+authors: [uanela]
+tags: [arkosjs, cors, security, middleware]
+date: 2025-05-19
+description: We rethought how Arkos.js handles CORS defaults and simplified the API to give developers full control while staying honest about what the framework was doing under the hood.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tabs, Tab } from "fumadocs-ui/components/tabs";
+
+# Rethinking CORS Defaults in Arkos.js
+
+CORS is one of those things most backend developers configure once and never think about again — usually in a rush, right before deployment. Set it, forget it, ship it. And that's fine, until it isn't.
+
+We've been thinking about how Arkos.js handles CORS out of the box, and we decided it was time to simplify the API and be more transparent about what the framework does and doesn't do for you.
+
+## How It Started
+
+When we first built the CORS middleware config in Arkos.js, we wanted to make life easier for developers. The idea was simple: instead of passing raw `cors()` options, you could declare `allowedOrigins` and we'd wire it all up for you.
+
+<Tabs items={["v1.6+", "v1.5"]}>
+  <Tab value="v1.6+">
+```typescript title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    cors: {
+      allowedOrigins: "*",
+    },
+  },
+});
+```
+  </Tab>
+  <Tab value="v1.5">
+```typescript title="src/app.ts"
+arkos.init({
+  cors: {
+    allowedOrigins: "*",
+  },
+});
+```
+  </Tab>
+</Tabs>
+
+Clean, right? The intention was good. `"*"` should mean "allow everyone" — same as what you'd expect from plain `cors()`.
+
+But there's a subtle difference that's easy to miss.
+
+## The Difference Between `"*"` and `true`
+
+Internally, `allowedOrigins: "*"` was not setting `Access-Control-Allow-Origin: *`. It was doing this:
+
+```typescript
+if (allowed === "*") cb(null, true);
+```
+
+`cb(null, true)` tells the `cors` package to **reflect the request origin dynamically** — whatever origin the browser sends, the server echoes it back. That's `origin: true`, not `origin: "*"`. Two very different behaviors, and unless you've spent time reading the `cors` package internals, you'd never know.
+
+Combined with `credentials: true` in the defaults, this meant that apps leaving `allowedOrigins: "*"` or not configuring CORS at all were running with `origin: true, credentials: true` — which is more permissive than most developers realize or intend.
+
+To be clear: this is ultimately a CORS configuration responsibility. The `cors` package and CORS itself are well-documented, and setting your allowed origins explicitly is always the right call for production. But we realized our API was making it too easy to not think about it.
+
+## What cors() Actually Does
+
+Plain `cors()` with no config defaults to `origin: "*"` and no credentials. That means:
+
+- Any origin can reach your API ✓
+- But credentialed requests (cookies, auth headers) are blocked by the browser ✓
+
+It's permissive, but safe. The browser won't let `evil.com` make requests on behalf of your logged-in users because `origin: "*"` and `credentials: true` cannot coexist — the browser enforces this at the spec level. If you need credentialed cross-origin requests, you have to explicitly name your origins. That's intentional.
+
+## Simplifying the API
+
+We decided the right move was to stop wrapping `cors` with a custom shape and just expose it directly. Less abstraction, less room for surprises.
+
+The new API accepts `cors.CorsOptions` or `cors.CorsOptionsDelegate` directly at the top level:
+
+<Tabs items={["v1.6+", "v1.5"]}>
+  <Tab value="v1.6+">
+```typescript title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    // Simple — cors.CorsOptions
+    cors: {
+      origin: ["https://myapp.com", "https://admin.myapp.com"],
+      credentials: true,
+    },
+
+    // Full delegate control
+    // cors: (req, callback) => {
+    //   callback(null, { origin: true, credentials: true });
+    // },
+
+    // Disable entirely
+    // cors: false,
+  },
+});
+```
+  </Tab>
+  <Tab value="v1.5">
+```typescript title="src/app.ts"
+arkos.init({
+  // Simple — cors.CorsOptions
+  cors: {
+    origin: ["https://myapp.com", "https://admin.myapp.com"],
+    credentials: true,
+  },
+
+  // Full delegate control
+  // cors: (req, callback) => {
+  //   callback(null, { origin: true, credentials: true });
+  // },
+
+  // Disable entirely
+  // cors: false,
+});
+```
+  </Tab>
+</Tabs>
+
+No magic. No translation layer. Whatever you pass goes straight to `cors()`.
+
+## The New Defaults
+
+In development, we kept things convenient: `origin: true, credentials: true`. You're on localhost, you're iterating fast, you don't want to think about CORS.
+
+In production, we switched to `origin: "*"` — the same as plain `cors()`. Permissive, but honest. No credentials. If you need credentials in production, you configure `origin` explicitly. That's your responsibility as the developer, not ours as the framework.
+
+```typescript
+const defaultOptions = {
+  origin: isProduction() ? "*" : true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Connection"],
+  credentials: isProduction() ? false : true,
+};
+```
+
+## What's Deprecated
+
+The old shape still works for now but will warn you:
+
+<Tabs items={["v1.6+", "v1.5"]}>
+  <Tab value="v1.6+">
+```typescript title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  middlewares: {
+    cors: {
+      allowedOrigins: "...", // → use cors: { origin: "..." }
+      options: { ... },     // → pass cors.CorsOptions directly
+      customHandler: fn,    // → pass the handler directly: cors: fn
+    },
+  },
+});
+```
+  </Tab>
+  <Tab value="v1.5">
+```typescript title="src/app.ts"
+arkos.init({
+  cors: {
+    allowedOrigins: "...", // → use cors: { origin: "..." }
+    options: { ... },     // → pass cors.CorsOptions directly
+    customHandler: fn,    // → pass the handler directly: cors: fn
+  },
+});
+```
+  </Tab>
+</Tabs>
+
+<Callout type="warn">
+  If you're using `allowedOrigins`, `options`, or `customHandler`, you'll see deprecation warnings pointing to this post. Migrate to the new API — it's simpler and more predictable.
+</Callout>
+
+## One More Thing About CORS
+
+Since we're here — CORS is a browser-only mechanism. Postman ignores it. `curl` ignores it. Server-to-server requests ignore it. It only exists to stop malicious websites from making requests on behalf of your logged-in users through their browser.
+
+And for non-simple requests (`application/json`, custom headers), the browser sends a preflight `OPTIONS` request first — unauthenticated — to check if the real request is allowed. That's why CORS middleware must always be first in the middleware chain, before auth. If auth runs first and rejects the preflight, you'll get a confusing CORS error instead of a useful 401.
+
+```typescript
+// CORS must come before everything else
+app.use(cors(...));
+app.use(authMiddleware);
+```
+
+Arkos.js already handles this ordering for you. Just make sure you're not overriding it.
+
+## Wrapping Up
+
+CORS is your responsibility as a developer — Arkos.js can set sensible defaults and stay out of your way, but it can't make the decision of which origins should be allowed to access your API. That's business logic, not framework logic.
+
+The new API makes that boundary clearer. Less magic, more control.
+
+If you have questions or run into anything unexpected during migration, open an issue on [GitHub](https://github.com/uanela/arkos).
