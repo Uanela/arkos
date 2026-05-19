@@ -593,7 +593,10 @@ export type ArkosConfig = {
      */
     cookieParser?:
       | false
-      | Parameters<typeof cookieParser>
+      | {
+          secret?: string | string[];
+          options?: Parameters<typeof cookieParser>[1];
+        }
       | ArkosRequestHandler;
     /**
    * Options to define how query must be parsed.
