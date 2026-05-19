@@ -15,6 +15,7 @@ import {
   isProduction,
   validateArkosConfig,
 } from "./utils/helpers/arkos-config.helpers";
+export const app: express.Express = express();
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
 const docsLink =

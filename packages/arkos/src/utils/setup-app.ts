@@ -1,6 +1,6 @@
 import compression from "compression";
 import { Arkos } from "../types/arkos";
-import { getArkosConfig } from "./helpers/arkos-config.helpers";
+import { getArkosConfig, isProduction } from "./helpers/arkos-config.helpers";
 import rateLimit from "express-rate-limit";
 import deepmerge from "./helpers/deepmerge.helper";
 import cors from "cors";
@@ -12,6 +12,8 @@ import debuggerService from "../modules/debugger/debugger.service";
 import { catchAsync } from "../exports/error-handler";
 import { TooManyRequestsError } from "../modules/error-handler/utils/errors";
 import ExitError from "./helpers/exit-error";
+import sheu from "./sheu";
+import { ArkosRequestHandler } from "../types";
 
 export default function setupApp(app: Arkos) {
   const config = getArkosConfig();
@@ -67,43 +69,67 @@ export default function setupApp(app: Arkos) {
   }
 
   if (middlewaresConfig?.cors !== false) {
-    if (typeof middlewaresConfig?.cors === "function") {
-      app.use(middlewaresConfig.cors);
-    } else {
+    const corsConfig = middlewaresConfig?.cors!;
+
+    if ("customHandler" in corsConfig)
+      sheu.warn(
+        "cors.customHandler is deprecated. Pass the handler directly: `cors: myHandler`. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+      );
+
+    if ("allowedOrigins" in corsConfig)
+      sheu.warn(
+        "cors.allowedOrigins is deprecated. Use `cors: { origin: '...' }` directly instead. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+      );
+
+    if ("options" in corsConfig)
+      sheu.warn(
+        "cors.options is deprecated. Pass cors.CorsOptions directly instead. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+      );
+
+    const defaultOptions = {
+      origin: isProduction() ? "*" : true,
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "Connection"],
+      credentials: isProduction() ? false : true,
+    };
+
+    if (typeof corsConfig === "function") {
+      if (corsConfig.length >= 3) {
+        app.use(corsConfig as ArkosRequestHandler);
+      } else {
+        // cors.CorsOptionsDelegate — (req, cb)
+        app.use(cors(corsConfig as cors.CorsOptionsDelegate));
+      }
+    } else if (
+      middlewaresConfig?.cors &&
+      typeof middlewaresConfig.cors === "object" &&
+      "customHandler" in middlewaresConfig.cors
+    ) {
+      // { customHandler } shape — delegate entirely to user's handler
+      app.use(cors(middlewaresConfig.cors.customHandler));
+    } else if (
+      middlewaresConfig?.cors &&
+      typeof middlewaresConfig.cors === "object" &&
+      !("allowedOrigins" in middlewaresConfig.cors)
+    ) {
+      // Plain cors.CorsOptions passed directly at top level
       app.use(
         cors(
-          middlewaresConfig?.cors?.customHandler
-            ? middlewaresConfig.cors.customHandler
-            : deepmerge(
-                {
-                  origin: (
-                    origin: string,
-                    cb: (err: Error | null, allow?: boolean) => void
-                  ) => {
-                    const allowed = (
-                      middlewaresConfig?.cors as {
-                        allowedOrigins: string | string[];
-                      }
-                    )?.allowedOrigins;
+          deepmerge(defaultOptions, middlewaresConfig.cors as cors.CorsOptions)
+        )
+      );
+    } else {
+      const { allowedOrigins, options } = middlewaresConfig?.cors as {
+        allowedOrigins?: string | string[] | "*";
+        options?: cors.CorsOptions;
+      };
 
-                    if (allowed === "*") cb(null, true);
-                    else if (Array.isArray(allowed))
-                      cb(null, !origin || allowed?.includes?.(origin));
-                    else if (typeof allowed === "string")
-                      cb(null, !origin || allowed === origin);
-                    else cb(null, false);
-                  },
-
-                  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-                  allowedHeaders: [
-                    "Content-Type",
-                    "Authorization",
-                    "Connection",
-                  ],
-                  credentials: true,
-                },
-                middlewaresConfig?.cors?.options || {}
-              )
+      app.use(
+        cors(
+          deepmerge(defaultOptions, {
+            origin: allowedOrigins ?? defaultOptions.origin,
+            ...(options || {}),
+          })
         )
       );
     }
