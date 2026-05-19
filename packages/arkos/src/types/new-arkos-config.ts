@@ -369,27 +369,39 @@ export type ArkosConfig = {
     /**
      * Configuration for CORS (Cross-Origin Resource Sharing).
      *
-     * @property {string | string[] | "all"} [allowedOrigins] - List of allowed origins. If set to `"all"`, all origins are accepted.
-     * @property {import('cors').CorsOptions} [options] - Additional CORS options passed directly to the `cors` middleware.
-     * @property {import('cors').CorsOptionsDelegate} [customHandler] - A custom middleware function that overrides the default behavior.
+     * Accepts:
+     * - `false` — disables CORS middleware entirely.
+     * - `cors.CorsOptions` — passed directly to the `cors` middleware.
+     * - `cors.CorsOptionsDelegate` — a delegate function passed directly to the `cors` middleware.
+     * - `ArkosRequestHandler` — a full Express middleware that replaces the cors middleware entirely.
+     * - An object with deprecated `allowedOrigins`, `options`, and `customHandler` properties.
      *
-     * @remarks
-     * If `customHandler` is provided, both `allowedOrigins` and `options` will be ignored in favor of the custom logic.
+     * In development, defaults to `origin: true, credentials: true`.
+     * In production, defaults to `origin: "*"` (equivalent to plain `cors()`).
      *
      * See https://www.npmjs.com/package/cors
      */
     cors?:
       | false
+      | cors.CorsOptions
+      | cors.CorsOptionsDelegate
       | {
           /**
-           * Defines allowed origins to acess the API.
+           * Defines allowed origins to access the API.
+           *
+           * @deprecated Use `cors: { origin: string | string[] }` (cors.CorsOptions) directly instead.
            */
-          allowedOrigins?: string | string[] | "*";
+          allowedOrigins?: string | string[] | "*" | true;
+          /**
+           * Additional cors options.
+           *
+           * @deprecated Pass cors.CorsOptions directly instead: `cors: { origin: "...", credentials: true }`.
+           */
           options?: cors.CorsOptions;
           /**
-           * If you would like to override the entire middleware
+           * If you would like to override the entire middleware.
            *
-           * see
+           * @deprecated Pass the handler directly instead: `cors: myCorsHandler`.
            */
           customHandler?: cors.CorsOptionsDelegate;
         }
