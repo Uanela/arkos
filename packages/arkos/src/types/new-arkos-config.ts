@@ -1,5 +1,5 @@
 import cors from "cors";
-import express from "express";
+import express, { CookieOptions } from "express";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import compression from "compression";
@@ -157,7 +157,6 @@ export type ArkosConfig = {
        * Defaults to "30d" if not provided.
        */
       expiresIn?: MsDuration | number;
-
       /**
        * Configuration for the JWT cookie sent to the client
        */
@@ -165,22 +164,41 @@ export type ArkosConfig = {
         /**
          * Whether the cookie should be marked as secure (sent only over HTTPS).
          * Defaults to `true` in production and `false` in development.
+         *
+         * @env `JWT_COOKIE_SECURE`
          */
         secure?: boolean;
-
         /**
          * Whether the cookie should be marked as HTTP-only.
          * Default is `true` to prevent access via JavaScript.
+         *
+         * @env `JWT_COOKIE_HTTP_ONLY`
          */
         httpOnly?: boolean;
-
         /**
          * Controls the SameSite attribute of the cookie.
          * Defaults to "none" in production and "lax" in development.
          * Options: "lax" | "strict" | "none"
+         *
+         * @env `JWT_COOKIE_SAME_SITE`
          */
         sameSite?: "lax" | "strict" | "none";
-      };
+        /**
+         * Expiry date of the cookie in GMT. If not specified (undefined), creates a session cookie.
+         *
+         * @default `now() + authentication.jwt.expireIn | JWT_EXPIRES_IN`
+         */
+        expires?: Date | undefined;
+        /**
+         * Domain for the cookie. Use a leading dot (e.g. `.example.com`) to include all subdomains.
+         *
+         * @env `JWT_COOKIE_DOMAIN`
+         */
+        domain?: string | undefined;
+      } & Omit<
+        CookieOptions,
+        "secure" | "httpOnly" | "sameSite" | "expires" | "domain"
+      >;
     };
   };
   /** Allows to customize and toggle the built-in validation, by default it is set to `false`. If true is passed it will use validation with the default resolver set to `class-validator` if you intend to change the resolver to `zod` do the following:
