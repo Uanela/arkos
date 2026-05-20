@@ -1,5 +1,4 @@
 import setupApp from "../setup-app";
-import { getArkosConfig } from "../helpers/arkos-config.helpers";
 import { handleRequestLogs } from "../../modules/base/base.middlewares";
 import debuggerService from "../../modules/debugger/debugger.service";
 import { queryParser } from "../helpers/query-parser.helpers";
@@ -8,9 +7,15 @@ import rateLimit from "express-rate-limit";
 import cors from "cors";
 import express from "express";
 import cookieParser from "cookie-parser";
-import { TooManyRequestsError } from "../../exports/error-handler";
+import sheu from "../sheu";
+import { isProduction, getArkosConfig } from "../helpers/arkos-config.helpers";
+import { TooManyRequestsError } from "../../modules/error-handler/utils/errors";
 
-jest.mock("../helpers/arkos-config.helpers");
+jest.mock("../helpers/arkos-config.helpers", () => ({
+  isProduction: jest.fn(),
+  getArkosConfig: jest.fn(),
+}));
+jest.mock("../sheu", () => ({ warn: jest.fn() }));
 jest.mock("../helpers/query-parser.helpers", () => ({
   queryParser: jest.fn(() => "queryParserMiddleware"),
 }));
@@ -34,9 +39,10 @@ jest.mock("express", () => ({
 jest.mock("cookie-parser", () => jest.fn(() => "cookieParserMiddleware"));
 
 const mockGetArkosConfig = getArkosConfig as jest.Mock;
+const mockIsProduction = isProduction as jest.Mock;
 
 function makeMockApp() {
-  return { use: jest.fn() };
+  return { use: jest.fn() } as any;
 }
 
 describe("setupApp", () => {
@@ -146,8 +152,71 @@ describe("setupApp", () => {
       expect(app.use).toHaveBeenCalledWith("corsMiddleware");
     });
 
+    it("uses replaced middlewares", async () => {
+      const app = makeMockApp();
+      const customCompressionMiddleware = jest.fn();
+      const customCorsMiddleware = jest.fn((_: any, _1: any, _2: any) => {});
+
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: {
+          compression: customCompressionMiddleware as any,
+          cors: customCorsMiddleware as any,
+        },
+      });
+
+      setupApp(app);
+
+      expect(compression).not.toHaveBeenCalled();
+      expect(cors).not.toHaveBeenCalled();
+      expect(app.use).toHaveBeenCalledWith(customCompressionMiddleware);
+      expect(app.use).toHaveBeenCalledWith(customCorsMiddleware);
+    });
+
+    it('configures cors with * origins when "*" is specified', async () => {
+      const app = makeMockApp();
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: {
+          cors: { allowedOrigins: "*" },
+        },
+      });
+
+      setupApp(app);
+
+      expect(cors).toHaveBeenCalledWith(
+        expect.objectContaining({
+          origin: "*",
+        })
+      );
+
+      const origin = (cors as jest.Mock).mock.calls[0][0].origin;
+
+      expect(origin).toBe("*");
+    });
+
+    it("configures cors with specific origins", async () => {
+      const app = makeMockApp();
+      const allowedOrigins = ["https://example.com", "https://test.com"];
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        middlewares: {
+          cors: { allowedOrigins },
+        },
+      });
+
+      setupApp(app);
+
+      expect(cors).toHaveBeenCalledWith(
+        expect.objectContaining({
+          origin: allowedOrigins,
+        })
+      );
+
+      // Test the origin callback
+      const origin = (cors as jest.Mock).mock.calls[0][0].origin;
+      expect(origin).toBe(allowedOrigins);
+    });
+
     it("should apply custom cors function directly", () => {
-      const customCors = jest.fn();
+      const customCors = jest.fn((_: any, _1: any, _2: any) => {});
       mockGetArkosConfig.mockReturnValue({
         middlewares: { cors: customCors },
       });
@@ -174,83 +243,186 @@ describe("setupApp", () => {
       expect(cors).not.toHaveBeenCalled();
     });
 
-    describe("cors origin callback", () => {
-      function getCorsOriginFn(corsConfig: object) {
-        mockGetArkosConfig.mockReturnValue({
-          middlewares: { cors: corsConfig },
-        });
-        const app = makeMockApp();
-        setupApp(app as any);
-        const corsCall = (cors as jest.Mock).mock.calls[0][0];
-        return corsCall.origin;
-      }
-
-      it('should allow all origins when allowedOrigins is "*"', () => {
-        const origin = getCorsOriginFn({ allowedOrigins: "*" });
-        const cb = jest.fn();
-        origin("http://example.com", cb);
-        expect(cb).toHaveBeenCalledWith(null, true);
+    describe("cors middleware setup", () => {
+      beforeEach(() => {
+        jest.clearAllMocks();
       });
 
-      it("should allow origin when it is in the allowedOrigins array", () => {
-        const origin = getCorsOriginFn({
-          allowedOrigins: ["http://example.com"],
+      describe("disabled", () => {
+        it("should not apply cors when cors is false", () => {
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: { cors: false },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          expect(cors).not.toHaveBeenCalled();
         });
-        const cb = jest.fn();
-        origin("http://example.com", cb);
-        expect(cb).toHaveBeenCalledWith(null, true);
       });
 
-      it("should reject origin not in the allowedOrigins array", () => {
-        const origin = getCorsOriginFn({
-          allowedOrigins: ["http://example.com"],
+      describe("function shapes", () => {
+        it("should use corsConfig as ArkosRequestHandler when function has arity >= 3", () => {
+          const handler = jest.fn((req: any, res: any, next: any) => {});
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: { cors: handler },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          expect(cors).not.toHaveBeenCalled();
+          expect(app.use).toHaveBeenCalledWith(handler);
         });
-        const cb = jest.fn();
-        origin("http://other.com", cb);
-        expect(cb).toHaveBeenCalledWith(null, false);
+
+        it("should pass CorsOptionsDelegate to cors() when function has arity < 3", () => {
+          const delegate = jest.fn((req: any, cb: any) => {});
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: { cors: delegate },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          expect(cors).toHaveBeenCalledWith(delegate);
+        });
       });
 
-      it("should allow undefined origin (same-origin requests) with array", () => {
-        const origin = getCorsOriginFn({
-          allowedOrigins: ["http://example.com"],
+      describe("deprecated shape warnings", () => {
+        it("should warn when customHandler is used", () => {
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: { cors: { customHandler: jest.fn() } },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          expect(sheu.warn).toHaveBeenCalledWith(
+            expect.stringContaining("cors.customHandler is deprecated")
+          );
         });
-        const cb = jest.fn();
-        origin(undefined, cb);
-        expect(cb).toHaveBeenCalledWith(null, true);
+
+        it("should warn when allowedOrigins is used", () => {
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: { cors: { allowedOrigins: "*" } },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          expect(sheu.warn).toHaveBeenCalledWith(
+            expect.stringContaining("cors.allowedOrigins is deprecated")
+          );
+        });
+
+        it("should warn when options is used", () => {
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: { cors: { options: { maxAge: 600 } } },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          expect(sheu.warn).toHaveBeenCalledWith(
+            expect.stringContaining("cors.options is deprecated")
+          );
+        });
       });
 
-      it("should allow matching origin when allowedOrigins is a string", () => {
-        const origin = getCorsOriginFn({
-          allowedOrigins: "http://example.com",
+      describe("deprecated allowedOrigins shape", () => {
+        function getCorsOptions(corsConfig: object) {
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: { cors: corsConfig },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          return (cors as jest.Mock).mock.calls[0][0];
+        }
+
+        it('should pass origin: "*" when allowedOrigins is "*"', () => {
+          const options = getCorsOptions({ allowedOrigins: "*" });
+          expect(options.origin).toBe("*");
         });
-        const cb = jest.fn();
-        origin("http://example.com", cb);
-        expect(cb).toHaveBeenCalledWith(null, true);
+
+        it("should pass origin array when allowedOrigins is an array", () => {
+          const options = getCorsOptions({
+            allowedOrigins: ["http://example.com"],
+          });
+          expect(options.origin).toEqual(["http://example.com"]);
+        });
+
+        it("should pass origin string when allowedOrigins is a string", () => {
+          const options = getCorsOptions({
+            allowedOrigins: "http://example.com",
+          });
+          expect(options.origin).toBe("http://example.com");
+        });
+
+        it("should fall back to default origin when allowedOrigins is not set", () => {
+          const options = getCorsOptions({});
+          expect(options.origin).toBe(true); // dev default
+        });
+
+        it("should merge options on top of defaults", () => {
+          const options = getCorsOptions({
+            allowedOrigins: "http://example.com",
+            options: { maxAge: 600 },
+          });
+          expect(options.origin).toBe("http://example.com");
+          expect(options.maxAge).toBe(600);
+        });
+
+        it("should delegate to customHandler", () => {
+          const handler = jest.fn();
+          getCorsOptions({ customHandler: handler });
+          expect(cors).toHaveBeenCalledWith(handler);
+        });
       });
 
-      it("should reject non-matching origin when allowedOrigins is a string", () => {
-        const origin = getCorsOriginFn({
-          allowedOrigins: "http://example.com",
+      describe("plain cors.CorsOptions", () => {
+        it("should merge user options on top of defaults", () => {
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: {
+              cors: { origin: "http://example.com", credentials: true },
+            },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          const options = (cors as jest.Mock).mock.calls[0][0];
+          expect(options.origin).toBe("http://example.com");
+          expect(options.credentials).toBe(true);
         });
-        const cb = jest.fn();
-        origin("http://other.com", cb);
-        expect(cb).toHaveBeenCalledWith(null, false);
+
+        it("should keep default methods and allowedHeaders when not overridden", () => {
+          mockGetArkosConfig.mockReturnValue({
+            middlewares: { cors: { origin: "http://example.com" } },
+          });
+          const app = makeMockApp();
+          setupApp(app as any);
+          const options = (cors as jest.Mock).mock.calls[0][0];
+          expect(options.methods).toEqual([
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "OPTIONS",
+          ]);
+          expect(options.allowedHeaders).toEqual([
+            "Content-Type",
+            "Authorization",
+            "Connection",
+          ]);
+        });
       });
 
-      it("should allow undefined origin when allowedOrigins is a string", () => {
-        const origin = getCorsOriginFn({
-          allowedOrigins: "http://example.com",
+      describe("defaults", () => {
+        it("should apply dev defaults when no cors config is provided", () => {
+          mockGetArkosConfig.mockReturnValue({ middlewares: {} });
+          const app = makeMockApp();
+          setupApp(app as any);
+          const options = (cors as jest.Mock).mock.calls[0][0];
+          expect(options.origin).toBe(true);
+          expect(options.credentials).toBe(true);
         });
-        const cb = jest.fn();
-        origin(undefined, cb);
-        expect(cb).toHaveBeenCalledWith(null, true);
-      });
 
-      it("should deny all when allowedOrigins is not set", () => {
-        const origin = getCorsOriginFn({});
-        const cb = jest.fn();
-        origin("http://example.com", cb);
-        expect(cb).toHaveBeenCalledWith(null, false);
+        it("should apply production defaults when in production", () => {
+          mockIsProduction.mockReturnValue(true);
+          mockGetArkosConfig.mockReturnValue({ middlewares: {} });
+          const app = makeMockApp();
+          setupApp(app as any);
+          const options = (cors as jest.Mock).mock.calls[0][0];
+          expect(options.origin).toBe("*");
+          expect(options.credentials).toBe(false);
+        });
       });
     });
   });
@@ -297,13 +469,15 @@ describe("setupApp", () => {
     it("should apply cookieParser with no params when not configured", () => {
       const app = makeMockApp();
       setupApp(app as any);
-      expect(cookieParser).toHaveBeenCalledWith();
+      expect(cookieParser).toHaveBeenCalledWith(undefined, undefined);
       expect(app.use).toHaveBeenCalledWith("cookieParserMiddleware");
     });
 
     it("should apply cookieParser with array params", () => {
       mockGetArkosConfig.mockReturnValue({
-        middlewares: { cookieParser: ["secret", { decode: jest.fn() }] },
+        middlewares: {
+          cookieParser: { secret: "secret", options: { decode: jest.fn() } },
+        },
       });
       const app = makeMockApp();
       setupApp(app as any);
@@ -412,7 +586,7 @@ describe("setupApp", () => {
       expect(app.use).toHaveBeenCalledWith(debuggerService.logRequestInfo);
     });
 
-    it("should apply logRequestInfo even when all other middlewares are disabled", () => {
+    it("should apply logRequestInfo and server listener checker even when all other middlewares are disabled", () => {
       mockGetArkosConfig.mockReturnValue({
         middlewares: {
           compression: false,
@@ -426,7 +600,7 @@ describe("setupApp", () => {
       });
       const app = makeMockApp();
       setupApp(app as any);
-      expect(app.use).toHaveBeenCalledTimes(1);
+      expect(app.use).toHaveBeenCalledTimes(2);
       expect(app.use).toHaveBeenCalledWith(debuggerService.logRequestInfo);
     });
   });
