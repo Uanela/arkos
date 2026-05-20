@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { blog } from "@/lib/source";
+import { blog, source } from "@/lib/source";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import { AuthorCard } from "@/components/blog/author-card";
 import { TagBadge } from "@/components/blog/tag-badge";
@@ -180,10 +180,45 @@ function Page() {
 export const Route = createFileRoute("/(home)/blog/$slug")({
   ssr: true,
   loader: async ({ params }) => {
-    const data = await serverLoader({ data: params.slug });
+    const data = await serverLoader({ data: params.slug! });
     await clientLoader.preload(data.path);
     return data;
   },
   notFoundComponent: () => <p>Post not found.</p>,
   component: Page,
+  head: async ({ params }) => {
+    const page = blog.getPage([params.slug]);
+
+    const title = page?.data.title
+      ? `${page.data.title} - Arkos.js Blog`
+      : "Arkos.js Blog";
+    const contents = page?.data.structuredData.contents;
+
+    const description =
+      page?.data.description ||
+      contents
+        ?.slice(
+          0,
+          contents?.[0].content.toLowerCase().startsWith("> available from")
+            ? 3
+            : 2
+        )
+        .map((c) =>
+          c.content.toLowerCase().startsWith("> available from")
+            ? undefined
+            : c.content
+        )
+        .filter(Boolean)
+        .join(". ") ||
+      "Arkos.js — The Express and Prisma RESTful Framework. Build secure and scalable RESTful APIs with minimal configuration.";
+
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+      ],
+    };
+  },
 });

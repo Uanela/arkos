@@ -24,6 +24,42 @@ export const Route = createFileRoute("/docs/$")({
     await clientLoader.preload(data.path);
     return data;
   },
+  head: async ({ params }) => {
+    const slugs = params._splat?.split("/") ?? [];
+    const page = source.getPage(slugs);
+
+    const title = page?.data.title
+      ? `${page.data.title} - Arkos.js Documentation`
+      : "Arkos.js Documentation";
+    const contents = page?.data.structuredData.contents;
+
+    const description =
+      page?.data.description ||
+      contents
+        ?.slice(
+          0,
+          contents?.[0].content.toLowerCase().startsWith("> available from")
+            ? 3
+            : 2
+        )
+        .map((c) =>
+          c.content.toLowerCase().startsWith("> available from")
+            ? undefined
+            : c.content
+        )
+        .filter(Boolean)
+        .join(". ") ||
+      "Arkos.js — The Express and Prisma RESTful Framework. Build secure and scalable RESTful APIs with minimal configuration.";
+
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+      ],
+    };
+  },
 });
 
 const serverLoader = createServerFn({
