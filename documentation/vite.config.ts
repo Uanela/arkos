@@ -5,7 +5,7 @@ import tsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import mdx from "fumadocs-mdx/vite";
 import { nitro } from "nitro/vite";
-import path from "node:path";
+import { resolve } from "path";
 
 export default defineConfig({
   server: {
@@ -34,11 +34,20 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": resolve(__dirname, "src"),
+      // path: "path-browserify",
     },
   },
   ssr: {
     noExternal: [],
-    external: ["node:path", "node:fs", "node:url", "node:os", "fumadocs-mdx"],
+    external: [
+      "path",
+      "node:fs",
+      "node:url",
+      "node:os",
+      "fumadocs-mdx",
+      "path",
+      "fs",
+    ],
   },
 });
