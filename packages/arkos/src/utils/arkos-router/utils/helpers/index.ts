@@ -32,6 +32,9 @@ export function extractArkosRoutes(
     prefix = "",
     inheritedRouteOptions?: ArkosRouterOptions
   ) {
+    if (Object.keys(inheritedRouteOptions || {}).length === 0)
+      inheritedRouteOptions = undefined;
+
     stack.forEach((layer: any) => {
       if (layer.route) {
         const fullPath = prefix + layer.route.path;
@@ -73,14 +76,17 @@ export function extractArkosRoutes(
         extractFromStack(
           layer.handle.stack,
           nestedPrefix,
-          layer.handle._arkos?.options ?? inheritedRouteOptions
+          layer.handle._arkos?.options?.openapi
+            ? layer.handle._arkos.options
+            : inheritedRouteOptions
         );
       }
     });
   }
 
   const stack = app._router?.stack || app.stack;
-  if (stack) extractFromStack(stack, basePath);
+  if (stack)
+    extractFromStack(stack, basePath, app._arkos?.options || undefined);
 
   return routes;
 }

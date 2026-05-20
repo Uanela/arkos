@@ -33,6 +33,17 @@ describe("applymakeRouterProxy", () => {
     RouteConfigRegistry.get = jest.fn();
   });
 
+  it("should expose _arkos metadata with options and registered routes", () => {
+    const router = makeRouter({ openapi: { tags: ["Users"] } }) as any;
+    const handler = jest.fn();
+
+    router.get({ path: "/users" }, handler);
+
+    expect(router._arkos.options.openapi.tags).toEqual(["Users"]);
+    expect(router._arkos.routes).toHaveLength(1);
+    expect(router._arkos.routes[0].method).toBe("get");
+  });
+
   describe("makeRouter OpenAPI tag merging", () => {
     it("should merge router-level and route-level openapi tags", () => {
       const router = makeRouter({ openapi: { tags: ["Users"] } }) as any;

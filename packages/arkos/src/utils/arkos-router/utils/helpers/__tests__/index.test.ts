@@ -64,8 +64,18 @@ describe("extractArkosRoutes", () => {
     const result = extractArkosRoutes(app);
 
     expect(result).toEqual([
-      { path: "/a", method: "GET", config: { path: "/a", method: "GET" } },
-      { path: "/b", method: "POST", config: { path: "/b", method: "POST" } },
+      {
+        path: "/a",
+        method: "GET",
+        routeOptions: undefined,
+        config: { path: "/a", method: "GET" },
+      },
+      {
+        path: "/b",
+        method: "POST",
+        routeOptions: undefined,
+        config: { path: "/b", method: "POST" },
+      },
     ]);
   });
 
@@ -104,6 +114,7 @@ describe("extractArkosRoutes", () => {
       {
         path: "/base/nested/c",
         method: "GET",
+        routeOptions: undefined,
         config: { path: "/c", method: "GET" },
       },
     ]);
