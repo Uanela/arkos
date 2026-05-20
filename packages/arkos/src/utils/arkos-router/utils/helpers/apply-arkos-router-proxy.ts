@@ -4,6 +4,7 @@ import {
   ArkosRouteConfig,
   ArkosUseConfig,
   IArkosRoute,
+  InternalIArkosRouter,
   PathParams,
 } from "../../types";
 import RouteConfigValidator from "../../route-config-validator";
@@ -24,6 +25,11 @@ export function applyArkosRouterProxy<T extends object>(
   },
   component: "app" | "router" = "router"
 ): T {
+  (target as InternalIArkosRouter)._arkos = {
+    options,
+    routes: [],
+  };
+
   return new Proxy(target, {
     get(target, prop, receiver) {
       const originalMethod = Reflect.get(target, prop, receiver) as Function;
@@ -175,6 +181,11 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
 
             const finalHandler = handlers[handlers.length - 1];
             RouteConfigRegistry.register(finalHandler, config, method);
+            (target as InternalIArkosRouter)._arkos.routes.push({
+              handler: finalHandler,
+              config,
+              method,
+            });
           }
 
           const arkosConfig = getArkosConfig();
@@ -230,7 +241,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           return originalMethod.call(target, path, ...handlers);
         };
       }
-      // }
+
       return originalMethod;
     },
   });
