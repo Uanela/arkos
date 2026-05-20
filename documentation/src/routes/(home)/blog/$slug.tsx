@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { blog, source } from "@/lib/source";
+import { blog } from "@/lib/source";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import { AuthorCard } from "@/components/blog/author-card";
 import { TagBadge } from "@/components/blog/tag-badge";

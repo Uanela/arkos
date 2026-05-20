@@ -5,7 +5,6 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import browserCollections from ".source/browser";
 import {
   CheckCircleIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   ListIcon,
   ArrowUpIcon,
