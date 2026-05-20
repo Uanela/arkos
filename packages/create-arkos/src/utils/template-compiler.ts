@@ -208,6 +208,10 @@ class TemplateCompiler {
 
           fs.mkdirSync(path.dirname(outputPath), { recursive: true });
           fs.writeFileSync(outputPath, content);
+        } else {
+          const outputPath = path.join(outputDir, relativePath);
+          fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+          fs.copyFileSync(fullPath, outputPath);
         }
       });
     }
