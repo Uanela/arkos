@@ -12,7 +12,7 @@ Arkos supports two approaches to file uploads: **standalone routes** (`/api/uplo
 const { urls } = await fetch("/api/uploads/images", { method: "POST", body: formData }).then(r => r.json());
 ```
 
-See [File Upload Routes](/docs/guides/file-uploads/routes) for the full standalone API.
+See [File Upload Routes](/docs/guides/file-handling/file-uploads/routes) for the full standalone API.
 
 ## Router uploads
 
@@ -65,7 +65,7 @@ export default userRouter;
   `RouteHook` is the new name for `export const config: RouterConfig`. Existing code using the old name still works but will log a deprecation warning. See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for details.
 </Callout>
 
-For all upload types (`single`, `array`, `fields`), nested field notation, and `RouteHook` examples, see [Router Upload](/docs/guides/file-uploads/router-upload).
+For all upload types (`single`, `array`, `fields`), nested field notation, and `RouteHook` examples, see [Router Upload](/docs/guides/file-handling/file-uploads/router-upload).
 
 ## Global configuration
 
@@ -169,7 +169,7 @@ arkos.init({
 
 ## Related
 
-- [Router Upload](/docs/guides/file-uploads/router-upload) — attaching uploads to custom and built-in routes
-- [File Upload Routes](/docs/guides/file-uploads/routes) — standalone endpoints, request format, image processing params
+- [Router Upload](/docs/guides/file-handling/file-uploads/router-upload) — attaching uploads to custom and built-in routes
+- [File Upload Routes](/docs/guides/file-handling/file-uploads/routes) — standalone endpoints, request format, image processing params
 - [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) — before/after hooks for any file operation
 - [Validation with file uploads](/docs/guides/validation/usage#validation-with-file-uploads) — how to combine `validation.body` and `experimental.uploads` in the same request
