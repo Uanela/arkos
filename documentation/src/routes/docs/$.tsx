@@ -24,14 +24,31 @@ export const Route = createFileRoute("/docs/$")({
     await clientLoader.preload(data.path);
     return data;
   },
-  head: async ({ params }) => {
-    const slugs = params._splat?.split("/") ?? [];
+  head: async ({ loaderData }) => {
+    return {
+      meta: [
+        { title: loaderData.title },
+        { name: "description", content: loaderData.description },
+        { property: "og:title", content: loaderData.title },
+        { property: "og:description", content: loaderData.description },
+      ],
+    };
+  },
+});
+
+const serverLoader = createServerFn({
+  method: "GET",
+})
+  .inputValidator((slugs: string[]) => slugs)
+  .handler(async ({ data: slugs }) => {
     const page = source.getPage(slugs);
+    if (!page) throw notFound();
+
+    const contents = page?.data.structuredData.contents;
 
     const title = page?.data.title
       ? `${page.data.title} - Arkos.js Documentation`
       : "Arkos.js Documentation";
-    const contents = page?.data.structuredData.contents;
 
     const description =
       page?.data.description ||
@@ -52,28 +69,11 @@ export const Route = createFileRoute("/docs/$")({
       "Arkos.js — The Express and Prisma RESTful Framework. Build secure and scalable RESTful APIs with minimal configuration.";
 
     return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-      ],
-    };
-  },
-});
-
-const serverLoader = createServerFn({
-  method: "GET",
-})
-  .inputValidator((slugs: string[]) => slugs)
-  .handler(async ({ data: slugs }) => {
-    const page = source.getPage(slugs);
-    if (!page) throw notFound();
-
-    return {
       url: page.url,
       path: page.path,
       pageTree: await source.serializePageTree(source.getPageTree()),
+      title,
+      description,
     };
   });
 
