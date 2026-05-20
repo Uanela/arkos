@@ -14,12 +14,42 @@ import { lenientDecode } from "./helpers/url-helpers";
 import path from "path";
 import express from "express";
 import { userRequire } from "./helpers/global.helpers";
+import { existsSync, mkdirSync } from "fs";
+import sheu from "./sheu";
 
 export default function initializeApp(app: Arkos) {
   const config = getArkosConfig();
   const globalPrefix = config.globalPrefix || "/api";
 
   const routersConfig = config?.routers;
+
+  if (config?.staticFiles?.enabled !== false) {
+    const folder = config?.staticFiles?.folder ?? "public";
+    const prefix = config?.staticFiles?.prefix ?? "/";
+    const resolvedPath = path.resolve(process.cwd(), folder);
+
+    if (!existsSync(resolvedPath)) {
+      mkdirSync(resolvedPath, { recursive: true });
+      sheu.warn(
+        `Folder '${resolvedPath}' was created to serve static files. If you intend to disable static files set staticFiles.enabled = false. See https://arkosjs.com/docs/static-files`,
+        { timestamp: true }
+      );
+    }
+
+    app.use(
+      { path: prefix },
+      express.static(resolvedPath, {
+        maxAge: "1y",
+        etag: true,
+        lastModified: true,
+        dotfiles: "ignore",
+        fallthrough: true,
+        index: false,
+        cacheControl: true,
+        ...config?.staticFiles?.expressStatic,
+      })
+    );
+  }
 
   if (routersConfig?.welcomeRoute !== false) {
     if (typeof routersConfig?.welcomeRoute === "function") {
