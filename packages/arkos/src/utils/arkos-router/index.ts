@@ -8,6 +8,80 @@ import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/clas
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy";
+import { Arkos } from "../../types/arkos";
+
+export type ArkosRouterOptions = {
+  /**
+   * Prefix to apply to all routes in this router.
+   * Nested routers inherit and concatenate prefixes from parent routers.
+   *
+   * @since 1.5.0-beta
+   * @example
+   * // All routes in this router will be prefixed with "/api"
+   * prefix: "/api"
+   */
+  prefix?: string | RegExp | Array<string | RegExp>;
+  /**
+   * OpenAPI metadata to apply to all routes in this router.
+   * Nested routers inherit from parent routers unless explicitly overridden.
+   * Route-level openapi config fully replaces inherited values when defined.
+   *
+   * @since 1.6.0-beta
+   * @example
+   * openapi: {
+   *   tags: ["Users"],
+   *   security: [{ bearerAuth: [] }]
+   * }
+   */
+  openapi?: {
+    /**
+     * Tags to apply to all routes in this router, used to group them in OpenAPI documentation.
+     * Route-level tags fully replaces this value when defined.
+     *
+     * @since 1.6.0-beta
+     * @example
+     * // Group all routes in this router under "Users"
+     * tags: ["Users"]
+     */
+    tags?: string[];
+    /**
+     * Security requirements to apply to all routes in this router.
+     * Route-level security fully replaces this value when defined.
+     *
+     * @since 1.6.2-canary.1
+     * @example
+     * // Require bearer auth for all routes in this router
+     * security: [{ bearerAuth: [] }]
+     *
+     * // Explicitly make all routes public (overridable per route)
+     * security: []
+     */
+    security?: OpenAPIV3.SecurityRequirementObject[];
+
+    /**
+     * Server definitions to apply to all routes in this router.
+     * Follows the OpenAPI 3.0 Server Object specification.
+     * Route-level servers fully replaces this value when defined.
+     *
+     * @since 1.6.2-canary.1
+     * @example
+     * servers: [{ url: "https://api.example.com/v2", description: "V2 API" }]
+     */
+    servers?: OpenAPIV3.ServerObject[];
+    /**
+     * External documentation to apply to all routes in this router.
+     * Route-level externalDocs fully replaces this value when defined.
+     *
+     * @since 1.6.2-canary.1
+     * @example
+     * externalDocs: {
+     *   description: "Find more information here",
+     *   url: "https://docs.example.com/users"
+     * }
+     */
+    externalDocs?: OpenAPIV3.ExternalDocumentationObject;
+  };
+};
 
 /**
  * Creates an enhanced Express Router with features like OpenAPI documentation capabilities and smart data validation.
@@ -32,12 +106,10 @@ import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy"
  * @returns {IArkosRouter} A proxied Express Router instance with enhanced OpenAPI capabilities
  *
  * @see {@link https://www.arkosjs.com/docs/reference/arkos-router} for configuration options
+ * @since 1.4.0-beta
  */
 export default function ArkosRouter(
-  options?: RouterOptions & {
-    prefix?: string | RegExp | Array<string | RegExp>;
-    openapi?: { tags?: string[] };
-  }
+  options?: RouterOptions & ArkosRouterOptions
 ): IArkosRouter {
   const router = Router(options);
   return applyArkosRouterProxy(router, options) as IArkosRouter;
@@ -45,7 +117,7 @@ export default function ArkosRouter(
 
 const hasDuplicatedPath = (path: string) => /^(\/.+)\1/.test(path);
 
-export function generateOpenAPIFromApp(app: any) {
+export function generateOpenAPIFromApp(app: Arkos) {
   const routes = extractArkosRoutes(app);
   const arkosConfig = getArkosConfig();
 
@@ -54,7 +126,7 @@ export function generateOpenAPIFromApp(app: any) {
     Record<string, Partial<OpenAPIV3.OperationObject>>
   > = {};
 
-  routes.forEach(({ path, method, config }) => {
+  routes.forEach(({ path, method, config, routeOptions }) => {
     if (config?.experimental?.openapi === false || hasDuplicatedPath(path))
       return;
     const originalPath = path;
@@ -171,7 +243,14 @@ export function generateOpenAPIFromApp(app: any) {
       ...convertedOpenAPI,
       summary: openapi?.summary || `${path}`,
       description: openapi?.description || `${method} ${path}`,
-      tags: openapi?.tags || ["Defaults"],
+      servers: openapi?.servers || routeOptions?.openapi?.servers || undefined,
+      security:
+        openapi?.security || routeOptions?.openapi?.security || undefined,
+      externalDocs:
+        openapi?.externalDocs ||
+        routeOptions?.openapi?.externalDocs ||
+        undefined,
+      tags: openapi?.tags || routeOptions?.openapi?.tags || ["Defaults"],
       operationId: openapi.operationId || `${method.toLowerCase()}:${path}`,
       parameters: allParameters,
       ...(!convertedOpenAPI.requestBody &&
@@ -225,7 +304,7 @@ export function generateOpenAPIFromApp(app: any) {
             })(),
           },
         }),
-    };
+    } as OpenAPIV3.PathItemObject;
   });
 
   return paths;

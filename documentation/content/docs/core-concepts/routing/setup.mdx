@@ -34,7 +34,7 @@ arkos.init({
   </Tab>
 </Tabs>
 
-### WebSockets and Custom Server Access
+### Custom Server Access and WebSockets   
 
 If you need access to the underlying HTTP server — for WebSockets, for example:
 
@@ -50,17 +50,13 @@ import { Server } from "socket.io";
 
 const app = arkos();
 
-async function start() {
-  await app.build();
+await app.build();
 
-  const server = http.createServer(app);
+const server = http.createServer(app);
 
-  const io = new Server(server);
+const io = new Server(server);
 
-  app.listen(server);
-}
-
-start();
+app.listen(server);
 ```
   </Tab>
   <Tab value="pre-1.6">

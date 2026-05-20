@@ -27,6 +27,7 @@
 
   process.env.NO_CLI = "true";
   process.env.FORCE_COLOR = "3";
+  process.env.__ARKOS_CLI = "true";
   const child = spawn(process.execPath, args, {
     stdio: ["inherit", "inherit", "pipe"],
   });
