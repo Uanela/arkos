@@ -290,7 +290,8 @@ describe("setupApp", () => {
           const app = makeMockApp();
           setupApp(app as any);
           expect(sheu.warn).toHaveBeenCalledWith(
-            expect.stringContaining("cors.customHandler is deprecated")
+            expect.stringContaining("cors.customHandler is deprecated"),
+            { timestamp: true }
           );
         });
 
@@ -301,7 +302,8 @@ describe("setupApp", () => {
           const app = makeMockApp();
           setupApp(app as any);
           expect(sheu.warn).toHaveBeenCalledWith(
-            expect.stringContaining("cors.allowedOrigins is deprecated")
+            expect.stringContaining("cors.allowedOrigins is deprecated"),
+            { timestamp: true }
           );
         });
 
@@ -312,7 +314,8 @@ describe("setupApp", () => {
           const app = makeMockApp();
           setupApp(app as any);
           expect(sheu.warn).toHaveBeenCalledWith(
-            expect.stringContaining("cors.options is deprecated")
+            expect.stringContaining("cors.options is deprecated"),
+            { timestamp: true }
           );
         });
       });
