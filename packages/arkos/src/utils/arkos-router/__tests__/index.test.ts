@@ -129,6 +129,112 @@ describe("generateOpenAPIFromApp", () => {
     jest.clearAllMocks();
   });
 
+  it("should use routeOptions openapi tags as fallback when route has no tags", () => {
+    (RouteConfigRegistry.get as jest.Mock).mockReturnValue({
+      config: { path: "/users" },
+      method: "get",
+    });
+
+    const openapiPaths = generateOpenAPIFromApp({
+      ...mockApp,
+      _arkos: { options: { openapi: { tags: ["Inherited"] } } },
+    });
+
+    expect(openapiPaths["/users"]["get"].tags).toEqual(["Inherited"]);
+  });
+
+  it("should use routeOptions openapi tags as fallback when route has no tags", () => {
+    (RouteConfigRegistry.get as jest.Mock).mockReturnValue({
+      path: "/users",
+      method: "get",
+    });
+
+    const nestedRouter = {
+      stack: [
+        {
+          route: {
+            path: "/users",
+            methods: { get: true },
+            stack: [{ handle: {} }],
+          },
+        },
+      ],
+      _arkos: { options: { openapi: { tags: ["Inherited"] } } },
+    };
+
+    const app: any = {
+      _router: {
+        stack: [
+          {
+            name: "router",
+            regexp: /^\/api\/?(?=\/|$)/i,
+            handle: nestedRouter,
+          },
+        ],
+      },
+    };
+
+    const openapiPaths = generateOpenAPIFromApp(app);
+    expect(openapiPaths["/api/users"]["get"].tags).toEqual(["Inherited"]);
+  });
+
+  it("should propagate inherited openapi tags through deeply nested routers", () => {
+    (RouteConfigRegistry.get as jest.Mock).mockReturnValue({
+      path: "/users",
+      method: "get",
+    });
+
+    const deepNestedRouter = {
+      stack: [
+        {
+          route: {
+            path: "/users",
+            methods: { get: true },
+            stack: [{ handle: {} }],
+          },
+        },
+      ],
+      _arkos: { options: {} },
+    };
+
+    const middleRouter = {
+      stack: [
+        {
+          name: "router",
+          regexp: /^\/v1\/?(?=\/|$)/i,
+          handle: deepNestedRouter,
+        },
+      ],
+      _arkos: { options: {} },
+    };
+
+    const app: any = {
+      _router: {
+        stack: [
+          {
+            name: "router",
+            regexp: /^\/api\/?(?=\/|$)/i,
+            handle: {
+              stack: [
+                {
+                  name: "router",
+                  regexp: /^\/v1\/?(?=\/|$)/i,
+                  handle: middleRouter,
+                },
+              ],
+              _arkos: { options: { openapi: { tags: ["Grandparent"] } } },
+            },
+          },
+        ],
+      },
+    };
+
+    const openapiPaths = generateOpenAPIFromApp(app);
+    expect(openapiPaths["/api/v1/v1/users"]["get"].tags).toEqual([
+      "Grandparent",
+    ]);
+  });
+
   it("should generate OpenAPI paths from Express app routes", async () => {
     const openapiPaths = generateOpenAPIFromApp(mockApp);
 
@@ -147,7 +253,7 @@ describe("generateOpenAPIFromApp", () => {
 
   it("should export path parameters from route path", async () => {
     const routePath = "/products/{id}/views/{viewId}/{userId}";
-    const app = {
+    const app: any = {
       _router: {
         stack: [
           {
@@ -172,7 +278,7 @@ describe("generateOpenAPIFromApp", () => {
 
   it("should throw an error when try to define path parameter that is not contained on the route pathname", async () => {
     const routePath = "/products/:id/:viewId";
-    const app = {
+    const app: any = {
       _router: {
         stack: [
           {
@@ -238,7 +344,7 @@ describe("generateOpenAPIFromApp", () => {
   });
 
   it("should handle empty app with no routes", async () => {
-    const emptyApp = {
+    const emptyApp: any = {
       _router: {
         stack: [],
       },
