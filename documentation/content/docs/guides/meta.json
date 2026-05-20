@@ -5,7 +5,7 @@
     "global-middlewares",
     "validation",
     "error-handling",
-    "file-uploads",
+    "file-handling",
     "security",
     "open-api-documentation",
     "email-service",
