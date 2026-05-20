@@ -36,22 +36,28 @@ export const getUserFileExtension = (root = process.cwd()): "ts" | "js" => {
   const tsconfigPath = path.join(root, "tsconfig.json");
 
   function isTs() {
-    if (fs.existsSync(tsconfigPath)) return true;
+    try {
+      if (fs.existsSync(tsconfigPath)) return true;
 
-    const packageJsonPath = path.join(root, "package.json");
+      const packageJsonPath = path.join(root, "package.json");
 
-    if (!fs.existsSync(packageJsonPath)) return false;
+      if (!fs.existsSync(packageJsonPath)) return false;
 
-    const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+      const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 
-    const dependencies = {
-      ...pkg.dependencies,
-      ...pkg.devDependencies,
-      ...pkg.peerDependencies,
-    };
+      const dependencies = {
+        ...pkg.dependencies,
+        ...pkg.devDependencies,
+        ...pkg.peerDependencies,
+      };
 
-    return Boolean(dependencies.typescript);
+      return Boolean(dependencies.typescript);
+    } catch {
+      return false;
+    }
   }
 
-  return isTs() && process.env.ARKOS_BUILD !== "true" ? "ts" : "js";
+  userFileExtension =
+    isTs() && process.env.ARKOS_BUILD !== "true" ? "ts" : "js";
+  return userFileExtension;
 };

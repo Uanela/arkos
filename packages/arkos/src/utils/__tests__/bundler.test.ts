@@ -140,6 +140,9 @@ describe("Bundler", () => {
           "noImplicitAny": false,
           "paths": {
           "@src/*": ["./src/*"]
+/*
+*
+*/
         }
         },
         "include": ["src/**/*.ts", "packages/**/*.ts", "arkos.config.ts"],
