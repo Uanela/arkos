@@ -35,9 +35,7 @@ const config = {
     strict: false,
   },
   middlewares: {
-    cors: {
-      allowedOrigins: "*"
-    },
+    cors: {},
   },
   {{#if (eq prisma.provider "none")}}
   warnings: {
