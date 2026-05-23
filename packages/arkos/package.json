@@ -51,6 +51,11 @@
       "import": "./dist/esm/exports/error-handler/index.js",
       "require": "./dist/cjs/exports/error-handler/index.js"
     },
+    "./websockets": {
+      "types": "./dist/types/exports/websockets.d.ts",
+      "import": "./dist/esm/exports/websockets.js",
+      "require": "./dist/cjs/exports/websockets.js"
+    },
     "./utils": {
       "types": "./dist/types/exports/utils/index.d.ts",
       "import": "./dist/esm/exports/utils/index.js",
@@ -78,7 +83,8 @@
       "prisma": ["./dist/types/exports/prisma/index.d.ts"],
       "auth": ["./dist/types/exports/auth/index.d.ts"],
       "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
-      "utils": ["./dist/types/exports/utils/index.d.ts"]
+      "utils": ["./dist/types/exports/utils/index.d.ts"],
+      "websockets": ["./dist/types/exports/websockets.d.ts"]
     }
   },
   "scripts": {
@@ -159,6 +165,7 @@
     "mimetype": "0.0.8",
     "openapi-types": "12.1.3",
     "prisma": "6.19.2",
+    "socket.io": "^4.8.3",
     "ts-jest": "29.3.1",
     "ts-node": "^10.9.2",
     "ts-prune": "0.10.3",
@@ -193,6 +200,7 @@
     "multer": "2.0.2",
     "nodemailer": "8.0.7",
     "sharp": "0.34.5",
+    "socket.io": "^4.8.3",
     "swagger-jsdoc": "6.2.8",
     "zod": "3.24.2",
     "zod-to-json-schema": "3.24.6"
