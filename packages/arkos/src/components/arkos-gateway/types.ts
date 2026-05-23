@@ -134,11 +134,9 @@ export type ArkosGatewayHookType = "connection" | "disconnect" | "error";
 export type ArkosGatewayConfig = {
   /**
    * Socket.io namespace for this gateway.
-   * Arkos prepends "/" internally — just pass the name.
-   * If omitted, defaults to the root namespace "/".
    *
    * @example
-   * name: "chat"
+   * name: "/chat"
    * // connects at: http://localhost:3000/chat
    */
   name: string;
@@ -160,30 +158,6 @@ export type ArkosGatewayConfig = {
    * rateLimit: { windowMs: 60_000, max: 200 }
    */
   rateLimit?: Partial<RateLimitOptions>;
-
-  /**
-   * CORS options passed to the Socket.io namespace.
-   *
-   * @example
-   * cors: { origin: "https://myapp.com" }
-   */
-  cors?: CorsOptions;
-
-  /**
-   * Called after a socket successfully connects (and passes auth if enabled).
-   */
-  onConnect?: ArkosGatewayConnectionHandler;
-
-  /**
-   * Called when a socket disconnects.
-   */
-  onDisconnect?: ArkosGatewayConnectionHandler;
-
-  /**
-   * Called when an AppError is thrown inside any event handler.
-   * If not provided, Arkos emits a default "error" event to the socket.
-   */
-  onError?: ArkosGatewayErrorHandler;
 };
 
 export class ArkosGatewayController {}
