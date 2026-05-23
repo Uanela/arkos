@@ -14,8 +14,11 @@ import { Validator } from "../../types/validation/validator";
 import { Server } from "socket.io";
 import { authActionService, authService } from "../../exports/services";
 import { checkRateLimit, clearRateLimitForSocket } from "./utils/rate-limiter";
-import handleArkosGatewayErrors, {
+import {
+  handleArkosGatewayErrors,
   runArkosGatewayPipes,
+  handleGatewayEventLog,
+  handleGatewayLifecycleLog,
 } from "./utils/helpers";
 import authHookManager from "../../modules/auth/utils/auth-hooks-manager";
 import { getArkosConfig } from "../../server";
@@ -25,7 +28,7 @@ import {
   TooManyRequestsError,
 } from "../../exports/error-handler";
 import { loginRequiredError } from "../../modules/auth/utils/auth-error-objects";
-import { handleGatewayEventLog } from "./utils/logger";
+import errorPrettifier from "../../modules/base/utils/error-prettifier";
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
@@ -49,7 +52,7 @@ export class IArkosGateway {
    * with its auth, rateLimit, and pipes.
    *
    * @example
-   * chatGateway.use((socket, io) => {
+   * chatGateway.use((socket, data, io) => {
    *   console.log("incoming connection", socket.id)
    * })
    *
@@ -278,9 +281,12 @@ export class IArkosGateway {
     }
 
     ns.on("connection", async (socket: ArkosSocket) => {
+      handleGatewayLifecycleLog(this.config.name, "connected", socket.id);
       const connectionStartTime = new Date().getTime();
 
       socket.on("disconnect", async () => {
+        handleGatewayLifecycleLog(this.config.name, "disconnected", socket.id);
+
         clearRateLimitForSocket(socket.id);
         try {
           for (const handler of disconnectHandlers) await handler(socket, io);
@@ -370,11 +376,31 @@ export class IArkosGateway {
                   { data }
                 );
               else if (shouldValidate === "passthrough") data = data;
-              else
-                data = await (validationFn as any)(
-                  eventConfig.validation,
-                  data
-                );
+              else {
+                try {
+                  data = await (validationFn as any)(
+                    eventConfig.validation,
+                    data
+                  );
+                } catch (err: any) {
+                  const { validationConfig } = validationManager;
+
+                  const resolver = validationConfig?.resolver;
+                  const isZod = validationConfig?.resolver === "zod";
+
+                  const prettifiedError = errorPrettifier.prettify(
+                    resolver as any,
+                    err
+                  );
+                  const error = prettifiedError[0];
+
+                  throw new BadRequestError(
+                    error.message,
+                    `InvalidData`,
+                    isZod ? err.format() : err
+                  );
+                }
+              }
             }
 
             socket.data = data;
