@@ -32,14 +32,12 @@ alertsGateway.hook("error", (err, socket) => {
   socket.emit("error", { message: err.message, layer: "alerts" });
 });
 
-alertsGateway.pipe((socket, data, next) => {
+alertsGateway.pipe((socket, data) => {
   socket.data.alertsGlobalPipe = true;
-  next();
 });
 
-alertsGateway.pipe({ event: "send_alert" }, (socket, data, next) => {
+alertsGateway.pipe({ event: "send_alert" }, (socket, data) => {
   socket.data.alertsScopedPipe = true;
-  next();
 });
 
 alertsGateway.on(
@@ -77,14 +75,12 @@ notificationsGateway.hook("error", (err, socket) => {
   socket.emit("error", { message: err.message, layer: "notifications" });
 });
 
-notificationsGateway.pipe((socket, data, next) => {
+notificationsGateway.pipe((socket, data) => {
   socket.data.notificationsGlobalPipe = true;
-  next();
 });
 
-notificationsGateway.pipe({ event: "mark_read" }, (socket, data, next) => {
+notificationsGateway.pipe({ event: "mark_read" }, (socket, data) => {
   socket.data.notificationsScopedPipe = true;
-  next();
 });
 
 notificationsGateway.on(
@@ -119,14 +115,12 @@ chatGateway.hook("error", (err, socket) => {
   socket.emit("error", { message: err.message, layer: "chat" });
 });
 
-chatGateway.pipe((socket, data, next) => {
+chatGateway.pipe((socket, data) => {
   socket.data.chatGlobalPipe = true;
-  next();
 });
 
-chatGateway.pipe({ event: "send_message" }, (socket, data, next) => {
+chatGateway.pipe({ event: "send_message" }, (socket, data) => {
   socket.data.chatScopedPipe = true;
-  next();
 });
 
 chatGateway.on(
