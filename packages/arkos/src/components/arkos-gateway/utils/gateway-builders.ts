@@ -105,59 +105,17 @@ export class GatewayEmitBuilder {
 
   /**
    * Emits an event to the target (room or all sockets in namespace).
-   * Supports deduplication via gateway or per-call config.
    *
    * @example
    * await gateway.toRoom("room-123").emit("update", data)
-   * await gateway.toAll().emit("announcement", data, {
-   *   dedup: { enabled: true, ttl: 60 }
-   * })
+   * await gateway.toAll().emit("announcement", data)
    */
   async emit<TData = any>(
     event: string,
     data: TData,
-    options: ArkosEmitOptions = {}
+    _options: ArkosEmitOptions = {}
   ): Promise<void | any> {
-    const { isDuplicate, messageId } = await this.resolveEmitDedup(
-      event,
-      options,
-      this.gatewayConfig
-    );
-
-    if (isDuplicate) return;
-
-    this.target.emit(event, { ...data, _mid: messageId });
-  }
-
-  async checkAndMarkDuplicate(
-    eventType: string,
-    messageId: string,
-    options: ArkosEmitOptions["dedup"] & { store: ArkosGatewayStore }
-  ): Promise<boolean> {
-    if (options?.enabled !== true) return false;
-
-    const key = `arkos::dedup:${eventType}:${messageId}`;
-    const ttl = options.ttl ?? 3600;
-
-    if (await options.store.has(key)) return true;
-    await options.store.set(key, ttl);
-    return false;
-  }
-
-  async resolveEmitDedup(
-    event: string,
-    options: ArkosEmitOptions,
-    gatewayConfig: ArkosGatewayConfig
-  ): Promise<{ isDuplicate: boolean; messageId: string }> {
-    const messageId = uuidv7();
-
-    const isDuplicate = await this.checkAndMarkDuplicate(event, messageId, {
-      enabled: options.dedup?.enabled ?? gatewayConfig.dedup?.enabled,
-      ttl: options.dedup?.ttl ?? gatewayConfig.dedup?.ttl,
-      store: this.store,
-    });
-
-    return { isDuplicate, messageId };
+    this.target.emit(event, { ...data });
   }
 }
 
@@ -174,7 +132,6 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
 
   /**
    * Emits an event to all active socket connections of a specific user.
-   * Supports deduplication, timeout, and exponential backoff retries.
    *
    * Returns `{ success: false, reason: "offline" }` if the user has no
    * active connections, and `{ success: false, reason: "timeout" }` if
@@ -185,7 +142,6 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
    * await gateway.toUser(userId).emit("order_update", data, {
    *   timeout: 5000,
    *   retries: 3,
-   *   dedup: { enabled: true, ttl: 60 }
    * })
    */
   async emit<TData = any>(
@@ -199,15 +155,7 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
 
     if (!sockets.length) return { success: false, reason: "offline" };
 
-    const { isDuplicate, messageId } = await this.resolveEmitDedup(
-      event,
-      options,
-      this.gatewayConfig
-    );
-
-    if (isDuplicate) return { success: true };
-
-    const dataWithId = { ...data, _mid: messageId };
+    const dataWithId = { ...data, _mid: uuidv7() };
     const timeout = options.timeout ?? 5000;
     const maxRetries = options.retries ?? 0;
 
@@ -252,24 +200,14 @@ export class GatewaySocketEmitBuilder extends GatewayEmitBuilder {
     data: TData,
     options: ArkosEmitOptions = {}
   ): Promise<{ success: boolean; reason?: string }> {
-    const { isDuplicate, messageId } = await this.resolveEmitDedup(
-      event,
-      options,
-      this.gatewayConfig
-    );
-
-    if (isDuplicate) return { success: true };
-
     const timeout = options.timeout ?? 5000;
     const maxRetries = options.retries ?? 0;
 
     const attemptEmit = () =>
       new Promise<boolean>((resolve) => {
-        this.socket
-          .timeout(timeout)
-          .emit(event, { ...data, _mid: messageId }, (err: any) => {
-            resolve(!err);
-          });
+        this.socket.timeout(timeout).emit(event, data, (err: any) => {
+          resolve(!err);
+        });
       });
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
