@@ -4,13 +4,5 @@
     "moduleResolution": "bundler",
     "module": "ES2020",
     "outDir": "./dist/esm"
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/**/__tests__/**",
-    "src/**/*.test.ts",
-    "src/**/*.test.js"
-  ]
+  }
 }

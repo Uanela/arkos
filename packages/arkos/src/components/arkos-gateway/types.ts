@@ -68,7 +68,7 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
    * @example
    * rateLimit: { windowMs: 10_000, max: 5 }
    */
-  rateLimit?: Partial<RateLimitOptions>;
+  rateLimit?: Partial<RateLimitOptions> | false;
 
   /**
    * Role-based authorization for this specific event.
@@ -243,7 +243,6 @@ export interface ArkosGatewayDedupStore {
  * gateway.toUser(userId).emit("notification", data, {
  *   timeout: 5000,
  *   retries: 3,
- *   dedup: { enabled: true, ttl: 60 }
  * })
  */
 export interface ArkosEmitOptions {
@@ -285,6 +284,93 @@ export interface ArkosEmitOptions {
      */
     ttl?: number;
   };
+}
+
+/**
+ * Options for `gateway.register()`.
+ * Passed once at the root gateway registration — applies to all child gateways.
+ *
+ * @example
+ * gateway.register(io, {
+ *   store: new MultiTierStore([
+ *     new MemoryStore(),
+ *     new RedisStore(redis)
+ *   ])
+ * })
+ */
+export type ArkosGatewayRegisterOptions = {
+  /**
+   * Unified store for rate limiting and deduplication across all gateways.
+   * Defaults to an in-memory store — zero config required for single-instance deployments.
+   *
+   * For distributed deployments (multiple Node processes / instances), plug in a
+   * Redis store or a multi-tier store to share state across instances.
+   *
+   * @example
+   * store: new RedisArkosStore(redis)
+   * store: new MultiTierStore([new MemoryStore(), new RedisStore(redis)])
+   */
+  store?: ArkosGatewayStore;
+};
+
+/**
+ * Unified store interface for rate limiting and deduplication.
+ * Implement this to plug in Redis, Valkey, or any distributed store.
+ *
+ * @example
+ * class RedisArkosStore implements ArkosGatewayStore {
+ *   constructor(private redis: RedisClientType) {}
+ *
+ *   async increment(key: string, windowMs: number) {
+ *     const count = await this.redis.incr(key)
+ *     if (count === 1) await this.redis.pExpire(key, windowMs)
+ *     const ttl = await this.redis.pTtl(key)
+ *     return { count, resetAt: Date.now() + ttl }
+ *   }
+ *
+ *   async clear(prefix: string) {
+ *     const keys = await this.redis.keys(`${prefix}*`)
+ *     if (keys.length) await this.redis.del(keys)
+ *   }
+ *
+ *   async has(key: string) {
+ *     return (await this.redis.exists(key)) === 1
+ *   }
+ *
+ *   async set(key: string, ttl: number) {
+ *     await this.redis.setEx(key, ttl, "1")
+ *   }
+ * }
+ */
+export interface ArkosGatewayStore {
+  /**
+   * Increment a rate limit counter for a given key and window.
+   * Called on every event to track request counts.
+   * Key format: `arkos::rl:{socketId}:{event}`
+   */
+  increment(
+    key: string,
+    windowMs: number
+  ): Promise<{ count: number; resetAt: number }>;
+
+  /**
+   * Clear all rate limit entries matching a prefix.
+   * Called on socket disconnect.
+   * Prefix format: `arkos::rl:{socketId}`
+   */
+  clear(prefix: string): Promise<void>;
+
+  /**
+   * Check if a dedup key exists.
+   * Called before emitting to detect duplicate messages.
+   */
+  has(key: string): Promise<boolean>;
+
+  /**
+   * Store a dedup key with a TTL in seconds.
+   * Called after emitting to mark a message as seen.
+   */
+  set(key: string, ttl: number): Promise<void>;
 }
 
 export class ArkosGatewayController {}

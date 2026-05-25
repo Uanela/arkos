@@ -9,6 +9,7 @@ import {
   ArkosGatewayPipe,
   ArkosGatewayConnectionHandler,
   ArkosSocket,
+  ArkosGatewayRegisterOptions,
 } from "./types";
 import { Validator } from "../../types/validation/validator";
 import { Server } from "socket.io";
@@ -32,12 +33,12 @@ import errorPrettifier from "../../modules/base/utils/error-prettifier";
 import {
   GatewayEmitBuilder,
   GatewayRoomBuilder,
+  GatewaySocketEmitBuilder,
   GatewayUserBuilder,
   GatewayUserEmitBuilder,
 } from "./utils/gateway-builders";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-
-const usersSockets = new Map<string, Set<string>>();
+import { defaultGatewayStore } from "./utils/memory-gateway-store";
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
@@ -49,6 +50,8 @@ export class IArkosGateway {
     handler: ArkosGatewayHookHandler;
   }[] = [];
   private io?: Server;
+  private registryOptions?: ArkosGatewayRegisterOptions;
+  static registered = false;
 
   constructor(config: ArkosGatewayConfig) {
     this.config = config;
@@ -229,19 +232,29 @@ export class IArkosGateway {
    * const io = new Server(server)
    * chatGateway.register(io)
    */
-  register(io: Server): void {
-    this._register(io);
+  register(io: Server, options: ArkosGatewayRegisterOptions = {}): void {
+    if (IArkosGateway.registered)
+      throw new Error(
+        `gateway.register() can only be called once by a global top level gateway. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/components/advanced-guides/web-sockets/setup.`
+      );
+    IArkosGateway.registered = true;
+    this._register(io, undefined, [], [], options);
   }
 
-  _register(
+  private _register(
     io: Server,
     parentConfig?: ArkosGatewayConfig,
     inheritedHooks: {
       type: ArkosGatewayHookType;
       handler: ArkosGatewayHookHandler;
     }[] = [],
-    inheritedPipes: ArkosGatewayPipe[] = []
+    inheritedPipes: ArkosGatewayPipe[] = [],
+    options: ArkosGatewayRegisterOptions = {}
   ): void {
+    options.store = options.store ?? defaultGatewayStore;
+    const { store } = options;
+    this.registryOptions = options;
+
     const parentName = parentConfig?.name;
     const ownName = this.config.name;
     this.io = io;
@@ -296,24 +309,12 @@ export class IArkosGateway {
       handleGatewayLifecycleLog(this.config.name, "connected", socket.id);
       const connectionStartTime = new Date().getTime();
 
-      if (socket.user?.id) {
-        if (!usersSockets.has(socket.user.id))
-          usersSockets.set(socket.user.id, new Set());
-
-        usersSockets.get(socket.user.id)!.add(socket.id);
-      }
+      if (socket.user?.id) socket.join(`arkos::user:${socket.user.id}`);
 
       socket.on("disconnect", async () => {
         handleGatewayLifecycleLog(this.config.name, "disconnected", socket.id);
 
-        if (socket.user?.id) {
-          usersSockets.get(socket.user.id)?.delete(socket.id);
-          if (usersSockets.get(socket.user.id)?.size === 0) {
-            usersSockets.delete(socket.user.id);
-          }
-        }
-
-        clearRateLimitForSocket(socket.id);
+        await clearRateLimitForSocket(socket.id, store);
         try {
           for (const handler of disconnectHandlers) await handler(socket, io);
         } catch (err) {
@@ -352,11 +353,12 @@ export class IArkosGateway {
 
           try {
             const rateLimitOptions = eventConfig.rateLimit ?? resolvedRateLimit;
-            if (rateLimitOptions) {
-              const { allowed, retryAfter } = checkRateLimit(
+            if (rateLimitOptions !== false) {
+              const { allowed, retryAfter } = await checkRateLimit(
                 socket.id,
                 eventConfig.event,
-                rateLimitOptions
+                rateLimitOptions || {},
+                options.store!
               );
               if (!allowed) {
                 throw new TooManyRequestsError(undefined, undefined, {
@@ -473,7 +475,8 @@ export class IArkosGateway {
           rateLimit: resolvedRateLimit,
         },
         resolvedHooks,
-        inheritedPipes
+        inheritedPipes,
+        options
       );
     }
   }
@@ -497,12 +500,11 @@ export class IArkosGateway {
   toUser(userId: string) {
     return new GatewayUserEmitBuilder(
       userId,
-      usersSockets,
-      this.io!,
-      this.config
+      this.io!.of(this.config.name),
+      this.config,
+      this.registryOptions?.store!
     );
   }
-
   /**
    * Returns a builder for sending events to all sockets in a room.
    *
@@ -516,7 +518,8 @@ export class IArkosGateway {
   toRoom(room: string) {
     return new GatewayEmitBuilder(
       this.io!.of(this.config.name).to(room),
-      this.config
+      this.config,
+      this.registryOptions?.store!
     );
   }
 
@@ -532,7 +535,11 @@ export class IArkosGateway {
    * @since 1.7.0-canary.19
    */
   toAll() {
-    return new GatewayEmitBuilder(this.io!.of(this.config.name), this.config);
+    return new GatewayEmitBuilder(
+      this.io!.of(this.config.name),
+      this.config,
+      this.registryOptions?.store!
+    );
   }
 
   /**
@@ -545,7 +552,7 @@ export class IArkosGateway {
    * @since 1.7.0-canary.19
    */
   user(userId: string) {
-    return new GatewayUserBuilder(userId, usersSockets);
+    return new GatewayUserBuilder(userId, this.io!.of(this.config.name));
   }
 
   /**
@@ -580,11 +587,10 @@ export class IArkosGateway {
    * @since 1.7.0-canary.19
    */
   toSocket(socket: ArkosSocket) {
-    return new GatewayUserEmitBuilder(
-      socket.user?.id ?? socket.id,
-      new Map([[socket.user?.id ?? socket.id, new Set([socket.id])]]),
-      this.io!,
-      this.config
+    return new GatewaySocketEmitBuilder(
+      socket,
+      this.config,
+      this.registryOptions?.store!
     );
   }
 }
