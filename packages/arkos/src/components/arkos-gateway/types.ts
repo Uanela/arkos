@@ -4,7 +4,6 @@ import { DefaultEventsMap } from "socket.io";
 import { Validator } from "../../types/validation/validator";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { ArkosPolicyRule } from "../arkos-policy/types";
-import { CorsOptions } from "cors";
 
 /**
  * An events map is an interface that maps event names to their value, which
@@ -158,6 +157,134 @@ export type ArkosGatewayConfig = {
    * rateLimit: { windowMs: 60_000, max: 200 }
    */
   rateLimit?: Partial<RateLimitOptions>;
+  /**
+   * Configuration for the deduplication system on this gateway.
+   * Deduplication prevents the same event from being processed or emitted
+   * multiple times within a given time window.
+   *
+   * All settings drill down to child gateways and can be overridden per child.
+   *
+   * @example
+   * ArkosGateway({
+   *   name: "/chat",
+   *   dedup: {
+   *     enabled: true,
+   *     ttl: 3600,
+   *     store: new RedisDeduplicationStore(redisClient)
+   *   }
+   * })
+   */
+  dedup?: {
+    /**
+     * Whether deduplication is enabled for this gateway.
+     * Defaults to `true` — opt out explicitly if you need duplicate events.
+     *
+     * @default true
+     */
+    enabled?: boolean;
+
+    /**
+     * Time-to-live in seconds for deduplication keys.
+     * After this period the same message ID can be processed again.
+     *
+     * @default 3600
+     */
+    ttl?: number;
+
+    /**
+     * Custom deduplication store. Defaults to an in-memory store.
+     * Plug in Redis, bento-cache, or any store implementing
+     * `ArkosGatewayDedupStore` for distributed deduplication across
+     * multiple server instances.
+     *
+     * @default MemoryDedupStore
+     */
+    store?: ArkosGatewayDedupStore;
+  };
 };
+
+/**
+ * Interface for a custom deduplication store.
+ * Implement this to plug in Redis, bento-cache, or any other
+ * distributed store for deduplication across multiple server instances.
+ *
+ * @example
+ * class RedisDeduplicationStore implements ArkosGatewayDedupStore {
+ *   constructor(private redis: RedisClientType) {}
+ *
+ *   async has(key: string): Promise<boolean> {
+ *     return (await this.redis.exists(key)) === 1
+ *   }
+ *
+ *   async set(key: string, ttl: number): Promise<void> {
+ *     await this.redis.setEx(key, ttl, "1")
+ *   }
+ * }
+ */
+export interface ArkosGatewayDedupStore {
+  /**
+   * Returns whether the key exists in the store.
+   * Used to detect duplicate messages.
+   */
+  has(key: string): Promise<boolean>;
+
+  /**
+   * Stores a key with a TTL in seconds.
+   * Called after a message is processed to mark it as seen.
+   */
+  set(key: string, ttl: number): Promise<void>;
+}
+
+/**
+ * Options available on every Arkos-owned emit method.
+ * All fields are optional — defaults are applied at the gateway level.
+ *
+ * @example
+ * gateway.toUser(userId).emit("notification", data, {
+ *   timeout: 5000,
+ *   retries: 3,
+ *   dedup: { enabled: true, ttl: 60 }
+ * })
+ */
+export interface ArkosEmitOptions {
+  /**
+   * Timeout in milliseconds to wait for an acknowledgement from the client.
+   * Only applies to `toUser()` and `toSocket()` — broadcasts have no ack.
+   *
+   * @default 5000
+   */
+  timeout?: number;
+
+  /**
+   * Number of retry attempts if the emit times out or fails.
+   * Uses exponential backoff between attempts, capped at 5 seconds.
+   * Only applies to `toUser()` and `toSocket()`.
+   *
+   * @default 0
+   */
+  retries?: number;
+
+  /**
+   * Per-call deduplication overrides.
+   * Store cannot be overridden here — set it at the gateway level.
+   */
+  dedup?: {
+    /**
+     * Whether to deduplicate this specific emit.
+     * Overrides the gateway-level `dedup.enabled` setting.
+     *
+     * @default true
+     */
+    enabled?: boolean;
+
+    /**
+     * TTL in seconds for this specific emit's deduplication key.
+     * Overrides the gateway-level `dedup.ttl` setting.
+     *
+     * @default 3600
+     */
+    ttl?: number;
+  };
+}
 
 export class ArkosGatewayController {}
