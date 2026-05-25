@@ -1,35 +1,44 @@
 import { uuidv7 } from "uuidv7";
-import { ArkosEmitOptions, ArkosGatewayConfig } from "../types";
-import gatewayDedupManager from "./gateway-dedup-manager";
+import {
+  ArkosEmitOptions,
+  ArkosGatewayConfig,
+  ArkosGatewayStore,
+  ArkosSocket,
+} from "../types";
 import { Server } from "socket.io";
 
 export class GatewayUserBuilder {
   constructor(
     private userId: string,
-    private userSockets: Map<string, Set<string>>
+    private ns: ReturnType<Server["of"]>
   ) {}
 
   /**
    * Returns whether the user has at least one active socket connection.
    *
    * @example
-   * if (gateway.user(userId).isOnline()) {
+   * if (await gateway.user(userId).isOnline()) {
    *   // user is connected
    * }
    */
-  isOnline(): boolean {
-    return (this.userSockets.get(this.userId)?.size ?? 0) > 0;
+  async isOnline(): Promise<boolean> {
+    const sockets = await this.ns
+      .in(`arkos::user:${this.userId}`)
+      .fetchSockets();
+    return sockets.length > 0;
   }
-
   /**
    * Returns the number of active socket connections for this user.
    * A user can have multiple connections (e.g. multiple tabs/devices).
    *
    * @example
-   * const count = gateway.user(userId).socketCount()
+   * const count = await gateway.user(userId).socketCount()
    */
-  socketCount(): number {
-    return this.userSockets.get(this.userId)?.size ?? 0;
+  async socketCount() {
+    const sockets = await this.ns
+      .in(`arkos::user:${this.userId}`)
+      .fetchSockets();
+    return sockets.length;
   }
 
   /**
@@ -38,8 +47,11 @@ export class GatewayUserBuilder {
    * @example
    * const socketIds = gateway.user(userId).socketIds()
    */
-  socketIds(): string[] {
-    return [...(this.userSockets.get(this.userId) ?? [])];
+  async socketIds() {
+    const sockets = await this.ns
+      .in(`arkos::user:${this.userId}`)
+      .fetchSockets();
+    return sockets.map((s) => s.id);
   }
 }
 
@@ -84,12 +96,11 @@ export class GatewayRoomBuilder {
   }
 }
 
-
-
 export class GatewayEmitBuilder {
   constructor(
     protected target: { emit: (event: string, ...args: any[]) => any },
-    protected gatewayConfig: ArkosGatewayConfig
+    protected gatewayConfig: ArkosGatewayConfig,
+    protected store: ArkosGatewayStore
   ) {}
 
   /**
@@ -118,6 +129,21 @@ export class GatewayEmitBuilder {
     this.target.emit(event, { ...data, _mid: messageId });
   }
 
+  async checkAndMarkDuplicate(
+    eventType: string,
+    messageId: string,
+    options: ArkosEmitOptions["dedup"] & { store: ArkosGatewayStore }
+  ): Promise<boolean> {
+    if (options?.enabled !== true) return false;
+
+    const key = `arkos::dedup:${eventType}:${messageId}`;
+    const ttl = options.ttl ?? 3600;
+
+    if (await options.store.has(key)) return true;
+    await options.store.set(key, ttl);
+    return false;
+  }
+
   async resolveEmitDedup(
     event: string,
     options: ArkosEmitOptions,
@@ -125,15 +151,11 @@ export class GatewayEmitBuilder {
   ): Promise<{ isDuplicate: boolean; messageId: string }> {
     const messageId = uuidv7();
 
-    const isDuplicate = await gatewayDedupManager.checkAndMarkDuplicate(
-      event,
-      messageId,
-      {
-        enabled: options.dedup?.enabled ?? gatewayConfig.dedup?.enabled,
-        ttl: options.dedup?.ttl ?? gatewayConfig.dedup?.ttl,
-        gatewayConfig,
-      }
-    );
+    const isDuplicate = await this.checkAndMarkDuplicate(event, messageId, {
+      enabled: options.dedup?.enabled ?? gatewayConfig.dedup?.enabled,
+      ttl: options.dedup?.ttl ?? gatewayConfig.dedup?.ttl,
+      store: this.store,
+    });
 
     return { isDuplicate, messageId };
   }
@@ -142,12 +164,12 @@ export class GatewayEmitBuilder {
 export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
   constructor(
     private userId: string,
-    private userSockets: Map<string, Set<string>>,
-    private io: Server,
-    gatewayConfig: ArkosGatewayConfig
+    private ns: ReturnType<Server["of"]>,
+    gatewayConfig: ArkosGatewayConfig,
+    protected store: ArkosGatewayStore
   ) {
     // target is a no-op here, we handle emit ourselves
-    super({ emit: () => {} }, gatewayConfig);
+    super({ emit: () => {} }, gatewayConfig, store);
   }
 
   /**
@@ -171,11 +193,11 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
     data: TData,
     options: ArkosEmitOptions = {}
   ): Promise<{ success: boolean; reason?: string }> {
-    const socketIds = this.userSockets.get(this.userId);
+    const sockets = await this.ns
+      .in(`arkos::user:${this.userId}`)
+      .fetchSockets();
 
-    if (!socketIds?.size) {
-      return { success: false, reason: "offline" };
-    }
+    if (!sockets.length) return { success: false, reason: "offline" };
 
     const { isDuplicate, messageId } = await this.resolveEmitDedup(
       event,
@@ -191,25 +213,67 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
 
     const attemptEmit = async (): Promise<boolean> => {
       const results = await Promise.allSettled(
-        [...socketIds].map((socketId) => {
-          const socket = this.io.sockets.sockets.get(socketId);
-          if (!socket) return Promise.resolve(false);
-
-          return new Promise<boolean>((resolve) => {
-            socket.timeout(timeout).emit(event, dataWithId, (err: any) => {
-              resolve(!err);
-            });
-          });
-        })
+        sockets.map(
+          (socket) =>
+            new Promise<boolean>((resolve) => {
+              socket.timeout(timeout).emit(event, dataWithId, (err: any) => {
+                resolve(!err);
+              });
+            })
+        )
       );
-
       return results.some((r) => r.status === "fulfilled" && r.value === true);
     };
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const success = await attemptEmit();
-      if (success) return { success: true };
+      if (await attemptEmit()) return { success: true };
+      if (attempt < maxRetries) {
+        const delay = Math.min(Math.pow(2, attempt) * 1000, 5000);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
 
+    return { success: false, reason: "timeout" };
+  }
+}
+
+export class GatewaySocketEmitBuilder extends GatewayEmitBuilder {
+  constructor(
+    private socket: ArkosSocket,
+    gatewayConfig: ArkosGatewayConfig,
+    protected store: ArkosGatewayStore
+  ) {
+    // target is a no-op here, we handle emit ourselves
+    super({ emit: () => {} }, gatewayConfig, store);
+  }
+
+  async emit<TData = any>(
+    event: string,
+    data: TData,
+    options: ArkosEmitOptions = {}
+  ): Promise<{ success: boolean; reason?: string }> {
+    const { isDuplicate, messageId } = await this.resolveEmitDedup(
+      event,
+      options,
+      this.gatewayConfig
+    );
+
+    if (isDuplicate) return { success: true };
+
+    const timeout = options.timeout ?? 5000;
+    const maxRetries = options.retries ?? 0;
+
+    const attemptEmit = () =>
+      new Promise<boolean>((resolve) => {
+        this.socket
+          .timeout(timeout)
+          .emit(event, { ...data, _mid: messageId }, (err: any) => {
+            resolve(!err);
+          });
+      });
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (await attemptEmit()) return { success: true };
       if (attempt < maxRetries) {
         const delay = Math.min(Math.pow(2, attempt) * 1000, 5000);
         await new Promise((r) => setTimeout(r, delay));
