@@ -157,7 +157,7 @@ export class IArkosGateway {
     eventConfig: ArkosGatewayEventConfig<TSchema>,
     handler: ArkosGatewayHandler
   ): this {
-    if (eventConfig.disabled) return this;
+    if ((eventConfig as any).disabled) return this;
 
     if (eventConfig.authorization && this.config.authentication === false) {
       throw new Error(
@@ -262,6 +262,7 @@ export class IArkosGateway {
       arrayMerge: (_, sourceArray) => sourceArray,
     });
     this.config.name = ownName;
+    const localConfig = this.config;
 
     const namespaceName = parentName
       ? `${parentName}${ownName ?? ""}`
@@ -350,6 +351,42 @@ export class IArkosGateway {
             eventConfig.ack && typeof args[args.length - 1] === "function"
               ? args[args.length - 1]
               : undefined;
+
+          function resolveDedup() {
+            if (
+              parentConfig?.dedup === false ||
+              localConfig.dedup === false ||
+              eventConfig.dedup === false
+            )
+              return null;
+
+            return {
+              enabled: true,
+              ttl: 3600,
+              ...parentConfig?.dedup,
+              ...localConfig?.dedup,
+              ...eventConfig?.dedup,
+            };
+          }
+
+          const dedupOpt = resolveDedup();
+
+          if (dedupOpt?.enabled !== false) {
+            if (!data._mid)
+              throw new BadRequestError(
+                "Missing _mid in your payload for deduplication",
+                "MissingDedupMessageId"
+              );
+
+            const key = `arkos::dedup:${eventConfig.event}:${data._mid}`;
+            const ttl = dedupOpt?.ttl ?? 3600;
+
+            if (await store.has(key)) return;
+            await store.set(key, ttl);
+
+            const { _mid, ...payload } = data;
+            data = payload;
+          }
 
           try {
             const rateLimitOptions = eventConfig.rateLimit ?? resolvedRateLimit;
@@ -485,14 +522,11 @@ export class IArkosGateway {
    * Returns a builder for sending events to a specific user across all
    * their active socket connections.
    *
-   * Supports deduplication, timeout, and retries.
-   *
    * @example
    * await gateway.toUser(userId).emit("notification", data)
    * await gateway.toUser(userId).emit("order_update", data, {
    *   timeout: 5000,
    *   retries: 3,
-   *   dedup: { enabled: true, ttl: 60 }
    * })
    *
    * @since 1.7.0-canary.19
@@ -507,8 +541,6 @@ export class IArkosGateway {
   }
   /**
    * Returns a builder for sending events to all sockets in a room.
-   *
-   * Supports deduplication.
    *
    * @example
    * await gateway.toRoom("room-123").emit("update", data)
@@ -526,8 +558,6 @@ export class IArkosGateway {
   /**
    * Returns a builder for broadcasting events to all sockets
    * connected to this gateway's namespace.
-   *
-   * Supports deduplication.
    *
    * @example
    * await gateway.toAll().emit("announcement", data)
@@ -571,17 +601,13 @@ export class IArkosGateway {
   /**
    * Returns a builder for sending events to a specific socket connection.
    * Use this when you have a direct socket reference and want Arkos sugar
-   * (deduplication, timeout, retries) on top of native socket.emit().
-   *
-   * For most direct responses inside a handler, native socket.timeout().emit()
-   * is sufficient. Use this when deduplication matters on a per-socket emit.
+   * (timeout, retries) on top of native socket.emit().
    *
    * @example
    * await gateway.toSocket(socket).emit("notification", data)
    * await gateway.toSocket(socket).emit("order_update", data, {
    *   timeout: 5000,
    *   retries: 3,
-   *   dedup: { enabled: true, ttl: 60 }
    * })
    *
    * @since 1.7.0-canary.19
