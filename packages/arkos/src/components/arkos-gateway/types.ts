@@ -90,12 +90,47 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
    * // handler: (socket, data, io, ack) => { ack({ status: "ok" }) }
    */
   ack?: boolean;
-
   /**
-   * Disables this event handler without removing it.
-   * Useful for feature flags or temporary disabling.
+   * Per-event deduplication configuration for incoming gateway handlers.
+   *
+   * Controls whether an incoming event should be processed only once based on its
+   * unique message identifier (`_mid`).
+   *
+   * Deduplication is applied BEFORE the handler executes, ensuring idempotency
+   * at the processing boundary (not at transport/emit level).
+   *
+   * This is typically used to prevent:
+   * - duplicate client submissions
+   * - retry-based re-delivery
+   * - reconnect replay of the same logical event
    */
-  disabled?: boolean;
+  dedup?:
+    | {
+        /**
+         * Enables or disables deduplication for this event handler.
+         *
+         * When enabled, the gateway will check whether the incoming message ID
+         * has already been processed and skip execution if so.
+         *
+         * Overrides the gateway-level `dedup.enabled` configuration.
+         *
+         * @default true
+         */
+        enabled?: boolean;
+
+        /**
+         * Time-to-live for the deduplication key in seconds.
+         *
+         * Defines how long a processed message ID is remembered to prevent
+         * duplicate execution within that window.
+         *
+         * Overrides the gateway-level `dedup.ttl` configuration.
+         *
+         * @default 3600
+         */
+        ttl?: number;
+      }
+    | false;
 };
 
 export type ArkosGatewayAckFn = (response: any) => void;
@@ -159,10 +194,11 @@ export type ArkosGatewayConfig = {
   rateLimit?: Partial<RateLimitOptions>;
   /**
    * Configuration for the deduplication system on this gateway.
-   * Deduplication prevents the same event from being processed or emitted
+   * Deduplication prevents the same event from being processed
    * multiple times within a given time window.
    *
-   * All settings drill down to child gateways and can be overridden per child.
+   * All settings drill down to child gateways and can be overridden per child
+   * or per listener (`gateway.on`)
    *
    * @example
    * ArkosGateway({
@@ -170,37 +206,28 @@ export type ArkosGatewayConfig = {
    *   dedup: {
    *     enabled: true,
    *     ttl: 3600,
-   *     store: new RedisDeduplicationStore(redisClient)
    *   }
    * })
    */
-  dedup?: {
-    /**
-     * Whether deduplication is enabled for this gateway.
-     * Defaults to `true` — opt out explicitly if you need duplicate events.
-     *
-     * @default true
-     */
-    enabled?: boolean;
+  dedup?:
+    | {
+        /**
+         * Whether deduplication is enabled for this gateway.
+         * Defaults to `true` — opt out explicitly if you need duplicate events.
+         *
+         * @default true
+         */
+        enabled?: boolean;
 
-    /**
-     * Time-to-live in seconds for deduplication keys.
-     * After this period the same message ID can be processed again.
-     *
-     * @default 3600
-     */
-    ttl?: number;
-
-    /**
-     * Custom deduplication store. Defaults to an in-memory store.
-     * Plug in Redis, bento-cache, or any store implementing
-     * `ArkosGatewayDedupStore` for distributed deduplication across
-     * multiple server instances.
-     *
-     * @default MemoryDedupStore
-     */
-    store?: ArkosGatewayDedupStore;
-  };
+        /**
+         * Time-to-live in seconds for deduplication keys.
+         * After this period the same message ID can be processed again.
+         *
+         * @default 3600
+         */
+        ttl?: number;
+      }
+    | false;
 };
 
 /**
@@ -262,28 +289,6 @@ export interface ArkosEmitOptions {
    * @default 0
    */
   retries?: number;
-
-  /**
-   * Per-call deduplication overrides.
-   * Store cannot be overridden here — set it at the gateway level.
-   */
-  dedup?: {
-    /**
-     * Whether to deduplicate this specific emit.
-     * Overrides the gateway-level `dedup.enabled` setting.
-     *
-     * @default true
-     */
-    enabled?: boolean;
-
-    /**
-     * TTL in seconds for this specific emit's deduplication key.
-     * Overrides the gateway-level `dedup.ttl` setting.
-     *
-     * @default 3600
-     */
-    ttl?: number;
-  };
 }
 
 /**
