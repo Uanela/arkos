@@ -29,6 +29,15 @@ import {
 } from "../../exports/error-handler";
 import { loginRequiredError } from "../../modules/auth/utils/auth-error-objects";
 import errorPrettifier from "../../modules/base/utils/error-prettifier";
+import {
+  GatewayEmitBuilder,
+  GatewayRoomBuilder,
+  GatewayUserBuilder,
+  GatewayUserEmitBuilder,
+} from "./utils/gateway-builders";
+import deepmerge from "../../utils/helpers/deepmerge.helper";
+
+const usersSockets = new Map<string, Set<string>>();
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
@@ -39,6 +48,7 @@ export class IArkosGateway {
     type: ArkosGatewayHookType;
     handler: ArkosGatewayHookHandler;
   }[] = [];
+  private io?: Server;
 
   constructor(config: ArkosGatewayConfig) {
     this.config = config;
@@ -225,10 +235,7 @@ export class IArkosGateway {
 
   _register(
     io: Server,
-    parentConfig?: Pick<
-      ArkosGatewayConfig,
-      "name" | "authentication" | "rateLimit"
-    >,
+    parentConfig?: ArkosGatewayConfig,
     inheritedHooks: {
       type: ArkosGatewayHookType;
       handler: ArkosGatewayHookHandler;
@@ -237,6 +244,11 @@ export class IArkosGateway {
   ): void {
     const parentName = parentConfig?.name;
     const ownName = this.config.name;
+    this.io = io;
+    this.config = deepmerge(parentConfig || {}, this.config, {
+      arrayMerge: (_, sourceArray) => sourceArray,
+    });
+    this.config.name = ownName;
 
     const namespaceName = parentName
       ? `${parentName}${ownName ?? ""}`
@@ -284,8 +296,22 @@ export class IArkosGateway {
       handleGatewayLifecycleLog(this.config.name, "connected", socket.id);
       const connectionStartTime = new Date().getTime();
 
+      if (socket.user?.id) {
+        if (!usersSockets.has(socket.user.id))
+          usersSockets.set(socket.user.id, new Set());
+
+        usersSockets.get(socket.user.id)!.add(socket.id);
+      }
+
       socket.on("disconnect", async () => {
         handleGatewayLifecycleLog(this.config.name, "disconnected", socket.id);
+
+        if (socket.user?.id) {
+          usersSockets.get(socket.user.id)?.delete(socket.id);
+          if (usersSockets.get(socket.user.id)?.size === 0) {
+            usersSockets.delete(socket.user.id);
+          }
+        }
 
         clearRateLimitForSocket(socket.id);
         try {
@@ -451,6 +477,116 @@ export class IArkosGateway {
       );
     }
   }
+
+  /**
+   * Returns a builder for sending events to a specific user across all
+   * their active socket connections.
+   *
+   * Supports deduplication, timeout, and retries.
+   *
+   * @example
+   * await gateway.toUser(userId).emit("notification", data)
+   * await gateway.toUser(userId).emit("order_update", data, {
+   *   timeout: 5000,
+   *   retries: 3,
+   *   dedup: { enabled: true, ttl: 60 }
+   * })
+   *
+   * @since 1.7.0-canary.19
+   */
+  toUser(userId: string) {
+    return new GatewayUserEmitBuilder(
+      userId,
+      usersSockets,
+      this.io!,
+      this.config
+    );
+  }
+
+  /**
+   * Returns a builder for sending events to all sockets in a room.
+   *
+   * Supports deduplication.
+   *
+   * @example
+   * await gateway.toRoom("room-123").emit("update", data)
+   *
+   * @since 1.7.0-canary.19
+   */
+  toRoom(room: string) {
+    return new GatewayEmitBuilder(
+      this.io!.of(this.config.name).to(room),
+      this.config
+    );
+  }
+
+  /**
+   * Returns a builder for broadcasting events to all sockets
+   * connected to this gateway's namespace.
+   *
+   * Supports deduplication.
+   *
+   * @example
+   * await gateway.toAll().emit("announcement", data)
+   *
+   * @since 1.7.0-canary.19
+   */
+  toAll() {
+    return new GatewayEmitBuilder(this.io!.of(this.config.name), this.config);
+  }
+
+  /**
+   * Returns a handle for querying state and managing a specific user.
+   *
+   * @example
+   * gateway.user(userId).isOnline()
+   * gateway.user(userId).socketCount()
+   *
+   * @since 1.7.0-canary.19
+   */
+  user(userId: string) {
+    return new GatewayUserBuilder(userId, usersSockets);
+  }
+
+  /**
+   * Returns a handle for querying state of a specific room.
+   *
+   * @example
+   * gateway.room("room-123").sockets()
+   * gateway.room("room-123").size()
+   *
+   * @since 1.7.0-canary.19
+   */
+  room(roomId: string) {
+    return new GatewayRoomBuilder(roomId, this.io!.of(this.config.name));
+  }
+
+  /**
+   * Returns a builder for sending events to a specific socket connection.
+   * Use this when you have a direct socket reference and want Arkos sugar
+   * (deduplication, timeout, retries) on top of native socket.emit().
+   *
+   * For most direct responses inside a handler, native socket.timeout().emit()
+   * is sufficient. Use this when deduplication matters on a per-socket emit.
+   *
+   * @example
+   * await gateway.toSocket(socket).emit("notification", data)
+   * await gateway.toSocket(socket).emit("order_update", data, {
+   *   timeout: 5000,
+   *   retries: 3,
+   *   dedup: { enabled: true, ttl: 60 }
+   * })
+   *
+   * @since 1.7.0-canary.19
+   */
+  toSocket(socket: ArkosSocket) {
+    return new GatewayUserEmitBuilder(
+      socket.user?.id ?? socket.id,
+      new Map([[socket.user?.id ?? socket.id, new Set([socket.id])]]),
+      this.io!,
+      this.config
+    );
+  }
 }
 
 /**
@@ -493,7 +629,7 @@ export class IArkosGateway {
  * app.listen(server)
  * ```
  * @since 1.7.0-canary.18
- * @see {@link https://www.arkosjs.com/docs/core-concepts/components/gateway} for full documentation
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/components/gateways} for full documentation
  */
 function ArkosGateway(config: ArkosGatewayConfig) {
   return new IArkosGateway(config);
