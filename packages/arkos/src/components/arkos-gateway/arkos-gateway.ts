@@ -36,7 +36,7 @@ import {
   GatewaySocketEmitBuilder,
   GatewayUserBuilder,
   GatewayUserEmitBuilder,
-} from "./utils/gateway-builders";
+} from "./utils/emit-builders";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { defaultGatewayStore } from "./utils/memory-gateway-store";
 
@@ -51,7 +51,6 @@ export class IArkosGateway {
   }[] = [];
   private io?: Server;
   private registryOptions?: ArkosGatewayRegisterOptions;
-  static registered = false;
 
   constructor(config: ArkosGatewayConfig) {
     this.config = config;
@@ -157,7 +156,7 @@ export class IArkosGateway {
     eventConfig: ArkosGatewayEventConfig<TSchema>,
     handler: ArkosGatewayHandler
   ): this {
-    if ((eventConfig as any).disabled) return this;
+    if (eventConfig.disabled) return this;
 
     if (eventConfig.authorization && this.config.authentication === false) {
       throw new Error(
@@ -233,12 +232,12 @@ export class IArkosGateway {
    * chatGateway.register(io)
    */
   register(io: Server, options: ArkosGatewayRegisterOptions = {}): void {
-    if (IArkosGateway.registered)
+    if ((io as any)._arkosGatewayRegistered)
       throw new Error(
-        `gateway.register() can only be called once by a global top level gateway. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/components/advanced-guides/web-sockets/setup.`
+        `The method gateway.register() can only be called once per io server instance. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/components/advanced-guides/web-sockets/setup.`
       );
-    IArkosGateway.registered = true;
-    this._register(io, undefined, [], [], options);
+    (io as any)._arkosGatewayRegistered = true;
+    this._register(io, undefined, this.hooks || [], this.pipes || [], options);
   }
 
   private _register(
@@ -371,24 +370,48 @@ export class IArkosGateway {
 
           const dedupOpt = resolveDedup();
 
-          if (dedupOpt?.enabled !== false) {
-            if (!data._mid)
-              throw new BadRequestError(
-                "Missing _mid in your payload for deduplication",
-                "MissingDedupMessageId"
-              );
-
-            const key = `arkos::dedup:${eventConfig.event}:${data._mid}`;
-            const ttl = dedupOpt?.ttl ?? 3600;
-
-            if (await store.has(key)) return;
-            await store.set(key, ttl);
-
-            const { _mid, ...payload } = data;
-            data = payload;
-          }
-
           try {
+            if (dedupOpt?.enabled !== false) {
+              if (!data?._meta?.mid)
+                throw new BadRequestError(
+                  "Missing data._meta.mid in your payload for deduplication",
+                  "MissingDedupMessageId"
+                );
+
+              const key = `arkos::dedup:${eventConfig.event}:${data._mid}`;
+              const ttl = dedupOpt?.ttl ?? 3600;
+
+              if (await store.has(key)) return;
+              await store.set(key, ttl);
+
+              const { _meta, ...payload } = data;
+              data = payload;
+
+              if (_meta?._mid !== undefined) {
+                if (
+                  typeof _meta?._mid !== "string" ||
+                  _meta?._mid?.trim() === ""
+                ) {
+                  throw new BadRequestError(
+                    "Invalid data._meta.mid, it must be a non-empty string",
+                    "InvalidMessageId"
+                  );
+                }
+              }
+
+              if (_meta.timestamp !== undefined) {
+                const timestamp = new Date(_meta.timestamp);
+                if (isNaN(timestamp.getTime())) {
+                  throw new BadRequestError(
+                    "Invalid data._meta.timestamp, it must be a valid date",
+                    "InvalidTimestamp"
+                  );
+                }
+              }
+
+              socket.meta = _meta;
+            }
+
             const rateLimitOptions = eventConfig.rateLimit ?? resolvedRateLimit;
             if (rateLimitOptions !== false) {
               const { allowed, retryAfter } = await checkRateLimit(
