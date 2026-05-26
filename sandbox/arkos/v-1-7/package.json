@@ -24,7 +24,7 @@
     "@prisma/client": "6.19.2",
     "@scalar/api-reference": "1.55.3",
     "@scalar/express-api-reference": "0.8.35",
-    "arkos": "file:../../../packages/arkos",
+    "arkos": "1.7.0-canary.22",
     "express": "4.22.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
