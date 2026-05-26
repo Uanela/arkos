@@ -18,6 +18,7 @@ export interface ArkosSocket<
   EmitEvents extends EventsMap = ListenEvents,
   ServerSideEvents extends EventsMap = DefaultEventsMap,
   SocketData extends Validator = any,
+  SocketLocals extends Record<string, any> = Record<string, any>,
 > extends Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData> {
   /**
    * Populated by Arkos after successful authentication on connection.
@@ -35,6 +36,48 @@ export interface ArkosSocket<
    * User access token
    */
   accessToken?: string;
+  /**
+   * Metadata associated with the incoming message/event.
+   *
+   * - `_mid`: Unique message identifier used for deduplication. When deduplication is enabled,
+   *   Arkos checks this ID to prevent processing the same message multiple times.
+   * - `timestamp`: Timestamp when the message was sent from the client.
+   *
+   * @example
+   * socket.on("send_message", (data) => {
+   *   console.log(socket.meta?._mid); // "abc123"
+   *   console.log(socket.meta?.timestamp); // 2024-01-01T00:00:00.000Z
+   * });
+   */
+  meta?: { _mid?: string; timestamp?: Date };
+
+  /**
+   * Custom local data storage for the socket lifecycle.
+   *
+   * Use this to store any custom data that needs to persist throughout the
+   * socket's connection lifetime. Unlike `socket.data` which is overwritten
+   * by validation on each event, `socket.locals` persists across events
+   * and is not automatically modified by Arkos.
+   *
+   * @example
+   * // Store custom data in a middleware
+   * chatGateway.pipe((socket, data, io) => {
+   *   socket.locals.requestCount = (socket.locals.requestCount || 0) + 1;
+   *   socket.locals.lastActivity = new Date();
+   * });
+   *
+   * @example
+   * // Type-safe locals with TypeScript
+   * interface MySocketLocals {
+   *   requestCount: number;
+   *   lastActivity: Date;
+   *   userPreferences?: object;
+   * }
+   *
+   * const socket: ArkosSocket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any, MySocketLocals>;
+   * socket.locals.requestCount; // typed as number
+   */
+  locals?: SocketLocals;
 }
 
 export type ArkosGatewayPipe = (
@@ -90,6 +133,11 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
    * // handler: (socket, data, io, ack) => { ack({ status: "ok" }) }
    */
   ack?: boolean;
+  /**
+   * Disables this event handler without removing it.
+   * Useful for feature flags or temporary disabling.
+   */
+  disabled?: boolean;
   /**
    * Per-event deduplication configuration for incoming gateway handlers.
    *
@@ -289,6 +337,49 @@ export interface ArkosEmitOptions {
    * @default 0
    */
   retries?: number;
+  /**
+   * Whether to expect an acknowledgement from the client.
+   *
+   * When `true`, the emit uses `emitWithAck` under the hood — the server
+   * waits for the client to call its ack callback, and the resolved value
+   * is returned in `result.data`.
+   *
+   * When `false` (default), the emit is fire-and-forget (or fire-and-confirm
+   * if `timeout` is set, using a server-side timeout callback).
+   *
+   * @default false
+   *
+   * // wait for client ack + get response back
+   * const result = await gateway.toUser(userId).emit("order:confirm", data, { ack: true })
+   * if (result.success) console.log(result.data) // client's ack payload
+   */
+  ack?: boolean;
+  /**
+   * Whether to send the event without waiting for room membership or
+   * buffering. Volatile events are discarded if the client is not
+   * immediately reachable (e.g. disconnected or busy).
+   *
+   * Useful for high-frequency, non-critical events like cursor positions
+   * or typing indicators where losing a packet is acceptable.
+   *
+   * @default false
+   *
+   * @example
+   * await gateway.toUser(userId).emit("cursor", data, { volatile: true })
+   */
+  volatile?: boolean;
+
+  /**
+   * Whether to enable per-message deflate compression on the payload.
+   * Disabling compression can improve performance for small, frequent
+   * messages where compression overhead outweighs the size savings.
+   *
+   * @default true
+   *
+   * @example
+   * await gateway.toUser(userId).emit("ping", data, { compress: false })
+   */
+  compress?: boolean;
 }
 
 /**
