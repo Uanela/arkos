@@ -26,7 +26,7 @@ export default function initializeApp(app: Arkos) {
   if (config?.staticFiles?.enabled !== false) {
     const folder = config?.staticFiles?.folder ?? "/public";
     const prefix = config?.staticFiles?.prefix ?? "/";
-    const resolvedPath = path.resolve(process.cwd(), folder);
+    const resolvedPath = path.resolve(path.join(process.cwd(), folder));
 
     if (!existsSync(resolvedPath)) {
       mkdirSync(resolvedPath, { recursive: true });
