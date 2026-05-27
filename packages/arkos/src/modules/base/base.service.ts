@@ -132,7 +132,7 @@ interface ServiceOperationConfig {
 export class BaseService<TModelName extends keyof Models = keyof Models> {
   modelName: TModelName;
   relationFields: ModelGroupRelationFields;
-  private prismaInstace: PrismaClient;
+  private prismaInstace?: PrismaClient;
 
   constructor(modelName: TModelName) {
     this.modelName = camelCase(modelName as string) as TModelName;
