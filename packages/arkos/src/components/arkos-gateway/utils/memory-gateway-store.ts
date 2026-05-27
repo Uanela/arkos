@@ -36,6 +36,17 @@ export class MemoryGatewayStore implements ArkosGatewayStore {
     timer.unref();
     this.dedup.set(key, timer);
   }
+
+  async setIfNotExists(key: string, ttl: number): Promise<boolean> {
+    if (this.dedup.has(key)) return false;
+
+    const timer = setTimeout(() => this.dedup.delete(key), ttl * 1000);
+    timer.unref();
+
+    this.dedup.set(key, timer);
+
+    return true;
+  }
 }
 
 export const defaultGatewayStore = new MemoryGatewayStore();
