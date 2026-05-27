@@ -49,7 +49,15 @@ export interface ArkosSocket<
    *   console.log(socket.meta?.timestamp); // 2024-01-01T00:00:00.000Z
    * });
    */
-  meta?: { _mid?: string; timestamp?: Date };
+  meta?: {
+    _mid?: string;
+    /**
+     * Message timestamp used by deduplication and freshness checks.
+     *
+     * Required when using `dedup.maxAge`.
+     */
+    timestamp?: string | number | Date;
+  };
 
   /**
    * Custom local data storage for the socket lifecycle.
@@ -125,19 +133,27 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
   authorization?: ArkosPolicyRule;
 
   /**
-   * Whether this event handler expects an acknowledgement callback.
-   * When true, the handler receives ack as the fourth argument.
-   *
-   * @example
-   * ack: true
-   * // handler: (socket, data, io, ack) => { ack({ status: "ok" }) }
+   * If `true`, the gateway will automatically call `ack({ success: true })`
+   * after the handler finishes, unless the handler already called ack manually.
+   * The ack callback is **always** passed to the handler as the 4th argument.
    */
   ack?: boolean;
+
   /**
    * Disables this event handler without removing it.
    * Useful for feature flags or temporary disabling.
    */
   disabled?: boolean;
+  /**
+   * Maximum age in milliseconds for incoming messages.
+   * Events older than this threshold are rejected.
+   *
+   * Useful for short-lived real-time events such as typing,
+   * presence, and cursor updates.
+   *
+   * Requires `data._meta.timestamp`.
+   */
+  maxAge?: number;
   /**
    * Per-event deduplication configuration for incoming gateway handlers.
    *
@@ -152,6 +168,7 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
    * - retry-based re-delivery
    * - reconnect replay of the same logical event
    */
+
   dedup?:
     | {
         /**
@@ -165,7 +182,6 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
          * @default true
          */
         enabled?: boolean;
-
         /**
          * Time-to-live for the deduplication key in seconds.
          *
@@ -448,25 +464,39 @@ export interface ArkosGatewayStore {
     key: string,
     windowMs: number
   ): Promise<{ count: number; resetAt: number }>;
-
   /**
    * Clear all rate limit entries matching a prefix.
    * Called on socket disconnect.
    * Prefix format: `arkos::rl:{socketId}`
    */
   clear(prefix: string): Promise<void>;
-
   /**
    * Check if a dedup key exists.
    * Called before emitting to detect duplicate messages.
    */
   has(key: string): Promise<boolean>;
-
   /**
    * Store a dedup key with a TTL in seconds.
    * Called after emitting to mark a message as seen.
    */
   set(key: string, ttl: number): Promise<void>;
+  /**
+   * Atomically stores a deduplication key only if it does not already exist.
+   *
+   * Returns `true` if the key was successfully created and the caller
+   * should continue processing the message.
+   *
+   * Returns `false` if the key already exists, indicating the message
+   * has already been seen and should be treated as a duplicate.
+   *
+   * Implementations should guarantee atomic behavior whenever possible
+   * (for example Redis `SET NX EX`) to prevent race conditions under
+   * concurrent processing.
+   *
+   * @param key Unique deduplication key.
+   * @param ttl Time-to-live in seconds before the key expires.
+   */
+  setIfNotExists(key: string, ttl: number): Promise<boolean>;
 }
 
 export class ArkosGatewayController {}
