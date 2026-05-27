@@ -419,13 +419,13 @@ export async function loadAllModuleComponents() {
 }
 
 const DEPRECATION_GROUPS = [
-  {
-    key: "authConfigs",
-    fileKey: (moduleName: string, ext: string) => `${moduleName}.auth.${ext}`,
-    label: "Auth Config Files (.auth.ts)",
-    migration:
-      "https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy",
-  },
+  // {
+  //   key: "authConfigs",
+  //   fileKey: (moduleName: string, ext: string) => `${moduleName}.auth.${ext}`,
+  //   label: "Auth Config Files (.auth.ts)",
+  //   migration:
+  //     "https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy",
+  // },
   // {
   //   key: "interceptors",
   //   fileKey: (moduleName: string, ext: string) =>
@@ -501,8 +501,8 @@ export function warnDeprecatedModuleComponents(
           Object.keys((components.router as any).config).length > 0;
       } else if (group.key === "autoLoadedRouter") {
         // auth, file-upload always auto-loaded; prisma models with a router file
-        found =
-          ["auth", "file-upload"].includes(moduleName) || !!components.router;
+        // found =
+        //   ["auth", "file-upload"].includes(moduleName) || !!components.router;
       } else {
         found = !!(components as any)[group.key];
       }
@@ -516,16 +516,20 @@ export function warnDeprecatedModuleComponents(
   const hasAny = groups.some((g) => g.files.length > 0);
   if (!hasAny) return;
 
-  sheu.warn(
-    `\nDeprecation warnings — the following patterns will be removed in v2.0:\n`
-  );
+  // sheu.warn(
+  //   `\nDeprecation warnings — the following patterns will be removed in v2.0:\n`
+  // );
 
   for (const group of groups) {
     if (group.files.length === 0) continue;
-    sheu.warn(`  ${group.label}`);
-    for (const file of group.files) {
-      sheu.warn(`    - ${file}`);
-    }
-    sheu.warn(`  → Migrate: ${group.migration}\n`);
+    sheu.warn(
+      `Found ${group.label.toLowerCase()} at the filepaths bellow, those patterns will stop auto loading in v2.0:`,
+      { timestamp: true }
+    );
+    console.warn(group.files.join(", "));
+    // for (const file of group.files) {
+    //   sheu.warn(`    - ${file}`);
+    // }
+    console.warn(`See migration guide at ${group.migration}\n`);
   }
 }
