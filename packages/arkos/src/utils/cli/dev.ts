@@ -70,7 +70,7 @@ export async function devCommand(options: DevOptions = {}) {
 
       if (answer) {
         console.info("\nSyncing base service with @prisma/client...");
-        console.log("");
+        console.info("");
         execSync(`npx arkos prisma generate`);
       } else
         throw Error(
