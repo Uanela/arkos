@@ -151,7 +151,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
 
   get prisma() {
     if (!this.prismaInstace) this.prismaInstace = getPrismaInstance();
-    return this.prismaInstace;
+    return this.prismaInstace!;
   }
 
   private executeOperation = (config: ServiceOperationConfig) => {
