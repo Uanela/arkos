@@ -110,6 +110,7 @@ jest.mock("../utils/memory-gateway-store", () => ({
     set: jest.fn(),
     increment: jest.fn(),
     clear: jest.fn(),
+    setIfNotExists: jest.fn(),
   },
 }));
 
@@ -540,6 +541,7 @@ describe("IArkosGateway", () => {
         set: jest.fn(),
         increment: jest.fn(),
         clear: jest.fn(),
+        setIfNotExists: jest.fn(),
       };
 
       gateway.register(mockIo, { store: customStore });
@@ -1041,7 +1043,9 @@ describe("IArkosGateway", () => {
         const mockSocket = createMockSocket();
         const handler = jest.fn();
 
-        (defaultGatewayStore.has as jest.Mock).mockResolvedValue(true);
+        (defaultGatewayStore.setIfNotExists as jest.Mock).mockResolvedValueOnce(
+          false
+        );
 
         gateway.on({ event: "test" }, handler);
 
@@ -1080,7 +1084,7 @@ describe("IArkosGateway", () => {
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
         await eventHandler({ _meta: { mid: "msg-1" } });
 
-        expect(defaultGatewayStore.set).toHaveBeenCalledWith(
+        expect(defaultGatewayStore.setIfNotExists).toHaveBeenCalledWith(
           "arkos::dedup:test:msg-1",
           expect.any(Number)
         );
@@ -1925,6 +1929,117 @@ describe("IArkosGateway", () => {
 
       expect(gateway).toBeInstanceOf(IArkosGateway);
     });
+  });
+
+  it("should throw BadRequestError when maxAge is set but _meta.timestamp is missing", async () => {
+    const { mockIo, mockNs } = createMockIo();
+    const gateway = new IArkosGateway({ name: "/chat" });
+    const mockSocket = createMockSocket();
+
+    gateway.on({ event: "test", maxAge: 60_000 }, jest.fn());
+
+    (gateway as any)._register(mockIo, undefined, [], [], {});
+
+    const connectionCb = mockNs.on.mock.calls.find(
+      ([event]: [string, any]) => event === "connection"
+    )[1];
+    connectionCb(mockSocket);
+
+    const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+    await eventHandler({ _meta: { mid: "msg-1" } });
+
+    expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("_meta.timestamp"),
+      }),
+      mockSocket,
+      mockIo,
+      [],
+      expect.objectContaining({ event: "test", namespace: "/chat" }),
+      undefined
+    );
+  });
+
+  it("should throw BadRequestError when message age exceeds maxAge", async () => {
+    const { mockIo, mockNs } = createMockIo();
+    const gateway = new IArkosGateway({ name: "/chat" });
+    const mockSocket = createMockSocket();
+
+    gateway.on({ event: "test", maxAge: 60_000 }, jest.fn());
+
+    (gateway as any)._register(mockIo, undefined, [], [], {});
+
+    const connectionCb = mockNs.on.mock.calls.find(
+      ([event]: [string, any]) => event === "connection"
+    )[1];
+    connectionCb(mockSocket);
+
+    const oldTimestamp = new Date(Date.now() - 120_000).toISOString(); // 2 min ago
+    const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+    await eventHandler({ _meta: { mid: "msg-1", timestamp: oldTimestamp } });
+
+    expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Message is too old" }),
+      mockSocket,
+      mockIo,
+      [],
+      expect.objectContaining({ event: "test", namespace: "/chat" }),
+      undefined
+    );
+  });
+
+  it("should process message within maxAge window", async () => {
+    const { mockIo, mockNs } = createMockIo();
+    const gateway = new IArkosGateway({ name: "/chat" });
+    const mockSocket = createMockSocket();
+    const handler = jest.fn();
+
+    (defaultGatewayStore.setIfNotExists as jest.Mock).mockResolvedValueOnce(
+      true
+    );
+
+    gateway.on({ event: "test", maxAge: 60_000 }, handler);
+
+    (gateway as any)._register(mockIo, undefined, [], [], {});
+
+    const connectionCb = mockNs.on.mock.calls.find(
+      ([event]: [string, any]) => event === "connection"
+    )[1];
+    connectionCb(mockSocket);
+
+    const recentTimestamp = new Date(Date.now() - 10_000).toISOString(); // 10s ago
+    const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+    await eventHandler({ _meta: { mid: "msg-1", timestamp: recentTimestamp } });
+
+    expect(handler).toHaveBeenCalled();
+  });
+
+  it("should throw BadRequestError when _meta.timestamp is in the future", async () => {
+    const { mockIo, mockNs } = createMockIo();
+    const gateway = new IArkosGateway({ name: "/chat" });
+    const mockSocket = createMockSocket();
+
+    gateway.on({ event: "test" }, jest.fn());
+
+    (gateway as any)._register(mockIo, undefined, [], [], {});
+
+    const connectionCb = mockNs.on.mock.calls.find(
+      ([event]: [string, any]) => event === "connection"
+    )[1];
+    connectionCb(mockSocket);
+
+    const futureTimestamp = new Date(Date.now() + 60_000).toISOString();
+    const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+    await eventHandler({ _meta: { mid: "msg-1", timestamp: futureTimestamp } });
+
+    expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Timestamp is in the future" }),
+      mockSocket,
+      mockIo,
+      [],
+      expect.objectContaining({ event: "test", namespace: "/chat" }),
+      undefined
+    );
   });
 });
 
