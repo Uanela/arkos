@@ -210,6 +210,13 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
     );
     if (!sockets.length) return { success: false, reason: "offline" };
 
+    if ("_meta" in ((data as any) || {}))
+      throw new Error(
+        `Cannot emit event "${event}" with a pre-existing _meta field. ` +
+          `ArkosGateway manages _meta automatically for deduplication and freshness. ` +
+          `Remove the _meta property from your payload.`
+      );
+
     const timeout = options.timeout ?? 5000;
     const maxRetries = options.retries ?? 0;
     const dataWithMeta = {
@@ -320,6 +327,14 @@ export class GatewaySocketEmitBuilder extends GatewayEmitBuilder {
   ): Promise<{ success: boolean; reason?: string; data?: TAck }> {
     const timeout = options.timeout ?? 5000;
     const maxRetries = options.retries ?? 0;
+
+    if ("_meta" in ((data as any) || {}))
+      throw new Error(
+        `Cannot emit event "${event}" with a pre-existing _meta field. ` +
+          `ArkosGateway manages _meta automatically for deduplication and freshness. ` +
+          `Remove the _meta property from your payload.`
+      );
+
     const dataWithMeta = {
       ...data,
       _meta: { mid: uuidv7(), timestamp: Date.now() },
