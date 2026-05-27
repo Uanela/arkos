@@ -347,9 +347,17 @@ export class IArkosGateway {
           let data = args[0];
 
           const ack =
-            eventConfig.ack && typeof args[args.length - 1] === "function"
+            typeof args[args.length - 1] === "function"
               ? args[args.length - 1]
               : undefined;
+
+          let ackCalled = false;
+          const wrappedAck = ack
+            ? (...response: any) => {
+                ackCalled = true;
+                ack(...response);
+              }
+            : undefined;
 
           function resolveDedup() {
             if (
@@ -371,46 +379,66 @@ export class IArkosGateway {
           const dedupOpt = resolveDedup();
 
           try {
+            const meta = data?._meta;
+
+            if (eventConfig?.maxAge && !meta.timestamp)
+              throw new BadRequestError(
+                "Missing _meta.timestamp for maxAge deduplication"
+              );
+
+            if (meta.timestamp !== undefined) {
+              const timestamp = new Date(meta.timestamp);
+
+              if (isNaN(timestamp.getTime())) {
+                throw new BadRequestError(
+                  "Invalid data._meta.timestamp",
+                  "InvalidTimestamp"
+                );
+              }
+
+              const age = Date.now() - timestamp.getTime();
+
+              if (age < 0) {
+                throw new BadRequestError(
+                  "Timestamp is in the future",
+                  "FutureTimestamp"
+                );
+              }
+
+              if (eventConfig?.maxAge && age > eventConfig?.maxAge) {
+                throw new BadRequestError("Message is too old", "StaleMessage");
+              }
+            }
+
             if (dedupOpt && dedupOpt?.enabled !== false) {
-              if (!data?._meta?.mid)
+              if (!meta?.mid)
                 throw new BadRequestError(
                   "Missing data._meta.mid in your payload for deduplication",
                   "MissingDedupMessageId",
                   { data }
                 );
 
-              const key = `arkos::dedup:${eventConfig.event}:${data._meta.mid}`;
+              if (typeof meta.mid !== "string" || meta.mid.trim() === "")
+                throw new BadRequestError(
+                  "Invalid data._meta.mid, it must be a non-empty string",
+                  "InvalidMessageId"
+                );
+
+              const key = `arkos::dedup:${eventConfig.event}:${meta.mid}`;
               const ttl = dedupOpt?.ttl ?? 3600;
 
-              if (await store.has(key)) return;
-              await store.set(key, ttl);
+              const acquired = await store.setIfNotExists(key, ttl);
+
+              if (acquired === false)
+                return wrappedAck?.({
+                  success: true,
+                  duplicate: true,
+                });
 
               const { _meta, ...payload } = data;
               data = payload;
 
-              if (_meta?._mid !== undefined) {
-                if (
-                  typeof _meta?._mid !== "string" ||
-                  _meta?._mid?.trim() === ""
-                ) {
-                  throw new BadRequestError(
-                    "Invalid data._meta.mid, it must be a non-empty string",
-                    "InvalidMessageId"
-                  );
-                }
-              }
-
-              if (_meta.timestamp !== undefined) {
-                const timestamp = new Date(_meta.timestamp);
-                if (isNaN(timestamp.getTime())) {
-                  throw new BadRequestError(
-                    "Invalid data._meta.timestamp, it must be a valid date",
-                    "InvalidTimestamp"
-                  );
-                }
-              }
-
-              socket.meta = _meta;
+              socket.meta = meta;
             }
 
             const rateLimitOptions = eventConfig.rateLimit ?? resolvedRateLimit;
@@ -501,7 +529,7 @@ export class IArkosGateway {
               io
             );
 
-            await handler(socket, data, io, ack);
+            await handler(socket, data, io, wrappedAck);
 
             handleGatewayEventLog(
               this.config.name,
@@ -509,6 +537,10 @@ export class IArkosGateway {
               200,
               startTime
             );
+
+            if (eventConfig.ack && ack && !ackCalled) {
+              ack({ success: true });
+            }
           } catch (err: any) {
             handleArkosGatewayErrors(
               err,
