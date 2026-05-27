@@ -311,6 +311,17 @@ export class IArkosGateway {
 
       if (socket.user?.id) socket.join(`arkos::user:${socket.user.id}`);
 
+      try {
+        for (const handler of connectHandlers) await handler(socket, io);
+      } catch (err: any) {
+        handleArkosGatewayErrors(err, socket, io, [], {
+          startTime: connectionStartTime,
+          namespace: this.config.name,
+          event: "connection",
+        });
+        return;
+      }
+
       socket.on("disconnect", async () => {
         handleGatewayLifecycleLog(this.config.name, "disconnected", socket.id);
 
@@ -325,17 +336,6 @@ export class IArkosGateway {
           });
         }
       });
-
-      try {
-        for (const handler of connectHandlers) await handler(socket, io);
-      } catch (err: any) {
-        handleArkosGatewayErrors(err, socket, io, [], {
-          startTime: connectionStartTime,
-          namespace: this.config.name,
-          event: "connection",
-        });
-        return;
-      }
 
       for (const entry of this.events) {
         if ((entry.config as any)._pipeOnly || !entry.handler) continue;
@@ -353,9 +353,9 @@ export class IArkosGateway {
 
           function resolveDedup() {
             if (
-              parentConfig?.dedup === false ||
+              eventConfig.dedup === false ||
               localConfig.dedup === false ||
-              eventConfig.dedup === false
+              parentConfig?.dedup === false
             )
               return null;
 
@@ -371,14 +371,15 @@ export class IArkosGateway {
           const dedupOpt = resolveDedup();
 
           try {
-            if (dedupOpt?.enabled !== false) {
+            if (dedupOpt && dedupOpt?.enabled !== false) {
               if (!data?._meta?.mid)
                 throw new BadRequestError(
                   "Missing data._meta.mid in your payload for deduplication",
-                  "MissingDedupMessageId"
+                  "MissingDedupMessageId",
+                  { data }
                 );
 
-              const key = `arkos::dedup:${eventConfig.event}:${data._mid}`;
+              const key = `arkos::dedup:${eventConfig.event}:${data._meta.mid}`;
               const ttl = dedupOpt?.ttl ?? 3600;
 
               if (await store.has(key)) return;
