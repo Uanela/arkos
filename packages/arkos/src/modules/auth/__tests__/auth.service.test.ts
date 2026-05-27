@@ -650,7 +650,11 @@ describe("AuthService", () => {
       });
 
       // Execute and Verify
-      await expect(authService.verifyJwtToken(token)).rejects.toEqual(jwtError);
+      await expect(authService.verifyJwtToken(token)).rejects.toThrow(
+        expect.objectContaining({
+          message: "Your auth token is invalid, please login again.",
+        })
+      );
       expect(jwt.verify).toHaveBeenCalledWith(
         token,
         expect.any(String),
@@ -690,7 +694,7 @@ describe("AuthService", () => {
         await authService.getAuthenticatedUser(mockReq);
       } catch (err: any) {
         expect(err?.message).toBe(
-          "ValidationError: Trying to call AuthService.getAuthenticatedUser without setting up authentication"
+          "Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.ts, see https://www.arkosjs.com/core-concepts/authentication/setup"
         );
       }
     });
@@ -776,7 +780,7 @@ describe("AuthService", () => {
       mockReq.headers.authorization = "Bearer invalid-token";
       (authService.verifyJwtToken as any) = jest
         .fn()
-        .mockRejectedValue(new Error("Token invalid"));
+        .mockRejectedValue(new AppError("Token invalid", 401));
 
       // Execute and Verify
       await expect(
@@ -835,7 +839,7 @@ describe("AuthService", () => {
       ).rejects.toBeInstanceOf(AppError);
     });
 
-    it("should not throw password changed error if path includes logout", async () => {
+    it("should not throw password changed error if the operation is logout", async () => {
       // Setup
       mockReq.headers.authorization = "Bearer valid-token";
       mockReq.path = "/auth/logout";
@@ -858,7 +862,7 @@ describe("AuthService", () => {
         .mockReturnValue(true);
 
       // Execute
-      const result = await authService.getAuthenticatedUser(mockReq);
+      const result = await authService.getAuthenticatedUser(mockReq, "logout");
 
       // Verify
       expect(result).toEqual(mockUser);
@@ -882,7 +886,10 @@ describe("AuthService", () => {
 
       await authService.authenticate(mockReq, mockRes, mockNext);
 
-      expect(authService.getAuthenticatedUser).toHaveBeenCalledWith(mockReq);
+      expect(authService.getAuthenticatedUser).toHaveBeenCalledWith(
+        mockReq,
+        "default"
+      );
       expect(mockReq.user).toEqual(mockUser);
       expect(mockNext).toHaveBeenCalledWith();
     });
