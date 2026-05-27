@@ -11,10 +11,10 @@ jest.mock("../../../exports/services", () => ({
   },
 }));
 
-jest.mock("../../../modules/auth/utils/auth-hooks-manager", () => ({
-  runAuthenticate: jest.fn(),
-  runAuthorize: jest.fn(),
-}));
+// jest.mock("../../../modules/auth/utils/auth-hooks-manager", () => ({
+//   runAuthenticate: jest.fn(),
+//   runAuthorize: jest.fn(),
+// }));
 
 jest.mock("../../../modules/auth/utils/auth-error-objects", () => ({
   loginRequiredError: new Error("Login required"),
@@ -63,7 +63,7 @@ jest.mock("../../../exports/error-handler", () => ({
 }));
 
 jest.mock("../utils/rate-limiter", () => ({
-  checkRateLimit: jest.fn(),
+  checkRateLimit: jest.fn().mockResolvedValue({ allowed: true }),
   clearRateLimitForSocket: jest.fn(),
 }));
 
@@ -168,7 +168,11 @@ function createMockSocket(overrides: any = {}) {
 }
 
 describe("IArkosGateway", () => {
+  let runAuthorize = jest.spyOn(authHookManager, "runAuthorize");
+  let runAuthenticate = jest.spyOn(authHookManager, "runAuthenticate");
   beforeEach(() => {
+    (validationManager.isValidValidator as jest.Mock).mockReturnValue(true);
+
     jest.clearAllMocks();
   });
 
@@ -657,9 +661,11 @@ describe("IArkosGateway", () => {
         (authService.getAuthenticatedUser as jest.Mock).mockResolvedValue({
           id: "user-1",
         });
-        (authHookManager.runAuthenticate as jest.Mock).mockImplementation(
-          ({ context, done }, authenticateFn) => authenticateFn(context)
-        );
+        //         (authHookManager.runAuthenticate as jest.Mock).mockImplementation(
+        //           ({ context, done }, authenticateFn) => {
+        // authenticateFn(context)
+        //           }
+        //         );
 
         (gateway as any)._register(mockIo, undefined, [], [], {});
         const middlewareFn = mockNs.use.mock.calls[0][0];
@@ -678,9 +684,9 @@ describe("IArkosGateway", () => {
         const next = jest.fn();
 
         (authService.getAuthenticatedUser as jest.Mock).mockResolvedValue(null);
-        (authHookManager.runAuthenticate as jest.Mock).mockImplementation(
-          ({ context, done }, authenticateFn) => authenticateFn(context)
-        );
+        // (authHookManager.runAuthenticate as jest.Mock).mockImplementation(
+        //   ({ context, done }, authenticateFn) => authenticateFn(context)
+        // );
 
         (gateway as any)._register(mockIo, undefined, [], [], {});
         const middlewareFn = mockNs.use.mock.calls[0][0];
@@ -699,9 +705,7 @@ describe("IArkosGateway", () => {
         const next = jest.fn();
         const authError = new Error("Auth failed");
 
-        (authHookManager.runAuthenticate as jest.Mock).mockRejectedValue(
-          authError
-        );
+        (runAuthenticate as jest.Mock).mockRejectedValue(authError);
 
         (gateway as any)._register(mockIo, undefined, [], [], {});
         const middlewareFn = mockNs.use.mock.calls[0][0];
@@ -833,9 +837,6 @@ describe("IArkosGateway", () => {
         const mockSocket = createMockSocket();
         const error = new Error("Connection failed");
         const connHandler = jest.fn().mockRejectedValue(error);
-
-        // Spy on event registration
-        const spy = jest.spyOn(gateway as any, "on");
 
         (gateway as any)._register(
           mockIo,
@@ -1000,15 +1001,12 @@ describe("IArkosGateway", () => {
         const connectionCb = mockNs.on.mock.calls.find(
           ([event]: [string, any]) => event === "connection"
         )[1];
+        const socket = createMockSocket();
 
-        connectionCb(createMockSocket());
+        connectionCb(socket);
 
-        expect(
-          mockSocketOnForEvent(createMockSocket(), "event1")
-        ).toBeDefined();
-        expect(
-          mockSocketOnForEvent(createMockSocket(), "event2")
-        ).toBeDefined();
+        expect(mockSocketOnForEvent(socket, "event1")).toBeDefined();
+        expect(mockSocketOnForEvent(socket, "event2")).toBeDefined();
       });
 
       it("should skip _pipeOnly entries", () => {
@@ -1175,13 +1173,17 @@ describe("IArkosGateway", () => {
 
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           expect.objectContaining({
-            message: expect.stringContaining("Invalid data._meta.mid"),
+            message: expect.stringContaining("Missing data._meta.mid"),
           }),
+          mockSocket,
           expect.anything(),
-          expect.anything(),
-          expect.anything(),
-          expect.anything(),
-          expect.anything()
+          [],
+          expect.objectContaining({
+            event: "test",
+            namespace: "/chat",
+            startTime: expect.any(Number),
+          }),
+          undefined
         );
       });
 
@@ -1209,11 +1211,15 @@ describe("IArkosGateway", () => {
           expect.objectContaining({
             message: expect.stringContaining("Invalid data._meta.timestamp"),
           }),
+          mockSocket,
           expect.anything(),
-          expect.anything(),
-          expect.anything(),
-          expect.anything(),
-          expect.anything()
+          [],
+          expect.objectContaining({
+            event: "test",
+            namespace: "/chat",
+            startTime: expect.any(Number),
+          }),
+          undefined
         );
       });
 
@@ -1234,7 +1240,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(defaultGatewayStore.has).not.toHaveBeenCalled();
         expect(handler).toHaveBeenCalled();
@@ -1265,7 +1271,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(handler).toHaveBeenCalled();
       });
@@ -1295,7 +1301,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(handler).not.toHaveBeenCalled();
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
@@ -1325,7 +1331,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(checkRateLimit).not.toHaveBeenCalled();
         expect(handler).toHaveBeenCalled();
@@ -1359,7 +1365,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(authHookManager.runAuthorize).toHaveBeenCalledWith(
           { context: mockSocket, done: expect.any(Function) },
@@ -1397,7 +1403,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(validationManager.validationFn).toHaveBeenCalled();
         expect(handler).toHaveBeenCalledWith(
@@ -1428,7 +1434,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           expect.any(Error),
@@ -1445,7 +1451,10 @@ describe("IArkosGateway", () => {
         const gateway = new IArkosGateway({ name: "/chat" });
         const mockSocket = createMockSocket();
         const handler = jest.fn();
-        const originalData = { data: "original" };
+        const data = {
+          data: "original",
+          _meta: { mid: "123" },
+        };
 
         (checkRateLimit as jest.Mock).mockResolvedValue({ allowed: true });
         (validationManager.shouldValidate as jest.Mock).mockReturnValue(
@@ -1463,7 +1472,9 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler(originalData);
+        await eventHandler(data);
+
+        const { _meta, ...originalData } = data;
 
         expect(handler).toHaveBeenCalledWith(
           mockSocket,
@@ -1493,7 +1504,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -1530,7 +1541,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" }, ackFn);
+        await eventHandler({ data: "test", _meta: { mid: "123" } }, ackFn);
 
         expect(handler).toHaveBeenCalledWith(
           mockSocket,
@@ -1560,7 +1571,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" }, ackFn);
+        await eventHandler({ data: "test", _meta: { mid: "123" } }, ackFn);
 
         expect(handler).toHaveBeenCalledWith(
           mockSocket,
@@ -1658,7 +1669,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           error,
@@ -1696,7 +1707,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           error,
@@ -1731,7 +1742,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" }, ackFn);
+        await eventHandler({ data: "test", _meta: { mid: "123" } }, ackFn);
 
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           error,
@@ -1769,7 +1780,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "test", _meta: { mid: "123" } });
 
         expect(runArkosGatewayPipes).toHaveBeenCalledWith(
           expect.arrayContaining([globalPipe, eventPipe]),
@@ -1803,7 +1814,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ data: "thebigg", _meta: { mid: "123" } });
 
         expect(mockSocket.data).toEqual(validatedData);
       });
@@ -1827,7 +1838,7 @@ describe("IArkosGateway", () => {
         connectionCb(mockSocket);
 
         const eventHandler = getEventHandlerForSocket(mockSocket, "test");
-        await eventHandler({ data: "test" });
+        await eventHandler({ name: "test", _meta: { mid: "123" } });
 
         expect(handleGatewayEventLog).toHaveBeenCalledWith(
           "/chat",
