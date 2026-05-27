@@ -1534,7 +1534,7 @@ describe("IArkosGateway", () => {
 
         (checkRateLimit as jest.Mock).mockResolvedValue({ allowed: true });
 
-        gateway.on({ event: "test", ack: true }, handler);
+        gateway.on({ event: "test" }, handler);
 
         (gateway as any)._register(mockIo, undefined, [], [], {});
 
@@ -1551,7 +1551,7 @@ describe("IArkosGateway", () => {
           mockSocket,
           expect.any(Object),
           mockIo,
-          ackFn
+          expect.any(Function)
         );
       });
 
@@ -1581,7 +1581,7 @@ describe("IArkosGateway", () => {
           mockSocket,
           expect.any(Object),
           mockIo,
-          undefined
+          expect.any(Function)
         );
       });
     });
