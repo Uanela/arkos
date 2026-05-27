@@ -31,4 +31,22 @@ export class MultiTierArkosGatewayStore implements ArkosGatewayStore {
   async set(key: string, ttl: number) {
     await Promise.all(this.tiers.map((t) => t.set(key, ttl)));
   }
+
+  async setIfNotExists(key: string, ttl: number): Promise<boolean> {
+    for (const tier of this.tiers) {
+      const acquired = await tier.setIfNotExists(key, ttl);
+
+      if (acquired) {
+        for (const t of this.tiers) {
+          if (t !== tier) {
+            t.set(key, ttl).catch(() => {});
+          }
+        }
+
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
