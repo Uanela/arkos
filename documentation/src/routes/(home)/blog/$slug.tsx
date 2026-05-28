@@ -24,10 +24,34 @@ const serverLoader = createServerFn({ method: "GET" }).handler(
     const pages = blog.getPages();
     const index = pages.findIndex((p) => p.slugs[0] === slug);
 
+    const contents = page?.data.structuredData.contents;
+
+    const title = page?.data.title
+      ? `${page.data.title} - Arkos.js Blog`
+      : "Arkos.js Blog";
+
+    const description =
+      page?.data.description ||
+      contents
+        ?.slice(
+          0,
+          contents?.[0].content.toLowerCase().startsWith("> available from")
+            ? 3
+            : 2
+        )
+        .map((c) =>
+          c.content.toLowerCase().startsWith("> available from")
+            ? undefined
+            : c.content
+        )
+        .filter(Boolean)
+        .join(". ") ||
+      "Arkos.js — The Express and Prisma RESTful Framework. Build secure and scalable RESTful APIs with minimal configuration.";
+
     return {
       path: page.path,
-      title: extractText(page.data.title),
-      description: page.data.description,
+      title: extractText(title),
+      description,
       authors: page.data.authors,
       date: page.data.date,
       tags: page.data.tags || [],
@@ -180,10 +204,20 @@ function Page() {
 export const Route = createFileRoute("/(home)/blog/$slug")({
   ssr: true,
   loader: async ({ params }) => {
-    const data = await serverLoader({ data: params.slug });
+    const data = await serverLoader({ data: params.slug! });
     await clientLoader.preload(data.path);
     return data;
   },
   notFoundComponent: () => <p>Post not found.</p>,
   component: Page,
+  head: ({ loaderData }) => {
+    return {
+      meta: [
+        { title: loaderData.title },
+        { name: "description", content: loaderData.description },
+        { property: "og:title", content: loaderData.title },
+        { property: "og:description", content: loaderData.description },
+      ],
+    };
+  },
 });

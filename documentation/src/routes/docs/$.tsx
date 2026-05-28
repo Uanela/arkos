@@ -64,10 +64,36 @@ const serverLoader = createServerFn({
     const page = source.getPage(slugs);
     if (!page) throw notFound();
 
+    const contents = page?.data.structuredData.contents;
+
+    const title = page?.data.title
+      ? `${page.data.title} - Arkos.js Documentation`
+      : "Arkos.js Documentation";
+
+    const description =
+      page?.data.description ||
+      contents
+        ?.slice(
+          0,
+          contents?.[0].content.toLowerCase().startsWith("> available from")
+            ? 3
+            : 2
+        )
+        .map((c) =>
+          c.content.toLowerCase().startsWith("> available from")
+            ? undefined
+            : c.content
+        )
+        .filter(Boolean)
+        .join(". ") ||
+      "Arkos.js — The Express and Prisma RESTful Framework. Build secure and scalable RESTful APIs with minimal configuration.";
+
     return {
       url: page.url,
       path: page.path,
       pageTree: await source.serializePageTree(source.getPageTree()),
+      title,
+      description,
     };
   });
 
