@@ -9,6 +9,7 @@ import { queryParser } from "../../../helpers/query-parser.helpers";
 import uploadManager from "./upload-manager";
 import multer from "multer";
 import { catchAsync } from "../../../../exports/error-handler";
+import { ArkosRouterOptions } from "../..";
 
 export function extractArkosRoutes(
   app: any,
@@ -17,14 +18,23 @@ export function extractArkosRoutes(
   path: string;
   method: string;
   config?: ArkosRouteConfig;
+  routeOptions?: ArkosRouterOptions;
 }> {
   const routes: Array<{
     path: string;
     method: string;
     config?: ArkosRouteConfig;
+    routeOptions?: ArkosRouterOptions;
   }> = [];
 
-  function extractFromStack(stack: any[], prefix = "") {
+  function extractFromStack(
+    stack: any[],
+    prefix = "",
+    inheritedRouteOptions?: ArkosRouterOptions
+  ) {
+    if (Object.keys(inheritedRouteOptions || {}).length === 0)
+      inheritedRouteOptions = undefined;
+
     stack.forEach((layer: any) => {
       if (layer.route) {
         const fullPath = prefix + layer.route.path;
@@ -32,17 +42,16 @@ export function extractArkosRoutes(
 
         methods.forEach((method) => {
           const handlers = layer.route.stack || [];
-          let config: ArkosRouteConfig | undefined;
 
           for (const handler of handlers) {
             const foundConfig = RouteConfigRegistry.get(handler.handle);
 
             if (foundConfig) {
-              config = foundConfig;
               routes.push({
                 path: fullPath,
                 method: method.toUpperCase(),
-                config,
+                config: foundConfig,
+                routeOptions: inheritedRouteOptions,
               });
 
               break;
@@ -64,13 +73,20 @@ export function extractArkosRoutes(
           }
         }
 
-        extractFromStack(layer.handle.stack, nestedPrefix);
+        extractFromStack(
+          layer.handle.stack,
+          nestedPrefix,
+          layer.handle._arkos?.options?.openapi
+            ? layer.handle._arkos.options
+            : inheritedRouteOptions
+        );
       }
     });
   }
 
   const stack = app._router?.stack || app.stack;
-  if (stack) extractFromStack(stack, basePath);
+  if (stack)
+    extractFromStack(stack, basePath, app._arkos?.options || undefined);
 
   return routes;
 }

@@ -1,0 +1,69 @@
+---
+title: Modules and Auto-generated CRUD
+description: Understand how Arkos discovers modules and gives you full CRUD for free.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## How Arkos discovers modules
+
+Arkos reads your Prisma schema directly at startup and auto-generates a full set of CRUD endpoints for every model. No folders to create, no files to generate, nothing.
+
+After pushing the schema in the previous chapter, you already have 20 working endpoints. You don't need to do anything.
+
+## Check it at /api/docs
+
+Before writing a single line of custom code, open your browser and go to:
+
+```
+http://localhost:8000/api/docs
+```
+
+You'll see every generated endpoint already listed and ready to call -- `Book`, `Chapter`, `Verse`, `FavouriteVerse`, and `User`. You can expand any route, fill in the request body, and hit **Send** right there in the browser.
+
+<Callout type="info">
+  `/api/docs` is your main testing tool throughout this tutorial. You don't need Postman or curl -- everything is interactive there.
+</Callout>
+
+## What you get for free
+
+All endpoints are protected by role-based access control by default, so no user has permissions yet. To freely explore them before wiring up policies, open `arkos.config.ts` and temporarily disable authentication:
+
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  authentication: {
+    enabled: false,
+  },
+});
+```
+
+With that in place, all of the following are open to test freely at `/api/docs`:
+
+| Method | Path | Action |
+|--------|------|--------|
+| GET | `/api/books` | List all books (paginated, filterable) |
+| GET | `/api/books/:id` | Get one book |
+| POST | `/api/books` | Create a book |
+| PATCH | `/api/books/:id` | Update a book |
+| DELETE | `/api/books/:id` | Delete a book |
+
+The same pattern repeats for `/api/chapters`, `/api/verses`, and `/api/favourite-verses`.
+
+Once you're done exploring, remove the `authentication.enabled` override -- the next chapter covers locking everything down properly with policies.
+
+## Filtering and pagination out of the box
+
+Every list endpoint supports query parameters for filtering, sorting, and pagination automatically:
+
+```
+GET /api/verses?chapterId=1&page=1&limit=30
+GET /api/books?testament=New%20Testament&orderBy=name
+```
+
+No extra code required.
+
+## When you do need to generate files
+
+You only reach for the CLI when you want to add logic on top of the defaults -- policies, interceptors, custom routes, validation. The upcoming chapters do exactly that, and each one will generate only the specific file it needs.

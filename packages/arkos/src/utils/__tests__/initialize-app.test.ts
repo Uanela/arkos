@@ -11,6 +11,9 @@ import { getSwaggerRouter } from "../../modules/swagger/swagger.router";
 import errorHandler from "../../modules/error-handler/error-handler.controller";
 import { AppError } from "../../exports/error-handler";
 
+jest.mock("../helpers/global.helpers", () => ({
+  userRequire: { resolve: jest.fn(() => "@scalar/api-reference") },
+}));
 jest.mock("../../server", () => ({ getArkosConfig: jest.fn() }));
 jest.mock("../helpers/arkos-config.helpers", () => ({
   isAuthenticationEnabled: jest.fn(),
@@ -165,7 +168,7 @@ describe("initializeApp", () => {
       const app = makeMockApp();
       initializeApp(app as any);
       expect(getAuthRouter).toHaveBeenCalledWith(expect.any(Object));
-      expect(app.use).toHaveBeenCalledWith("/api", "authRouter");
+      expect(app.use).toHaveBeenCalledWith({ path: "/api" }, "authRouter");
     });
 
     it("should not mount authRouter when authentication is disabled", () => {
@@ -182,14 +185,17 @@ describe("initializeApp", () => {
       const app = makeMockApp();
       initializeApp(app as any);
       expect(getPrismaModelsRouter).toHaveBeenCalledWith(expect.any(Object));
-      expect(app.use).toHaveBeenCalledWith("/api", "modelsRouter");
+      expect(app.use).toHaveBeenCalledWith({ path: "/api" }, "modelsRouter");
     });
 
     it("should always mount availableResourcesRouter under globalPrefix", () => {
       const app = makeMockApp();
       initializeApp(app as any);
       expect(getAvailableResourcesAndRoutesRouter).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledWith("/api", "availableResourcesRouter");
+      expect(app.use).toHaveBeenCalledWith(
+        { path: "/api" },
+        "availableResourcesRouter"
+      );
     });
   });
 
@@ -201,7 +207,7 @@ describe("initializeApp", () => {
       const app = makeMockApp();
       initializeApp(app as any);
       expect(getSwaggerRouter).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledWith("/api", "swaggerRouter");
+      expect(app.use).toHaveBeenCalledWith({ path: "/api" }, "swaggerRouter");
     });
 
     it("should mount swagger when ARKOS_BUILD is true and enableAfterBuild is true", () => {
@@ -212,7 +218,7 @@ describe("initializeApp", () => {
       const app = makeMockApp();
       initializeApp(app as any);
       expect(getSwaggerRouter).toHaveBeenCalled();
-      expect(app.use).toHaveBeenCalledWith("/api", "swaggerRouter");
+      expect(app.use).toHaveBeenCalledWith({ path: "/api" }, "swaggerRouter");
     });
 
     it("should not mount swagger when ARKOS_BUILD is true and enableAfterBuild is not true", () => {
@@ -238,7 +244,7 @@ describe("initializeApp", () => {
       addGlobalErrorHandler(app as any);
 
       const wildcardCall = (app.use as jest.Mock).mock.calls.find(
-        (call) => call[0] === "*"
+        (call) => call[0].path === "*"
       );
       expect(wildcardCall).toBeDefined();
 

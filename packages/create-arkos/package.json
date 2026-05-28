@@ -1,10 +1,10 @@
 {
   "name": "create-arkos",
-  "version": "1.6.0-canary.55",
+  "version": "1.7.0-canary.24",
   "type": "module",
   "description": "CLI for creating Arkos.js projects, see docs at www.arkosjs.com",
   "bin": {
-    "create-arkos": "./dist/index.js"
+    "create-arkos": "dist/index.js"
   },
   "scripts": {
     "test": "vitest --coverage",
@@ -26,23 +26,23 @@
   "bugs": {
     "url": "https://github.com/uanela/arkos/issues"
   },
-  "homepage": "https://www.arkosjs.com/docs/tooling/cli/overviewcreate-arkos",
+  "homepage": "https://www.arkosjs.com/docs/cli/create-arkos",
   "files": ["dist", "templates", "cli.js", "README.md"],
   "devDependencies": {
-    "@types/inquirer": "8.1.0",
+    "@types/inquirer": "9.0.9",
     "@types/node": "16.18.126",
-    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/coverage-v8": "4.1.7",
     "rimraf": "6.1.3",
     "ts-node": "10.9.2",
     "tsx": "4.21.0",
     "typescript": "4.9.5",
-    "vitest": "3.2.4"
+    "vitest": "4.1.7"
   },
   "dependencies": {
     "@clack/prompts": "0.11.0",
-    "@inquirer/prompts": "7.6.0",
+    "@inquirer/prompts": "7",
     "chalk": "5.4.1",
-    "handlebars": "4.7.8",
+    "handlebars": "^4.7.9",
     "inquirer": "8.2.6"
   }
 }

@@ -1,0 +1,162 @@
+---
+title: Auth and Policies
+description: Protect routes with ArkosPolicy and RouteHook — public reads, authenticated writes.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+## How Arkos auth works
+
+Every auto-generated route requires authentication and authorization by default. You customize it down by exporting a `RouteHook` from the router file and passing either `false` (public) or an `ArkosPolicy` rule (authenticated + role-checked) to the `authentication` key of each operation.
+
+## Book, Chapter, and Verse policies
+
+Scripture should be publicly readable. Only admins should be able to create, update, or delete records. You can use the following command to generate ArkosPolicy and ArkosRouter which comes with RouteHook for each of the models.
+
+```bash
+pnpm arkos generate policy,router --module book,chapter,verse
+```
+
+After running the above command arkos will generate a set of ArkosPolicy and router files for each module. Next step is to go on each file and customize it, to apply the required authentication and authorization rules.
+
+<Tabs items={["Book", "Chapter", "Verse"]}>
+  <Tab value="Book">
+    ```ts title="src/modules/book/book.policy.ts"
+    import { ArkosPolicy } from "arkos";
+
+    const bookPolicy = ArkosPolicy("book")
+      .rule("Create", { roles: ["Admin"], name: "Create Book" })
+      .rule("Update", { roles: ["Admin"], name: "Update Book" })
+      .rule("Delete", { roles: ["Admin"], name: "Delete Book" })
+      .rule("View",   { roles: ["*"] });
+
+    export default bookPolicy;
+    ```
+
+    ```ts title="src/modules/book/book.router.ts"
+    import { ArkosRouter, RouteHook } from "arkos";
+    import bookPolicy from "@/src/modules/book/book.policy";
+
+    export const hook: RouteHook = {
+      findMany:  { authentication: false },
+      findOne:   { authentication: false },
+      createOne: { authentication: bookPolicy.Create },
+      updateOne: { authentication: bookPolicy.Update },
+      deleteOne: { authentication: bookPolicy.Delete },
+    };
+
+    const bookRouter = ArkosRouter();
+    export default bookRouter;
+    ```
+  </Tab>
+  <Tab value="Chapter">
+    ```ts title="src/modules/chapter/chapter.policy.ts"
+    import { ArkosPolicy } from "arkos";
+
+    const chapterPolicy = ArkosPolicy("chapter")
+      .rule("Create", { roles: ["Admin"], name: "Create Chapter" })
+      .rule("Update", { roles: ["Admin"], name: "Update Chapter" })
+      .rule("Delete", { roles: ["Admin"], name: "Delete Chapter" })
+      .rule("View",   { roles: ["*"] });
+
+    export default chapterPolicy;
+    ```
+
+    ```ts title="src/modules/chapter/chapter.router.ts"
+    import { ArkosRouter, RouteHook } from "arkos";
+    import chapterPolicy from "@/src/modules/chapter/chapter.policy";
+
+    export const hook: RouteHook = {
+      findMany:  { authentication: false },
+      findOne:   { authentication: false },
+      createOne: { authentication: chapterPolicy.Create },
+      updateOne: { authentication: chapterPolicy.Update },
+      deleteOne: { authentication: chapterPolicy.Delete },
+    };
+
+    const chapterRouter = ArkosRouter();
+    export default chapterRouter;
+    ```
+  </Tab>
+  <Tab value="Verse">
+    ```ts title="src/modules/verse/verse.policy.ts"
+    import { ArkosPolicy } from "arkos";
+
+    const versePolicy = ArkosPolicy("verse")
+      .rule("Create", { roles: ["Admin"], name: "Create Verse" })
+      .rule("Update", { roles: ["Admin"], name: "Update Verse" })
+      .rule("Delete", { roles: ["Admin"], name: "Delete Verse" })
+      .rule("View",   { roles: ["*"] });
+
+    export default versePolicy;
+    ```
+
+    ```ts title="src/modules/verse/verse.router.ts"
+    import { ArkosRouter, RouteHook } from "arkos";
+    import versePolicy from "@/src/modules/verse/verse.policy";
+
+    export const hook: RouteHook = {
+      findMany:  { authentication: false },
+      findOne:   { authentication: false },
+      createOne: { authentication: versePolicy.Create },
+      updateOne: { authentication: versePolicy.Update },
+      deleteOne: { authentication: versePolicy.Delete },
+    };
+
+    const verseRouter = ArkosRouter();
+    export default verseRouter;
+    ```
+  </Tab>
+</Tabs>
+
+## FavouriteVerse policy
+
+Any authenticated member can manage their own favourites.
+
+```ts title="src/modules/favourite-verse/favourite-verse.policy.ts"
+import { ArkosPolicy } from "arkos";
+
+const favouriteVersePolicy = ArkosPolicy("favouriteVerse")
+  .rule("Create", { roles: ["Member", "Admin"] })
+  .rule("Delete", { roles: ["Member", "Admin"] })
+  .rule("View",   { roles: ["Member", "Admin"] });
+
+export default favouriteVersePolicy;
+```
+
+```ts title="src/modules/favourite-verse/favourite-verse.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import favouriteVersePolicy from "@/src/modules/favourite-verse/favourite-verse.policy";
+
+export const hook: RouteHook = {
+  findMany:  { authentication: favouriteVersePolicy.View },
+  findOne:   { authentication: favouriteVersePolicy.View },
+  createOne: { authentication: favouriteVersePolicy.Create },
+  deleteOne: { authentication: favouriteVersePolicy.Delete },
+};
+
+const favouriteVerseRouter = ArkosRouter();
+
+export default favouriteVerseRouter;
+```
+
+<Callout type="info">
+  `authentication: false` makes a route fully public — no token required. Passing a policy rule requires a valid JWT **and** the matching role. Any other role gets a 403.
+</Callout>
+
+## Logging in and getting a token
+
+Once the server is running, register and log in via the user module to get a token:
+
+```bash
+# Register
+POST /api/auth/signup
+{ "name": "Admin", "email": "admin@bible.api", "password": "secret", "role": "Admin" }
+
+# Login
+POST /api/users/auth/login
+{ "email": "admin@bible.api", "password": "secret" }
+```
+
+Use the returned token as `Authorization: Bearer <token>` on protected requests.

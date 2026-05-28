@@ -747,7 +747,10 @@ describe("Auth Router", () => {
 
     getAuthRouter(mockArkosConfig);
 
-    expect(mockRouter.use).toHaveBeenCalledWith("/auth", expect.any(Function));
+    expect(mockRouter.use).toHaveBeenCalledWith(
+      { path: "/auth" },
+      expect.any(Function)
+    );
   });
 
   test("should mount custom express router when getModuleComponents returns one", () => {
@@ -765,7 +768,10 @@ describe("Auth Router", () => {
 
     getAuthRouter(mockArkosConfig);
 
-    expect(mockRouter.use).toHaveBeenCalledWith("/auth", fakeExpressRouter);
+    expect(mockRouter.use).toHaveBeenCalledWith(
+      { path: "/auth" },
+      fakeExpressRouter
+    );
   });
 
   test("should throw when custom router module export is not a valid router", () => {

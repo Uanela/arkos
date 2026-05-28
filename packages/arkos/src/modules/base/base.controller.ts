@@ -179,12 +179,28 @@ export class BaseController {
           const [records, total] = await Promise.all([
             result,
             this.service.count(where, {
-              user: req?.user,
+              user: req?.user!,
               accessToken: req?.accessToken,
             }),
           ]);
+
+          const take = serviceArgs[1]?.take ?? null;
+          const skip = serviceArgs[1]?.skip ?? 0;
+
+          const limit = take ?? total;
+          const currentPage = limit > 0 ? Math.floor(skip / limit) + 1 : 1;
+          const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
+
           data = records;
-          additionalData = { total, results: records.length };
+          additionalData = {
+            total,
+            results: records.length,
+            page: currentPage,
+            pages: totalPages,
+            limit,
+            hasNextPage: currentPage < totalPages,
+            hasPrevPage: currentPage > 1,
+          };
         }
 
         const error = config.errorHandler
@@ -382,8 +398,7 @@ export class BaseController {
   ): any {
     if (operationType === "findMany" && additionalData)
       return {
-        total: additionalData.total,
-        results: additionalData.results,
+        ...additionalData,
         data,
       };
 

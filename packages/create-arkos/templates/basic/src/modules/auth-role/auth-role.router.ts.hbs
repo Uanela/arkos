@@ -1,6 +1,14 @@
-import { ArkosRouter } from "arkos";
+import { ArkosRouter{{#if typescript}}, RouteHook{{/if}} } from "arkos";
 {{#if authentication}}
 import authRolePolicy from "@/src/modules/auth-role/auth-role.policy";
+
+export const hook{{#if typescript}}: RouteHook{{/if}} = {
+  createOne: { authentication: authRolePolicy.Create },
+  findMany: { authentication: authRolePolicy.View },
+  findOne: { authentication: authRolePolicy.View },
+  updateOne: { authentication: authRolePolicy.Update },
+  deleteOne: { authentication: authRolePolicy.Delete },
+};
 {{/if}}
 
 const authRoleRouter = ArkosRouter({

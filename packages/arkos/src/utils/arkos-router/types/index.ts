@@ -14,6 +14,7 @@ import compression from "compression";
 import { OpenApiConfig } from "./openapi-config";
 import { UploadConfig } from "./upload-config";
 import { BodyParserConfig } from "./body-parser-config";
+import { ArkosRouterOptions } from "..";
 
 export type ArkosUseConfig = Pick<
   ArkosRouteConfig,
@@ -35,6 +36,17 @@ type InferValidationType<T, Fallback> = T extends ZodSchema
 
 export type PathParams = string | RegExp | Array<string | RegExp>;
 
+export type InternalIArkosRouter = IArkosRouter & {
+  _arkos: {
+    options?: ArkosRouterOptions;
+    routes: Array<{
+      handler: ArkosAnyRequestHandler;
+      config: ArkosRouteConfig;
+      method: string;
+    }>;
+  };
+};
+
 export type ArkosAnyRequestHandler =
   | ArkosRequestHandler
   | ArkosErrorRequestHandler
@@ -54,16 +66,19 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
       TQuery extends
         | ZodSchema
         | (new (...args: any[]) => object)
+        | null
         | false
         | undefined = any,
       TBody extends
         | ZodSchema
         | (new (...args: any[]) => object)
+        | null
         | false
         | undefined = any,
       TParams extends
         | ZodSchema
         | (new (...args: any[]) => object)
+        | null
         | false
         | undefined = any,
     >(
@@ -91,16 +106,19 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
       TQuery extends
         | ZodSchema
         | (new (...args: any[]) => object)
+        | null
         | false
         | undefined = any,
       TBody extends
         | ZodSchema
         | (new (...args: any[]) => object)
+        | null
         | false
         | undefined = any,
       TParams extends
         | ZodSchema
         | (new (...args: any[]) => object)
+        | null
         | false
         | undefined = any,
     >(
@@ -139,16 +157,22 @@ export type ArkosRouteMethodHandler<T> = {
     TQuery extends
       | ZodSchema
       | (new (...args: any[]) => object)
+      | null
+      | null
       | false
       | undefined = any,
     TBody extends
       | ZodSchema
       | (new (...args: any[]) => object)
+      | null
+      | null
       | false
       | undefined = any,
     TParams extends
       | ZodSchema
       | (new (...args: any[]) => object)
+      | null
+      | null
       | false
       | undefined = any,
   >(
@@ -177,16 +201,22 @@ export type ArkosRouteMethodHandler<T> = {
     TQuery extends
       | ZodSchema
       | (new (...args: any[]) => object)
+      | null
+      | null
       | false
       | undefined = any,
     TBody extends
       | ZodSchema
       | (new (...args: any[]) => object)
+      | null
+      | null
       | false
       | undefined = any,
     TParams extends
       | ZodSchema
       | (new (...args: any[]) => object)
+      | null
+      | null
       | false
       | undefined = any,
   >(
@@ -232,6 +262,7 @@ export type UseMethodHandler<T> = IRouterHandler<T> &
         ArkosErrorRequestHandler | Array<ArkosErrorRequestHandler>
       >
     ): T;
+    (...handlers: Array<ArkosRequestHandler | Array<ArkosRequestHandler>>): T;
   };
 
 export interface IArkosRoute extends IRoute {
@@ -311,17 +342,23 @@ export type ArkosRouteConfig<
   TQuery extends
     | ZodSchema
     | (new (...args: any[]) => object)
+    | null
     | false
+    | null
     | undefined = any,
   TBody extends
     | ZodSchema
     | (new (...args: any[]) => object)
+    | null
     | false
+    | null
     | undefined = any,
   TParams extends
     | ZodSchema
     | (new (...args: any[]) => object)
+    | null
     | false
+    | null
     | undefined = any,
 > = {
   /**
@@ -354,11 +391,13 @@ export type ArkosRouteConfig<
    *
    * @remarks
    * - Set to `false` to disable all validation.
+   * - Set to `null` to forbidden all request inputs.
    * - Provide an object with `query`, `body`, and/or `params` properties to validate specific parts of the request.
    * - Each property accepts a Zod schema, a class constructor, or `false` to disable validation for that part.
    */
   validation?:
     | false
+    | null
     | {
         query?: TQuery;
         body?: TBody;

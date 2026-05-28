@@ -1,0 +1,154 @@
+---
+title: Custom Routes
+description: Build a passage lookup endpoint — GET /api/verses/passage?book=John&chapter=3&verse=16.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## What you're building
+
+Auto-generated routes cover standard CRUD. When you need something specific — like fetching a verse by canonical reference — you add a custom route to the module's `ArkosRouter`.
+
+The endpoint you'll build:
+
+```
+GET /api/verses/passage?book=John&chapter=3&verse=16
+```
+
+## Write the query schema
+
+Create the schema by hand — the generator doesn't know this custom shape:
+
+```ts title="src/modules/verse/schemas/passage-query.schema.ts"
+import { z } from "zod";
+
+const PassageQuerySchema = z.object({
+  book:    z.string().min(1),
+  chapter: z.coerce.number().int().positive(),
+  verse:   z.coerce.number().int().positive(),
+});
+
+export default PassageQuerySchema;
+```
+
+`z.coerce.number()` handles the fact that query string values are always strings — Zod will coerce them to numbers before validating.
+
+## Add the handler to the verse controller
+
+If you haven't generated the controller yet:
+
+```bash
+npx arkos generate controller -m verse
+```
+
+Add `getByReference` as a method on the class:
+
+```ts title="src/modules/verse/verse.controller.ts"
+import { BaseController } from "arkos";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+import { AppError } from "arkos/error-handler";
+import verseService from "@/src/modules/verse/verse.service";
+import prisma from "@/src/utils/prisma";
+
+class VerseController extends BaseController {
+  getByReference = async (
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    try {
+      const { book, chapter, verse } = req.query as {
+        book: string;
+        chapter: string;
+        verse: string;
+      };
+
+      const result = await prisma.verse.findFirst({
+        where: {
+          number: Number(verse),
+          chapter: {
+            number: Number(chapter),
+            book: { name: { equals: book, mode: "insensitive" } },
+          },
+        },
+        include: {
+          chapter: { include: { book: true } },
+        },
+      });
+
+      if (!result) throw new AppError("Passage not found", 404);
+      res.json({ status: "success", data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
+export default new VerseController(verseService);
+```
+
+## Register the custom route
+
+Open `verse.router.ts` and register the new route alongside the existing `RouteHook`:
+
+```ts title="src/modules/verse/verse.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import versePolicy from "@/src/modules/verse/verse.policy";
+import verseController from "@/src/modules/verse/verse.controller";
+import PassageQuerySchema from "@/src/modules/verse/schemas/passage-query.schema";
+
+export const hook: RouteHook = {
+  findMany:  { authentication: false },
+  findOne:   { authentication: false },
+  createOne: { authentication: versePolicy.Create },
+  updateOne: { authentication: versePolicy.Update },
+  deleteOne: { authentication: versePolicy.Delete },
+};
+
+const verseRouter = ArkosRouter();
+
+verseRouter.get(
+  {
+    path: "/api/verses/passage",
+    authentication: false,
+    validation: { query: PassageQuerySchema },
+  },
+  verseController.getByReference
+);
+
+export default verseRouter;
+```
+
+<Callout type="info">
+  Custom routes registered with `ArkosRouter` are automatically included in the OpenAPI documentation generated at `/api/docs`. Validation schemas are converted to OpenAPI query parameter definitions automatically.
+</Callout>
+
+## Try it out
+
+```
+GET /api/verses/passage?book=John&chapter=3&verse=16
+```
+
+A matched verse returns:
+
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 1234,
+    "number": 16,
+    "text": "For God so loved the world...",
+    "audioUrl": null,
+    "chapter": {
+      "number": 3,
+      "book": { "name": "John", "testament": "New Testament" }
+    }
+  }
+}
+```
+
+If the reference doesn't exist you get a clean 404:
+
+```json
+{ "status": "error", "message": "Passage not found" }
+```

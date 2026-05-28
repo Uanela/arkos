@@ -207,24 +207,6 @@ generate
   });
 
 generate
-  .command("route-hook")
-  .alias("rh")
-  .description("Generate a new route hook")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.routeHook({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("service-hook")
-  .alias("sh")
-  .description("Generate a new service hook")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.serviceHook({ ...generateOptions, ...options });
-  });
-
-generate
   .command("login-schema")
   .alias("ls")
   .description("Generate zod login schema for auth module")

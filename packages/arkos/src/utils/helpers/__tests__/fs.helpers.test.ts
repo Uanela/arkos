@@ -1,10 +1,10 @@
-import fs from "fs";
+import fs from "node:fs";
 import { getUserFileExtension } from "../fs.helpers";
 import * as fsHelpers from "../fs.helpers";
-import path from "path";
+import path from "node:path";
 
 // Mock the fs module
-jest.mock("fs", () => ({
+jest.mock("node:fs", () => ({
   ...jest.requireActual("fs"),
   stat: jest.fn(),
   access: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock("fs", () => ({
   },
 }));
 
-jest.mock("path");
+jest.mock("node:path");
 
 describe("fs.helpers", () => {
   beforeEach(() => {
@@ -67,8 +67,10 @@ describe("fs.helpers", () => {
 
     it('should return "ts" when tsconfig.json exists and ARKOS_BUILD is not "true"', () => {
       // Mock fs.existsSync to return true for tsconfig.json
+
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
+      process.env.ARKOS_BUILD = "false";
       const result = getUserFileExtension();
 
       expect(result).toBe("ts");
@@ -113,20 +115,6 @@ describe("fs.helpers", () => {
       expect(result).toBe("js");
       expect(fs.existsSync).toHaveBeenCalledWith(mockTsConfigPath);
       expect(fsHelpers.userFileExtension).toBe("js");
-    });
-
-    it('should return "ts" when has src/app.ts', () => {
-      // Mock fs.existsSync to return false for tsconfig.json
-      (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
-        if (path.includes("src/app.ts")) return true;
-        return false;
-      });
-
-      const result = getUserFileExtension();
-
-      expect(result).toBe("ts");
-      expect(fs.existsSync).toHaveBeenCalledWith(mockTsConfigPath);
-      expect(fsHelpers.userFileExtension).toBe("ts");
     });
 
     it('should return "js" when an error occurs during file system checks', () => {

@@ -20,6 +20,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["avatar"],
         });
       });
 
@@ -41,6 +42,7 @@ describe("arkosRouterOpenApiManager", () => {
               description: "Max size: 5242880 bytes",
             },
           },
+          required: ["avatar"],
         });
       });
 
@@ -109,6 +111,8 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+
+          required: ["gallery"],
         });
       });
 
@@ -133,6 +137,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 10,
             },
           },
+          required: ["photos"],
         });
       });
 
@@ -141,6 +146,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "array",
           field: "images",
           maxSize: 2097152,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
@@ -216,6 +222,7 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+          required: ["avatar", "resume"],
         });
       });
 
@@ -250,6 +257,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 3,
             },
           },
+          required: ["photos", "documents"],
         });
       });
 
@@ -258,6 +266,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "fields",
           fields: [{ name: "avatar" }, { name: "cover" }],
           maxSize: 5242880,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
@@ -361,6 +370,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "single",
           field: "avatar",
+          required: false,
         };
 
         const existingSchema: any = {
@@ -429,6 +439,7 @@ describe("arkosRouterOpenApiManager", () => {
           type: "array",
           field: "files",
           maxCount: 3,
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(
@@ -467,6 +478,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["photo"],
         });
       });
     });
@@ -476,6 +488,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "fields",
           fields: [{ name: "single_file" }],
+          required: false,
         };
 
         const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
@@ -521,6 +534,7 @@ describe("arkosRouterOpenApiManager", () => {
               format: "binary",
             },
           },
+          required: ["avatar"],
         };
 
         const uploadConfig: UploadConfig = {
@@ -710,6 +724,7 @@ describe("arkosRouterOpenApiManager", () => {
               },
             },
           },
+          required: ["photos"],
         };
 
         const uploadConfig: UploadConfig = {
@@ -916,6 +931,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "fields",
           fields: [{ name: "avatar" }, { name: "resume" }],
+          required: false,
         };
 
         expect(() =>
@@ -1144,7 +1160,6 @@ describe("arkosRouterOpenApiManager", () => {
           Error(
             `ValidationError: Invalid multipart/form-data schema for route '/users/profile':
   - Upload field 'avatar' must have type 'array', got 'string'
-  - Upload field 'avatar' is not required in config but marked as required in schema
   - Missing upload field 'resume' in multipart/form-data schema`
           )
         );
@@ -1242,6 +1257,7 @@ describe("arkosRouterOpenApiManager", () => {
         const uploadConfig: UploadConfig = {
           type: "single",
           field: "avatar",
+          required: false,
         };
 
         expect(() =>
@@ -1266,6 +1282,7 @@ describe("arkosRouterOpenApiManager", () => {
               maxItems: 10,
             },
           },
+          required: ["photos"],
         };
 
         const uploadConfig: UploadConfig = {
@@ -1334,6 +1351,194 @@ describe("arkosRouterOpenApiManager", () => {
           expect(error.message).toContain("  - ");
           expect(error.message.split("\n").length).toBeGreaterThan(1);
         }
+      });
+    });
+  });
+
+  describe("Nested array path field names", () => {
+    describe("addUploadFields", () => {
+      it("should resolve [] to [0] in single type field name", () => {
+        const uploadConfig: UploadConfig = {
+          type: "single",
+          field: "banners[][image]",
+        };
+
+        const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
+
+        expect(result).toEqual({
+          type: "object",
+          properties: {
+            "banners[0][image]": {
+              type: "string",
+              format: "binary",
+            },
+          },
+          required: ["banners[0][image]"],
+        });
+      });
+
+      it("should resolve [] to [0] in array type field name", () => {
+        const uploadConfig: UploadConfig = {
+          type: "array",
+          field: "banners[][images]",
+          maxCount: 5,
+        };
+
+        const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
+
+        expect(result).toEqual({
+          type: "object",
+          properties: {
+            "banners[0][images]": {
+              type: "array",
+              items: {
+                type: "string",
+                format: "binary",
+              },
+              maxItems: 5,
+            },
+          },
+          required: ["banners[0][images]"],
+        });
+      });
+
+      it("should resolve [] to [0] in fields entries", () => {
+        const uploadConfig: UploadConfig = {
+          type: "fields",
+          fields: [
+            { name: "slides[][mobileImage]", type: "single" },
+            { name: "slides[][tabletImage]", type: "single" },
+            { name: "gallery", maxCount: 5 },
+          ],
+        };
+
+        const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
+
+        expect(result).toEqual({
+          type: "object",
+          properties: {
+            "slides[0][mobileImage]": {
+              type: "string",
+              format: "binary",
+            },
+            "slides[0][tabletImage]": {
+              type: "string",
+              format: "binary",
+            },
+            gallery: {
+              type: "array",
+              items: {
+                type: "string",
+                format: "binary",
+              },
+              maxItems: 5,
+            },
+          },
+          required: [
+            "slides[0][mobileImage]",
+            "slides[0][tabletImage]",
+            "gallery",
+          ],
+        });
+      });
+
+      it("should resolve multiple [] in deeply nested path", () => {
+        const uploadConfig: UploadConfig = {
+          type: "single",
+          field: "a[][b][][c]",
+        };
+
+        const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
+
+        expect(result.properties!["a[0][b][0][c]"]).toBeDefined();
+      });
+    });
+
+    describe("validateMultipartFormDocs", () => {
+      it("should validate nested array path by resolving [] to [0]", () => {
+        const userSchema = {
+          type: "object",
+          properties: {
+            "banners[0][image]": {
+              type: "string",
+              format: "binary",
+            },
+          },
+          required: ["banners[0][image]"],
+        };
+
+        const uploadConfig: UploadConfig = {
+          type: "single",
+          field: "banners[][image]",
+        };
+
+        expect(() =>
+          arkosRouterOpenApiManager.validateMultipartFormDocs(
+            userSchema,
+            "/banners",
+            uploadConfig
+          )
+        ).not.toThrow();
+      });
+
+      it("should throw when nested array path field is missing in schema", () => {
+        const userSchema = {
+          type: "object",
+          properties: {
+            "banners[][image]": {
+              type: "string",
+              format: "binary",
+            },
+          },
+        };
+
+        const uploadConfig: UploadConfig = {
+          type: "single",
+          field: "banners[][image]",
+        };
+
+        expect(() =>
+          arkosRouterOpenApiManager.validateMultipartFormDocs(
+            userSchema,
+            "/banners",
+            uploadConfig
+          )
+        ).toThrow(
+          "Missing upload field 'banners[][image]' in multipart/form-data schema"
+        );
+      });
+
+      it("should validate nested array path in fields entries", () => {
+        const userSchema = {
+          type: "object",
+          properties: {
+            "slides[0][mobileImage]": {
+              type: "string",
+              format: "binary",
+            },
+            "slides[0][tabletImage]": {
+              type: "string",
+              format: "binary",
+            },
+          },
+          required: ["slides[0][mobileImage]", "slides[0][tabletImage]"],
+        };
+
+        const uploadConfig: UploadConfig = {
+          type: "fields",
+          fields: [
+            { name: "slides[][mobileImage]", type: "single" },
+            { name: "slides[][tabletImage]", type: "single" },
+          ],
+        };
+
+        expect(() =>
+          arkosRouterOpenApiManager.validateMultipartFormDocs(
+            userSchema,
+            "/slides",
+            uploadConfig
+          )
+        ).not.toThrow();
       });
     });
   });

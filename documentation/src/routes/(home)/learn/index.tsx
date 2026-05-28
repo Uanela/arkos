@@ -95,7 +95,7 @@ const chapters = [
     title: "File Uploads",
     description:
       "Handle single, multiple and nested file uploads with declarative configuration.",
-    href: "/docs/guides/file-uploads/setup",
+    href: "/docs/guides/file-handling/file-uploads/setup",
   },
   {
     number: 10,
@@ -275,6 +275,6 @@ function LearnPage() {
   );
 }
 
-export const Route = createFileRoute("/(home)/learn")({
+export const Route = createFileRoute("/(home)/learn/")({
   component: LearnPage,
 });

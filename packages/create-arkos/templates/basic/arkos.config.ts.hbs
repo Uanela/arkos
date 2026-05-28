@@ -1,6 +1,11 @@
 import { defineConfig } from "arkos/config"
 
 const arkosConfig = defineConfig({
+  {{#if (eq entryPoint "src/server")}}
+  source: {
+    entryPoint: "{{entryPoint}}{{#if typescript}}.ts{{else}}.js{{/if}}"
+  },
+  {{/if}}
   {{#if (neq authentication.type "none")}}
   authentication: {
     mode: '{{authentication.type}}',
@@ -25,9 +30,7 @@ const arkosConfig = defineConfig({
     strict: false,
   },
   middlewares: {
-    cors: {
-      allowedOrigins: "*"
-    },
+    cors: {},
   },
   {{#if (eq prisma.provider "none")}}
   warnings: {

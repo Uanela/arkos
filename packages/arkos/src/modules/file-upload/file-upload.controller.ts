@@ -11,6 +11,16 @@ import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../types";
 import { getModuleComponents } from "../../utils/dynamic-loader";
 
+function matchesUploadUrl(
+  originalUrl: string,
+  baseUploadRoute: string,
+  fileType: string,
+  fileName: string
+): boolean {
+  const expectedPath = `${baseUploadRoute}/${fileType}/${fileName}`;
+  return originalUrl === expectedPath || originalUrl.startsWith(expectedPath);
+}
+
 /**
  * Handles files uploads and allow to be extended
  */
@@ -174,17 +184,19 @@ export class FileUploadController {
             new AppError("Invalid file type", 400, "InvalidFileType")
           );
       }
+      // top of file or a shared utils import
+      const escapeRegExp = (value: string) =>
+        value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
       try {
         const { fileUpload } = getArkosConfig();
-        const baseUploadRoute = fileUpload?.baseRoute || "/api/uploads";
 
+        const baseUploadRoute = fileUpload?.baseRoute || "/api/uploads";
         const urlPattern = new RegExp(
-          `${baseUploadRoute}/${fileType}/${fileName}`
+          `${escapeRegExp(baseUploadRoute)}/${escapeRegExp(fileType)}/${escapeRegExp(fileName)}`
         );
 
         const isExpectedUrlPattern = urlPattern.test(req.originalUrl);
-
         if (isExpectedUrlPattern) {
           // Build the expected URL for this request
           const fullUrl = `${req.protocol}://${req.get("host")}${
@@ -277,14 +289,12 @@ export class FileUploadController {
 
         if (fileName && fileName.trim() !== "") {
           try {
-            const baseUploadRoute = fileUpload?.baseRoute || "/api/uploads";
-
-            const urlPattern = new RegExp(
-              `${baseUploadRoute}/${fileType}/${fileName}`
+            const isExpectedUrlPattern = matchesUploadUrl(
+              req.originalUrl,
+              fileUpload?.baseRoute || "/api/uploads",
+              fileType,
+              fileName
             );
-
-            const isExpectedUrlPattern = urlPattern.test(req.originalUrl);
-
             if (isExpectedUrlPattern) {
               const oldFileUrl = `${req.protocol}://${req.get("host")}${
                 req.originalUrl
