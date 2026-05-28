@@ -74,20 +74,6 @@ export function useGateway(namespace: string) {
       },
 
       /**
-       * Join a room.
-       * @example
-       * chat.join("room-123")
-       */
-      join: (room: string) => gateway.join(room),
-
-      /**
-       * Leave a room.
-       * @example
-       * chat.leave("room-123")
-       */
-      leave: (room: string) => gateway.leave(room),
-
-      /**
        * Reactive connection status for this namespace.
        * @example
        * chat.status // "connected" | "reconnecting" | "disconnected" | "connecting"

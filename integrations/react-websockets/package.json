@@ -1,14 +1,11 @@
 {
   "name": "@arkosjs/react-websockets",
-  "version": "0.1.0-canary.1",
+  "version": "0.1.0-canary.2",
   "description": "React bindings for Arkos WebSocket Gateway",
   "main": "dist/exports/index.js",
   "module": "dist/exports/index.js",
   "types": "dist/exports/index.d.ts",
-  "files": [
-    "dist",
-    "README.md"
-  ],
+  "files": ["dist", "README.md"],
   "author": "Uanela Como",
   "license": "MIT",
   "repository": {
@@ -21,6 +18,7 @@
   "homepage": "https://www.arkosjs.com",
   "scripts": {
     "build": "rm -r ./dist && tsc",
+    "prepublishOnly": "pnpm build",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

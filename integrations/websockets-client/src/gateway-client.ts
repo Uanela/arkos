@@ -39,10 +39,10 @@ export class GatewayClient {
     );
     this.socket.io.on("reconnect", () => this.setStatus("connected"));
 
-    // Convention: server can emit "arkos:user" after auth to hydrate client user
-    this.socket.on("arkos:user", (user: any) => {
-      this.user = user;
-      this.notify("onUser", user);
+    // Convention: server can emit "authenticated" after auth to hydrate client user
+    this.socket.on("authenticated", (data: any) => {
+      this.user = data.user;
+      this.notify("onUser", data.user);
     });
   }
 
@@ -177,26 +177,6 @@ export class GatewayClient {
     };
 
     return tryEmit();
-  }
-
-  /**
-   * Join a Socket.IO room.
-   *
-   * @example
-   * chat.join("room-123")
-   */
-  join(room: string): void {
-    this.socket.emit("arkos:join", { room });
-  }
-
-  /**
-   * Leave a Socket.IO room.
-   *
-   * @example
-   * chat.leave("room-123")
-   */
-  leave(room: string): void {
-    this.socket.emit("arkos:leave", { room });
   }
 
   /**

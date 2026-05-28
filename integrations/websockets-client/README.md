@@ -1,8 +1,41 @@
-# @arkosjs/websockets-client
+![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=4)
 
-Framework-agnostic WebSocket client for [Arkos Gateway](https://www.arkosjs.com/docs/core-concepts/components/gateways).
+<div align="center">
 
-Handles `_meta` envelope injection, client-side deduplication, ack/retry/timeout, and observable connection state — all without binding you to any framework.
+[![npm](https://img.shields.io/npm/v/@arkosjs/websockets-client)](https://www.npmjs.com/package/@arkosjs/websockets-client)
+![npm](https://img.shields.io/npm/dt/@arkosjs/websockets-client)
+![GitHub](https://img.shields.io/github/license/uanela/arkos)
+
+</div>
+
+<div align="center">
+<h2>Framework-Agnostic WebSocket Client for Arkos Gateway</h2>
+<p>Handle real-time communication with automatic deduplication, ack/retry/timeout, and observable connection state — without framework lock-in</p>
+</div>
+
+<div align="center">
+
+**[Installation](#installation)** •
+**[Quick Start](#quick-start)** •
+**[API Reference](#api-reference)** •
+**[How \_meta Works](#how-_meta-works)** •
+**[Framework Adapters](#framework-adapters)** •
+**[Documentation](https://www.arkosjs.com/docs/core-concepts/components/gateways)** •
+**[GitHub](https://github.com/uanela/arkos)**
+
+</div>
+
+---
+
+## What is `@arkosjs/websockets-client`?
+
+This is the **core WebSocket client** that powers all Arkos real-time features. It wraps socket.io and adds:
+
+- **Automatic `_meta` injection** — every emit gets a unique ID and timestamp for dedup/maxAge
+- **Client-side deduplication** — guards against reconnect replay and server retry storms
+- **Ack + retry + timeout** — request-response patterns with exponential backoff
+- **Observable connection state** — drive framework reactivity without framework coupling
+- **Zero framework dependencies** — works standalone or with React, Vue, Svelte, Solid, Angular
 
 ## Installation
 
@@ -10,28 +43,98 @@ Handles `_meta` envelope injection, client-side deduplication, ack/retry/timeout
 npm install @arkosjs/websockets-client socket.io-client
 ```
 
-## Quick start
+You'll also need `socket.io-client` as a peer dependency.
+
+## Quick Start
+
+### Create a Manager and Client
 
 ```ts
 import { Manager } from "socket.io-client";
 import { createWebsocketClient } from "@arkosjs/websockets-client";
 
 const manager = new Manager("http://localhost:3000", {
-  auth: { token: "your-auth-token" },
-  reconnection: true,
+    auth: { token: "your-auth-token" },
+    reconnection: true,
 });
 
 const client = createWebsocketClient(manager);
+```
 
+### Get a Gateway for a Namespace
+
+```ts
 const chat = client.gateway("/chat");
 const orders = client.gateway("/orders");
 ```
 
-> The `Manager` owns the connection config. `createWebsocketClient` wraps it.
-> Calling `client.gateway()` with the same namespace twice returns the same instance — no duplicate connections.
-> socket.io multiplexes all namespaces over a single TCP connection.
+Calling `.gateway()` with the same namespace twice returns the same instance — no duplicate connections. Socket.io multiplexes all namespaces over a single TCP connection.
 
-## API
+### Listen to Events
+
+```ts
+const off = chat.on("receive_message", (data) => {
+    console.log(data);
+});
+
+// Cleanup when done
+off();
+```
+
+Client-side deduplication is applied automatically when `_meta.mid` is present — guards against reconnect replay or server retry storms.
+
+### Emit Events
+
+**Fire and forget:**
+
+```ts
+chat.emit("send_message", { room: "general", content: "hello" });
+```
+
+**With acknowledgement:**
+
+```ts
+const result = await chat.emit("send_message", data, {
+    ack: true,
+    timeout: 5000,
+    retries: 3,
+});
+
+if (result.success) {
+    console.log(result.data);
+} else {
+    console.error(result.error);
+}
+```
+
+Retries with exponential backoff on timeout, capped at 5s per attempt.
+
+### Track Connection State
+
+```ts
+const unsub = chat.subscribe({
+    onStatus: (status) => {
+        console.log(status); // "connected" | "disconnected" | "reconnecting" | "connecting"
+    },
+    onUser: (user) => {
+        console.log(user); // Populated when server emits "authenticated"
+    },
+});
+
+// Cleanup
+unsub();
+```
+
+Or read the current state synchronously:
+
+```ts
+chat.status; // "connected" | "disconnected" | "reconnecting" | "connecting"
+chat.user; // { id, email, ... } | null
+```
+
+---
+
+## API Reference
 
 ### `createWebsocketClient(manager)`
 
@@ -47,7 +150,10 @@ Returns (or lazily creates) a `GatewayClient` for the given namespace.
 
 ```ts
 const chat = client.gateway("/chat");
+const orders = client.gateway("/orders");
 ```
+
+Subsequent calls with the same namespace return the cached instance.
 
 ### `client.destroy()`
 
@@ -57,145 +163,186 @@ Disconnects all namespace sockets and clears the gateway map.
 client.destroy();
 ```
 
-### `GatewayClient`
+---
+
+## GatewayClient API
 
 The object returned by `client.gateway()`. All interaction with a namespace goes through here.
 
-#### `.on(event, handler)` → `() => void`
+### `.on(event, handler)` → `() => void`
 
 Listen to a server event. Returns an unsubscribe function.
 
-Client-side deduplication is applied automatically when `_meta.mid` is present in the payload — guards against reconnect replay or server retry storms.
-
 ```ts
 const off = chat.on("receive_message", (data) => {
-  console.log(data);
+    console.log(data);
 });
 
-// cleanup
+// Cleanup
 off();
 ```
 
-#### `.off(event, handler?)`
+**Deduplication:** Client-side dedup is applied automatically when `_meta.mid` is present in the payload — it's stripped before the handler is called.
 
-Remove a specific handler or all handlers for an event.
+### `.emit(event, data)` → `void`
 
-```ts
-chat.off("receive_message", handler);
-chat.off("receive_message"); // removes all
-```
-
-#### `.emit(event, data)` — fire and forget
-
-Automatically injects `_meta.mid` and `_meta.timestamp` into the payload so ArkosGateway's dedup and `maxAge` features work without any manual wiring.
+Fire-and-forget emit. Automatically injects `_meta.mid` and `_meta.timestamp`.
 
 ```ts
 chat.emit("send_message", { room: "general", content: "hello" });
 ```
 
-#### `.emit(event, data, { ack: true, timeout?, retries? })` — with ack
+### `.emit(event, data, { ack: true, timeout?, retries? })` → `Promise<ArkosEmitResult>`
 
-Returns a `Promise<ArkosEmitResult>`. Retries with exponential backoff on timeout, capped at 5s per attempt.
+Emit with acknowledgement. Returns a promise resolving to the server's ack response.
 
 ```ts
 const result = await chat.emit("send_message", data, {
-  ack: true,
-  timeout: 5000,
-  retries: 3,
+    ack: true,
+    timeout: 5000, // Wait 5s before retrying (default: 5000)
+    retries: 3, // Retry up to 3 times (default: 0)
 });
 
-if (result.success) console.log(result.data);
-else console.error(result.error);
+if (result.success) {
+    console.log("Data:", result.data);
+} else {
+    console.error("Error:", result.error);
+}
 ```
 
-#### `.join(room)` / `.leave(room)`
+Retries use exponential backoff: 1s, 2s, 4s, capped at 5s.
 
-Emit `arkos:join` / `arkos:leave` to the server.
+### `.subscribe(subscriber)` → `() => void`
 
-```ts
-chat.join("room-123");
-chat.leave("room-123");
-```
-
-#### `.subscribe(subscriber)` → `() => void`
-
-Subscribe to connection state changes. Used by framework adapters to drive reactivity. Returns an unsubscribe function.
+Subscribe to connection state changes. Used by framework adapters to drive reactivity.
 
 ```ts
 const unsub = chat.subscribe({
-  onStatus: (status) => console.log(status), // "connected" | "disconnected" | "reconnecting" | "connecting"
-  onUser: (user) => console.log(user), // populated when server emits "arkos:user"
+    onStatus: (status) => {
+        // "connected" | "disconnected" | "reconnecting" | "connecting"
+    },
+    onUser: (user) => {
+        // Populated when server emits "authenticated"
+    },
 });
 
+// Cleanup
 unsub();
 ```
 
-#### `.status`
+### `.status`
 
 Current connection status (non-reactive sync read).
 
 ```ts
-chat.status; // "connected" | "disconnected" | "reconnecting" | "connecting"
+if (chat.status === "connected") {
+    chat.emit("send_message", data);
+}
 ```
 
-#### `.user`
+### `.user`
 
-Current user (non-reactive sync read). Populated when the server emits `"arkos:user"` after authentication.
+Current user object (non-reactive sync read). Populated when the server emits `"authenticated"` after authentication.
 
 ```ts
-chat.user; // { id, email, ... } | null
+if (chat.user) {
+    console.log(`Connected as ${chat.user.id}`);
+}
 ```
 
-#### `.rawSocket`
+### `.rawSocket`
 
-Escape hatch to the underlying socket.io `Socket` instance.
+Escape hatch to the underlying socket.io `Socket` instance for advanced use cases.
 
 ```ts
-chat.rawSocket.id;
+chat.rawSocket.id; // Socket ID
 ```
 
-#### `.destroy()`
+### `.destroy()`
 
 Removes all listeners and cleans up internal state. Called automatically by `client.destroy()`.
 
-## How `_meta` works
+```ts
+chat.destroy();
+```
+
+---
+
+## How `_meta` Works
 
 Every `.emit()` call automatically wraps your payload with a `_meta` envelope:
 
 ```ts
-// you call
-chat.emit("send_message", { room: "general", content: "hello" })
+// You call this
+chat.emit("send_message", { room: "general", content: "hello" });
 
-// server receives
+// Server receives this
 {
   room: "general",
   content: "hello",
   _meta: {
-    mid: "550e8400-e29b-41d4-a716-446655440000", // auto-generated UUID
-    timestamp: "2026-01-01T00:00:00.000Z"        // auto-generated ISO timestamp
+    mid: "550e8400-e29b-41d4-a716-446655440000",  // Auto-generated UUID
+    timestamp: "2026-01-01T00:00:00.000Z"          // Auto-generated ISO timestamp
   }
 }
 ```
 
-This is what ArkosGateway's `dedup` and `maxAge` options consume. You never need to construct it manually.
+This `_meta` envelope is what [ArkosGateway](https://www.arkosjs.com/docs/core-concepts/components/gateways)'s `dedup` and `maxAge` options consume for server-side deduplication and time-based validation.
 
-On the receive side, `_meta` is stripped before your handler is called — it's internal plumbing, not your data.
+**You never need to construct it manually.** On the receive side, `_meta` is stripped before your handler is called — it's internal plumbing, not your data.
 
-## Framework adapters
+---
 
-This package is the core used by all official Arkos framework bindings:
+## Framework Adapters
 
-| Package                       | Status                      |
-| ----------------------------- | --------------------------- |
-| `@arkosjs/react-websockets`   | ✅ Available                |
-| `@arkosjs/svelte-websockets`  | 🚧 Looking for contributors |
-| `@arkosjs/solid-websockets`   | 🚧 Looking for contributors |
-| `@arkosjs/vue-websockets`     | 🚧 Looking for contributors |
-| `@arkosjs/angular-websockets` | 🚧 Looking for contributors |
+This package is the **core** used by all official Arkos framework bindings. If you're using a framework, use one of these instead:
 
-See [CONTRIBUTING-FRAMEWORK-BINDINGS.md](../../CONTRIBUTING-FRAMEWORK-BINDINGS.md) if you want to help.
+| Framework | Package                       | Status                      |
+| --------- | ----------------------------- | --------------------------- |
+| React     | `@arkosjs/react-websockets`   | ✅ Available                |
+| Svelte    | `@arkosjs/svelte-websockets`  | 🚧 Looking for contributors |
+| Vue       | `@arkosjs/vue-websockets`     | 🚧 Looking for contributors |
+| Solid     | `@arkosjs/solid-websockets`   | 🚧 Looking for contributors |
+| Angular   | `@arkosjs/angular-websockets` | 🚧 Looking for contributors |
+
+Each adapter wraps this core in your framework's reactivity primitives (hooks, stores, services, etc.).
+
+**Want to contribute a binding?** See [CONTRIBUTING_FRAMEWORK_BINDINGS.md](../../CONTRIBUTING_FRAMEWORK_BINDINGS.md).
+
+---
+
+## Peer Dependencies
+
+| Package            | Version  |
+| ------------------ | -------- |
+| `socket.io-client` | `^4.7.0` |
+
+---
 
 ## Related
 
-- [ArkosGateway docs](https://www.arkosjs.com/docs/core-concepts/components/gateways)
+- [ArkosGateway Documentation](https://www.arkosjs.com/docs/core-concepts/components/gateways)
+- [Contributing Framework Bindings](../../CONTRIBUTING_FRAMEWORK_BINDINGS.md)
 - [`@arkosjs/react-websockets`](../react-websockets)
+
+---
+
+## License
+
+MIT
+
+<div align="center">
+
+**[Installation](#installation)** •
+**[Quick Start](#quick-start)** •
+**[API Reference](#api-reference)** •
+**[How \_meta Works](#how-_meta-works)** •
+**[Framework Adapters](#framework-adapters)** •
+**[Documentation](https://www.arkosjs.com/docs/core-concepts/components/gateways)** •
+**[GitHub](https://github.com/uanela/arkos)**
+
+Built with ❤️ as part of [Arkos.js](https://arkosjs.com)
+
+_Real-time WebSocket communication, simplified._
+
+</div>
