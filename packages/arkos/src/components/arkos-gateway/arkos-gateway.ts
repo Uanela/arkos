@@ -161,7 +161,7 @@ export class IArkosGateway {
     if (eventConfig.authorization && this.config.authentication === false) {
       throw new Error(
         `Event "${eventConfig.event}" on "${this.config.name}" gateway defines authorization rules ` +
-          `but the gateway has authentication: false. Enable authentication on the gateway to use per-event authorization.`
+          `but the gateway has authentication: false. Enable authentication on the gateway to use per-event authentication.`
       );
     }
 
@@ -183,9 +183,14 @@ export class IArkosGateway {
       this.events.push(entry);
     }
 
-    authActionService.add(eventConfig.event, this.config.name!, {
-      [eventConfig.event]: eventConfig.authorization,
-    });
+    if (typeof eventConfig?.authorization == "object")
+      authActionService.add(
+        eventConfig.authorization!.action,
+        eventConfig.authorization!.resource,
+        {
+          [eventConfig.event]: eventConfig.authorization?.rule,
+        }
+      );
 
     return this;
   }
@@ -306,6 +311,7 @@ export class IArkosGateway {
     }
 
     ns.on("connection", async (socket: ArkosSocket) => {
+      socket.locals = {};
       handleGatewayLifecycleLog(this.config.name, "connected", socket.id);
       const connectionStartTime = new Date().getTime();
 
@@ -343,6 +349,7 @@ export class IArkosGateway {
         const { config: eventConfig, handler, pipes: eventPipes = [] } = entry;
 
         socket.on(eventConfig.event, async (...args: any[]) => {
+          socket.locals = {};
           const startTime = new Date().getTime();
           let data = args[0];
 
@@ -379,9 +386,11 @@ export class IArkosGateway {
           const dedupOpt = resolveDedup();
 
           try {
-            const meta = data?._meta;
+            const meta = data?._meta || {};
+            const resolvedMaxAge =
+              eventConfig.maxAge ?? localConfig.maxAge ?? parentConfig?.maxAge;
 
-            if (eventConfig?.maxAge && !meta.timestamp)
+            if (resolvedMaxAge && !meta.timestamp)
               throw new BadRequestError(
                 "Missing _meta.timestamp for maxAge deduplication"
               );
@@ -405,7 +414,7 @@ export class IArkosGateway {
                 );
               }
 
-              if (eventConfig?.maxAge && age > eventConfig?.maxAge) {
+              if (resolvedMaxAge && age > resolvedMaxAge) {
                 throw new BadRequestError("Message is too old", "StaleMessage");
               }
             }
@@ -456,12 +465,12 @@ export class IArkosGateway {
               }
             }
 
-            if (eventConfig.authorization && resolvedAuth) {
+            if (typeof eventConfig.authorization === "object" && resolvedAuth) {
               await authHookManager.runAuthorize(
                 { context: socket, done: () => {} },
                 eventConfig.event,
                 this.config.name!,
-                eventConfig.authorization
+                eventConfig.authorization!.rule
               );
             }
 

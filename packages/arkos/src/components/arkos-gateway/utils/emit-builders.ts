@@ -118,13 +118,9 @@ export class GatewayEmitBuilder<
    * Returns the raw Socket.IO namespace target, allowing full access to
    * native Socket.IO chaining (e.g. `volatile`, `compress`, `to`, `except`).
    *
-   * Use this as an escape hatch when the builder's `emit` options are not
-   * sufficient for your use case.
-   *
    * @example
    * const target = gateway.toRoom("room-123").resolve()
    * target.volatile.emit("cursor", data)
-   * target.compress(false).emit("ping", data)
    */
   resolve(): T | ArkosSocket {
     return this.target;
@@ -133,20 +129,112 @@ export class GatewayEmitBuilder<
   /**
    * Emits an event to the target (room or all sockets in namespace).
    *
+   * When `ack: true`, uses `emitWithAck` under the hood — Socket.IO requires
+   * all sockets in the target to acknowledge. One unresponsive socket will
+   * cause a timeout. For reliable per-socket delivery use `gateway.toUser()`
+   * or `gateway.toSocket()` instead.
+   *
    * @example
    * await gateway.toRoom("room-123").emit("update", data)
    * await gateway.toAll().emit("announcement", data)
    * await gateway.toRoom("room-123").emit("update", data, { volatile: true })
-   * await gateway.toRoom("room-123").emit("update", data, { compress: false })
+   * await gateway.toRoom("room-123").emit("update", data, {
+   *   ack: true,
+   *   timeout: 5000,
+   *   retries: 2,
+   * })
    */
-  async emit<TData = any>(
+  async emit<TData = any, TAck = any>(
     event: string,
     data: TData,
     options: ArkosEmitOptions = {}
-  ): Promise<any> {
+  ): Promise<{ success: boolean; reason?: string; data?: TAck } | void> {
+    this.guardMeta(event, data);
+    const dataWithMeta = this.withMeta(data);
     let target = this.target;
-    if (options.volatile) target = target.volatile as any;
-    target.compress(options.compress ?? true).emit(event, { ...data });
+    if (options.volatile) target = (target as any).volatile;
+    const compressed = (target as any).compress(options.compress ?? true);
+
+    if (!options.ack) {
+      compressed.emit(event, dataWithMeta);
+      return;
+    }
+
+    const timeout = options.timeout ?? 5000;
+    const maxRetries = options.retries ?? 0;
+
+    return this.withRetries(
+      async (): Promise<{ success: boolean; reason?: string; data?: TAck }> => {
+        try {
+          const response = (await compressed
+            .timeout(timeout)
+            .emitWithAck(event, dataWithMeta)) as TAck;
+          return { success: true, data: response };
+        } catch {
+          return { success: false };
+        }
+      },
+      maxRetries,
+      { success: false, reason: "timeout" }
+    );
+  }
+
+  guardMeta(event: string, data: any) {
+    if ("_meta" in (data || {}))
+      throw new Error(
+        `Cannot emit event "${event}" with a pre-existing _meta field. ` +
+          `ArkosGateway manages _meta automatically. ` +
+          `Remove the _meta property from your payload.`
+      );
+  }
+
+  withMeta<T>(data: T): T & { _meta: { mid: string; timestamp: number } } {
+    return {
+      ...(data as any),
+      _meta: { mid: uuidv7(), timestamp: Date.now() },
+    };
+  }
+
+  async attemptSocketEmit<TData, TAck>(
+    socket: ArkosSocket,
+    event: string,
+    data: TData,
+    options: ArkosEmitOptions
+  ): Promise<{ success: boolean; data?: TAck; reason?: string }> {
+    const timeout = options.timeout ?? 5000;
+    const s = options.volatile
+      ? socket.volatile.timeout(timeout)
+      : socket.timeout(timeout);
+    const sc = s.compress(options.compress ?? true);
+
+    if (options.ack) {
+      try {
+        const response = (await sc.emitWithAck(event, data)) as TAck;
+        return { success: true, data: response };
+      } catch {
+        return { success: false };
+      }
+    }
+
+    return new Promise<{ success: boolean; reason?: string }>((resolve) => {
+      sc.emit(event, data, (err: any) => resolve({ success: !err }));
+    });
+  }
+
+  async withRetries<T extends { success: boolean; reason?: string }>(
+    attempt: () => Promise<T>,
+    maxRetries: number,
+    fallback: T
+  ): Promise<T> {
+    for (let i = 0; i <= maxRetries; i++) {
+      const result = await attempt();
+      if (result.success) return result;
+      if (i < maxRetries) {
+        const delay = Math.min(Math.pow(2, i) * 1000, 5000);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+    return fallback;
   }
 }
 
@@ -164,9 +252,6 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
    * Returns the raw Socket.IO room target for this user, allowing full access
    * to native Socket.IO chaining (e.g. `volatile`, `compress`, `except`).
    *
-   * Note: this does not check whether the user is online. Use
-   * `gateway.user(userId).isOnline()` first if needed.
-   *
    * @example
    * const target = gateway.toUser(userId).resolve()
    * target.volatile.emit("cursor", data)
@@ -182,9 +267,8 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
    * active connections, and `{ success: false, reason: "timeout" }` if
    * all retry attempts are exhausted.
    *
-   * When `ack: true`, waits for the client to acknowledge the event and
-   * returns the ack payload in `result.data`. Uses `emitWithAck` under
-   * the hood — throws internally on timeout and retries accordingly.
+   * When `ack: true`, any single socket acknowledging counts as success —
+   * useful for multi-tab/device scenarios where one confirmation is enough.
    *
    * @example
    * await gateway.toUser(userId).emit("notification", data)
@@ -210,72 +294,40 @@ export class GatewayUserEmitBuilder extends GatewayEmitBuilder {
     );
     if (!sockets.length) return { success: false, reason: "offline" };
 
-    if ("_meta" in ((data as any) || {}))
-      throw new Error(
-        `Cannot emit event "${event}" with a pre-existing _meta field. ` +
-          `ArkosGateway manages _meta automatically for deduplication and freshness. ` +
-          `Remove the _meta property from your payload.`
-      );
-
-    const timeout = options.timeout ?? 5000;
+    this.guardMeta(event, data);
+    const dataWithMeta = this.withMeta(data);
     const maxRetries = options.retries ?? 0;
-    const dataWithMeta = {
-      ...data,
-      _meta: { mid: uuidv7(), timestamp: Date.now() },
-    };
 
-    const attemptEmit = async (): Promise<{
-      success: boolean;
-      data?: TAck;
-    }> => {
-      if (options.ack) {
+    return this.withRetries(
+      async (): Promise<{ success: boolean; reason?: string; data?: TAck }> => {
         const results = await Promise.allSettled(
-          sockets.map((socket) => {
-            const s = options.volatile
-              ? socket.volatile.timeout(timeout)
-              : socket.timeout(timeout);
-            return s
-              .compress(options.compress ?? true)
-              .emitWithAck(event, dataWithMeta) as Promise<TAck>;
-          })
-        );
-        const first = results.find((r) => r.status === "fulfilled");
-        if (first && first.status === "fulfilled")
-          return { success: true, data: first.value };
-        return { success: false };
-      } else {
-        const results = await Promise.allSettled(
-          sockets.map(
-            (socket) =>
-              new Promise<boolean>((resolve) => {
-                const s = options.volatile
-                  ? socket.volatile.timeout(timeout)
-                  : socket.timeout(timeout);
-                s.compress(options.compress ?? true).emit(
-                  event,
-                  dataWithMeta,
-                  (err: any) => resolve(!err)
-                );
-              })
+          sockets.map((socket) =>
+            this.attemptSocketEmit<typeof dataWithMeta, TAck>(
+              socket as ArkosSocket,
+              event,
+              dataWithMeta,
+              options
+            )
           )
         );
+
+        if (options.ack) {
+          const first = results.find(
+            (r) => r.status === "fulfilled" && r.value.success
+          );
+          if (first && first.status === "fulfilled")
+            return { success: true, data: first.value.data };
+          return { success: false };
+        }
+
         const ok = results.some(
-          (r) => r.status === "fulfilled" && r.value === true
+          (r) => r.status === "fulfilled" && r.value.success
         );
         return { success: ok };
-      }
-    };
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const result = await attemptEmit();
-      if (result.success) return result;
-      if (attempt < maxRetries) {
-        const delay = Math.min(Math.pow(2, attempt) * 1000, 5000);
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    }
-
-    return { success: false, reason: "timeout" };
+      },
+      maxRetries,
+      { success: false, reason: "timeout" }
+    );
   }
 }
 
@@ -285,7 +337,6 @@ export class GatewaySocketEmitBuilder extends GatewayEmitBuilder {
     gatewayConfig: ArkosGatewayConfig,
     store: ArkosGatewayStore
   ) {
-    // no-op
     super({ emit: () => {} } as any, gatewayConfig, store);
   }
 
@@ -296,7 +347,6 @@ export class GatewaySocketEmitBuilder extends GatewayEmitBuilder {
    * @example
    * const socket = gateway.toSocket(socket).resolve()
    * socket.volatile.emit("ping", data)
-   * const ack = await socket.timeout(3000).emitWithAck("handshake", data)
    */
   override resolve() {
     return this.socket;
@@ -325,55 +375,20 @@ export class GatewaySocketEmitBuilder extends GatewayEmitBuilder {
     data: TData,
     options: ArkosEmitOptions = {}
   ): Promise<{ success: boolean; reason?: string; data?: TAck }> {
-    const timeout = options.timeout ?? 5000;
+    this.guardMeta(event, data);
+    const dataWithMeta = this.withMeta(data);
     const maxRetries = options.retries ?? 0;
 
-    if ("_meta" in ((data as any) || {}))
-      throw new Error(
-        `Cannot emit event "${event}" with a pre-existing _meta field. ` +
-          `ArkosGateway manages _meta automatically for deduplication and freshness. ` +
-          `Remove the _meta property from your payload.`
-      );
-
-    const dataWithMeta = {
-      ...data,
-      _meta: { mid: uuidv7(), timestamp: Date.now() },
-    };
-
-    const attemptEmit = async (): Promise<{
-      success: boolean;
-      data?: TAck;
-    }> => {
-      const s = options.volatile
-        ? this.socket.volatile.timeout(timeout)
-        : this.socket.timeout(timeout);
-      const sc = s.compress(options.compress ?? true);
-
-      if (options.ack) {
-        try {
-          const response = (await sc.emitWithAck(event, dataWithMeta)) as TAck;
-          return { success: true, data: response };
-        } catch {
-          return { success: false };
-        }
-      } else {
-        return new Promise<{ success: boolean }>((resolve) => {
-          sc.emit(event, dataWithMeta, (err: any) =>
-            resolve({ success: !err })
-          );
-        });
-      }
-    };
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const result = await attemptEmit();
-      if (result.success) return result;
-      if (attempt < maxRetries) {
-        const delay = Math.min(Math.pow(2, attempt) * 1000, 5000);
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    }
-
-    return { success: false, reason: "timeout" };
+    return this.withRetries(
+      () =>
+        this.attemptSocketEmit<typeof dataWithMeta, TAck>(
+          this.socket,
+          event,
+          dataWithMeta,
+          options
+        ),
+      maxRetries,
+      { success: false, reason: "timeout" }
+    );
   }
 }
