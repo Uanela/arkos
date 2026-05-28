@@ -1,14 +1,6 @@
 {
   "name": "arkos",
-<<<<<<< HEAD
-<<<<<<< HEAD
-  "version": "1.6.2-canary.1",
-=======
-  "version": "1.6.1-beta",
->>>>>>> 94664614b7b49d590da5a0d75f381508a51e7cf0
-=======
-  "version": "1.5.12-beta",
->>>>>>> b153f93d2e20eb2844c6bb3502d1a9d16014c8f1
+  "version": "1.6.2-beta",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
