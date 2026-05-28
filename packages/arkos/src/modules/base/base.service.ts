@@ -132,7 +132,7 @@ interface ServiceOperationConfig {
 export class BaseService<TModelName extends keyof Models = keyof Models> {
   modelName: TModelName;
   relationFields: ModelGroupRelationFields;
-  prisma: PrismaClient;
+  private prismaInstace?: PrismaClient;
 
   constructor(modelName: TModelName) {
     this.modelName = camelCase(modelName as string) as TModelName;
@@ -147,7 +147,11 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
       list:
         modelFields?.filter((field) => field.isRelation && field.isArray) || [],
     };
-    this.prisma = getPrismaInstance();
+  }
+
+  get prisma() {
+    if (!this.prismaInstace) this.prismaInstace = getPrismaInstance();
+    return this.prismaInstace!;
   }
 
   private executeOperation = (config: ServiceOperationConfig) => {

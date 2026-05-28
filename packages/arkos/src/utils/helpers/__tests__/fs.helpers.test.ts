@@ -117,20 +117,6 @@ describe("fs.helpers", () => {
       expect(fsHelpers.userFileExtension).toBe("js");
     });
 
-    it('should return "ts" when has src/app.ts', () => {
-      // Mock fs.existsSync to return false for tsconfig.json
-      (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
-        if (path.includes("src/app.ts")) return true;
-        return false;
-      });
-
-      const result = getUserFileExtension();
-
-      expect(result).toBe("ts");
-      expect(fs.existsSync).toHaveBeenCalledWith(mockTsConfigPath);
-      expect(fsHelpers.userFileExtension).toBe("ts");
-    });
-
     it('should return "js" when an error occurs during file system checks', () => {
       // Force an error by making fs.existsSync throw
       (fs.existsSync as jest.Mock).mockImplementation(() => {

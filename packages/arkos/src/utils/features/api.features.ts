@@ -30,6 +30,7 @@ export default class APIFeatures {
     "prismaQueryOptions",
     "ignoredFields",
     "select",
+    "orderBy",
     "omit",
   ];
 
@@ -158,14 +159,33 @@ export default class APIFeatures {
   }
 
   sort() {
+    const reqOrderBy = this.req?.query.orderBy;
+
+    const normalizeOrderBy = (orderBy: any): object[] => {
+      if (!orderBy) return [];
+      if (Array.isArray(orderBy)) return orderBy;
+      if (typeof orderBy === "object") return [orderBy];
+      return [];
+    };
+
     if (this.searchParams.sort) {
-      const sortBy = this.searchParams?.sort
-        ?.split(",")
-        ?.map((field: string) => ({
-          [field.startsWith("-") ? field.substring(1) : field]:
-            field.startsWith("-") ? "desc" : "asc",
-        }));
-      this.filters = deepmerge(this.filters, { orderBy: sortBy });
+      const sortBy = this.searchParams.sort.split(",").map((field: string) => ({
+        [field.startsWith("-") ? field.substring(1) : field]: field.startsWith(
+          "-"
+        )
+          ? "desc"
+          : "asc",
+      }));
+
+      const reqOrderByArray = normalizeOrderBy(reqOrderBy);
+
+      const result = reqOrderByArray.length
+        ? [...sortBy, ...reqOrderByArray]
+        : sortBy;
+
+      this.filters = deepmerge(this.filters, { orderBy: result });
+    } else {
+      this.filters.orderBy = reqOrderBy;
     }
 
     return this;

@@ -14,6 +14,7 @@ import compression from "compression";
 import { OpenApiConfig } from "./openapi-config";
 import { UploadConfig } from "./upload-config";
 import { BodyParserConfig } from "./body-parser-config";
+import { ArkosRouterOptions } from "..";
 
 export type ArkosUseConfig = Pick<
   ArkosRouteConfig,
@@ -34,6 +35,17 @@ type InferValidationType<T, Fallback> = T extends ZodSchema
     : Fallback;
 
 export type PathParams = string | RegExp | Array<string | RegExp>;
+
+export type InternalIArkosRouter = IArkosRouter & {
+  _arkos: {
+    options?: ArkosRouterOptions;
+    routes: Array<{
+      handler: ArkosAnyRequestHandler;
+      config: ArkosRouteConfig;
+      method: string;
+    }>;
+  };
+};
 
 export type ArkosAnyRequestHandler =
   | ArkosRequestHandler
