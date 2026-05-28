@@ -5,14 +5,8 @@ import {
   JsonSchema,
   JsonSchemaProperty,
 } from "./types";
-import { UserArkosConfig } from "../define-config";
-import {
-  OperationByModule,
-  routeHookReader,
-} from "../../components/arkos-route-hook/reader";
+import { OperationByModule } from "../../components/arkos-route-hook/reader";
 import { ArkosModuleType } from "../../components/arkos-route-hook/types";
-import { isAuthenticationEnabled } from "../helpers/arkos-config.helpers";
-import { kebabCase } from "../helpers/change-case.helpers";
 
 export interface SchemaGenerationConfig<T extends ArkosModuleType> {
   modelName: T;
