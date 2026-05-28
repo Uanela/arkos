@@ -6,6 +6,7 @@ import {
 } from "../types";
 import sheu from "../../../utils/sheu";
 import { isProduction } from "../../../utils/helpers/arkos-config.helpers";
+import { getHandledError } from "../../../modules/error-handler/utils/get-handled-error";
 
 export async function handleArkosGatewayErrors(
   err: any,
@@ -40,13 +41,17 @@ export async function handleArkosGatewayErrors(
 
   if (!emitCalled) {
     sheu.error(err);
+    err = getHandledError(err);
+
     const payload = {
       message: err?.message ?? "Internal server error",
       ...(err.isOperational
         ? err
         : { code: "InternalServerError", statusCode: 500 }),
     };
-    socket.emit("error", payload);
+
+    if (isProduction()) sendProductionError(err, socket);
+    else sendDevelopmentError(payload, socket);
 
     ack?.({ error: payload.message, ...(payload.meta || {}) });
 
@@ -57,6 +62,33 @@ export async function handleArkosGatewayErrors(
       loggerMeta.startTime
     );
   }
+}
+
+function sendDevelopmentError(err: any, socket: ArkosSocket): void {
+  socket.emit("error", {
+    ...err,
+    message: err.message?.split?.("\n")[err.message?.split?.("\n").length - 1],
+    stack: err?.originalError?.stack?.split?.("\n"),
+  });
+}
+
+function sendProductionError(err: any, socket: ArkosSocket): void {
+  if (err.isOperational)
+    socket.emit("event", {
+      status: err.status,
+      message: err.message,
+      meta: err.meta || {},
+      code: err.code || "Unknown",
+      statusCode: err.statusCode || 500,
+    });
+  else
+    socket.emit("error", {
+      status: "error",
+      message: "Internal server error, please try again later.",
+      code: "InternalServerError",
+      meta: {},
+      statusCode: 500,
+    });
 }
 
 export async function runArkosGatewayPipes(
