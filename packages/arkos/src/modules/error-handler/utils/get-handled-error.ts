@@ -3,7 +3,7 @@ import multerErrorHandler from "../utils/multer-error-handler";
 import * as errorControllerHelper from "../utils/error-handler.helpers";
 
 export function getHandledError(err: any): any {
-  let error = null;
+  let error = err;
 
   switch (err.name) {
     case "JsonWebTokenError":
