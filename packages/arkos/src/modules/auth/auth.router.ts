@@ -11,9 +11,12 @@ import { routeHookReader } from "../../components/arkos-route-hook/reader";
 import { ArkosAuthRouteHookInstance } from "../../components/arkos-route-hook/types";
 import authController from "./auth.controller";
 import authOpenAPIGenerator from "./utils/auth-openapi-generator";
+import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 
 export function getAuthRouter() {
   const router = ArkosRouter();
+  if (!getPrismaInstance()) return router;
+
   const routeHook = loadableRegistry.getItem("ArkosRouteHook", "auth");
 
   const op = (

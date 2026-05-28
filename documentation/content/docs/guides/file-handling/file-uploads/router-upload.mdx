@@ -7,7 +7,7 @@ import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 Router uploads let you attach file handling directly to a route so that the file path is automatically injected into `req.body` before your handler runs — no separate upload step required. This works on both custom routes via [ArkosRouter](/docs/core-concepts/components/routers) and built-in routes via [RouteHook](/docs/core-concepts/components/route-hooks).
 
-If you need to upload files independently of any route or model operation, see [File Upload Routes](/docs/guides/file-uploads/routes) for the standalone approach instead.
+If you need to upload files independently of any route or model operation, see [File Upload Routes](/docs/guides/file-handling/file-uploads/routes) for the standalone approach instead.
 
 ## Upload types
 
@@ -245,6 +245,6 @@ The file path lands at `req.body.profile.photo`.
 
 ## Related
 
-- [File Upload Setup](/docs/guides/file-uploads/setup) — global configuration, `baseUploadDir`, `baseRoute`, restrictions
-- [File Upload Routes](/docs/guides/file-uploads/routes) — standalone endpoints and request format
+- [File Upload Setup](/docs/guides/file-handling/file-uploads/setup) — global configuration, `baseUploadDir`, `baseRoute`, restrictions
+- [File Upload Routes](/docs/guides/file-handling/file-uploads/routes) — standalone endpoints and request format
 - [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) — before/after hooks for file upload operations

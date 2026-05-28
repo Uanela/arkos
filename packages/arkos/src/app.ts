@@ -9,7 +9,11 @@ import { IncomingMessage, Server, ServerResponse } from "http";
 import ExitError from "./utils/helpers/exit-error";
 import loadableRegistry from "./components/arkos-loadable-registry";
 import { applyArkosRouterProxy } from "./utils/arkos-router/utils/helpers/apply-arkos-router-proxy";
-import { validateArkosConfig } from "./utils/helpers/arkos-config.helpers";
+import {
+  isProduction,
+  validateArkosConfig,
+} from "./utils/helpers/arkos-config.helpers";
+export const app: express.Express = express();
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
 const docsLink =
@@ -46,18 +50,20 @@ let instanciated = false;
  *
  * app.use(reportsRouter);
  *
- * async function start() {
- *  await app.build();
+ * await app.build();
  *
- *  const server = http.createServer(app);
- *  app.listen(server)
- * }
- * main()
+ * const server = http.createServer(app);
+ * app.listen(server)
  * ```
  *
  * @see {@link https://www.arkosjs.com/docs/core-concepts/routing/setup}
  */
 export function arkos(): Arkos {
+  if (process.env.__ARKOS_CLI !== "true")
+    throw ExitError(
+      `Arkos.js application must be started the built-in cli ${isProduction() ? "'arkos start' in production" : `'arkos dev' in development`} see https://www.arkosjs.com/docs/getting-started/installation#7-set-up-packagejson-scripts`
+    );
+
   if (instanciated)
     throw ExitError(`arkos() must be called only once, see ${docsLink}`);
 
@@ -114,7 +120,9 @@ export function arkos(): Arkos {
     return cb || function () {};
   };
 
-  app.listen = async function (...args): Promise<Server> {
+  app.listen = async function (...args: any[]): Promise<Server> {
+    process.env.__ARKOS_SERVER_LISTENER = "arkos";
+
     if (state === "listening")
       throw ExitError(`app.listen() must only be called once, see ${docsLink}`);
     if (state === "building")

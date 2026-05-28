@@ -17,7 +17,7 @@ Arkos automatically exposes dedicated routes for standalone file operations. The
 `:fileType` accepts: `images`, `videos`, `documents`, or `files`.
 
 <Callout type="info">
-  `/api/uploads` is the default base route and can be customized in your config. See [File Upload Setup](/docs/guides/file-uploads/setup) for details.
+  `/api/uploads` is the default base route and can be customized in your config. See [File Upload Setup](/docs/guides/file-handling/file-uploads/setup) for details.
 </Callout>
 
 ## Two approaches to file uploads
@@ -34,7 +34,7 @@ These standalone routes are one way to handle file uploads. Arkos also supports 
 - You want a single API call that handles data and files together
 - You want automatic cleanup on error via `deleteOnError`
 
-See [Router Upload](/docs/guides/file-uploads/router-upload) for the full router upload guide.
+See [Router Upload](/docs/guides/file-handling/file-uploads/router-upload) for the full router upload guide.
 
 ## Configuring file upload routes
 
@@ -290,7 +290,7 @@ arkos.init({
 
 ## Related
 
-- [Router Upload](/docs/guides/file-uploads/router-upload) — attaching uploads to custom and built-in routes
+- [Router Upload](/docs/guides/file-handling/file-uploads/router-upload) — attaching uploads to custom and built-in routes
 - [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) — before/after hooks for any file operation
 - [File Upload Services](/docs/reference/file-upload-services) — programmatic file operations inside controllers and services
 - [Validation with file uploads](/docs/guides/validation/usage#validation-with-file-uploads) — how to combine `validation.body` and `experimental.uploads` in the same request

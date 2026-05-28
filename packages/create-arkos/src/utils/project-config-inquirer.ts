@@ -31,6 +31,7 @@ export interface ProjectConfig {
     strict?: boolean;
   };
   advanced?: boolean;
+  entryPoint: "src/app" | "src/server";
 }
 
 class ProjectConfigInquirer {
@@ -47,6 +48,7 @@ class ProjectConfigInquirer {
     await this.promptValidation();
     await this.promptAuthentication();
     await this.promptStrictRouting();
+    await this.promptEntryPoint();
 
     if (this.config.projectName === ".") {
       this.config.projectName = path.basename(process.cwd());
@@ -279,9 +281,9 @@ class ProjectConfigInquirer {
         multipleRoles,
       };
     } else if (this.config.prisma.provider === "sqlite") {
-      console.info(
-        `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
-      );
+      // console.info(
+      //   `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
+      // );
     }
   }
 
@@ -297,6 +299,21 @@ class ProjectConfigInquirer {
     this.config.routing = {
       strict: strictRouting,
     };
+  }
+
+  private async promptEntryPoint() {
+    const ext = this.config.typescript ? "ts" : "js";
+    const { entryPoint } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "entryPoint",
+        message: `Which ${chalk.cyan("Entry Point")} would you like to use?`,
+        choices: [`src/app.${ext}`, `src/server.${ext}`],
+        default: `src/app.${ext}`,
+      },
+    ]);
+
+    this.config.entryPoint = entryPoint.replace(`.${ext}`, "");
   }
 }
 

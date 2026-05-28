@@ -305,6 +305,11 @@ describe("BaseController", () => {
         total: mockTotal,
         results: mockData.length,
         data: mockData,
+        hasNextPage: false,
+        hasPrevPage: false,
+        limit: 30,
+        page: 1,
+        pages: 1,
       });
     });
 
@@ -327,6 +332,11 @@ describe("BaseController", () => {
         total: mockTotal,
         results: mockData.length,
         data: mockData,
+        hasNextPage: false,
+        hasPrevPage: false,
+        limit: 30,
+        page: 1,
+        pages: 1,
       });
       expect(mockRequest.responseStatus).toBe(200);
       expect(mockNext).toHaveBeenCalled();
@@ -347,6 +357,11 @@ describe("BaseController", () => {
         total: mockTotal,
         results: mockData.length,
         data: mockData,
+        hasNextPage: false,
+        hasPrevPage: false,
+        limit: 30,
+        page: 1,
+        pages: 1,
       });
     });
   });

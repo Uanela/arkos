@@ -5,7 +5,7 @@ title: Generated Routes
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-When Arkos boots, it reads your Prisma schema, authentication configuration, and file upload configuration to automatically register three categories of routes — [Prisma Model Routes](/docs/core-concepts/prisma-orm/routes), [Authentication Routes](/docs/core-concepts/authentication/routes), and [File Upload Routes](/docs/guides/file-uploads/routes). No route definitions needed. Every endpoint that comes from these categories is fully functional out of the box, and every one of them can be intercepted, configured, or disabled without touching Arkos internals.
+When Arkos boots, it reads your Prisma schema, authentication configuration, and file upload configuration to automatically register three categories of routes — [Prisma Model Routes](/docs/core-concepts/prisma-orm/routes), [Authentication Routes](/docs/core-concepts/authentication/routes), and [File Upload Routes](/docs/guides/file-handling/file-uploads/routes). No route definitions needed. Every endpoint that comes from these categories is fully functional out of the box, and every one of them can be intercepted, configured, or disabled without touching Arkos internals.
 
 ## How It Works
 
@@ -128,4 +128,4 @@ See [Interceptors](/docs/core-concepts/components/interceptors) for the full lis
 
 - **[Prisma Model Routes](/docs/core-concepts/prisma-orm/routes)** — RESTful endpoints generated from your Prisma schema, with built-in filtering, sorting, pagination, field selection, and full-text search.
 - **[Authentication Routes](/docs/core-concepts/authentication/routes)** — Login, signup, logout, password update, and current user endpoints.
-- **[File Upload Routes](/docs/guides/file-uploads/routes)** — Upload, replace, retrieve, and delete endpoints for standalone file operations.
+- **[File Upload Routes](/docs/guides/file-handling/file-uploads/routes)** — Upload, replace, retrieve, and delete endpoints for standalone file operations.

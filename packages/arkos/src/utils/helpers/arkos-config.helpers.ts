@@ -1,5 +1,6 @@
 import { defineConfig, UserArkosConfig } from "../define-config";
 import sheu from "../sheu";
+import ExitError from "./exit-error";
 import * as fsHelpers from "./fs.helpers";
 import { getPrismaInstance } from "./prisma.helpers";
 ("ReplaceWithNeededImportsForArkosConfig"); // This will be filled by post build script
@@ -39,8 +40,8 @@ export function isAuthenticationEnabled() {
 export function getArkosConfig(): UserArkosConfig {
   const config =
     typeof definedArkosConfig === "string"
-      ? {}
-      : (definedArkosConfig as any)?.default || {};
+      ? { __loader: "defineConfig" }
+      : (definedArkosConfig as any)?.default || { __loader: "defineConfig" };
   const configFile = `arkos.config.${fsHelpers.getUserFileExtension()}`;
 
   if (
@@ -72,18 +73,23 @@ export function validateArkosConfig() {
   const config = getArkosConfig();
   const authenticationEnabled = isAuthenticationEnabled();
 
+  if (!config?.source?.entryPoint)
+    throw ExitError(
+      `Invalid value for 'arkosConfig.source.entryPoint', please pass a valid path from the current working directory`
+    );
+
   if (
     authenticationEnabled &&
     isProduction() &&
     !process.env.JWT_SECRET &&
     !config.authentication?.jwt?.secret
   )
-    throw Error(
+    throw ExitError(
       `Missing jwt secret in production, see https://www.arkosjs.com/docs/core-concepts/authentication/setup#configuration`
     );
 
   if (authenticationEnabled && !getPrismaInstance())
-    throw Error(
+    throw ExitError(
       `Arkos' authentication system relies on prisma instance, please disabled your authentication or see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup to setup a prisma instance`
     );
 }

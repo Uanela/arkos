@@ -1,4 +1,5 @@
 import { ArkosRouter } from "arkos";
+import arkosConfig from "@/arkos.config";
 import fileUploadRouter from "@/src/modules/file-upload/file-upload.router";
 {{#if authentication.type}}
 import authRouter from "@/src/modules/auth/auth.router";
@@ -9,7 +10,9 @@ import authRoleRouter from "@/src/modules/auth-role/auth-role.router";
 import authPermissionRouter from "@/src/modules/auth-permission/auth-permission.router";
 {{/if}}
 
-const router = ArkosRouter();
+const router = ArkosRouter({ 
+  prefix: arkosConfig.globalPrefix || "/api",
+})
 
 router.use(fileUploadRouter);
 {{#if authentication.type}}

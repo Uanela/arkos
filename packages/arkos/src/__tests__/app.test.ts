@@ -3,6 +3,7 @@ import * as runtimeCliCommanderModule from "../utils/cli/utils/runtime-cli-comma
 jest.mock("../utils/helpers/arkos-config.helpers", () => ({
   getArkosConfig: jest.fn(() => ({})),
   validateArkosConfig: jest.fn(() => ({})),
+  isProduction: jest.fn(),
 }));
 let mockListenFn: jest.Mock;
 
@@ -52,6 +53,7 @@ describe("arkos()", () => {
     jest.resetModules();
     jest.clearAllMocks();
 
+    process.env.__ARKOS_CLI = "true";
     delete process.env.CLI_COMMAND;
     delete process.env.PORT;
     delete process.env.__PORT;

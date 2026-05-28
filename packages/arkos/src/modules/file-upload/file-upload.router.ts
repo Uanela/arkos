@@ -17,6 +17,7 @@ import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-gener
 export function getFileUploadRouter() {
   const router = ArkosRouter();
   const { fileUpload } = getArkosConfig();
+  if (!fileUpload?.enabled === false) return router;
 
   const routeHook = loadableRegistry.getItem("ArkosRouteHook", "file-upload");
 

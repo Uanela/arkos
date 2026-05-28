@@ -1,0 +1,136 @@
+---
+title: File Uploads
+description: Attach audio recordings to verses using router uploads — no separate upload step required.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+
+## How router uploads work
+
+Arkos supports two upload strategies. The standalone approach (`POST /api/uploads/:type`) uploads the file first and returns a URL you reference later. The router upload approach attaches the upload directly to the route — the file path is injected into `req.body` before your handler runs, so you create the record and upload the file in a single request.
+
+For attaching audio to a verse, the router upload is the right choice.
+
+## Configure upload restrictions
+
+Open `arkos.config.ts` and add the `fileUpload` block:
+
+```ts title="arkos.config.ts"
+import { defineConfig } from "arkos/config";
+
+export default defineConfig({
+  fileUpload: {
+    baseUploadDir: "/uploads",
+    baseRoute: "/api/uploads",
+    restrictions: {
+      files: {
+        maxSize: 20 * 1024 * 1024,
+        supportedFilesRegex: /\.(mp3|m4a|wav|ogg)$/,
+      },
+    },
+  },
+});
+```
+
+This sets the root upload directory, the standalone endpoint base, and the file type and size restrictions for audio.
+
+## Attach the upload to the route hook
+
+Open `verse.router.ts` and add `experimental.uploads` to `createOne` and `updateOne`:
+
+```ts title="src/modules/verse/verse.router.ts"
+import { ArkosRouter, RouteHook } from "arkos";
+import versePolicy from "@/src/modules/verse/verse.policy";
+import verseController from "@/src/modules/verse/verse.controller";
+import PassageQuerySchema from "@/src/modules/verse/schemas/passage-query.schema";
+
+export const hook: RouteHook = {
+  findMany:  { authentication: false },
+  findOne:   { authentication: false },
+  createOne: {
+    authentication: versePolicy.Create,
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "audioFile",
+        uploadDir: "verse-audio",
+        deleteOnError: true,
+      },
+    },
+  },
+  updateOne: {
+    authentication: versePolicy.Update,
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "audioFile",
+        uploadDir: "verse-audio",
+        required: false,
+        deleteOnError: true,
+      },
+    },
+  },
+  deleteOne: { authentication: versePolicy.Delete },
+};
+
+const verseRouter = ArkosRouter();
+
+verseRouter.get(
+  {
+    path: "/api/verses/passage",
+    authentication: false,
+    validation: { query: PassageQuerySchema },
+  },
+  verseController.getByReference
+);
+
+export default verseRouter;
+```
+
+When a file is included in the request, Arkos saves it to `/uploads/verse-audio/` and sets `req.body.audioUrl` to the resulting path before the built-in handler runs. The `audioUrl` column in your `Verse` model is populated automatically.
+
+<Callout type="info">
+  `required: false` on `updateOne` means the upload is optional — clients can update other verse fields without sending a new audio file.
+</Callout>
+
+<Callout type="info">
+  `deleteOnError: true` means Arkos will delete the uploaded file if the database operation fails — no orphaned files.
+</Callout>
+
+## Uploading from a client
+
+Send a `multipart/form-data` request. Here's a `curl` example for creating a verse with an audio file:
+
+```bash
+curl -X POST http://localhost:8000/api/verses \
+  -H "Authorization: Bearer <admin-token>" \
+  -F "number=1" \
+  -F "text=In the beginning God created the heavens and the earth." \
+  -F 'chapter={"id":1}' \
+  -F "audioFile=@./genesis-1-1.mp3"
+```
+
+## Custom route with upload
+
+You can also attach uploads to custom `ArkosRouter` routes using the same `experimental.uploads` key:
+
+```ts title="src/modules/verse/verse.router.ts (custom route example)"
+verseRouter.patch(
+  {
+    path: "/api/verses/:id/audio",
+    authentication: versePolicy.Update,
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "audioFile",
+        uploadDir: "verse-audio",
+        deleteOnError: true,
+      },
+    },
+  },
+  verseController.replaceAudio
+);
+```
+
+The upload options are identical whether you're on a `RouteHook` built-in or a custom `ArkosRouter` route.

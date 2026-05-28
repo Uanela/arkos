@@ -1,4 +1,4 @@
-![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=2)
+![Header Image](https://www.arkosjs.com/img/arkos-readme-header.webp?v=3)
 
 <div align="center">
 
@@ -15,50 +15,89 @@
 <p>A tool for backend developers and teams who ship software with complex business logic under tight deadlines</p>
 </div>
 
----
-
 <div align="center">
 
 **[Installation](https://www.arkosjs.com/docs/getting-started/installation)** •
 **[Documentation](https://arkosjs.com/docs)** •
 **[Website](https://arkosjs.com)** •
+**[Tutorial](https://arkosjs.com/learn)** •
 **[GitHub](https://github.com/uanela/arkos)** •
 **[Blog](https://www.arkosjs.com/blog)** •
 **[Npm](https://www.npmjs.com/package/arkos)**
 
 </div>
 
----
-
-## Why Arkos?
-
-Every line of boilerplate code is a missed opportunity for innovation. Arkos.js gives developers back their time so they can focus on building what truly matters—**the core business logic**.
-
-**Perfect for:**
-
-- Backend developers shipping complex features under tight deadlines
-- Teams who want to scale fast without reinventing standard patterns
-- Projects that need production-ready auth, validation, and docs from day one
-
 ## Quick Start
-
-Get started with Arkos.js in seconds:
 
 ```bash
 pnpm create arkos@latest my-project
 ```
 
-**That's it!** You now have:
+Your new project already has JWT auth, customizable CRUD routes, Swagger docs at `/api/docs`, file uploads, validation, and a full security middleware stack. Understand the generated [Project Structure](https://www.arkosjs.com/docs/getting-started/project-structure).
 
-- Production-ready REST API
-- JWT authentication
-- Auto-generated Swagger docs at `/api/docs`
-- File upload handling
-- Input validation
+## Your Entry Point
 
-## See It In Action
+```typescript
+// src/app.ts
+import arkos from "arkos";
+import postRouter from "@/src/modules/post/post.router"; // custom router
 
-**1. Define your Prisma model:**
+const app = arkos();
+
+app.use(postRouter);
+
+app.listen();
+```
+
+Arkos replaces the Express `app` — but it _is_ Express under the hood. You can still use `app.use()`, custom middleware, and raw Express code wherever you need it.
+
+## Creating a Router Beyond Express
+
+```typescript
+// src/modules/post/post.router.ts
+import { ArkosRouter } from "arkos";
+import CreatePostSchema from "@/src/modules/post/schemas/create-post.schema";
+import postService from "@/src/modules/post/post.service";
+import postPolicy from "@/src/modules/post/post.policy"; // Authorization component
+
+const postRouter = ArkosRouter({ prefix: "/api/posts" });
+
+postRouter.post(
+  {
+    path: "/", // auto registered into openapi
+    authentication: postPolicy.Create, // Authentication and authorization with RBAC
+    validation: { body: CreatePostSchema }, // auto documented into openapi requestBody
+  },
+  async (req, res) => {
+    const post = await postService.createOne(req.body); // no error handling need, arkos already handles it
+    res.json({ data: post });
+  }
+);
+
+export default postRouter;
+```
+
+See more about the enhanced express-based router (ArkosRouter) at [ArkosRouter Guide](https://www.arkosjs.com/docs/core-concepts/components/routers).
+
+## Define Permissions Once, Guard Everywhere
+
+```typescript
+// src/modules/post/post.policy.ts
+import { ArkosPolicy } from "arkos";
+
+const postPolicy: ArkosPolicy<"post"> = ArkosPolicy("post");
+
+postPolicy.rule("Create", ["Writer", "Admin"]);
+postPolicy.rule("View", ["Writer", "Admin", "User"]);
+
+export default postPolicy;
+```
+
+Define who can do what, once, per resource. Arkos enforces it across every route that references the policy — no scattered middleware, no repeated role checks.
+
+## Automatic CRUD: One Model, Full REST Endpoints
+
+**Define The Prisma model:**
 
 ```prisma
 model Post {
@@ -66,142 +105,81 @@ model Post {
   title     String
   content   String
   authorId  String
-  author    User   @relation(fields: [authorId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 ```
 
-**2. Get instant REST endpoints:**
+**Get a full REST API — instantly:**
 
 ```
-POST   /api/posts           Create a new post
-GET    /api/posts           List all posts
-GET    /api/posts/:id       Get a specific post
-PATCH  /api/posts/:id       Update a post
-DELETE /api/posts/:id       Delete a post
+POST   /api/posts        Create a post
+GET    /api/posts        List all posts
+GET    /api/posts/:id    Get a post
+PATCH  /api/posts/:id    Update a post
+DELETE /api/posts/:id    Delete a post
 ```
 
-All with built-in **authentication**, **validation**, and **documentation**. **Zero boilerplate.**
+Authenticated, validated, and documented. Zero boilerplate.
 
-**3. Add custom business logic with interceptors:**
+**Customize just like normal router:**
 
 ```typescript
+// src/modules/post/post.router.ts
+import { ArkosRouter, RouteHook } from "arkos";
+import postPolicy from "@/src/modules/post/post.policy";
+import UpdatePostSchema from "@/src/modules/post/post.schema";
+
+export const hook: RouteHook<"prisma"> = {
+  findMany: { authentication: false }, // Making GET /api/posts public
+  createOne: { authentication: postPolicy.Create },
+  updateOne: {
+    authentication: postPolicy.Update,
+    validation: { body: UpdatePostSchema },
+  },
+  deleteOne: { authentication: postPolicy.Delete },
+};
+
+const postRouter = ArkosRouter({ prefix: "/api/posts" });
+
+export default postRouter;
+```
+
+Your auto-generated CRUD routes accept the same config as any ArkosRouter route — authentication, validation, rate limiting, all in one place.
+
+**Add business logic exactly where you need it:**
+
+```typescript
+// src/modules/post/post.interceptor.ts
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
-import { AppError } from "arkos/error-handler";
+import { BadRequestError } from "arkos/error-handler";
 
 export const beforeCreateOne = [
-    async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-        // Add custom validation
-        if (req.body.title.length < 5) {
-            throw new AppErr("Title is too short", 400, "TitleTooShort");
-        }
+  async (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
+    if (req.body.title.length < 5)
+      throw new BadRequestError("Title is too short", "TitleTooShort");
 
-        // Enrich data
-        req.body.slug = req.body.title.toLowerCase().replace(/\s/g, "-");
-        req.body.authorId = req.user.id;
-
-        next();
-    },
+    req.body.slug = req.body.title.toLowerCase().replace(/\s/g, "-");
+    req.body.authorId = req.user.id;
+    next();
+  },
 ];
 ```
 
-## What You Get Out of the Box
+Name the file, export the hook, and Arkos picks it up automatically. No registration needed.
 
-### **Enterprise-Ready Authentication**
+## What You Stop Building From Scratch
 
-- JWT token management with secure refresh tokens
-- Password hashing with bcrypt
-- Role-based access control (RBAC)
-- Production-ready from day one
-
-### **Smart Data Validation**
-
-- Automatic validation from Prisma models
-- Zod schema integration
-- Class-validator support
-- Zero configuration required
-
-### **Bulletproof Security Stack**
-
-- Rate limiting to prevent abuse
-- CORS configuration
-- Input sanitization with helmet.js
-- Comprehensive error handling
-
-### **Self-Documenting APIs**
-
-- Auto-generated OpenAPI/Swagger specifications
-- Beautiful interactive Scalar UI
-- Auto-sync with your routes
-- JSON schemas from Zod or Prisma models
-
-### **Intelligent File Processing**
-
-- Multer-powered file uploads
-- Automatic image and video optimization
-- Smart type validation
-- Easy local storage configuration
-
-### **Effortless Email Integration**
-
-- Built-in Nodemailer service
-- Template support
-- Clean, simple API
-- Just focus on your content
-
-### **Powerful Interceptors**
-
-- Before/after request hooks
-- Custom validation logic
-- Data transformation
-- Flexible middleware system
-
-### **Unmatched Prisma Integration**
-
-- Seamless ORM integration
-- Automatic relation handling
-- Write less Prisma, build more data
-- Built on Prisma's rock-solid foundation
-
-## Arkos vs Traditional Setup
-
-| Task                     | Traditional Approach        | With Arkos             |
-| ------------------------ | --------------------------- | ---------------------- |
-| Setup JWT authentication | 2-3 hours of config         | ✅ Built-in & ready    |
-| Create CRUD routes       | 30 min per model            | ✅ Auto-generated      |
-| Add input validation     | Manual for each endpoint    | ✅ Zod/Class-validator |
-| Setup API documentation  | Install + configure Swagger | ✅ Auto-generated      |
-| Configure file uploads   | Multer setup + validation   | ✅ Ready to use        |
-| Add security middleware  | Research + implement        | ✅ Pre-configured      |
-| **Total setup time**     | **~8-12 hours**             | **~5 minutes**         |
-
-## Features
-
-- **Automatic API Generation** - Instantly create RESTful routes from Prisma models
-- **Built-in Authentication** - JWT-based authentication with minimal setup
-- **Express Middlewares** - Pre-configured security, parsing, and error handling
-- **Data Validation** - Input validation and transformation capabilities
-- **Prisma Integration** - Seamless database management with relation fields support
-- **File Upload & Optimization** - Efficient handling of images, videos, and documents
-- **Interceptors Middlewares** - Customize request/response flow with hooks
-- **Nodemailer Integration** - Easy email sending functionality
-- **Swagger API Documentation** - Automatically generate API documentation
-
-**BETA VERSION**
-
-## Trusted By Developers Building Daily
-
-> "Arkos.js changed how I work on the backend: with a Prisma model I already get CRUD routes, auth, and validation out-of-the-box — I saved a lot of time and could focus on business logic."  
-> **— Gelson Matavela, Founder / Grupo Vergui**
-
-> "It removes boilerplate and provides a clean structure to build products. Built-in auth is powerful and ready. Automatic CRUD and docs save time, while interceptors allow flexible business logic."  
-> **— Augusto Domingos, Tech Lead / DSAI For Moz**
-
-> "With Arkos.js, I can build backends in just a few minutes. It removes the boilerplate and lets me focus entirely on the core logic. Fast, simple, and incredibly productive."  
-> **— Niuro Langa, Software Developer / SparkTech**
-
-[See more testimonials →](https://arkosjs.com)
+| What you'd normally write                | What Arkos gives you              |
+| ---------------------------------------- | --------------------------------- |
+| JWT setup, refresh tokens, bcrypt        | ✅ Built-in auth system           |
+| 5 route handlers per Prisma model        | ✅ Auto-generated CRUD            |
+| Zod/CV schemas per endpoint              | ✅ Auto generate from your models |
+| Swagger config + schema upkeep           | ✅ Auto-generated OpenAPI docs    |
+| Multer setup + file type validation      | ✅ File upload system             |
+| Rate limiting, CORS, Helmet, compression | ✅ Pre-configured security stack  |
+| **Total setup time**                     | **~5 minutes vs ~8–12 hours**     |
 
 ## Documentation
 
@@ -211,8 +189,8 @@ For comprehensive guides, API reference, and examples, visit our [official docum
 
 - [Getting Started Guide](https://arkosjs.com/docs)
 - [Authentication Setup](https://arkosjs.com/docs/core-concepts/authentication/setup)
-- [Using Interceptors](https://arkosjs.com/docs/core-concepts/interceptors)
-- [File Uploads](https://arkosjs.com/docs/guides/file-uploads/setup)
+- [Using Interceptors](https://arkosjs.com/docs/core-concepts/components/interceptors)
+- [File Uploads](https://arkosjs.com/docs/guides/file-handling/file-uploads/setup)
 - [Validation](https://arkosjs.com/docs/guides/validation/setup)
 - [Email Service](https://arkosjs.com/docs/guides/email-service)
 
@@ -221,7 +199,7 @@ For comprehensive guides, API reference, and examples, visit our [official docum
 You can get the latest features we're testing before releasing them:
 
 ```bash
-pnpm create arkos@canary my-project
+pnpm create arkos@next my-project
 ```
 
 ## Built With
@@ -241,24 +219,45 @@ Arkos.js is built on top of industry-leading tools:
 
 Contributions are welcome! We appreciate all contributions, from bug fixes to new features.
 
+## What Developers Say
+
+> "Arkos.js changed how I work on the backend: with a Prisma model I already get CRUD routes, auth, and validation out-of-the-box — I saved a lot of time and could focus on business logic."
+>
+> **— Gelson Matavela, Founder / Grupo Vergui**
+
+> "It removes boilerplate and provides a clean structure to build products. Built-in auth is powerful and ready. Automatic CRUD and docs save time, while interceptors allow flexible business logic."
+>
+> **— Augusto Domingos, Tech Lead / DSAI For Moz**
+
+> "With Arkos.js, I can build backends in just a few minutes. It removes the boilerplate and lets me focus entirely on the core logic. Fast, simple, and incredibly productive."
+>
+> **— Niuro Langa, Software Developer / SparkTech**
+
+[See more testimonials →](https://arkosjs.com)
+
+## Philosophy
+
+Arkos sits between minimal frameworks like Express/Fastify and opinionated ones like NestJS/AdonisJS. It doesn't ask you to learn a new paradigm — it enhances the one most Node.js developers already use, by automating everything that's standardized and staying out of the way everywhere else.
+
+Inspired by how Django and Laravel work in their ecosystems: batteries included, nothing forced on you.
+
+> The name "Arkos" comes from the Greek word **ἀρχή** _(Arkhē)_, meaning "beginning" or "foundation".
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 <div align="center">
 
 **[Installation](https://www.arkosjs.com/docs/getting-started/installation)** •
 **[Documentation](https://arkosjs.com/docs)** •
 **[Website](https://arkosjs.com)** •
+**[Tutorial](https://arkosjs.com/learn)** •
 **[GitHub](https://github.com/uanela/arkos)** •
 **[Blog](https://www.arkosjs.com/blog)** •
 **[Npm](https://www.npmjs.com/package/arkos)**
 
 Built with ❤️ by [Uanela Como](https://github.com/uanela) and contributors
-
----
 
 _The name "Arkos" comes from the Greek word "ἀρχή" (Arkhē), meaning "beginning" or "foundation", reflecting our goal of providing a solid foundation for backend development._
 

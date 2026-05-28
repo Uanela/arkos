@@ -1,6 +1,14 @@
-import { ArkosRouter } from "arkos";
+import { ArkosRouter{{#if typescript}}, RouteHook{{/if}} } from "arkos";
 {{#if authentication}}
 import authPermissionPolicy from "@/src/modules/auth-permission/auth-permission.policy";
+
+export const hook{{#if typescript}}: RouteHook{{/if}} = {
+  createOne: { authentication: authPermissionPolicy.Create },
+  findMany: { authentication: authPermissionPolicy.View },
+  findOne: { authentication: authPermissionPolicy.View },
+  updateOne: { authentication: authPermissionPolicy.Update },
+  deleteOne: { authentication: authPermissionPolicy.Delete },
+};
 {{/if}}
 
 const authPermissionRouter = ArkosRouter({ 

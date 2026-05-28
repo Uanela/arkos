@@ -23,13 +23,23 @@ export function getSwaggerRouter(
   app: Arkos
 ): Router {
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
+  const defaultSwaggerConfig = getSwaggerDefaultConfig({
+    ...pathsFromCustomArkosRouters,
+  })!;
 
   const swaggerConfigs = deepmerge(
-    getSwaggerDefaultConfig({
-      ...pathsFromCustomArkosRouters,
-    }) || {},
+    defaultSwaggerConfig,
     arkosConfig.swagger || {}
   ) as ArkosConfig["swagger"];
+
+  if (arkosConfig.swagger?.options?.definition?.servers && swaggerConfigs) {
+    swaggerConfigs!.options!.definition!.servers =
+      arkosConfig.swagger.options.definition.servers;
+
+    swaggerConfigs!.options!.definition!.servers.push(
+      defaultSwaggerConfig.options.definition.servers[0]
+    );
+  }
 
   const { definition, ...options } = swaggerConfigs?.options!;
   const swaggerSpecification = swaggerJsdoc({

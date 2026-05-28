@@ -172,6 +172,20 @@ export default function getOpenApiLoginHtml() {
     }
 
     .error-message.show { display: block; }
+
+    .page-footer {
+        position: fixed;
+        bottom: 16px;
+        width: 100%;
+        text-align: center;
+        font-size: 14px;
+        color: #999999;
+      }
+
+      .page-footer a {
+        color: #999999;
+        text-decoration: underline;
+      }
   </style>
 </head>
 <body>
@@ -224,6 +238,10 @@ export default function getOpenApiLoginHtml() {
 
     </form>
   </div>
+
+  <footer class="page-footer">
+    Powered by <a href="https://www.arkosjs.com" target="_blank" rel="noopener noreferrer">Arkos.js</a>
+  </footer>
 
   <script>
     const usernameLabel = document.getElementById('usernameLabel');

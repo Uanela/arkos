@@ -167,27 +167,27 @@ export interface ArkosRequest<
   ReqBody = any,
   Query extends Record<string, any> = any,
 > extends Request<P, ResBody, ReqBody, Query> {
-  /**
-   * Request signals used to control Arkos's built-in request handling pipeline.
-   *
-   * @since v1.6.0-beta
-   */
-  signals?: {
-    /**
-     * When set to `true` in a `before` hook, Arkos skips its built-in logic for the current pipeline step (e.g. CRUD, authentication, authorization).
-     * Automatically reset to `false` after the step completes.
-     *
-     * @example
-     * ```ts
-     * before: (req, res, next) => {
-     *   req.user = myCustomAuth(req);
-     *   req.signals.skip = true;
-     *   next();
-     * }
-     * ```
-     */
-    skip?: boolean;
-  };
+  // /**
+  //  * Request signals used to control Arkos's built-in request handling pipeline.
+  //  *
+  //  * @since v1.6.0-beta
+  //  */
+  // signals?: {
+  //   /**
+  //    * When set to `true` in a `before` hook, Arkos skips its built-in logic for the current pipeline step (e.g. CRUD, authentication, authorization).
+  //    * Automatically reset to `false` after the step completes.
+  //    *
+  //    * @example
+  //    * ```ts
+  //    * before: (req, res, next) => {
+  //    *   req.user = myCustomAuth(req);
+  //    *   req.signals.skip = true;
+  //    *   next();
+  //    * }
+  //    * ```
+  //    */
+  //   skip?: boolean;
+  // };
   /**
    * Authenticated user
    */

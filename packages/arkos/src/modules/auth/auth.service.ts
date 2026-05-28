@@ -39,6 +39,7 @@ import {
   AuthorizeAfterHookHandler,
   AuthorizeErrorHookHandler,
 } from "../../types/arkos-config/utils";
+import { CookieOptions } from "express";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -284,7 +285,9 @@ export class AuthService {
         else return req.secure || req.headers["x-forwarded-proto"] === "https";
       })(),
       sameSite,
-    };
+      domain: authConfigs?.jwt?.cookie?.domain || process.env.JWT_COOKIE_DOMAIN,
+      ...arkosConfig?.authentication?.jwt?.cookie,
+    } as CookieOptions;
   }
 
   /**

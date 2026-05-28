@@ -1,16 +1,23 @@
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import { Bundler } from "../../bundler";
 import fs from "fs";
 import { buildCommand } from "../build";
+import { getUserFileExtension } from "../../helpers/fs.helpers";
 
 jest.mock("fs");
 jest.mock("path", () => {
   const actual = jest.requireActual("path");
-  return { ...actual };
+  return {
+    ...actual,
+  };
 });
-// jest.mock("dotenv");
+jest.mock("../../helpers/fs.helpers", () => ({
+  ...jest.requireActual("../../helpers/fs.helpers"),
+  getUserFileExtension: jest.fn(() => "js"),
+}));
 jest.mock("child_process", () => ({
   execSync: jest.fn(),
+  execFileSync: jest.fn(),
 }));
 
 const mockFs = fs as jest.Mocked<typeof fs>;
@@ -41,44 +48,111 @@ const TSCONFIG = JSON.stringify({
 describe("Bundler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(process, "cwd").mockReturnValue("/mock/project");
+    jest.spyOn(console, "error").mockImplementation(jest.fn());
+    jest.spyOn(console, "log").mockImplementation(jest.fn());
+    jest.spyOn(console, "info").mockImplementation(jest.fn());
     mockFs.existsSync.mockReturnValue(false);
     mockFs.readdirSync.mockReturnValue([]);
-    mockFs.readFileSync.mockReturnValue("");
+    mockFs.readFileSync.mockReturnValue("{}");
     mockFs.writeFileSync.mockImplementation(() => {});
   });
 
-  // describe("buildCommand", () => {
-  //   it("should correctly build a TypeScript project with default settings", () => {
-  //     (fs.existsSync as jest.Mock).mockReturnValue(true);
+  describe("buildCommand", () => {
+    it("should correctly build a TypeScript project with default settings", () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
 
-  //     buildCommand({});
+      buildCommand({});
 
-  //     // Verify tsconfig creation
-  //     expect(fs.writeFileSync).toHaveBeenCalledWith(
-  //       "/mock/project/tsconfig.arkos-build.json",
-  //       expect.stringContaining('"outDir": "./.build"')
-  //     );
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("/mock/project/tsconfig.arkos-build.json"),
+        expect.stringContaining('"outDir": ".build"')
+      );
 
-  //     (execSync as jest.Mock).mockImplementation(() => {
-  //       return "";
-  //     });
+      (execFileSync as jest.Mock).mockImplementation(() => {
+        return "";
+      });
 
-  //     // (fs.existsSync as jest.Mock).mockReturnValue(true);
+      expect(console.error).not.toHaveBeenCalled();
 
-  //     expect(console.error).not.toHaveBeenCalled();
+      // Verify TypeScript compilation command
+      expect(execFileSync).toHaveBeenCalledWith(
+        "tsc",
+        ["-p", "/mock/project/tsconfig.arkos-build.json"],
+        expect.any(Object)
+      );
 
-  //     // Verify TypeScript compilation command
-  //     expect(execSync).toHaveBeenCalledWith(
-  //       "npx tsc -p /mock/project/tsconfig.arkos-build.json",
-  //       expect.any(Object)
-  //     );
+      // Verify temp config cleanup
+      expect(fs.unlinkSync).toHaveBeenCalledWith(
+        "/mock/project/tsconfig.arkos-build.json"
+      );
+    });
 
-  //     // Verify temp config cleanup
-  //     expect(fs.unlinkSync).toHaveBeenCalledWith(
-  //       "/mock/project/tsconfig.arkos-build.json"
-  //     );
-  //   });
-  // });
+    it("should correctly build a TypeScript project with tsconfig containing comments", () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      const configWithComments = `{
+        // this is a comment
+        "compilerOptions": {
+          "target": "ES6",
+          // Uanela
+          "module": "es2020",
+          "moduleResolution": "bundler",
+          "rootDir": ".",
+          "baseUrl": ".",
+          "esModuleInterop": true,
+          "isolatedModules": true,
+          "skipLibCheck": true,
+          "forceConsistentCasingInFileNames": true,
+          "strict": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "lib": ["es6", "dom"],
+          "noImplicitAny": false,
+          "paths": {
+          "@src/*": ["./src/*"]
+        }
+        },
+        "include": ["src/**/*.ts", "packages/**/*.ts", "arkos.config.ts"],
+        "exclude": [
+          "node_modules",
+          ".build",
+          "build",
+          "generated-schemas.ts",
+          "uml",
+          "uploads"
+        ]
+      }`;
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+
+      mockFs.readFileSync.mockReturnValue(configWithComments);
+
+      buildCommand({});
+
+      // Verify tsconfig creation
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining("/mock/project/tsconfig.arkos-build.json"),
+        expect.stringContaining('"outDir": ".build"')
+      );
+
+      (execSync as jest.Mock).mockImplementation(() => {
+        return "";
+      });
+
+      expect(console.error).not.toHaveBeenCalled();
+
+      expect(execFileSync).toHaveBeenCalledWith(
+        "tsc",
+        ["-p", "/mock/project/tsconfig.arkos-build.json"],
+        expect.any(Object)
+      );
+
+      // Verify temp config cleanup
+      expect(fs.unlinkSync).toHaveBeenCalledWith(
+        "/mock/project/tsconfig.arkos-build.json"
+      );
+    });
+  });
 
   describe("config loading", () => {
     it("should auto-detect tsconfig.json when no configPath provided", () => {

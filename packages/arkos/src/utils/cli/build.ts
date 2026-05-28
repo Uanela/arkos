@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
@@ -97,11 +97,9 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
     options.config || "tsconfig.json"
   );
   let tsconfig: any = {};
-
   try {
     if (fs.existsSync(tsconfigPath)) {
-      const tsconfigContent = fs.readFileSync(tsconfigPath, "utf8");
-      tsconfig = JSON.parse(tsconfigContent);
+      tsconfig = bundler.readJsonWithComments(tsconfigPath);
     }
   } catch (error) {
     console.error("❌ Error reading tsconfig.json:", error);
@@ -124,7 +122,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
 
   try {
     removeDir(BUILD_DIR);
-    execSync(`tsc -p ${tempTsconfigPath}`, {
+    execFileSync("tsc", ["-p", tempTsconfigPath], {
       stdio: "inherit",
       cwd: process.cwd(),
     });

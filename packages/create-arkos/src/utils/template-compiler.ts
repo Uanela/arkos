@@ -116,6 +116,8 @@ class TemplateCompiler {
     // Ignoring javascript related files when typescript true
     if (config?.typescript) files.push(...["jsconfig.json.hbs"]);
 
+    if (config.entryPoint === "src/app") files.push("server.ts.hbs");
+
     return files;
   }
   /**
@@ -167,6 +169,10 @@ class TemplateCompiler {
 
           fs.mkdirSync(path.dirname(outputPath), { recursive: true });
           fs.writeFileSync(outputPath, content);
+        } else {
+          const outputPath = path.join(outputDir, relativePath);
+          fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+          fs.copyFileSync(fullPath, outputPath);
         }
       });
     }

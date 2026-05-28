@@ -4,11 +4,11 @@
 
 We take security seriously in Arkos.js. The following versions are currently supported with security updates:
 
-| Version             | Supported          | Status                   |
-| ------------------- | ------------------ | ------------------------ |
-| 1.5.x (latest beta) | :white_check_mark: | Active development       |
-| 1.4.x  | :white_check_mark: | Patch updates until 10/05/26       |
-| < 1.4.x             | :x:                | Please upgrade to supported versions |
+| Version             | Supported          | Status                               |
+| ------------------- | ------------------ | ------------------------------------ |
+| 1.6.x (latest beta) | :white_check_mark: | Active development                   |
+| 1.5.x               | :white_check_mark: | Patch updates until 10/07/26         |
+| < 1.5.x             | :x:                | Please upgrade to supported versions |
 
 **Post-2.0 Stable Release Policy:**
 
@@ -77,10 +77,10 @@ Suggested Fix (optional):
 - **Initial Assessment**: We will provide an initial assessment within **3 business days**
 - **Updates**: We will keep you informed of our progress
 - **Resolution Timeline**: Depending on severity:
-    - **Critical**: Patch within 1 week
-    - **High**: Patch within 2 weeks
-    - **Medium**: Patch within 1 month
-    - **Low**: Addressed in next release cycle
+  - **Critical**: Patch within 1 week
+  - **High**: Patch within 2 weeks
+  - **Medium**: Patch within 1 month
+  - **Low**: Addressed in next release cycle
 
 ### 5. Coordinated Disclosure
 
@@ -109,51 +109,51 @@ If you prefer to remain anonymous, we'll respect that too.
 ### In Scope - Please Report These:
 
 - **Authentication & Authorization Issues**
-    - JWT token vulnerabilities
-    - Permission bypass
-    - Session handling issues
-    - Role-based access control flaws
+  - JWT token vulnerabilities
+  - Permission bypass
+  - Session handling issues
+  - Role-based access control flaws
 
 - **Injection Vulnerabilities**
-    - SQL injection (despite Prisma's protections)
-    - NoSQL injection
-    - Command injection
-    - Code injection
+  - SQL injection (despite Prisma's protections)
+  - NoSQL injection
+  - Command injection
+  - Code injection
 
 - **File Upload Vulnerabilities**
-    - Path traversal
-    - Arbitrary file upload
-    - File type validation bypass
-    - Malicious file execution
+  - Path traversal
+  - Arbitrary file upload
+  - File type validation bypass
+  - Malicious file execution
 
 - **API Security Issues**
-    - Mass assignment vulnerabilities
-    - Insecure direct object references (IDOR)
-    - Rate limiting bypass
-    - CORS misconfigurations
+  - Mass assignment vulnerabilities
+  - Insecure direct object references (IDOR)
+  - Rate limiting bypass
+  - CORS misconfigurations
 
 - **Cross-Site Attacks**
-    - Cross-Site Scripting (XSS)
-    - Cross-Site Request Forgery (CSRF)
+  - Cross-Site Scripting (XSS)
+  - Cross-Site Request Forgery (CSRF)
 
 - **Data Exposure**
-    - Sensitive data leakage
-    - Insecure data storage
-    - Logging of sensitive information
+  - Sensitive data leakage
+  - Insecure data storage
+  - Logging of sensitive information
 
 - **Cryptographic Issues**
-    - Weak encryption
-    - Insecure password hashing
-    - Predictable random values
+  - Weak encryption
+  - Insecure password hashing
+  - Predictable random values
 
 - **Dependency Vulnerabilities**
-    - Critical vulnerabilities in Arkos.js dependencies
+  - Critical vulnerabilities in Arkos.js dependencies
 
 - **Framework-Level Issues**
-    - Any security flaw in Arkos.js core code
-    - Middleware vulnerabilities
-    - Service layer security issues
-    - CLI security issues
+  - Any security flaw in Arkos.js core code
+  - Middleware vulnerabilities
+  - Service layer security issues
+  - CLI security issues
 
 ### Out of Scope - Please Don't Report:
 
@@ -199,12 +199,12 @@ Always validate and sanitize user input, even though Arkos.js provides helpers.
 
 ```typescript
 arkos.init({
-    auth: {
-        jwt: {
-            secret: process.env.JWT_SECRET, // Strong, random secret
-            expiresIn: "15m", // Short-lived tokens
-        },
+  auth: {
+    jwt: {
+      secret: process.env.JWT_SECRET, // Strong, random secret
+      expiresIn: "15m", // Short-lived tokens
     },
+  },
 });
 ```
 
@@ -221,11 +221,11 @@ While Arkos.js generates secure code, always review what's generated for your sp
 ```typescript
 // Only enable routes you actually need
 export const config = {
-    disable: {
-        create: false,
-        findMany: false,
-        // Others disabled by default in strict mode
-    },
+  disable: {
+    create: false,
+    findMany: false,
+    // Others disabled by default in strict mode
+  },
 };
 ```
 
@@ -233,10 +233,10 @@ export const config = {
 
 ```typescript
 arkos.init({
-    fileUpload: {
-        maxFileSize: 5 * 1024 * 1024, // 5MB limit
-        baseUploadDir: "./uploads",
-    },
+  fileUpload: {
+    maxFileSize: 5 * 1024 * 1024, // 5MB limit
+    baseUploadDir: "./uploads",
+  },
 });
 ```
 
