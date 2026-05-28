@@ -36,6 +36,13 @@ export const Route = createFileRoute("/(home)/blog/")({
     return { postsWithMeta };
   },
   component: RouteComponent,
+  head: () => ({
+    meta: [
+      {
+        title: "Arkos.js Blog",
+      },
+    ],
+  }),
 });
 
 function RouteComponent() {

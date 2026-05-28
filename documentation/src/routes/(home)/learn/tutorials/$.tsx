@@ -5,7 +5,6 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import browserCollections from ".source/browser";
 import {
   CheckCircleIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   ListIcon,
   ArrowUpIcon,
@@ -40,12 +39,34 @@ const serverLoader = createServerFn({ method: "GET" }).handler(
       isCurrent: i === index,
     }));
 
-    console.log(allChapters);
+    const contents = page?.data.structuredData.contents;
+
+    const title = page?.data.title
+      ? `${page.data.title} - Arkos.js Blog`
+      : "Arkos.js Blog";
+
+    const description =
+      page?.data.description ||
+      contents
+        ?.slice(
+          0,
+          contents?.[0].content.toLowerCase().startsWith("> available from")
+            ? 3
+            : 2
+        )
+        .map((c) =>
+          c.content.toLowerCase().startsWith("> available from")
+            ? undefined
+            : c.content
+        )
+        .filter(Boolean)
+        .join(". ") ||
+      "Arkos.js — The Express and Prisma RESTful Framework. Build secure and scalable RESTful APIs with minimal configuration.";
 
     return {
       path: page.path,
-      title: extractText(page.data.title),
-      description: page.data.description,
+      title: extractText(title),
+      description,
       chapterNumber: index + 1,
       totalChapters: pages.length,
       chapters: allChapters,
@@ -512,4 +533,14 @@ export const Route = createFileRoute("/(home)/learn/tutorials/$")({
   },
   notFoundComponent: () => <p>Post not found.</p>,
   component: Page,
+  head: ({ loaderData }) => {
+    return {
+      meta: [
+        { title: loaderData.title },
+        { name: "description", content: loaderData.description },
+        { property: "og:title", content: loaderData.title },
+        { property: "og:description", content: loaderData.description },
+      ],
+    };
+  },
 });
