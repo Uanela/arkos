@@ -1,0 +1,33 @@
+version: 2
+
+updates:
+  - package-ecosystem: "pnpm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      prod-patch:
+        dependency-type: "production"
+        update-types:
+          - "patch"
+    
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    
+    open-pull-requests-limit: 10
+    
+    labels:
+      - "dependencies"
+    
+    commit-message:
+      prefix: "chore"
+      include: "scope"

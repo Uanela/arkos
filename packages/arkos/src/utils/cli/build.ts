@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
@@ -122,7 +122,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
 
   try {
     removeDir(BUILD_DIR);
-    execSync(`tsc -p ${tempTsconfigPath}`, {
+    execFileSync("tsc", ["-p", tempTsconfigPath], {
       stdio: "inherit",
       cwd: process.cwd(),
     });
