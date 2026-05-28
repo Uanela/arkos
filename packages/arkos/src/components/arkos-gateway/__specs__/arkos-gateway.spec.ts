@@ -1,3 +1,4 @@
+jest.spyOn(console, "info").mockImplementation(jest.fn());
 import { IArkosGateway } from "../arkos-gateway";
 import { defaultGatewayStore } from "../utils/memory-gateway-store";
 
@@ -10,11 +11,6 @@ jest.mock("../../../exports/services", () => ({
     add: jest.fn(),
   },
 }));
-
-// jest.mock("../../../modules/auth/utils/auth-hooks-manager", () => ({
-//   runAuthenticate: jest.fn(),
-//   runAuthorize: jest.fn(),
-// }));
 
 jest.mock("../../../modules/auth/utils/auth-error-objects", () => ({
   loginRequiredError: new Error("Login required"),
@@ -101,7 +97,7 @@ jest.mock("../utils/emit-builders", () => ({
 
 jest.mock("../../../utils/helpers/deepmerge.helper", () => ({
   __esModule: true,
-  default: jest.fn((target, source, options) => ({ ...target, ...source })),
+  default: jest.fn((target, source, _) => ({ ...target, ...source })),
 }));
 
 jest.mock("../utils/memory-gateway-store", () => ({
@@ -124,8 +120,6 @@ import {
   handleGatewayLifecycleLog,
 } from "../utils/helpers";
 import validationManager from "../../../types/validation/validation-manager";
-// import errorPrettifier from "../../modules/base/utils/error-prettifier";
-// import { getArkosConfig } from "../../server";
 
 // Helper to create mock Socket.io namespace
 function createMockNamespace() {
@@ -169,8 +163,9 @@ function createMockSocket(overrides: any = {}) {
 }
 
 describe("IArkosGateway", () => {
-  let runAuthorize = jest.spyOn(authHookManager, "runAuthorize");
+  jest.spyOn(authHookManager, "runAuthorize");
   let runAuthenticate = jest.spyOn(authHookManager, "runAuthenticate");
+
   beforeEach(() => {
     (validationManager.isValidValidator as jest.Mock).mockReturnValue(true);
 
@@ -378,7 +373,14 @@ describe("IArkosGateway", () => {
 
       expect(() =>
         gateway.on(
-          { event: "test", authorization: { roles: ["Admin"] } },
+          {
+            event: "test",
+            authorization: {
+              resource: "chat",
+              action: "test",
+              rule: { roles: ["Admin"] },
+            },
+          },
           jest.fn()
         )
       ).toThrow(/Event "test" on "\/chat" gateway defines authorization rules/);
@@ -406,22 +408,19 @@ describe("IArkosGateway", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
 
       gateway.on(
-        { event: "test", authorization: { roles: ["Admin"] } },
+        {
+          event: "test",
+          authorization: {
+            resource: "chat",
+            action: "test",
+            rule: { roles: ["Admin"] },
+          },
+        },
         jest.fn()
       );
 
-      expect(authActionService.add).toHaveBeenCalledWith("test", "/chat", {
+      expect(authActionService.add).toHaveBeenCalledWith("test", "chat", {
         test: { roles: ["Admin"] },
-      });
-    });
-
-    it("should call authActionService.add even without authorization", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-
-      gateway.on({ event: "test" }, jest.fn());
-
-      expect(authActionService.add).toHaveBeenCalledWith("test", "/chat", {
-        test: undefined,
       });
     });
 
@@ -1356,7 +1355,14 @@ describe("IArkosGateway", () => {
         (checkRateLimit as jest.Mock).mockResolvedValue({ allowed: true });
 
         gateway.on(
-          { event: "test", authorization: { roles: ["Admin"] } },
+          {
+            event: "test",
+            authorization: {
+              resource: "chat",
+              action: "test",
+              rule: { roles: ["Admin"] },
+            },
+          },
           handler
         );
 
@@ -2040,6 +2046,160 @@ describe("IArkosGateway", () => {
       expect.objectContaining({ event: "test", namespace: "/chat" }),
       undefined
     );
+  });
+
+  describe("maxAge inheritance", () => {
+    it("should use gateway-level maxAge when event does not override", async () => {
+      const { mockIo, mockNs } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat", maxAge: 60_000 });
+      const mockSocket = createMockSocket();
+
+      gateway.on({ event: "test" }, jest.fn());
+
+      (gateway as any)._register(mockIo, undefined, [], [], {});
+
+      const connectionCb = mockNs.on.mock.calls.find(
+        ([event]: [string, any]) => event === "connection"
+      )[1];
+      connectionCb(mockSocket);
+
+      const oldTimestamp = new Date(Date.now() - 120_000).toISOString();
+      const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+      await eventHandler({ _meta: { mid: "msg-1", timestamp: oldTimestamp } });
+
+      expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Message is too old" }),
+        mockSocket,
+        mockIo,
+        [],
+        expect.objectContaining({ event: "test", namespace: "/chat" }),
+        undefined
+      );
+    });
+
+    it("should use event-level maxAge over gateway-level maxAge", async () => {
+      const { mockIo, mockNs } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat", maxAge: 60_000 });
+      const mockSocket = createMockSocket();
+      const handler = jest.fn();
+
+      (defaultGatewayStore.setIfNotExists as jest.Mock).mockResolvedValueOnce(
+        true
+      );
+
+      // event maxAge is more permissive — 5 minutes
+      gateway.on({ event: "test", maxAge: 300_000 }, handler);
+
+      (gateway as any)._register(mockIo, undefined, [], [], {});
+
+      const connectionCb = mockNs.on.mock.calls.find(
+        ([event]: [string, any]) => event === "connection"
+      )[1];
+      connectionCb(mockSocket);
+
+      // 2 min ago — rejected by gateway maxAge but within event maxAge
+      const timestamp = new Date(Date.now() - 120_000).toISOString();
+      const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+      await eventHandler({ _meta: { mid: "msg-1", timestamp } });
+
+      expect(handler).toHaveBeenCalled();
+      expect(handleArkosGatewayErrors).not.toHaveBeenCalled();
+    });
+
+    it("should inherit maxAge from parent gateway config", async () => {
+      const { mockIo, mockNs } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      const mockSocket = createMockSocket();
+
+      gateway.on({ event: "test" }, jest.fn());
+
+      (gateway as any)._register(
+        mockIo,
+        { name: "/parent", maxAge: 60_000 },
+        [],
+        [],
+        {}
+      );
+
+      const connectionCb = mockNs.on.mock.calls.find(
+        ([event]: [string, any]) => event === "connection"
+      )[1];
+      connectionCb(mockSocket);
+
+      const oldTimestamp = new Date(Date.now() - 120_000).toISOString();
+      const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+      await eventHandler({ _meta: { mid: "msg-1", timestamp: oldTimestamp } });
+
+      expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Message is too old" }),
+        mockSocket,
+        mockIo,
+        [],
+        expect.objectContaining({ event: "test" }),
+        undefined
+      );
+    });
+
+    it("should allow event-level maxAge to override parent gateway maxAge", async () => {
+      const { mockIo, mockNs } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      const mockSocket = createMockSocket();
+      const handler = jest.fn();
+
+      (defaultGatewayStore.setIfNotExists as jest.Mock).mockResolvedValueOnce(
+        true
+      );
+
+      gateway.on({ event: "test", maxAge: 300_000 }, handler);
+
+      (gateway as any)._register(
+        mockIo,
+        { name: "/parent", maxAge: 60_000 },
+        [],
+        [],
+        {}
+      );
+
+      const connectionCb = mockNs.on.mock.calls.find(
+        ([event]: [string, any]) => event === "connection"
+      )[1];
+      connectionCb(mockSocket);
+
+      const timestamp = new Date(Date.now() - 120_000).toISOString();
+      const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+      await eventHandler({ _meta: { mid: "msg-1", timestamp } });
+
+      expect(handler).toHaveBeenCalled();
+      expect(handleArkosGatewayErrors).not.toHaveBeenCalled();
+    });
+
+    it("should not apply maxAge when neither gateway nor event defines it", async () => {
+      const { mockIo, mockNs } = createMockIo();
+      const gateway = new IArkosGateway({ name: "/chat" });
+      const mockSocket = createMockSocket();
+      const handler = jest.fn();
+
+      (defaultGatewayStore.setIfNotExists as jest.Mock).mockResolvedValueOnce(
+        true
+      );
+
+      gateway.on({ event: "test" }, handler);
+
+      (gateway as any)._register(mockIo, undefined, [], [], {});
+
+      const connectionCb = mockNs.on.mock.calls.find(
+        ([event]: [string, any]) => event === "connection"
+      )[1];
+      connectionCb(mockSocket);
+
+      // Very old timestamp — should still pass since no maxAge set
+      const oldTimestamp = new Date(Date.now() - 999_999).toISOString();
+      const eventHandler = getEventHandlerForSocket(mockSocket, "test");
+      await eventHandler({ _meta: { mid: "msg-1", timestamp: oldTimestamp } });
+
+      expect(handler).toHaveBeenCalled();
+      expect(handleArkosGatewayErrors).not.toHaveBeenCalled();
+    });
   });
 });
 
