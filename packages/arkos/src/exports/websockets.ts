@@ -12,7 +12,6 @@ export type {
   ArkosGatewayErrorHandler,
   ArkosGatewayAckFn,
   ArkosEmitOptions,
-  ArkosGatewayDedupStore,
 } from "../components/arkos-gateway/types";
 
 export { ArkosGateway };

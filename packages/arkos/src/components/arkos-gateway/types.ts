@@ -4,6 +4,7 @@ import { DefaultEventsMap } from "socket.io";
 import { Validator } from "../../types/validation/validator";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { ArkosPolicyRule } from "../arkos-policy/types";
+import { DetailedAccessControlRule } from "../../types/auth";
 
 /**
  * An events map is an interface that maps event names to their value, which
@@ -50,7 +51,10 @@ export interface ArkosSocket<
    * });
    */
   meta?: {
-    _mid?: string;
+    /**
+     * The event message ID sent by the client
+     */
+    mid?: string;
     /**
      * Message timestamp used by deduplication and freshness checks.
      *
@@ -60,30 +64,19 @@ export interface ArkosSocket<
   };
 
   /**
-   * Custom local data storage for the socket lifecycle.
+   * Per-event local data storage, scoped to the current event's pipeline.
    *
-   * Use this to store any custom data that needs to persist throughout the
-   * socket's connection lifetime. Unlike `socket.data` which is overwritten
-   * by validation on each event, `socket.locals` persists across events
-   * and is not automatically modified by Arkos.
+   * Use this to pass data between pipes and the event handler —
+   * similar to Express's `res.locals`. Reset automatically on each event.
    *
    * @example
-   * // Store custom data in a middleware
    * chatGateway.pipe((socket, data, io) => {
-   *   socket.locals.requestCount = (socket.locals.requestCount || 0) + 1;
-   *   socket.locals.lastActivity = new Date();
-   * });
+   *   socket.locals.user = enrichUser(socket.user)
+   * })
    *
-   * @example
-   * // Type-safe locals with TypeScript
-   * interface MySocketLocals {
-   *   requestCount: number;
-   *   lastActivity: Date;
-   *   userPreferences?: object;
-   * }
-   *
-   * const socket: ArkosSocket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any, MySocketLocals>;
-   * socket.locals.requestCount; // typed as number
+   * chatGateway.on({ event: "send_message" }, (socket, data, io) => {
+   *   console.log(socket.locals.user) // set by pipe above
+   * })
    */
   locals?: SocketLocals;
 }
@@ -122,15 +115,18 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
   rateLimit?: Partial<RateLimitOptions> | false;
 
   /**
-   * Role-based authorization for this specific event.
+   * Authorization configuration.
    *
-   * Gateway must have authentication: true for this to work.
-   * Arkos will throw at registration time if gateway has authentication: false.
-   *
-   * @example
-   * authorization: { roles: ["Admin", "Moderator"] }
+   * @remarks
+   * - Supports ArkosPolicy rules
+   * - gateway authentication config must NOT be false, otherwise this will throw in registration time
+   * - Provide an object to specify resource-based access control with resource name, action, and optional custom rules.
    */
-  authorization?: ArkosPolicyRule;
+  authorization?: {
+    resource: string;
+    action: string;
+    rule?: DetailedAccessControlRule | string[] | "*";
+  };
 
   /**
    * If `true`, the gateway will automatically call `ack({ success: true })`
@@ -292,39 +288,20 @@ export type ArkosGatewayConfig = {
         ttl?: number;
       }
     | false;
+  /**
+   * Maximum age in milliseconds for incoming messages.
+   * Events older than this threshold are rejected.
+   *
+   * Can be overridden per event via `maxAge` in `gateway.on()`.
+   *
+   * @example
+   * ArkosGateway({
+   *   name: "/chat",
+   *   maxAge: 30_000, // reject messages older than 30s
+   * })
+   */
+  maxAge?: number;
 };
-
-/**
- * Interface for a custom deduplication store.
- * Implement this to plug in Redis, bento-cache, or any other
- * distributed store for deduplication across multiple server instances.
- *
- * @example
- * class RedisDeduplicationStore implements ArkosGatewayDedupStore {
- *   constructor(private redis: RedisClientType) {}
- *
- *   async has(key: string): Promise<boolean> {
- *     return (await this.redis.exists(key)) === 1
- *   }
- *
- *   async set(key: string, ttl: number): Promise<void> {
- *     await this.redis.setEx(key, ttl, "1")
- *   }
- * }
- */
-export interface ArkosGatewayDedupStore {
-  /**
-   * Returns whether the key exists in the store.
-   * Used to detect duplicate messages.
-   */
-  has(key: string): Promise<boolean>;
-
-  /**
-   * Stores a key with a TTL in seconds.
-   * Called after a message is processed to mark it as seen.
-   */
-  set(key: string, ttl: number): Promise<void>;
-}
 
 /**
  * Options available on every Arkos-owned emit method.
