@@ -90,17 +90,20 @@ export async function bootstrap(
 
     if ("customHandler" in corsConfig)
       sheu.warn(
-        "cors.customHandler is deprecated. Pass the handler directly: `cors: myHandler`. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+        "cors.customHandler is deprecated. Pass the handler directly: `cors: myHandler`. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs",
+        { timestamp: true }
       );
 
     if ("allowedOrigins" in corsConfig)
       sheu.warn(
-        "cors.allowedOrigins is deprecated. Use `cors: { origin: '...' }` directly instead. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+        "cors.allowedOrigins is deprecated. Use `cors: { origin: '...' }` directly instead. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs",
+        { timestamp: true }
       );
 
     if ("options" in corsConfig)
       sheu.warn(
-        "cors.options is deprecated. Pass cors.CorsOptions directly instead. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs"
+        "cors.options is deprecated. Pass cors.CorsOptions directly instead. See https://www.arkosjs.com/blog/rethinking-cors-defaults-in-arkosjs",
+        { timestamp: true }
       );
 
     const defaultOptions = {
