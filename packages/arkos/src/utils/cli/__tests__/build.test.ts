@@ -1,5 +1,5 @@
 import fs from "fs";
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import { buildCommand } from "../build";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../../dotenv.helpers";
@@ -8,6 +8,7 @@ import sheu from "../../sheu";
 // Mock dependencies
 jest.mock("child_process", () => ({
   execSync: jest.fn(),
+  execFileSync: jest.fn(),
   spawn: jest.fn(() => ({
     kill: jest.fn(),
   })),
@@ -218,17 +219,16 @@ describe("buildCommand", () => {
         expect.stringContaining('"outDir": "./.build"')
       );
 
-      (execSync as jest.Mock).mockImplementation(() => {
+      (execFileSync as jest.Mock).mockImplementation(() => {
         return "";
       });
-
-      // (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       expect(console.error).not.toHaveBeenCalled();
 
       // Verify TypeScript compilation command
-      expect(execSync).toHaveBeenCalledWith(
-        "tsc -p /mock/project/tsconfig.arkos-build.json",
+      expect(execFileSync).toHaveBeenCalledWith(
+        "tsc",
+        ["-p", "/mock/project/tsconfig.arkos-build.json"],
         expect.any(Object)
       );
 
@@ -267,7 +267,7 @@ describe("buildCommand", () => {
     });
 
     it("should handle TypeScript compilation errors", () => {
-      (execSync as jest.Mock).mockImplementation(() => {
+      (execFileSync as jest.Mock).mockImplementation(() => {
         throw new Error("TypeScript compilation failed");
       });
 
