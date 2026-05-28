@@ -1,4 +1,4 @@
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import { Bundler } from "../../bundler";
 import fs from "fs";
 import { buildCommand } from "../build";
@@ -17,6 +17,7 @@ jest.mock("../../helpers/fs.helpers", () => ({
 }));
 jest.mock("child_process", () => ({
   execSync: jest.fn(),
+  execFileSync: jest.fn(),
 }));
 
 const mockFs = fs as jest.Mocked<typeof fs>;
@@ -69,14 +70,16 @@ describe("Bundler", () => {
         expect.stringContaining('"outDir": ".build"')
       );
 
-      (execSync as jest.Mock).mockImplementation(() => {
+      (execFileSync as jest.Mock).mockImplementation(() => {
         return "";
       });
 
       expect(console.error).not.toHaveBeenCalled();
 
-      expect(execSync).toHaveBeenCalledWith(
-        "tsc -p /mock/project/tsconfig.arkos-build.json",
+      // Verify TypeScript compilation command
+      expect(execFileSync).toHaveBeenCalledWith(
+        "tsc",
+        ["-p", "/mock/project/tsconfig.arkos-build.json"],
         expect.any(Object)
       );
 
@@ -138,8 +141,9 @@ describe("Bundler", () => {
 
       expect(console.error).not.toHaveBeenCalled();
 
-      expect(execSync).toHaveBeenCalledWith(
-        "tsc -p /mock/project/tsconfig.arkos-build.json",
+      expect(execFileSync).toHaveBeenCalledWith(
+        "tsc",
+        ["-p", "/mock/project/tsconfig.arkos-build.json"],
         expect.any(Object)
       );
 
