@@ -1,0 +1,32 @@
+{
+  "name": "@arkosjs/websockets-client",
+  "version": "0.1.0-canary.1",
+  "description": "Framework-agnostic WebSocket client for Arkos Gateway",
+  "main": "dist/exports/index.js",
+  "module": "dist/exports/index.js",
+  "types": "dist/exports/index.d.ts",
+  "files": ["dist", "README.md"],
+  "author": "Uanela Como",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uanela/arkos.git"
+  },
+  "bugs": {
+    "url": "https://github.com/uanela/arkos/issues"
+  },
+  "homepage": "https://www.arkosjs.com",
+  "scripts": {
+    "build": "rm -r ./dist && tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "socket.io-client": "^4.7.0"
+  }
+}
