@@ -76,74 +76,71 @@ const tictactoeGateway = ArkosGateway({
  * Second player triggers game start. Both players receive:
  *   game_start { roomId, board, yourMark, opponentUsername, currentTurn }
  */
-tictactoeGateway.on(
-  { event: "join_game", ack: true },
-  (socket, data, io, ack) => {
-    const username: string = data?.username?.trim() || "Anonymous";
+tictactoeGateway.on({ event: "join_game", ack: true }, (socket, data, ack) => {
+  const username: string = data?.username?.trim() || "Anonymous";
 
-    // Already waiting — pair them up
-    if (waitingPlayer && waitingPlayer.socketId !== socket.id) {
-      const roomId = `room_${Date.now()}`;
+  // Already waiting — pair them up
+  if (waitingPlayer && waitingPlayer.socketId !== socket.id) {
+    const roomId = `room_${Date.now()}`;
 
-      const playerX: Player = {
-        socketId: waitingPlayer.socketId,
-        username: waitingPlayer.username,
-        mark: "X",
-      };
-      const playerO: Player = {
-        socketId: socket.id,
-        username,
-        mark: "O",
-      };
+    const playerX: Player = {
+      socketId: waitingPlayer.socketId,
+      username: waitingPlayer.username,
+      mark: "X",
+    };
+    const playerO: Player = {
+      socketId: socket.id,
+      username,
+      mark: "O",
+    };
 
-      const room: GameRoom = {
-        roomId,
-        players: [playerX, playerO],
-        board: emptyBoard(),
-        currentTurn: "X",
-        status: "playing",
-      };
+    const room: GameRoom = {
+      roomId,
+      players: [playerX, playerO],
+      board: emptyBoard(),
+      currentTurn: "X",
+      status: "playing",
+    };
 
-      rooms.set(roomId, room);
-      waitingPlayer = null;
+    rooms.set(roomId, room);
+    waitingPlayer = null;
 
-      // Put both sockets in the same socket.io room
-      socket.join(roomId);
-      io.of("/tic-tac-toe").sockets.get(playerX.socketId)?.join(roomId);
+    // Put both sockets in the same socket.io room
+    socket.join(roomId);
+    tictactoeGateway.toSocket(playerX.socketId).resolve().join(roomId);
 
-      const basePayload = {
-        roomId,
-        board: room.board,
-        currentTurn: room.currentTurn,
-      };
+    const basePayload = {
+      roomId,
+      board: room.board,
+      currentTurn: room.currentTurn,
+    };
 
-      // Notify waiting player (X)
-      io.of("/tic-tac-toe")
-        .to(playerX.socketId)
-        .emit("game_start", {
-          ...basePayload,
-          yourMark: "X",
-          opponentUsername: username,
-        });
-
-      // Ack joining player (O)
-      ack?.({
-        success: true,
-        data: {
-          ...basePayload,
-          yourMark: "O",
-          opponentUsername: playerX.username,
-        },
+    // Notify waiting player (X)
+    io.of("/tic-tac-toe")
+      .to(playerX.socketId)
+      .emit("game_start", {
+        ...basePayload,
+        yourMark: "X",
+        opponentUsername: username,
       });
 
-      return;
-    }
+    // Ack joining player (O)
+    ack?.({
+      success: true,
+      data: {
+        ...basePayload,
+        yourMark: "O",
+        opponentUsername: playerX.username,
+      },
+    });
 
-    // No one waiting — put this player in the slot
-    waitingPlayer = { socketId: socket.id, username };
-    ack?.({ success: true, data: { waiting: true } });
+    return;
   }
-);
+
+  // No one waiting — put this player in the slot
+  waitingPlayer = { socketId: socket.id, username };
+  ack?.({ success: true, data: { waiting: true } });
+});
 
 /**
  * make_move
