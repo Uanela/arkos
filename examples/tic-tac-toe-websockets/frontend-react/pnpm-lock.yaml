@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@arkosjs/react-websockets':
-        specifier: 0.1.0-canary.2
-        version: 0.1.0-canary.2(@arkosjs/websockets-client@0.1.0-canary.2(socket.io-client@4.8.3))(react@19.2.6)(socket.io-client@4.8.3)
+        specifier: link:../../../integrations/react-websockets
+        version: link:../../../integrations/react-websockets
       react:
         specifier: ^19.2.6
         version: 19.2.6
@@ -59,18 +59,6 @@ importers:
         version: 8.0.14(@types/node@24.12.4)
 
 packages:
-
-  '@arkosjs/react-websockets@0.1.0-canary.2':
-    resolution: {integrity: sha512-REljAggAtRYHXZq9+6fE6YhBe+FyCZjx55iv/nFIqMJnMVaph25FHkDGgZyV/5BsBVZ8uNx0FiS20pP0frUNvQ==}
-    peerDependencies:
-      '@arkosjs/websockets-client': '*'
-      react: '>=17.0.0'
-      socket.io-client: ^4.7.0
-
-  '@arkosjs/websockets-client@0.1.0-canary.2':
-    resolution: {integrity: sha512-2uwrr+b8jq2oZhjX5lX9h2zvfW4Igbz7nmW42Fy+0LNrGQKOkIUtgon8kzY94LQE/R9DS0kn39O8A+EHwfUyPA==}
-    peerDependencies:
-      socket.io-client: ^4.7.0
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -968,16 +956,6 @@ packages:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
-
-  '@arkosjs/react-websockets@0.1.0-canary.2(@arkosjs/websockets-client@0.1.0-canary.2(socket.io-client@4.8.3))(react@19.2.6)(socket.io-client@4.8.3)':
-    dependencies:
-      '@arkosjs/websockets-client': 0.1.0-canary.2(socket.io-client@4.8.3)
-      react: 19.2.6
-      socket.io-client: 4.8.3
-
-  '@arkosjs/websockets-client@0.1.0-canary.2(socket.io-client@4.8.3)':
-    dependencies:
-      socket.io-client: 4.8.3
 
   '@babel/code-frame@7.29.7':
     dependencies:

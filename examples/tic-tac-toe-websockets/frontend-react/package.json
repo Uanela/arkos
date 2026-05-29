@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@arkosjs/react-websockets": "0.1.0-canary.2",
+    "@arkosjs/react-websockets": "link:../../../integrations/react-websockets",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "socket.io-client": "^4.8.3"
