@@ -31,11 +31,10 @@ import {
 import { loginRequiredError } from "../../modules/auth/utils/auth-error-objects";
 import errorPrettifier from "../../modules/base/utils/error-prettifier";
 import {
-  GatewayEmitBuilder,
+  GatewayBroadcastBuilder,
   GatewayRoomBuilder,
-  GatewaySocketEmitBuilder,
+  GatewaySocketBuilder,
   GatewayUserBuilder,
-  GatewayUserEmitBuilder,
 } from "./utils/emit-builders";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { defaultGatewayStore } from "./utils/memory-gateway-store";
@@ -583,102 +582,91 @@ export class IArkosGateway {
   }
 
   /**
-   * Returns a builder for sending events to a specific user across all
-   * their active socket connections.
+   * Returns a builder for querying and managing a specific socket connection.
+   * Accepts a socket ID. If the socket is no longer connected, operations
+   * no-op or return `{ success: false, reason: "not_found" }`.
    *
    * @example
-   * await gateway.toUser(userId).emit("notification", data)
-   * await gateway.toUser(userId).emit("order_update", data, {
-   *   timeout: 5000,
-   *   retries: 3,
-   * })
+   * await gateway.socket(socketId).join("room-123")
+   * await gateway.socket(socketId).leave("room-123")
+   * gateway.socket(socketId).disconnect()
+   * const rooms = await gateway.socket(socketId).rooms()
+   * const connected = await gateway.socket(socketId).isConnected()
+   * await gateway.socket(socketId).emit("notification", data)
    *
-   * @since 1.7.0-canary.19
+   * @since 1.7.0-canary.28
    */
-  toUser(userId: string) {
-    return new GatewayUserEmitBuilder(
-      userId,
-      this.io!.of(this.config.name),
-      this.config,
-      this.registryOptions?.store!
-    );
-  }
-  /**
-   * Returns a builder for sending events to all sockets in a room.
-   *
-   * @example
-   * await gateway.toRoom("room-123").emit("update", data)
-   *
-   * @since 1.7.0-canary.19
-   */
-  toRoom(room: string) {
-    return new GatewayEmitBuilder(
-      this.io!.of(this.config.name).to(room),
+  socket(socketId: string) {
+    return new GatewaySocketBuilder(
+      socketId,
+      this.io!.of(this.config.name!),
       this.config,
       this.registryOptions?.store!
     );
   }
 
   /**
-   * Returns a builder for broadcasting events to all sockets
-   * connected to this gateway's namespace.
+   * Returns a builder for querying and managing a specific user across
+   * all their active socket connections.
    *
    * @example
-   * await gateway.toAll().emit("announcement", data)
+   * await gateway.user(userId).join("room-123")
+   * await gateway.user(userId).leave("room-123")
+   * await gateway.user(userId).disconnect()
+   * const rooms = await gateway.user(userId).rooms()
+   * const online = await gateway.user(userId).isOnline()
+   * await gateway.user(userId).emit("notification", data)
+   * await gateway.user(userId).except({ socket: socketId }).emit("sync", data)
    *
-   * @since 1.7.0-canary.19
-   */
-  toAll() {
-    return new GatewayEmitBuilder(
-      this.io!.of(this.config.name),
-      this.config,
-      this.registryOptions?.store!
-    );
-  }
-
-  /**
-   * Returns a handle for querying state and managing a specific user.
-   *
-   * @example
-   * gateway.user(userId).isOnline()
-   * gateway.user(userId).socketCount()
-   *
-   * @since 1.7.0-canary.19
+   * @since 1.7.0-canary.28
    */
   user(userId: string) {
-    return new GatewayUserBuilder(userId, this.io!.of(this.config.name));
+    return new GatewayUserBuilder(
+      userId,
+      this.io!.of(this.config.name!),
+      this.config,
+      this.registryOptions?.store!
+    );
   }
 
   /**
-   * Returns a handle for querying state of a specific room.
+   * Returns a builder for querying and emitting to a specific room.
    *
    * @example
-   * gateway.room("room-123").sockets()
-   * gateway.room("room-123").size()
+   * await gateway.room("room-123").emit("update", data)
+   * await gateway.room("room-123").except({ socket: socketId }).emit("update", data)
+   * await gateway.room("room-123").except({ user: userId }).emit("update", data)
+   * await gateway.room("room-123").except({ room: "other-room" }).emit("update", data)
+   * const size = await gateway.room("room-123").size()
+   * const users = await gateway.room("room-123").users()
+   * const hasUser = await gateway.room("room-123").has({ user: userId })
    *
-   * @since 1.7.0-canary.19
+   * @since 1.7.0-canary.28
    */
   room(roomId: string) {
-    return new GatewayRoomBuilder(roomId, this.io!.of(this.config.name));
+    return new GatewayRoomBuilder(
+      roomId,
+      this.io!.of(this.config.name!),
+      this.config,
+      this.registryOptions?.store!
+    );
   }
 
   /**
-   * Returns a builder for sending events to a specific socket connection.
-   * Use this when you have a direct socket reference and want Arkos sugar
-   * (timeout, retries) on top of native socket.emit().
+   * Returns a builder for broadcasting events to all sockets in this
+   * gateway's namespace, with optional exclusions.
    *
    * @example
-   * await gateway.toSocket(socket).emit("notification", data)
-   * await gateway.toSocket(socket).emit("order_update", data, {
-   *   timeout: 5000,
-   *   retries: 3,
-   * })
+   * await gateway.broadcast().emit("announcement", data)
+   * await gateway.broadcast().except({ socket: socketId }).emit("announcement", data)
+   * await gateway.broadcast().except({ room: roomId }).emit("announcement", data)
+   * await gateway.broadcast().except({ user: userId }).emit("announcement", data)
    *
-   * @since 1.7.0-canary.19
+   * @since 1.7.0-canary.28
    */
-  toSocket(socket: ArkosSocket) {
-    return new GatewaySocketEmitBuilder(
-      socket,
+  broadcast() {
+    return new GatewayBroadcastBuilder(
+      this.io!.of(this.config.name!),
       this.config,
       this.registryOptions?.store!
     );
