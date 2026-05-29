@@ -11,7 +11,6 @@ import { getHandledError } from "../../../modules/error-handler/utils/get-handle
 export async function handleArkosGatewayErrors(
   err: any,
   socket: ArkosSocket,
-  io: Server,
   errorHandlers: ArkosGatewayErrorHandler[] = [],
   loggerMeta: {
     namespace: string;
@@ -30,7 +29,7 @@ export async function handleArkosGatewayErrors(
 
   if (errorHandlers.length) {
     try {
-      for (const handler of errorHandlers) await handler(err, socket, io);
+      for (const handler of errorHandlers) await handler(err, socket);
     } catch (catchedErr: any) {
       err = catchedErr;
       emitCalled = false;

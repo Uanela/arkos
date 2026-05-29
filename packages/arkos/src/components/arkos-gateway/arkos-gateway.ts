@@ -146,7 +146,7 @@ export class IArkosGateway {
    * @example
    * chatGateway.on(
    *   { event: "send_message", validation: MessageSchema, ack: true },
-   *   (socket, data, io, ack) => {
+   *   (socket, data, ack) => {
    *     socket.to(data.room).emit("receive_message", data)
    *     ack?.({ status: "ok" })
    *   }
@@ -318,9 +318,9 @@ export class IArkosGateway {
       if (socket.user?.id) socket.join(`arkos::user:${socket.user.id}`);
 
       try {
-        for (const handler of connectHandlers) await handler(socket, io);
+        for (const handler of connectHandlers) await handler(socket);
       } catch (err: any) {
-        handleArkosGatewayErrors(err, socket, io, [], {
+        handleArkosGatewayErrors(err, socket, [], {
           startTime: connectionStartTime,
           namespace: this.config.name,
           event: "connection",
@@ -333,9 +333,9 @@ export class IArkosGateway {
 
         await clearRateLimitForSocket(socket.id, store);
         try {
-          for (const handler of disconnectHandlers) await handler(socket, io);
+          for (const handler of disconnectHandlers) await handler(socket);
         } catch (err) {
-          handleArkosGatewayErrors(err, socket, io, [], {
+          handleArkosGatewayErrors(err, socket, [], {
             startTime: connectionStartTime,
             namespace: this.config.name,
             event: "disconnection",
@@ -538,7 +538,7 @@ export class IArkosGateway {
               io
             );
 
-            await handler(socket, data, io, wrappedAck);
+            await handler(socket, data, wrappedAck);
 
             handleGatewayEventLog(
               this.config.name,
@@ -554,7 +554,6 @@ export class IArkosGateway {
             handleArkosGatewayErrors(
               err,
               socket,
-              io,
               errorHandlers,
               {
                 startTime,
@@ -708,7 +707,7 @@ export class IArkosGateway {
  *
  * chatGateway.on(
  *   { event: "send_message", validation: MessageSchema, ack: true },
- *   (socket, data, io, ack) => {
+ *   (socket, data, ack) => {
  *     socket.to(data.room).emit("receive_message", data)
  *     ack?.({ status: "ok" })
  *   }

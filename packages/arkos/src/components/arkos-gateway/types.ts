@@ -198,7 +198,6 @@ export type ArkosGatewayAckFn = (response: any) => void;
 export type ArkosGatewayHandler<TData = any> = (
   socket: ArkosSocket,
   data: TData,
-  io: Server,
   ack?: ArkosGatewayAckFn
 ) => void | Promise<void>;
 
@@ -210,7 +209,6 @@ export type ArkosGatewayEventEntry = {
 
 export type ArkosGatewayConnectionHandler = (
   socket: ArkosSocket,
-  io: Server
 ) => void | Promise<void>;
 
 export type ArkosGatewayHookHandler =
@@ -220,7 +218,6 @@ export type ArkosGatewayHookHandler =
 export type ArkosGatewayErrorHandler = (
   error: any,
   socket: ArkosSocket,
-  io: Server
 ) => void | Promise<void>;
 
 export type ArkosGatewayHookType = "connection" | "disconnect" | "error";
