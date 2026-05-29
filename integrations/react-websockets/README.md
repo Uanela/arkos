@@ -47,16 +47,22 @@ import { Manager } from "socket.io-client";
 import { WebSocketProvider } from "@arkosjs/react-websockets";
 
 export default function App() {
-    const manager = new Manager("http://localhost:3000", {
-        auth: { token: "your-auth-token" },
-        reconnection: true,
-    });
+  const [accessToken] = useState("123");
 
-    return (
-        <WebSocketProvider manager={manager}>
-            <ChatRoom />
-        </WebSocketProvider>
-    );
+  const manager = useMemo(
+    () =>
+      new Manager("http://localhost:3000", {
+        auth: { token: accessToken },
+        reconnection: true,
+      }),
+    [accessToken]
+  );
+
+  return (
+    <WebSocketProvider manager={manager}>
+      <ChatRoom />
+    </WebSocketProvider>
+  );
 }
 ```
 
@@ -69,41 +75,39 @@ import { useGateway } from "@arkosjs/react-websockets";
 import { useState } from "react";
 
 function ChatRoom() {
-    const chat = useGateway("/chat");
-    const [messages, setMessages] = useState([]);
+  const chat = useGateway("/chat");
+  const [messages, setMessages] = useState([]);
 
-    // Listen to events — automatically cleaned up on unmount
-    chat.on("receive_message", (data) => {
-        setMessages((prev) => [...prev, data]);
-    });
+  // Listen to events — automatically cleaned up on unmount
+  chat.on("receive_message", (data) => {
+    setMessages((prev) => [...prev, data]);
+  });
 
-    // Emit with loading/error tracking
-    const sendMessage = chat.useEmit("send_message");
+  // Emit with loading/error tracking
+  const sendMessage = chat.useEmit("send_message");
 
-    return (
-        <div>
-            <p>Status: {chat.status}</p>
-            <button
-                onClick={() =>
-                    sendMessage.emit({
-                        room: "general",
-                        content: "hello",
-                    })
-                }
-                disabled={sendMessage.loading}
-            >
-                {sendMessage.loading ? "Sending..." : "Send"}
-            </button>
-            {sendMessage.error && (
-                <p style={{ color: "red" }}>{sendMessage.error}</p>
-            )}
-            <ul>
-                {messages.map((msg, i) => (
-                    <li key={i}>{msg.content}</li>
-                ))}
-            </ul>
-        </div>
-    );
+  return (
+    <div>
+      <p>Status: {chat.status}</p>
+      <button
+        onClick={() =>
+          sendMessage.emit({
+            room: "general",
+            content: "hello",
+          })
+        }
+        disabled={sendMessage.loading}
+      >
+        {sendMessage.loading ? "Sending..." : "Send"}
+      </button>
+      {sendMessage.error && <p style={{ color: "red" }}>{sendMessage.error}</p>}
+      <ul>
+        {messages.map((msg, i) => (
+          <li key={i}>{msg.content}</li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 ```
 
@@ -148,7 +152,7 @@ The handler is kept stable internally — changing the callback won't re-registe
 ```tsx
 // Simple listener
 chat.on("receive_message", (data) => {
-    setMessages((prev) => [...prev, data]);
+  setMessages((prev) => [...prev, data]);
 });
 
 // With explicit dependencies (e.g., re-subscribe when room changes)
@@ -169,15 +173,15 @@ sendMessage.emit({ room: "general", content: "hello" });
 
 // With acknowledgement (waits for server response)
 const result = await sendMessage.emit(data, {
-    ack: true,
-    timeout: 5000,
-    retries: 3,
+  ack: true,
+  timeout: 5000,
+  retries: 3,
 });
 
 if (result.success) {
-    console.log("Message sent:", result.data);
+  console.log("Message sent:", result.data);
 } else {
-    console.error("Failed:", result.error);
+  console.error("Failed:", result.error);
 }
 ```
 
@@ -197,7 +201,7 @@ Reactive connection status. Re-renders when status changes.
 chat.status; // "connected" | "connecting" | "reconnecting" | "disconnected"
 
 if (chat.status === "connected") {
-    sendMessage.emit(data);
+  sendMessage.emit(data);
 }
 ```
 
@@ -231,17 +235,17 @@ Listen for the `"authenticated"` event after login:
 
 ```tsx
 function Dashboard() {
-    const chat = useGateway("/chat");
-    const [user, setUser] = useState(null);
+  const chat = useGateway("/chat");
+  const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        // Server emits "authenticated" with user data
-        chat.on("authenticated", (data) => {
-            setUser(data.user);
-        });
-    }, [chat]);
+  useEffect(() => {
+    // Server emits "authenticated" with user data
+    chat.on("authenticated", (data) => {
+      setUser(data.user);
+    });
+  }, [chat]);
 
-    return user ? <div>Welcome, {user.name}</div> : <div>Loading...</div>;
+  return user ? <div>Welcome, {user.name}</div> : <div>Loading...</div>;
 }
 ```
 
@@ -249,30 +253,30 @@ function Dashboard() {
 
 ```tsx
 function SendForm() {
-    const chat = useGateway("/messages");
-    const sendMessage = chat.useEmit("send_message");
+  const chat = useGateway("/messages");
+  const sendMessage = chat.useEmit("send_message");
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const result = await sendMessage.emit(
-            { content: "Hello!" },
-            { ack: true, timeout: 5000, retries: 2 }
-        );
-
-        if (result.success) {
-            alert("Message received by server");
-        } else {
-            alert(`Error: ${result.error}`);
-        }
-    };
-
-    return (
-        <form onSubmit={handleSubmit}>
-            <button disabled={sendMessage.loading}>
-                {sendMessage.loading ? "Sending..." : "Send"}
-            </button>
-        </form>
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await sendMessage.emit(
+      { content: "Hello!" },
+      { ack: true, timeout: 5000, retries: 2 }
     );
+
+    if (result.success) {
+      alert("Message received by server");
+    } else {
+      alert(`Error: ${result.error}`);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <button disabled={sendMessage.loading}>
+        {sendMessage.loading ? "Sending..." : "Send"}
+      </button>
+    </form>
+  );
 }
 ```
 
@@ -282,14 +286,14 @@ Listen for server-wide errors:
 
 ```tsx
 function ChatRoom() {
-    const chat = useGateway("/chat");
+  const chat = useGateway("/chat");
 
-    chat.on("error", (errorData) => {
-        console.error("Server error:", errorData);
-        // Show toast, log, etc.
-    });
+  chat.on("error", (errorData) => {
+    console.error("Server error:", errorData);
+    // Show toast, log, etc.
+  });
 
-    return <div>Chat App</div>;
+  return <div>Chat App</div>;
 }
 ```
 
@@ -297,22 +301,22 @@ function ChatRoom() {
 
 ```tsx
 function ConnectionIndicator() {
-    const chat = useGateway("/chat");
+  const chat = useGateway("/chat");
 
-    return (
-        <div
-            style={{
-                color:
-                    chat.status === "connected"
-                        ? "green"
-                        : chat.status === "disconnected"
-                          ? "red"
-                          : "orange",
-            }}
-        >
-            {chat.status}
-        </div>
-    );
+  return (
+    <div
+      style={{
+        color:
+          chat.status === "connected"
+            ? "green"
+            : chat.status === "disconnected"
+              ? "red"
+              : "orange",
+      }}
+    >
+      {chat.status}
+    </div>
+  );
 }
 ```
 
@@ -322,11 +326,11 @@ function ConnectionIndicator() {
 
 ```ts
 import type {
-    ArkosEmitOptions,
-    ArkosEmitResult,
-    ArkosEventHandler,
-    GatewayStatus,
-    SocketEmitter,
+  ArkosEmitOptions,
+  ArkosEmitResult,
+  ArkosEventHandler,
+  GatewayStatus,
+  SocketEmitter,
 } from "@arkosjs/react-websockets";
 ```
 

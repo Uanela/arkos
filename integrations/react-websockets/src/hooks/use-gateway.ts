@@ -30,6 +30,7 @@ import type {
 export function useGateway(namespace: string) {
   const client = useWebsocketClient();
   const gateway = useMemo(() => client.gateway(namespace), [client, namespace]);
+  const status = useGatewayStatus(gateway);
 
   return useMemo(
     () => ({
@@ -79,15 +80,13 @@ export function useGateway(namespace: string) {
        * chat.status // "connected" | "reconnecting" | "disconnected" | "connecting"
        */
       // eslint-disable-next-line react-hooks/rules-of-hooks
-      get status() {
-        return useGatewayStatus(gateway);
-      },
+      status,
 
       /**
        * Escape hatch to the raw GatewayClient.
        */
       raw: gateway as GatewayClient,
     }),
-    [gateway]
+    [gateway, status]
   );
 }

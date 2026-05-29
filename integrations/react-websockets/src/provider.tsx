@@ -23,10 +23,10 @@ interface WebSocketProviderProps {
  * share the same client and lazily connect per namespace.
  *
  * @example
- * const manager = new Manager("http://localhost:3000", {
- *   auth: { token: "your-auth-token" },
+ * const manager = useMemo(() => new Manager("http://localhost:3000", {
+ *   auth: { token: accessToken },
  *   reconnection: true,
- * });
+ * }), [accessToken]);
  *
  * <WebSocketProvider manager={manager}>
  *   <App />
@@ -38,16 +38,20 @@ export function WebSocketProvider({
 }: WebSocketProviderProps) {
   const clientRef = useRef<WebsocketClient | null>(null);
 
-  if (!clientRef.current) {
-    clientRef.current = createWebsocketClient(manager);
-  }
+  if (!clientRef.current) clientRef.current = createWebsocketClient(manager);
+
+  const mountCount = useRef(0);
 
   useEffect(() => {
+    mountCount.current += 1;
+    if (!clientRef.current) clientRef.current = createWebsocketClient(manager);
+
     return () => {
+      if (mountCount.current === 1) return;
       clientRef.current?.destroy();
       clientRef.current = null;
     };
-  }, []);
+  }, [manager]);
 
   return (
     <WebsocketClientContext.Provider value={clientRef.current}>

@@ -15,7 +15,9 @@ export function useGatewayStatus(gateway: GatewayClient): GatewayStatus {
     setStatus(gateway.status);
 
     const unsubscribe = gateway.subscribe({
-      onStatus: (s) => setStatus(s),
+      onStatus: (s) => {
+        setStatus(s);
+      },
     });
 
     return unsubscribe;
