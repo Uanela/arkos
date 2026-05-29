@@ -72,6 +72,10 @@ jest.mock("../utils/helpers", () => ({
 
 jest.mock("../utils/emit-builders", () => ({
   GatewayEmitBuilder: jest.fn().mockImplementation((target) => ({ target })),
+  GatewaySocketBuilder: jest.fn().mockImplementation((target) => ({ target })),
+  GatewayBroadcastBuilder: jest
+    .fn()
+    .mockImplementation((target) => ({ target })),
   GatewayRoomBuilder: jest
     .fn()
     .mockImplementation((roomId, ns) => ({ roomId, ns })),
@@ -570,7 +574,7 @@ describe("IArkosGateway", () => {
   // ============================================================
   describe("_register()", () => {
     it("should create namespace with own name when no parent", () => {
-      const { mockIo, mockNs } = createMockIo();
+      const { mockIo } = createMockIo();
       const gateway = new IArkosGateway({ name: "/chat" });
 
       (gateway as any)._register(mockIo, undefined, [], [], {});
@@ -579,7 +583,7 @@ describe("IArkosGateway", () => {
     });
 
     it("should create namespace with parent name prefix", () => {
-      const { mockIo, mockNs } = createMockIo();
+      const { mockIo } = createMockIo();
       const childGateway = new IArkosGateway({ name: "/admin" });
 
       (childGateway as any)._register(mockIo, { name: "/chat" }, [], [], {});
@@ -588,7 +592,7 @@ describe("IArkosGateway", () => {
     });
 
     it("should merge parent config with own config", () => {
-      const { mockIo, mockNs } = createMockIo();
+      const { mockIo } = createMockIo();
       const gateway = new IArkosGateway({
         name: "/chat",
         authentication: true,
@@ -1582,7 +1586,7 @@ describe("IArkosGateway", () => {
     // ---- Child Gateway Tests ----
     describe("child gateways", () => {
       it("should recursively register child gateways", () => {
-        const { mockIo, mockNs } = createMockIo();
+        const { mockIo } = createMockIo();
         const parentGateway = new IArkosGateway({ name: "/chat" });
         const childGateway = new IArkosGateway({ name: "/admin" });
         const childSpy = jest.spyOn(childGateway as any, "_register");
@@ -1601,7 +1605,7 @@ describe("IArkosGateway", () => {
       });
 
       it("should pass resolved auth and rateLimit to child gateways", () => {
-        const { mockIo, mockNs } = createMockIo();
+        const { mockIo } = createMockIo();
         const parentGateway = new IArkosGateway({
           name: "/chat",
           authentication: true,
@@ -1620,7 +1624,7 @@ describe("IArkosGateway", () => {
       });
 
       it("should pass resolved hooks to child gateways", () => {
-        const { mockIo, mockNs } = createMockIo();
+        const { mockIo } = createMockIo();
         const parentGateway = new IArkosGateway({ name: "/chat" });
         const childGateway = new IArkosGateway({ name: "/admin" });
         const childSpy = jest.spyOn(childGateway as any, "_register");
@@ -1855,7 +1859,7 @@ describe("IArkosGateway", () => {
       (gateway as any).io = mockIo;
       (gateway as any).registryOptions = { store: defaultGatewayStore };
 
-      const result = gateway.toUser("user-1");
+      const result = gateway.user("user-1");
 
       expect(result).toBeDefined();
     });
@@ -1865,17 +1869,17 @@ describe("IArkosGateway", () => {
       (gateway as any).io = mockIo;
       (gateway as any).registryOptions = { store: defaultGatewayStore };
 
-      const result = gateway.toRoom("room-1");
+      const result = gateway.room("room-1");
 
       expect(result).toBeDefined();
     });
 
-    it("toAll() should return GatewayEmitBuilder instance", () => {
+    it("broadcast() should return GatewayEmitBuilder instance", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
       (gateway as any).io = mockIo;
       (gateway as any).registryOptions = { store: defaultGatewayStore };
 
-      const result = gateway.toAll();
+      const result = gateway.broadcast();
 
       expect(result).toBeDefined();
     });
@@ -1898,12 +1902,16 @@ describe("IArkosGateway", () => {
       expect(result).toBeDefined();
     });
 
-    it("toSocket() should return GatewaySocketEmitBuilder instance", () => {
+    it("socket() should return GatewaySocketEmitBuilder instance", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
+      const { mockIo } = createMockIo();
       const mockSocket = createMockSocket();
-      (gateway as any).registryOptions = { store: defaultGatewayStore };
+      (gateway as any).io = mockIo;
+      (gateway as any).registryOptions = {
+        store: defaultGatewayStore,
+      };
 
-      const result = gateway.toSocket(mockSocket as any);
+      const result = gateway.socket(mockSocket.id);
 
       expect(result).toBeDefined();
     });
