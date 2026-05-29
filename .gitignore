@@ -15,3 +15,4 @@ documentation/.next
 debug.log
 .ignored
 .cache
+.git-backup
