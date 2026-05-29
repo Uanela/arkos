@@ -130,7 +130,7 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
   /**
    * If `true`, the gateway will automatically call `ack({ success: true })`
    * after the handler finishes, unless the handler already called ack manually.
-   * The ack callback is **always** passed to the handler as the 4th argument.
+   * The ack callback is **always** passed to the handler as the 3rd argument.
    */
   ack?: boolean;
 
@@ -197,7 +197,6 @@ export type ArkosGatewayAckFn = (response: any) => void;
 export type ArkosGatewayHandler<TData = any> = (
   socket: ArkosSocket,
   data: TData,
-  io: Server,
   ack?: ArkosGatewayAckFn
 ) => void | Promise<void>;
 
@@ -208,8 +207,7 @@ export type ArkosGatewayEventEntry = {
 };
 
 export type ArkosGatewayConnectionHandler = (
-  socket: ArkosSocket,
-  io: Server
+  socket: ArkosSocket
 ) => void | Promise<void>;
 
 export type ArkosGatewayHookHandler =
@@ -218,8 +216,7 @@ export type ArkosGatewayHookHandler =
 
 export type ArkosGatewayErrorHandler = (
   error: any,
-  socket: ArkosSocket,
-  io: Server
+  socket: ArkosSocket
 ) => void | Promise<void>;
 
 export type ArkosGatewayHookType = "connection" | "disconnect" | "error";

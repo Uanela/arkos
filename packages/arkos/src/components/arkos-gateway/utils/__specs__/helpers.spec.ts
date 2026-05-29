@@ -33,13 +33,12 @@ const loggerMeta = {
 describe("handleArkosGatewayErrors", () => {
   test("calls error handlers when registered", async () => {
     const { socket } = makeSocket();
-    const io = makeIo();
     const errorHandler = jest.fn().mockResolvedValue(undefined);
     const err = new Error("boom");
 
-    await handleArkosGatewayErrors(err, socket, io, [errorHandler], loggerMeta);
+    await handleArkosGatewayErrors(err, socket, [errorHandler], loggerMeta);
 
-    expect(errorHandler).toHaveBeenCalledWith(err, socket, io);
+    expect(errorHandler).toHaveBeenCalledWith(err, socket);
   });
 
   test("does not emit default error when handler calls socket.emit", async () => {
@@ -51,7 +50,6 @@ describe("handleArkosGatewayErrors", () => {
     await handleArkosGatewayErrors(
       new Error("handled"),
       socket,
-      makeIo(),
       [errorHandler],
       loggerMeta
     );
@@ -69,7 +67,7 @@ describe("handleArkosGatewayErrors", () => {
       code: "BadRequest",
     };
 
-    await handleArkosGatewayErrors(err, socket, makeIo(), [], loggerMeta);
+    await handleArkosGatewayErrors(err, socket, [], loggerMeta);
 
     expect(emitSpy).toHaveBeenCalledWith(
       "error",
@@ -84,7 +82,6 @@ describe("handleArkosGatewayErrors", () => {
     await handleArkosGatewayErrors(
       new Error("unhandled"),
       socket,
-      makeIo(),
       [errorHandler],
       loggerMeta
     );
@@ -102,7 +99,7 @@ describe("handleArkosGatewayErrors", () => {
       meta: { field: "email" },
     };
 
-    await handleArkosGatewayErrors(err, socket, makeIo(), [], loggerMeta, ack);
+    await handleArkosGatewayErrors(err, socket, [], loggerMeta, ack);
 
     expect(ack).toHaveBeenCalledWith(
       expect.objectContaining({ error: "fail" })
@@ -119,7 +116,6 @@ describe("handleArkosGatewayErrors", () => {
     await handleArkosGatewayErrors(
       new Error("handled"),
       socket,
-      makeIo(),
       [errorHandler],
       loggerMeta,
       ack
@@ -135,7 +131,6 @@ describe("handleArkosGatewayErrors", () => {
     await handleArkosGatewayErrors(
       new Error("test"),
       socket,
-      makeIo(),
       [errorHandler],
       loggerMeta
     );
@@ -150,7 +145,6 @@ describe("handleArkosGatewayErrors", () => {
     await handleArkosGatewayErrors(
       new Error("original"),
       socket,
-      makeIo(),
       [errorHandler],
       loggerMeta
     );
@@ -165,7 +159,6 @@ describe("handleArkosGatewayErrors", () => {
     await handleArkosGatewayErrors(
       new Error("original"),
       socket,
-      makeIo(),
       [errorHandler],
       loggerMeta
     );
@@ -182,7 +175,6 @@ describe("handleArkosGatewayErrors", () => {
     await handleArkosGatewayErrors(
       new Error("raw error"),
       socket,
-      makeIo(),
       [],
       loggerMeta
     );
@@ -202,7 +194,7 @@ describe("handleArkosGatewayErrors", () => {
       code: "NotFound",
     };
 
-    await handleArkosGatewayErrors(err, socket, makeIo(), [], loggerMeta);
+    await handleArkosGatewayErrors(err, socket, [], loggerMeta);
 
     expect(emitSpy).toHaveBeenCalledWith(
       "error",
@@ -223,7 +215,6 @@ describe("handleArkosGatewayErrors", () => {
     await handleArkosGatewayErrors(
       new Error("multi"),
       socket,
-      makeIo(),
       [h1, h2],
       loggerMeta
     );

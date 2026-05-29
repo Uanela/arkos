@@ -795,8 +795,8 @@ describe("IArkosGateway", () => {
 
         await connectionCb(mockSocket);
 
-        expect(connHandler1).toHaveBeenCalledWith(mockSocket, mockIo);
-        expect(connHandler2).toHaveBeenCalledWith(mockSocket, mockIo);
+        expect(connHandler1).toHaveBeenCalledWith(mockSocket);
+        expect(connHandler2).toHaveBeenCalledWith(mockSocket);
       });
 
       it("should handle error in connection handler", async () => {
@@ -823,7 +823,6 @@ describe("IArkosGateway", () => {
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           error,
           mockSocket,
-          mockIo,
           [],
           expect.objectContaining({
             namespace: "/chat",
@@ -916,8 +915,8 @@ describe("IArkosGateway", () => {
 
         await disconnectCb();
 
-        expect(disHandler1).toHaveBeenCalledWith(mockSocket, mockIo);
-        expect(disHandler2).toHaveBeenCalledWith(mockSocket, mockIo);
+        expect(disHandler1).toHaveBeenCalledWith(mockSocket);
+        expect(disHandler2).toHaveBeenCalledWith(mockSocket);
       });
 
       it("should log lifecycle event on disconnect", async () => {
@@ -976,7 +975,6 @@ describe("IArkosGateway", () => {
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           error,
           mockSocket,
-          mockIo,
           [],
           expect.objectContaining({
             namespace: "/chat",
@@ -1111,7 +1109,6 @@ describe("IArkosGateway", () => {
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           expect.objectContaining({ message: expect.stringContaining("mid") }),
           mockSocket,
-          mockIo,
           [],
           expect.any(Object),
           undefined
@@ -1150,7 +1147,6 @@ describe("IArkosGateway", () => {
         expect(handler).toHaveBeenCalledWith(
           mockSocket,
           expect.not.objectContaining({ _meta: expect.anything() }),
-          mockIo,
           undefined
         );
       });
@@ -1179,7 +1175,6 @@ describe("IArkosGateway", () => {
             message: expect.stringContaining("Missing data._meta.mid"),
           }),
           mockSocket,
-          expect.anything(),
           [],
           expect.objectContaining({
             event: "test",
@@ -1215,7 +1210,6 @@ describe("IArkosGateway", () => {
             message: expect.stringContaining("Invalid data._meta.timestamp"),
           }),
           mockSocket,
-          expect.anything(),
           [],
           expect.objectContaining({
             event: "test",
@@ -1310,7 +1304,6 @@ describe("IArkosGateway", () => {
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           expect.any(Error),
           mockSocket,
-          mockIo,
           [],
           expect.any(Object),
           undefined
@@ -1419,7 +1412,6 @@ describe("IArkosGateway", () => {
         expect(handler).toHaveBeenCalledWith(
           mockSocket,
           validatedData,
-          mockIo,
           undefined
         );
       });
@@ -1449,7 +1441,6 @@ describe("IArkosGateway", () => {
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           expect.any(Error),
           mockSocket,
-          mockIo,
           [],
           expect.any(Object),
           undefined
@@ -1489,7 +1480,6 @@ describe("IArkosGateway", () => {
         expect(handler).toHaveBeenCalledWith(
           mockSocket,
           originalData,
-          mockIo,
           undefined
         );
       });
@@ -1521,7 +1511,6 @@ describe("IArkosGateway", () => {
             message: "Event data is not allowed for this event.",
           }),
           mockSocket,
-          mockIo,
           [],
           expect.any(Object),
           undefined
@@ -1556,7 +1545,6 @@ describe("IArkosGateway", () => {
         expect(handler).toHaveBeenCalledWith(
           mockSocket,
           expect.any(Object),
-          mockIo,
           expect.any(Function)
         );
       });
@@ -1586,7 +1574,6 @@ describe("IArkosGateway", () => {
         expect(handler).toHaveBeenCalledWith(
           mockSocket,
           expect.any(Object),
-          mockIo,
           expect.any(Function)
         );
       });
@@ -1684,7 +1671,6 @@ describe("IArkosGateway", () => {
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           error,
           mockSocket,
-          mockIo,
           expect.any(Array),
           expect.any(Object),
           undefined
@@ -1722,7 +1708,6 @@ describe("IArkosGateway", () => {
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           error,
           mockSocket,
-          mockIo,
           [errorHandler],
           expect.any(Object),
           undefined
@@ -1757,7 +1742,6 @@ describe("IArkosGateway", () => {
         expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
           error,
           mockSocket,
-          mockIo,
           [],
           expect.any(Object),
           ackFn
@@ -1959,7 +1943,6 @@ describe("IArkosGateway", () => {
         message: expect.stringContaining("_meta.timestamp"),
       }),
       mockSocket,
-      mockIo,
       [],
       expect.objectContaining({ event: "test", namespace: "/chat" }),
       undefined
@@ -1987,7 +1970,6 @@ describe("IArkosGateway", () => {
     expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
       expect.objectContaining({ message: "Message is too old" }),
       mockSocket,
-      mockIo,
       [],
       expect.objectContaining({ event: "test", namespace: "/chat" }),
       undefined
@@ -2041,7 +2023,6 @@ describe("IArkosGateway", () => {
     expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
       expect.objectContaining({ message: "Timestamp is in the future" }),
       mockSocket,
-      mockIo,
       [],
       expect.objectContaining({ event: "test", namespace: "/chat" }),
       undefined
@@ -2070,7 +2051,6 @@ describe("IArkosGateway", () => {
       expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
         expect.objectContaining({ message: "Message is too old" }),
         mockSocket,
-        mockIo,
         [],
         expect.objectContaining({ event: "test", namespace: "/chat" }),
         undefined
@@ -2133,7 +2113,6 @@ describe("IArkosGateway", () => {
       expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
         expect.objectContaining({ message: "Message is too old" }),
         mockSocket,
-        mockIo,
         [],
         expect.objectContaining({ event: "test" }),
         undefined
