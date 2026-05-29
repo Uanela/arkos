@@ -107,7 +107,7 @@ tictactoeGateway.on({ event: "join_game", ack: true }, (socket, data, ack) => {
 
     // Put both sockets in the same socket.io room
     socket.join(roomId);
-    tictactoeGateway.toSocket(playerX.socketId).resolve().join(roomId);
+    tictactoeGateway.socket(playerX.socketId).join(roomId);
 
     const basePayload = {
       roomId,
@@ -116,13 +116,11 @@ tictactoeGateway.on({ event: "join_game", ack: true }, (socket, data, ack) => {
     };
 
     // Notify waiting player (X)
-    io.of("/tic-tac-toe")
-      .to(playerX.socketId)
-      .emit("game_start", {
-        ...basePayload,
-        yourMark: "X",
-        opponentUsername: username,
-      });
+    tictactoeGateway.socket(playerX.socketId).emit("game_start", {
+      ...basePayload,
+      yourMark: "X",
+      opponentUsername: username,
+    });
 
     // Ack joining player (O)
     ack?.({
@@ -154,73 +152,68 @@ tictactoeGateway.on({ event: "join_game", ack: true }, (socket, data, ack) => {
  * If the game ends:
  *   game_over { board, result: "X" | "O" | "draw", winnerUsername? }
  */
-tictactoeGateway.on(
-  { event: "make_move", ack: true },
-  (socket, data, io, ack) => {
-    const { roomId, index } = data ?? {};
+tictactoeGateway.on({ event: "make_move", ack: true }, (socket, data, ack) => {
+  const { roomId, index } = data ?? {};
 
-    const room = rooms.get(roomId);
-    if (!room) {
-      return ack?.({ success: false, error: "Room not found." });
-    }
-
-    if (room.status === "finished") {
-      return ack?.({ success: false, error: "Game is already over." });
-    }
-
-    const player = room.players.find((p) => p.socketId === socket.id);
-    if (!player) {
-      return ack?.({ success: false, error: "You are not in this room." });
-    }
-
-    if (player.mark !== room.currentTurn) {
-      return ack?.({ success: false, error: "It's not your turn." });
-    }
-
-    if (typeof index !== "number" || index < 0 || index > 8) {
-      return ack?.({ success: false, error: "Invalid cell index." });
-    }
-
-    if (room.board[index] !== null) {
-      return ack?.({ success: false, error: "Cell already taken." });
-    }
-
-    // Apply move
-    room.board[index] = player.mark;
-    room.currentTurn = player.mark === "X" ? "O" : "X";
-
-    const moveMadePayload = {
-      board: room.board,
-      index,
-      mark: player.mark,
-      currentTurn: room.currentTurn,
-    };
-
-    io.of("/tic-tac-toe").to(roomId).emit("move_made", moveMadePayload);
-    ack?.({ success: true });
-
-    // Check win / draw
-    const result = checkWinner(room.board);
-    if (result) {
-      room.status = "finished";
-
-      const winnerPlayer =
-        result !== "draw"
-          ? room.players.find((p) => p.mark === result)
-          : undefined;
-
-      io.of("/tic-tac-toe")
-        .to(roomId)
-        .emit("game_over", {
-          board: room.board,
-          result,
-          winnerUsername: winnerPlayer?.username ?? null,
-        });
-
-      rooms.delete(roomId);
-    }
+  const room = rooms.get(roomId);
+  if (!room) {
+    return ack?.({ success: false, error: "Room not found." });
   }
-);
+
+  if (room.status === "finished") {
+    return ack?.({ success: false, error: "Game is already over." });
+  }
+
+  const player = room.players.find((p) => p.socketId === socket.id);
+  if (!player) {
+    return ack?.({ success: false, error: "You are not in this room." });
+  }
+
+  if (player.mark !== room.currentTurn) {
+    return ack?.({ success: false, error: "It's not your turn." });
+  }
+
+  if (typeof index !== "number" || index < 0 || index > 8) {
+    return ack?.({ success: false, error: "Invalid cell index." });
+  }
+
+  if (room.board[index] !== null) {
+    return ack?.({ success: false, error: "Cell already taken." });
+  }
+
+  // Apply move
+  room.board[index] = player.mark;
+  room.currentTurn = player.mark === "X" ? "O" : "X";
+
+  const moveMadePayload = {
+    board: room.board,
+    index,
+    mark: player.mark,
+    currentTurn: room.currentTurn,
+  };
+
+  tictactoeGateway.room(roomId).emit("move_made", moveMadePayload);
+  ack?.({ success: true });
+
+  // Check win / draw
+  const result = checkWinner(room.board);
+  if (result) {
+    room.status = "finished";
+
+    const winnerPlayer =
+      result !== "draw"
+        ? room.players.find((p) => p.mark === result)
+        : undefined;
+
+    tictactoeGateway.room(roomId).emit("game_over", {
+      board: room.board,
+      result,
+      winnerUsername: winnerPlayer?.username ?? null,
+    });
+
+    rooms.delete(roomId);
+  }
+});
 
 /**
  * disconnect hook
@@ -228,7 +221,7 @@ tictactoeGateway.on(
  * If a player disconnects mid-game, notify the opponent and clean up.
  * If the waiting player disconnects, clear the slot.
  */
-tictactoeGateway.hook("disconnect", (socket, io) => {
+tictactoeGateway.hook("disconnect", (socket) => {
   // Clear waiting slot if it was this socket
   if (waitingPlayer?.socketId === socket.id) {
     waitingPlayer = null;
@@ -242,7 +235,7 @@ tictactoeGateway.hook("disconnect", (socket, io) => {
   room.status = "finished";
 
   const opp = opponent(room, socket.id);
-  io.of("/tic-tac-toe").to(opp.socketId).emit("opponent_left", {
+  tictactoeGateway.socket(opp.socketId).emit("opponent_left", {
     message: "Your opponent disconnected. You win by default!",
   });
 
