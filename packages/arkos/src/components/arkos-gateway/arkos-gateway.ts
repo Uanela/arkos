@@ -269,7 +269,7 @@ export class IArkosGateway {
     const localConfig = this.config;
 
     const namespaceName = parentName
-      ? `${parentName}${ownName ?? ""}`
+      ? `${parentName.replace(/\/$/, "")}/${ownName.replace(/^\//, "")}`
       : (ownName ?? "");
 
     const ns = io.of(namespaceName);

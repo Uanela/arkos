@@ -3,7 +3,6 @@ import { User } from "../../types";
 import { DefaultEventsMap } from "socket.io";
 import { Validator } from "../../types/validation/validator";
 import { Options as RateLimitOptions } from "express-rate-limit";
-import { ArkosPolicyRule } from "../arkos-policy/types";
 import { DetailedAccessControlRule } from "../../types/auth";
 
 /**
