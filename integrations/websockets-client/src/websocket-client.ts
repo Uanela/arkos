@@ -1,6 +1,7 @@
-import { Manager } from "socket.io-client";
+import { Manager, SocketOptions } from "socket.io-client";
 import { GatewayClient } from "./gateway-client";
 import { ClientDedupStore } from "./utils/dedup-store";
+import deepmerge from "./utils/deepmerge";
 
 /**
  * WebsocketClient manages socket connections per namespace.
@@ -21,7 +22,10 @@ import { ClientDedupStore } from "./utils/dedup-store";
 export class WebsocketClient {
   private gateways = new Map<string, GatewayClient>();
 
-  constructor(private manager: Manager) {}
+  constructor(
+    private manager: Manager,
+    private opts?: Partial<SocketOptions>
+  ) {}
 
   /**
    * Get (or lazily create) a GatewayClient for the given namespace.
@@ -31,14 +35,15 @@ export class WebsocketClient {
    *
    * @example
    * const chat = client.gateway("/chat")
-   * const orders = client.gateway("/orders")
+   * const orders = client.gateway("/orders", { auth: { token } })
    */
-  gateway(namespace: string): GatewayClient {
-    if (this.gateways.has(namespace)) {
-      return this.gateways.get(namespace)!;
-    }
+  gateway(namespace: string, opts?: Partial<SocketOptions>): GatewayClient {
+    if (this.gateways.has(namespace)) return this.gateways.get(namespace)!;
 
-    const socket = this.manager.socket(namespace);
+    const socket = this.manager.socket(
+      namespace,
+      deepmerge(this.opts || {}, opts || {})
+    );
     const dedup = new ClientDedupStore();
     const gatewayClient = new GatewayClient(socket, dedup);
 
@@ -74,6 +79,9 @@ export class WebsocketClient {
  *
  * const chat = client.gateway("/chat")
  */
-export function createWebsocketClient(manager: Manager): WebsocketClient {
-  return new WebsocketClient(manager);
+export function createWebsocketClient(
+  manager: Manager,
+  opts?: Partial<SocketOptions>
+): WebsocketClient {
+  return new WebsocketClient(manager, opts);
 }

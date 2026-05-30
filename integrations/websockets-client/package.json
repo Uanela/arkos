@@ -1,6 +1,6 @@
 {
   "name": "@arkosjs/websockets-client",
-  "version": "0.1.0-canary.2",
+  "version": "0.1.0-canary.3",
   "description": "Framework-agnostic WebSocket client for Arkos Gateway",
   "main": "dist/exports/index.js",
   "module": "dist/exports/index.js",
