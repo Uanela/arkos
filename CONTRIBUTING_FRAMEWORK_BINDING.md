@@ -1,7 +1,7 @@
 # Contributing Framework Bindings for `@arkosjs/websockets-client`
 
 > ⚠️ **The code in this document was written by AI and has NOT been tested by a real framework user.**
-> If you use Svelte, Solid, Vue, or Angular and want to contribute, this document gives you the full picture — architecture, core API, and reference implementations to validate and ship.
+> If you use Svelte, Solid, Vue, or Angular and want to contribute, this document gives you the EXAMPLE picture — architecture, core API, and reference implementations to validate and ship.
 
 ---
 
@@ -20,7 +20,15 @@ Framework packages are **thin adapters**. All business logic (dedup, `_meta` inj
 
 ---
 
-## Core API to wrap
+## Examples And References
+
+1. **Implemented Code In Core API** - [Tic Tac Toe In Pure TS](https://github.com/Uanela/arkos/tree/feat/websockets-client/examples/tic-tac-toe-websockets/frontend-js)
+2. **Implemented Code In React API** - [Tic Tac Toe In React](https://github.com/Uanela/arkos/tree/feat/websockets-client/examples/tic-tac-toe-websockets/frontend-react)
+3. **The Backend Used** - [Tic Tac Toe Backend](https://github.com/Uanela/arkos/tree/feat/websockets-client/examples/tic-tac-toe-websockets/backend)
+
+---
+
+## Core API to wrap (Not AI)
 
 ```ts
 import { Manager } from "socket.io-client"
