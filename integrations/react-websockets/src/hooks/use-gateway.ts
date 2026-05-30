@@ -8,6 +8,7 @@ import type {
   ArkosEmitOptions,
   ArkosEventHandler,
 } from "@arkosjs/websockets-client";
+import { SocketOptions } from "socket.io-client";
 
 /**
  * Returns a scoped gateway handle for a given namespace.
@@ -16,7 +17,7 @@ import type {
  * The namespace socket is lazily created on first call and reused.
  *
  * @example
- * const chat = useGateway("/chat")
+ * const chat = useGateway("/chat", { ... })
  *
  * chat.on("receive_message", (data) => setMessages(prev => [...prev, data]))
  *
@@ -27,9 +28,12 @@ import type {
  * chat.status   // "connected" | "reconnecting" | "disconnected"
  * chat.user     // mirrors socket.user from server auth
  */
-export function useGateway(namespace: string) {
+export function useGateway(namespace: string, opts?: Partial<SocketOptions>) {
   const client = useWebsocketClient();
-  const gateway = useMemo(() => client.gateway(namespace), [client, namespace]);
+  const gateway = useMemo(
+    () => client.gateway(namespace, opts),
+    [client, namespace]
+  );
   const status = useGatewayStatus(gateway);
 
   return useMemo(

@@ -9,12 +9,14 @@ import {
   WebsocketClient,
   createWebsocketClient,
 } from "@arkosjs/websockets-client";
+import { SocketOptions } from "socket.io-client";
 
 const WebsocketClientContext = createContext<WebsocketClient | null>(null);
 
 interface WebSocketProviderProps {
   children: ReactNode;
   manager: Parameters<typeof createWebsocketClient>[0];
+  options?: Partial<SocketOptions>;
 }
 
 /**
@@ -24,27 +26,29 @@ interface WebSocketProviderProps {
  *
  * @example
  * const manager = useMemo(() => new Manager("http://localhost:3000", {
- *   auth: { token: accessToken },
  *   reconnection: true,
- * }), [accessToken]);
+ * }), []);
  *
- * <WebSocketProvider manager={manager}>
+ * <WebSocketProvider manager={manager} options={{ auth: { token } }}>
  *   <App />
  * </WebSocketProvider>
  */
 export function WebSocketProvider({
   children,
   manager,
+  options,
 }: WebSocketProviderProps) {
   const clientRef = useRef<WebsocketClient | null>(null);
 
-  if (!clientRef.current) clientRef.current = createWebsocketClient(manager);
+  if (!clientRef.current)
+    clientRef.current = createWebsocketClient(manager, options);
 
   const mountCount = useRef(0);
 
   useEffect(() => {
     mountCount.current += 1;
-    if (!clientRef.current) clientRef.current = createWebsocketClient(manager);
+    if (!clientRef.current)
+      clientRef.current = createWebsocketClient(manager, options);
 
     return () => {
       if (mountCount.current === 1) return;
