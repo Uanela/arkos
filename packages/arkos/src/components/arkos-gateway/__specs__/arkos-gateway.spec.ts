@@ -689,15 +689,22 @@ describe("IArkosGateway", () => {
         const next = jest.fn();
 
         (authService.getAuthenticatedUser as jest.Mock).mockResolvedValue(null);
-        // (authHookManager.runAuthenticate as jest.Mock).mockImplementation(
-        //   ({ context, done }, authenticateFn) => authenticateFn(context)
-        // );
 
         (gateway as any)._register(mockIo, undefined, [], [], {});
         const middlewareFn = mockNs.use.mock.calls[0][0];
         await middlewareFn(mockSocket, next);
 
-        expect(next).toHaveBeenCalledWith(expect.any(Error));
+        expect(next).not.toHaveBeenCalledWith();
+        expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
+          expect.any(Error),
+          mockSocket,
+          [],
+          {
+            startTime: expect.any(Number),
+            namespace: "/chat",
+            event: "authentication",
+          }
+        );
       });
 
       it("auth middleware should call next() with error when runAuthenticate fails", async () => {
@@ -717,6 +724,16 @@ describe("IArkosGateway", () => {
         await middlewareFn(mockSocket, next);
 
         expect(next).toHaveBeenCalledWith(authError);
+        expect(handleArkosGatewayErrors).toHaveBeenCalledWith(
+          authError,
+          mockSocket,
+          [],
+          {
+            startTime: expect.any(Number),
+            namespace: "/chat",
+            event: "authentication",
+          }
+        );
       });
     });
 

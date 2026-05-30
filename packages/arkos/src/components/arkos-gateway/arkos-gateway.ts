@@ -294,9 +294,16 @@ export class IArkosGateway {
 
     if (resolvedAuth) {
       ns.use(async (socket: ArkosSocket, next) => {
+        const startTime = new Date().getTime();
         try {
           await authHookManager.runAuthenticate(
-            { context: socket, done: next },
+            {
+              context: socket,
+              done: (err?: any) => {
+                if (err) throw err;
+                next();
+              },
+            },
             async (socket) => {
               const user = await authService.getAuthenticatedUser(socket);
               if (!user) throw loginRequiredError;
@@ -304,6 +311,11 @@ export class IArkosGateway {
             }
           );
         } catch (err: any) {
+          handleArkosGatewayErrors(err, socket, errorHandlers, {
+            startTime,
+            namespace: this.config.name,
+            event: "authentication",
+          });
           next(err);
         }
       });
