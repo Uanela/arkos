@@ -38,8 +38,15 @@ type Screen = "join" | "waiting" | "game";
 export function TicTacToe() {
   const game = useGateway("/tic-tac-toe");
 
+  game.on("connect_error", (...data) => {
+    console.log(data);
+  });
+
   useEffect(() => {
+    console.log(game.raw.rawSocket.active);
+    console.log(game.raw.rawSocket.connected);
     game.raw.rawSocket.connect();
+    console.log(game.raw.rawSocket.connected);
   }, []);
 
   const status = game.status;
