@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useRef, type ReactNode } from "react";
 import {
   WebsocketClient,
   createWebsocketClient,
@@ -39,23 +33,7 @@ export function WebSocketProvider({
   options,
 }: WebSocketProviderProps) {
   const clientRef = useRef<WebsocketClient | null>(null);
-
-  if (!clientRef.current)
-    clientRef.current = createWebsocketClient(manager, options);
-
-  const mountCount = useRef(0);
-
-  useEffect(() => {
-    mountCount.current += 1;
-    if (!clientRef.current)
-      clientRef.current = createWebsocketClient(manager, options);
-
-    return () => {
-      if (mountCount.current === 1) return;
-      clientRef.current?.destroy();
-      clientRef.current = null;
-    };
-  }, [manager]);
+  clientRef.current ??= createWebsocketClient(manager, options);
 
   return (
     <WebsocketClientContext.Provider value={clientRef.current}>
