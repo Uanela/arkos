@@ -1800,8 +1800,7 @@ describe("IArkosGateway", () => {
         expect(runArkosGatewayPipes).toHaveBeenCalledWith(
           expect.arrayContaining([globalPipe, eventPipe]),
           mockSocket,
-          expect.any(Object),
-          mockIo
+          expect.any(Object)
         );
         expect(handler).toHaveBeenCalled();
       });

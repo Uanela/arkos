@@ -63,7 +63,7 @@ export class IArkosGateway {
    * with its auth, rateLimit, and pipes.
    *
    * @example
-   * chatGateway.use((socket, data, io) => {
+   * chatGateway.use((socket, data) => {
    *   console.log("incoming connection", socket.id)
    * })
    *
@@ -98,11 +98,11 @@ export class IArkosGateway {
    *
    * @example
    * // runs before every event in this gateway
-   * chatGateway.pipe((socket, data, io) => {
+   * chatGateway.pipe((socket, data) => {
    * })
    *
    * // runs only before "send_message"
-   * chatGateway.pipe({ event: "send_message" }, (socket, data, io) => {
+   * chatGateway.pipe({ event: "send_message" }, (socket, data) => {
    * })
    */
   pipe(fn: ArkosGatewayPipe): this;
@@ -203,15 +203,15 @@ export class IArkosGateway {
    *   If not registered, Arkos emits a default `"error"` event to the socket.
    *
    * @example
-   * chatGateway.hook("connection", (socket, io) => {
+   * chatGateway.hook("connection", (socket) => {
    *   console.log("connected", socket.user.id)
    * })
    *
-   * chatGateway.hook("disconnect", (socket, io) => {
+   * chatGateway.hook("disconnect", (socket) => {
    *   console.log("disconnected", socket.id)
    * })
    *
-   * chatGateway.hook("error", (err, socket, io) => {
+   * chatGateway.hook("error", (err, socket) => {
    *   socket.emit("error", { message: err.message })
    * })
    */
@@ -545,8 +545,7 @@ export class IArkosGateway {
             await runArkosGatewayPipes(
               [...inheritedPipes, ...eventPipes],
               socket,
-              data,
-              io
+              data
             );
 
             await handler(socket, data, wrappedAck);

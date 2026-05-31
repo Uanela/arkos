@@ -1,4 +1,4 @@
-import { Server, Socket } from "socket.io";
+import { Socket } from "socket.io";
 import { User } from "../../types";
 import { DefaultEventsMap } from "socket.io";
 import { Validator } from "../../types/validation/validator";
@@ -69,11 +69,11 @@ export interface ArkosSocket<
    * similar to Express's `res.locals`. Reset automatically on each event.
    *
    * @example
-   * chatGateway.pipe((socket, data, io) => {
+   * chatGateway.pipe((socket, data) => {
    *   socket.locals.user = enrichUser(socket.user)
    * })
    *
-   * chatGateway.on({ event: "send_message" }, (socket, data, io) => {
+   * chatGateway.on({ event: "send_message" }, (socket, data) => {
    *   console.log(socket.locals.user) // set by pipe above
    * })
    */
@@ -82,8 +82,7 @@ export interface ArkosSocket<
 
 export type ArkosGatewayPipe = (
   socket: ArkosSocket,
-  data: any,
-  io: Server
+  data: any
 ) => void | Promise<void>;
 
 export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {

@@ -1,10 +1,8 @@
-import { Server } from "socket.io";
 import {
   ArkosGatewayErrorHandler,
   ArkosGatewayPipe,
   ArkosSocket,
 } from "../types";
-import sheu from "../../../utils/sheu";
 import { isProduction } from "../../../utils/helpers/arkos-config.helpers";
 import { getHandledError } from "../../../modules/error-handler/utils/get-handled-error";
 
@@ -39,7 +37,7 @@ export async function handleArkosGatewayErrors(
   socket.emit = originalEmit;
 
   if (!emitCalled) {
-    sheu.error(err);
+    console.error("[\x1b[31mError\x1b[0m]:", err);
     err = getHandledError(err);
 
     const payload = {
@@ -93,11 +91,10 @@ function sendProductionError(err: any, socket: ArkosSocket): void {
 export async function runArkosGatewayPipes(
   pipes: ArkosGatewayPipe[],
   socket: ArkosSocket,
-  data: any,
-  io: Server
+  data: any
 ) {
   for (const pipe of pipes) {
-    await pipe(socket, data, io);
+    await pipe(socket, data);
   }
 }
 

@@ -1,5 +1,3 @@
-import { Server } from "socket.io";
-
 jest.mock("../../../../utils/sheu", () => ({ error: jest.fn() }));
 jest.mock("../../../../utils/helpers/arkos-config.helpers", () => ({
   isProduction: jest.fn().mockReturnValue(false),
@@ -18,10 +16,6 @@ function makeSocket(): { socket: any; emitSpy: jest.Mock } {
     socket: { id: "socket-id-123", emit: emitSpy },
     emitSpy,
   };
-}
-
-function makeIo(): any {
-  return {} as Server;
 }
 
 const loggerMeta = {
@@ -239,7 +233,7 @@ describe("runArkosGatewayPipes", () => {
       }),
     ];
 
-    await runArkosGatewayPipes(pipes, socket, { data: true }, makeIo());
+    await runArkosGatewayPipes(pipes, socket, { data: true });
 
     expect(order).toEqual([1, 2, 3]);
   });
@@ -248,20 +242,19 @@ describe("runArkosGatewayPipes", () => {
     const { socket } = makeSocket();
     const pipe = jest.fn().mockResolvedValue(undefined);
     const data = { room: "room:1" };
-    const io = makeIo();
 
-    await runArkosGatewayPipes([pipe], socket, data, io);
+    await runArkosGatewayPipes([pipe], socket, data);
 
-    expect(pipe).toHaveBeenCalledWith(socket, data, io);
+    expect(pipe).toHaveBeenCalledWith(socket, data);
   });
 
   test("propagates throw from pipe", async () => {
     const { socket } = makeSocket();
     const pipes = [jest.fn().mockRejectedValue(new Error("pipe exploded"))];
 
-    await expect(
-      runArkosGatewayPipes(pipes, socket, {}, makeIo())
-    ).rejects.toThrow("pipe exploded");
+    await expect(runArkosGatewayPipes(pipes, socket, {})).rejects.toThrow(
+      "pipe exploded"
+    );
   });
 
   test("stops execution after throwing pipe", async () => {
@@ -269,9 +262,7 @@ describe("runArkosGatewayPipes", () => {
     const pipe2 = jest.fn();
     const pipes = [jest.fn().mockRejectedValue(new Error("stop")), pipe2];
 
-    await expect(
-      runArkosGatewayPipes(pipes, socket, {}, makeIo())
-    ).rejects.toThrow();
+    await expect(runArkosGatewayPipes(pipes, socket, {})).rejects.toThrow();
 
     expect(pipe2).not.toHaveBeenCalled();
   });
@@ -279,9 +270,7 @@ describe("runArkosGatewayPipes", () => {
   test("resolves immediately with empty pipes array", async () => {
     const { socket } = makeSocket();
 
-    await expect(
-      runArkosGatewayPipes([], socket, {}, makeIo())
-    ).resolves.toBeUndefined();
+    await expect(runArkosGatewayPipes([], socket, {})).resolves.toBeUndefined();
   });
 
   test("handles sync pipe that returns undefined", async () => {
@@ -289,7 +278,7 @@ describe("runArkosGatewayPipes", () => {
     const pipe = jest.fn().mockReturnValue(undefined);
 
     await expect(
-      runArkosGatewayPipes([pipe], socket, {}, makeIo())
+      runArkosGatewayPipes([pipe], socket, {})
     ).resolves.toBeUndefined();
   });
 });
