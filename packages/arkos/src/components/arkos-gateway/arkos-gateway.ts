@@ -32,7 +32,7 @@ import { loginRequiredError } from "../../modules/auth/utils/auth-error-objects"
 import errorPrettifier from "../../modules/base/utils/error-prettifier";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { defaultGatewayStore } from "./utils/memory-gateway-store";
-import { mountArkosSocketExtensions } from "./arkos-socket";
+import { mountArkosSocketExtensions } from "./socket-extensions";
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;

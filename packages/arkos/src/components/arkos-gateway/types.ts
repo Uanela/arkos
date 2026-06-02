@@ -124,7 +124,11 @@ export interface ArkosSocket<
    *
    * @since 1.7.0-canary.29
    */
-  retry(times: number): ArkosRetryTarget;
+  retry(
+    times: number,
+    initialDelay?: number,
+    multiplier?: number
+  ): ArkosRetryTarget;
 
   /**
    * Emits an event to this client.
@@ -138,7 +142,7 @@ export interface ArkosSocket<
   emit<Ev extends EventNames<EmitEvents>>(
     ev: Ev,
     ...args: EventParams<EmitEvents, Ev>
-  ): boolean;
+  ): true;
 
   /**
    * Emits an event and waits for an acknowledgement from the client.
@@ -240,7 +244,7 @@ export interface ArkosBroadcastOperator<
   emit<Ev extends EventNames<EmitEvents>>(
     ev: Ev,
     ...args: EventParams<EmitEvents, Ev>
-  ): boolean;
+  ): true;
 
   /** Chain volatile flag — event may be lost if client is not ready. */
   get volatile(): ArkosBroadcastOperator<EmitEvents, SocketData>;
@@ -286,9 +290,6 @@ export interface ArkosBroadcastOperator<
  * @since 1.7.0-canary.29
  */
 export interface ArkosRetryTarget {
-  /** Emit with retry. `_meta` is injected automatically. */
-  emit(event: string, data: any, ...rest: any[]): boolean;
-
   /** Emit with ack and retry. `_meta` is injected automatically. */
   emitWithAck(event: string, data: any, ...rest: any[]): Promise<any>;
 
@@ -314,7 +315,7 @@ export interface ArkosUserTarget {
    * @example
    * socket.user(userId).emit("notification", data)
    */
-  emit(event: string, ...args: any[]): boolean;
+  emit(event: string, ...args: any[]): true;
 
   /**
    * Exclude sockets from the emit.
@@ -380,6 +381,14 @@ export interface ArkosUserTarget {
    * await socket.user(userId).disconnect()
    */
   disconnect(close?: boolean): Promise<void>;
+  /**
+   * Returns all active rooms for this user.
+   *
+   * @example
+   * const rooms = await socket.user(userId).rooms()
+   * console.log(rooms.length) // number of active tabs/connections
+   */
+  rooms(): string[];
 }
 
 export type ArkosGatewayPipe = (
