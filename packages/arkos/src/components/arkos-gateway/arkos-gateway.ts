@@ -30,14 +30,9 @@ import {
 } from "../../exports/error-handler";
 import { loginRequiredError } from "../../modules/auth/utils/auth-error-objects";
 import errorPrettifier from "../../modules/base/utils/error-prettifier";
-import {
-  GatewayBroadcastBuilder,
-  GatewayRoomBuilder,
-  GatewaySocketBuilder,
-  GatewayUserBuilder,
-} from "./utils/emit-builders";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { defaultGatewayStore } from "./utils/memory-gateway-store";
+import { mountArkosSocketExtensions } from "./socket-extensions";
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
@@ -48,8 +43,6 @@ export class IArkosGateway {
     type: ArkosGatewayHookType;
     handler: ArkosGatewayHookHandler;
   }[] = [];
-  private io?: Server;
-  private registryOptions?: ArkosGatewayRegisterOptions;
 
   constructor(config: ArkosGatewayConfig) {
     this.config = config;
@@ -63,7 +56,7 @@ export class IArkosGateway {
    * with its auth, rateLimit, and pipes.
    *
    * @example
-   * chatGateway.use((socket, data) => {
+   * chatGateway.use((socket, next) => {
    *   console.log("incoming connection", socket.id)
    * })
    *
@@ -75,7 +68,6 @@ export class IArkosGateway {
       if (item instanceof IArkosGateway) {
         this.gateways.push(item);
       } else if (typeof item === "function") {
-        // stored but applied as ns.use() during register()
         this.pipes.push(item as ArkosGatewayPipe);
       } else {
         throw new Error(
@@ -90,8 +82,7 @@ export class IArkosGateway {
    * Register a pipe — middleware that runs before event handlers.
    *
    * When called with a function only, the pipe runs before every event
-   * handler in this gateway and drills down to child gateways, identical
-   * to how Express `router.use(fn)` works.
+   * handler in this gateway and drills down to child gateways.
    *
    * When called with an event config object, the pipe runs only for that
    * specific event.
@@ -124,7 +115,6 @@ export class IArkosGateway {
         entry.pipes = entry.pipes ?? [];
         entry.pipes.push(fn);
       } else {
-        // deferred — pipe registered before on()
         this.events.push({
           config: { event: fnOrConfig.event, _pipeOnly: true } as any,
           handler: null as any,
@@ -171,7 +161,6 @@ export class IArkosGateway {
     const entry: ArkosGatewayEventEntry = {
       config: eventConfig,
       handler,
-      // snapshot global pipes at registration time + any deferred scoped pipes
       pipes: [...this.pipes, ...(deferred?.pipes ?? [])],
     };
 
@@ -205,10 +194,6 @@ export class IArkosGateway {
    * @example
    * chatGateway.hook("connection", (socket) => {
    *   console.log("connected", socket.user.id)
-   * })
-   *
-   * chatGateway.hook("disconnect", (socket) => {
-   *   console.log("disconnected", socket.id)
    * })
    *
    * chatGateway.hook("error", (err, socket) => {
@@ -256,11 +241,9 @@ export class IArkosGateway {
   ): void {
     options.store = options.store ?? defaultGatewayStore;
     const { store } = options;
-    this.registryOptions = options;
 
     const parentName = parentConfig?.name;
     const ownName = this.config.name;
-    this.io = io;
     this.config = deepmerge(parentConfig || {}, this.config, {
       arrayMerge: (_, sourceArray) => sourceArray,
     });
@@ -293,7 +276,8 @@ export class IArkosGateway {
       .map((h) => h.handler as ArkosGatewayErrorHandler);
 
     if (resolvedAuth) {
-      ns.use(async (socket: ArkosSocket, next) => {
+      ns.use(async (socket: any, next) => {
+        socket = socket as ArkosSocket;
         const startTime = new Date().getTime();
         try {
           await authHookManager.runAuthenticate(
@@ -308,7 +292,8 @@ export class IArkosGateway {
               const user = await authService.getAuthenticatedUser(socket);
               if (!user) throw loginRequiredError;
               return user;
-            }
+            },
+            "currentUser"
           );
         } catch (err: any) {
           handleArkosGatewayErrors(err, socket, errorHandlers, {
@@ -321,12 +306,18 @@ export class IArkosGateway {
       });
     }
 
-    ns.on("connection", async (socket: ArkosSocket) => {
+    ns.on("connection", async (s) => {
+      const socket = s as ArkosSocket;
       socket.locals = {};
+
+      socket._arkos = { store, gatewayConfig: localConfig };
+      mountArkosSocketExtensions(socket);
+
       handleGatewayLifecycleLog(this.config.name, "connected", socket.id);
       const connectionStartTime = new Date().getTime();
 
-      if (socket.user?.id) socket.join(`arkos::user:${socket.user.id}`);
+      if (socket.currentUser?.id)
+        socket.join(`arkos::user:${socket.currentUser.id}`);
 
       try {
         for (const handler of connectHandlers) await handler(socket);
@@ -481,7 +472,8 @@ export class IArkosGateway {
                 { context: socket, done: () => {} },
                 eventConfig.event,
                 this.config.name!,
-                eventConfig.authorization!.rule
+                eventConfig.authorization!.rule,
+                "currentUser"
               );
             }
 
@@ -591,117 +583,22 @@ export class IArkosGateway {
       );
     }
   }
-
-  /**
-   * Returns a builder for querying and managing a specific socket connection.
-   * Accepts a socket ID. If the socket is no longer connected, operations
-   * no-op or return `{ success: false, reason: "not_found" }`.
-   *
-   * @example
-   * await gateway.socket(socketId).join("room-123")
-   * await gateway.socket(socketId).leave("room-123")
-   * gateway.socket(socketId).disconnect()
-   * const rooms = await gateway.socket(socketId).rooms()
-   * const connected = await gateway.socket(socketId).isConnected()
-   * await gateway.socket(socketId).emit("notification", data)
-   *
-   * @since 1.7.0-canary.28
-   */
-  socket(socketId: string) {
-    return new GatewaySocketBuilder(
-      socketId,
-      this.io!.of(this.config.name!),
-      this.config,
-      this.registryOptions?.store!
-    );
-  }
-
-  /**
-   * Returns a builder for querying and managing a specific user across
-   * all their active socket connections.
-   *
-   * @example
-   * await gateway.user(userId).join("room-123")
-   * await gateway.user(userId).leave("room-123")
-   * await gateway.user(userId).disconnect()
-   * const rooms = await gateway.user(userId).rooms()
-   * const online = await gateway.user(userId).isOnline()
-   * await gateway.user(userId).emit("notification", data)
-   * await gateway.user(userId).except({ socket: socketId }).emit("sync", data)
-   *
-   * @since 1.7.0-canary.28
-   */
-  user(userId: string) {
-    return new GatewayUserBuilder(
-      userId,
-      this.io!.of(this.config.name!),
-      this.config,
-      this.registryOptions?.store!
-    );
-  }
-
-  /**
-   * Returns a builder for querying and emitting to a specific room.
-   *
-   * @example
-   * await gateway.room("room-123").emit("update", data)
-   * await gateway.room("room-123").except({ socket: socketId }).emit("update", data)
-   * await gateway.room("room-123").except({ user: userId }).emit("update", data)
-   * await gateway.room("room-123").except({ room: "other-room" }).emit("update", data)
-   * const size = await gateway.room("room-123").size()
-   * const users = await gateway.room("room-123").users()
-   * const hasUser = await gateway.room("room-123").has({ user: userId })
-   *
-   * @since 1.7.0-canary.28
-   */
-  room(roomId: string) {
-    return new GatewayRoomBuilder(
-      roomId,
-      this.io!.of(this.config.name!),
-      this.config,
-      this.registryOptions?.store!
-    );
-  }
-
-  /**
-   * Returns a builder for broadcasting events to all sockets in this
-   * gateway's namespace, with optional exclusions.
-   *
-   * @example
-   * await gateway.broadcast().emit("announcement", data)
-   * await gateway.broadcast().except({ socket: socketId }).emit("announcement", data)
-   * await gateway.broadcast().except({ room: roomId }).emit("announcement", data)
-   * await gateway.broadcast().except({ user: userId }).emit("announcement", data)
-   *
-   * @since 1.7.0-canary.28
-   */
-  broadcast() {
-    return new GatewayBroadcastBuilder(
-      this.io!.of(this.config.name!),
-      this.config,
-      this.registryOptions?.store!
-    );
-  }
 }
 
 /**
  * Creates an Arkos WebSocket Gateway backed by Socket.io.
  *
- * Handles authentication, validation, rate limiting, middleware,
+ * Handles authentication, validation, rate limiting, pipes,
  * error handling, and nested gateways — all declaratively.
+ * Enhances every connected socket with `socket.user()`, `socket.peer()`,
+ * `socket.retry()`, and automatic `_meta` injection on outgoing emits.
  *
  * @example
  * ```ts
- * // chat.gateway.ts
  * const chatGateway = ArkosGateway({
  *   name: "chat",
  *   authentication: true,
  *   rateLimit: { windowMs: 60_000, max: 200 },
- * })
- *
- * chatGateway.use((socket, data, next) => {
- *   console.log(`[${socket.user.id}] event received`)
- *   next()
  * })
  *
  * chatGateway.on(
@@ -711,20 +608,9 @@ export class IArkosGateway {
  *     ack?.({ status: "ok" })
  *   }
  * )
- *
- * // app.ts
- * const app = arkos()
- * await app.build()
- *
- * const server = http.createServer(app)
- * const io = new Server(server)
- *
- * chatGateway.register(io)
- *
- * app.listen(server)
  * ```
  * @since 1.7.0-canary.18
- * @see {@link https://www.arkosjs.com/docs/core-concepts/components/gateways} for full documentation
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/components/gateways}
  */
 function ArkosGateway(config: ArkosGatewayConfig) {
   return new IArkosGateway(config);

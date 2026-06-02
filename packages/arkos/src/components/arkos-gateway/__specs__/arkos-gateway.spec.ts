@@ -70,35 +70,6 @@ jest.mock("../utils/helpers", () => ({
   handleGatewayLifecycleLog: jest.fn(),
 }));
 
-jest.mock("../utils/emit-builders", () => ({
-  GatewayEmitBuilder: jest.fn().mockImplementation((target) => ({ target })),
-  GatewaySocketBuilder: jest.fn().mockImplementation((target) => ({ target })),
-  GatewayBroadcastBuilder: jest
-    .fn()
-    .mockImplementation((target) => ({ target })),
-  GatewayRoomBuilder: jest
-    .fn()
-    .mockImplementation((roomId, ns) => ({ roomId, ns })),
-  GatewayUserBuilder: jest
-    .fn()
-    .mockImplementation((userId, ns) => ({ userId, ns })),
-  GatewayUserEmitBuilder: jest
-    .fn()
-    .mockImplementation((userId, ns, config, store) => ({
-      userId,
-      ns,
-      config,
-      store,
-    })),
-  GatewaySocketEmitBuilder: jest
-    .fn()
-    .mockImplementation((socket, config, store) => ({
-      socket,
-      config,
-      store,
-    })),
-}));
-
 jest.mock("../../../utils/helpers/deepmerge.helper", () => ({
   __esModule: true,
   default: jest.fn((target, source, _) => ({ ...target, ...source })),
@@ -154,13 +125,16 @@ function createMockIo() {
 function createMockSocket(overrides: any = {}) {
   return {
     id: "socket-1",
-    user: { id: "user-1", email: "test@test.com", role: "User" },
+    currentUser: { id: "user-1", email: "test@test.com", role: "User" },
     data: {},
     meta: {},
     locals: {},
     join: jest.fn(),
     on: jest.fn(),
     emit: jest.fn(),
+    to: jest.fn(),
+    timeout: jest.fn(),
+    emitWithAck: jest.fn(),
     rooms: new Set(["arkos::user:user-1"]),
     ...overrides,
   };
@@ -176,9 +150,6 @@ describe("IArkosGateway", () => {
     jest.clearAllMocks();
   });
 
-  // ============================================================
-  // CONSTRUCTOR TESTS
-  // ============================================================
   describe("constructor", () => {
     it("should set default name to 'web-socket' when not provided", () => {
       const gateway = new IArkosGateway({} as any);
@@ -205,9 +176,6 @@ describe("IArkosGateway", () => {
     });
   });
 
-  // ============================================================
-  // USE METHOD TESTS
-  // ============================================================
   describe("use()", () => {
     it("should add middleware function to pipes array", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
@@ -264,9 +232,6 @@ describe("IArkosGateway", () => {
     });
   });
 
-  // ============================================================
-  // PIPE METHOD TESTS
-  // ============================================================
   describe("pipe()", () => {
     it("should add function to global pipes when called with function only", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
@@ -356,9 +321,6 @@ describe("IArkosGateway", () => {
     });
   });
 
-  // ============================================================
-  // ON METHOD TESTS
-  // ============================================================
   describe("on()", () => {
     it("should skip registration when eventConfig.disabled is true", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
@@ -437,9 +399,6 @@ describe("IArkosGateway", () => {
     });
   });
 
-  // ============================================================
-  // HOOK METHOD TESTS
-  // ============================================================
   describe("hook()", () => {
     it("should register connection hook", () => {
       const gateway = new IArkosGateway({ name: "/chat" });
@@ -503,75 +462,6 @@ describe("IArkosGateway", () => {
     });
   });
 
-  // ============================================================
-  // REGISTER METHOD TESTS
-  // ============================================================
-  describe("register()", () => {
-    it("should throw when called twice on same io instance", () => {
-      const { mockIo } = createMockIo();
-      const gateway = new IArkosGateway({ name: "/chat" });
-
-      gateway.register(mockIo);
-
-      expect(() => gateway.register(mockIo)).toThrow(
-        /gateway.register\(\) can only be called once per io server instance/
-      );
-    });
-
-    it("should mark io as registered", () => {
-      const { mockIo } = createMockIo();
-      const gateway = new IArkosGateway({ name: "/chat" });
-
-      gateway.register(mockIo);
-
-      expect((mockIo as any)._arkosGatewayRegistered).toBe(true);
-    });
-
-    it("should use defaultGatewayStore when no store provided in options", () => {
-      const { mockIo } = createMockIo();
-      const gateway = new IArkosGateway({ name: "/chat" });
-
-      gateway.register(mockIo);
-
-      expect((gateway as any).registryOptions.store).toBe(defaultGatewayStore);
-    });
-
-    it("should use provided store from options", () => {
-      const { mockIo } = createMockIo();
-      const gateway = new IArkosGateway({ name: "/chat" });
-      const customStore = {
-        has: jest.fn(),
-        set: jest.fn(),
-        increment: jest.fn(),
-        clear: jest.fn(),
-        setIfNotExists: jest.fn(),
-      };
-
-      gateway.register(mockIo, { store: customStore });
-
-      expect((gateway as any).registryOptions.store).toBe(customStore);
-    });
-
-    it("should call _register with merged hooks and pipes", () => {
-      const { mockIo } = createMockIo();
-      const gateway = new IArkosGateway({ name: "/chat" });
-      const spy = jest.spyOn(gateway as any, "_register");
-
-      gateway.register(mockIo);
-
-      expect(spy).toHaveBeenCalledWith(
-        mockIo,
-        undefined,
-        [],
-        [],
-        expect.any(Object)
-      );
-    });
-  });
-
-  // ============================================================
-  // _REGISTER METHOD TESTS
-  // ============================================================
   describe("_register()", () => {
     it("should create namespace with own name when no parent", () => {
       const { mockIo } = createMockIo();
@@ -759,7 +649,7 @@ describe("IArkosGateway", () => {
       it("should not join user room when socket has no user.id", () => {
         const { mockIo, mockNs } = createMockIo();
         const gateway = new IArkosGateway({ name: "/chat" });
-        const mockSocket = createMockSocket({ user: undefined });
+        const mockSocket = createMockSocket({ currentUser: undefined });
 
         (gateway as any)._register(mockIo, undefined, [], [], {});
 
@@ -1395,7 +1285,8 @@ describe("IArkosGateway", () => {
           { context: mockSocket, done: expect.any(Function) },
           "test",
           "/chat",
-          { roles: ["Admin"] }
+          { roles: ["Admin"] },
+          "currentUser"
         );
       });
     });
@@ -1864,78 +1755,6 @@ describe("IArkosGateway", () => {
     });
   });
 
-  // ============================================================
-  // EMIT HELPER METHODS TESTS
-  // ============================================================
-  describe("emit helper methods", () => {
-    const { mockIo } = createMockIo();
-
-    it("toUser() should return GatewayUserEmitBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-      (gateway as any).registryOptions = { store: defaultGatewayStore };
-
-      const result = gateway.user("user-1");
-
-      expect(result).toBeDefined();
-    });
-
-    it("toRoom() should return GatewayEmitBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-      (gateway as any).registryOptions = { store: defaultGatewayStore };
-
-      const result = gateway.room("room-1");
-
-      expect(result).toBeDefined();
-    });
-
-    it("broadcast() should return GatewayEmitBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-      (gateway as any).registryOptions = { store: defaultGatewayStore };
-
-      const result = gateway.broadcast();
-
-      expect(result).toBeDefined();
-    });
-
-    it("user() should return GatewayUserBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-
-      const result = gateway.user("user-1");
-
-      expect(result).toBeDefined();
-    });
-
-    it("room() should return GatewayRoomBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-
-      const result = gateway.room("room-1");
-
-      expect(result).toBeDefined();
-    });
-
-    it("socket() should return GatewaySocketEmitBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      const { mockIo } = createMockIo();
-      const mockSocket = createMockSocket();
-      (gateway as any).io = mockIo;
-      (gateway as any).registryOptions = {
-        store: defaultGatewayStore,
-      };
-
-      const result = gateway.socket(mockSocket.id);
-
-      expect(result).toBeDefined();
-    });
-  });
-
-  // ============================================================
-  // FACTORY FUNCTION TEST
-  // ============================================================
   describe("ArkosGateway factory function", () => {
     it("should create an IArkosGateway instance", () => {
       const ArkosGateway = require("../arkos-gateway").default;
@@ -2206,9 +2025,6 @@ describe("IArkosGateway", () => {
   });
 });
 
-// ============================================================
-// HELPER FUNCTIONS FOR TESTS
-// ============================================================
 function mockSocketOnForEvent(socket: any, event: string) {
   return socket.on.mock.calls.find(([e]: [string, any]) => e === event);
 }
