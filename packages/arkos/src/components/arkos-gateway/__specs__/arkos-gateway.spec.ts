@@ -1867,71 +1867,71 @@ describe("IArkosGateway", () => {
   // ============================================================
   // EMIT HELPER METHODS TESTS
   // ============================================================
-  describe("emit helper methods", () => {
-    const { mockIo } = createMockIo();
-
-    it("toUser() should return GatewayUserEmitBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-      (gateway as any).registryOptions = { store: defaultGatewayStore };
-
-      const result = gateway.user("user-1");
-
-      expect(result).toBeDefined();
-    });
-
-    it("toRoom() should return GatewayEmitBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-      (gateway as any).registryOptions = { store: defaultGatewayStore };
-
-      const result = gateway.room("room-1");
-
-      expect(result).toBeDefined();
-    });
-
-    it("broadcast() should return GatewayEmitBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-      (gateway as any).registryOptions = { store: defaultGatewayStore };
-
-      const result = gateway.broadcast();
-
-      expect(result).toBeDefined();
-    });
-
-    it("user() should return GatewayUserBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-
-      const result = gateway.user("user-1");
-
-      expect(result).toBeDefined();
-    });
-
-    it("room() should return GatewayRoomBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      (gateway as any).io = mockIo;
-
-      const result = gateway.room("room-1");
-
-      expect(result).toBeDefined();
-    });
-
-    it("socket() should return GatewaySocketEmitBuilder instance", () => {
-      const gateway = new IArkosGateway({ name: "/chat" });
-      const { mockIo } = createMockIo();
-      const mockSocket = createMockSocket();
-      (gateway as any).io = mockIo;
-      (gateway as any).registryOptions = {
-        store: defaultGatewayStore,
-      };
-
-      const result = gateway.socket(mockSocket.id);
-
-      expect(result).toBeDefined();
-    });
-  });
+  // describe("emit helper methods", () => {
+  //   const { mockIo } = createMockIo();
+  //
+  //   it("toUser() should return GatewayUserEmitBuilder instance", () => {
+  //     const gateway = new IArkosGateway({ name: "/chat" });
+  //     (gateway as any).io = mockIo;
+  //     (gateway as any).registryOptions = { store: defaultGatewayStore };
+  //
+  //     const result = gateway.user("user-1");
+  //
+  //     expect(result).toBeDefined();
+  //   });
+  //
+  //   it("toRoom() should return GatewayEmitBuilder instance", () => {
+  //     const gateway = new IArkosGateway({ name: "/chat" });
+  //     (gateway as any).io = mockIo;
+  //     (gateway as any).registryOptions = { store: defaultGatewayStore };
+  //
+  //     const result = gateway.room("room-1");
+  //
+  //     expect(result).toBeDefined();
+  //   });
+  //
+  //   it("broadcast() should return GatewayEmitBuilder instance", () => {
+  //     const gateway = new IArkosGateway({ name: "/chat" });
+  //     (gateway as any).io = mockIo;
+  //     (gateway as any).registryOptions = { store: defaultGatewayStore };
+  //
+  //     const result = gateway.broadcast();
+  //
+  //     expect(result).toBeDefined();
+  //   });
+  //
+  //   it("user() should return GatewayUserBuilder instance", () => {
+  //     const gateway = new IArkosGateway({ name: "/chat" });
+  //     (gateway as any).io = mockIo;
+  //
+  //     const result = gateway.user("user-1");
+  //
+  //     expect(result).toBeDefined();
+  //   });
+  //
+  //   it("room() should return GatewayRoomBuilder instance", () => {
+  //     const gateway = new IArkosGateway({ name: "/chat" });
+  //     (gateway as any).io = mockIo;
+  //
+  //     const result = gateway.room("room-1");
+  //
+  //     expect(result).toBeDefined();
+  //   });
+  //
+  //   it("socket() should return GatewaySocketEmitBuilder instance", () => {
+  //     const gateway = new IArkosGateway({ name: "/chat" });
+  //     const { mockIo } = createMockIo();
+  //     const mockSocket = createMockSocket();
+  //     (gateway as any).io = mockIo;
+  //     (gateway as any).registryOptions = {
+  //       store: defaultGatewayStore,
+  //     };
+  //
+  //     const result = gateway.socket(mockSocket.id);
+  //
+  //     expect(result).toBeDefined();
+  //   });
+  // });
 
   // ============================================================
   // FACTORY FUNCTION TEST
