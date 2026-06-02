@@ -33,7 +33,8 @@ class AuthHookManager {
    */
   async runAuthenticate<TContext extends ArkosBaseContext>(
     adapter: ArkosMiddlewareAdapter<TContext>,
-    getUser: (context: TContext) => Promise<User | null>
+    getUser: (context: TContext) => Promise<User | null>,
+    keyName: "user" | "currentUser" = "user"
   ): Promise<void> {
     const { context, done } = adapter;
     const hooks = getArkosConfig()?.authentication?.hooks?.authenticate;
@@ -55,7 +56,7 @@ class AuthHookManager {
     if (!before.skipped) {
       try {
         const user = await getUser(context);
-        context.user = user ?? undefined;
+        (context as any)[keyName] = user ?? undefined;
       } catch (err) {
         const onError = await this.runErrorHooks(hooks?.onError, err, context);
         if (onError.skipped) {
@@ -87,7 +88,8 @@ class AuthHookManager {
     adapter: ArkosMiddlewareAdapter<TContext>,
     action: string,
     resource: string,
-    rule?: string[] | DetailedAccessControlRule | "*"
+    rule: string[] | DetailedAccessControlRule | "*" = [],
+    keyName: "user" | "currentUser" = "user"
   ): Promise<void> {
     const { context, done } = adapter;
     const hooks = getArkosConfig()?.authentication?.hooks?.authorize;
@@ -114,8 +116,8 @@ class AuthHookManager {
 
     if (!before.skipped) {
       try {
-        if (context.user) {
-          const user = context.user as User;
+        if ((context as any)[keyName]) {
+          const user = (context as any)[keyName] as User;
           const configs = getArkosConfig();
           if (!user.isSuperUser) {
             const notEnoughPermissionsError = new ForbiddenError(
