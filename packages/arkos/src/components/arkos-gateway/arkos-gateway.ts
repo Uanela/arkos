@@ -306,18 +306,18 @@ export class IArkosGateway {
       });
     }
 
-    ns.on("connection", async (socket: any) => {
-      socket = socket as ArkosSocket;
+    ns.on("connection", async (s) => {
+      const socket = s as ArkosSocket;
       socket.locals = {};
 
-      // Inject Arkos context and mount enhanced socket methods
       socket._arkos = { store, gatewayConfig: localConfig };
       mountArkosSocketExtensions(socket);
 
       handleGatewayLifecycleLog(this.config.name, "connected", socket.id);
       const connectionStartTime = new Date().getTime();
 
-      if (socket.user?.id) socket.join(`arkos::user:${socket.user.id}`);
+      if (socket.currentUser?.id)
+        socket.join(`arkos::user:${socket.currentUser.id}`);
 
       try {
         for (const handler of connectHandlers) await handler(socket);
