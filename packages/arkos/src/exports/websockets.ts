@@ -11,7 +11,7 @@ export type {
   ArkosGatewayConnectionHandler,
   ArkosGatewayErrorHandler,
   ArkosGatewayAckFn,
-  ArkosEmitOptions,
+  ArkosBroadcastOperator,
 } from "../components/arkos-gateway/types";
 
 export { ArkosGateway };
