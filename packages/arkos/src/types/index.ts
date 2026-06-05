@@ -324,3 +324,17 @@ export type ArkosErrorRequestHandler<
   res: ArkosResponse<ResBody, Locals>,
   next: ArkosNextFunction
 ) => void | Promise<void>;
+
+export type ArkosAnyRequestHandler<
+  P extends Record<string, any> = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery extends Record<string, any> = any,
+  Locals extends Record<string, any> = Record<string, any>,
+> =
+  | ArkosRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
+  | ArkosErrorRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
+  | Array<
+      | ArkosRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
+      | ArkosErrorRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
+    >;
