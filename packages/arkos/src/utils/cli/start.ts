@@ -48,15 +48,10 @@ export function startCommand(options: StartOptions = {}) {
 
     env.__HOST =
       env?.CLI_HOST ||
-      // config?.host ||
       env?.HOST ||
       (env.ARKOS_BUILD !== "true" ? "0.0.0.0" : "127.0.0.1");
 
-    env.__PORT =
-      env?.CLI_PORT ||
-      // || config?.port
-      env?.PORT ||
-      "8000";
+    env.__PORT = env?.CLI_PORT || env?.PORT || "8000";
 
     watermarkStamper.stamp({
       envFiles,

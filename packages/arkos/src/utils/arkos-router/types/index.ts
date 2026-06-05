@@ -8,6 +8,7 @@ import compression from "compression";
 import { OpenApiConfig } from "./openapi-config";
 import { UploadConfig } from "./upload-config";
 import { BodyParserConfig } from "./body-parser-config";
+import { Validator } from "../../../types/validation/validator";
 
 type InferValidationType<T, Fallback> = T extends ZodSchema
   ? z.infer<T>
@@ -32,24 +33,9 @@ export type ArkosAnyRequestHandler =
 type RouterMethodHandler<T> = {
   (config: PathParams, ...handlers: Array<ArkosAnyRequestHandler>): T;
   <
-    TQuery extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
-    TBody extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
-    TParams extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
+    TQuery extends Validator = any,
+    TBody extends Validator = any,
+    TParams extends Validator = any,
   >(
     config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
     ...handlers: Array<
@@ -72,24 +58,9 @@ type RouterMethodHandler<T> = {
     >
   ): T;
   <
-    TQuery extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
-    TBody extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
-    TParams extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
+    TQuery extends Validator = any,
+    TBody extends Validator = any,
+    TParams extends Validator = any,
   >(
     config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
     ...handlers: Array<
@@ -123,24 +94,9 @@ export type ArkosRouteMethodHandler<T> = {
     >
   ): T;
   <
-    TQuery extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
-    TBody extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
-    TParams extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
+    TQuery extends Validator = any,
+    TBody extends Validator = any,
+    TParams extends Validator = any,
   >(
     config: Omit<ArkosRouteConfig<TQuery, TBody, TParams>, "path">,
     ...handlers: Array<
@@ -164,24 +120,9 @@ export type ArkosRouteMethodHandler<T> = {
   ): T;
 
   <
-    TQuery extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
-    TBody extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
-    TParams extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | false
-      | undefined = any,
+    TQuery extends Validator = any,
+    TBody extends Validator = any,
+    TParams extends Validator = any,
   >(
     config: Omit<ArkosRouteConfig<TQuery, TBody, TParams>, "path">,
     ...handlers: Array<
