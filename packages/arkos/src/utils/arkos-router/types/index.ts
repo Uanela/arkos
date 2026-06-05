@@ -1,4 +1,5 @@
 import {
+  Application,
   IRoute,
   IRouter,
   IRouterHandler,
@@ -111,6 +112,15 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
             >
           >
       >
+    ): T;
+
+    <
+      TQuery extends Validator = any,
+      TBody extends Validator = any,
+      TParams extends Validator = any,
+    >(
+      config: ArkosRouteConfig<TQuery, TBody, TParams>,
+      subApplication: Application
     ): T;
   };
 
