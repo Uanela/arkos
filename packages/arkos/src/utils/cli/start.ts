@@ -9,6 +9,7 @@ import sheu from "../sheu";
 interface StartOptions {
   port?: string;
   host?: string;
+  stamp?: false;
 }
 
 let child: ChildProcess | null = null;
@@ -53,11 +54,12 @@ export function startCommand(options: StartOptions = {}) {
 
     env.__PORT = env?.CLI_PORT || env?.PORT || "8000";
 
-    watermarkStamper.stamp({
-      envFiles,
-      port: env.__PORT,
-      host: env.__HOST,
-    });
+    if (options.stamp !== false)
+      watermarkStamper.stamp({
+        envFiles,
+        port: env.__PORT,
+        host: env.__HOST,
+      });
 
     child = spawn("node", [entryPoint], {
       stdio: "inherit",
