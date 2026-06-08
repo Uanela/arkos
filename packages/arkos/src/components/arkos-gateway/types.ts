@@ -112,7 +112,7 @@ export interface ArkosSocket<
    *
    * @since 1.7.0-canary.29
    */
-  peer(socketId: string): ArkosSocket;
+  peer(socketId: string): ArkosSocket | undefined;
 
   /**
    * Wraps the next `emit` or `emitWithAck` with exponential backoff retry logic.

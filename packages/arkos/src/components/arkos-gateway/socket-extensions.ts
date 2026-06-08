@@ -433,13 +433,8 @@ export function mountArkosSocketExtensions(socket: ArkosSocket): void {
     return new ArkosUserTargetImpl(socket, userId);
   };
 
-  socket.peer = function (socketId: string): ArkosSocket {
+  socket.peer = function (socketId: string) {
     const peer = socket.nsp.sockets.get(socketId) as ArkosSocket | undefined;
-    if (!peer)
-      throw new Error(
-        `Socket with ID ${socketId} was not found. The peer may have disconnected.`
-      );
-
     return peer;
   };
 
