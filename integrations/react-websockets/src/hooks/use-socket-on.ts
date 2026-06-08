@@ -26,7 +26,7 @@ export function useSocketOn<T = any>(
 
   const stableHandler = useCallback((data: T) => {
     handlerRef.current(data);
-  }, []); // intentionally empty — stability via ref
+  }, deps); // intentionally empty — stability via ref
 
   useEffect(() => {
     const off = gateway.on<T>(event, stableHandler);
