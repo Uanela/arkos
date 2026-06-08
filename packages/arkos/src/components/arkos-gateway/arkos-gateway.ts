@@ -409,12 +409,11 @@ export class IArkosGateway {
 
               const age = Date.now() - timestamp.getTime();
 
-              if (age < 0) {
+              if (age + 1000 < 0)
                 throw new BadRequestError(
                   "Timestamp is in the future",
                   "FutureTimestamp"
                 );
-              }
 
               if (resolvedMaxAge && age > resolvedMaxAge) {
                 throw new BadRequestError("Message is too old", "StaleMessage");
