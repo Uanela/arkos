@@ -9,6 +9,7 @@ import sheu from "../sheu";
 interface StartOptions {
   port?: string;
   host?: string;
+  stamp?: false;
 }
 
 let child: ChildProcess | null = null;
@@ -48,21 +49,17 @@ export function startCommand(options: StartOptions = {}) {
 
     env.__HOST =
       env?.CLI_HOST ||
-      // config?.host ||
       env?.HOST ||
       (env.ARKOS_BUILD !== "true" ? "0.0.0.0" : "127.0.0.1");
 
-    env.__PORT =
-      env?.CLI_PORT ||
-      // || config?.port
-      env?.PORT ||
-      "8000";
+    env.__PORT = env?.CLI_PORT || env?.PORT || "8000";
 
-    watermarkStamper.stamp({
-      envFiles,
-      port: env.__PORT,
-      host: env.__HOST,
-    });
+    if (options.stamp !== false)
+      watermarkStamper.stamp({
+        envFiles,
+        port: env.__PORT,
+        host: env.__HOST,
+      });
 
     child = spawn("node", [entryPoint], {
       stdio: "inherit",

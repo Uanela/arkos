@@ -90,6 +90,7 @@ export class EmailService {
     }
 
     return {
+      ...emailConfigs,
       host,
       port: port || 465,
       secure: secure !== undefined ? secure : true,

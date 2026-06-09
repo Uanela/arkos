@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import { getUserFileExtension } from "../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
@@ -34,13 +34,6 @@ export function buildCommand(options: BuildOptions = {}) {
     watermarkStamper.stamp({
       envFiles,
     });
-    // console.info("");
-    // console.info(`  \x1b[1m\x1b[36m  Arkos.js ${getVersion()}\x1b[0m`);
-    // console.info(
-    //   `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
-    //     .replaceAll(`${process.cwd()}/`, "")
-    //     .replaceAll("/", "")}`
-    // );
 
     console.info(`\n  Creating an optimized production build...`);
 
@@ -128,7 +121,7 @@ function buildTypeScriptProject(options: BuildOptions, moduleType: ModuleType) {
 
   try {
     removeDir(BUILD_DIR);
-    execSync(`tsc -p ${tempTsconfigPath}`, {
+    execFileSync("tsc", ["-p", tempTsconfigPath], {
       stdio: "inherit",
       cwd: process.cwd(),
     });

@@ -71,14 +71,30 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/types/exports/*/index.d.ts"],
-      "services": ["./dist/types/exports/services/index.d.ts"],
-      "validation": ["./dist/types/exports/validation/index.d.ts"],
-      "error-handler": ["./dist/types/exports/error-handler/index.d.ts"],
-      "prisma": ["./dist/types/exports/prisma/index.d.ts"],
-      "auth": ["./dist/types/exports/auth/index.d.ts"],
-      "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
-      "utils": ["./dist/types/exports/utils/index.d.ts"]
+      "*": [
+        "./dist/types/exports/*/index.d.ts"
+      ],
+      "services": [
+        "./dist/types/exports/services/index.d.ts"
+      ],
+      "validation": [
+        "./dist/types/exports/validation/index.d.ts"
+      ],
+      "error-handler": [
+        "./dist/types/exports/error-handler/index.d.ts"
+      ],
+      "prisma": [
+        "./dist/types/exports/prisma/index.d.ts"
+      ],
+      "auth": [
+        "./dist/types/exports/auth/index.d.ts"
+      ],
+      "middlewares": [
+        "./dist/types/exports/middlewares/index.d.ts"
+      ],
+      "utils": [
+        "./dist/types/exports/utils/index.d.ts"
+      ]
     }
   },
   "scripts": {
@@ -97,7 +113,6 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ui": "vitest --ui",
     "test:create": "tsx src/scripts/create-test.ts",
     "publish:test": "npm publish --tag test",
     "publish:beta": "npm publish --tag beta",
@@ -132,7 +147,11 @@
     "url": "https://github.com/uanela/arkos/issues"
   },
   "homepage": "https://www.arkosjs.com",
-  "files": ["dist", "cli.js", "README.md"],
+  "files": [
+    "dist",
+    "cli.js",
+    "README.md"
+  ],
   "devDependencies": {
     "@babel/preset-typescript": "7.27.1",
     "@scalar/express-api-reference": "0.8.32",
@@ -147,7 +166,7 @@
     "@types/jsonwebtoken": "9.0.9",
     "@types/multer": "2.0.0",
     "@types/node": "22.13.13",
-    "@types/nodemailer": "6.4.17",
+    "@types/nodemailer": "8.0.0",
     "@types/pluralize": "0.0.33",
     "@types/swagger-jsdoc": "6.0.4",
     "@typescript-eslint/eslint-plugin": "6.0.0",
@@ -163,8 +182,7 @@
     "ts-prune": "0.10.3",
     "tsx": "4.20.3",
     "type-fest": "4.41.0",
-    "typescript": "5.8.2",
-    "vitest": "3.2.4"
+    "typescript": "5.8.2"
   },
   "dependencies": {
     "chokidar": "4.0.3",
@@ -188,7 +206,7 @@
     "html-to-text": "9.0.5",
     "jsonwebtoken": "9.0.2",
     "mimetype": "0.0.8",
-    "multer": "2.0.2",
+    "multer": "2.1.1",
     "nodemailer": "6.10.0",
     "sharp": "0.33.5",
     "swagger-jsdoc": "6.2.8",
