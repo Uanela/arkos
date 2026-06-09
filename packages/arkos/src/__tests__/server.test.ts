@@ -11,8 +11,8 @@ const mockProcessExit = jest
 
 jest.useFakeTimers();
 
-import * as server from "../server";
 import { bootstrap } from "../app";
+import * as server from "../server";
 import portAndHostAllocator from "../utils/features/port-and-host-allocator";
 import runtimeCliCommander from "../utils/cli/utils/runtime-cli-commander";
 import * as arkosConfigHelpers from "../utils/helpers/arkos-config.helpers";
