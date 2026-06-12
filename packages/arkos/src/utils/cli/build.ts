@@ -28,6 +28,7 @@ export async function buildCommand(options: BuildOptions = {}) {
   const fileExt = getUserFileExtension();
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
   process.env.ARKOS_BUILD = "true";
+  process.env.__SKIP_LISTEN = "true";
 
   const envFiles = loadEnvironmentVariables();
   const moduleType = validateModuleType(options.module);
@@ -49,13 +50,11 @@ export async function buildCommand(options: BuildOptions = {}) {
     const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
       process.env
     );
-
-    const child = startCommand({
+    await startCommand({
       ...hostAndPort,
       stamp: false,
       shouldThrow: true,
     });
-    child.kill();
 
     console.info(`\n\x1b[1m\x1b[32m  Build complete!\x1b[0m\n`);
     console.info(`  \x1b[1mNext step:\x1b[0m`);

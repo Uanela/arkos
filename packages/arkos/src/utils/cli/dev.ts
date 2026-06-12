@@ -111,9 +111,8 @@ export async function devCommand(options: DevOptions = {}) {
 
       if (fileExt === "ts") {
         child = spawn("npx", ["tsx-strict", "--watch", entryPointRelative], {
-          stdio: "inherit",
+          stdio: ["inherit", "inherit", "inherit", "ipc"],
           env,
-          shell: true,
         });
       } else {
         env.TSX_TSCONFIG_PATH = "./jsconfig.json";
@@ -121,9 +120,8 @@ export async function devCommand(options: DevOptions = {}) {
           "npx",
           ["tsx-strict", "--no-type-check", "--watch", entryPointRelative],
           {
-            stdio: "inherit",
+            stdio: ["inherit", "inherit", "inherit", "ipc"],
             env,
-            shell: true,
           }
         );
       }
