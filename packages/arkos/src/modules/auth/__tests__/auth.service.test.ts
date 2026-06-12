@@ -1562,8 +1562,8 @@ describe("AuthService", () => {
       mockPrisma.authPermission.count.mockResolvedValue(0); // No permissions
 
       const accessControlMiddleware = authService.handleAccessControl(
-        "User",
-        "create"
+        "create",
+        "User"
       );
 
       // Execute
@@ -1572,7 +1572,7 @@ describe("AuthService", () => {
       // Verify
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: "You do not have permission to perfom this action",
+          message: "You cannot perform create for user",
           statusCode: 403,
         })
       );

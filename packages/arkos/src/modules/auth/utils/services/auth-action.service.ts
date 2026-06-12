@@ -165,7 +165,7 @@ class AuthActionService {
       resource,
       name: `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`,
       description: `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`,
-      errorMessage: `You do not have permission to perform this operation`,
+      errorMessage: `You cannot perform ${sentenceCase(action).toLowerCase()} for ${sentenceCase(resource).toLowerCase()}`,
     };
 
     const config = getArkosConfig();
