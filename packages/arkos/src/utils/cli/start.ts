@@ -10,6 +10,7 @@ interface StartOptions {
   port?: string;
   host?: string;
   stamp?: false;
+  shouldThrow?: true;
 }
 
 let child: ChildProcess | null = null;
@@ -72,7 +73,10 @@ export function startCommand(options: StartOptions = {}) {
 
       process.exit(0);
     });
+
+    return child;
   } catch (error) {
+    if (options.shouldThrow) throw error;
     sheu.error("Production server failed to start:");
     console.error(error);
     process.exit(1);
