@@ -4,6 +4,7 @@ import { buildCommand } from "../build";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
 import { loadEnvironmentVariables } from "../../dotenv.helpers";
 import sheu from "../../sheu";
+import * as startCli from "../start";
 
 // Mock dependencies
 jest.mock("child_process", () => ({
@@ -57,6 +58,12 @@ describe("buildCommand", () => {
     warn: console.warn,
   };
 
+  const mockChildKill = jest.fn();
+  const mockStartCommand = jest
+    .spyOn(startCli, "startCommand")
+    .mockImplementation(() => {
+      return { kill: mockChildKill } as any;
+    });
   // Mock process.exit
   const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {
     console.error(`Process.exit called with code ${code}`);
@@ -70,6 +77,7 @@ describe("buildCommand", () => {
     console.info = jest.fn();
     console.error = jest.fn();
     console.warn = jest.fn();
+    console.log = jest.fn();
 
     // Mock process.cwd()
     jest.spyOn(process, "cwd").mockReturnValue("/mock/project");
@@ -377,7 +385,7 @@ describe("buildCommand", () => {
     //   expect(packageJsonCalls[0][1]).not.toContain('"type":"module"');
     // });
 
-    it("should handle package.json errors gracefully", () => {
+    it("should handle package.json errors gracefully", async () => {
       (fs.readFileSync as jest.Mock).mockImplementation((path) => {
         if (
           path.includes("package.json") &&
@@ -393,7 +401,7 @@ describe("buildCommand", () => {
         Object.assign("file.txt", { isDirectory: () => {} }),
       ]);
 
-      buildCommand({});
+      await buildCommand({});
 
       // Should still complete without creating a package.json in build dir
       expect(console.info).toHaveBeenCalledWith(
@@ -405,7 +413,7 @@ describe("buildCommand", () => {
   describe("Error handling", () => {
     it("should handle build failures and exit with code 1", () => {
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-      (execSync as jest.Mock).mockImplementation(() => {
+      (execFileSync as jest.Mock).mockImplementation(() => {
         throw new Error("Build failed");
       });
 
@@ -421,8 +429,30 @@ describe("buildCommand", () => {
       expect(console.error).toHaveBeenCalledWith(expect.any(Error));
     });
 
-    it("should handle file copy errors gracefully", () => {
-      (execSync as jest.Mock).mockImplementation(() => {
+    it("should handle build failures and exit with code 1 when startCommand fails", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+      (execFileSync as jest.Mock).mockImplementation(() => {
+        return true;
+      });
+      const jwtError = new Error("Missing JWT_SECRET in production");
+      mockStartCommand.mockImplementationOnce(() => {
+        throw jwtError;
+      });
+
+      await buildCommand({});
+
+      expect(console.error).toHaveBeenCalledWith(
+        "Process.exit called with code 1"
+      );
+
+      expect(sheu.error).toHaveBeenCalledWith(
+        expect.stringContaining("Build failed:")
+      );
+      expect(console.error).toHaveBeenCalledWith(jwtError);
+    });
+
+    it("should handle file copy errors gracefully", async () => {
+      (execFileSync as jest.Mock).mockImplementation(() => {
         return "";
       });
       (getUserFileExtension as jest.Mock).mockReturnValue("js");
@@ -433,7 +463,7 @@ describe("buildCommand", () => {
         Object.assign("file.txt", { isDirectory: () => {} }),
       ]);
 
-      buildCommand({});
+      await buildCommand({});
 
       expect(console.warn).toHaveBeenCalledWith(
         "Warning: Error copying project files:",

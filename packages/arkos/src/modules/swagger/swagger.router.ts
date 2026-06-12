@@ -7,6 +7,7 @@ import express from "express";
 import { ArkosConfig, ArkosRequest, ArkosResponse } from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { OpenAPIV3 } from "openapi-types";
+import { isProduction } from "../../utils/helpers/arkos-config.helpers";
 
 const swaggerRouter = Router();
 
@@ -25,7 +26,11 @@ export async function getSwaggerRouter(
     arkosConfig.swagger || {}
   ) as ArkosConfig["swagger"];
 
-  if (arkosConfig.swagger?.options?.definition?.servers && swaggerConfigs) {
+  if (
+    arkosConfig.swagger?.options?.definition?.servers &&
+    swaggerConfigs &&
+    !isProduction()
+  ) {
     swaggerConfigs!.options!.definition!.servers =
       arkosConfig.swagger.options.definition.servers;
 
