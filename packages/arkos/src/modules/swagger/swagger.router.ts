@@ -15,6 +15,7 @@ import AppError from "../error-handler/utils/app-error";
 import getOpenApiLoginHtml from "./utils/get-open-api-login-html";
 import { Arkos } from "../../types/arkos";
 import { OpenAPIV3 } from "openapi-types";
+import { isProduction } from "../../utils/helpers/arkos-config.helpers";
 
 const swaggerRouter = Router();
 
@@ -30,7 +31,11 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
     arkosConfig.swagger || {}
   ) as ArkosConfig["swagger"];
 
-  if (arkosConfig.swagger?.options?.definition?.servers && swaggerConfigs) {
+  if (
+    arkosConfig.swagger?.options?.definition?.servers &&
+    swaggerConfigs &&
+    !isProduction()
+  ) {
     swaggerConfigs!.options!.definition!.servers =
       arkosConfig.swagger.options.definition.servers;
 

@@ -10,6 +10,8 @@ import { getArkosConfig } from "../helpers/arkos-config.helpers";
 interface StartOptions {
   port?: string;
   host?: string;
+  stamp?: false;
+  shouldThrow?: true;
 }
 
 let child: ChildProcess | null = null;
@@ -18,7 +20,7 @@ let envFiles: string[] | undefined;
 /**
  * Production start command for the arkos CLI
  */
-export async function startCommand(options: StartOptions = {}) {
+export function startCommand(options: StartOptions = {}) {
   process.env.NO_CLI = "true";
 
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
@@ -60,11 +62,12 @@ export async function startCommand(options: StartOptions = {}) {
 
     env.__PORT = env?.CLI_PORT || env?.PORT || "8000";
 
-    watermarkStamper.stamp({
-      envFiles,
-      port: env.__PORT,
-      host: env.__HOST,
-    });
+    if (options.stamp !== false)
+      watermarkStamper.stamp({
+        envFiles,
+        port: env.__PORT,
+        host: env.__HOST,
+      });
 
     child = spawn("node", [entryPoint], {
       stdio: "inherit",
@@ -77,7 +80,10 @@ export async function startCommand(options: StartOptions = {}) {
 
       process.exit(0);
     });
+
+    return child;
   } catch (error) {
+    if (options.shouldThrow) throw error;
     sheu.error("Production server failed to start:");
     console.error(error);
     process.exit(1);
