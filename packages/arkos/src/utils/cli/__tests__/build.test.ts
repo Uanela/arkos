@@ -58,11 +58,15 @@ describe("buildCommand", () => {
     warn: console.warn,
   };
 
-  const mockChildKill = jest.fn();
   const mockStartCommand = jest
     .spyOn(startCli, "startCommand")
     .mockImplementation(() => {
-      return { kill: mockChildKill } as any;
+      return {
+        kill: jest.fn(),
+        on: jest.fn(async (m: any) => {
+          console.debug("called", m);
+        }),
+      } as any;
     });
   // Mock process.exit
   const mockExit = jest.spyOn(process, "exit").mockImplementation((code) => {

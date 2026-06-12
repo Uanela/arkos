@@ -19,7 +19,7 @@ let envFiles: string[] | undefined;
 /**
  * Production start command for the arkos CLI
  */
-export function startCommand(options: StartOptions = {}) {
+export async function startCommand(options: StartOptions = {}) {
   process.env.NO_CLI = "true";
 
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
@@ -63,9 +63,8 @@ export function startCommand(options: StartOptions = {}) {
       });
 
     child = spawn("node", [entryPoint], {
-      stdio: "inherit",
+      stdio: ["inherit", "inherit", "inherit", "ipc"],
       env,
-      shell: true,
     });
 
     process.on("SIGINT", () => {
@@ -74,7 +73,14 @@ export function startCommand(options: StartOptions = {}) {
       process.exit(0);
     });
 
-    return child;
+    await new Promise((resolve) => {
+      child?.on?.("message", (m: { started: boolean }) => {
+        if (m.started === true) {
+          if (process.env.__SKIP_LISTEN === "true") resolve(child?.kill?.());
+          else resolve(null);
+        }
+      });
+    });
   } catch (error) {
     if (options.shouldThrow) throw error;
     sheu.error("Production server failed to start:");

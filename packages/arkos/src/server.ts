@@ -77,39 +77,41 @@ async function initApp(
 
       if (initConfig?.configureServer) await initConfig.configureServer(server);
 
-      server.listen(
-        Number(portAndHost?.port),
-        portAndHost.host! === "localhost" ? "127.0.0.1" : portAndHost.host!,
-        () => {
-          const host = ["0.0.0.0", "127.0.0.1"].includes(portAndHost?.host)
-            ? "localhost"
-            : portAndHost?.host;
+      process.send?.({ started: true });
+      if (process.env.__SKIP_LISTEN !== "true")
+        server.listen(
+          Number(portAndHost?.port),
+          portAndHost.host! === "localhost" ? "127.0.0.1" : portAndHost.host!,
+          () => {
+            const host = ["0.0.0.0", "127.0.0.1"].includes(portAndHost?.host)
+              ? "localhost"
+              : portAndHost?.host;
 
-          const message = `${sheu.gray(time)} {{server}} waiting on http://${host}:${portAndHost?.port}`;
+            const message = `${sheu.gray(time)} {{server}} waiting on http://${host}:${portAndHost?.port}`;
 
-          sheu.ready(
-            message.replace(
-              "{{server}}",
-              `${process.env.ARKOS_BUILD === "true" ? "Production" : "Development"} server`
+            sheu.ready(
+              message.replace(
+                "{{server}}",
+                `${process.env.ARKOS_BUILD === "true" ? "Production" : "Development"} server`
+              )
+            );
+            if (networkHost && portAndHost.host === "0.0.0.0")
+              sheu.ready(
+                message
+                  .replace(host, networkHost)
+                  .replace("{{server}}", `Network server`)
+              );
+            if (
+              arkosConfig?.swagger?.mode &&
+              ((arkosConfig?.swagger?.enableAfterBuild &&
+                process.env.ARKOS_BUILD === "true") ||
+                process.env.ARKOS_BUILD !== "true")
             )
-          );
-          if (networkHost && portAndHost.host === "0.0.0.0")
-            sheu.ready(
-              message
-                .replace(host, networkHost)
-                .replace("{{server}}", `Network server`)
-            );
-          if (
-            arkosConfig?.swagger?.mode &&
-            ((arkosConfig?.swagger?.enableAfterBuild &&
-              process.env.ARKOS_BUILD === "true") ||
-              process.env.ARKOS_BUILD !== "true")
-          )
-            sheu.ready(
-              `${message.replace("{{server}}", "Documentation")}${arkosConfig?.swagger?.endpoint || "/api/docs"}`
-            );
-        }
-      );
+              sheu.ready(
+                `${message.replace("{{server}}", "Documentation")}${arkosConfig?.swagger?.endpoint || "/api/docs"}`
+              );
+          }
+        );
     } else if (!cliCommand) {
       sheu.warn(
         `${sheu.gray(time)} Port set to undefined, hence no internal http server was setup.`
