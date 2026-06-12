@@ -1,8 +1,10 @@
-import { execSync } from "child_process";
+import { execFileSync, execSync } from "child_process";
 import { Bundler } from "../../bundler";
 import fs from "fs";
 import { buildCommand } from "../build";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
+import sheu from "../../sheu";
+import * as startCli from "../start";
 
 jest.mock("fs");
 jest.mock("path", () => {
@@ -11,12 +13,14 @@ jest.mock("path", () => {
     ...actual,
   };
 });
+jest.mock("../../sheu");
 jest.mock("../../helpers/fs.helpers", () => ({
   ...jest.requireActual("../../helpers/fs.helpers"),
   getUserFileExtension: jest.fn(() => "js"),
 }));
 jest.mock("child_process", () => ({
   execSync: jest.fn(),
+  execFileSync: jest.fn(),
 }));
 
 const mockFs = fs as jest.Mocked<typeof fs>;
@@ -43,10 +47,21 @@ const TSCONFIG = JSON.stringify({
     },
   },
 });
+jest.mock("../../dotenv.helpers", () => ({
+  loadEnvironmentVariables: jest.fn(() => [".env"]),
+}));
 
 describe("Bundler", () => {
+  const mockStartCommand = jest
+    .spyOn(startCli, "startCommand")
+    .mockImplementation(() => {
+      return { kill: jest.fn() } as any;
+    });
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Mock process.cwd()
     jest.spyOn(process, "cwd").mockReturnValue("/mock/project");
     jest.spyOn(console, "error").mockImplementation(jest.fn());
     jest.spyOn(console, "log").mockImplementation(jest.fn());
@@ -55,6 +70,10 @@ describe("Bundler", () => {
     mockFs.readdirSync.mockReturnValue([]);
     mockFs.readFileSync.mockReturnValue("{}");
     mockFs.writeFileSync.mockImplementation(() => {});
+
+    jest.spyOn(startCli, "startCommand").mockImplementation(() => {
+      return { kill: jest.fn() } as any;
+    });
   });
 
   describe("buildCommand", () => {
@@ -69,14 +88,16 @@ describe("Bundler", () => {
         expect.stringContaining('"outDir": ".build"')
       );
 
-      (execSync as jest.Mock).mockImplementation(() => {
+      (execFileSync as jest.Mock).mockImplementation(() => {
         return "";
       });
 
       expect(console.error).not.toHaveBeenCalled();
 
-      expect(execSync).toHaveBeenCalledWith(
-        "tsc -p /mock/project/tsconfig.arkos-build.json",
+      // Verify TypeScript compilation command
+      expect(execFileSync).toHaveBeenCalledWith(
+        "tsc",
+        ["-p", "/mock/project/tsconfig.arkos-build.json"],
         expect.any(Object)
       );
 
@@ -86,7 +107,30 @@ describe("Bundler", () => {
       );
     });
 
-    it("should correctly build a TypeScript project with tsconfig containing comments", () => {
+    it("should handle build failures and exit with code 1 when startCommand fails", async () => {
+      (getUserFileExtension as jest.Mock).mockReturnValue("ts");
+      (execFileSync as jest.Mock).mockImplementation(() => {
+        return true;
+      });
+      jest.spyOn(process, "exit").mockImplementationOnce(jest.fn() as any);
+      const jwtError = new Error("Missing JWT_SECRET in production");
+      mockStartCommand.mockImplementationOnce(() => {
+        throw jwtError;
+      });
+
+      await buildCommand({});
+
+      // expect(jest.spyOn(sheu, "error")).toHaveBeenCalledWith(
+      //   `Build failed: ${jwtError.message}`
+      // );
+
+      expect(sheu.error).toHaveBeenCalledWith(
+        expect.stringContaining("Build failed:")
+      );
+      expect(console.error).toHaveBeenCalledWith(jwtError);
+    });
+
+    it("should correctly build a TypeScript project with tsconfig containing comments", async () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
       const configWithComments = `{
         // this is a comment
@@ -124,7 +168,7 @@ describe("Bundler", () => {
 
       mockFs.readFileSync.mockReturnValue(configWithComments);
 
-      buildCommand({});
+      await buildCommand({});
 
       // Verify tsconfig creation
       expect(fs.writeFileSync).toHaveBeenCalledWith(
@@ -138,8 +182,9 @@ describe("Bundler", () => {
 
       expect(console.error).not.toHaveBeenCalled();
 
-      expect(execSync).toHaveBeenCalledWith(
-        "tsc -p /mock/project/tsconfig.arkos-build.json",
+      expect(execFileSync).toHaveBeenCalledWith(
+        "tsc",
+        ["-p", "/mock/project/tsconfig.arkos-build.json"],
         expect.any(Object)
       );
 

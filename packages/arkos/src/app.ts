@@ -111,7 +111,7 @@ export function arkos(): Arkos {
     return cb || function () {};
   };
 
-  app.listen = async function (...args): Promise<Server> {
+  app.listen = async function (...args: any[]): Promise<Server> {
     process.env.__ARKOS_SERVER_LISTENER = "arkos";
 
     if (state === "listening")

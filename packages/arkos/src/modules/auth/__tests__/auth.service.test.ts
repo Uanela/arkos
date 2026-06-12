@@ -31,11 +31,7 @@ jest.mock("../../../utils/dynamic-loader", () => ({
 jest.mock("../../../utils/helpers/arkos-config.helpers", () => ({
   isAuthenticationEnabled: jest.fn(() => true),
   isUsingAuthentication: jest.fn(() => true),
-}));
-
-jest.mock("../utils/services/auth-action.service", () => ({
-  __esModule: true,
-  default: { add: jest.fn() },
+  getArkosConfig: jest.fn(() => {}),
 }));
 
 jest.mock("fs");
@@ -1566,8 +1562,8 @@ describe("AuthService", () => {
       mockPrisma.authPermission.count.mockResolvedValue(0); // No permissions
 
       const accessControlMiddleware = authService.handleAccessControl(
-        "User",
-        "create"
+        "create",
+        "User"
       );
 
       // Execute
@@ -1576,7 +1572,7 @@ describe("AuthService", () => {
       // Verify
       expect(mockNext).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: "You do not have permission to perfom this action",
+          message: "You cannot perform create for user",
           statusCode: 403,
         })
       );

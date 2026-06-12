@@ -31,16 +31,16 @@
     "zod": "4.3.6"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.1.18",
-    "@types/mdx": "2.0.13",
-    "@types/node": "25.2.3",
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "5.1.4",
-    "nitro": "3.0.1-20260128-211656-ae83c97e",
-    "srvx": "0.11.5",
-    "tailwindcss": "4.1.18",
-    "typescript": "5.9.3",
-    "vite-tsconfig-paths": "6.1.1"
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/mdx": "^2.0.13",
+    "@types/node": "^25.2.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "nitro": "3.0.260522-beta",
+    "srvx": "^0.11.5",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite-tsconfig-paths": "^6.1.1"
   }
 }
