@@ -1,4 +1,4 @@
-import { kebabCase } from "../../../../exports/utils";
+import { kebabCase, sentenceCase } from "../../../../exports/utils";
 import {
   AccessControlConfig,
   DetailedAccessControlRule,
@@ -23,11 +23,15 @@ class AuthActionService {
       resource: "auth-action",
       name: "View auth action",
       description: "View an auth action",
-      errorMessage: "You do not have permission to perform this operation",
+      errorMessage: "You cannot perform view for auth action",
     },
   ];
 
-  add(action: string, resource: string, accessControl?: AccessControlConfig) {
+  add(
+    action: string,
+    resource: string,
+    accessControl?: AccessControlConfig
+  ): Required<AuthAction> {
     const transformedAction = this.transformAccessControlToValidAuthAction(
       action,
       resource,
@@ -40,8 +44,7 @@ class AuthActionService {
 
       const defaultName = `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`;
       const defaultDescription = `${capitalize(kebabCase(action).replace(/-/g, " "))} ${capitalize(kebabCase(resource).replace(/-/g, " "))}`;
-      const defaultErrorMessage =
-        "You do not have permission to perform this operation";
+      const defaultErrorMessage = `You cannot perform ${sentenceCase(action).toLowerCase()} for ${sentenceCase(resource).toLowerCase()}`;
 
       const isNonDefault = (
         value: string | undefined,
@@ -100,7 +103,7 @@ class AuthActionService {
         ? [...new Set(mergedRoles)].sort()
         : undefined;
 
-      const merged: AuthAction = {
+      const merged: Required<AuthAction> = {
         action: existingAuthAction.action,
         resource: existingAuthAction.resource,
         roles: uniqueRoles,
@@ -109,15 +112,17 @@ class AuthActionService {
           existingAuthAction.description ?? transformedAction.description,
         errorMessage:
           existingAuthAction.errorMessage ?? transformedAction.errorMessage,
-      };
+      } as any;
 
       this.remove(action, resource);
       this.authActions.push(merged);
+      return merged;
     } else {
       if (transformedAction.roles) {
         transformedAction.roles = [...transformedAction.roles].sort();
       }
       this.authActions.push(transformedAction);
+      return transformedAction;
     }
   }
 
@@ -143,8 +148,8 @@ class AuthActionService {
     action: string,
     resource: string,
     accessControl?: AccessControlConfig
-  ): AuthAction {
-    const baseAuthAction: AuthAction = {
+  ): Required<AuthAction> {
+    const baseAuthAction: Required<AuthAction> = {
       roles:
         (accessControl &&
           (Array.isArray(accessControl)
@@ -165,7 +170,8 @@ class AuthActionService {
 
     const config = getArkosConfig();
 
-    if (config?.authentication?.mode === "dynamic") delete baseAuthAction.roles;
+    if (config?.authentication?.mode === "dynamic")
+      delete (baseAuthAction as any).roles;
 
     if (!accessControl) return baseAuthAction;
 
