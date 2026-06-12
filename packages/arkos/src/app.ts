@@ -131,6 +131,9 @@ export function arkos(): Arkos {
     const port = Number(process.env.__PORT || process.env.PORT || "8000");
     const host = process.env.__HOST! || process.env.HOST || "0.0.0.0";
 
+    process.send?.({ started: true });
+    if (process.env.__SKIP_LISTEN !== "true") return appServer;
+
     if ((args as any)?.length === 0 || typeof args[0] === "function")
       appServer = originalListen(
         port,
