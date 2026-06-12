@@ -182,7 +182,8 @@ class AuthActionService {
         ? (accessControl as any)[action]
         : undefined;
 
-    if (config?.authentication?.mode !== "static") delete baseAuthAction.roles;
+    if (config?.authentication?.mode !== "static")
+      delete (baseAuthAction as any).roles;
 
     if (actionRule) {
       if (Array.isArray(actionRule)) {

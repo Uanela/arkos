@@ -764,7 +764,9 @@ export class AuthService {
     resource: string,
     rule?: string[] | DetailedAccessControlRule | "*"
   ): ArkosRequestHandler {
-    authActionService.add(action, resource, { [action]: rule });
+    const authAction = authActionService.add(action, resource, {
+      [action]: rule,
+    });
 
     return catchAsync(
       async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
@@ -801,7 +803,7 @@ export class AuthService {
 
               if (!user.isSuperUser) {
                 const notEnoughPermissionsError = new AppError(
-                  "You do not have permission to perform this action",
+                  authAction.errorMessage,
                   403,
                   "NotEnoughPermissions"
                 );

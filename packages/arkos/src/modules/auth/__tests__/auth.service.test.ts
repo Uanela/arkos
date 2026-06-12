@@ -31,11 +31,7 @@ jest.mock("../../../utils/dynamic-loader", () => ({
 jest.mock("../../../utils/helpers/arkos-config.helpers", () => ({
   isAuthenticationEnabled: jest.fn(() => true),
   isUsingAuthentication: jest.fn(() => true),
-}));
-
-jest.mock("../utils/services/auth-action.service", () => ({
-  __esModule: true,
-  default: { add: jest.fn() },
+  getArkosConfig: jest.fn(() => {}),
 }));
 
 jest.mock("fs");
