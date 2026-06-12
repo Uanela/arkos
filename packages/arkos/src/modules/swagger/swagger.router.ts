@@ -34,7 +34,7 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
   if (
     arkosConfig.swagger?.options?.definition?.servers &&
     swaggerConfigs &&
-    !isProduction()
+    isProduction()
   ) {
     swaggerConfigs!.options!.definition!.servers =
       arkosConfig.swagger.options.definition.servers;
