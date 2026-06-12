@@ -152,14 +152,13 @@ describe("startCommand", () => {
       "node",
       [`${process.cwd()}/.build/src/app.js`],
       expect.objectContaining({
-        stdio: "inherit",
+        stdio: ["inherit", "inherit", "inherit", "ipc"],
         env: expect.objectContaining({
           NODE_ENV: "production",
           ARKOS_BUILD: "true",
           CLI_PORT: "3000",
           CLI_HOST: "localhost",
         }),
-        shell: true,
       })
     );
 
@@ -193,14 +192,13 @@ describe("startCommand", () => {
       "node",
       [`${process.cwd()}/.build/src/app.js`],
       expect.objectContaining({
-        stdio: "inherit",
+        stdio: ["inherit", "inherit", "inherit", "ipc"],
         env: expect.objectContaining({
           NODE_ENV: "staging",
           ARKOS_BUILD: "true",
           CLI_PORT: "3000",
           CLI_HOST: "localhost",
         }),
-        shell: true,
       })
     );
 
@@ -243,7 +241,7 @@ describe("startCommand", () => {
 
     (fs.existsSync as jest.Mock).mockReturnValue(true);
 
-    await startCommand();
+    startCommand();
 
     expect(spawn).toHaveBeenCalledWith(
       "node",

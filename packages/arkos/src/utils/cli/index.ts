@@ -29,7 +29,7 @@ program
   .description("Run production server")
   .option("-p, --port <number>", "Port number")
   .option("-h, --host <host>", "Host to bind to")
-  .action(startCommand as any);
+  .action(startCommand);
 
 const generate = program
   .command("generate")
