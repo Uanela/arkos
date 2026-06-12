@@ -12,6 +12,7 @@ import {
 import { AccessAction, DetailedAccessControlRule } from "../../../types/auth";
 import { ForbiddenError } from "../../error-handler/utils/errors";
 import authService from "../auth.service";
+import { AuthAction } from "./services/auth-action.service";
 
 type ArkosBaseContext = ArkosRequest | ArkosSocket;
 
@@ -85,12 +86,11 @@ class AuthHookManager {
    */
   async runAuthorize<TContext extends ArkosBaseContext>(
     adapter: ArkosMiddlewareAdapter<TContext>,
-    action: string,
-    resource: string,
-    rule?: string[] | DetailedAccessControlRule | "*"
+    authAction: Required<AuthAction>
   ): Promise<void> {
     const { context, done } = adapter;
     const hooks = getArkosConfig()?.authentication?.hooks?.authorize;
+    const { action, resource, ...rule } = authAction;
     const hooksMeta = { action, resource, rule };
 
     const before = await this.runHooks(hooks?.before, context, hooksMeta);
@@ -119,7 +119,7 @@ class AuthHookManager {
           const configs = getArkosConfig();
           if (!user.isSuperUser) {
             const notEnoughPermissionsError = new ForbiddenError(
-              "You do not have permission to perform this action",
+              authAction.errorMessage,
               "NotEnoughPermissions"
             );
             if (configs?.authentication?.mode === "dynamic") {

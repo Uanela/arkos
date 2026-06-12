@@ -183,7 +183,7 @@ export class IArkosGateway {
     }
 
     if (typeof eventConfig?.authorization == "object")
-      authActionService.add(
+      eventConfig.authorization._authAction = authActionService.add(
         eventConfig.authorization!.action,
         eventConfig.authorization!.resource,
         {
@@ -479,9 +479,7 @@ export class IArkosGateway {
             if (typeof eventConfig.authorization === "object" && resolvedAuth) {
               await authHookManager.runAuthorize(
                 { context: socket, done: () => {} },
-                eventConfig.event,
-                this.config.name!,
-                eventConfig.authorization!.rule
+                eventConfig?.authorization?._authAction
               );
             }
 

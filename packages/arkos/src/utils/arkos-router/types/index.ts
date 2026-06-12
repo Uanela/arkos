@@ -1,4 +1,5 @@
 import {
+  Application,
   IRoute,
   IRouter,
   IRouterHandler,
@@ -9,7 +10,11 @@ import { z, ZodSchema } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
 import { DetailedAccessControlRule } from "../../../types/auth";
-import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../../types";
+import {
+  ArkosAnyRequestHandler,
+  ArkosErrorRequestHandler,
+  ArkosRequestHandler,
+} from "../../../types";
 import compression from "compression";
 import { OpenApiConfig } from "./openapi-config";
 import { UploadConfig } from "./upload-config";
@@ -48,11 +53,6 @@ export type InternalIArkosRouter = IArkosRouter & {
   };
 };
 
-export type ArkosAnyRequestHandler =
-  | ArkosRequestHandler
-  | ArkosErrorRequestHandler
-  | Array<ArkosRequestHandler | ArkosErrorRequestHandler>;
-
 /**
  * Handler function for HTTP methods that accepts route configuration and request handlers.
  *
@@ -62,7 +62,7 @@ export type ArkosAnyRequestHandler =
  */
 type RouterMethodHandler<T> = IRouterHandler<T> &
   IRouterMatcher<T> & {
-    (config: PathParams, ...handlers: Array<ArkosAnyRequestHandler>): T;
+    // (config: PathParams, ...handlers: Array<ArkosAnyRequestHandler>): T;
     <
       TQuery extends Validator = any,
       TBody extends Validator = any,
@@ -113,6 +113,15 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
           >
       >
     ): T;
+
+    <
+      TQuery extends Validator = any,
+      TBody extends Validator = any,
+      TParams extends Validator = any,
+    >(
+      config: ArkosRouteConfig<TQuery, TBody, TParams>,
+      subApplication: Application
+    ): T;
   };
 
 export type ArkosRouteMethodHandler<T> = {
@@ -125,31 +134,13 @@ export type ArkosRouteMethodHandler<T> = {
     >
   ): T;
   <
-    TQuery extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | null
-      | false
-      | undefined = any,
-    TBody extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | null
-      | false
-      | undefined = any,
-    TParams extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | null
-      | false
-      | undefined = any,
+    TQuery extends Validator = any,
+    TBody extends Validator = any,
+    TParams extends Validator = any,
   >(
     config: Omit<ArkosRouteConfig<TQuery, TBody, TParams>, "path">,
     ...handlers: Array<
-      | ArkosRequestHandler<
+      | ArkosAnyRequestHandler<
           InferValidationType<TParams, Record<string, string>>,
           any,
           InferValidationType<TBody, any>,
@@ -169,27 +160,9 @@ export type ArkosRouteMethodHandler<T> = {
   ): T;
 
   <
-    TQuery extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | null
-      | false
-      | undefined = any,
-    TBody extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | null
-      | false
-      | undefined = any,
-    TParams extends
-      | ZodSchema
-      | (new (...args: any[]) => object)
-      | null
-      | null
-      | false
-      | undefined = any,
+    TQuery extends Validator = any,
+    TBody extends Validator = any,
+    TParams extends Validator = any,
   >(
     config: Omit<ArkosRouteConfig<TQuery, TBody, TParams>, "path">,
     ...handlers: Array<
@@ -301,7 +274,6 @@ export interface IArkosRouter extends IRouter {
   /** ALL methods handler with route configuration support */
   all: RouterMethodHandler<this>;
   use: UseMethodHandler<this>;
-
   route<T extends string>(prefix: T): IArkosRoute;
   route(prefix: PathParams): IArkosRoute;
 }
@@ -310,27 +282,9 @@ export interface IArkosRouter extends IRouter {
  * Configuration object for defining routes in Arkos.js.
  */
 export type ArkosRouteConfig<
-  TQuery extends
-    | ZodSchema
-    | (new (...args: any[]) => object)
-    | null
-    | false
-    | null
-    | undefined = any,
-  TBody extends
-    | ZodSchema
-    | (new (...args: any[]) => object)
-    | null
-    | false
-    | null
-    | undefined = any,
-  TParams extends
-    | ZodSchema
-    | (new (...args: any[]) => object)
-    | null
-    | false
-    | null
-    | undefined = any,
+  TQuery extends Validator = any,
+  TBody extends Validator = any,
+  TParams extends Validator = any,
 > = {
   /**
    * Disables the route by not mounting it internally.

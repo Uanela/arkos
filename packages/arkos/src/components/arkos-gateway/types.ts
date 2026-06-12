@@ -4,6 +4,7 @@ import { DefaultEventsMap } from "socket.io";
 import { Validator } from "../../types/validation/validator";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { DetailedAccessControlRule } from "../../types/auth";
+import { AuthAction } from "../../modules/auth/utils/services/auth-action.service";
 
 /**
  * An events map is an interface that maps event names to their value, which
@@ -125,6 +126,10 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
     resource: string;
     action: string;
     rule?: DetailedAccessControlRule | string[] | "*";
+    /**
+     * @private
+     */
+    _authAction: Required<AuthAction>;
   };
 
   /**

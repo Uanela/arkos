@@ -23,7 +23,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create User",
         description: "Create User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
     });
 
@@ -40,7 +40,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Generate Report User",
         description: "Generate Report User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform generate report for user",
       });
     });
 
@@ -53,7 +53,7 @@ describe("AuthActionService", () => {
         resource: "product",
         name: "Download Excel File Product",
         description: "Download Excel File Product",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform download excel file for product",
       });
     });
 
@@ -87,7 +87,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create User",
         description: "Create User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
     });
 
@@ -102,7 +102,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create User",
         description: "Create User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
     });
 
@@ -149,14 +149,14 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create New User",
         description: "Allows creating new user accounts",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
       expect(authActionService.authActions[1]).toEqual({
         action: "Update",
         resource: "user",
         name: "Modify User",
         description: "Allows updating user information",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform update for user",
       });
     });
 
@@ -176,7 +176,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create User",
         description: "Create User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
     });
   });
@@ -196,21 +196,21 @@ describe("AuthActionService", () => {
           resource: "user",
           name: "Create User",
           description: "Create User",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform create for user",
         },
         {
           action: "Update",
           resource: "user",
           name: "Update User",
           description: "Update User",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform update for user",
         },
         {
           action: "View",
           resource: "product",
           name: "View Product",
           description: "View Product",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform view for product",
         },
       ]);
     });
@@ -236,7 +236,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create User",
         description: "Create User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
     });
 
@@ -307,21 +307,21 @@ describe("AuthActionService", () => {
           resource: "user",
           name: "Create User",
           description: "Create User",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform create for user",
         },
         {
           action: "Update",
           resource: "user",
           name: "Update User",
           description: "Update User",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform update for user",
         },
         {
           action: "Delete",
           resource: "user",
           name: "Delete User",
           description: "Delete User",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform delete for user",
         },
       ]);
     });
@@ -350,21 +350,21 @@ describe("AuthActionService", () => {
           resource: "user",
           name: "Create User",
           description: "Create User",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform create for user",
         },
         {
           action: "Create",
           resource: "product",
           name: "Create Product",
           description: "Create Product",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform create for product",
         },
         {
           action: "Create",
           resource: "order",
           name: "Create Order",
           description: "Create Order",
-          errorMessage: "You do not have permission to perform this operation",
+          errorMessage: "You cannot perform create for order",
         },
       ]);
     });
@@ -411,7 +411,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create User",
         description: "Create User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
     });
 
@@ -423,7 +423,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create User",
         description: "Create User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
     });
 
@@ -437,7 +437,7 @@ describe("AuthActionService", () => {
         resource: "user",
         name: "Create a badass user",
         description: "Create User",
-        errorMessage: "You do not have permission to perform this operation",
+        errorMessage: "You cannot perform create for user",
       });
     });
   });

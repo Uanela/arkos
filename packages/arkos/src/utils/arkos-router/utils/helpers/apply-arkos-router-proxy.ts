@@ -1,6 +1,5 @@
 import { RouterOptions } from "express";
 import {
-  ArkosAnyRequestHandler,
   ArkosRouteConfig,
   ArkosUseConfig,
   IArkosRoute,
@@ -16,6 +15,7 @@ import { catchAsync } from "../../../../exports/error-handler";
 import deepmerge from "../../../helpers/deepmerge.helper";
 import ExitError from "../../../helpers/exit-error";
 import uploadManager from "./upload-manager";
+import { ArkosAnyRequestHandler } from "../../../../types";
 
 export function applyArkosRouterProxy<T extends object>(
   target: T,
