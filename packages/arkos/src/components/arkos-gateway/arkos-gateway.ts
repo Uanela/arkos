@@ -33,6 +33,12 @@ import errorPrettifier from "../../modules/base/utils/error-prettifier";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { defaultGatewayStore } from "./utils/memory-gateway-store";
 import { mountArkosSocketExtensions } from "./socket-extensions";
+import {
+  isAuthenticationEnabled,
+  isUsingAuthentication,
+} from "../../utils/helpers/arkos-config.helpers";
+import ExitError from "../../utils/helpers/exit-error";
+import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
@@ -275,7 +281,7 @@ export class IArkosGateway {
       .filter((h) => h.type === "error")
       .map((h) => h.handler as ArkosGatewayErrorHandler);
 
-    if (resolvedAuth) {
+    if (resolvedAuth && isAuthenticationEnabled()) {
       ns.use(async (socket: any, next) => {
         socket = socket as ArkosSocket;
         const startTime = new Date().getTime();
@@ -304,7 +310,15 @@ export class IArkosGateway {
           next(err);
         }
       });
-    }
+    } else if (
+      (this.config.authentication || parentConfig?.authentication) &&
+      !isUsingAuthentication()
+    )
+      throw ExitError(
+        `Trying to authenticate gateway ${this.config.name ? ` ${this.config.name}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
+
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
+      );
 
     ns.on("connection", async (s) => {
       const socket = s as ArkosSocket;
@@ -466,13 +480,25 @@ export class IArkosGateway {
               }
             }
 
-            if (typeof eventConfig.authorization === "object" && resolvedAuth) {
+            if (
+              typeof eventConfig.authorization === "object" &&
+              resolvedAuth &&
+              isAuthenticationEnabled()
+            ) {
               await authHookManager.runAuthorize(
                 { context: socket, done: () => {} },
                 eventConfig?.authorization?._authAction,
                 "currentUser"
               );
-            }
+            } else if (
+              (this.config.authentication || parentConfig?.authentication) &&
+              !isUsingAuthentication()
+            )
+              throw ExitError(
+                `Trying to use authorization gateway.on("${eventConfig.event}") without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
+
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
+              );
 
             if (eventConfig.validation) {
               const arkosConfig = getArkosConfig();

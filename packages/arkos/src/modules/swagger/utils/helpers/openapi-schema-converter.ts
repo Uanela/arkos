@@ -493,7 +493,7 @@ class OpenAPIchemaConverter {
     schema: any,
     prefix = "",
     visitedRefs = new Set<string>()
-  ): any[] {
+  ) {
     const flattened = this.flattenSchemaCore(schema, prefix, visitedRefs);
 
     return flattened.map(({ name, schema, required }) => ({
