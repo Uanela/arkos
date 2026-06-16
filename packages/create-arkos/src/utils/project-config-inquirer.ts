@@ -198,7 +198,6 @@ class ProjectConfigInquirer {
   }
 
   private async promptValidation() {
-    // For JS projects, class-validator is not supported — skip the choice
     const choices = this.config.typescript
       ? ["zod", "class-validator", "none"]
       : ["zod", "none"];
@@ -224,7 +223,7 @@ class ProjectConfigInquirer {
   private async promptAuthentication() {
     if (this.config.prisma.provider === "none") {
       console.info(
-        `${chalk.cyan("!")} Skipping authentication setup as it requires prisma.`
+        `${chalk.cyan("! ")} ${chalk.bold("Skipping authentication setup as it requires prisma.")}`
       );
       this.config.authentication = {
         type: "none",
@@ -286,9 +285,10 @@ class ProjectConfigInquirer {
         multipleRoles,
       };
     } else if (this.config.prisma.provider === "sqlite") {
-      // console.info(
-      //   `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
-      // );
+      console.info(
+        `${chalk.cyan("! ")} 
+        ${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
+      );
     }
   }
 
