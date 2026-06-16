@@ -19,14 +19,14 @@
     "@types/express": "5.0.0",
     {{/if}}
     "tsx-strict": "0.7.0",
-    "tsx": "4.21.0"{{#if (neq prisma.provider "none")}},
+    "tsx": "4.22.4"{{#if (neq prisma.provider "none")}},
     "prisma": "6.19.2"
     {{/if}}
   },
   "dependencies": {
     "arkos": "1.5.11-beta", 
     "express": "4.22.1",
-    "@scalar/express-api-reference": "0.8.35",
+    "@scalar/express-api-reference": "0.10.2",
     "@scalar/api-reference": "1.55.3"{{#if (or (neq prisma.provider "none") validation.type)}},{{/if}}
     {{#if (neq prisma.provider "none")}}
     "@prisma/client": "6.19.2"{{#if validation.type}},{{/if}}
