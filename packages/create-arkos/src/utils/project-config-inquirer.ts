@@ -12,7 +12,7 @@ export interface ProjectConfig {
   authentication?: {
     type?: "static" | "dynamic" | "none";
     usernameField?: string;
-    multipleRoles: boolean;
+    multipleRoles?: boolean;
   };
   prisma: {
     provider:
@@ -223,7 +223,12 @@ class ProjectConfigInquirer {
 
   private async promptAuthentication() {
     if (this.config.prisma.provider === "none") {
-      console.info(`Skipping authentication setup as it requires prisma.`);
+      console.info(
+        `${chalk.cyan("!")} Skipping authentication setup as it requires prisma.`
+      );
+      this.config.authentication = {
+        type: "none",
+      };
       return;
     }
 
