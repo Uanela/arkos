@@ -26,7 +26,9 @@
   "dependencies": {
     "arkos": "1.5.11-beta", 
     "express": "4.22.1",
-    "@scalar/express-api-reference": "0.8.35"{{#if (neq prisma.provider "none")}},
+    "@scalar/express-api-reference": "0.8.35",
+    "@scalar/api-reference": "1.55.3"{{#if (or (neq prisma.provider "none") validation.type)}},{{/if}}
+    {{#if (neq prisma.provider "none")}}
     "@prisma/client": "6.19.2"{{#if validation.type}},{{/if}}
     {{/if}}
     {{#if (eq validation.type "class-validator")}}
