@@ -178,7 +178,8 @@ export class IArkosGateway {
     }
 
     if (typeof eventConfig?.authorization == "object")
-      eventConfig.authorization._authAction = authActionService.add(
+      // To reuse later on
+      (eventConfig.authorization as any)._authAction = authActionService.add(
         eventConfig.authorization!.action,
         eventConfig.authorization!.resource,
         {
@@ -364,6 +365,16 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
 
         const { config: eventConfig, handler, pipes: eventPipes = [] } = entry;
 
+        if (
+          (this.config.authentication || parentConfig?.authentication) &&
+          !isUsingAuthentication()
+        )
+          throw ExitError(
+            `Trying to use authorization gateway.on("${eventConfig.event}") without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
+
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
+          );
+
         socket.on(eventConfig.event, async (...args: any[]) => {
           socket.locals = {};
           const startTime = new Date().getTime();
@@ -487,18 +498,10 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             ) {
               await authHookManager.runAuthorize(
                 { context: socket, done: () => {} },
-                eventConfig?.authorization?._authAction,
+                (eventConfig?.authorization as any)?._authAction,
                 "currentUser"
               );
-            } else if (
-              (this.config.authentication || parentConfig?.authentication) &&
-              !isUsingAuthentication()
-            )
-              throw ExitError(
-                `Trying to use authorization gateway.on("${eventConfig.event}") without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
-
-For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
-              );
+            }
 
             if (eventConfig.validation) {
               const arkosConfig = getArkosConfig();

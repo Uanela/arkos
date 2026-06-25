@@ -17,7 +17,6 @@ import {
   Last,
   ///@ts-ignore
 } from "socket.io/dist/typed-events";
-import { AuthAction } from "../../modules/auth/utils/services/auth-action.service";
 
 export interface EventsMap {
   [event: string]: any;
@@ -416,10 +415,6 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
     resource: string;
     action: string;
     rule?: DetailedAccessControlRule | string[] | "*";
-    /**
-     * @private
-     */
-    _authAction: Required<AuthAction>;
   };
 
   /**
