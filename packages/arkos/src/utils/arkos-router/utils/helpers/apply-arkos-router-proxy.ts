@@ -85,7 +85,9 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           const allHandlers = [
             ...middlewareStack,
             ...handlers.map((h) =>
-              catchAsync(h, { type: h.length > 3 ? "error" : "normal" })
+              "param" in h
+                ? h
+                : catchAsync(h, { type: h.length > 3 ? "error" : "normal" })
             ),
           ];
 
