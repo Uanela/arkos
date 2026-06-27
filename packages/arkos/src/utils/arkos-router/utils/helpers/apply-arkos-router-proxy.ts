@@ -87,7 +87,15 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             ...handlers.map((h) =>
               "param" in h
                 ? h
-                : catchAsync(h, { type: h.length > 3 ? "error" : "normal" })
+                : Array.isArray(h)
+                  ? h.map((_h) =>
+                      "param" in _h
+                        ? _h
+                        : catchAsync(_h, {
+                            type: _h.length > 3 ? "error" : "normal",
+                          })
+                    )
+                  : catchAsync(h, { type: h.length > 3 ? "error" : "normal" })
             ),
           ];
 
