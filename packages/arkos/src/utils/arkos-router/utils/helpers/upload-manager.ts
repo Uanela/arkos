@@ -576,23 +576,11 @@ class UploadManager {
                 ? baseRoute
                 : `/${baseRoute}`) + normalizePath(file.path);
 
-          if (config.attachToBody === false) return undefined;
-          if (config.attachToBody === "pathname" || !config.attachToBody)
-            return (file as any).pathname;
-          if (config.attachToBody === "url") return url;
-          if (config.attachToBody === "file") return file;
-
           if (attachToBody === false) return undefined;
           if (attachToBody === "url") return url;
           if (attachToBody === "file") return file;
 
-          return (
-            (baseRoute === "/"
-              ? ""
-              : baseRoute.startsWith("/")
-                ? baseRoute
-                : `/${baseRoute}`) + normalizePath(file.path)
-          );
+          return (file as any).pathname;
         };
 
         const setNestedValue = (obj: any, path: string, value: any) => {
