@@ -17,6 +17,12 @@ import ExitError from "../../../helpers/exit-error";
 import uploadManager from "./upload-manager";
 import { ArkosAnyRequestHandler } from "../../../../types";
 
+const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
+  return arr.reduce((flat, item) => {
+    return flat.concat(Array.isArray(item) ? flattenHandlers(item) : item);
+  }, []);
+};
+
 export function applyArkosRouterProxy<T extends object>(
   target: T,
   options?: RouterOptions & {
@@ -81,23 +87,23 @@ export function applyArkosRouterProxy<T extends object>(
 For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
             );
 
+          const flatHandlers = flattenHandlers(handlers);
+
+          handlers = flatHandlers.map((handler: ArkosAnyRequestHandler) => {
+            if (!handler || typeof handler !== "function")
+              throw ExitError(
+                `Wrong value for handler in route ${path}, recevied ${handler}.`
+              );
+
+            return "param" in handler
+              ? handler
+              : catchAsync(handler, {
+                  type: handler.length > 3 ? "error" : "normal",
+                });
+          });
+
           const middlewareStack = getMiddlewareStack(useConfig);
-          const allHandlers = [
-            ...middlewareStack,
-            ...handlers.map((h) =>
-              "param" in h
-                ? h
-                : Array.isArray(h)
-                  ? h.map((_h) =>
-                      "param" in _h
-                        ? _h
-                        : catchAsync(_h, {
-                            type: _h.length > 3 ? "error" : "normal",
-                          })
-                    )
-                  : catchAsync(h, { type: h.length > 3 ? "error" : "normal" })
-            ),
-          ];
+          const allHandlers = [...middlewareStack, ...handlers];
 
           return originalMethod.call(target, path, ...allHandlers);
         };
@@ -173,20 +179,10 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             );
 
           if (handlers.length > 0) {
-            const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
-              return arr.reduce((flat, item) => {
-                return flat.concat(
-                  Array.isArray(item) ? flattenHandlers(item) : item
-                );
-              }, []);
-            };
-
             const flatHandlers = flattenHandlers(handlers);
 
             handlers = flatHandlers.map((handler: ArkosAnyRequestHandler) => {
-              if (!handler) throw UndefinedHandlerError(handler);
-
-              if (typeof handler !== "function")
+              if (!handler || typeof handler !== "function")
                 throw UndefinedHandlerError(handler);
 
               return catchAsync(handler, {
