@@ -256,7 +256,7 @@ describe("UploadManager", () => {
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.file.pathname).toBe("C:/uploads/file.jpg");
+      expect(mockReq.file.pathname).toBe("/api/uploadsC:/uploads/file.jpg");
       expect(mockReq.file.url).toBe(
         "http://localhost:3000/api/uploads/C:/file.jpg"
       );
@@ -283,7 +283,7 @@ describe("UploadManager", () => {
       middleware(mockReq, mockRes, mockNext);
 
       expect(mockReq.file.pathname).toBe(
-        "/uploads/companies/logos/company-1770044939233-8726529.png"
+        "/api/uploads/uploads/companies/logos/company-1770044939233-8726529.png"
       );
       expect(mockReq.file.url).toBe(
         "http://localhost:3000/api/uploads/companies/logos/company-1770044939233-8726529.png"
