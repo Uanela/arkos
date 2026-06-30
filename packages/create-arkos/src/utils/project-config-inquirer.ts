@@ -12,7 +12,7 @@ export interface ProjectConfig {
   authentication?: {
     type?: "static" | "dynamic" | "none";
     usernameField?: string;
-    multipleRoles: boolean;
+    multipleRoles?: boolean;
   };
   prisma: {
     provider:
@@ -198,7 +198,6 @@ class ProjectConfigInquirer {
   }
 
   private async promptValidation() {
-    // For JS projects, class-validator is not supported — skip the choice
     const choices = this.config.typescript
       ? ["zod", "class-validator", "none"]
       : ["zod", "none"];
@@ -223,7 +222,12 @@ class ProjectConfigInquirer {
 
   private async promptAuthentication() {
     if (this.config.prisma.provider === "none") {
-      console.info(`Skipping authentication setup as it requires prisma.`);
+      console.info(
+        `${chalk.cyan("! ")} ${chalk.bold("Skipping authentication setup as it requires prisma.")}`
+      );
+      this.config.authentication = {
+        type: "none",
+      };
       return;
     }
 
@@ -281,9 +285,10 @@ class ProjectConfigInquirer {
         multipleRoles,
       };
     } else if (this.config.prisma.provider === "sqlite") {
-      // console.info(
-      //   `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
-      // );
+      console.info(
+        `${chalk.cyan("! ")} 
+        ${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
+      );
     }
   }
 
