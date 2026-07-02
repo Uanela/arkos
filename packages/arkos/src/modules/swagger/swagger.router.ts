@@ -2,7 +2,7 @@ import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs";
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
-import { generateOpenAPIFromApp } from "../../utils/arkos-router";
+import ArkosRouter, { generateOpenAPIFromApp } from "../../utils/arkos-router";
 import {
   ArkosConfig,
   ArkosNextFunction,
@@ -17,7 +17,7 @@ import { Arkos } from "../../types/arkos";
 import { OpenAPIV3 } from "openapi-types";
 import { isProduction } from "../../utils/helpers/arkos-config.helpers";
 
-const swaggerRouter = Router();
+const swaggerRouter = ArkosRouter();
 
 export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
@@ -57,7 +57,7 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
 
   if (authenticate) {
     swaggerRouter.use(
-      endpoint,
+      { path: endpoint },
       (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         if (req.path.includes("/auth")) return next();
         next("route"); // skip to auth chain below
@@ -65,8 +65,8 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
     );
 
     swaggerRouter.use(
-      endpoint,
-      authService.authenticate,
+      { path: endpoint },
+      // authService.authenticate,
       (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         if (!req.user?.isSuperUser)
           return next(
@@ -96,14 +96,14 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
   }
 
   swaggerRouter.get(
-    `${endpoint}/auth/login`,
+    { path: `${endpoint}/auth/login` },
     (_: ArkosRequest, res: ArkosResponse) => {
       res.send(getOpenApiLoginHtml());
     }
   );
 
   swaggerRouter.get(
-    `${endpoint}/openapi.json`,
+    { path: `${endpoint}/openapi.json` },
     (_: ArkosRequest, res: ArkosResponse) => {
       res.json(swaggerSpecification);
     }
@@ -112,7 +112,7 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
   let scalarHandler: any = null;
 
   swaggerRouter.use(
-    endpoint,
+    { path: endpoint },
     scalarMiddleware(scalarHandler, swaggerSpecification, swaggerConfigs)
   );
 
