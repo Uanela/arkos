@@ -25,6 +25,7 @@ import {
 import deepmerge from "../../../helpers/deepmerge.helper";
 import { catchAsync } from "../../../../exports/error-handler";
 import { pascalCase } from "../../../helpers/change-case.helpers";
+import { ArkosFile } from "../../../../types/upload";
 
 function determineUploadDir(file: Express.Multer.File) {
   if (file.mimetype.includes?.("image")) return "/images";
@@ -97,7 +98,7 @@ class UploadManager {
       (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
         const middleware = this.getMiddleware(config);
         req.headers["x-upload-dir"] = config.uploadDir;
-        middleware(req, res, async (err) => {
+        middleware(req, res, async (err: any) => {
           if (err) return next(err);
 
           if (oldFilePath) {
@@ -293,11 +294,11 @@ class UploadManager {
           }`;
         };
 
-        const getAttachValue = (file: Express.Multer.File): any => {
+        const getAttachValue = (file: ArkosFile) => {
           const url = buildFileURL(file);
 
-          (file as any).url = url;
-          (file as any).pathname =
+          file.url = url;
+          file.pathname =
             (baseRoute === "/"
               ? ""
               : baseRoute.startsWith("/")
