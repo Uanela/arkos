@@ -13,7 +13,8 @@ type ArkosRouterMethods =
   | "all"
   | "use"
   | "trace"
-  | "route";
+  | "route"
+  | "use";
 
 export interface Arkos
   extends Omit<Express, "listen" | ArkosRouterMethods>,

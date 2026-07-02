@@ -1,4 +1,3 @@
-import { Request } from "express";
 import deepmerge from "../helpers/deepmerge.helper";
 import { parseQueryParamsWithModifiers } from "../helpers/api.features.helpers";
 import AppError from "../../modules/error-handler/utils/app-error";
@@ -34,7 +33,7 @@ export default class APIFeatures {
     "omit",
   ];
 
-  constructor(req?: Request, modelName?: ModelName) {
+  constructor(req?: ArkosRequest, modelName?: ModelName) {
     if (req) {
       const { filters = "{}", ...restOfQuery } = req.query;
       this.req = req;
