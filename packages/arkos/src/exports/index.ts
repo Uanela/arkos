@@ -14,6 +14,7 @@ import { ArkosConfig } from "../types/new-arkos-config";
 import { ArkosInitConfig } from "../types/arkos-config";
 import { loadEnvironmentVariables } from "../utils/dotenv.helpers";
 import { ArkosFile } from "../types/upload";
+import { isProduction } from "../utils/helpers/arkos-config.helpers";
 
 /**
  * Initializes the Arkos application.
@@ -40,6 +41,7 @@ export {
   ArkosRouter,
   ArkosRouteConfig,
   ArkosFile,
+  isProduction,
 };
 
 /**
