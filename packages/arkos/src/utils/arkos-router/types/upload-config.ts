@@ -1,3 +1,5 @@
+import { ArkosFile } from "../../../exports";
+
 export type UploadConfig =
   /**
    * Creates middleware that processes a single file associated with the
@@ -164,7 +166,12 @@ export type ArkosRouterBaseUploadConfig = {
    * When using validation, the attached format will be available in your validated body.
    * For array/fields uploads, an array of the specified format will be attached.
    */
-  attachToBody?: "pathname" | "url" | "file" | false;
+  attachToBody?:
+    | "pathname"
+    | "url"
+    | "file"
+    | false
+    | ((file: ArkosFile) => any);
   /**
    * Maximum file size in bytes.
    * Overrides the framework-level default for this uploadDir category.

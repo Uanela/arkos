@@ -292,6 +292,30 @@ describe("UploadManager", () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
+    it("should attach customer data to body for single file", () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        attachToBody: (file: any) => {
+          return {
+            hello: "world",
+            path: file.path,
+          };
+        },
+      };
+      mockReq.file = { path: "C:\\uploads\\file.jpg" };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockReq.file.pathname).toBe("/api/uploadsC:/uploads/file.jpg");
+      expect(mockReq.file.url).toBe(
+        "http://localhost:3000/api/uploads/C:/file.jpg"
+      );
+      expect(mockReq.body.avatar.hello).toBeDefined();
+      expect(mockNext).toHaveBeenCalled();
+    });
+
     it("should attach pathname to body for single file in windows", () => {
       const config = {
         type: "single" as const,

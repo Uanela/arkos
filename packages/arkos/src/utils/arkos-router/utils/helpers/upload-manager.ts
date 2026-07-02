@@ -580,6 +580,10 @@ class UploadManager {
           if (attachToBody === false) return undefined;
           if (attachToBody === "url") return url;
           if (attachToBody === "file") return file;
+          if (typeof attachToBody === "function") {
+            const result = attachToBody(file);
+            if (result) return result;
+          }
 
           return (file as any).pathname;
         };
