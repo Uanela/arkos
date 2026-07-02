@@ -1,5 +1,6 @@
 import { NextFunction, Response, Request } from "express";
 import { PrismaModels } from "../generated";
+import { ArkosFile } from "./upload";
 
 /**
  * Type definition for authentication-related Prisma query operations
@@ -223,14 +224,13 @@ export interface ArkosRequest<
    */
   user?: User;
   /**
-   * Single uploaded file, populated when using `multer.single()`
+   * Single uploaded file, populated when using `{ uploads: { type: "single" }}`
    */
-  file?: Express.Multer.File;
+  file?: ArkosFile;
   /**
-   * Uploaded files, populated when using `multer.array()` or `multer.fields()`.
-   *
+   * Uploaded files, populated when using `{ uploads: { type: "array" }}` or `{ uploads: { type: "fileds" }}`.
    */
-  files?: Express.Multer.File[] | Record<string, Express.Multer.File[]>;
+  files?: ArkosFile[] | Record<string, ArkosFile[]>;
 
   /**
    * Fields to include in relational queries
