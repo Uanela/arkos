@@ -15,6 +15,7 @@ import { loadEnvironmentVariables } from "../utils/dotenv.helpers";
 import { ArkosPolicy } from "../components/arkos-policy";
 import { IArkosPolicy } from "../components/arkos-policy/types";
 import { arkos } from "../app";
+import { ArkosFile } from "../types/upload";
 
 export {
   ArkosRequest,
@@ -32,6 +33,7 @@ export {
   ArkosRouteConfig,
   ArkosPolicy,
   IArkosPolicy,
+  ArkosFile,
 };
 
 /**
