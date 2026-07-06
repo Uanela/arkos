@@ -64,6 +64,11 @@ export default config
   return defineConfig(config) as any;
 }
 
+/**
+ * Returns true if application is being run through `arkos start` after `arkos build`
+ *
+ * @since 1.5.16-beta
+ */
 export function isProduction() {
   return process.env.ARKOS_BUILD === "true";
 }

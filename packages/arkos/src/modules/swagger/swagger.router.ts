@@ -10,7 +10,6 @@ import {
   ArkosResponse,
 } from "../../exports";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import authService from "../auth/auth.service";
 import AppError from "../error-handler/utils/app-error";
 import getOpenApiLoginHtml from "./utils/get-open-api-login-html";
 import { Arkos } from "../../types/arkos";
@@ -65,8 +64,7 @@ export function getSwaggerRouter(arkosConfig: ArkosConfig, app: Arkos): Router {
     );
 
     swaggerRouter.use(
-      { path: endpoint },
-      // authService.authenticate,
+      { authentication: true, path: endpoint },
       (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         if (!req.user?.isSuperUser)
           return next(

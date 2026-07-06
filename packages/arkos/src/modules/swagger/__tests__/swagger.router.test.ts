@@ -17,6 +17,24 @@ jest.mock("fs", () => ({
   promises: { stat: jest.fn(), access: jest.fn(), mkdir: jest.fn() },
 }));
 
+jest.mock("../../../utils/arkos-router", () => {
+  const mockInstance = {
+    use: jest.fn(),
+    delete: jest.fn(),
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+  };
+
+  return {
+    __esModule: true,
+    ...jest.requireActual("../../../utils/arkos-router"),
+    default: jest.fn(() => mockInstance),
+    // default: jest.fn(),
+    _getMockInstance: () => mockInstance,
+  };
+});
+
 jest.mock("express", () => {
   const mockInstance = {
     use: jest.fn(),
@@ -25,6 +43,7 @@ jest.mock("express", () => {
     post: jest.fn(),
     put: jest.fn(),
   };
+
   return {
     __esModule: true,
     Router: jest.fn(() => mockInstance),
