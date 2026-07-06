@@ -78,13 +78,13 @@ export class EmailService {
     const pass = emailConfigs?.auth?.pass || process.env.EMAIL_PASSWORD;
     const name = emailConfigs?.name || process.env.EMAIL_NAME;
 
-    if (!host || !user || !pass) {
+    if (!host) {
       throw new AppError(
         "You are trying to use emailService without setting email configurations. " +
-          "Please configure either arkosConfig.email or environment variables (EMAIL_HOST, EMAIL_USER, EMAIL_PASSWORD)",
+          "Please configure either arkosConfig.email or environment variables (EMAIL_HOST)",
         500,
         {
-          docs: "Read more about emailService at https://www.arkosjs.com/docs/core-concepts/sending-emails",
+          docs: "Read more about emailService at https://www.arkosjs.com/docs/guides/email-service",
         }
       );
     }
@@ -94,10 +94,13 @@ export class EmailService {
       host,
       port: port || 465,
       secure: secure !== undefined ? secure : true,
-      auth: {
-        user,
-        pass,
-      },
+      auth:
+        user && pass
+          ? {
+              user,
+              pass,
+            }
+          : undefined,
       name,
     };
   }
@@ -149,7 +152,11 @@ export class EmailService {
 
     const info = await transporter.sendMail({
       ...options,
-      from: fromAddress,
+      from: fromAddress
+        ? config.name
+          ? `${config.name}<${fromAddress}>`
+          : fromAddress
+        : undefined,
       text:
         options?.text ||
         (typeof options.html === "string" && options.html
