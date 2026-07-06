@@ -1,7 +1,6 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import { getSwaggerRouter } from "../../../../src/modules/swagger/swagger.router";
 import getSwaggerDefaultConfig from "../../../../src/modules/swagger/utils/helpers/get-swagger-default-configs";
-import express from "express";
 import { Arkos } from "../../../types/arkos";
 
 jest.mock("fs", () => ({
@@ -18,16 +17,16 @@ jest.mock("fs", () => ({
     mkdir: jest.fn(),
   },
 }));
-jest.mock("express", () => ({
+jest.mock("../../../utils/arkos-router", () => ({
   __esModule: true,
-  Router: jest.fn(() => ({
+  ...jest.requireActual("../../../utils/arkos-router"),
+  default: jest.fn(() => ({
     use: jest.fn(),
     delete: jest.fn(),
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
   })),
-  default: jest.fn(),
 }));
 jest.mock("swagger-jsdoc");
 
