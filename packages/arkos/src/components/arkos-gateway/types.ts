@@ -99,22 +99,6 @@ export interface ArkosSocket<
   user(userId: string): ArkosUserTarget;
 
   /**
-   * Returns the socket instance for a given socket ID.
-   * Throws if the socket is not found or has disconnected.
-   *
-   * Use native Socket.io chaining on the returned socket:
-   * `socket.peer(id).emit()`, `socket.peer(id).timeout(ms).emitWithAck()`, etc.
-   *
-   * @example
-   * socket.peer(socketId).emit("event", data)
-   * socket.peer(socketId).timeout(3000).emitWithAck("event", data)
-   * socket.peer(socketId).retry(3).emit("event", data)
-   *
-   * @since 1.7.0-canary.29
-   */
-  peer(socketId: string): ArkosSocket | undefined;
-
-  /**
    * Wraps the next `emit` or `emitWithAck` with exponential backoff retry logic.
    * Chain `.timeout(ms)` before `.emitWithAck()` as usual.
    *
@@ -308,87 +292,15 @@ export interface ArkosRetryTarget {
  *
  * @since 1.7.0-canary.29
  */
-export interface ArkosUserTarget {
-  /**
-   * Emit to all of this user's sockets. `_meta` is injected automatically.
-   *
-   * @example
-   * socket.user(userId).emit("notification", data)
-   */
-  emit(event: string, ...args: any[]): true;
-
-  /**
-   * Exclude sockets from the emit.
-   * Accepts a room name, socket ID, or `{ user: string | string[] }`.
-   *
-   * @example
-   * socket.user(userId).except({ user: otherUserId }).emit("sync", data)
-   * socket.user(userId).except({ user: [id1, id2] }).emit("sync", data)
-   * socket.user(userId).except(socketId).emit("sync", data)
-   */
-  except(
-    target: string | string[] | { user: string | string[] }
-  ): ArkosUserTarget;
-
-  /**
-   * Returns whether the user has at least one active socket connection.
-   *
-   * @example
-   * if (await socket.user(userId).isOnline()) { ... }
-   */
-  isOnline(): Promise<boolean>;
-
-  /**
-   * Returns all active socket instances for this user.
-   * Mirrors `ns.to(room).fetchSockets()`.
-   *
-   * @example
-   * const sockets = await socket.user(userId).fetchSockets()
-   */
-  fetchSockets(): Promise<ArkosSocket[]>;
-
-  /**
-   * Returns whether any of this user's sockets are in the given room.
-   * Mirrors native `.in(room)` semantics.
-   *
-   * @example
-   * const inside = await socket.user(userId).in("room-123")
-   */
-  in(roomId: string): Promise<boolean>;
-
-  /**
-   * Joins all of this user's sockets to a room.
-   *
-   * @example
-   * await socket.user(userId).join("room-123")
-   */
-  join(roomId: string): Promise<void>;
-
-  /**
-   * Removes all of this user's sockets from a room.
-   *
-   * @example
-   * await socket.user(userId).leave("room-123")
-   */
-  leave(roomId: string): Promise<void>;
-
-  /**
-   * Disconnects all of this user's sockets.
-   *
-   * @param close - If `true`, closes the underlying connections. Defaults to `false`.
-   *
-   * @example
-   * await socket.user(userId).disconnect()
-   */
-  disconnect(close?: boolean): Promise<void>;
+export interface ArkosUserTarget extends ArkosBroadcastOperator {
   /**
    * Returns all active rooms for this user.
    *
    * @example
-   * const rooms = await socket.user(userId).rooms()
+   * const rooms = await socket.user(userId).activeRooms()
    * console.log(rooms.length) // number of active tabs/connections
    */
-  rooms(): string[];
+  activeRooms(): Promise<string[]>;
 }
 
 export type ArkosGatewayPipe = (

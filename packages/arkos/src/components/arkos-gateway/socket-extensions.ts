@@ -5,6 +5,7 @@ import {
   ArkosSocket,
   ArkosUserTarget,
 } from "./types";
+import { BroadcastOperator } from "socket.io";
 
 function injectMeta<T>(
   data: T
@@ -35,7 +36,7 @@ function resolveUserSocketIds(
 export class ArkosBroadcastOperatorImpl {
   constructor(
     private readonly socket: ArkosSocket,
-    private readonly operator: ArkosBroadcastOperator
+    private readonly operator: BroadcastOperator<any, any>
   ) {
     const instance = Object.create(operator) as this;
     instance.emit = this.emit.bind(this);
@@ -103,7 +104,7 @@ export class ArkosBroadcastOperatorImpl {
    * socket.to("room-101").emit("message", { text: "hello" })
    * socket.broadcast.emit("announcement", data)
    */
-  emit(event: string, ...args: any[]): true {
+  emit(event: string, ...args: any[]): boolean {
     const [data, ...rest] = args;
     return this.operator.emit(event, injectMeta(data), ...rest);
   }
@@ -156,163 +157,6 @@ export class ArkosBroadcastOperatorImpl {
   async emitWithAck(event: string, ...args: any[]): Promise<any[]> {
     const [data, ...rest] = args;
     return this.operator.emitWithAck(event, injectMeta(data), ...rest);
-  }
-}
-
-class ArkosUserTargetImpl implements ArkosUserTarget {
-  constructor(
-    private readonly socket: ArkosSocket,
-    private readonly userId: string,
-    private readonly excludedIds: string[] = [],
-    private readonly excludedRooms: string[] = []
-  ) {}
-
-  private getUserSockets(): ArkosSocket[] {
-    return [...this.socket.nsp.sockets.values()].filter((s) =>
-      s.rooms.has(`arkos::user:${this.userId}`)
-    ) as ArkosSocket[];
-  }
-
-  /**
-   * Excludes sockets from the emit.
-   * Accepts a room name, socket ID, array of rooms/IDs,
-   * or `{ user: string | string[] }` to exclude all sockets of one or more users.
-   *
-   * @example
-   * socket.user(userId).except({ user: otherUserId }).emit("sync", data)
-   * socket.user(userId).except({ user: [id1, id2] }).emit("sync", data)
-   * socket.user(userId).except(socketId).emit("sync", data)
-   */
-  except(
-    target: string | string[] | { user: string | string[] }
-  ): ArkosUserTarget {
-    if (typeof target === "string") {
-      return new ArkosUserTargetImpl(
-        this.socket,
-        this.userId,
-        this.excludedIds,
-        [...this.excludedRooms, target]
-      );
-    }
-
-    if (Array.isArray(target)) {
-      return new ArkosUserTargetImpl(
-        this.socket,
-        this.userId,
-        this.excludedIds,
-        [...this.excludedRooms, ...target]
-      );
-    }
-
-    const socketIds = resolveUserSocketIds(this.socket, target.user);
-    return new ArkosUserTargetImpl(
-      this.socket,
-      this.userId,
-      [...this.excludedIds, ...socketIds],
-      this.excludedRooms
-    );
-  }
-
-  /**
-   * Emits an event to all active sockets of this user. `_meta` is injected automatically.
-   *
-   * @example
-   * socket.user(userId).emit("notification", { message: "You have a new order" })
-   */
-  emit(event: string, ...args: any[]): true {
-    const [data, ...rest] = args;
-    let target: any = this.socket.nsp.to(`arkos::user:${this.userId}`);
-    for (const id of this.excludedIds) target = target.except(id);
-    for (const room of this.excludedRooms) target = target.except(room);
-    return target.emit(event, injectMeta(data), ...rest);
-  }
-
-  /**
-   * Returns whether the user has at least one active socket connection.
-   *
-   * @example
-   * if (await socket.user(userId).isOnline()) {
-   *   socket.user(userId).emit("ping", {})
-   * }
-   */
-  async isOnline(): Promise<boolean> {
-    return this.getUserSockets().length > 0;
-  }
-
-  /**
-   * Returns all active socket instances for this user.
-   * Mirrors `ns.to(room).fetchSockets()`.
-   *
-   * @example
-   * const sockets = await socket.user(userId).fetchSockets()
-   * console.log(sockets.length) // number of active tabs/connections
-   */
-  async fetchSockets(): Promise<ArkosSocket[]> {
-    return this.getUserSockets();
-  }
-
-  /**
-   * Returns all active rooms for this user.
-   *
-   * @example
-   * const rooms = await socket.user(userId).rooms()
-   * console.log(rooms.length) // number of active tabs/connections
-   */
-  rooms() {
-    const userSockets = this.getUserSockets();
-    const roomsSet = new Set<string>();
-
-    for (const s of userSockets) {
-      for (const room of s.rooms) {
-        // Exclude the internal user tracking room
-        if (!room.startsWith("arkos::user:")) roomsSet.add(room);
-      }
-    }
-
-    return Array.from(roomsSet);
-  }
-
-  /**
-   * Returns whether any of this user's sockets are in the given room.
-   * Mirrors native `.in(room)` semantics.
-   *
-   * @example
-   * const inside = await socket.user(userId).in("room-123")
-   */
-  async in(roomId: string): Promise<boolean> {
-    return this.getUserSockets().some((s) => s.rooms.has(roomId));
-  }
-
-  /**
-   * Joins all of this user's sockets to a room.
-   *
-   * @example
-   * await socket.user(userId).join("room-123")
-   */
-  async join(roomId: string): Promise<void> {
-    await Promise.all(this.getUserSockets().map((s) => s.join(roomId)));
-  }
-
-  /**
-   * Removes all of this user's sockets from a room.
-   *
-   * @example
-   * await socket.user(userId).leave("room-123")
-   */
-  async leave(roomId: string): Promise<void> {
-    await Promise.all(this.getUserSockets().map((s) => s.leave(roomId)));
-  }
-
-  /**
-   * Disconnects all of this user's sockets.
-   *
-   * @param close - If `true`, closes the underlying connections. Defaults to `false`.
-   *
-   * @example
-   * await socket.user(userId).disconnect()
-   */
-  async disconnect(close = false): Promise<void> {
-    this.getUserSockets().forEach((s) => s.disconnect(close));
   }
 }
 
@@ -430,14 +274,26 @@ export function mountArkosSocketExtensions(socket: ArkosSocket): void {
   });
 
   socket.user = function (userId: string): ArkosUserTarget {
-    return new ArkosUserTargetImpl(socket, userId);
-  };
+    const target = new ArkosBroadcastOperatorImpl(
+      socket,
+      socket.nsp.to(`arkos::user:${userId}`)
+    ) as any as ArkosUserTarget;
 
-  socket.peer = function (socketId: string) {
-    const peer = socket.nsp.sockets.get(socketId) as ArkosSocket | undefined;
-    return peer;
-  };
+    target.activeRooms = async () => {
+      const sockets = await (
+        target as unknown as ArkosBroadcastOperator
+      ).fetchSockets();
+      const roomsSet = new Set<string>();
+      for (const s of sockets as any[]) {
+        for (const room of s.rooms) {
+          if (!room.startsWith("arkos::user:")) roomsSet.add(room);
+        }
+      }
+      return Array.from(roomsSet);
+    };
 
+    return target;
+  };
   socket.retry = function (
     times: number,
     baseDelay: number = 1000,
