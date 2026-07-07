@@ -542,4 +542,145 @@ describe("generateOpenAPIFromApp", () => {
       );
     });
   });
+
+  describe("generateOpenAPIFromApp - upload content-type generation", () => {
+    const baseAppFor = (_: any) => ({
+      _router: {
+        stack: [
+          {
+            route: {
+              path: "/upload",
+              methods: { post: true },
+              stack: [{ handle: "uploadHandler" }],
+            },
+          },
+        ],
+      },
+    });
+
+    const mockRegistry = (config: any) => {
+      (RouteConfigRegistry.get as jest.Mock).mockImplementation((handler) =>
+        handler === "uploadHandler" ? config : null
+      );
+    };
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it("should only generate multipart/form-data when upload field is required by default", () => {
+      const config = {
+        experimental: {
+          uploads: {
+            type: "single",
+            field: "avatar",
+          },
+        },
+      };
+      mockRegistry(config);
+
+      const openapiPaths: any = generateOpenAPIFromApp(baseAppFor(config));
+
+      const content = openapiPaths["/upload"]["post"].requestBody.content;
+      expect(content).toHaveProperty("multipart/form-data");
+      expect(content).not.toHaveProperty("application/json");
+    });
+
+    it("should only generate multipart/form-data when required is explicitly true", () => {
+      const config = {
+        experimental: {
+          uploads: {
+            type: "fields",
+            fields: [{ name: "document" }, { name: "note" }],
+            required: true,
+          },
+        },
+      };
+      mockRegistry(config);
+
+      const openapiPaths: any = generateOpenAPIFromApp(baseAppFor(config));
+
+      const content = openapiPaths["/upload"]["post"].requestBody.content;
+      expect(content).toHaveProperty("multipart/form-data");
+      expect(content).not.toHaveProperty("application/json");
+    });
+
+    it("should generate both multipart/form-data and application/json when upload is optional", () => {
+      const config = {
+        experimental: {
+          uploads: {
+            type: "fields",
+            fields: [{ name: "avatar" }, { name: "coverPhoto" }],
+            required: false,
+          },
+        },
+      };
+      mockRegistry(config);
+
+      const openapiPaths: any = generateOpenAPIFromApp(baseAppFor(config));
+
+      const content = openapiPaths["/upload"]["post"].requestBody.content;
+      expect(content).toHaveProperty("multipart/form-data");
+      expect(content).toHaveProperty("application/json");
+    });
+
+    it("should keep default behavior (application/json) when there is no upload config", () => {
+      const config = {
+        validation: {
+          body: {}, // truthy schema to force requestBody content generation
+        },
+      };
+      mockRegistry(config);
+
+      const openapiPaths: any = generateOpenAPIFromApp(baseAppFor(config));
+
+      const content = openapiPaths["/upload"]["post"].requestBody.content;
+      expect(content).toHaveProperty("application/json");
+      expect(content).not.toHaveProperty("multipart/form-data");
+    });
+
+    it("should generate both content types when required is false and validation.body is also set", () => {
+      const config = {
+        validation: {
+          body: {},
+        },
+        experimental: {
+          uploads: {
+            type: "single",
+            field: "avatar",
+            required: false,
+          },
+        },
+      };
+      mockRegistry(config);
+
+      const openapiPaths: any = generateOpenAPIFromApp(baseAppFor(config));
+
+      const content = openapiPaths["/upload"]["post"].requestBody.content;
+      expect(content).toHaveProperty("multipart/form-data");
+      expect(content).toHaveProperty("application/json");
+    });
+
+    it("should generate only multipart/form-data when required is true and validation.body is also set", () => {
+      const config = {
+        validation: {
+          body: {},
+        },
+        experimental: {
+          uploads: {
+            type: "single",
+            field: "avatar",
+            required: true,
+          },
+        },
+      };
+      mockRegistry(config);
+
+      const openapiPaths: any = generateOpenAPIFromApp(baseAppFor(config));
+
+      const content = openapiPaths["/upload"]["post"].requestBody.content;
+      expect(content).toHaveProperty("multipart/form-data");
+      expect(content).not.toHaveProperty("application/json");
+    });
+  });
 });
