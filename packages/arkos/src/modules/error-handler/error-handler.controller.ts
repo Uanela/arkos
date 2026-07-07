@@ -28,8 +28,8 @@ export default function errorHandler(
 ): void {
   console.error("[\x1b[31mError\x1b[0m]:", err);
 
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || "error";
+  err.statusCode = err.isOperational ? err.statusCode : 500;
+  err.status = err.isOperational ? err.status : "error";
 
   let error: any = {
     ...err,
