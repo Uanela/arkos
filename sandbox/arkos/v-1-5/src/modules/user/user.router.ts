@@ -20,7 +20,7 @@ userRouter.post(
     authentication: false,
     validation: {
       body: z.object({
-        b: z.array(z.string()),
+        b: z.array(z.coerce.bigint()),
       }),
     },
     experimental: {
