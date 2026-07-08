@@ -1,25 +1,31 @@
-import { ArkosConfig } from 'arkos'
+import { ArkosConfig } from "arkos";
 
 const config: ArkosConfig = {
   authentication: {
-    mode: 'static',
+    mode: "static",
     login: {
-      allowedUsernames: ['email'],
-    }
+      allowedUsernames: ["email"],
+    },
+    enabled: false,
   },
   routers: {
-    strict: "no-bulk"
+    strict: "no-bulk",
   },
   validation: {
-    resolver: 'zod'
+    resolver: "zod",
   },
   swagger: {
-    mode: 'zod',
+    mode: "zod",
     strict: false,
   },
   middlewares: {
     cors: {},
   },
-}
+  fileUpload: {
+    expressStatic: {
+      fallthrough: false,
+    },
+  },
+};
 
-export default config
+export default config;
