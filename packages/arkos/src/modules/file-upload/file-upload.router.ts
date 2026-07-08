@@ -14,11 +14,17 @@ import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
-import { ArkosConfig } from "../../exports";
+import {
+  ArkosConfig,
+  ArkosNextFunction,
+  ArkosRequest,
+  ArkosResponse,
+} from "../../exports";
 import path from "path";
 import ArkosRouter from "../../utils/arkos-router";
 import { FileUploadRouterEndpoint } from "../../types/router-config";
 import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-generator";
+import AppError from "../error-handler/utils/app-error";
 
 export function getFileUploadRouter(arkosConfig: ArkosConfig) {
   const router = ArkosRouter();
@@ -110,13 +116,28 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
             etag: true,
             lastModified: true,
             dotfiles: "ignore",
-            fallthrough: true,
+            fallthrough: false,
             index: false,
             cacheControl: true,
           },
           fileUpload?.expressStatic || {}
         )
       ),
+      (
+        err: any,
+        req: ArkosRequest,
+        _res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
+        if (err.code === "ENOENT")
+          throw new AppError(
+            `File ${req.path.replace(`/api/${arkosConfig.fileUpload?.baseRoute}`.replace("//", "/"), "")} was not found`,
+            404,
+            "FileNotFound"
+          );
+
+        next(err);
+      },
       ...processMiddleware(interceptors?.onFindFileError, { type: "error" })
     );
   }
