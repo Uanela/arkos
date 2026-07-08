@@ -129,12 +129,18 @@ export function getFileUploadRouter(arkosConfig: ArkosConfig) {
         _res: ArkosResponse,
         next: ArkosNextFunction
       ) => {
-        if (err.code === "ENOENT")
-          throw new AppError(
-            `File ${req.path.replace(`/api/${arkosConfig.fileUpload?.baseRoute}`.replace("//", "/"), "")} was not found`,
-            404,
-            "FileNotFound"
+        if (err.code === "ENOENT") {
+          const filepath = req.path.replace(
+            `/api/${arkosConfig.fileUpload?.baseRoute}`.replace("//", "/"),
+            ""
           );
+          throw new AppError(
+            `File ${filepath} was not found`,
+            404,
+            "FileNotFound",
+            { filepath }
+          );
+        }
 
         next(err);
       },
