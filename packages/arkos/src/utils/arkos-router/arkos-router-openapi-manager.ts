@@ -38,7 +38,7 @@ class ArkosRouterOpenAPIManager {
       uploadSchema.properties[uploadConfig.field] = {
         type: "string",
         format: "binary",
-        description: `Single file field ${uploadConfig.maxSize && `, max size: ${uploadConfig.maxSize} bytes`}`,
+        description: `Single file field ${uploadConfig.maxSize ? `, max size: ${uploadConfig.maxSize} bytes` : ""}`,
       };
       if (uploadConfig.required !== false) {
         uploadSchema.required.push(uploadConfig.field);
@@ -51,7 +51,7 @@ class ArkosRouterOpenAPIManager {
           format: "binary",
         },
         ...(uploadConfig.maxCount && { maxItems: uploadConfig.maxCount }),
-        description: `Array file field${uploadConfig.maxSize && `,max size per file: ${uploadConfig.maxSize} bytes`}`,
+        description: `Array file field${uploadConfig.maxSize ? `,max size per file: ${uploadConfig.maxSize} bytes` : ""}`,
       };
       if (uploadConfig.required !== false) {
         uploadSchema.required.push(uploadConfig.field);
@@ -65,7 +65,7 @@ class ArkosRouterOpenAPIManager {
             format: "binary",
           },
           ...(field.maxCount && { maxItems: field.maxCount }),
-          description: `Array file field${uploadConfig.maxSize && `,max size per file: ${uploadConfig.maxSize} bytes`}`,
+          description: `Array file field${uploadConfig.maxSize ? `,max size per file: ${uploadConfig.maxSize} bytes` : ""}`,
         };
         if (uploadConfig.required !== false) {
           uploadSchema.required.push(field.name);
