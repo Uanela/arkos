@@ -10,15 +10,34 @@ For type safety in your custom code, the `ArkosPrismaInput` TypeScript utility t
 
 ## How It Works
 
-Arkos scans relation fields in your request body and converts them based on the data shape:
+Arkos scans relation fields in your request body and converts them based on the data shape. The exact result differs slightly depending on whether the relation is **single (one-to-one)** or **array (one-to-many)** — most notably for `delete` and `disconnect`.
+
+### Single (one-to-one) relations
 
 | Input Pattern | Operation | Result |
-|---------------|-----------|--------|
+|---|---|---|
 | `{ id: 5 }` | Connect | `{ connect: { id: 5 } }` |
 | `{ name: "New Item" }` | Create | `{ create: { name: "..." } }` |
 | `{ id: 5, name: "Updated" }` | Update | `{ update: { where: { id: 5 }, data: { name: "..." } } }` |
-| `{ id: 5, apiAction: "delete" }` | Delete | `{ delete: { where: { id: 5 } } }` |
-| `{ id: 5, apiAction: "disconnect" }` | Disconnect | `{ disconnect: { where: { id: 5 } } }` |
+| `{ apiAction: "delete" }` | Delete | `{ delete: true }` |
+| `{ apiAction: "disconnect" }` | Disconnect | `{ disconnect: true }` |
+
+<Callout type="warn">
+  For single relations, `delete` and `disconnect` don't need an `id` — there's only
+  one possible related record, so Arkos always resolves them to `{ delete: true }`
+  / `{ disconnect: true }`. This is different from array relations below, where an
+  `id` is required to target the specific item to remove.
+</Callout>
+
+### Array (one-to-many) relations
+
+| Input Pattern | Operation | Result |
+|---|---|---|
+| `{ id: 5 }` | Connect | `{ connect: { id: 5 } }` |
+| `{ name: "New Item" }` | Create | `{ create: { name: "..." } }` |
+| `{ id: 5, name: "Updated" }` | Update | `{ update: { where: { id: 5 }, data: { name: "..." } } }` |
+| `{ id: 5, apiAction: "delete" }` | Delete | `{ deleteMany: { id: { in: [5] } } }` |
+| `{ id: 5, apiAction: "disconnect" }` | Disconnect | `{ disconnect: [{ id: 5 }] }` |
 
 ## Setup
 
@@ -46,13 +65,53 @@ const postData: CreatePostInput = {
 
 ## Examples
 
+### Single (One-to-One) Relations
+
+The same flattened input works for one-to-one relations. Below is every operation
+against a single `profile` relation on `User`:
+
+```typescript title="src/modules/user/user.controller.ts"
+import { ArkosPrismaInput } from "arkos/prisma";
+import { Prisma } from "@prisma/client";
+
+// Connect to an existing profile
+const connectProfile: ArkosPrismaInput<Prisma.UserUpdateInput> = {
+  profile: { id: 42 },
+};
+// -> profile: { connect: { id: 42 } }
+
+// Create a new profile inline
+const createProfile: ArkosPrismaInput<Prisma.UserUpdateInput> = {
+  profile: { bio: "Full-stack developer" },
+};
+// -> profile: { create: { bio: "Full-stack developer" } }
+
+// Update the connected profile in place
+const updateProfile: ArkosPrismaInput<Prisma.UserUpdateInput> = {
+  profile: { id: 42, bio: "Updated bio" },
+};
+// -> profile: { update: { where: { id: 42 }, data: { bio: "Updated bio" } } }
+
+// Delete the connected profile — no id needed
+const deleteProfile: ArkosPrismaInput<Prisma.UserUpdateInput> = {
+  profile: { apiAction: "delete" },
+};
+// -> profile: { delete: true }
+
+// Disconnect without deleting — no id needed
+const disconnectProfile: ArkosPrismaInput<Prisma.UserUpdateInput> = {
+  profile: { apiAction: "disconnect" },
+};
+// -> profile: { disconnect: true }
+```
+
 ### Create with Mixed Relations
 
 ```typescript title="src/modules/post/post.controller.ts"
 const createPost: ArkosPrismaInput<Prisma.PostCreateInput> = {
   title: "New Blog Post",
   content: "This is the content",
-  author: { id: 123 },  // Connect to existing user
+  author: { id: 123 },  // Connect to existing user (single relation)
   tags: [
     { name: "Technology" },  // Create new tag
     { name: "Programming" }, // Create new tag
@@ -69,7 +128,7 @@ const updatePost: ArkosPrismaInput<Prisma.PostUpdateInput> = {
   comments: [
     { id: 1, content: "Updated comment" },  // Update existing
     { content: "New comment" },              // Create new
-    { id: 3, apiAction: "delete" }           // Delete
+    { id: 3, apiAction: "delete" }           // Delete — id required for array relations
   ]
 };
 ```
@@ -79,7 +138,7 @@ const updatePost: ArkosPrismaInput<Prisma.PostUpdateInput> = {
 ```typescript title="src/modules/order/order.controller.ts"
 const createOrder: ArkosPrismaInput<Prisma.OrderCreateInput> = {
   total: 99.99,
-  customer: { email: "customer@example.com" },  // Connect by email (must be @unique)
+  customer: { email: "customer@example.com" },  // Connect by email (must be @unique), single relation
   products: [
     { sku: "PROD-123" },  // Connect by SKU (must be @unique)
     { sku: "PROD-456" }
@@ -89,21 +148,22 @@ const createOrder: ArkosPrismaInput<Prisma.OrderCreateInput> = {
 
 ### Nested Relations
 
-Arkos handles nested relations recursively:
+Arkos handles nested relations recursively, and single and array relations can be
+nested inside one another at any depth:
 
 ```typescript title="src/modules/post/post.controller.ts"
 const createPost: ArkosPrismaInput<Prisma.PostCreateInput> = {
   title: "My Post",
-  author: { id: 1 },
+  author: { id: 1 },  // Single relation on the post itself
   comments: [
     {
       content: "Great post!",
-      author: { id: 2 }  // Nested relation — connect comment author
+      author: { id: 2 }  // Single relation nested inside an array relation — connect
     },
     {
       content: "Thanks",
       author: {
-        name: "Anonymous",  // Nested relation — create new user
+        name: "Anonymous",  // Single relation nested inside an array relation — create
         email: "anon@example.com"
       }
     }
@@ -113,10 +173,15 @@ const createPost: ArkosPrismaInput<Prisma.PostCreateInput> = {
 
 ## Explicit Operations with `apiAction`
 
-For ambiguous cases, use `apiAction` to specify the operation:
+For ambiguous cases, use `apiAction` to specify the operation. The `id` requirement
+differs by relation shape:
 
-```typescript
+```typescript title="src/modules/user/user.controller.ts"
 const updateUser: ArkosPrismaInput<Prisma.UserUpdateInput> = {
+  // Single relation — no id needed for delete/disconnect
+  profile: { apiAction: "disconnect" },
+
+  // Array relation — id required to target the specific item
   posts: [
     { id: 1, apiAction: "connect" },    // Connect existing
     { id: 2, title: "Updated", apiAction: "update" },  // Update
@@ -147,7 +212,7 @@ export const beforeCreateOne = [
   ) => {
     // Type-safe access to flattened relations
     req.body.author = { id: req.user!.id };
-    
+
     // Add defaults to all tags
     if (req.body.tags) {
       req.body.tags = req.body.tags.map(tag => ({
@@ -155,7 +220,7 @@ export const beforeCreateOne = [
         type: "user-generated"
       }));
     }
-    
+
     next();
   }
 ];

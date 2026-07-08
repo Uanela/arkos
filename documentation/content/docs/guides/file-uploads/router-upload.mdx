@@ -258,7 +258,7 @@ The value written to `req.body[field]` (or `req.body.fields[name]`) depends on `
 
 - `"pathname"` (default) → `string`, e.g. `"/api/uploads/documents/report-123.xlsx"`
 - `"url"` → `string`, e.g. `"https://yourdomain.com/api/uploads/documents/report-123.xlsx"`
-- `"file"` → the full Multer file object, extended with `url` and `pathname`:
+- `"file"` → the full Multer file object, extended with `url` and `pathname` aka Arkos file object:
 
 ```ts
 {
