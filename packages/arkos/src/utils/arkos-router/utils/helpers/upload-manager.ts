@@ -414,6 +414,12 @@ class UploadManager {
         )
       );
   };
+
+  isAllFieldRequired(uploadConfig: UploadConfig): boolean {
+    if (!uploadConfig) return false;
+
+    return uploadConfig.required !== false;
+  }
 }
 
 const uploadManager = new UploadManager();

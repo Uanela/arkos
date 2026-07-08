@@ -89,17 +89,17 @@ describe("ZodSchemaGenerator", () => {
 
         expect(result).toContain('import { z } from "zod"');
         expect(result).toContain("const PostSchema = z.object({");
-        expect(result).toContain("id: z.string()");
-        expect(result).toContain("title: z.string()");
-        expect(result).toContain("content: z.string().optional()");
+        expect(result).toContain("id: z.coerce.string()");
+        expect(result).toContain("title: z.coerce.string()");
+        expect(result).toContain("content: z.coerce.string().optional()");
         expect(result).toContain(
-          "createdAt: z.date().or(z.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date')"
+          "createdAt: z.coerce.date().or(z.coerce.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date')"
         );
         expect(result).toContain(
-          "updatedAt: z.date().or(z.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date')"
+          "updatedAt: z.coerce.date().or(z.coerce.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date')"
         );
         expect(result).toContain(
-          "export type PostSchemaType = z.infer<typeof PostSchema>"
+          "export type PostSchema = z.infer<typeof PostSchema>"
         );
         expect(result).toContain("export default PostSchema;");
       });
@@ -152,10 +152,10 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateBaseSchema(options);
 
-        expect(result).toContain("email: z.string()");
-        expect(result).toContain("name: z.string()");
+        expect(result).toContain("email: z.coerce.string()");
+        expect(result).toContain("name: z.coerce.string()");
         expect(result).not.toContain("password:");
-        expect(result).not.toContain("z.string().min(8)"); // No password validation in base schema
+        expect(result).not.toContain("z.coerce.string().min(8)"); // No password validation in base schema
       });
 
       it("should include password field for non-user modules", () => {
@@ -192,8 +192,8 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateBaseSchema(options);
 
-        expect(result).toContain("password: z.string()");
-        expect(result).not.toContain("z.string().min(8)"); // No special validation for non-user modules
+        expect(result).toContain("password: z.coerce.string()");
+        expect(result).not.toContain("z.coerce.string().min(8)"); // No special validation for non-user modules
       });
 
       it("should exclude all relation fields", () => {
@@ -252,8 +252,8 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateBaseSchema(options);
 
-        expect(result).toContain("title: z.string()");
-        expect(result).toContain("authorId: z.string()");
+        expect(result).toContain("title: z.coerce.string()");
+        expect(result).toContain("authorId: z.coerce.string()");
         expect(result).not.toContain("author:");
         expect(result).not.toContain("comments:");
       });
@@ -292,7 +292,7 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateBaseSchema(options);
 
-        expect(result).toContain("email: z.string().email()");
+        expect(result).toContain("email: z.coerce.string().email()");
       });
 
       it("should handle enum fields with proper imports", () => {
@@ -451,12 +451,12 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
         expect(result).toContain("const StringFilterSchema = z.object({");
-        expect(result).toContain("icontains: z.string().optional()");
+        expect(result).toContain("icontains: z.coerce.string().optional()");
 
         expect(result).toContain("title: StringFilterSchema.optional()");
         expect(result).toContain("content: StringFilterSchema.optional()");
         expect(result).toContain(
-          "export type QueryPostSchemaType = z.infer<typeof QueryPostSchema>"
+          "export type QueryPostSchema = z.infer<typeof QueryPostSchema>"
         );
       });
 
@@ -552,7 +552,7 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
-        expect(result).toContain("published: z.boolean().optional()");
+        expect(result).toContain("published: z.coerce.boolean().optional()");
       });
 
       it("should generate DateTimeFilterSchema for DateTime fields", () => {
@@ -597,9 +597,9 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
         expect(result).toContain("const DateTimeFilterSchema = z.object({");
-        expect(result).toContain("equals: z.string().optional()");
-        expect(result).toContain("gte: z.string().optional()");
-        expect(result).toContain("lte: z.string().optional()");
+        expect(result).toContain("equals: z.coerce.string().optional()");
+        expect(result).toContain("gte: z.coerce.string().optional()");
+        expect(result).toContain("lte: z.coerce.string().optional()");
 
         expect(result).toContain(
           "publishedAt: DateTimeFilterSchema.optional()"
@@ -720,7 +720,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
         expect(result).toContain(
-          "author: z.object({ id: z.string().optional() }).optional()"
+          "author: z.object({ id: z.coerce.string().optional() }).optional()"
         );
       });
 
@@ -839,7 +839,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
         expect(result).toContain(
-          "category: z.object({ id: z.string().optional() }).optional()"
+          "category: z.object({ id: z.coerce.string().optional() }).optional()"
         );
         expect(result).not.toContain("parent:");
       });
@@ -976,7 +976,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateQuerySchema(options);
 
         expect(result).toContain(
-          "author: z.object({ id: z.string().optional() }).optional()"
+          "author: z.object({ id: z.coerce.string().optional() }).optional()"
         );
         expect(result).not.toContain("password:");
       });
@@ -1183,11 +1183,11 @@ describe("ZodSchemaGenerator", () => {
 
         expect(result).toContain('import { z } from "zod"');
         expect(result).toContain("const CreatePostSchema = z.object({");
-        expect(result).toContain("title: z.string()");
-        expect(result).toContain("content: z.string().optional()");
+        expect(result).toContain("title: z.coerce.string()");
+        expect(result).toContain("content: z.coerce.string().optional()");
         expect(result).not.toContain("id:");
         expect(result).toContain(
-          "export type CreatePostSchemaType = z.infer<typeof CreatePostSchema>"
+          "export type CreatePostSchema = z.infer<typeof CreatePostSchema>"
         );
         expect(result).toContain("export default CreatePostSchema;");
       });
@@ -1240,9 +1240,9 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("price: z.number()");
-        expect(result).toContain("quantity: z.number()");
-        expect(result).toContain("discount: z.number().optional()");
+        expect(result).toContain("price: z.coerce.number()");
+        expect(result).toContain("quantity: z.coerce.number()");
+        expect(result).toContain("discount: z.coerce.number().optional()");
       });
 
       it("should handle boolean fields", () => {
@@ -1286,8 +1286,8 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("published: z.boolean()");
-        expect(result).toContain("featured: z.boolean().optional()");
+        expect(result).toContain("published: z.coerce.boolean()");
+        expect(result).toContain("featured: z.coerce.boolean().optional()");
       });
 
       it("should handle DateTime fields", () => {
@@ -1332,10 +1332,10 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
         expect(result).toContain(
-          "startDate: z.date().or(z.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date')"
+          "startDate: z.coerce.date().or(z.coerce.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date')"
         );
         expect(result).toContain(
-          "endDate: z.date().or(z.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date').optional()"
+          "endDate: z.coerce.date().or(z.coerce.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date').optional()"
         );
       });
 
@@ -1410,7 +1410,7 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("amount: z.bigint()");
+        expect(result).toContain("amount: z.coerce.bigint()");
       });
 
       it("should handle Bytes fields", () => {
@@ -1621,7 +1621,7 @@ describe("ZodSchemaGenerator", () => {
 
         expect(result).not.toContain("categoryId:");
         expect(result).toContain(
-          "category: z.object({ id: z.string().min(1) })"
+          "category: z.object({ id: z.coerce.string().min(1) })"
         );
       });
     });
@@ -1675,8 +1675,10 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("tags: z.array(z.string().min(1))");
-        expect(result).toContain("scores: z.array(z.number()).optional()");
+        expect(result).toContain("tags: z.array(z.coerce.string().min(1))");
+        expect(result).toContain(
+          "scores: z.array(z.coerce.number()).optional()"
+        );
       });
     });
 
@@ -1937,7 +1939,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
         expect(result).toContain(
-          "category: z.object({ id: z.string().min(1) })"
+          "category: z.object({ id: z.coerce.string().min(1) })"
         );
       });
 
@@ -1997,7 +1999,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
         expect(result).toContain(
-          "category: z.object({ id: z.string().min(1) }).optional()"
+          "category: z.object({ id: z.coerce.string().min(1) }).optional()"
         );
       });
 
@@ -2058,7 +2060,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
         expect(result).toContain(
-          "category: z.object({ slug: z.string().min(1) })"
+          "category: z.object({ slug: z.coerce.string().min(1) })"
         );
       });
 
@@ -2162,7 +2164,9 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("category: z.object({ id: z.number() })");
+        expect(result).toContain(
+          "category: z.object({ id: z.coerce.number() })"
+        );
       });
     });
 
@@ -2215,8 +2219,8 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("email: z.string().email()");
-        expect(result).toContain("name: z.string()");
+        expect(result).toContain("email: z.coerce.string().email()");
+        expect(result).toContain("name: z.coerce.string()");
       });
 
       it("should add password validation for user module password field", () => {
@@ -2254,7 +2258,7 @@ describe("ZodSchemaGenerator", () => {
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
         expect(result).toContain(
-          'password: z.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number")'
+          'password: z.coerce.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number")'
         );
       });
 
@@ -2306,11 +2310,11 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("email: z.string().email()");
+        expect(result).toContain("email: z.coerce.string().email()");
         expect(result).toContain(
-          'password: z.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number")'
+          'password: z.coerce.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number")'
         );
-        expect(result).toContain("name: z.string()");
+        expect(result).toContain("name: z.coerce.string()");
       });
 
       it("should not apply user validations to non-user modules", () => {
@@ -2354,9 +2358,9 @@ describe("ZodSchemaGenerator", () => {
 
         const result = zodSchemaGenerator.generateCreateSchema(options);
 
-        expect(result).toContain("email: z.string()");
-        expect(result).not.toContain("z.string().email()");
-        expect(result).toContain("password: z.string()");
+        expect(result).toContain("email: z.coerce.string()");
+        expect(result).not.toContain("z.coerce.string().email()");
+        expect(result).toContain("password: z.coerce.string()");
         expect(result).not.toContain("min(8)");
       });
     });
@@ -2402,12 +2406,12 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
-      expect(result).toContain("title: z.string().optional()");
-      expect(result).toContain("content: z.string().optional()");
+      expect(result).toContain("title: z.coerce.string().optional()");
+      expect(result).toContain("content: z.coerce.string().optional()");
       expect(result).not.toContain("id:");
       expect(result).not.toContain("createdAt:");
       expect(result).toContain(
-        "export type UpdatePostSchemaType = z.infer<typeof UpdatePostSchema>"
+        "export type UpdatePostSchema = z.infer<typeof UpdatePostSchema>"
       );
     });
 
@@ -2427,7 +2431,7 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "User", camel: "user", kebab: "user" },
       });
 
-      expect(result).toContain("email: z.string().email().optional()");
+      expect(result).toContain("email: z.coerce.string().email().optional()");
       expect(result).toContain(
         'regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number")'
       );
@@ -2463,7 +2467,7 @@ describe("ZodSchemaGenerator", () => {
 
       expect(result).not.toContain("categoryId");
       expect(result).toContain(
-        "category: z.object({ id: z.string().min(1) }).optional()"
+        "category: z.object({ id: z.coerce.string().min(1) }).optional()"
       );
     });
 
@@ -2489,7 +2493,7 @@ describe("ZodSchemaGenerator", () => {
       expect(result).toContain(
         "status: z.nativeEnum(ProductStatus).optional()"
       );
-      expect(result).toContain("name: z.string().optional()");
+      expect(result).toContain("name: z.coerce.string().optional()");
       expect(result).toContain(
         'import { ProductStatus } from "@prisma/client"'
       );
@@ -2511,8 +2515,10 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "Product", camel: "product", kebab: "product" },
       });
 
-      expect(result).toContain("tags: z.array(z.string().min(1)).optional()");
-      expect(result).toContain("scores: z.array(z.number()).optional()");
+      expect(result).toContain(
+        "tags: z.array(z.coerce.string().min(1)).optional()"
+      );
+      expect(result).toContain("scores: z.array(z.coerce.number()).optional()");
     });
 
     it("should handle enum arrays correctly", () => {
@@ -2559,12 +2565,12 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "Test", camel: "test", kebab: "test" },
       });
 
-      expect(result).toContain("name: z.string().optional()");
-      expect(result).toContain("age: z.number().optional()");
-      expect(result).toContain("price: z.number().optional()");
-      expect(result).toContain("isActive: z.boolean().optional()");
+      expect(result).toContain("name: z.coerce.string().optional()");
+      expect(result).toContain("age: z.coerce.number().optional()");
+      expect(result).toContain("price: z.coerce.number().optional()");
+      expect(result).toContain("isActive: z.coerce.boolean().optional()");
       expect(result).toContain("data: z.any().optional()");
-      expect(result).toContain("bigNumber: z.bigint().optional()");
+      expect(result).toContain("bigNumber: z.coerce.bigint().optional()");
       expect(result).toContain("fileData: z.instanceof(Buffer).optional()");
     });
 
@@ -2612,7 +2618,7 @@ describe("ZodSchemaGenerator", () => {
       expect(result).not.toContain("createdAt:");
       expect(result).not.toContain("updatedAt:");
       expect(result).not.toContain("deletedAt:");
-      expect(result).toContain("title: z.string().optional()");
+      expect(result).toContain("title: z.coerce.string().optional()");
     });
   });
 
@@ -2696,9 +2702,9 @@ describe("ZodSchemaGenerator", () => {
       });
 
       expect(result).toContain("mainTag: z.object({");
-      expect(result).toContain("name: z.string()");
-      expect(result).toContain("slug: z.string()");
-      expect(result).toContain("color: z.string().optional()");
+      expect(result).toContain("name: z.coerce.string()");
+      expect(result).toContain("slug: z.coerce.string()");
+      expect(result).toContain("color: z.coerce.string().optional()");
     });
 
     it("should generate an optional single composite type field with .optional()", () => {
@@ -2768,8 +2774,8 @@ describe("ZodSchemaGenerator", () => {
       });
 
       expect(result).toContain("tags: z.array(z.object({");
-      expect(result).toContain("name: z.string()");
-      expect(result).toContain("slug: z.string()");
+      expect(result).toContain("name: z.coerce.string()");
+      expect(result).toContain("slug: z.coerce.string()");
     });
 
     it("should generate an optional composite type array field with .optional()", () => {
@@ -2961,9 +2967,9 @@ describe("ZodSchemaGenerator", () => {
       });
 
       expect(result).toContain("mainTag: z.object({");
-      expect(result).toContain("name: z.string()");
-      expect(result).toContain("slug: z.string()");
-      expect(result).toContain("color: z.string().optional()");
+      expect(result).toContain("name: z.coerce.string()");
+      expect(result).toContain("slug: z.coerce.string()");
+      expect(result).toContain("color: z.coerce.string().optional()");
       expect(result).toContain("}).optional()");
     });
 
