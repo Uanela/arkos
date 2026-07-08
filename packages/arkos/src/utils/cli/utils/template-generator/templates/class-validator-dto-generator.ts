@@ -66,7 +66,8 @@ export class ClassValidatorDtoGenerator {
             const { decorators, type } = this.generateClassValidatorField(
               f,
               false,
-              validatorsUsed
+              validatorsUsed,
+              transformersUsed
             );
             const mod = isTypeScript ? (f.isOptional ? "?" : "!") : "";
             return `${decorators}  ${f.name}${mod}: ${type};`;
@@ -120,7 +121,8 @@ export class ClassValidatorDtoGenerator {
             relationDtoName,
             validatorsUsed,
             enumsUsed,
-            isTypeScript
+            isTypeScript,
+            transformersUsed
           );
 
           if (!dtoFields.find((dtoField) => dtoField.includes(relationDtoName)))
@@ -140,7 +142,8 @@ export class ClassValidatorDtoGenerator {
       const { decorators, type } = this.generateClassValidatorField(
         field,
         isUserModule,
-        validatorsUsed
+        validatorsUsed,
+        transformersUsed
       );
       const isOptional = field.isOptional || field.defaultValue !== undefined;
       const typeModifier = isTypeScript ? (isOptional ? "?" : "!") : "";
@@ -216,7 +219,8 @@ ${dtoFields.join("\n\n")}
               this.generateClassValidatorFieldForUpdate(
                 f,
                 false,
-                validatorsUsed
+                validatorsUsed,
+                transformersUsed
               );
             const mod = isTypeScript ? "?" : "";
             return `${decorators}  ${f.name}${mod}: ${type};`;
@@ -260,7 +264,8 @@ ${dtoFields.join("\n\n")}
             relationDtoName,
             validatorsUsed,
             enumsUsed,
-            isTypeScript
+            isTypeScript,
+            transformersUsed
           );
 
           if (!dtoFields.find((dtoField) => dtoField.includes(relationDtoName)))
@@ -281,7 +286,8 @@ ${dtoFields.join("\n\n")}
       const { decorators, type } = this.generateClassValidatorFieldForUpdate(
         field,
         isUserModule,
-        validatorsUsed
+        validatorsUsed,
+        transformersUsed
       );
       const typeModifier = isTypeScript ? "?" : "";
       dtoFields.push(`${decorators}  ${field.name}${typeModifier}: ${type};`);
@@ -340,7 +346,8 @@ ${dtoFields.join("\n\n")}
       const { decorators, type } = this.generateClassValidatorField(
         field,
         isUserModule,
-        validatorsUsed
+        validatorsUsed,
+        transformersUsed
       );
       const isOptional = field.isOptional;
       const typeModifier = isTypeScript ? (isOptional ? "?" : "!") : "";
@@ -444,7 +451,8 @@ ${dtoFields.join("\n\n")}
             relationDtoName,
             validatorsUsed,
             enumsUsed,
-            isTypeScript
+            isTypeScript,
+            transformersUsed
           );
 
           if (
@@ -484,8 +492,9 @@ ${dtoFields.join("\n\n")}
 
       if (field.type === "Boolean") {
         validatorsUsed.add("IsBoolean");
+        transformersUsed.add("Transform");
 
-        const fieldDef = `  @IsOptional()\n  @IsBoolean()\n  ${field.name}${typeModifier}: boolean;`;
+        const fieldDef = `  @IsOptional()\n  @Transform(({ value }) => value === true || value === "true" || value === 1 || value === "1")\n  @IsBoolean()\n  ${field.name}${typeModifier}: boolean;`;
 
         if (timestampFields.includes(field.name)) {
           timestampDtoFields.push(fieldDef);
@@ -642,7 +651,8 @@ ${allFields.join("\n\n")}
     dtoName: string,
     validatorsUsed: Set<string>,
     enumsUsed: Set<string>,
-    isTypeScript: boolean
+    isTypeScript: boolean,
+    transformersUsed: Set<string>
   ): string {
     const fields: string[] = [];
 
@@ -658,7 +668,8 @@ ${allFields.join("\n\n")}
       const { decorators, type } = this.generateClassValidatorField(
         refFieldAsPrismaField,
         false,
-        validatorsUsed
+        validatorsUsed,
+        transformersUsed
       );
       const typeModifier = isTypeScript ? "!" : "";
       fields.push(
@@ -671,10 +682,48 @@ ${fields.join("\n\n")}
 }`;
   }
 
+  /**
+   * Builds a @Transform decorator that coerces raw incoming values
+   * (e.g. strings from multipart/form-data or query params) into the
+   * correct native type before class-validator runs its checks.
+   * Mirrors the z.coerce.* behavior used in the Zod schema generator.
+   */
+  private generateTransformDecorator(field: PrismaField): string | null {
+    const isArray = field.isArray;
+
+    switch (field.type) {
+      case "Int":
+      case "Float":
+      case "Decimal":
+        return isArray
+          ? `@Transform(({ value }) => (Array.isArray(value) ? value.map((v: any) => (v !== undefined && v !== null && v !== "" ? Number(v) : v)) : value))`
+          : `@Transform(({ value }) => (value !== undefined && value !== null && value !== "" ? Number(value) : value))`;
+
+      case "BigInt":
+        return isArray
+          ? `@Transform(({ value }) => (Array.isArray(value) ? value.map((v: any) => (v !== undefined && v !== null && v !== "" ? BigInt(v) : v)) : value))`
+          : `@Transform(({ value }) => (value !== undefined && value !== null && value !== "" ? BigInt(value) : value))`;
+
+      case "Boolean":
+        return isArray
+          ? `@Transform(({ value }) => (Array.isArray(value) ? value.map((v: any) => v === true || v === "true" || v === 1 || v === "1") : value))`
+          : `@Transform(({ value }) => value === true || value === "true" || value === 1 || value === "1")`;
+
+      case "DateTime":
+        return isArray
+          ? `@Transform(({ value }) => (Array.isArray(value) ? value.map((v: any) => (v ? new Date(v) : v)) : value))`
+          : `@Transform(({ value }) => (value ? new Date(value) : value))`;
+
+      default:
+        return null;
+    }
+  }
+
   private generateClassValidatorField(
     field: PrismaField,
     isUserModule: boolean,
-    validatorsUsed: Set<string>
+    validatorsUsed: Set<string>,
+    transformersUsed: Set<string>
   ): { decorators: string; type: string } {
     let decorators: string[] = [];
     let type = this.mapPrismaTypeToTS(field.type);
@@ -704,6 +753,12 @@ ${fields.join("\n\n")}
       validatorsUsed.add("IsEnum");
       type = field.isArray ? `${field.type}[]` : field.type;
     } else {
+      const transformDecorator = this.generateTransformDecorator(field);
+      if (transformDecorator) {
+        decorators.push(transformDecorator);
+        transformersUsed.add("Transform");
+      }
+
       const fieldValidators = this.getValidatorsForType(field, isUserModule);
       decorators.push(...fieldValidators);
       fieldValidators.forEach((decorator) => {
@@ -723,7 +778,8 @@ ${fields.join("\n\n")}
   private generateClassValidatorFieldForUpdate(
     field: PrismaField,
     isUserModule: boolean,
-    validatorsUsed: Set<string>
+    validatorsUsed: Set<string>,
+    transformersUsed: Set<string>
   ): { decorators: string; type: string } {
     let decorators: string[] = [];
     let type = this.mapPrismaTypeToTS(field.type);
@@ -750,6 +806,12 @@ ${fields.join("\n\n")}
       validatorsUsed.add("IsEnum");
       type = field.isArray ? `${field.type}[]` : field.type;
     } else {
+      const transformDecorator = this.generateTransformDecorator(field);
+      if (transformDecorator) {
+        decorators.push(transformDecorator);
+        transformersUsed.add("Transform");
+      }
+
       const fieldValidators = this.getValidatorsForType(field, isUserModule);
       decorators.push(...fieldValidators);
       fieldValidators.forEach((decorator) => {
