@@ -1004,7 +1004,8 @@ ${usernameFields.join("\n\n")}
             relationDtoName,
             validatorsUsed,
             enumsUsed,
-            isTypeScript
+            isTypeScript,
+            transformersUsed
           );
           if (!dtoFields.find((d) => d.includes(relationDtoName)))
             nestedDtoClasses.push(nestedDtoClass);
@@ -1033,7 +1034,8 @@ ${usernameFields.join("\n\n")}
       const { decorators, type } = this.generateClassValidatorField(
         field,
         true,
-        validatorsUsed
+        validatorsUsed,
+        transformersUsed
       );
       const isOptional = field.isOptional || field.defaultValue !== undefined;
       const typeModifier = isTypeScript ? (isOptional ? "?" : "!") : "";
@@ -1116,7 +1118,8 @@ ${dtoFields.join("\n\n")}
             relationDtoName,
             validatorsUsed,
             enumsUsed,
-            isTypeScript
+            isTypeScript,
+            transformersUsed
           );
           if (!dtoFields.find((d) => d.includes(relationDtoName)))
             nestedDtoClasses.push(nestedDtoClass);
@@ -1133,7 +1136,8 @@ ${dtoFields.join("\n\n")}
       const { decorators, type } = this.generateClassValidatorFieldForUpdate(
         field,
         true,
-        validatorsUsed
+        validatorsUsed,
+        transformersUsed
       );
       const typeModifier = isTypeScript ? "?" : "";
       dtoFields.push(`${decorators}  ${field.name}${typeModifier}: ${type};`);

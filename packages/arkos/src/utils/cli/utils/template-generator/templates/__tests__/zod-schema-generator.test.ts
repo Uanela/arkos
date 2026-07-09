@@ -3335,7 +3335,7 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
       });
 
-      expect(result).toContain("username: z.string()");
+      expect(result).toContain("username: z.coerce.string()");
       expect(result).toContain("password: z.string().min(8)");
       expect(result).toContain(".regex(/[a-z]/");
       expect(result).toContain(".regex(/[A-Z]/");
@@ -3392,7 +3392,7 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
       });
 
-      expect(result).toContain("email: z.string().email()");
+      expect(result).toContain("email: z.coerce.string().email()");
     });
 
     it("should not include type export for JavaScript", () => {
@@ -3542,7 +3542,7 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
       });
 
-      expect(result).toContain("username: z.string().optional()");
+      expect(result).toContain("username: z.coerce.string().optional()");
       expect(result).not.toContain("password:");
       expect(result).not.toContain("roles:");
       expect(result).not.toContain("isActive:");
@@ -3592,8 +3592,8 @@ describe("ZodSchemaGenerator", () => {
         modelName: { pascal: "Auth", camel: "auth", kebab: "auth" },
       });
 
-      expect(result).toContain("username: z.string().optional()");
-      expect(result).toContain("firstName: z.string().optional()");
+      expect(result).toContain("username: z.coerce.string().optional()");
+      expect(result).toContain("firstName: z.coerce.string().optional()");
     });
   });
 
