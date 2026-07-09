@@ -16,23 +16,17 @@ jest.mock("fs", () => ({
   },
   promises: { stat: jest.fn(), access: jest.fn(), mkdir: jest.fn() },
 }));
-
-jest.mock("express", () => {
-  const mockInstance = {
+jest.mock("../../../utils/arkos-router", () => ({
+  __esModule: true,
+  ...jest.requireActual("../../../utils/arkos-router"),
+  default: jest.fn(() => ({
     use: jest.fn(),
     delete: jest.fn(),
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
-  };
-  return {
-    __esModule: true,
-    Router: jest.fn(() => mockInstance),
-    default: jest.fn(),
-    _getMockInstance: () => mockInstance,
-  };
-});
-
+  })),
+}));
 jest.mock("swagger-jsdoc");
 
 const mockApiReference = jest.fn();

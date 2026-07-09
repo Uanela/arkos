@@ -804,6 +804,21 @@ class UploadManager {
         )
       );
   };
+
+  isAllFieldRequired(uploadConfig: UploadConfig): boolean {
+    let isRequired = false;
+    if (!uploadConfig) isRequired = false;
+
+    if (uploadConfig.type !== "fields")
+      isRequired = uploadConfig.required !== false;
+    else {
+      isRequired = uploadConfig.fields.every(
+        (field) => (field as any).required
+      );
+    }
+
+    return isRequired;
+  }
 }
 
 const uploadManager = new UploadManager();

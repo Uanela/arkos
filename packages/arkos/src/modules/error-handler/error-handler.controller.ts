@@ -26,8 +26,8 @@ export default function errorHandler(
 ): void {
   console.error("[\x1b[31mError\x1b[0m]:", err);
 
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || "error";
+  err.statusCode = err.isOperational ? err.statusCode : 500;
+  err.status = err.isOperational ? err.status : "error";
 
   let error: any = {
     ...err,
@@ -114,7 +114,10 @@ function sendProductionError(err: AppError, _: Request, res: Response): void {
  * @returns {void}
  */
 process.on("SIGTERM", () => {
-  if (process.env.ARKOS_BUILD !== "true") {
+  if (
+    process.env.ARKOS_BUILD !== "true" ||
+    process.env.__SKIP_LISTEN === "true"
+  ) {
     process.exit();
   } else {
     console.error("SIGTERM RECEIVED in Production. Shutting down gracefully!");

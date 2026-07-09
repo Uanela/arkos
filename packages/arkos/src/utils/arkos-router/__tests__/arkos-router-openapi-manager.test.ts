@@ -18,6 +18,7 @@ describe("arkosRouterOpenApiManager", () => {
             avatar: {
               type: "string",
               format: "binary",
+              description: "Single file field",
             },
           },
           required: ["avatar"],
@@ -39,7 +40,7 @@ describe("arkosRouterOpenApiManager", () => {
             avatar: {
               type: "string",
               format: "binary",
-              description: "Max size: 5242880 bytes",
+              description: "Single file field, max size: 5242880 bytes",
             },
           },
           required: ["avatar"],
@@ -61,6 +62,7 @@ describe("arkosRouterOpenApiManager", () => {
             document: {
               type: "string",
               format: "binary",
+              description: "Single file field",
             },
           },
           required: ["document"],
@@ -83,7 +85,7 @@ describe("arkosRouterOpenApiManager", () => {
             resume: {
               type: "string",
               format: "binary",
-              description: "Max size: 10485760 bytes",
+              description: "Single file field, max size: 10485760 bytes",
             },
           },
           required: ["resume"],
@@ -109,6 +111,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
             },
           },
 
@@ -135,6 +138,7 @@ describe("arkosRouterOpenApiManager", () => {
                 format: "binary",
               },
               maxItems: 10,
+              description: "Array file field",
             },
           },
           required: ["photos"],
@@ -160,7 +164,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
-              description: "Max size per file: 2097152 bytes",
+              description: "Array file field, max size per file: 2097152 bytes",
             },
           },
         });
@@ -187,7 +191,7 @@ describe("arkosRouterOpenApiManager", () => {
                 format: "binary",
               },
               maxItems: 5,
-              description: "Max size per file: 1048576 bytes",
+              description: "Array file field, max size per file: 1048576 bytes",
             },
           },
           required: ["attachments"],
@@ -213,6 +217,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
             },
             resume: {
               type: "array",
@@ -220,6 +225,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
             },
           },
           required: ["avatar", "resume"],
@@ -246,6 +252,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
               maxItems: 5,
             },
             documents: {
@@ -254,6 +261,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
               maxItems: 3,
             },
           },
@@ -280,7 +288,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
-              description: "Max size per file: 5242880 bytes",
+              description: "Array file field, max size per file: 5242880 bytes",
             },
             cover: {
               type: "array",
@@ -288,7 +296,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
-              description: "Max size per file: 5242880 bytes",
+              description: "Array file field, max size per file: 5242880 bytes",
             },
           },
         });
@@ -312,6 +320,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
             },
             id_back: {
               type: "array",
@@ -319,6 +328,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
             },
           },
           required: ["id_front", "id_back"],
@@ -348,7 +358,7 @@ describe("arkosRouterOpenApiManager", () => {
                 format: "binary",
               },
               maxItems: 1,
-              description: "Max size per file: 3145728 bytes",
+              description: "Array file field, max size per file: 3145728 bytes",
             },
             gallery: {
               type: "array",
@@ -357,7 +367,7 @@ describe("arkosRouterOpenApiManager", () => {
                 format: "binary",
               },
               maxItems: 10,
-              description: "Max size per file: 3145728 bytes",
+              description: "Array file field, max size per file: 3145728 bytes",
             },
           },
           required: ["avatar", "gallery"],
@@ -395,6 +405,7 @@ describe("arkosRouterOpenApiManager", () => {
             avatar: {
               type: "string",
               format: "binary",
+              description: "Single file field",
             },
           },
           required: ["name"],
@@ -428,6 +439,7 @@ describe("arkosRouterOpenApiManager", () => {
             document: {
               type: "string",
               format: "binary",
+              description: "Single file field",
             },
           },
           required: ["title", "document"],
@@ -456,6 +468,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
               maxItems: 3,
             },
           },
@@ -476,6 +489,7 @@ describe("arkosRouterOpenApiManager", () => {
             photo: {
               type: "string",
               format: "binary",
+              description: "Single file field",
             },
           },
           required: ["photo"],
@@ -502,6 +516,7 @@ describe("arkosRouterOpenApiManager", () => {
                 type: "string",
                 format: "binary",
               },
+              description: "Array file field",
             },
           },
         });

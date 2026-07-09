@@ -10,6 +10,7 @@ import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy";
 import { Arkos } from "../../types/arkos";
 import { ArkosRouterBaseUploadConfig } from "./types/upload-config";
+import uploadManager from "./utils/helpers/upload-manager";
 
 export type ArkosRouterOptions = {
   /**
@@ -239,6 +240,10 @@ export function generateOpenAPIFromApp(app: Arkos) {
     const multipartFormSchema =
       convertedOpenAPI?.requestBody?.content?.["multipart/form-data"];
 
+    const allUploadFieldsAreRequired = hasUploadFields
+      ? uploadManager.isAllFieldRequired(config?.experimental?.uploads!)
+      : false;
+
     if (hasUploadFields && multipartFormSchema)
       arkosRouterOpenApiManager.validateMultipartFormDocs(
         multipartFormSchema,
@@ -281,9 +286,11 @@ export function generateOpenAPIFromApp(app: Arkos) {
                     ),
                   },
                 }),
-                "application/json": {
-                  schema,
-                },
+                ...(!allUploadFieldsAreRequired && {
+                  "application/json": {
+                    schema,
+                  },
+                }),
               };
             })(),
           },
@@ -297,6 +304,10 @@ export function generateOpenAPIFromApp(app: Arkos) {
                 convertedOpenAPI?.requestBody?.content?.["application/json"]
                   ?.schema || {};
 
+              delete convertedOpenAPI?.requestBody?.content?.[
+                "application/json"
+              ];
+
               return {
                 "multipart/form-data": {
                   schema: openApiSchemaConverter.flattenSchema(
@@ -307,6 +318,11 @@ export function generateOpenAPIFromApp(app: Arkos) {
                   ),
                 },
                 ...convertedOpenAPI?.requestBody?.content,
+                ...(!allUploadFieldsAreRequired && {
+                  "application/json": {
+                    schema,
+                  },
+                }),
               };
             })(),
           },
