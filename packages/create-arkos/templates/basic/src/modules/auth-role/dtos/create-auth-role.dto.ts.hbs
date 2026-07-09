@@ -1,26 +1,15 @@
 import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import 'reflect-metadata'
-{{#if (eq prisma.provider "sqlite")}}
-
-export enum AuthPermissionAction {
-  View = 'View',
-  Create = 'Create',
-  Update = 'Update',
-  Delete = 'Delete'
-}
-{{else}}
-import { AuthPermissionAction } from "@prisma/client"
-{{/if}}
 
 class CreatePermissionForRoleDto {
   @IsString()
   @IsNotEmpty({ message: 'Resource is required' })
   resource!: string;
 
-  @IsEnum(AuthPermissionAction)
-  @Transform(({ value }) => value || AuthPermissionAction.View)
-  action: AuthPermissionAction = AuthPermissionAction.View;
+  @IsString()
+  @Transform(({ value }) => String(value))
+  action!: string;
 
   @IsOptional()
   @IsString()
