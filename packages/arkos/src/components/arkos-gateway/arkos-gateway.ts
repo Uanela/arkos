@@ -38,6 +38,7 @@ import {
 } from "./utils/emit-builders";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { defaultGatewayStore } from "./utils/memory-gateway-store";
+import { AuthAction } from "../../modules/auth/utils/services/auth-action.service";
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
@@ -182,14 +183,15 @@ export class IArkosGateway {
       this.events.push(entry);
     }
 
-    if (typeof eventConfig?.authorization == "object")
+    if (typeof eventConfig?.authorization == "object") {
       eventConfig.authorization._authAction = authActionService.add(
         eventConfig.authorization!.action,
         eventConfig.authorization!.resource,
         {
-          [eventConfig.event]: eventConfig.authorization?.rule,
+          [eventConfig.authorization!.action]: eventConfig.authorization?.rule,
         }
       );
+    }
 
     return this;
   }
@@ -479,7 +481,7 @@ export class IArkosGateway {
             if (typeof eventConfig.authorization === "object" && resolvedAuth) {
               await authHookManager.runAuthorize(
                 { context: socket, done: () => {} },
-                eventConfig?.authorization?._authAction
+                eventConfig?.authorization?._authAction as Required<AuthAction>
               );
             }
 

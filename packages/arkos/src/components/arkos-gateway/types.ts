@@ -129,7 +129,7 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
     /**
      * @private
      */
-    _authAction: Required<AuthAction>;
+    _authAction?: Required<AuthAction>;
   };
 
   /**

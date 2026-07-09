@@ -8,7 +8,11 @@ jest.mock("../../../exports/services", () => ({
     getAuthenticatedUser: jest.fn(),
   },
   authActionService: {
-    add: jest.fn(),
+    add: jest.fn((action: any, resource: any, rule: any) => ({
+      action,
+      resource,
+      ...rule[action],
+    })),
   },
 }));
 
@@ -1393,9 +1397,7 @@ describe("IArkosGateway", () => {
 
         expect(authHookManager.runAuthorize).toHaveBeenCalledWith(
           { context: mockSocket, done: expect.any(Function) },
-          "test",
-          "/chat",
-          { roles: ["Admin"] }
+          { action: "test", resource: "chat", roles: ["Admin"] }
         );
       });
     });
