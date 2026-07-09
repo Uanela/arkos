@@ -16,17 +16,23 @@ jest.mock("fs", () => ({
   },
   promises: { stat: jest.fn(), access: jest.fn(), mkdir: jest.fn() },
 }));
-jest.mock("../../../utils/arkos-router", () => ({
-  __esModule: true,
-  ...jest.requireActual("../../../utils/arkos-router"),
-  default: jest.fn(() => ({
+jest.mock("../../../utils/arkos-router", () => {
+  const instance = {
     use: jest.fn(),
     delete: jest.fn(),
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
-  })),
-}));
+  };
+  const router = jest.fn(() => instance);
+
+  return {
+    __esModule: true,
+    ...jest.requireActual("../../../utils/arkos-router"),
+    default: router,
+    _getMockInstance: () => instance,
+  };
+});
 jest.mock("swagger-jsdoc");
 
 const mockApiReference = jest.fn();
@@ -61,7 +67,8 @@ function getRouterInstance(): {
   post: jest.Mock;
   put: jest.Mock;
 } {
-  const express = require("express");
+  const express = require("../../../utils/arkos-router");
+
   return express._getMockInstance();
 }
 
@@ -125,7 +132,7 @@ describe("getSwaggerRouter", () => {
       getSwaggerRouter({ swagger: { authenticate: true } } as any, mockApp);
       const router = getRouterInstance();
       const endpointUseCalls = router.use.mock.calls.filter(
-        (c: any[]) => c[0] === endpoint
+        (c: any[]) => c[0].path === endpoint
       );
       expect(endpointUseCalls.length).toBeGreaterThanOrEqual(2);
     });
@@ -151,14 +158,17 @@ describe("getSwaggerRouter", () => {
     it("registers authService.authenticate in the second use() chain", () => {
       getSwaggerRouter({ swagger: { authenticate: true } } as any, mockApp);
       const router = getRouterInstance();
-      const secondUseArgs = router.use.mock.calls[1];
-      expect(secondUseArgs).toContain(authService.authenticate);
+      const firstArgs = router.use.mock.calls[1];
+      expect(firstArgs).toContainEqual({
+        authentication: true,
+        path: "/api/docs",
+      });
     });
 
     it("super-user middleware calls next() when isSuperUser is true", () => {
       getSwaggerRouter({ swagger: { authenticate: true } } as any, mockApp);
       const router = getRouterInstance();
-      const superUserMiddleware = router.use.mock.calls[1][2];
+      const superUserMiddleware = router.use.mock.calls[1][1];
       const next = jest.fn();
       superUserMiddleware({ user: { isSuperUser: true } }, {}, next);
       expect(next).toHaveBeenCalledWith();
@@ -167,7 +177,7 @@ describe("getSwaggerRouter", () => {
     it("super-user middleware calls next(error) when isSuperUser is false", () => {
       getSwaggerRouter({ swagger: { authenticate: true } } as any, mockApp);
       const router = getRouterInstance();
-      const superUserMiddleware = router.use.mock.calls[1][2];
+      const superUserMiddleware = router.use.mock.calls[1][1];
       const next = jest.fn();
       superUserMiddleware({ user: { isSuperUser: false } }, {}, next);
       expect(next).toHaveBeenCalledWith(
@@ -178,7 +188,7 @@ describe("getSwaggerRouter", () => {
     it("super-user middleware calls next(error) when user is absent", () => {
       getSwaggerRouter({ swagger: { authenticate: true } } as any, mockApp);
       const router = getRouterInstance();
-      const superUserMiddleware = router.use.mock.calls[1][2];
+      const superUserMiddleware = router.use.mock.calls[1][1];
       const next = jest.fn();
       superUserMiddleware({ user: undefined }, {}, next);
       expect(next).toHaveBeenCalledWith(
@@ -189,7 +199,7 @@ describe("getSwaggerRouter", () => {
     it("error handler calls next() when path includes /auth", () => {
       getSwaggerRouter({ swagger: { authenticate: true } } as any, mockApp);
       const router = getRouterInstance();
-      const errorHandler = router.use.mock.calls[1][3];
+      const errorHandler = router.use.mock.calls[1][2];
       const next = jest.fn();
       errorHandler(
         new Error("fail"),
@@ -206,7 +216,7 @@ describe("getSwaggerRouter", () => {
         mockApp
       );
       const router = getRouterInstance();
-      const errorHandler = router.use.mock.calls[1][3];
+      const errorHandler = router.use.mock.calls[1][2];
       const res = { redirect: jest.fn() };
       errorHandler(
         { message: "Token expired" },
@@ -228,7 +238,7 @@ describe("getSwaggerRouter", () => {
         mockApp
       );
       const router = getRouterInstance();
-      const errorHandler = router.use.mock.calls[1][3];
+      const errorHandler = router.use.mock.calls[1][2];
       const res = { redirect: jest.fn() };
       errorHandler({}, { path: endpoint }, res, jest.fn());
       expect(res.redirect).toHaveBeenCalledWith(
@@ -242,7 +252,7 @@ describe("getSwaggerRouter", () => {
       getSwaggerRouter({ swagger: { authenticate: false } } as any, mockApp);
       const router = getRouterInstance();
       const endpointUseCalls = router.use.mock.calls.filter(
-        (c: any[]) => c[0] === endpoint
+        (c: any[]) => c[0].path === endpoint
       );
       expect(endpointUseCalls).toHaveLength(1);
     });
@@ -252,7 +262,7 @@ describe("getSwaggerRouter", () => {
     it("registers the route", () => {
       getSwaggerRouter({} as any, mockApp);
       const router = getRouterInstance();
-      const registered = router.get.mock.calls.map((c: any[]) => c[0]);
+      const registered = router.get.mock.calls.map((c: any[]) => c[0].path);
       expect(registered).toContain(`${endpoint}/auth/login`);
     });
 
@@ -260,7 +270,7 @@ describe("getSwaggerRouter", () => {
       getSwaggerRouter({} as any, mockApp);
       const router = getRouterInstance();
       const handler = router.get.mock.calls.find(
-        (c: any[]) => c[0] === `${endpoint}/auth/login`
+        (c: any[]) => c[0].path === `${endpoint}/auth/login`
       )![1];
       const res = { send: jest.fn() };
       handler({}, res);
@@ -273,7 +283,7 @@ describe("getSwaggerRouter", () => {
     it("registers the route", () => {
       getSwaggerRouter({} as any, mockApp);
       const router = getRouterInstance();
-      const registered = router.get.mock.calls.map((c: any[]) => c[0]);
+      const registered = router.get.mock.calls.map((c: any[]) => c[0].path);
       expect(registered).toContain(`${endpoint}/openapi.json`);
     });
 
@@ -281,7 +291,7 @@ describe("getSwaggerRouter", () => {
       getSwaggerRouter({} as any, mockApp);
       const router = getRouterInstance();
       const handler = router.get.mock.calls.find(
-        (c: any[]) => c[0] === `${endpoint}/openapi.json`
+        (c: any[]) => c[0].path === `${endpoint}/openapi.json`
       )![1];
       const res = { json: jest.fn() };
       handler({}, res);
