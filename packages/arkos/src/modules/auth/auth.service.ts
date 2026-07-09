@@ -366,20 +366,30 @@ export class AuthService {
     resource: string
   ) {
     const prisma = getPrismaInstance();
-    return !!(await prisma.userRole.findFirst({
-      where: {
-        userId,
-        role: {
-          permissions: {
-            some: {
-              resource,
-              action,
+
+    const [userPermission, hasRolePermission] = await Promise.all([
+      prisma.userPermission
+        ? prisma.userPermission.findFirst({
+            where: { userId, permission: { resource, action } },
+            select: { effect: true },
+          })
+        : Promise.resolve(null),
+
+      prisma.userRole.findFirst({
+        where: {
+          userId,
+          role: {
+            permissions: {
+              some: { resource, action },
             },
           },
         },
-      },
-      select: { id: true },
-    }));
+        select: { id: true },
+      }),
+    ]);
+
+    if (userPermission) return userPermission.effect === "Allow";
+    return !!hasRolePermission;
   }
 
   /**

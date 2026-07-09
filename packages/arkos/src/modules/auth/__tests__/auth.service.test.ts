@@ -82,6 +82,9 @@ describe("AuthService", () => {
       userRole: {
         findFirst: jest.fn(),
       },
+      userPermission: {
+        findFirst: jest.fn(),
+      },
       authPermission: {
         count: jest.fn(),
       },
@@ -2046,6 +2049,81 @@ describe("AuthService", () => {
         select: { id: true },
       });
       expect(result).toBe(false);
+    });
+
+    it("should return false when an explicit Deny override exists, even though the user's role grants the permission", async () => {
+      const userId = "user-123";
+      const action = "Delete";
+      const resource = "User";
+
+      mockPrisma.userRole.findFirst.mockResolvedValue({ id: "role-123" });
+      mockPrisma.userPermission.findFirst.mockResolvedValue({ effect: "Deny" });
+
+      const result = await (authService as any).checkDynamicAccessControl(
+        userId,
+        action,
+        resource
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it("should return true when an explicit Allow override exists, even though the user's role does NOT grant the permission", async () => {
+      const userId = "user-123";
+      const action = "Delete";
+      const resource = "User";
+
+      mockPrisma.userRole.findFirst.mockResolvedValue(null);
+      mockPrisma.userPermission.findFirst.mockResolvedValue({
+        effect: "Allow",
+      });
+
+      const result = await (authService as any).checkDynamicAccessControl(
+        userId,
+        action,
+        resource
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it("should fall back to role-derived permission when no UserPermission override row exists", async () => {
+      const userId = "user-123";
+      const action = "Update";
+      const resource = "User";
+
+      mockPrisma.userRole.findFirst.mockResolvedValue({ id: "role-123" });
+      mockPrisma.userPermission.findFirst.mockResolvedValue(null);
+
+      const result = await (authService as any).checkDynamicAccessControl(
+        userId,
+        action,
+        resource
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it("should fall back to role-derived permission when the UserPermission model is not scaffolded (old project)", async () => {
+      const userId = "user-123";
+      const action = "Update";
+      const resource = "User";
+
+      // Simulate an older project's Prisma client: no userPermission delegate at all.
+      const { userPermission, ...prismaWithoutUserPermission } = mockPrisma;
+      (getPrismaInstance as jest.Mock).mockReturnValueOnce(
+        prismaWithoutUserPermission
+      );
+      mockPrisma.userRole.findFirst.mockResolvedValue({ id: "role-123" });
+
+      const result = await (authService as any).checkDynamicAccessControl(
+        userId,
+        action,
+        resource
+      );
+
+      expect(result).toBe(true);
+      expect(mockPrisma.userPermission.findFirst).not.toHaveBeenCalled();
     });
   });
 

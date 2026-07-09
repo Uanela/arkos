@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested, IsArray } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import 'reflect-metadata'
 
@@ -17,9 +17,11 @@ export default class CreateAuthPermissionDto {
   @Transform(({ value }) => String(value))
   action!: string;
 
-  @ValidateNested()
+  @ValidateNested({ each: true })
+  @IsArray()
   @Type(() => RoleConnectDto)
-  role!: RoleConnectDto;
+  @IsOptional()
+  roles?: RoleConnectDto[];
 
   @IsOptional()
   @IsString()
