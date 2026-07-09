@@ -4,7 +4,6 @@ import { User } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
-import { getArkosConfig } from "../../server";
 import arkosEnv from "../../utils/arkos-env";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import {
@@ -30,6 +29,7 @@ import {
 } from "./utils/auth-error-objects";
 import authActionService from "./utils/services/auth-action.service";
 import {
+  getArkosConfig,
   isAuthenticationEnabled,
   isUsingAuthentication,
 } from "../../utils/helpers/arkos-config.helpers";

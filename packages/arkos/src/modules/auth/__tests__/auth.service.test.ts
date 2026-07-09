@@ -2,8 +2,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import authServiceImport from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
-import { getArkosConfig } from "../../../server";
 import {
+  getArkosConfig,
   isAuthenticationEnabled,
   isUsingAuthentication,
 } from "../../../utils/helpers/arkos-config.helpers";
@@ -31,7 +31,16 @@ jest.mock("../../../utils/dynamic-loader", () => ({
 jest.mock("../../../utils/helpers/arkos-config.helpers", () => ({
   isAuthenticationEnabled: jest.fn(() => true),
   isUsingAuthentication: jest.fn(() => true),
-  getArkosConfig: jest.fn(() => {}),
+  getArkosConfig: jest.fn(() => ({
+    authentication: {
+      mode: "static",
+      passwordValidation: {
+        regex: /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/,
+        message:
+          "Password must contain at least one uppercase letter, one lowercase letter, and one number",
+      },
+    },
+  })),
 }));
 
 jest.mock("fs");
@@ -1481,9 +1490,9 @@ describe("AuthService", () => {
         mockReq.user = user;
         mockConfig.authentication.mode = "static";
 
-        const middleware = authService.authorize("View", "product");
+        const middleware = authService.authorize("Cook", "product");
 
-        expect(authorizeSpy).toHaveBeenCalledWith("View", "product");
+        expect(authorizeSpy).toHaveBeenCalledWith("Cook", "product");
 
         await middleware(mockReq, mockRes, mockNext);
         expect(mockNext).toHaveBeenCalledWith(
