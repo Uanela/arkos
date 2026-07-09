@@ -695,7 +695,7 @@ describe("ClassValidatorDtoGenerator", () => {
 
         expect(result).not.toContain("class BooleanFilter {");
         expect(result).toContain(
-          "@IsOptional()\n  @IsBoolean()\n  published?: boolean;"
+          '@IsOptional()\n  @Transform(({ value }) => value === true || value === "true" || value === 1 || value === "1")\n  @IsBoolean()\n  published?: boolean;'
         );
       });
 
@@ -1579,13 +1579,13 @@ describe("ClassValidatorDtoGenerator", () => {
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  name?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNumber()\n  price?: number;"
+          '@IsOptional()\n  @Transform(({ value }) => (value !== undefined && value !== null && value !== "" ? Number(value) : value))\n  @IsNumber()\n  price?: number;'
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsBoolean()\n  inStock?: boolean;"
+          '@IsOptional()\n  @Transform(({ value }) => value === true || value === "true" || value === 1 || value === "1")\n  @IsBoolean()\n  inStock?: boolean;'
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsDate()\n  releaseDate?: Date;"
+          "@IsOptional()\n  @Transform(({ value }) => (value ? new Date(value) : value))\n  @IsDate()\n  releaseDate?: Date;"
         );
         expect(result).not.toContain("id:");
       });
@@ -1712,7 +1712,7 @@ describe("ClassValidatorDtoGenerator", () => {
         });
 
         expect(result).toContain(
-          "@IsOptional()\n  @IsNumber()\n  size?: bigint;"
+          '@IsOptional()\n  @Transform(({ value }) => (value !== undefined && value !== null && value !== "" ? BigInt(value) : value))\n  @IsNumber()\n  size?: bigint;'
         );
         expect(result).toContain(
           "@IsOptional()\n  @IsObject()\n  metadata?: any;"
@@ -1893,7 +1893,7 @@ describe("ClassValidatorDtoGenerator", () => {
           "@IsOptional()\n  @IsNotEmpty({ each: true })\n  @IsArray()\n  @IsString({ each: true })\n  tags?: string[];"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
+          '@IsOptional()\n  @IsArray()\n  @Transform(({ value }) => (Array.isArray(value) ? value.map((v: any) => (v !== undefined && v !== null && v !== "" ? Number(v) : v)) : value))\n  @IsNumber({ each: true })\n  scores?: number[];'
         );
       });
     });
@@ -2743,7 +2743,7 @@ describe("ClassValidatorDtoGenerator", () => {
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  slug?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsBoolean()\n  published?: boolean;"
+          '@IsOptional()\n  @Transform(({ value }) => value === true || value === "true" || value === 1 || value === "1")\n  @IsBoolean()\n  published?: boolean;'
         );
 
         // Should not have any required fields (!)
@@ -2803,7 +2803,7 @@ describe("ClassValidatorDtoGenerator", () => {
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  name?: string;"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsNumber()\n  price?: number;"
+          '@IsOptional()\n  @Transform(({ value }) => (value !== undefined && value !== null && value !== "" ? Number(value) : value))\n  @IsNumber()\n  price?: number;'
         );
         expect(result).toContain(
           "@IsOptional()\n  @IsNotEmpty()\n  @IsString()\n  description?: string;"
@@ -3209,7 +3209,7 @@ describe("ClassValidatorDtoGenerator", () => {
           "@IsArray()\n  @IsString({ each: true })\n  tags!: string[];"
         );
         expect(result).toContain(
-          "@IsOptional()\n  @IsArray()\n  @IsNumber({ each: true })\n  scores?: number[];"
+          '@IsOptional()\n  @IsArray()\n  @Transform(({ value }) => (Array.isArray(value) ? value.map((v: any) => (v !== undefined && v !== null && v !== "" ? Number(v) : v)) : value))\n  @IsNumber({ each: true })\n  scores?: number[];'
         );
       });
     });
@@ -4246,7 +4246,9 @@ describe("ClassValidatorDtoGenerator", () => {
       });
 
       expect(result).toContain("ValidateNested");
-      expect(result).toContain('import { Type } from "class-transformer"');
+      expect(result).toContain(
+        'import { Type, Transform } from "class-transformer"'
+      );
     });
 
     it("should not generate index-based partial update — full array replacement only", () => {
@@ -4552,7 +4554,9 @@ describe("ClassValidatorDtoGenerator", () => {
       });
 
       expect(result).toContain("ValidateNested");
-      expect(result).toContain('import { Type } from "class-transformer"');
+      expect(result).toContain(
+        'import { Type, Transform } from "class-transformer"'
+      );
     });
   });
 

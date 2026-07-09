@@ -1,5 +1,4 @@
 import { ArkosSocket } from "../../../components/arkos-gateway/types";
-import { getArkosConfig } from "../../../server";
 import { ArkosRequest, User } from "../../../types";
 import {
   AuthenticateAfterHookHandler,
@@ -10,6 +9,7 @@ import {
   AuthorizeHookHandler,
 } from "../../../types/arkos-config/utils";
 import { AccessAction, DetailedAccessControlRule } from "../../../types/auth";
+import { getArkosConfig } from "../../../utils/helpers/arkos-config.helpers";
 import { ForbiddenError } from "../../error-handler/utils/errors";
 import authService from "../auth.service";
 import { AuthAction } from "./services/auth-action.service";

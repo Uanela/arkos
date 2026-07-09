@@ -92,9 +92,9 @@ type IArkosRouterMethodHandler<T> = IRouterHandler<T> &
       TBody extends Validator = any,
       TParams extends Validator = any,
     >(
-      config: ArkosRouteConfig<TQuery, TBody, TParams>,
+      config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
       ...handlers: Array<
-        | ArkosErrorRequestHandler<
+        | ArkosAnyRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
             any,
             InferValidationType<TBody, any>,
@@ -102,13 +102,22 @@ type IArkosRouterMethodHandler<T> = IRouterHandler<T> &
             any
           >
         | Array<
-            ArkosErrorRequestHandler<
-              InferValidationType<TParams, Record<string, string>>,
-              any,
-              InferValidationType<TBody, any>,
-              InferValidationType<TQuery, qs.ParsedQs>,
-              any
-            >
+            | ArkosAnyRequestHandler<
+                InferValidationType<TParams, Record<string, string>>,
+                any,
+                InferValidationType<TBody, any>,
+                InferValidationType<TQuery, qs.ParsedQs>,
+                any
+              >
+            | Array<
+                ArkosErrorRequestHandler<
+                  InferValidationType<TParams, Record<string, string>>,
+                  any,
+                  InferValidationType<TBody, any>,
+                  InferValidationType<TQuery, qs.ParsedQs>,
+                  any
+                >
+              >
           >
       >
     ): T;
@@ -124,12 +133,20 @@ type IArkosRouterMethodHandler<T> = IRouterHandler<T> &
   };
 
 export type ArkosRouteMethodHandler<T> = {
-  (
+  <
+    TQuery extends Validator = any,
+    TBody extends Validator = any,
+    TParams extends Validator = any,
+  >(
     config: ArkosAnyRequestHandler | Omit<ArkosRouteConfig, "path">,
     ...handlers: Array<
-      | ArkosRequestHandler
-      | ArkosErrorRequestHandler
-      | Array<ArkosRequestHandler | ArkosErrorRequestHandler>
+      ArkosAnyRequestHandler<
+        InferValidationType<TParams, Record<string, string>>,
+        any,
+        InferValidationType<TBody, any>,
+        InferValidationType<TQuery, qs.ParsedQs>,
+        Locals
+      >
     >
   ): T;
   <
@@ -157,7 +174,6 @@ export type ArkosRouteMethodHandler<T> = {
         >
     >
   ): T;
-
   <
     TQuery extends Validator = any,
     TBody extends Validator = any,
@@ -165,7 +181,7 @@ export type ArkosRouteMethodHandler<T> = {
   >(
     config: Omit<ArkosRouteConfig<TQuery, TBody, TParams>, "path">,
     ...handlers: Array<
-      | ArkosErrorRequestHandler<
+      | ArkosAnyRequestHandler<
           InferValidationType<TParams, Record<string, string>>,
           any,
           InferValidationType<TBody, any>,
@@ -173,7 +189,7 @@ export type ArkosRouteMethodHandler<T> = {
           Locals
         >
       | Array<
-          ArkosErrorRequestHandler<
+          ArkosAnyRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
             any,
             InferValidationType<TBody, any>,

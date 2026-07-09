@@ -24,10 +24,6 @@ import {
 import authHookManager from "../../modules/auth/utils/auth-hooks-manager";
 import { getArkosConfig } from "../../server";
 import validationManager from "../../types/validation/validation-manager";
-import {
-  BadRequestError,
-  TooManyRequestsError,
-} from "../../exports/error-handler";
 import { loginRequiredError } from "../../modules/auth/utils/auth-error-objects";
 import errorPrettifier from "../../modules/base/utils/error-prettifier";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
@@ -39,6 +35,10 @@ import {
 } from "../../utils/helpers/arkos-config.helpers";
 import ExitError from "../../utils/helpers/exit-error";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
+import {
+  BadRequestError,
+  TooManyRequestsError,
+} from "../../modules/error-handler/utils/errors";
 
 export class IArkosGateway {
   private config: ArkosGatewayConfig;
@@ -183,7 +183,7 @@ export class IArkosGateway {
         eventConfig.authorization!.action,
         eventConfig.authorization!.resource,
         {
-          [eventConfig.event]: eventConfig.authorization?.rule,
+          [eventConfig.authorization!.action]: eventConfig.authorization?.rule,
         }
       );
 

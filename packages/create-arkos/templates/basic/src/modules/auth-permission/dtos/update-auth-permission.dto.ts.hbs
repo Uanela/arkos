@@ -1,17 +1,12 @@
-import { IsString, IsOptional, IsEnum } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsString, IsOptional, IsNotEmpty, IsArray, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import 'reflect-metadata'
-{{#if (eq prisma.provider "sqlite")}}
 
-export enum AuthPermissionAction {
-  View = 'View',
-  Create = 'Create',
-  Update = 'Update',
-  Delete = 'Delete'
+class RoleConnectDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Role ID is required' })
+  id!: string;
 }
-{{else}}
-import { AuthPermissionAction } from "@prisma/client"
-{{/if}}
 
 export default class UpdateAuthPermissionDto {
   @IsOptional()
@@ -19,9 +14,15 @@ export default class UpdateAuthPermissionDto {
   resource?: string;
 
   @IsOptional()
-  @IsEnum(AuthPermissionAction)
-  @Transform(({ value }) => value) 
-  action?: AuthPermissionAction
+  @IsString()
+  @Transform(({ value }) => String(value))
+  action?: string
+
+  @ValidateNested({ each: true })
+  @IsArray()
+  @Type(() => RoleConnectDto)
+  @IsOptional()
+  roles?: RoleConnectDto[];
 
   @IsOptional()
   @IsString()
