@@ -14,15 +14,7 @@ import { isEndpointDisabled } from "../base/utils/helpers/base.router.helpers";
 import debuggerService from "../debugger/debugger.service";
 import routerValidator from "../base/utils/router-validator";
 import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
-<<<<<<< HEAD
-=======
-import {
-  ArkosConfig,
-  ArkosNextFunction,
-  ArkosRequest,
-  ArkosResponse,
-} from "../../exports";
->>>>>>> 3ccbb109a23f396544fb433fce20b035c83959ef
+import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../exports";
 import path from "path";
 import ArkosRouter from "../../utils/arkos-router";
 import { UserArkosConfig } from "../../utils/define-config";

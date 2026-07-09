@@ -9,6 +9,7 @@ import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-
 import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy";
 import { Arkos } from "../../types/arkos";
+import uploadManager from "./utils/helpers/upload-manager";
 
 export type ArkosRouterOptions = {
   /**
