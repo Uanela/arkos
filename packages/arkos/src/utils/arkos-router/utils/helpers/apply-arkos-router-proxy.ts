@@ -81,7 +81,7 @@ export function applyArkosRouterProxy<T extends object>(
 
           if (useConfig.authentication && !authenticationConfig?.mode)
             throw ExitError(
-              `Trying to authenticate route ${path ? ` ${path}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
+              `Trying to authenticate route ${path ? `${path}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
 
 For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
             );

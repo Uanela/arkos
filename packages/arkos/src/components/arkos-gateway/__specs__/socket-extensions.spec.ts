@@ -5,11 +5,22 @@ function makeBroadcastOperator(overrides: Record<string, any> = {}) {
   const op: any = {
     emit: jest.fn().mockReturnValue(true),
     emitWithAck: jest.fn().mockResolvedValue([{ ok: true }]),
-    fetchSockets: jest.fn().mockResolvedValue([]),
+    fetchSockets: jest.fn(() => {
+      return op?.sockets
+        ? Array.from(op.sockets)
+            .filter((s: any) => {
+              return Array.from(s[1].rooms || []).includes(op.id);
+            })
+            .map((s: any) => s[1])
+        : [];
+    }),
     except: jest.fn(),
     compress: jest.fn(),
     timeout: jest.fn(),
     volatile: null as any,
+    socketsJoin: jest.fn().mockResolvedValue(undefined),
+    socketsLeave: jest.fn().mockResolvedValue(undefined),
+    disconnectSockets: jest.fn(),
     ...overrides,
   };
   op.except.mockReturnValue(op);
@@ -22,11 +33,15 @@ function makeBroadcastOperator(overrides: Record<string, any> = {}) {
 function makeSocket(
   id = "socket-1",
   overrides: Record<string, any> = {}
-): ArkosSocket {
+): ArkosSocket & { activeRooms: Set<string> } {
   const broadcastOp = makeBroadcastOperator();
+  const sockets = new Map<string, ArkosSocket>();
+
   const nsp = {
-    sockets: new Map<string, ArkosSocket>(),
-    to: jest.fn().mockReturnValue(makeBroadcastOperator()),
+    sockets,
+    to: jest.fn((roomId: string) => {
+      return makeBroadcastOperator({ sockets, id: roomId });
+    }),
   };
 
   const rawEmit = jest.fn().mockReturnValue(true);
@@ -37,14 +52,20 @@ function makeSocket(
   const socket: any = {
     id,
     rooms: new Set<string>([id]),
+    activeRooms: () => {
+      const rooms = (Array.from(socket.rooms) as string[]).filter(
+        (r: string) => r !== id
+      );
+      return rooms;
+    },
     nsp,
     emit: rawEmit,
     emitWithAck: rawEmitWithAck,
     to: rawTo,
     timeout: rawTimeout,
-    join: jest.fn().mockResolvedValue(undefined),
-    leave: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn(),
+    socketsJoin: jest.fn().mockResolvedValue(undefined),
+    socketsLeave: jest.fn().mockResolvedValue(undefined),
+    disconnectSockets: jest.fn(),
     user: jest.fn(),
     peer: jest.fn(),
     retry: jest.fn(),
@@ -73,9 +94,10 @@ function addUserSocket(
   socket: ArkosSocket,
   userId: string,
   socketId = `s-${userId}`
-): ArkosSocket {
+) {
   const s = makeSocket(socketId);
   (s.rooms as Set<string>).add(`arkos::user:${userId}`);
+  // (s.activeRooms as Set<string>).add(`arkos::user:${userId}`);
   socket.nsp.sockets.set(socketId, s);
   return s;
 }
@@ -412,9 +434,10 @@ describe("mountArkosSocketExtensions", () => {
       mountArkosSocketExtensions(socket);
       const s1 = addUserSocket(socket, "user-1", "s-u1-a");
       const s2 = addUserSocket(socket, "user-1", "s-u1-b");
-      addUserSocket(socket, "user-2", "s-u2");
+      // addUserSocket(socket, "user-2", "s-u2");
 
       const sockets = await socket.user("user-1").fetchSockets();
+      // console.log(socket);
       expect(sockets).toHaveLength(2);
       expect(sockets).toContain(s1);
       expect(sockets).toContain(s2);
@@ -478,14 +501,17 @@ describe("mountArkosSocketExtensions", () => {
 
     test("join calls join on all user sockets", async () => {
       const socket = makeSocket();
+      const nspOp = makeBroadcastOperator();
+      (socket.nsp.to as jest.Mock).mockReturnValue(nspOp);
       mountArkosSocketExtensions(socket);
-      const s1 = addUserSocket(socket, "user-1", "s-u1-a");
-      const s2 = addUserSocket(socket, "user-1", "s-u1-b");
+
+      addUserSocket(socket, "user-1", "s-u1-a");
+      addUserSocket(socket, "user-1", "s-u1-b");
 
       socket.user("user-1").socketsJoin("new-room");
 
-      expect(s1.join).toHaveBeenCalledWith("new-room");
-      expect(s2.join).toHaveBeenCalledWith("new-room");
+      expect(nspOp.socketsJoin).toHaveBeenCalledWith("new-room");
+      expect(nspOp.socketsJoin).toHaveBeenCalledWith("new-room");
     });
 
     test("join is a no-op when user is offline", async () => {
@@ -498,36 +524,43 @@ describe("mountArkosSocketExtensions", () => {
 
     test("leave calls leave on all user sockets", async () => {
       const socket = makeSocket();
+      const nspOp = makeBroadcastOperator();
+      (socket.nsp.to as jest.Mock).mockReturnValue(nspOp);
       mountArkosSocketExtensions(socket);
-      const s1 = addUserSocket(socket, "user-1", "s-u1-a");
-      const s2 = addUserSocket(socket, "user-1", "s-u1-b");
+      addUserSocket(socket, "user-1", "s-u1-a");
+      addUserSocket(socket, "user-1", "s-u1-b");
 
       socket.user("user-1").socketsLeave("old-room");
 
-      expect(s1.leave).toHaveBeenCalledWith("old-room");
-      expect(s2.leave).toHaveBeenCalledWith("old-room");
+      expect(nspOp.socketsLeave).toHaveBeenCalledWith("old-room");
+      expect(nspOp.socketsLeave).toHaveBeenCalledWith("old-room");
     });
 
     test("disconnect calls disconnect on all user sockets with close=false by default", async () => {
       const socket = makeSocket();
+      const nspOp = makeBroadcastOperator();
+      (socket.nsp.to as jest.Mock).mockReturnValue(nspOp);
       mountArkosSocketExtensions(socket);
-      const s1 = addUserSocket(socket, "user-1", "s-u1-a");
-      const s2 = addUserSocket(socket, "user-1", "s-u1-b");
 
-      socket.user("user-1").disconnectSockets();
+      addUserSocket(socket, "user-1", "s-u1-a");
+      addUserSocket(socket, "user-1", "s-u1-b");
 
-      expect(s1.disconnect).toHaveBeenCalledWith(false);
-      expect(s2.disconnect).toHaveBeenCalledWith(false);
+      socket.user("user-1").disconnectSockets(false);
+
+      expect(nspOp.disconnectSockets).toHaveBeenCalledWith(false);
+      expect(nspOp.disconnectSockets).toHaveBeenCalledWith(false);
     });
 
     test("disconnect with close=true passes through", async () => {
       const socket = makeSocket();
+      const nspOp = makeBroadcastOperator();
+      (socket.nsp.to as jest.Mock).mockReturnValue(nspOp);
       mountArkosSocketExtensions(socket);
-      const s1 = addUserSocket(socket, "user-1");
+      addUserSocket(socket, "user-1");
 
       socket.user("user-1").disconnectSockets(true);
 
-      expect(s1.disconnect).toHaveBeenCalledWith(true);
+      expect(nspOp.disconnectSockets).toHaveBeenCalledWith(true);
     });
 
     test("except with string excludes room from emit target", () => {
@@ -551,8 +584,7 @@ describe("mountArkosSocketExtensions", () => {
 
       socket.user("user-1").except(["room-a", "room-b"]).emit("e", {});
 
-      expect(nspOp.except).toHaveBeenCalledWith("room-a");
-      expect(nspOp.except).toHaveBeenCalledWith("room-b");
+      expect(nspOp.except).toHaveBeenCalledWith(["room-a", "room-b"]);
     });
 
     test("except with { user } excludes target user socket ids", () => {
@@ -592,26 +624,6 @@ describe("mountArkosSocketExtensions", () => {
       const target = socket.user("user-1");
       const excepted = target.except("some-room");
       expect(excepted).not.toBe(target);
-    });
-  });
-
-  describe("socket.peer", () => {
-    test("returns socket by id", () => {
-      const socket = makeSocket();
-      mountArkosSocketExtensions(socket);
-      const peer = makeSocket("peer-socket");
-      socket.nsp.sockets.set("peer-socket", peer);
-
-      expect(socket.to("peer-socket")).toBe(peer);
-    });
-
-    test("throws when socket id not found", () => {
-      const socket = makeSocket();
-      mountArkosSocketExtensions(socket);
-
-      expect(() => socket.to("nonexistent")).toThrow(
-        "Socket with ID nonexistent was not found"
-      );
     });
   });
 

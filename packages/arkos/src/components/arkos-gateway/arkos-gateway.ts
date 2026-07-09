@@ -316,7 +316,7 @@ export class IArkosGateway {
       !isUsingAuthentication()
     )
       throw ExitError(
-        `Trying to authenticate gateway ${this.config.name ? ` ${this.config.name}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
+        `Trying to authenticate gateway ${this.config.name ? `${this.config.name}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
 
 For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
       );

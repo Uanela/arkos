@@ -88,6 +88,11 @@ jest.mock("../utils/memory-gateway-store", () => ({
     setIfNotExists: jest.fn(),
   },
 }));
+jest.mock("../../../utils/helpers/arkos-config.helpers", () => ({
+  ...jest.requireActual("../../../utils/helpers/arkos-config.helpers"),
+  isUsingAuthentication: jest.fn().mockReturnValue(true),
+  isAuthenticationEnabled: jest.fn().mockReturnValue(true),
+}));
 
 import { authService, authActionService } from "../../../exports/services";
 import authHookManager from "../../../modules/auth/utils/auth-hooks-manager";
@@ -1287,7 +1292,8 @@ describe("IArkosGateway", () => {
 
         expect(authHookManager.runAuthorize).toHaveBeenCalledWith(
           { context: mockSocket, done: expect.any(Function) },
-          { action: "test", resource: "chat", roles: ["Admin"] }
+          { action: "test", resource: "chat", roles: ["Admin"] },
+          "currentUser"
         );
       });
     });
