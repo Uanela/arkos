@@ -1386,6 +1386,7 @@ describe("arkosRouterOpenApiManager", () => {
             "banners[0][image]": {
               type: "string",
               format: "binary",
+              description: "Single file field",
             },
           },
           required: ["banners[0][image]"],
@@ -1406,6 +1407,7 @@ describe("arkosRouterOpenApiManager", () => {
           properties: {
             "banners[0][images]": {
               type: "array",
+              description: "Array file field",
               items: {
                 type: "string",
                 format: "binary",
@@ -1435,13 +1437,16 @@ describe("arkosRouterOpenApiManager", () => {
             "slides[0][mobileImage]": {
               type: "string",
               format: "binary",
+              description: "Single file field",
             },
             "slides[0][tabletImage]": {
               type: "string",
               format: "binary",
+              description: "Single file field",
             },
             gallery: {
               type: "array",
+              description: "Array file field",
               items: {
                 type: "string",
                 format: "binary",
