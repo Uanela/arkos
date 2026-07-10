@@ -185,12 +185,12 @@ No more constructing `new AppError("...", 404, "PostNotFound")` manually for com
 
 Multer errors are now caught globally and mapped to clean HTTP responses:
 
-| Multer error | Status | Code |
-|---|---|---|
-| `LIMIT_FILE_SIZE` | 413 | `FileTooLarge` |
-| `LIMIT_UNEXPECTED_FILE` | 400 | `UnexpectedFileField` |
-| `LIMIT_FILE_COUNT` | 400 | `TooManyFiles` |
-| `MISSING_FIELD_NAME` | 400 | `MissingFieldName` |
+| Multer error            | Status | Code                  |
+| ----------------------- | ------ | --------------------- |
+| `LIMIT_FILE_SIZE`       | 413    | `FileTooLarge`        |
+| `LIMIT_UNEXPECTED_FILE` | 400    | `UnexpectedFileField` |
+| `LIMIT_FILE_COUNT`      | 400    | `TooManyFiles`        |
+| `MISSING_FIELD_NAME`    | 400    | `MissingFieldName`    |
 
 ---
 
@@ -256,6 +256,7 @@ pnpm install arkos@canary
 The [documentation](https://arkosjs.com/docs) has been fully restructured alongside this release — new sections for Core Concepts, Guides, Reference, and Tooling, with every page updated to reflect v1.6 APIs.
 
 **Resources:**
+
 - [Full documentation](https://arkosjs.com/docs)
 - [Migration: auth files to ArkosPolicy](/blog/how-migrate-from-auth-files-to-arkos-policy)
 - [GitHub repository](https://github.com/uanela/arkos)
