@@ -10,11 +10,6 @@ class CreatePermissionForRoleDto {
   @IsString()
   @Transform(({ value }) => String(value))
   action!: string;
-
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value)
-  description?: string;
 }
 
 export default class CreateAuthRoleDto {

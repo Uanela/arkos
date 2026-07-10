@@ -2,8 +2,7 @@ import { z } from 'zod';
 
 const UpdateAuthPermissionSchema = z.object({
   resource: z.string().optional(),
-  action: z.string().min(1).optional(),
-  description: z.string().optional(),
+  action: z.string().min(1).optional()
 });
 
 export default UpdateAuthPermissionSchema
