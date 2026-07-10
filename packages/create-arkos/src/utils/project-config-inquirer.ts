@@ -1,6 +1,7 @@
 import path from "path";
 import inquirer from "inquirer";
 import chalk from "chalk";
+import { detectPackageManagerFromUserAgent } from "./helpers/npm.helpers";
 
 export interface ProjectConfig {
   projectName: string;
@@ -31,13 +32,16 @@ export interface ProjectConfig {
     strict?: boolean;
   };
   advanced?: boolean;
+  packageManager: string;
 }
 
 class ProjectConfigInquirer {
   private config: ProjectConfig;
 
   constructor() {
-    this.config = {} as ProjectConfig;
+    this.config = {
+      packageManager: detectPackageManagerFromUserAgent(),
+    } as ProjectConfig;
   }
 
   async run() {
