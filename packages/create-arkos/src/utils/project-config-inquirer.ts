@@ -266,8 +266,9 @@ class ProjectConfigInquirer {
     };
 
     if (
-      authenticationType !== "static" &&
-      this.config.prisma.provider !== "sqlite"
+      authenticationType !== "static" ||
+      (authenticationType == "static" &&
+        this.config.prisma.provider !== "sqlite")
     ) {
       const { multipleRoles } = await inquirer.prompt([
         {
