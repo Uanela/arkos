@@ -24,25 +24,15 @@ export const Route = createFileRoute("/docs/$")({
     await clientLoader.preload(data.path);
     return data;
   },
-  head: async ({ params }) => {
-    const slugs = params._splat?.split("/") ?? [];
-    const page = source.getPage(slugs);
+  head: async ({ loaderData }) => {
+    if (!loaderData) return;
 
-    const title = page?.data.title
-      ? `${page.data.title} - Arkos.js`
+    const title = loaderData.title
+      ? `${loaderData.title} - Arkos.js`
       : "Arkos.js";
 
     const description =
-      page?.data.description ||
-      page?.data.structuredData.contents
-        .slice(0, 3)
-        .map((c) =>
-          c.content.toLowerCase().startsWith("> available from")
-            ? undefined
-            : c.content
-        )
-        .filter(Boolean)
-        .join(". ") ||
+      loaderData.description ||
       "Arkos.js — The Express and Prisma RESTful Framework. Build secure and scalable RESTful APIs with minimal configuration.";
 
     return {
