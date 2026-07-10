@@ -124,6 +124,7 @@ const clientLoader = browserCollections.docs.createClientLoader({
 
 function Page() {
   const data = useFumadocsLoader(Route.useLoaderData())!;
+  const top = 92; // 56 normal, with annoucment banner 92
 
   return (
     <DocsLayout
@@ -140,7 +141,10 @@ function Page() {
       tree={data.pageTree}
       githubUrl={undefined}
       containerProps={{
-        className: "h-[calc(100vh-60px)] w-full top-[56px] fixed overflow-auto",
+        style: {
+          top,
+        },
+        className: "h-[calc(100vh-60px)] w-full fixed overflow-auto pb-8",
       }}
     >
       <Suspense>{clientLoader.useContent(data.path, data)}</Suspense>
