@@ -1,5 +1,13 @@
 export const beforeFindFile = [];
 
+export const onFindFileError = [
+  // (err: any, req: any, res: any, next: any) => {
+  //   console.log(req.path, err, err.code);
+  //
+  //   // next();
+  // },
+];
+
 export const beforeUploadFile = [];
 
 export const afterUploadFile = [];

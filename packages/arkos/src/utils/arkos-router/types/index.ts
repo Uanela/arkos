@@ -60,9 +60,8 @@ export type InternalIArkosRouter = IArkosRouter & {
  * @param {...(ArkosRequestHandler | ArkosErrorRequestHandler)[]} handlers - Request and error handlers for the route.
  * @returns {IRouter} The Express router instance.
  */
-type RouterMethodHandler<T> = IRouterHandler<T> &
+type IArkosRouterMethodHandler<T> = IRouterHandler<T> &
   IRouterMatcher<T> & {
-    // (config: PathParams, ...handlers: Array<ArkosAnyRequestHandler>): T;
     <
       TQuery extends Validator = any,
       TBody extends Validator = any,
@@ -93,9 +92,9 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
       TBody extends Validator = any,
       TParams extends Validator = any,
     >(
-      config: ArkosRouteConfig<TQuery, TBody, TParams>,
+      config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
       ...handlers: Array<
-        | ArkosErrorRequestHandler<
+        | ArkosAnyRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
             any,
             InferValidationType<TBody, any>,
@@ -103,13 +102,22 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
             any
           >
         | Array<
-            ArkosErrorRequestHandler<
-              InferValidationType<TParams, Record<string, string>>,
-              any,
-              InferValidationType<TBody, any>,
-              InferValidationType<TQuery, qs.ParsedQs>,
-              any
-            >
+            | ArkosAnyRequestHandler<
+                InferValidationType<TParams, Record<string, string>>,
+                any,
+                InferValidationType<TBody, any>,
+                InferValidationType<TQuery, qs.ParsedQs>,
+                any
+              >
+            | Array<
+                ArkosErrorRequestHandler<
+                  InferValidationType<TParams, Record<string, string>>,
+                  any,
+                  InferValidationType<TBody, any>,
+                  InferValidationType<TQuery, qs.ParsedQs>,
+                  any
+                >
+              >
           >
       >
     ): T;
@@ -125,12 +133,20 @@ type RouterMethodHandler<T> = IRouterHandler<T> &
   };
 
 export type ArkosRouteMethodHandler<T> = {
-  (
+  <
+    TQuery extends Validator = any,
+    TBody extends Validator = any,
+    TParams extends Validator = any,
+  >(
     config: ArkosAnyRequestHandler | Omit<ArkosRouteConfig, "path">,
     ...handlers: Array<
-      | ArkosRequestHandler
-      | ArkosErrorRequestHandler
-      | Array<ArkosRequestHandler | ArkosErrorRequestHandler>
+      ArkosAnyRequestHandler<
+        InferValidationType<TParams, Record<string, string>>,
+        any,
+        InferValidationType<TBody, any>,
+        InferValidationType<TQuery, qs.ParsedQs>,
+        Locals
+      >
     >
   ): T;
   <
@@ -158,7 +174,6 @@ export type ArkosRouteMethodHandler<T> = {
         >
     >
   ): T;
-
   <
     TQuery extends Validator = any,
     TBody extends Validator = any,
@@ -166,7 +181,7 @@ export type ArkosRouteMethodHandler<T> = {
   >(
     config: Omit<ArkosRouteConfig<TQuery, TBody, TParams>, "path">,
     ...handlers: Array<
-      | ArkosErrorRequestHandler<
+      | ArkosAnyRequestHandler<
           InferValidationType<TParams, Record<string, string>>,
           any,
           InferValidationType<TBody, any>,
@@ -174,7 +189,7 @@ export type ArkosRouteMethodHandler<T> = {
           Locals
         >
       | Array<
-          ArkosErrorRequestHandler<
+          ArkosAnyRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
             any,
             InferValidationType<TBody, any>,
@@ -206,7 +221,21 @@ export type UseMethodHandler<T> = IRouterHandler<T> &
         ArkosErrorRequestHandler | Array<ArkosErrorRequestHandler>
       >
     ): T;
-    (...handlers: Array<ArkosRequestHandler | Array<ArkosRequestHandler>>): T;
+    (
+      config: ArkosUseConfig,
+      ...handlers: Array<
+        | ArkosRequestHandler
+        | ArkosErrorRequestHandler
+        | Array<ArkosRequestHandler | ArkosErrorRequestHandler>
+      >
+    ): T;
+    (
+      ...handlers: Array<
+        | ArkosRequestHandler
+        | ArkosErrorRequestHandler
+        | Array<ArkosRequestHandler | ArkosErrorRequestHandler>
+      >
+    ): T;
   };
 
 export interface IArkosRoute extends IRoute {
@@ -256,23 +285,23 @@ export interface IArkosRoute extends IRoute {
  */
 export interface IArkosRouter extends IRouter {
   /** GET method handler with route configuration support */
-  get: RouterMethodHandler<this>;
+  get: IArkosRouterMethodHandler<this>;
   /** POST method handler with route configuration support */
-  post: RouterMethodHandler<this>;
+  post: IArkosRouterMethodHandler<this>;
   /** PUT method handler with route configuration support */
-  put: RouterMethodHandler<this>;
+  put: IArkosRouterMethodHandler<this>;
   /** PATCH method handler with route configuration support */
-  patch: RouterMethodHandler<this>;
+  patch: IArkosRouterMethodHandler<this>;
   /** DELETE method handler with route configuration support */
-  delete: RouterMethodHandler<this>;
+  delete: IArkosRouterMethodHandler<this>;
   /** OPTIONS method handler with route configuration support */
-  options: RouterMethodHandler<this>;
+  options: IArkosRouterMethodHandler<this>;
   /** HEAD method handler with route configuration support */
-  head: RouterMethodHandler<this>;
+  head: IArkosRouterMethodHandler<this>;
   // /** TRACE method handler with route configuration support */
-  trace: RouterMethodHandler<this>;
+  trace: IArkosRouterMethodHandler<this>;
   /** ALL methods handler with route configuration support */
-  all: RouterMethodHandler<this>;
+  all: IArkosRouterMethodHandler<this>;
   use: UseMethodHandler<this>;
   route<T extends string>(prefix: T): IArkosRoute;
   route(prefix: PathParams): IArkosRoute;
