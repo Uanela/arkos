@@ -1,0 +1,4 @@
+{
+  "title": "Frontend Integration",
+  "pages": ["vanilla-js", "react", "solid", "vue", "svelte", "angular"]
+}
