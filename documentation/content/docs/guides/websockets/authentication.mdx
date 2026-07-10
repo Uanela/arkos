@@ -1,0 +1,75 @@
+---
+title: Authentication
+---
+
+WebSocket authentication and authorization plug directly into Arkos's existing [Built-in Authentication System](/docs/core-concepts/authentication/setup) — there's no separate auth setup for sockets. If your HTTP routes are already authenticated, you're most of the way there.
+
+## Enabling it on a Gateway
+
+```ts
+const chatGateway = ArkosGateway({
+  name: "chat",
+  authentication: true,
+});
+```
+
+With `authentication: true`, every connection to this namespace runs through Arkos's auth middleware before it's accepted. On success, `socket.currentUser` is populated and the socket is joined to a `arkos::user:{id}` room automatically — this is what powers `socket.user(id)` in the [Enhanced Socket](/docs/core-concepts/websockets/enhanced-socket) guide. On failure, the connection is rejected before your `connection` hook ever runs.
+
+```ts
+chatGateway.hook("connection", (socket) => {
+  console.log(socket.currentUser.id); // guaranteed to exist here
+});
+```
+
+### Gotcha: you still need an auth mode configured
+
+`authentication: true` on a Gateway doesn't configure authentication from scratch — it reuses whatever mode (`static` or `dynamic`) you already set under `arkos.config.ts`. If you set `authentication: true` on a Gateway without ever configuring an authentication mode for your app, Arkos throws on startup rather than silently accepting unauthenticated sockets.
+
+### Nested Gateways inherit this
+
+A child Gateway registered via `.use()` inherits its parent's `authentication` setting unless it explicitly overrides it. See [Setup → Attaching connection middleware or nesting Gateways](/docs/core-concepts/websockets/setup#attaching-connection-middleware-or-nesting-gateways--use).
+
+## Per-event authorization
+
+Authentication answers "who is this," authorization answers "can they do this." It's set per event:
+
+```ts
+chatGateway.on(
+  {
+    event: "delete_message",
+    authorization: {
+      resource: "message",
+      action: "delete",
+      rule: ["Admin", "Moderator"],
+    },
+  },
+  (socket, data) => {
+    // only reached if the check passes
+  }
+);
+```
+
+`rule` accepts the same shapes as your HTTP access control rules — a role array, a `DetailedAccessControlRule`, or `"*"`.
+
+### Gotcha: authorization requires gateway-level authentication
+
+```ts
+const chatGateway = ArkosGateway({ name: "chat", authentication: false });
+
+chatGateway.on(
+  {
+    event: "delete_message",
+    authorization: { resource: "message", action: "delete" },
+  },
+  handler
+);
+// throws immediately, at registration time:
+// Event "delete_message" on "chat" gateway defines authorization rules
+// but the gateway has authentication: false.
+```
+
+This fails fast and loud on startup rather than at runtime on the first request — if you see this error, either set `authentication: true` on the Gateway, or drop `authorization` from the event.
+
+## Where it sits in the request lifecycle
+
+Authorization runs after rate limiting and before validation. See the full ordering in [Handling Events → Full request lifecycle for one event](/docs/core-concepts/websockets/handling-events#full-request-lifecycle-for-one-event).

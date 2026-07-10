@@ -1,0 +1,13 @@
+{
+  "title": "Web Sockets",
+  "pages": [
+    "setup",
+    "event-handling",
+    "authentication",
+    "validation",
+    "enhanced-socket",
+    "middlewares-and-hooks",
+    "advanced",
+    "frontend-integration"
+  ]
+}

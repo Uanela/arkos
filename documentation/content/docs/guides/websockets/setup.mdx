@@ -1,0 +1,100 @@
+---
+title: Setup
+---
+
+Arkos WebSockets are built directly on top of `socket.io`. If you already know `socket.io`, most of what follows is familiar — Arkos adds structure (validation, auth, dedup, rate limiting) around it, it doesn't replace it.
+
+## Creating a Gateway
+
+```ts
+import ArkosGateway from "arkos/websockets";
+
+const chatGateway = ArkosGateway({
+  name: "chat",
+  authentication: true,
+});
+```
+
+`config.name` becomes the Socket.io namespace. It defaults to `"web-socket"` if omitted.
+
+## Registering it
+
+```ts
+import { Server } from "socket.io";
+import chatGateway from "./gateways/chat.gateway";
+
+const io = new Server(httpServer);
+
+chatGateway.register(io);
+```
+
+`register(io, options?)` can only be called once per `io` instance — call it on your root Gateway and compose the rest with `.use()` (see below). Calling it twice throws.
+
+```ts
+chatGateway.register(io, {
+  store: myRedisStore, // optional — defaults to an in-memory store
+});
+```
+
+The `store` option backs both rate limiting and deduplication. See [Advanced → Stores and Scaling](/docs/guides/websockets/advanced/stores-and-scaling) if you're running more than one instance.
+
+## Attaching connection middleware or nesting Gateways — `.use()`
+
+`.use()` accepts either a raw Socket.io connection middleware, or another Gateway to nest under this one:
+
+```ts
+chatGateway.use((socket, next) => {
+  console.log("incoming connection", socket.id);
+  next();
+});
+
+// nested gateway — inherits this gateway's name as a namespace prefix,
+// plus its authentication and rateLimit config
+chatGateway.use(adminGateway);
+```
+
+A nested Gateway's namespace becomes `${parent.name}/${child.name}`. It inherits the parent's `authentication` and `rateLimit` unless it sets its own, and it inherits all of the parent's lifecycle hooks. It does **not** automatically inherit the parent's `.pipe()` middlewares — those are scoped to the Gateway that registered them.
+
+## Attaching an event handler — `.on()`
+
+```ts
+chatGateway.on({ event: "send_message" }, (socket, data) => {
+  socket.to(data.room).emit("receive_message", data);
+});
+```
+
+This is the shallow version — `.on()` takes a full event config (`validation`, `authorization`, `rateLimit`, `ack`, `dedup`, `maxAge`, `disabled`). The full breakdown, including how it interacts with `.pipe()`, is in [Handling Events](/docs/guides/websockets/event-handling).
+
+## Minimal end-to-end example
+
+```ts
+// gateways/chat.gateway.ts
+import ArkosGateway from "arkos/websockets";
+
+const chatGateway = ArkosGateway({ name: "chat" });
+
+chatGateway.on({ event: "send_message" }, (socket, data) => {
+  socket.to(data.room).emit("receive_message", data);
+});
+
+export default chatGateway;
+```
+
+```ts
+// src/server.ts
+import { Server } from "socket.io";
+import http from "http";
+import app from "@/src/app";
+import chatGateway from "@/src/gateways/chat.gateway";
+
+await app.build();
+
+const server = http.createServer(app);
+const io = new Server(server);
+
+chatGateway.register(io);
+
+app.listen(server);
+```
+
+Next: [Handling Events](/docs/guides/websockets/event-handling) for the full `.on()` config, or [Authentication](/docs/guides/websockets/authentication) if your Gateway needs `socket.currentUser`.

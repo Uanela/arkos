@@ -1,0 +1,90 @@
+---
+title: Middlewares and Hooks
+---
+
+Arkos Gateways give you three distinct extension points, and it's easy to reach for the right one:
+
+| API       | Runs when                                                                | Scope                         |
+| --------- | ------------------------------------------------------------------------ | ----------------------------- |
+| `.use()`  | On connection, before a socket is accepted — or composes a child Gateway | Connection-level              |
+| `.pipe()` | Before an event handler runs                                             | Event-level, global or scoped |
+| `.hook()` | On `connection`, `disconnect`, or `error`                                | Lifecycle-level               |
+
+## `.use()` — connection middleware and Gateway composition
+
+This is plain `socket.io` connection middleware — same `(socket, next)` signature you already know:
+
+```ts
+chatGateway.use((socket, next) => {
+  if (isBanned(socket.handshake.address)) return next(new Error("banned"));
+  next();
+});
+```
+
+`.use()` also accepts a Gateway instance, which nests it as a child:
+
+```ts
+chatGateway.use(adminGateway);
+```
+
+Nesting is a component-composition concern — it's the same idea as composing Routers, just for Gateways. The mechanics (namespace prefixing, what config inherits) are covered in [Setup](/docs/core-concepts/websockets/setup#attaching-connection-middleware-or-nesting-gateways--use); this page only covers that `.use()` is the API for it.
+
+## `.pipe()` — event middleware
+
+A pipe runs after auth/rate-limit/validation, before the handler. Register it globally (runs before every event in this Gateway) or scoped to one event:
+
+```ts
+// global — every event in this gateway
+chatGateway.pipe((socket, data) => {
+  socket.locals.startedAt = Date.now();
+});
+
+// scoped — only "send_message"
+chatGateway.pipe({ event: "send_message" }, (socket, data) => {
+  assertNotMuted(socket.currentUser, data.room);
+});
+```
+
+Declaration order does matter — if you scope a pipe to an event that isn't registered yet, Arkos holds onto it and merges it in once `.on()` is called for that event.
+
+```ts
+chatGateway.pipe({ event: "future_event" }, myPipe); // fine, registered first
+chatGateway.on({ event: "future_event" }, handler); // myPipe still runs
+```
+
+`.pipe()` is per-Gateway — a child Gateway does not automatically inherit its parent's pipes. If you need shared logic across a parent and its children, put it in a `.use()` connection middleware instead, which does apply before namespace-level auth on every socket in that branch.
+
+## `.hook()` — lifecycle hooks
+
+```ts
+chatGateway.hook("connection", (socket) => {
+  console.log("connected", socket.currentUser?.id);
+});
+
+chatGateway.hook("disconnect", (socket) => {
+  console.log("disconnected", socket.id);
+});
+
+chatGateway.hook("error", (err, socket) => {
+  socket.emit("error", { message: err.message });
+});
+```
+
+- **`connection`** — runs once, after authentication succeeds (if enabled), before any event listeners are wired for that socket. Throwing here prevents event listeners from being registered at all for that socket.
+- **`disconnect`** — runs on socket disconnect, after Arkos clears that socket's rate-limit state.
+- **`error`** — runs whenever anything in the event lifecycle throws (validation, authorization, rate limit, dedup, or your own handler).
+
+### The `error` hook's contract
+
+If your `error` hook calls `socket.emit(...)` itself, Arkos considers the error handled and stops there. If it doesn't emit anything (or throws itself), Arkos falls back to its own default error response — a detailed payload in development, a generic message in production.
+
+```ts
+chatGateway.hook("error", (err, socket) => {
+  // you own the response — Arkos won't also send one
+  socket.emit("error", { message: err.message, code: err.code });
+});
+```
+
+If you don't register an `error` hook at all, Arkos always sends its own default response.
+
+Nested Gateways inherit all of their parent's hooks, in addition to any of their own.
