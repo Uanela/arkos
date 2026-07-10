@@ -30,6 +30,10 @@ model User {
       {{/if}}
     {{/if}}
   {{/if}}
+  {{#if (eq authentication.type "dynamic")}}
+  permissions          UserPermission[]
+  {{/if}}
+  role                 UserRole?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   // other fields for your application
