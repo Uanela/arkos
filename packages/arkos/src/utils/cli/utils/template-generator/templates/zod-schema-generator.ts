@@ -100,7 +100,7 @@ export class ZodSchemaGenerator {
         : "";
 
     const typeExport = isTypeScript
-      ? `\n\nexport type Create${modelName!.pascal}SchemaType = z.infer<typeof Create${modelName!.pascal}Schema>;`
+      ? `\n\nexport type Create${modelName!.pascal}Schema = z.infer<typeof Create${modelName!.pascal}Schema>;`
       : "";
 
     return `import { z } from "zod";
@@ -189,7 +189,7 @@ export default Create${modelName!.pascal}Schema;${typeExport}
         : "";
 
     const typeExport = isTypeScript
-      ? `\n\nexport type Update${modelName!.pascal}SchemaType = z.infer<typeof Update${modelName!.pascal}Schema>;`
+      ? `\n\nexport type Update${modelName!.pascal}Schema = z.infer<typeof Update${modelName!.pascal}Schema>;`
       : "";
 
     return `import { z } from "zod";
@@ -236,7 +236,7 @@ export default Update${modelName!.pascal}Schema;${typeExport}
         : "";
 
     const typeExport = isTypeScript
-      ? `\n\nexport type ${modelName!.pascal}SchemaType = z.infer<typeof ${modelName!.pascal}Schema>;`
+      ? `\n\nexport type ${modelName!.pascal}Schema = z.infer<typeof ${modelName!.pascal}Schema>;`
       : "";
 
     return `import { z } from "zod";
@@ -273,8 +273,8 @@ export default ${modelName!.pascal}Schema;${typeExport}
 
     schemaFields.push(`  page: z.coerce.number().optional()`);
     schemaFields.push(`  limit: z.coerce.number().max(100).optional()`);
-    schemaFields.push(`  sort: z.string().optional()`);
-    schemaFields.push(`  fields: z.string().optional()`);
+    schemaFields.push(`  sort: z.coerce.string().optional()`);
+    schemaFields.push(`  fields: z.coerce.string().optional()`);
 
     for (const field of model.fields) {
       if (isUserModule && field.name === "password") continue;
@@ -323,7 +323,7 @@ export default ${modelName!.pascal}Schema;${typeExport}
       }
 
       if (field.type === "Boolean") {
-        const fieldDef = `  ${field.name}: z.boolean().optional()`;
+        const fieldDef = `  ${field.name}: z.coerce.boolean().optional()`;
 
         if (timestampFields.includes(field.name)) {
           timestampSchemaFields.push(fieldDef);
@@ -359,7 +359,7 @@ export default ${modelName!.pascal}Schema;${typeExport}
     const filterSchemasSection = filterSchemas ? `\n${filterSchemas}\n` : "";
 
     const typeExport = isTypeScript
-      ? `\n\nexport type Query${modelName!.pascal}SchemaType = z.infer<typeof Query${modelName!.pascal}Schema>;`
+      ? `\n\nexport type Query${modelName!.pascal}Schema = z.infer<typeof Query${modelName!.pascal}Schema>;`
       : "";
 
     const allFields = [...schemaFields, ...timestampSchemaFields];
@@ -406,7 +406,7 @@ export default Query${modelName!.pascal}Schema;${typeExport}
 
     if (filterSchemasNeeded.has("StringFilterSchema")) {
       schemas.push(`const StringFilterSchema = z.object({
-  icontains: z.string().optional()
+  icontains: z.coerce.string().optional()
 });`);
     }
 
@@ -420,9 +420,9 @@ export default Query${modelName!.pascal}Schema;${typeExport}
 
     if (filterSchemasNeeded.has("DateTimeFilterSchema")) {
       schemas.push(`const DateTimeFilterSchema = z.object({
-  equals: z.string().optional(),
-  gte: z.string().optional(),
-  lte: z.string().optional()
+  equals: z.coerce.string().optional(),
+  gte: z.coerce.string().optional(),
+  lte: z.coerce.string().optional()
 });`);
     }
 
@@ -446,9 +446,9 @@ export default Query${modelName!.pascal}Schema;${typeExport}
 
     if (isUserModule) {
       if (field.name === "email") {
-        zodType = `z.string().email()`;
+        zodType = `z.coerce.string().email()`;
       } else if (field.name === "password") {
-        zodType = `z.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number")`;
+        zodType = `z.coerce.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/, "Password must contain at least one uppercase letter, one lowercase letter, and one number")`;
       }
     }
 
@@ -462,21 +462,21 @@ export default Query${modelName!.pascal}Schema;${typeExport}
   private mapPrismaTypeToZod(prismaType: string): string {
     switch (prismaType) {
       case "String":
-        return "z.string()";
+        return "z.coerce.string()";
       case "Int":
       case "Float":
       case "Decimal":
-        return "z.number()";
+        return "z.coerce.number()";
       case "Boolean":
-        return "z.boolean()";
+        return "z.coerce.boolean()";
       case "DateTime":
-        return "z.date().or(z.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date')";
+        return "z.coerce.date().or(z.coerce.string()).refine((val) => val instanceof Date || !isNaN(Date.parse(val)), 'Invalid date')";
       case "Json":
         return "z.any()";
       case "Bytes":
         return "z.instanceof(Buffer)";
       case "BigInt":
-        return "z.bigint()";
+        return "z.coerce.bigint()";
       default:
         if (
           prismaSchemaParser.compositeTypes.some((t) => t.name === prismaType)

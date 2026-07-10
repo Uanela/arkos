@@ -318,7 +318,7 @@ export type ArkosConfig = {
           etag: true,
           lastModified: true,
           dotfiles: "ignore",
-          fallthrough: true,
+          fallthrough: false,
           index: false,
           cacheControl: true,
         }
@@ -528,7 +528,7 @@ export type ArkosConfig = {
   /**
    * Allows to configure email configurations for sending emails through `emailService`
    *
-   * See [www.arkosjs.com/docs/core-concepts/sending-emails](https://www.arkosjs.com/docs/core-concepts/sending-emails)
+   * See [www.arkosjs.com/docs/core-concepts/sending-emails](https://www.arkosjs.com/docs/guides/email-service)
    */
   email?: {
     /**
