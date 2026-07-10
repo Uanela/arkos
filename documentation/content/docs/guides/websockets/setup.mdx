@@ -2,7 +2,7 @@
 title: Setup
 ---
 
-> Available from 1.7.0
+> Available from 1.7.0-rc
 
 Arkos WebSockets are built directly on top of `socket.io`. If you already know `socket.io`, most of what follows is familiar — Arkos adds structure (validation, auth, dedup, rate limiting) around it, it doesn't replace it.
 
@@ -38,7 +38,7 @@ chatGateway.register(io, {
 });
 ```
 
-The `store` option backs both rate limiting and deduplication. See [Advanced → Stores and Scaling](/docs/guides/websockets/advanced/stores-and-scaling) if you're running more than one instance.
+The `store` option backs both rate limiting and deduplication. See [Stores and Scaling](/docs/guides/websockets/advanced/stores-and-scaling) if you're running more than one instance.
 
 ## Attaching connection middleware or nesting Gateways — `.use()`
 

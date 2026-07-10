@@ -24,8 +24,8 @@ chatGateway.on(
 
 ## Errors
 
-A failed validation throws a `BadRequestError` with code `InvalidData`, caught by the same error pipeline as everything else in the event lifecycle — see [Middlewares and Hooks → Hooks](/docs/core-concepts/websockets/middlewares-and-hooks#hooks) for how `error` hooks intercept it, or [Handling Events](/docs/core-concepts/websockets/handling-events#full-request-lifecycle-for-one-event) for where validation sits in the request lifecycle.
+A failed validation throws a `BadRequestError` with code `InvalidData`, caught by the same error pipeline as everything else in the event lifecycle — see [Middlewares and Hooks](/docs/guides/websockets/middlewares-and-hooks#hooks) for how `error` hooks intercept it, or [Handling Events](/docs/guides/websockets/event-handling#full-request-lifecycle-for-one-event) for where validation sits in the request lifecycle.
 
 ## `_meta` is not part of your schema
 
-Every payload from the [client SDK](/docs/core-concepts/websockets/advanced/frontend-integrations) carries a `_meta: { mid, timestamp }` field. Arkos strips it out and moves it to `socket.meta` before your validator ever sees the payload — you don't need to account for it in your schema.
+Every payload from the [client SDK](/docs/guides/websockets/advanced/frontend-integrations) carries a `_meta: { mid, timestamp }` field. Arkos strips it out and moves it to `socket.meta` before your validator ever sees the payload — you don't need to account for it in your schema.

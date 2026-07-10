@@ -123,7 +123,7 @@ const clientLoader = browserCollections.docs.createClientLoader({
 });
 
 function Page() {
-  const data = useFumadocsLoader(Route.useLoaderData());
+  const data = useFumadocsLoader(Route.useLoaderData())!;
 
   return (
     <DocsLayout
@@ -133,14 +133,14 @@ function Page() {
         collapsible: false,
         footer: false,
         tabs: false,
+        className: "overflow-auto pb-16",
       }}
       searchToggle={{ enabled: false }}
       links={[]}
       tree={data.pageTree}
       githubUrl={undefined}
       containerProps={{
-        className:
-          "h-[calc(100vh-60px)] w-full  top-[56px] fixed overflow-auto",
+        className: "h-[calc(100vh-60px)] w-full top-[56px] fixed overflow-auto",
       }}
     >
       <Suspense>{clientLoader.useContent(data.path, data)}</Suspense>

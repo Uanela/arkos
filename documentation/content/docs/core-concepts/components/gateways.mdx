@@ -19,7 +19,7 @@ chatGateway.on({ event: "send_message" }, (socket, data) => {
 export default chatGateway;
 ```
 
-A Gateway is created with `ArkosGateway(config)` and wired into a `socket.io` `Server` with `.register(io)`. Everything else — defining events, socket enhancements, pipes, hooks, deduplication — lives under [WebSockets](/docs/core-concepts/websockets/setup).
+A Gateway is created with `ArkosGateway(config)` and wired into a `socket.io` `Server` with `.register(io)`. Everything else — defining events, socket enhancements, pipes, hooks, deduplication — lives under [WebSockets](/docs/guides/websockets/setup).
 
 ## Anatomy
 

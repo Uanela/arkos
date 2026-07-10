@@ -29,7 +29,7 @@ export interface ArkosGatewayStore {
 - `has` / `set` / `setIfNotExists` back deduplication — keys are `arkos::dedup:{event}:{mid}`, with `setIfNotExists` doing the atomic check-and-set that makes dedup race-safe.
 - `clear(prefix)` is called on disconnect to drop a socket's rate-limit state (`arkos::rl:{socketId}`).
 
-### Gotcha: the default store is single-instance only
+### Default store is single-instance only
 
 `MemoryGatewayStore` holds everything in a `Map` in process memory. Run more than one instance of your app — multiple Node processes, multiple containers behind a load balancer — and each instance has its own view of rate limits and dedup state. A client can get rate-limited on instance A and sail through on instance B; the same message can be deduplicated on the instance that saw it first and processed again on another. Fine for local dev and single-instance deployments, not fine once you scale horizontally.
 

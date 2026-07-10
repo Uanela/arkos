@@ -2,7 +2,7 @@
 title: Deduplication and Freshness
 ---
 
-Both features key off `_meta`, a `{ mid, timestamp }` object Arkos expects on incoming payloads and injects automatically on outgoing ones (see [Enhanced Socket](/docs/core-concepts/websockets/enhanced-socket#gotcha-outgoing-_meta-is-injected-automatically)). If you're using the [client SDK](/docs/core-concepts/websockets/advanced/frontend-integrations), this is handled for you. If you're emitting from a raw `socket.io-client` connection, you need to send `_meta` yourself for these features to work.
+Both features key off `_meta`, a `{ mid, timestamp }` object Arkos expects on incoming payloads and injects automatically on outgoing ones (see [Enhanced Socket](/docs/guides/websockets/enhanced-socket#gotcha-outgoing-_meta-is-injected-automatically)). If you're using the [client Library](/docs/guides/websockets/advanced/frontend-integrations/overview), this is handled for you. If you're emitting from a raw `socket.io-client` connection, you need to send `_meta` yourself for these features to work.
 
 ## Deduplication
 
@@ -50,8 +50,8 @@ Rejects messages that are simply too old to matter — a client that reconnects 
 
 ```ts
 chatGateway.on(
-  { event: "cursor_move", maxAge: 5000 }, // reject anything older than 5s
-  handler
+    { event: "cursor_move", maxAge: 5000 }, // reject anything older than 5s
+    handler
 );
 ```
 

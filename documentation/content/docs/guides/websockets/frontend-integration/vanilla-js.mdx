@@ -51,7 +51,7 @@ const result = await gateway.emit("send_message", data, {
 // result: { success, data, error }
 ```
 
-`_meta.mid` and `_meta.timestamp` are injected on every emit automatically — this is what makes [deduplication and freshness checks](/docs/core-concepts/websockets/advanced/deduplication-and-freshness) work without you touching them.
+`_meta.mid` and `_meta.timestamp` are injected on every emit automatically — this is what makes [deduplication and freshness checks](/docs/guides/websockets/advanced/deduplication-and-freshness) work without you touching them.
 
 ## Reacting to connection state
 
@@ -81,4 +81,4 @@ gateway.user;
 client.destroy();
 ```
 
-Framework bindings wrap this in your framework's lifecycle/reactivity primitives so you don't manage `off()`/`unsub()` calls by hand — see [React](/docs/core-concepts/websockets/advanced/frontend-integrations/react) for the shipped example.
+Framework bindings wrap this in your framework's lifecycle/reactivity primitives so you don't manage `off()`/`unsub()` calls by hand — see [React](/docs/guides/websockets/advanced/frontend-integrations/react) for the shipped example.

@@ -27,7 +27,7 @@ export default function HeroSection(): ReactElement {
             id="tailwind"
             className="bg-white text-zinc-900 py-1 px-3 rounded-lg w-fit mx-auto text-center text-xs font-bold z-10 animate-bounce"
           >
-            BETA VERSION
+            RC VERSION
           </div>
           <h2 className="lg:text-[84px] md:text-6xl text-3xl font-bold z-10">
             The <span className="text-sky-400 ">Express</span> &{" "}

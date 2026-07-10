@@ -27,7 +27,7 @@ chatGateway.use((socket, next) => {
 chatGateway.use(adminGateway);
 ```
 
-Nesting is a component-composition concern — it's the same idea as composing Routers, just for Gateways. The mechanics (namespace prefixing, what config inherits) are covered in [Setup](/docs/core-concepts/websockets/setup#attaching-connection-middleware-or-nesting-gateways--use); this page only covers that `.use()` is the API for it.
+Nesting is a component-composition concern — it's the same idea as composing Routers, just for Gateways. The mechanics (namespace prefixing, what config inherits) are covered in [Setup](/docs/guides/websockets/setup#attaching-connection-middleware-or-nesting-gateways--use); this page only covers that `.use()` is the API for it.
 
 ## `.pipe()` — event middleware
 

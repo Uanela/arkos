@@ -13,7 +13,7 @@ const chatGateway = ArkosGateway({
 });
 ```
 
-With `authentication: true`, every connection to this namespace runs through Arkos's auth middleware before it's accepted. On success, `socket.currentUser` is populated and the socket is joined to a `arkos::user:{id}` room automatically — this is what powers `socket.user(id)` in the [Enhanced Socket](/docs/core-concepts/websockets/enhanced-socket) guide. On failure, the connection is rejected before your `connection` hook ever runs.
+With `authentication: true`, every connection to this namespace runs through Arkos's auth middleware before it's accepted. On success, `socket.currentUser` is populated and the socket is joined to a `arkos::user:{id}` room automatically — this is what powers `socket.user(id)` in the [Enhanced Socket](/docs/guides/websockets/enhanced-socket) guide. On failure, the connection is rejected before your `connection` hook ever runs.
 
 ```ts
 chatGateway.hook("connection", (socket) => {
@@ -27,7 +27,7 @@ chatGateway.hook("connection", (socket) => {
 
 ### Nested Gateways inherit this
 
-A child Gateway registered via `.use()` inherits its parent's `authentication` setting unless it explicitly overrides it. See [Setup → Attaching connection middleware or nesting Gateways](/docs/core-concepts/websockets/setup#attaching-connection-middleware-or-nesting-gateways--use).
+A child Gateway registered via `.use()` inherits its parent's `authentication` setting unless it explicitly overrides it. See [Attaching connection middleware or nesting Gateways](/docs/guides/websockets/setup#attaching-connection-middleware-or-nesting-gateways--use).
 
 ## Per-event authorization
 
@@ -72,4 +72,4 @@ This fails fast and loud on startup rather than at runtime on the first request 
 
 ## Where it sits in the request lifecycle
 
-Authorization runs after rate limiting and before validation. See the full ordering in [Handling Events → Full request lifecycle for one event](/docs/core-concepts/websockets/handling-events#full-request-lifecycle-for-one-event).
+Authorization runs after rate limiting and before validation. See the full ordering in [Full request lifecycle for one event](/docs/guides/websockets/event-handling#full-request-lifecycle-for-one-event).
