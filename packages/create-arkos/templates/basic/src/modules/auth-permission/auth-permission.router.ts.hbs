@@ -1,5 +1,4 @@
 import { ArkosRouter{{#if typescript}}, RouteHook{{/if}} } from "arkos";
-{{#if authentication}}
 import authPermissionPolicy from "@/src/modules/auth-permission/auth-permission.policy";
 
 export const hook{{#if typescript}}: RouteHook{{/if}} = {
@@ -9,11 +8,7 @@ export const hook{{#if typescript}}: RouteHook{{/if}} = {
   updateOne: { authentication: authPermissionPolicy.Update },
   deleteOne: { authentication: authPermissionPolicy.Delete },
 };
-{{/if}}
 
-const authPermissionRouter = ArkosRouter({ 
-    prefix: "/auth-permissions",
-    openapi: { tags: ["Auth Permissions"] } 
-  });
+const authPermissionRouter = ArkosRouter({ openapi: { tags: ["Auth Permissions"] } });
 
 export default authPermissionRouter;

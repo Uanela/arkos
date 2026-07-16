@@ -1,5 +1,4 @@
 import { ArkosRouter{{#if typescript}}, RouteHook{{/if}} } from "arkos";
-{{#if authentication}}
 import userPolicy from "@/src/modules/user/user.policy";
 
 export const hook{{#if typescript}}: RouteHook{{/if}} = {
@@ -9,11 +8,7 @@ export const hook{{#if typescript}}: RouteHook{{/if}} = {
   updateOne: { authentication: userPolicy.Update },
   deleteOne: { authentication: userPolicy.Delete },
 };
-{{/if}}
 
-const userRouter = ArkosRouter({ 
-    prefix: "/users",
-    openapi: { tags: ["Users"] }
-  });
+const userRouter = ArkosRouter({ openapi: { tags: ["Users"] } });
 
 export default userRouter;

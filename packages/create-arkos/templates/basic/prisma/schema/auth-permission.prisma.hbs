@@ -4,7 +4,6 @@ model AuthPermission {
   action    String   @default("View") 
   roles     AuthRole[] 
   users     UserPermission[]
-
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 

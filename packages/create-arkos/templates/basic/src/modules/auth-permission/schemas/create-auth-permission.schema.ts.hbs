@@ -1,0 +1,16 @@
+import { z } from 'zod';
+
+const CreateAuthPermissionSchema = z.object({
+  resource: z.string().min(1, 'Resource is required'),
+  action: z.string().min(1),
+  roles: z.array(z.object({
+    id: z.string().min(1, 'Role ID is required'),
+  })).optional(),
+  description: z.string().optional().default("Allows to create a permission for a given role."),
+});
+
+export default CreateAuthPermissionSchema
+
+{{#if typescript}}
+export type CreateAuthPermissionSchemaType = z.infer<typeof CreateAuthPermissionSchema>;
+{{/if}}
