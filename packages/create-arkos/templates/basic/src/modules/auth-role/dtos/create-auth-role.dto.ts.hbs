@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {{#if (eq validation.type "zod")}}
 import { z } from 'zod';
 
@@ -22,6 +23,11 @@ export type CreateAuthRoleDtoType = z.infer<typeof CreateAuthRoleDto>;
 import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import 'reflect-metadata';
+=======
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import 'reflect-metadata'
+>>>>>>> 746131e4a87884dd14cb395a9bdc6b3578804429
 
 class CreatePermissionForRoleDto {
   @IsString()
@@ -29,8 +35,13 @@ class CreatePermissionForRoleDto {
   resource!: string;
 
   @IsString()
+<<<<<<< HEAD
   @Transform(({ value }) => value || 'View')
   action: string = 'View';
+=======
+  @Transform(({ value }) => String(value))
+  action!: string;
+>>>>>>> 746131e4a87884dd14cb395a9bdc6b3578804429
 
   @IsOptional()
   @IsString()

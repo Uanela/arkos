@@ -39,7 +39,7 @@ jest.mock("../../../utils/helpers/routers.helpers", () => ({
   createRouteConfig: jest.fn(
     (_, __, routeName, path) => `/${routeName}${path}`
   ),
-  processMiddleware: jest.fn((mw, opts) => (mw ? [mw] : [])),
+  processMiddleware: jest.fn((mw, _) => (mw ? [mw] : [])),
 }));
 jest.mock("path", () => ({
   resolve: jest.fn(),
@@ -141,7 +141,7 @@ describe("File Upload Router", () => {
         etag: true,
         lastModified: true,
         dotfiles: "ignore",
-        fallthrough: true,
+        fallthrough: false,
         index: false,
         cacheControl: true,
       },
@@ -151,7 +151,8 @@ describe("File Upload Router", () => {
     expect(mockRouter.get).toHaveBeenCalledWith(
       "/api/uploads/*",
       expect.any(Function), // adjustRequestUrl
-      "mockedStaticMiddleware"
+      "mockedStaticMiddleware",
+      expect.any(Function) // file not found handler
     );
 
     expect(mockRouter.post).toHaveBeenCalledWith(
@@ -309,7 +310,8 @@ describe("File Upload Router", () => {
       "/api/uploads/*",
       expect.any(Function), // beforeFindFile
       expect.any(Function), // adjustRequestUrl
-      "mockedStaticMiddleware"
+      "mockedStaticMiddleware",
+      expect.any(Function) // file not found handler
     );
   });
 
@@ -338,7 +340,8 @@ describe("File Upload Router", () => {
       "/api/uploads/*",
       expect.any(Function), // beforeFindFile
       expect.any(Function), // adjustRequestUrl
-      "mockedStaticMiddleware"
+      "mockedStaticMiddleware",
+      expect.any(Function) // file not found handler
     );
 
     expect(mockRouter.post).toHaveBeenCalledWith(
@@ -590,7 +593,7 @@ describe("File Upload Router", () => {
         etag: true,
         lastModified: true,
         dotfiles: "ignore",
-        fallthrough: true,
+        fallthrough: false,
         index: false,
         cacheControl: true,
       },

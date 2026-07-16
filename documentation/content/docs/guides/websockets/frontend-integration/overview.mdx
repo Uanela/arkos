@@ -1,0 +1,20 @@
+---
+title: Overview
+---
+
+Everything below is shipped as `@arkosjs/websockets-client` and framework-specific packages on top of it. The core client handles what a raw `socket.io-client` connection doesn't: automatic `_meta` injection matching what the server expects (see [Deduplication and Freshness](/docs/guides/websockets/advanced/deduplication-and-freshness)), ack/retry/timeout ergonomics, and reactive connection status.
+
+<Callout type="warn">
+These packages are pre-1.0 and still maturing. The core client and the React binding are used and tested; the rest are community-contributed starting points that haven't been validated in a real app yet.
+</Callout>
+
+| Package                                                                                | Status                           |
+| -------------------------------------------------------------------------------------- | -------------------------------- |
+| [Vanilla JS](/docs/guides/websockets/advanced/frontend-integrations/vanilla-js) | Stable core API                  |
+| [React](/docs/guides/websockets/advanced/frontend-integrations/react)           | Reference implementation, tested |
+| [Vue](/docs/guides/websockets/advanced/frontend-integrations/vue)               | Under development                |
+| [Svelte](/docs/guides/websockets/advanced/frontend-integrations/svelte)         | Under development                |
+| [Solid](/docs/guides/websockets/advanced/frontend-integrations/solid)           | Under development                |
+| [Angular](/docs/guides/websockets/advanced/frontend-integrations/angular)       | Under development                |
+
+Every framework package is a thin adapter over the same core client — the reactivity primitives change, the API underneath doesn't. If your framework isn't listed as stable yet, the [Vanilla JS](/docs/guides/websockets/advanced/frontend-integrations/vanilla-js) page is your building block, and the [contributing guide](https://github.com/Uanela/arkos/blob/feat/websockets-client/websockets-client/CONTRIBUTING_FRAMEWORK_BINDIND.md) has a starting-point implementation plus an open issue for each framework if you want to help ship it.

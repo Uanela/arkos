@@ -222,7 +222,7 @@ describe("applymakeRouterProxy", () => {
       } catch {
         expect(ExitError).toHaveBeenCalledWith(
           expect.stringContaining(
-            "Trying to authenticate route use /api/admin without choosing an authentication mode"
+            "Trying to authenticate route /api/admin without choosing an authentication mode"
           )
         );
       }

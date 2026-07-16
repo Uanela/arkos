@@ -128,7 +128,8 @@ class OpenAPIchemaConverter {
     }
 
     if (schema.type === "array" && schema.items) {
-      const arrayPrefix = prefix ? `${prefix}[0]` : "[0]";
+      const arrayPrefix =
+        prefix && schema.items?.format === "binary" ? prefix : `${prefix}[0]`;
 
       // Check if items is an array FIRST, before checking for object
       if (schema.items.type === "array") {
@@ -172,7 +173,11 @@ class OpenAPIchemaConverter {
           }
           visitedRefs.delete(refPath);
         } else if (value.type === "array" && value.items) {
-          const arrayPrefix = `${paramName}[0]`;
+          const arrayPrefix =
+            paramName && value.items?.format == "binary"
+              ? paramName
+              : `${paramName}[0]`;
+
           if (value.items.type === "array") {
             flattened.push(
               ...this.flattenSchemaCore(value.items, arrayPrefix, visitedRefs)
@@ -493,7 +498,7 @@ class OpenAPIchemaConverter {
     schema: any,
     prefix = "",
     visitedRefs = new Set<string>()
-  ): any[] {
+  ) {
     const flattened = this.flattenSchemaCore(schema, prefix, visitedRefs);
 
     return flattened.map(({ name, schema, required }) => ({

@@ -24,25 +24,15 @@ export const Route = createFileRoute("/docs/$")({
     await clientLoader.preload(data.path);
     return data;
   },
-  head: async ({ params }) => {
-    const slugs = params._splat?.split("/") ?? [];
-    const page = source.getPage(slugs);
+  head: async ({ loaderData }) => {
+    if (!loaderData) return;
 
-    const title = page?.data.title
-      ? `${page.data.title} - Arkos.js`
+    const title = loaderData.title
+      ? `${loaderData.title} - Arkos.js`
       : "Arkos.js";
 
     const description =
-      page?.data.description ||
-      page?.data.structuredData.contents
-        .slice(0, 3)
-        .map((c) =>
-          c.content.toLowerCase().startsWith("> available from")
-            ? undefined
-            : c.content
-        )
-        .filter(Boolean)
-        .join(". ") ||
+      loaderData.description ||
       "Arkos.js — The Express and Prisma RESTful Framework. Build secure and scalable RESTful APIs with minimal configuration.";
 
     return {
@@ -133,7 +123,8 @@ const clientLoader = browserCollections.docs.createClientLoader({
 });
 
 function Page() {
-  const data = useFumadocsLoader(Route.useLoaderData());
+  const data = useFumadocsLoader(Route.useLoaderData())!;
+  const top = 92; // 56 normal, with annoucment banner 92
 
   return (
     <DocsLayout
@@ -143,14 +134,17 @@ function Page() {
         collapsible: false,
         footer: false,
         tabs: false,
+        className: "overflow-auto pb-16",
       }}
       searchToggle={{ enabled: false }}
       links={[]}
       tree={data.pageTree}
       githubUrl={undefined}
       containerProps={{
-        className:
-          "h-[calc(100vh-60px)] w-full  top-[56px] fixed overflow-auto",
+        style: {
+          top,
+        },
+        className: "h-[calc(100vh-60px)] w-full fixed overflow-auto pb-8",
       }}
     >
       <Suspense>{clientLoader.useContent(data.path, data)}</Suspense>

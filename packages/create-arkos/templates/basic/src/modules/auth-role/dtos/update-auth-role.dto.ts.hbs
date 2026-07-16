@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {{#if (eq validation.type "zod")}}
 import { z } from 'zod';
 
@@ -30,6 +31,15 @@ export enum ApiAction {
   delete = 'delete',
   create = 'create',
   update = 'update'
+=======
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import 'reflect-metadata'
+
+export enum ApiAction {
+  connect = 'connect',
+  disconnect = 'disconnect'
+>>>>>>> 746131e4a87884dd14cb395a9bdc6b3578804429
 }
 
 class UpdatePermissionForRoleDto {
@@ -39,11 +49,19 @@ class UpdatePermissionForRoleDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Resource is required' })
-  resource!: string;
+  @IsOptional()
+  resource?: string;
 
+<<<<<<< HEAD
   @IsString()
   @IsNotEmpty()
   action!: string;
+=======
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => String(value))
+  action?: string
+>>>>>>> 746131e4a87884dd14cb395a9bdc6b3578804429
 
   @IsOptional()
   @IsString()

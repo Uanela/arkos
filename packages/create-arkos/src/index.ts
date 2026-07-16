@@ -12,6 +12,10 @@ import { fileURLToPath } from "url";
 
 handlebars.registerHelper("eq", (a: any, b: any) => a === b);
 handlebars.registerHelper("neq", (a: any, b: any) => a !== b);
+handlebars.registerHelper("or", (...args: any[]) => {
+  const conditions = args.slice(0, -1);
+  return conditions.some((a) => !!a);
+});
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

@@ -28,6 +28,7 @@ import {
 } from "../../../../modules/file-upload/utils/helpers/file-upload.helpers";
 import deepmerge from "../../../helpers/deepmerge.helper";
 import { catchAsync } from "../../../../exports/error-handler";
+import { ArkosFile } from "../../../../types/upload";
 
 function determineUploadDir(file: Express.Multer.File) {
   if (file.mimetype.includes?.("image")) return "/images";
@@ -113,11 +114,11 @@ function extractIndices(key: string, pattern: string): number[] {
  * Groups files from req.files by their array indices for a given pattern.
  */
 function groupFilesByPattern(
-  files: { [fieldname: string]: Express.Multer.File[] },
+  files: { [fieldname: string]: ArkosFile[] },
   pattern: string
-): Map<string, Express.Multer.File[]> {
+): Map<string, ArkosFile[]> {
   const matcher = buildPathMatcher(pattern);
-  const groups = new Map<string, Express.Multer.File[]>();
+  const groups = new Map<string, ArkosFile[]>();
 
   for (const key of Object.keys(files)) {
     if (!matcher.test(key)) continue;
@@ -135,7 +136,7 @@ function groupFilesByPattern(
  * (i.e. nested array path fields handled via .any()).
  */
 function validateFileConstraints(
-  file: Express.Multer.File,
+  file: ArkosFile,
   allowedFileTypes?: string[] | RegExp,
   maxSize?: number
 ): string | null {
@@ -285,14 +286,13 @@ class UploadManager {
         const middleware = this.getMiddleware(config);
         req.headers["x-upload-dir"] =
           "uploadDir" in config ? config.uploadDir : undefined;
-        middleware(req, res, async (err) => {
+        middleware(req, res, async (err: any) => {
           if (err) return next(err);
 
           // .any() gives req.files as File[] — normalize to { [fieldname]: File[] }
           // so groupFilesByPattern works correctly for nested array paths
           if (configHasNestedArrayPaths(config) && Array.isArray(req.files)) {
-            const normalized: { [fieldname: string]: Express.Multer.File[] } =
-              {};
+            const normalized: { [fieldname: string]: ArkosFile[] } = {};
             for (const file of req.files) {
               if (!normalized[file.fieldname]) normalized[file.fieldname] = [];
               normalized[file.fieldname].push(file);
@@ -344,7 +344,7 @@ class UploadManager {
 
         if (isNested) {
           const filesObj = req.files as {
-            [fieldname: string]: Express.Multer.File[];
+            [fieldname: string]: ArkosFile[];
           };
           if (!filesObj || Array.isArray(filesObj)) {
             if (required)
@@ -398,7 +398,7 @@ class UploadManager {
             }
           } else {
             const filesObj = req.files as {
-              [fieldname: string]: Express.Multer.File[];
+              [fieldname: string]: ArkosFile[];
             };
             const files = Array.isArray(req.files)
               ? req.files
@@ -492,7 +492,7 @@ class UploadManager {
       _: ArkosResponse,
       next: ArkosNextFunction
     ) => {
-      const deleteFile = async (file: Express.Multer.File) => {
+      const deleteFile = async (file: ArkosFile) => {
         try {
           await fs.promises.unlink(file.path);
         } catch (error: any) {
@@ -553,7 +553,7 @@ class UploadManager {
             .replace(/\\/g, "/");
         };
 
-        const buildFileURL = (file: Express.Multer.File): string => {
+        const buildFileURL = (file: ArkosFile): string => {
           const relativePath = generateRelativePath(
             file.path,
             req.headers["x-upload-dir"] as string
@@ -564,24 +564,28 @@ class UploadManager {
         };
 
         const getAttachValue = (
-          file: Express.Multer.File,
+          file: ArkosFile,
           attachToBody: ArkosRouterBaseUploadConfig["attachToBody"]
-        ): any => {
+        ) => {
           const url = buildFileURL(file);
-          (file as any).url = url;
-          (file as any).pathname = normalizePath(file.path);
 
-          if (attachToBody === false) return undefined;
-          if (attachToBody === "url") return url;
-          if (attachToBody === "file") return file;
-
-          return (
+          file.url = url;
+          file.pathname =
             (baseRoute === "/"
               ? ""
               : baseRoute.startsWith("/")
                 ? baseRoute
-                : `/${baseRoute}`) + normalizePath(file.path)
-          );
+                : `/${baseRoute}`) + normalizePath(file.path);
+
+          if (attachToBody === false) return undefined;
+          if (attachToBody === "url") return url;
+          if (attachToBody === "file") return file;
+          if (typeof attachToBody === "function") {
+            const result = attachToBody(file);
+            if (result) return result;
+          }
+
+          return (file as any).pathname;
         };
 
         const setNestedValue = (obj: any, path: string, value: any) => {
@@ -613,7 +617,7 @@ class UploadManager {
          */
         const reconstructNestedArrayPath = (
           pattern: string,
-          filesObj: { [fieldname: string]: Express.Multer.File[] },
+          filesObj: { [fieldname: string]: ArkosFile[] },
           attachToBody: ArkosRouterBaseUploadConfig["attachToBody"],
           type: "single" | "array",
           sharedBodyUpdate?: any
@@ -673,7 +677,7 @@ class UploadManager {
           if (config.type === "single") {
             if (isNestedArrayPath(config.field)) {
               const filesObj = req.files as {
-                [fieldname: string]: Express.Multer.File[];
+                [fieldname: string]: ArkosFile[];
               };
               if (filesObj && !Array.isArray(filesObj)) {
                 reconstructNestedArrayPath(
@@ -694,7 +698,7 @@ class UploadManager {
           } else if (config.type === "array") {
             if (isNestedArrayPath(config.field)) {
               const filesObj = req.files as {
-                [fieldname: string]: Express.Multer.File[];
+                [fieldname: string]: ArkosFile[];
               };
               if (filesObj && !Array.isArray(filesObj)) {
                 reconstructNestedArrayPath(
@@ -716,7 +720,7 @@ class UploadManager {
             }
           } else if (config.type === "fields") {
             const filesObj = req.files as {
-              [fieldname: string]: Express.Multer.File[];
+              [fieldname: string]: ArkosFile[];
             };
             if (!filesObj || Array.isArray(filesObj)) return next();
 
@@ -800,6 +804,25 @@ class UploadManager {
         )
       );
   };
+
+  isAllFieldRequired(uploadConfig: UploadConfig): boolean {
+    let isRequired = false;
+    if (!uploadConfig) return false;
+
+    if (uploadConfig.type !== "fields")
+      isRequired = uploadConfig.required !== false;
+    else {
+      isRequired =
+        (uploadConfig as any).required !== undefined
+          ? (uploadConfig as any).required
+          : uploadConfig.fields.every(
+              (field) =>
+                (field as any).required || (field as any).required === undefined
+            );
+    }
+
+    return isRequired;
+  }
 }
 
 const uploadManager = new UploadManager();

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {{#if (eq validation.type "zod")}}
 import { z } from 'zod';
 
@@ -16,6 +17,17 @@ export type UpdateAuthPermissionDtoType = z.infer<typeof UpdateAuthPermissionDto
 import { IsString, IsOptional } from 'class-validator';
 import { Transform } from 'class-transformer';
 import 'reflect-metadata';
+=======
+import { IsString, IsOptional, IsNotEmpty, IsArray, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import 'reflect-metadata'
+
+class RoleConnectDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Role ID is required' })
+  id!: string;
+}
+>>>>>>> 746131e4a87884dd14cb395a9bdc6b3578804429
 
 export default class UpdateAuthPermissionDto {
   @IsOptional()
@@ -24,8 +36,19 @@ export default class UpdateAuthPermissionDto {
 
   @IsOptional()
   @IsString()
+<<<<<<< HEAD
   @Transform(({ value }) => value)
   action?: string;
+=======
+  @Transform(({ value }) => String(value))
+  action?: string
+
+  @ValidateNested({ each: true })
+  @IsArray()
+  @Type(() => RoleConnectDto)
+  @IsOptional()
+  roles?: RoleConnectDto[];
+>>>>>>> 746131e4a87884dd14cb395a9bdc6b3578804429
 
   @IsOptional()
   @IsString()

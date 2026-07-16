@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {{#if (eq validation.type "zod")}}
 import { z } from 'zod';
 
@@ -19,6 +20,11 @@ export type CreateAuthPermissionDtoType = z.infer<typeof CreateAuthPermissionDto
 import { IsString, IsNotEmpty, IsOptional, IsValidateNested } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import 'reflect-metadata';
+=======
+import { IsString, IsNotEmpty, IsOptional, ValidateNested, IsArray } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import 'reflect-metadata'
+>>>>>>> 746131e4a87884dd14cb395a9bdc6b3578804429
 
 class RoleConnectDto {
   @IsString()
@@ -32,16 +38,23 @@ export default class CreateAuthPermissionDto {
   resource!: string;
 
   @IsString()
+<<<<<<< HEAD
   @Transform(({ value }) => value || 'View')
   action?: string = 'View';
+=======
+  @Transform(({ value }) => String(value))
+  action!: string;
+>>>>>>> 746131e4a87884dd14cb395a9bdc6b3578804429
 
-  @ValidateNested()
+  @ValidateNested({ each: true })
+  @IsArray()
   @Type(() => RoleConnectDto)
-  role!: RoleConnectDto;
+  @IsOptional()
+  roles?: RoleConnectDto[];
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value)
+  @Transform(({ value }) => String(value))
   description?: string;
 }
 {{/if}}

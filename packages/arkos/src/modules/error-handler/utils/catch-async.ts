@@ -3,7 +3,7 @@ import {
   ArkosResponse,
   ArkosNextFunction,
   ArkosRequestHandler,
-  ArkosErrorRequestHandler,
+  ArkosAnyRequestHandler,
 } from "../../../types";
 
 /**
@@ -24,7 +24,7 @@ import {
  * ```
  */
 const catchAsync = (
-  fn: ArkosRequestHandler | ArkosErrorRequestHandler,
+  fn: ArkosAnyRequestHandler,
   options: { type: "error" | "normal" } = { type: "normal" }
 ): any =>
   options?.type === "error"

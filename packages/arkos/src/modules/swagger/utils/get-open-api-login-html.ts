@@ -258,13 +258,17 @@ export default function getOpenApiLoginHtml() {
         .trim();
     }
 
-    if (usernameSelect) {
+${
+  allowedUsernames.length > 1 &&
+  `if (usernameSelect) {
       usernameSelect.addEventListener('change', () => {
         const label = formatFieldLabel(usernameSelect.value);
         usernameLabel.textContent = label;
         usernameField.placeholder = \`Enter your \${label.toLowerCase()}\`;
       });
     }
+`
+}
 
     const params = new URLSearchParams(window.location.search);
     const urlErrorMessage = params.get('error-message');
