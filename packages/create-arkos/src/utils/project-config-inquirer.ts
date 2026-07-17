@@ -223,7 +223,7 @@ class ProjectConfigInquirer {
   private async promptAuthentication() {
     if (this.config.prisma.provider === "none") {
       console.info(
-        `${chalk.cyan("! ")} ${chalk.bold("Skipping authentication setup as it requires prisma.")}`
+        `${chalk.green("! ")} ${chalk.bold("Skipping authentication setup as it requires prisma.")}`
       );
       this.config.authentication = {
         type: "none",
@@ -286,8 +286,7 @@ class ProjectConfigInquirer {
       };
     } else if (this.config.prisma.provider === "sqlite") {
       console.info(
-        `${chalk.cyan("! ")} 
-        ${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
+        `${chalk.green("! ")} ${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
       );
     }
   }
