@@ -1,13 +1,21 @@
 packages:
   - "packages/*"
   - "integrations/*"
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  core-js: true
+  esbuild: true
+  prisma: true
+  sharp: true
+  vue-demi: true
 supportedArchitectures:
   os:
-  - win32
-  - darwin
-  - current
+    - win32
+    - darwin
+    - current
   cpu:
-  - arm64
-  - arm64v8
+    - arm64
+    - arm64v8
   arch:
-  - arm64v8
+    - arm64v8
