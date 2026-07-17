@@ -1,57 +1,34 @@
-{{#if (eq validation.type "zod")}}
-import { z } from 'zod';
-
-const UpdatePermissionForRoleDto = z.object({
-  id: z.string().optional(),
-  resource: z.string().min(1, "Resource is required"),
-  action: z.string(),
-  description: z.string().optional(),
-  apiAction: z.enum(["connect", "delete", "create", "update"]).optional(),
-});
-
-const UpdateAuthRoleDto = z.object({
-  name: z.string().min(1, "Role name is required"),
-  description: z.string().optional(),
-  permissions: z.array(UpdatePermissionForRoleDto).optional().default([]),
-});
-
-export default UpdateAuthRoleDto;
-{{#if typescript}}
-export type UpdateAuthRoleDtoType = z.infer<typeof UpdateAuthRoleDto>;
-{{/if}}
-{{/if}}
-{{#if (eq validation.type "class-validator")}}
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsEnum } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import 'reflect-metadata';
+import 'reflect-metadata'
 
 export enum ApiAction {
   connect = 'connect',
-  delete = 'delete',
-  create = 'create',
-  update = 'update'
+  disconnect = 'disconnect'
 }
 
 class UpdatePermissionForRoleDto {
-  @IsOptional()
   @IsString()
+  @IsOptional()
   id?: string;
 
   @IsString()
   @IsNotEmpty({ message: 'Resource is required' })
-  resource!: string;
+  @IsOptional()
+  resource?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  action!: string;
+  @Transform(({ value }) => String(value))
+  action?: string
 
   @IsOptional()
   @IsString()
   @Transform(({ value }) => value)
   description?: string;
 
+  @IsEnum(ApiAction)
   @IsOptional()
-  @IsString()
   apiAction?: ApiAction;
 }
 
@@ -71,4 +48,3 @@ export default class UpdateAuthRoleDto {
   @Transform(({ value }) => value || [])
   permissions?: UpdatePermissionForRoleDto[] = [];
 }
-{{/if}}

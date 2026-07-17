@@ -67,8 +67,8 @@ describe("UploadManager", () => {
       const config = { type: "single" as const, field: "avatar" };
       const middleware = uploadManager.handleUpload(config);
 
-      mockMulterInstance.single.mockReturnValue((req: any, res: any, cb: any) =>
-        cb()
+      mockMulterInstance.single.mockReturnValue(
+        (_req: any, _res: any, cb: any) => cb()
       );
 
       middleware(mockReq, mockRes, mockNext);
@@ -81,8 +81,8 @@ describe("UploadManager", () => {
       const config = { type: "array" as const, field: "photos", maxCount: 3 };
       const middleware = uploadManager.handleUpload(config);
 
-      mockMulterInstance.array.mockReturnValue((req: any, res: any, cb: any) =>
-        cb()
+      mockMulterInstance.array.mockReturnValue(
+        (_req: any, _res: any, cb: any) => cb()
       );
 
       middleware(mockReq, mockRes, mockNext);
@@ -97,8 +97,8 @@ describe("UploadManager", () => {
       };
       const middleware = uploadManager.handleUpload(config);
 
-      mockMulterInstance.fields.mockReturnValue((req: any, res: any, cb: any) =>
-        cb()
+      mockMulterInstance.fields.mockReturnValue(
+        (_req: any, _res: any, cb: any) => cb()
       );
 
       middleware(mockReq, mockRes, mockNext);
@@ -114,8 +114,8 @@ describe("UploadManager", () => {
       };
       const middleware = uploadManager.handleUpload(config);
 
-      mockMulterInstance.single.mockReturnValue((req: any, res: any, cb: any) =>
-        cb()
+      mockMulterInstance.single.mockReturnValue(
+        (_req: any, _res: any, cb: any) => cb()
       );
 
       middleware(mockReq, mockRes, mockNext);
@@ -128,8 +128,8 @@ describe("UploadManager", () => {
       const middleware = uploadManager.handleUpload(config);
       const mockError = new Error("Upload failed");
 
-      mockMulterInstance.single.mockReturnValue((req: any, res: any, cb: any) =>
-        cb(mockError)
+      mockMulterInstance.single.mockReturnValue(
+        (_req: any, _res: any, cb: any) => cb(mockError)
       );
 
       middleware(mockReq, mockRes, mockNext);
@@ -151,7 +151,7 @@ describe("UploadManager", () => {
       });
 
       mockMulterInstance.single.mockReturnValue(
-        (req: any, res: any, cb: any) => {
+        (_req: any, _res: any, cb: any) => {
           setTimeout(() => cb(), 0);
         }
       );
@@ -256,7 +256,7 @@ describe("UploadManager", () => {
       const middleware = uploadManager.handlePostUpload(config);
       middleware(mockReq, mockRes, mockNext);
 
-      expect(mockReq.file.pathname).toBe("C:/uploads/file.jpg");
+      expect(mockReq.file.pathname).toBe("/api/uploadsC:/uploads/file.jpg");
       expect(mockReq.file.url).toBe(
         "http://localhost:3000/api/uploads/C:/file.jpg"
       );
@@ -283,12 +283,36 @@ describe("UploadManager", () => {
       middleware(mockReq, mockRes, mockNext);
 
       expect(mockReq.file.pathname).toBe(
-        "/uploads/companies/logos/company-1770044939233-8726529.png"
+        "/api/uploads/uploads/companies/logos/company-1770044939233-8726529.png"
       );
       expect(mockReq.file.url).toBe(
         "http://localhost:3000/api/uploads/companies/logos/company-1770044939233-8726529.png"
       );
       expect(mockReq.body).toBeDefined();
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it("should attach customer data to body for single file", () => {
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        attachToBody: (file: any) => {
+          return {
+            hello: "world",
+            path: file.path,
+          };
+        },
+      };
+      mockReq.file = { path: "C:\\uploads\\file.jpg" };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      middleware(mockReq, mockRes, mockNext);
+
+      expect(mockReq.file.pathname).toBe("/api/uploadsC:/uploads/file.jpg");
+      expect(mockReq.file.url).toBe(
+        "http://localhost:3000/api/uploads/C:/file.jpg"
+      );
+      expect(mockReq.body.avatar.hello).toBeDefined();
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -1695,6 +1719,83 @@ describe("UploadManager", () => {
       expect(bodyUpdate.slides[1]).toHaveProperty("mobileImage");
       expect(bodyUpdate.slides[1]).toHaveProperty("tabletImage");
       expect(bodyUpdate.slides[1]).toHaveProperty("desktopImage");
+    });
+  });
+
+  describe("UploadManager.isAllFieldRequired", () => {
+    it("should return false when uploadConfig is undefined", () => {
+      expect(uploadManager.isAllFieldRequired(undefined as any)).toBe(false);
+    });
+
+    it("should return false when uploadConfig is null", () => {
+      expect(uploadManager.isAllFieldRequired(null as any)).toBe(false);
+    });
+
+    it("should return true by default when required is not set (single)", () => {
+      expect(
+        uploadManager.isAllFieldRequired({
+          type: "single",
+          field: "avatar",
+        } as any)
+      ).toBe(true);
+    });
+
+    it("should return true when required is explicitly true (single)", () => {
+      expect(
+        uploadManager.isAllFieldRequired({
+          type: "single",
+          field: "avatar",
+          required: true,
+        } as any)
+      ).toBe(true);
+    });
+
+    it("should return false when required is explicitly false (single)", () => {
+      expect(
+        uploadManager.isAllFieldRequired({
+          type: "single",
+          field: "avatar",
+          required: false,
+        } as any)
+      ).toBe(false);
+    });
+
+    it("should return true by default when required is not set (array)", () => {
+      expect(
+        uploadManager.isAllFieldRequired({
+          type: "array",
+          field: "gallery",
+        } as any)
+      ).toBe(true);
+    });
+
+    it("should return false when required is explicitly false (array)", () => {
+      expect(
+        uploadManager.isAllFieldRequired({
+          type: "array",
+          field: "gallery",
+          required: false,
+        } as any)
+      ).toBe(false);
+    });
+
+    it("should return true by default when required is not set (fields)", () => {
+      expect(
+        uploadManager.isAllFieldRequired({
+          type: "fields",
+          fields: [{ name: "avatar" }, { name: "coverPhoto" }],
+        } as any)
+      ).toBe(true);
+    });
+
+    it("should return false when required is explicitly false (fields)", () => {
+      expect(
+        uploadManager.isAllFieldRequired({
+          type: "fields",
+          fields: [{ name: "avatar" }, { name: "coverPhoto" }],
+          required: false,
+        } as any)
+      ).toBe(false);
     });
   });
 });

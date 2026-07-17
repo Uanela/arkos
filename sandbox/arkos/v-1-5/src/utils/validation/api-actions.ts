@@ -1,0 +1,11 @@
+/**
+* A simple array of available `apiAction` field when using auto generate API (That uses BaseService)
+* class behind the scenes.
+* 
+* Is worth mentioning that this will be addded into `arkos` as an util.
+*
+* @see {@link https://www.arkosjs.com/docs/core-concepts/prisma-orm/handling-relations} 
+*/
+const apiActions = ["connect", "disconnect", "delete", "update", "create"] as const;
+
+export default apiActions

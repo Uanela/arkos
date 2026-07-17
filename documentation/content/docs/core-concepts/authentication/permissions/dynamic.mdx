@@ -14,10 +14,11 @@ Before using Dynamic mode make sure you have authentication configured. See [Aut
 ## User Model
 
 Dynamic mode replaces the `role`/`roles` enum field with a `UserRole` relation, and adds three required models:
+
 ```prisma title="prisma/schema.prisma"
 model User {
   // ... required Arkos fields
-  roles UserRole[]
+  roles       UserRole[]
 
   // your own fields
   email     String?  @unique
@@ -35,13 +36,14 @@ model AuthRole {
 }
 
 model AuthPermission {
-  id       String   @id @default(uuid())
-  resource String
-  action   String
-  roleId   String
-  role     AuthRole @relation(fields: [roleId], references: [id])
+  id        String     @id @default(uuid())
+  resource  String
+  action    String
+  roles     AuthRole[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-  @@unique([resource, action, roleId])
+  @@unique([resource, action])
 }
 
 model UserRole {
@@ -55,6 +57,10 @@ model UserRole {
 }
 ```
 
+<Callout type="warn">
+Before 1.7.0, `AuthPermission` had a `roleId` field and `@@unique([resource, action, roleId])` — one row per role. 1.7.0 made permissions shared across roles via a many-to-many `roles` relation and changed the unique constraint to `@@unique([resource, action])`. See [Migrating from Static](#migrating-from-static) if you're upgrading an existing Dynamic-mode project.
+</Callout>
+
 See the full required User model at [User Model Authentication Setup](/docs/core-concepts/authentication/setup#user-model).
 
 ## Configuration
@@ -63,6 +69,7 @@ Change `mode` to `"dynamic"` — everything else stays the same as the base [Aut
 
 <Tabs items={["v1.6", "v1.4–v1.5", "v1.3"]}>
 <Tab value="v1.6">
+
 ```ts title="arkos.config.ts"
 import { defineConfig } from "arkos";
 
@@ -73,20 +80,22 @@ export default defineConfig({
   },
 });
 ```
+
 </Tab>
 <Tab value="v1.4–v1.5">
 ```ts title="arkos.config.ts"
 import { ArkosConfig } from "arkos";
 
 const arkosConfig: ArkosConfig = {
-  authentication: {
-    mode: "dynamic",
-    // ... rest of your config unchanged
-  },
+authentication: {
+mode: "dynamic",
+// ... rest of your config unchanged
+},
 };
 
 export default arkosConfig;
-```
+
+````
 </Tab>
 <Tab value="v1.3">
 ```ts title="src/app.ts"
@@ -98,13 +107,15 @@ arkos.init({
     // ... rest of your config unchanged
   },
 });
-```
+````
+
 </Tab>
 </Tabs>
 
 ## Defining Dynamic Permissions
 
 Same `ArkosPolicy` and `.auth.ts` API as [Static mode](/docs/core-concepts/authentication/permissions/static) — the only difference is that `roles` inside rules are ignored at enforcement time. Actual enforcement comes from database records instead. Define your policy with names and descriptions for discovery, and skip the roles — or keep `roles: ["*"]` where all authenticated users should have access:
+
 ```ts title="src/modules/post/post.policy.ts"
 import { ArkosPolicy } from "arkos";
 
@@ -122,6 +133,7 @@ Wiring to routes is identical to Static mode — see [Static Mode — Using Perm
 ## Managing Permissions
 
 Arkos auto-generates full CRUD endpoints for `AuthRole`, `AuthPermission`, and `UserRole`:
+
 ```
 GET    /api/auth-roles
 POST   /api/auth-roles
@@ -139,22 +151,82 @@ DELETE /api/user-roles/:id
 ```
 
 Or manage them programmatically:
+
 ```ts
 const adminRole = await prisma.authRole.create({ data: { name: "Admin" } });
 const editorRole = await prisma.authRole.create({ data: { name: "Editor" } });
 
-await prisma.authPermission.createMany({
-  data: [
-    { resource: "post", action: "Create", roleId: editorRole.id },
-    { resource: "post", action: "Update", roleId: editorRole.id },
-    { resource: "post", action: "Delete", roleId: adminRole.id },
-  ],
+const createPost = await prisma.authPermission.create({
+  data: {
+    resource: "post",
+    action: "Create",
+    roles: { connect: { id: editorRole.id } },
+  },
+});
+const deletePost = await prisma.authPermission.create({
+  data: {
+    resource: "post",
+    action: "Delete",
+    roles: { connect: { id: adminRole.id } },
+  },
 });
 
 await prisma.userRole.create({
   data: { userId: user.id, roleId: adminRole.id },
 });
 ```
+
+## User-Level Permission Overrides
+
+> Available from 1.7.0-rc
+
+Sometimes you need to grant or revoke a specific permission for one user without creating a one-off role for them. `UserPermission` sits on top of role-derived permissions and lets you override the result per user, per permission:
+
+```prisma title="prisma/schema.prisma"
+model UserPermission {
+  id           String               @id @default(uuid())
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  effect       UserPermissionEffect @default(Allow)
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id])
+  permissionId String
+  permission   AuthPermission       @relation(fields: [permissionId], references: [id])
+
+  @@unique([userId, permissionId])
+}
+
+enum UserPermissionEffect {
+  Allow
+  Deny
+}
+
+// Update the user to add new relation
+model User {
+  // ... everything else remains the same
+  permissions UserPermission[]
+}
+
+
+// Update it to add the new relation
+model AuthPermission {
+  // everything else remains the same
+  users     UserPermission[]
+}
+```
+
+**Resolution order** — this is exactly how `checkDynamicAccessControl` decides access:
+
+1. If a `UserPermission` row exists for `(userId, permissionId)`, its `effect` wins — full stop, regardless of role.
+2. Otherwise, falls back to whatever the user's `AuthRole` grants.
+
+<Callout type="info">
+If your Prisma client has no `userPermissions` delegate — i.e. you haven't added the model yet — Arkos skips the override lookup entirely and falls back to role-derived permission. No error, no behavior change. Safe to leave out until you actually need per-user overrides.
+</Callout>
+
+<Callout type="info">
+Already on Dynamic mode and want user-level overrides on an existing project? See [Adding User Permissions in Old Projects](/blogs/adding-user-permissions-in-old-projects) for the schema changes and migration steps.
+</Callout>
 
 ## Imperative Checks
 
@@ -174,3 +246,4 @@ Imperative checks in fine-grained access control also work with auth config file
 6. Create `AuthPermission` records based on your existing rules
 7. Assign users to roles via `UserRole`
 8. Remove `roles` from your policy rules — they'll be ignored anyway
+9. **Optional:** for per-user overrides, add the `UserPermission` model and `UserPermissionEffect` enum to your schema, add `permissions UserPermission[]` to `User`, then run `arkos prisma generate`

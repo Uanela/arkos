@@ -1,5 +1,5 @@
 ---
-title: Custom Handler (New)
+title: Custom Handler
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
@@ -22,11 +22,18 @@ app.use(myRouter);
 await app.build();
 
 // Register your custom error handler here — after build, before listen
-app.use((err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-  // Arkos has already sent the response — use this for side effects only
-  console.error("[CustomHandler]", err.message);
-  next(err);
-});
+app.use(
+  (
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    // Arkos has already sent the response — use this for side effects only
+    console.error("[CustomHandler]", err.message);
+    next(err);
+  }
+);
 
 app.listen();
 ```
@@ -48,13 +55,20 @@ import * as Sentry from "@sentry/node";
 
 await app.build();
 
-app.use((err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-  if (!err.isOperational) {
-    // Only report unexpected errors — not 404s, 403s, validation failures
-    Sentry.captureException(err);
+app.use(
+  (
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    if (!err.isOperational) {
+      // Only report unexpected errors — not 404s, 403s, validation failures
+      Sentry.captureException(err);
+    }
+    next(err);
   }
-  next(err);
-});
+);
 
 app.listen();
 ```
@@ -64,15 +78,22 @@ app.listen();
 ```ts title="src/app.ts"
 await app.build();
 
-app.use(async (err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-  if (err.statusCode >= 500) {
-    await slackClient.postMessage({
-      channel: "#alerts",
-      text: `[${req.method} ${req.path}] ${err.message}`,
-    });
+app.use(
+  async (
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    if (err.statusCode >= 500) {
+      await slackClient.postMessage({
+        channel: "#alerts",
+        text: `[${req.method} ${req.path}] ${err.message}`,
+      });
+    }
+    next(err);
   }
-  next(err);
-});
+);
 
 app.listen();
 ```
@@ -82,17 +103,24 @@ app.listen();
 ```ts title="src/app.ts"
 await app.build();
 
-app.use((err: any, req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-  logger.error({
-    message: err.message,
-    code: err.code,
-    statusCode: err.statusCode,
-    path: req.path,
-    method: req.method,
-    userId: req.user?.id,
-  });
-  next(err);
-});
+app.use(
+  (
+    err: any,
+    req: ArkosRequest,
+    res: ArkosResponse,
+    next: ArkosNextFunction
+  ) => {
+    logger.error({
+      message: err.message,
+      code: err.code,
+      statusCode: err.statusCode,
+      path: req.path,
+      method: req.method,
+      userId: req.user?.id,
+    });
+    next(err);
+  }
+);
 
 app.listen();
 ```

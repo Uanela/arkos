@@ -4,6 +4,10 @@ import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { sendResponse } from "../base/base.middlewares";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import { adjustRequestUrl } from "./utils/helpers/file-upload.helpers";
+import debuggerService from "../debugger/debugger.service";
+import routerValidator from "../base/utils/router-validator";
+import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
+import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../exports";
 import path from "path";
 import ArkosRouter from "../../utils/arkos-router";
 import loadableRegistry from "../../components/arkos-loadable-registry";
@@ -13,6 +17,7 @@ import {
 } from "../../components/arkos-route-hook/reader";
 import { getArkosConfig } from "../../server";
 import fileUploadJsonSchemaGenerator from "./utils/file-upload-json-schema-generator";
+import AppError from "../error-handler/utils/app-error";
 
 export function getFileUploadRouter() {
   const router = ArkosRouter();
@@ -76,13 +81,34 @@ export function getFileUploadRouter() {
             etag: true,
             lastModified: true,
             dotfiles: "ignore",
-            fallthrough: true,
+            fallthrough: false,
             index: false,
             cacheControl: true,
           },
           fileUpload?.expressStatic || {}
         )
       ),
+      (
+        err: any,
+        req: ArkosRequest,
+        _res: ArkosResponse,
+        next: ArkosNextFunction
+      ) => {
+        if (err.code === "ENOENT") {
+          const filepath = req.path.replace(
+            `/api/${fileUpload?.baseRoute}`.replace("//", "/"),
+            ""
+          );
+          throw new AppError(
+            `File ${filepath} was not found`,
+            404,
+            "FileNotFound",
+            { filepath }
+          );
+        }
+
+        next(err);
+      },
       ...processMiddleware(onError, { type: "error" })
     );
   }

@@ -21,14 +21,14 @@ export default function initializeApp(app: Arkos) {
   const routersConfig = config?.routers;
 
   if (config?.staticFiles?.enabled !== false) {
-    const folder = config?.staticFiles?.folder ?? "public";
+    const folder = config?.staticFiles?.folder ?? "/public";
     const prefix = config?.staticFiles?.prefix ?? "/";
-    const resolvedPath = path.resolve(process.cwd(), folder);
+    const resolvedPath = path.resolve(path.join(process.cwd(), folder));
 
     if (!existsSync(resolvedPath)) {
       mkdirSync(resolvedPath, { recursive: true });
       sheu.warn(
-        `Folder '${resolvedPath}' was created to serve static files. If you intend to disable static files set staticFiles.enabled = false. See https://arkosjs.com/docs/static-files`,
+        `Folder '${folder}' was created to serve static files, if you deleted it intending to disable static files, please rather set staticFiles.enabled = false. See https://arkosjs.com/docs/guides/file-handling/static-files`,
         { timestamp: true }
       );
     }

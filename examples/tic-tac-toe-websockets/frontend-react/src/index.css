@@ -1,0 +1,361 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #111;
+  --border: #222;
+  --accent: #e8ff00;
+  --accent2: #ff4d6d;
+  --text: #f0f0f0;
+  --muted: #555;
+  --x-color: #e8ff00;
+  --o-color: #ff4d6d;
+  --cell-size: 110px;
+  --gap: 6px;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Syne", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(232, 255, 0, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 255, 0, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.header {
+  text-align: center;
+}
+.header h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.header h1 .x {
+  color: var(--x-color);
+}
+.header h1 .o {
+  color: var(--o-color);
+}
+.header p {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.screen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.join-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+input[type="text"] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.95rem;
+  padding: 14px 18px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input[type="text"]:focus {
+  border-color: var(--accent);
+}
+input[type="text"]::placeholder {
+  color: var(--muted);
+}
+
+.btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 14px 28px;
+  cursor: pointer;
+  width: 100%;
+  transition:
+    opacity 0.15s,
+    transform 0.1s;
+}
+.btn:hover {
+  opacity: 0.88;
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn.secondary:hover {
+  border-color: var(--muted);
+}
+
+.waiting-indicator {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  animation: blink 1.2s infinite;
+}
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.status-bar {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 18px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  text-align: center;
+  min-height: 44px;
+  transition: all 0.2s;
+}
+.status-bar.your-turn {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.status-bar.opponent-turn {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.scoreboard {
+  width: 100%;
+  display: flex;
+  gap: var(--gap);
+}
+.score-card {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.score-card .name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.score-card .mark {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.score-card.x .mark {
+  color: var(--x-color);
+}
+.score-card.o .mark {
+  color: var(--o-color);
+}
+.score-card.x.active-turn {
+  border-color: var(--x-color);
+}
+.score-card.o.active-turn {
+  border-color: var(--o-color);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, var(--cell-size));
+  grid-template-rows: repeat(3, var(--cell-size));
+  gap: var(--gap);
+}
+
+.cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 2.8rem;
+  font-weight: 800;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
+  user-select: none;
+}
+.cell:hover:not(.taken):not(.disabled) {
+  background: #1a1a1a;
+  border-color: var(--muted);
+}
+.cell.taken {
+  cursor: default;
+}
+.cell.disabled {
+  cursor: not-allowed;
+}
+.cell.x {
+  color: var(--x-color);
+}
+.cell.o {
+  color: var(--o-color);
+}
+.cell.pop {
+  animation: pop 0.2s ease-out;
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.game-over-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.game-over-overlay.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+.game-over-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 40px 48px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+}
+.result-emoji {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+.result-text {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.result-sub {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 28px;
+}
+
+.text-muted {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.connection-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.connection-dot.connected {
+  background: #4caf50;
+}

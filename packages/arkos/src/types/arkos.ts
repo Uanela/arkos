@@ -19,7 +19,8 @@ type ArkosRouterMethods =
   | "all"
   | "use"
   | "trace"
-  | "route";
+  | "route"
+  | "use";
 
 /**
  * Creates and configures an Arkos application instance.

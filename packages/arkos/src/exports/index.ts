@@ -19,6 +19,8 @@ import { ArkosRouteHookInstance } from "../components/arkos-route-hook/types";
 import { ArkosPolicy } from "../components/arkos-policy";
 import { IArkosPolicy } from "../components/arkos-policy/types";
 import type { ArkosLoadable } from "../types/arkos";
+import { ArkosFile } from "../types/upload";
+import { isProduction } from "../utils/helpers/arkos-config.helpers";
 
 export {
   ArkosLoadable,
@@ -40,6 +42,8 @@ export {
   ArkosRouteHookInstance,
   ArkosPolicy,
   IArkosPolicy,
+  ArkosFile,
+  isProduction,
 };
 
 export default arkos;

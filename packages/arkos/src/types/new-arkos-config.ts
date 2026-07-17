@@ -501,7 +501,7 @@ export type ArkosConfig = {
           etag: true,
           lastModified: true,
           dotfiles: "ignore",
-          fallthrough: true,
+          fallthrough: false,
           index: false,
           cacheControl: true,
         }

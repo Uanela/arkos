@@ -98,7 +98,8 @@ describe("File Upload Router", () => {
     expect(mockRouter.get).toHaveBeenCalledWith(
       { path: "/api/uploads/*" },
       expect.any(Function), // adjustRequestUrl
-      "mockedStaticMiddleware"
+      "mockedStaticMiddleware",
+      expect.any(Function) // file not found handler
     );
     expect(mockRouter.post).toHaveBeenCalledWith(
       { path: "/api/uploads/:fileType" },
@@ -368,7 +369,7 @@ describe("File Upload Router", () => {
         etag: true,
         lastModified: true,
         dotfiles: "ignore",
-        fallthrough: true,
+        fallthrough: false,
         index: false,
         cacheControl: true,
       },

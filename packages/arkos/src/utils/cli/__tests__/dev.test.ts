@@ -128,13 +128,12 @@ describe("Dev Command", () => {
         "npx",
         ["tsx-strict", "--watch", expect.stringContaining("app.ts")],
         expect.objectContaining({
-          stdio: "inherit",
+          stdio: ["inherit", "inherit", "inherit", "ipc"],
           env: expect.objectContaining({
             NODE_ENV: "development",
             CLI_PORT: "3000",
             CLI_HOST: "localhost",
           }),
-          shell: true,
         })
       );
     });
@@ -152,14 +151,13 @@ describe("Dev Command", () => {
           expect.stringContaining("app.js"),
         ],
         expect.objectContaining({
-          stdio: "inherit",
+          stdio: ["inherit", "inherit", "inherit", "ipc"],
           env: expect.objectContaining({
             NODE_ENV: "development",
             CLI_PORT: "3000",
             __PORT: "3000",
             __HOST: "0.0.0.0",
           }),
-          shell: true,
         })
       );
     });
@@ -545,11 +543,9 @@ describe("Dev Command", () => {
           return process.stdin;
         });
 
-        const mockConsoleLog = jest.spyOn(console, "log").mockImplementation();
-
         await devCommand();
 
-        expect(mockConsoleLog).toHaveBeenCalledWith("");
+        expect(mockConsoleInfo).toHaveBeenCalledWith("");
       });
 
       it("should handle stdin data event correctly", async () => {

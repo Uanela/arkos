@@ -1,17 +1,13 @@
 model AuthPermission {
   id        String   {{{prisma.idDatabaseType}}}
   resource  String
-  {{#if (eq prisma.provider "sqlite")}}
   action    String   @default("View") 
-  {{else}}
-  action    String @default("View") 
-  {{/if}}
-  roleId    String    {{#if (eq prisma.provider "mongodb")}}@db.ObjectId{{/if}}
-  role      AuthRole  @relation(fields: [roleId], references: [id])
+  roles     AuthRole[] 
+  users     UserPermission[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  @@unique([resource, action, roleId])
+  @@unique([resource, action])
 }
 
 

@@ -53,12 +53,9 @@ class ArkosRouterOpenAPIManager {
       uploadSchema.properties[schemaKey] = {
         type: "string",
         format: "binary",
-        ...(uploadConfig.maxSize && {
-          description: `Max size: ${uploadConfig.maxSize} bytes`,
-        }),
-        ...(uploadConfig.description && {
-          description: uploadConfig.description,
-        }),
+        description:
+          uploadConfig.description ||
+          `Single file field${uploadConfig.maxSize ? `, max size: ${uploadConfig.maxSize} bytes` : ""}`,
       };
       if (uploadConfig.required !== false) {
         uploadSchema.required.push(schemaKey);
@@ -73,12 +70,9 @@ class ArkosRouterOpenAPIManager {
         },
         ...(uploadConfig.maxCount && { maxItems: uploadConfig.maxCount }),
         ...(uploadConfig.minCount && { minItems: uploadConfig.minCount }),
-        ...(uploadConfig.maxSize && {
-          description: `Max size per file: ${uploadConfig.maxSize} bytes`,
-        }),
-        ...(uploadConfig.description && {
-          description: uploadConfig.description,
-        }),
+        description:
+          uploadConfig.description ||
+          `Array file field${uploadConfig.maxSize ? `, max size per file: ${uploadConfig.maxSize} bytes` : ""}`,
       };
       if (uploadConfig.required !== false) {
         uploadSchema.required.push(schemaKey);
@@ -114,19 +108,15 @@ class ArkosRouterOpenAPIManager {
     field: UploadConfigFieldEntry,
     config: ArkosRouterBaseUploadConfig
   ): object {
+    const maxSize = field.maxSize ?? config.maxSize;
+
     if (field.type === "single") {
       return {
         type: "string",
         format: "binary",
-        ...(field.maxSize &&
-          !config.maxSize && {
-            description: `Max size: ${field.maxSize} bytes`,
-          }),
-        ...(config.maxSize &&
-          !field.maxSize && {
-            description: `Max size: ${config.maxSize} bytes`,
-          }),
-        ...(field.description && { description: field.description }),
+        description:
+          field.description ||
+          `Single file field${maxSize ? `, max size: ${maxSize} bytes` : ""}`,
       };
     }
 
@@ -140,18 +130,9 @@ class ArkosRouterOpenAPIManager {
       ...(field.maxCount && { maxItems: field.maxCount }),
       ...(field.type === "array" &&
         field.minCount && { minItems: field.minCount }),
-      ...((field.maxSize &&
-        !config.maxSize && {
-          description: `Max size per file: ${field.maxSize} bytes`,
-        }) ||
-        (config.maxSize &&
-          !field.maxSize && {
-            description: `Max size per file: ${config.maxSize} bytes`,
-          })),
-      ...(field.type === "array" &&
-        field.description && {
-          description: field.description,
-        }),
+      description:
+        (field.type === "array" && field.description) ||
+        `Array file field${maxSize ? `, max size per file: ${maxSize} bytes` : ""}`,
     };
   }
 

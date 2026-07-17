@@ -982,7 +982,7 @@ packages:
     hasBin: true
     peerDependencies:
       '@prisma/client': 6.19.2
-      '@scalar/api-reference': 1.50.0
+      '@scalar/api-reference': 1.55.3
       '@scalar/express-api-reference': 0.8.35
       bcryptjs: 3.0.2
       class-transformer: 0.5.1
@@ -998,7 +998,7 @@ packages:
       html-to-text: 9.0.5
       jsonwebtoken: 9.0.3
       mimetype: 0.0.8
-      multer: 2.0.2
+      multer: 2.1.1
       nodemailer: 8.0.7
       sharp: 0.34.5
       swagger-jsdoc: 6.2.8

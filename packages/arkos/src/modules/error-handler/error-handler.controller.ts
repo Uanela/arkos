@@ -1,9 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import AppError from "./utils/app-error";
-import * as errorControllerHelper from "./utils/error-handler.helpers";
 import { getAppServer } from "../../app";
-import multerErrorHandler from "./utils/multer-error-handler";
-import { MulterError } from "multer";
+import { getHandledError } from "./utils/get-handled-error";
 
 /**
  * Error handling middleware for Express.
@@ -28,8 +26,8 @@ export default function errorHandler(
 ): void {
   console.error("[\x1b[31mError\x1b[0m]:", err);
 
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || "error";
+  err.statusCode = err.isOperational ? err.statusCode : 500;
+  err.status = err.isOperational ? err.status : "error";
 
   let error: any = {
     ...err,
@@ -39,68 +37,7 @@ export default function errorHandler(
 
   if (process.env.ARKOS_BUILD === "true") delete error?.stack;
 
-  switch (err.name) {
-    case "JsonWebTokenError":
-      error = errorControllerHelper.handleJWTError();
-      break;
-    case "TokenExpiredError":
-      error = errorControllerHelper.handleJWTExpired();
-      break;
-    case "PrismaClientValidationError":
-      error = errorControllerHelper.handlePrismaClientValidationError(err);
-      break;
-    case "PrismaClientInitializationError":
-      error = errorControllerHelper.handlePrismaClientInitializationError(err);
-      break;
-    case "MulterError":
-      error = multerErrorHandler.handle(err as unknown as MulterError);
-      break;
-  }
-
-  switch (err.code) {
-    case "P1000":
-      error = errorControllerHelper.handleAuthenticationError(err);
-      break;
-    case "P1001":
-      error = errorControllerHelper.handleServerNotReachableError(err);
-      break;
-    case "P1002":
-      error = errorControllerHelper.handleConnectionTimeoutError(err);
-      break;
-    case "P1003":
-      error = errorControllerHelper.handleDatabaseNotFoundError(err);
-      break;
-    case "P2000":
-      error = errorControllerHelper.handleFieldValueTooLargeError(err);
-      break;
-    case "P2001":
-      error = errorControllerHelper.handleRecordNotFoundError(err);
-      break;
-    case "P2002":
-      error = errorControllerHelper.handleUniqueConstraintError(err);
-      break;
-    case "P2003":
-      error = errorControllerHelper.handleForeignKeyConstraintError(err);
-      break;
-    case "P2004":
-      error = errorControllerHelper.handleConstraintFailedError(err);
-      break;
-    case "P2025":
-      error = errorControllerHelper.handleNonExistingRecord(err);
-      break;
-    case "P3000":
-      error = errorControllerHelper.handleSchemaCreationFailedError(err);
-      break;
-    case "P3001":
-      error = errorControllerHelper.handleMigrationAlreadyAppliedError(err);
-      break;
-    case "P3002":
-      error = errorControllerHelper.handleMigrationScriptFailedError(err);
-      break;
-    case "P3003":
-      error = errorControllerHelper.handleVersionMismatchError(err);
-      break;
-  }
+  error = getHandledError(error);
 
   const { message, ...rest } = error;
   if (process.env.ARKOS_BUILD !== "true")
@@ -177,7 +114,10 @@ function sendProductionError(err: AppError, _: Request, res: Response): void {
  * @returns {void}
  */
 process.on("SIGTERM", () => {
-  if (process.env.ARKOS_BUILD !== "true") {
+  if (
+    process.env.ARKOS_BUILD !== "true" ||
+    process.env.__SKIP_LISTEN === "true"
+  ) {
     process.exit();
   } else {
     console.error("SIGTERM RECEIVED in Production. Shutting down gracefully!");

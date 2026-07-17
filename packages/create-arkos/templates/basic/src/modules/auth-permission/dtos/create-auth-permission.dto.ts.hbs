@@ -1,24 +1,6 @@
-{{#if (eq validation.type "zod")}}
-import { z } from 'zod';
-
-const CreateAuthPermissionDto = z.object({
-  resource: z.string().min(1, 'Resource is required'),
-  action: z.string().default('View'),
-  role: z.object({
-    id: z.string().min(1, 'Role ID is required'),
-  }),
-  description: z.string().optional(),
-});
-
-export default CreateAuthPermissionDto;
-{{#if typescript}}
-export type CreateAuthPermissionDtoType = z.infer<typeof CreateAuthPermissionDto>;
-{{/if}}
-{{/if}}
-{{#if (eq validation.type "class-validator")}}
-import { IsString, IsNotEmpty, IsOptional, IsValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested, IsArray } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import 'reflect-metadata';
+import 'reflect-metadata'
 
 class RoleConnectDto {
   @IsString()
@@ -32,16 +14,17 @@ export default class CreateAuthPermissionDto {
   resource!: string;
 
   @IsString()
-  @Transform(({ value }) => value || 'View')
-  action?: string = 'View';
+  @Transform(({ value }) => String(value))
+  action!: string;
 
-  @ValidateNested()
+  @ValidateNested({ each: true })
+  @IsArray()
   @Type(() => RoleConnectDto)
-  role!: RoleConnectDto;
+  @IsOptional()
+  roles?: RoleConnectDto[];
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value)
+  @Transform(({ value }) => String(value))
   description?: string;
 }
-{{/if}}

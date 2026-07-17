@@ -10,6 +10,8 @@ import { getArkosConfig } from "../helpers/arkos-config.helpers";
 interface StartOptions {
   port?: string;
   host?: string;
+  stamp?: false;
+  shouldThrow?: true;
 }
 
 let child: ChildProcess | null = null;
@@ -55,26 +57,21 @@ export async function startCommand(options: StartOptions = {}) {
 
     env.__HOST =
       env?.CLI_HOST ||
-      // config?.host ||
       env?.HOST ||
       (env.ARKOS_BUILD !== "true" ? "0.0.0.0" : "127.0.0.1");
 
-    env.__PORT =
-      env?.CLI_PORT ||
-      // || config?.port
-      env?.PORT ||
-      "8000";
+    env.__PORT = env?.CLI_PORT || env?.PORT || "8000";
 
-    watermarkStamper.stamp({
-      envFiles,
-      port: env.__PORT,
-      host: env.__HOST,
-    });
+    if (options.stamp !== false)
+      watermarkStamper.stamp({
+        envFiles,
+        port: env.__PORT,
+        host: env.__HOST,
+      });
 
     child = spawn("node", [entryPoint], {
-      stdio: "inherit",
+      stdio: ["inherit", "inherit", "inherit", "ipc"],
       env,
-      shell: true,
     });
 
     process.on("SIGINT", () => {
@@ -82,7 +79,17 @@ export async function startCommand(options: StartOptions = {}) {
 
       process.exit(0);
     });
+
+    await new Promise((resolve) => {
+      child?.on?.("message", (m: { started: boolean }) => {
+        if (m.started === true) {
+          if (process.env.__SKIP_LISTEN === "true") resolve(child?.kill?.());
+          else resolve(null);
+        }
+      });
+    });
   } catch (error) {
+    if (options.shouldThrow) throw error;
     sheu.error("Production server failed to start:");
     console.error(error);
     process.exit(1);

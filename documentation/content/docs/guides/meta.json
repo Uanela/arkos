@@ -9,6 +9,7 @@
     "security",
     "open-api-documentation",
     "email-service",
+    "websockets",
     "migrations"
   ]
 }
