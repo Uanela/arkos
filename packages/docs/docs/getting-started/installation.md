@@ -218,7 +218,7 @@ In the snippet above, we configured `CORS` so that we can run our application fr
 
 ### 7. Export Your Prisma Client
 
-Arkos.js requires your Prisma client to be exported as default under `src/utils/prisma/index.js` (or `src/utils/prisma/index.ts` for TypeScript) so that it can dynamically import it later to manage your application's auto-generated endpoints and enhance Prisma power through the [**BaseService Class**](/docs/api-reference/the-base-service-class).
+Arkos.js requires your Prisma client to be exported as default under `src/utils/prisma/index.js` (or `src/utils/prisma/index.ts` for TypeScript) so that it can dynamically import it later to manage your application's auto-generated endpoints and enhance Prisma power through the [**ArkosPrismaService Class**](/docs/api-reference/the-base-service-class).
 
 ```javascript
 import { PrismaClient } from "@prisma/client"

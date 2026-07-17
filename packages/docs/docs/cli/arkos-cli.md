@@ -238,9 +238,9 @@ Not all components are available for `auth` and `file-upload` modules. The CLI w
 **Generated Template:**
 
 ```typescript
-import { BaseService } from "arkos/services";
+import { ArkosPrismaService } from "arkos/services";
 
-class UserService extends BaseService<"user"> {
+class UserService extends ArkosPrismaService<"user"> {
   // Add your custom service methods here
 }
 
@@ -250,7 +250,7 @@ export default userService;
 ```
 
 **Features:**
-- Extends `BaseService` with Prisma type safety
+- Extends `ArkosPrismaService` with Prisma type safety
 - Automatic Prisma client integration
 - Ready for custom business logic
 
@@ -471,7 +471,7 @@ arkos generate hooks --module user
 arkos g h -m user
 ```
 
-Generates service hook files for customizing BaseService behavior at the service layer.
+Generates service hook files for customizing ArkosPrismaService behavior at the service layer.
 
 **File Location:** `src/modules/user/user.hooks.ts`
 
@@ -563,7 +563,7 @@ arkos g co -m post -n service,c,router,sc,dto
 
 | Full Name | Alias | What It Generates |
 |-----------|-------|-------------------|
-| `service` | `s` | BaseService extension |
+| `service` | `s` | ArkosPrismaService extension |
 | `controller` | `c` | BaseController extension |
 | `router` | `r` | ArkosRouter configuration |
 | `interceptors` | `i` | Interceptor middlewares |
@@ -659,7 +659,7 @@ arkos p g
 **What It Does:**
 - Runs `prisma generate` to create Prisma client
 - Syncs Arkos's internal type system with your Prisma schema
-- Ensures type safety across BaseService and other Arkos features
+- Ensures type safety across ArkosPrismaService and other Arkos features
 
 **When to Use:**
 - After modifying your Prisma schema

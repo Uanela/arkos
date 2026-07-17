@@ -59,7 +59,7 @@ Think of Arkos as a collection of smart light switches - each endpoint can be co
 
 **Seamless Validation**: Whether you prefer Zod or class-validator, validation works automatically based on your Prisma model definitions. Type safety is preserved throughout the entire stack.
 
-**Smart Relationship Handling**: The [**BaseService class**](/docs/api-reference/the-base-service-class) manages complex relationship operations automatically and Arkos.js handles query parameters gracefully for nested data access.
+**Smart Relationship Handling**: The [**ArkosPrismaService class**](/docs/api-reference/the-base-service-class) manages complex relationship operations automatically and Arkos.js handles query parameters gracefully for nested data access.
 
 **Clean Error Responses**: Consistent, informative error messages across your API with proper HTTP status codes and detailed error information for debugging.
 

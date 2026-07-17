@@ -470,7 +470,7 @@ describe("Dev Command", () => {
         expect(mockConsoleError).toHaveBeenCalledWith(
           expect.objectContaining({
             message: expect.stringContaining(
-              'Missing BaseService types please run "npx arkos prisma generate"'
+              'Missing ArkosPrismaService types please run "npx arkos prisma generate"'
             ),
           })
         );

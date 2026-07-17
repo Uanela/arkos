@@ -1,4 +1,5 @@
 import { ArkosRouteConfig } from "../../exports";
+import { ArkosPrismaService } from "../../exports/services";
 import { PrismaModels } from "../../generated";
 import { ArkosRequestHandler } from "../../types";
 
@@ -38,6 +39,10 @@ export type ArkosRouteHookMethodConfig<
      * Typed against the model's actual Prisma args for this operation.
      */
     prismaArgs?: PrismaQueryFor<TModel, TOp>;
+    /**
+     * ArkosPrismaService instace for such model
+     */
+    service?: ArkosPrismaService<TModel>
   };
 
 /**

@@ -5,7 +5,7 @@ import {
 import { EmailOptions } from "../../modules/email/email.service";
 import authService, { AuthService } from "../../modules/auth/auth.service";
 import emailService, { EmailService } from "../../modules/email/email.service";
-import { BaseService } from "../../modules/base/base.service";
+import { ArkosPrismaService } from "../../modules/base/base.service";
 import authActionService from "../../modules/auth/utils/services/auth-action.service";
 import {
   ServiceHookContext,
@@ -48,7 +48,7 @@ export { authService, AuthService, authActionService };
  * Base service.
  */
 export {
-  BaseService,
+  ArkosPrismaService,
   ServiceHookContext,
   BeforeCreateOneHookArgs,
   AfterCreateOneHookArgs,

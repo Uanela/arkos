@@ -326,9 +326,9 @@ While Arkos automatically handles relation fields in auto-generated endpoints, y
 ```typescript
 import { ArkosPrismaInput } from "arkos/prisma";
 import { Prisma } from "@prisma/client";
-import { BaseService } from "arkos/services";
+import { ArkosPrismaService } from "arkos/services";
 
-const productService = new BaseService("product");
+const productService = new ArkosPrismaService("product");
 
 // Define type-safe input
 type CreateProductInput = ArkosPrismaInput<Prisma.ProductCreateInput>;
@@ -444,20 +444,20 @@ The following code snippet is just a mere example of something done by **Arkos**
 :::
 
 ```ts
-import { BaseService } from "arkos/services";
+import { ArkosPrismaService } from "arkos/services";
 import { BaseController } from "arkos";
 
 export class ProductController extends BaseController {
-  private productService: BaseService;
+  private productService: ArkosPrismaService;
 
   constructor() {
-    this.service = new BaseService("product"); // Automatically handles relations for Product model
+    this.service = new ArkosPrismaService("product"); // Automatically handles relations for Product model
   }
 
   // Create a product with relations
   async createProduct(req, res) {
     try {
-      // BaseService.createOne already uses handleRelationFieldsInBody internally
+      // ArkosPrismaService.createOne already uses handleRelationFieldsInBody internally
       const product = await this.service.createOne(req.body);
       res.status(201).json({ data: product });
     } catch (error) {
@@ -468,7 +468,7 @@ export class ProductController extends BaseController {
   // Update a product with relations
   async updateProduct(req, res) {
     try {
-      // BaseService.updateOne also uses handleRelationFieldsInBody internally
+      // ArkosPrismaService.updateOne also uses handleRelationFieldsInBody internally
       const product = await this.service.updateOne(
         { id: parseInt(req.params.id) },
         req.body

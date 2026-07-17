@@ -1,4 +1,4 @@
-import { BaseService } from "../base.service";
+import { ArkosPrismaService } from "../base.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import authService from "../../auth/auth.service";
 import * as baseServiceHelpers from "../utils/helpers/base.service.helpers";
@@ -56,9 +56,9 @@ const handleRelationFieldsInBody = jest.spyOn(
   "handleRelationFieldsInBody"
 );
 
-describe("BaseService", () => {
-  let baseService: BaseService<any>;
-  let userService: BaseService<any>;
+describe("ArkosPrismaService", () => {
+  let baseService: ArkosPrismaService<any>;
+  let userService: ArkosPrismaService<any>;
   let mockPrisma: any;
 
   beforeEach(() => {
@@ -109,8 +109,8 @@ describe("BaseService", () => {
     mockPrisma.$transaction.mockImplementation((fn: any) => fn(mockPrisma));
     (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
 
-    baseService = new BaseService("Post");
-    userService = new BaseService("User");
+    baseService = new ArkosPrismaService("Post");
+    userService = new ArkosPrismaService("User");
   });
 
   // ─── Helper to set up hooks via reader ──────────────────────────────────────
@@ -168,7 +168,7 @@ describe("BaseService", () => {
 
     it("should handle models with no relations", () => {
       jest.spyOn(prismaSchemaParser, "getModelRelations").mockReturnValue([]);
-      const simpleService = new BaseService("SimpleModel");
+      const simpleService = new ArkosPrismaService("SimpleModel");
       expect(simpleService.relationFields).toEqual({ singular: [], list: [] });
     });
 
@@ -179,7 +179,7 @@ describe("BaseService", () => {
         { name: "arrayRel", isRelation: true, isArray: true },
         { name: "field2", isRelation: false, isArray: true },
       ] as PrismaField[]);
-      const testService = new BaseService("TestModel");
+      const testService = new ArkosPrismaService("TestModel");
       expect(testService.relationFields.singular).toHaveLength(1);
       expect(testService.relationFields.list).toHaveLength(1);
     });
@@ -1145,7 +1145,7 @@ describe("BaseService", () => {
     });
 
     it("should hash passwords for user model batch update", async () => {
-      userService = new BaseService("User");
+      userService = new ArkosPrismaService("User");
       const dataArray = [
         { id: "1", name: "User 1", password: "pass1" },
         { id: "2", name: "User 2", password: "pass2" },
@@ -1446,14 +1446,14 @@ describe("BaseService", () => {
 
   // ─── processPasswordHashing ─────────────────────────────────────────────────
 
-  describe("BaseService - processPasswordHashing method", () => {
-    let localUserService: BaseService<any>;
+  describe("ArkosPrismaService - processPasswordHashing method", () => {
+    let localUserService: ArkosPrismaService<any>;
 
     beforeEach(() => {
       jest.clearAllMocks();
       mockGetItem.mockReturnValue(null);
       mockGetHooks.mockReturnValue(null);
-      localUserService = new BaseService("User");
+      localUserService = new ArkosPrismaService("User");
     });
 
     it("should hash plain password for single object", async () => {

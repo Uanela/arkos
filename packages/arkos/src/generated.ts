@@ -27,7 +27,7 @@
  *
  * @example
  * ```ts
- * class BaseService<TModelName extends keyof PrismaModels<any>> {}
+ * class ArkosPrismaService<TModelName extends keyof PrismaModels<any>> {}
  * ```
  */
 
@@ -110,7 +110,7 @@ export type ExtractPrismaQueryOptions<T, K extends keyof T = never> = Omit<
  *
  * @example
  * ```ts
- * class BaseService<TModelName extends keyof PrismaModels<any>> {}
+ * class ArkosPrismaService<TModelName extends keyof PrismaModels<any>> {}
  * ```
  */
 export type PrismaModels<T extends Record<string, any>> = Record<

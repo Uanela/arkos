@@ -59,9 +59,9 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('import { BaseService } from "arkos/services"');
+      expect(result).toContain('import { ArkosPrismaService } from "arkos/services"');
       expect(result).toContain(
-        'class PostService extends BaseService<"post"> {}'
+        'class PostService extends ArkosPrismaService<"post"> {}'
       );
       expect(result).toContain('const postService = new PostService("post");');
       expect(result).toContain("export default postService;");
@@ -76,10 +76,10 @@ describe("generateServiceTemplate", () => {
       const result = generateServiceTemplate(options);
 
       expect(result).toContain(
-        'import { BaseService } from "../../core/services"'
+        'import { ArkosPrismaService } from "../../core/services"'
       );
       expect(result).toContain(
-        'class UserService extends BaseService<"user"> {}'
+        'class UserService extends ArkosPrismaService<"user"> {}'
       );
       expect(result).toContain('const userService = new UserService("user");');
     });
@@ -96,7 +96,7 @@ describe("generateServiceTemplate", () => {
       const result = generateServiceTemplate(options);
 
       expect(result).toContain(
-        'class BlogPostService extends BaseService<"blog-post"> {}'
+        'class BlogPostService extends ArkosPrismaService<"blog-post"> {}'
       );
       expect(result).toContain(
         'const blogPostService = new BlogPostService("blog-post");'
@@ -117,8 +117,8 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('import { BaseService } from "arkos/services"');
-      expect(result).toContain("class PostService extends BaseService {}");
+      expect(result).toContain('import { ArkosPrismaService } from "arkos/services"');
+      expect(result).toContain("class PostService extends ArkosPrismaService {}");
       expect(result).not.toContain('<"post">');
       expect(result).toContain('const postService = new PostService("post");');
       expect(result).toContain("export default postService;");
@@ -132,8 +132,8 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('import { BaseService } from "@lib/services"');
-      expect(result).toContain("class CategoryService extends BaseService {}");
+      expect(result).toContain('import { ArkosPrismaService } from "@lib/services"');
+      expect(result).toContain("class CategoryService extends ArkosPrismaService {}");
       expect(result).not.toContain("<");
     });
   });
@@ -393,7 +393,7 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('class AService extends BaseService<"a"> {}');
+      expect(result).toContain('class AService extends ArkosPrismaService<"a"> {}');
       expect(result).toContain('const aService = new AService("a");');
     });
 
@@ -409,7 +409,7 @@ describe("generateServiceTemplate", () => {
       const result = generateServiceTemplate(options);
 
       expect(result).toContain(
-        'class VeryLongModelNameWithManyWordsService extends BaseService<"very-long-model-name-with-many-words"> {}'
+        'class VeryLongModelNameWithManyWordsService extends ArkosPrismaService<"very-long-model-name-with-many-words"> {}'
       );
       expect(result).toContain(
         'const veryLongModelNameWithManyWordsService = new VeryLongModelNameWithManyWordsService("very-long-model-name-with-many-words");'
@@ -428,7 +428,7 @@ describe("generateServiceTemplate", () => {
       const result = generateServiceTemplate(options);
 
       expect(result).toContain(
-        'class Post2023Service extends BaseService<"post-2023"> {}'
+        'class Post2023Service extends ArkosPrismaService<"post-2023"> {}'
       );
       expect(result).toContain(
         'const post2023Service = new Post2023Service("post-2023");'
@@ -454,7 +454,7 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('import { BaseService } from "@custom/base"');
+      expect(result).toContain('import { ArkosPrismaService } from "@custom/base"');
       expect(result).not.toContain("@custom/auth");
       expect(result).not.toContain("@custom/email");
       expect(result).not.toContain("@custom/fileupload");
@@ -468,7 +468,7 @@ describe("generateServiceTemplate", () => {
 
       const result = generateServiceTemplate(options);
 
-      expect(result).toContain('import { BaseService } from "arkos/services"');
+      expect(result).toContain('import { ArkosPrismaService } from "arkos/services"');
     });
   });
 
@@ -522,7 +522,7 @@ describe("generateServiceTemplate", () => {
       expect(result).not.toContain("<");
     });
 
-    it("should use BaseService for all other prisma models", () => {
+    it("should use ArkosPrismaService for all other prisma models", () => {
       const testCases = [
         { pascal: "User", camel: "user", kebab: "user" },
         { pascal: "Post", camel: "post", kebab: "post" },
@@ -535,7 +535,7 @@ describe("generateServiceTemplate", () => {
           modelName: { pascal, camel, kebab },
         });
 
-        expect(result).toContain("BaseService");
+        expect(result).toContain("ArkosPrismaService");
         expect(result).toContain(`new ${pascal}Service("${kebab}")`);
         expect(result).toContain(`<"${kebab}">`);
       });
@@ -550,7 +550,7 @@ describe("generateServiceTemplate", () => {
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
-      expect(result).toContain('extends BaseService<"post">');
+      expect(result).toContain('extends ArkosPrismaService<"post">');
     });
 
     it("should not include type parameter for base service in JavaScript", () => {
@@ -560,7 +560,7 @@ describe("generateServiceTemplate", () => {
         modelName: { pascal: "Post", camel: "post", kebab: "post" },
       });
 
-      expect(result).toContain("extends BaseService {}");
+      expect(result).toContain("extends ArkosPrismaService {}");
       expect(result).not.toContain("<");
     });
 

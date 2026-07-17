@@ -324,7 +324,7 @@ const userData: ArkosPrismaInput<Prisma.UserCreateInput> = {
   ]
 };
 
-// BaseService automatically handles the conversion
+// ArkosPrismaService automatically handles the conversion
 await userService.createOne(userData);
 ```
 
@@ -450,9 +450,9 @@ const processRelation = (rel: any) => {
 
 ## Limitations
 
-1. **No Runtime Transformation**: This is a type-only utility. The actual runtime transformation is handled by Arkos's relation handling system when using [BaseService](/docs/api-reference/base-service) methods.
+1. **No Runtime Transformation**: This is a type-only utility. The actual runtime transformation is handled by Arkos's relation handling system when using [ArkosPrismaService](/docs/api-reference/base-service) methods.
 
-2. **Requires Arkos Services**: For the flattened format to work, you must use Arkos's BaseService or custom services that extend it. Direct Prisma Client calls require traditional Prisma format.
+2. **Requires Arkos Services**: For the flattened format to work, you must use Arkos's ArkosPrismaService or custom services that extend it. Direct Prisma Client calls require traditional Prisma format.
 
 3. **Ambiguous Cases**: When an object could be either `connect` or `update`, explicitly use `apiAction` to disambiguate.
 
@@ -468,5 +468,5 @@ const processRelation = (rel: any) => {
 
 - **[Handling Prisma Relation Fields](/docs/advanced-guide/handling-prisma-relations)** - How Arkos handles relations at runtime
 - **[Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares)** - Using with request interceptors
-- **[BaseService Class](/docs/api-reference/base-service)** - Service layer integration
+- **[ArkosPrismaService Class](/docs/api-reference/base-service)** - Service layer integration
 - **[Request Data Validation](/docs/core-concepts/request-data-validation)** - Combining with validation schemas

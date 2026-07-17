@@ -22,7 +22,7 @@ Although both succeeded very well on their own focused niches Nest with strong O
 
 On the past [**Uanela Como**](https://github.com/uanela) _(The creator)_ initially favored Mongoose ORM and became skeptical when first encountering Prisma's different approach. However, deeper exploration revealed Prisma's key strengths: superior separation of concerns, type safety, and intuitive querying that focuses on what an ORM should excel at.
 
-Rather than building a custom ORM, Arkos.js strategically integrates with Prisma - one of the most modern and widely adopted ORMs in JavaScript. Combined with Arkos.js's BaseService Class, this creates what Uanela describes as "an unmatched Prisma integration" that enhances established tools while adding enterprise-level patterns for RESTful API development.
+Rather than building a custom ORM, Arkos.js strategically integrates with Prisma - one of the most modern and widely adopted ORMs in JavaScript. Combined with Arkos.js's ArkosPrismaService Class, this creates what Uanela describes as "an unmatched Prisma integration" that enhances established tools while adding enterprise-level patterns for RESTful API development.
 
 ## Key Features Overview
 

@@ -260,7 +260,7 @@ generate
 program
   .command("prisma")
   .command("generate")
-  .description("Generate your @prisma/client and BaseService class types")
+  .description("Generate your @prisma/client and ArkosPrismaService class types")
   .action(prismaGenerateCommand);
 
 program

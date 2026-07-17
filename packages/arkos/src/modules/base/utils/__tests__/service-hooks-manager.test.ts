@@ -458,7 +458,7 @@ describe("ServiceHooksManager", () => {
   });
 
   describe("integration scenarios", () => {
-    it("should handle real-world BaseService hook scenario - beforeCreateOne", async () => {
+    it("should handle real-world ArkosPrismaService hook scenario - beforeCreateOne", async () => {
       const beforeCreateOneHook = jest.fn(
         async ({ data, context }: Record<string, any>) => {
           // Simulate adding user ID from context
@@ -487,7 +487,7 @@ describe("ServiceHooksManager", () => {
       expect(hooksArgs.data.createdBy).toBe(123);
     });
 
-    it("should handle real-world BaseService hook scenario - afterFindMany with access control", async () => {
+    it("should handle real-world ArkosPrismaService hook scenario - afterFindMany with access control", async () => {
       const afterFindManyHook1 = jest.fn(
         async ({ result, context }: Record<string, any>) => {
           // Simulate data filtering based on user role

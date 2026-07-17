@@ -13,7 +13,7 @@ type Models = PrismaModels<any>;
  *
  * The returned instance exposes a method per service operation.
  * Each method accepts typed `before`, `after`, and `onError` handler arrays
- * that run around the corresponding `BaseService` method call.
+ * that run around the corresponding `ArkosPrismaService` method call.
  *
  * Unlike `ArkosRouteHook`, handlers here are **not** Express middlewares —
  * they receive a typed args object specific to each operation.

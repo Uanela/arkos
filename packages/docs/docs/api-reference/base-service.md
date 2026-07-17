@@ -5,7 +5,7 @@ title: Base Service
 
 # Base Service Guide
 
-The `BaseService` class is a fundamental component that provides standardized CRUD (Create, Read, Update, Delete) operations for all models in your application. It serves as the foundation for **Arkos**'s Prisma integration and can be extended for model-specific implementations.
+The `ArkosPrismaService` class is a fundamental component that provides standardized CRUD (Create, Read, Update, Delete) operations for all models in your application. It serves as the foundation for **Arkos**'s Prisma integration and can be extended for model-specific implementations.
 
 ## Key Features
 
@@ -26,7 +26,7 @@ import TabItem from '@theme/TabItem';
 
 ### Enhanced Type Safety
 
-Starting with v1.4.0, Arkos provides **automatic type inference** for all BaseService methods when you run the type generation command:
+Starting with v1.4.0, Arkos provides **automatic type inference** for all ArkosPrismaService methods when you run the type generation command:
 
 ```bash
 npx arkos prisma generate
@@ -39,16 +39,16 @@ This command does two things:
 
 **What gets generated:**
 
-The command creates type definitions in `node_modules/arkos/types/modules/base/base.service.d.ts` that map your Prisma models to fully typed BaseService methods.
+The command creates type definitions in `node_modules/arkos/types/modules/base/base.service.d.ts` that map your Prisma models to fully typed ArkosPrismaService methods.
 
 ### Creating Type-Safe Services
 
 ```typescript
 // src/modules/user/user.service.ts
-import { BaseService } from "arkos/services";
+import { ArkosPrismaService } from "arkos/services";
 
 // ✅ Full type inference after running `npx arkos prisma generate`
-class UserService extends BaseService<"user"> {
+class UserService extends ArkosPrismaService<"user"> {
   // TypeScript knows all available fields and relations
   async findActiveUsers() {
     // Full autocomplete for query options
@@ -89,10 +89,10 @@ In v1.3.0, you need to manually specify the Prisma delegate type and even with t
 
 ```typescript
 // src/modules/user/user.service.ts
-import { BaseService } from "arkos/service";
+import { ArkosPrismaService } from "arkos/service";
 import { Prisma } from "@prisma/client";
 
-class UserService extends BaseService<Prisma.UserDelegate> {
+class UserService extends ArkosPrismaService<Prisma.UserDelegate> {
   async findActiveUsers() {
     return this.findMany(
       { status: "ACTIVE" },
@@ -124,7 +124,7 @@ We highly recommend upgrading to v1.4.0-beta for enhanced TypeScript support. Th
 constructor(modelName: string)
 ```
 
-Creates a new BaseService instance for the specified model.
+Creates a new ArkosPrismaService instance for the specified model.
 
 **Parameters:**
 
@@ -133,9 +133,9 @@ Creates a new BaseService instance for the specified model.
 **Example:**
 
 ```typescript
-import { BaseService } from "arkos/services";
+import { ArkosPrismaService } from "arkos/services";
 
-const userProfileService = new BaseService("user-profile");
+const userProfileService = new ArkosPrismaService("user-profile");
 ```
 
 ## Properties
@@ -788,7 +788,7 @@ if (!result) {
 }
 ```
 
-## Extending BaseService
+## Extending ArkosPrismaService
 
 ### File Structure
 
@@ -821,12 +821,12 @@ npx arkos g s -m post
 
 ```typescript
 // src/modules/user/user.service.ts
-import { BaseService } from "arkos/services";
+import { ArkosPrismaService } from "arkos/services";
 import { AppError } from "arkos/error-handler";
 import authService from "../auth/auth.service";
 import emailService from "../email/email.service";
 
-class UserService extends BaseService<"user"> {
+class UserService extends ArkosPrismaService<"user"> {
   // Custom method: Find by email
   async findByEmail(email: string) {
     return this.findOne(
@@ -865,7 +865,7 @@ class UserService extends BaseService<"user"> {
       throw new AppError("Invalid old password", 400);
     }
 
-    // Update password (automatically hashed by BaseService)
+    // Update password (automatically hashed by ArkosPrismaService)
     return this.updateOne({ id: userId }, { password: newPassword });
   }
 
@@ -940,7 +940,7 @@ export const afterCreateOne = [
 ### 1. Keep Constructor Simple
 
 ```typescript
-class ProductService extends BaseService<"product"> {
+class ProductService extends ArkosPrismaService<"product"> {
   constructor() {
     super("product");
     // Avoid complex initialization here
@@ -951,7 +951,7 @@ class ProductService extends BaseService<"product"> {
 ### 2. Reuse Parent Methods
 
 ```typescript
-class PostService extends BaseService<"post"> {
+class PostService extends ArkosPrismaService<"post"> {
   async createDraft(data: any) {
     // Call parent with additional data
     return this.createOne({
@@ -979,7 +979,7 @@ export const beforeCreateOne = [
 ### 4. Handle Transactions Properly
 
 ```typescript
-class OrderService extends BaseService<"order"> {
+class OrderService extends ArkosPrismaService<"order"> {
   async createOrderWithItems(orderData: any, items: any[]) {
     return this.prisma.$transaction(async (tx) => {
       // Create order
@@ -1004,7 +1004,7 @@ class OrderService extends BaseService<"order"> {
 ### 5. Export as Singleton
 
 ```typescript
-class UserService extends BaseService<"user"> {}
+class UserService extends ArkosPrismaService<"user"> {}
 
 // ✅ Export singleton instance
 const userService = new UserService("user");
@@ -1020,7 +1020,7 @@ export default userService;
 ### 1. Soft Deletes
 
 ```typescript
-class PostService extends BaseService<"post"> {
+class PostService extends ArkosPrismaService<"post"> {
   async softDelete(id: string) {
     return this.updateOne(
       { id },
@@ -1043,7 +1043,7 @@ class PostService extends BaseService<"post"> {
 ### 2. Pagination Helper
 
 ```typescript
-class ProductService extends BaseService<"product"> {
+class ProductService extends ArkosPrismaService<"product"> {
   async paginate(page: number = 1, limit: number = 10, filters: any = {}) {
     const skip = (page - 1) * limit;
 
@@ -1068,7 +1068,7 @@ class ProductService extends BaseService<"product"> {
 ### 3. Search Implementation
 
 ```typescript
-class PostService extends BaseService<"post"> {
+class PostService extends ArkosPrismaService<"post"> {
   async search(query: string, filters: any = {}) {
     return this.findMany(
       {
@@ -1109,10 +1109,10 @@ class PostService extends BaseService<"post"> {
 <TabItem value="before" label="Before v1.3.0">
 
 ```typescript
-import { BaseService } from "arkos/service";
+import { ArkosPrismaService } from "arkos/service";
 import { Prisma } from "@prisma/client";
 
-class UserService extends BaseService<Prisma.UserDelegate> {
+class UserService extends ArkosPrismaService<Prisma.UserDelegate> {
   constructor() {
     super("user");
   }
@@ -1123,9 +1123,9 @@ class UserService extends BaseService<Prisma.UserDelegate> {
 <TabItem value="after" label="After v1.4.0+ (Recommended)" default>
 
 ```typescript
-import { BaseService } from "arkos/services";
+import { ArkosPrismaService } from "arkos/services";
 
-class UserService extends BaseService<"user"> {
+class UserService extends ArkosPrismaService<"user"> {
   constructor() {
     super("user");
   }

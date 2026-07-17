@@ -183,12 +183,12 @@ export default postController
 <Tabs groupId="version">
 <TabItem value="v1.4" label="v1.4.0+ (Recommended)" default>
 
-Extend the base service with custom business logic. In v1.4.0+, `BaseService` uses kebab-case model names for better type inference:
+Extend the base service with custom business logic. In v1.4.0+, `ArkosPrismaService` uses kebab-case model names for better type inference:
 
 ```typescript
-import { BaseService } from "arkos/service";
+import { ArkosPrismaService } from "arkos/service";
 
-class PostService extends BaseService<"post"> {
+class PostService extends ArkosPrismaService<"post"> {
   async getPostsByAuthor(authorId: string) {
     return this.findMany(
        { authorId },
@@ -210,10 +210,10 @@ The kebab-case model name (`"post"`) enables automatic type inference after runn
 <TabItem value="v1.3" label="v1.3.0 and earlier">
 
 ```typescript
-import { BaseService } from "arkos/service";
+import { ArkosPrismaService } from "arkos/service";
 import { Prisma } from "@prisma/client";
 
-class PostService extends BaseService<Prisma.PostDelegate> {
+class PostService extends ArkosPrismaService<Prisma.PostDelegate> {
   async getPostsByAuthor(authorId: string) {
     return this.findMany(
        { authorId },
@@ -686,7 +686,7 @@ Essential scripts for ArkosJS development:
 ```
 
 :::tip Enhanced Type Generation
-The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitions that enable better type inference in `BaseService` and other framework components.
+The `arkos prisma generate` command in v1.4.0+ generates enhanced type definitions that enable better type inference in `ArkosPrismaService` and other framework components.
 :::
 
 </TabItem>

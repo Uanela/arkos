@@ -1,6 +1,6 @@
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
-import { BaseService } from "./base.service";
+import { ArkosPrismaService } from "./base.service";
 import AppError from "../error-handler/utils/app-error";
 import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
 import pluralize from "pluralize";
@@ -73,7 +73,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Service instance to handle business logic operations
    * @public
    */
-  service: BaseService<TModuleName>;
+  service: ArkosPrismaService<TModuleName>;
 
   /**
    * Name of the model this controller handles
@@ -87,7 +87,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    */
   constructor(modelName: TModuleName) {
     this.modelName = kebabCase(modelName);
-    this.service = new BaseService(modelName);
+    this.service = new ArkosPrismaService(modelName);
   }
 
   private getRouteHook() {
@@ -166,7 +166,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
           serviceArgs = await config.hooks.beforeService(serviceArgs, req);
 
         const serviceMethod = this.service[
-          config.serviceMethod as keyof BaseService<any>
+          config.serviceMethod as keyof ArkosPrismaService<any>
         ] as Function;
         let result = await serviceMethod.apply(this.service, serviceArgs);
 

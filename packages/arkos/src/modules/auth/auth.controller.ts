@@ -2,7 +2,7 @@ import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
 import authService from "./auth.service";
-import { BaseService } from "../base/base.service";
+import { ArkosPrismaService } from "../base/base.service";
 import { User } from "../../types";
 import { getArkosConfig } from "../../server";
 import {
@@ -24,10 +24,10 @@ export const defaultExcludedUserFields = {
  * Authentication controller class handling all auth-related operations
  */
 export class AuthController {
-  private userService?: BaseService<"user">;
+  private userService?: ArkosPrismaService<"user">;
 
   private getUserService() {
-    if (!this.userService) this.userService = new BaseService("user");
+    if (!this.userService) this.userService = new ArkosPrismaService("user");
     return this.userService;
   }
 

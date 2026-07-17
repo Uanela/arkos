@@ -19,17 +19,17 @@ interface InterceptorStore {
  *
  * @example
  * ```ts
- * const userInterceptor = ArkosRouteHook("user");
+ * const userRouteHook = ArkosRouteHook("user");
  *
- * userInterceptor.createOne({
+ * userRouteHook.createOne({
  *   validation: { body: CreateUserSchema },
  *   before: [sanitize],
  *   after: [notify]
  * });
  *
- * app.load(userInterceptor);
+ * app.load(userRouteHook);
  * ```
- * @see {@link https://www.arkosjs.com/docs/core-concepts/components/interceptors}
+ * @see {@link https://www.arkosjs.com/docs/core-concepts/components/route-hooks}
  */
 export function ArkosRouteHook<T extends ArkosModuleType>(
   moduleName: T

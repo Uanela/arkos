@@ -1,5 +1,5 @@
 import { BaseController } from "../base.controller";
-import { BaseService } from "../base.service";
+import { ArkosPrismaService } from "../base.service";
 import AppError from "../../error-handler/utils/app-error";
 import APIFeatures from "../../../utils/features/api.features";
 import loadableRegistry from "../../../components/arkos-loadable-registry";
@@ -12,8 +12,8 @@ jest.mock("fs", () => ({
 }));
 jest.mock("../../base/base.service", () => ({
   __esModule: true,
-  getBaseServices: jest.fn(),
-  BaseService: jest.fn(),
+  getArkosPrismaServices: jest.fn(),
+  ArkosPrismaService: jest.fn(),
 }));
 jest.mock("../../error-handler/utils/app-error");
 jest.mock("../../../utils/features/api.features");
@@ -39,12 +39,12 @@ describe("BaseController", () => {
   let mockRequest: any;
   let mockResponse: any;
   let mockNext: jest.Mock;
-  let mockBaseService: jest.Mocked<BaseService<any>>;
+  let mockArkosPrismaService: jest.Mocked<ArkosPrismaService<any>>;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    mockBaseService = {
+    mockArkosPrismaService = {
       createOne: jest.fn(),
       createMany: jest.fn(),
       findOne: jest.fn(),
@@ -58,8 +58,8 @@ describe("BaseController", () => {
       count: jest.fn(),
       relationFields: { singular: [], list: [] },
     } as any;
-    (BaseService as jest.Mock).mockImplementation(() => mockBaseService);
-    (BaseService as jest.Mock).mockImplementation(() => mockBaseService);
+    (ArkosPrismaService as jest.Mock).mockImplementation(() => mockArkosPrismaService);
+    (ArkosPrismaService as jest.Mock).mockImplementation(() => mockArkosPrismaService);
 
     mockGetItem.mockReturnValue(null);
     mockGetHooks.mockReturnValue(null);
@@ -113,19 +113,19 @@ describe("BaseController", () => {
 
   describe("constructor", () => {
     it("should initialize controller with correct model name and service", () => {
-      expect(BaseService).toHaveBeenCalledWith("Post");
+      expect(ArkosPrismaService).toHaveBeenCalledWith("Post");
     });
 
     it("should initialize with empty interceptors when registry returns null", () => {
       mockGetItem.mockReturnValue(null);
       new BaseController("User");
-      expect(BaseService).toHaveBeenCalledWith("User");
+      expect(ArkosPrismaService).toHaveBeenCalledWith("User");
     });
 
     it("should initialize when registry returns undefined", () => {
       mockGetItem.mockReturnValue(undefined);
       new BaseController("User");
-      expect(BaseService).toHaveBeenCalledWith("User");
+      expect(ArkosPrismaService).toHaveBeenCalledWith("User");
     });
   });
 
@@ -134,11 +134,11 @@ describe("BaseController", () => {
       const mockBody = { title: "Test Post" };
       const mockData = { id: 1, ...mockBody };
       mockRequest.body = mockBody;
-      mockBaseService.createOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.createOne.mockResolvedValue(mockData);
 
       await baseController.createOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.createOne).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.createOne).toHaveBeenCalledWith(
         mockBody,
         {},
         {
@@ -159,7 +159,7 @@ describe("BaseController", () => {
       baseController = new BaseController("Post");
 
       const mockData = { id: 1, title: "Test Post" };
-      mockBaseService.createOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.createOne.mockResolvedValue(mockData);
 
       await baseController.createOne(mockRequest, mockResponse, mockNext);
 
@@ -175,11 +175,11 @@ describe("BaseController", () => {
       const mockBody = [{ title: "Post 1" }, { title: "Post 2" }];
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.createMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.createMany.mockResolvedValue(mockResult as any);
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.createMany).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.createMany).toHaveBeenCalledWith(
         mockBody,
         {},
         {
@@ -198,14 +198,14 @@ describe("BaseController", () => {
       const mockBody: any[] = [];
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.createMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.createMany.mockResolvedValue(mockResult as any);
       try {
         await baseController.createMany(mockRequest, mockResponse, mockNext);
       } catch (err: any) {
         expect(err).toBeDefined();
       }
 
-      expect(mockBaseService.createMany).not.toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.createMany).not.toHaveBeenCalledWith(
         mockBody,
         {},
         {
@@ -223,7 +223,7 @@ describe("BaseController", () => {
     it("should call next with error if createMany returns null", async () => {
       const mockBody = [{ title: "Post 1" }];
       mockRequest.body = mockBody;
-      mockBaseService.createMany.mockResolvedValue(null as any);
+      mockArkosPrismaService.createMany.mockResolvedValue(null as any);
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
@@ -242,7 +242,7 @@ describe("BaseController", () => {
       const mockBody = [{ title: "Post 1" }];
       const mockResult = { count: 1 };
       mockRequest.body = mockBody;
-      mockBaseService.createMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.createMany.mockResolvedValue(mockResult as any);
 
       await baseController.createMany(mockRequest, mockResponse, mockNext);
 
@@ -258,7 +258,7 @@ describe("BaseController", () => {
 
   describe("findMany", () => {
     beforeEach(() => {
-      mockBaseService.relationFields = {
+      mockArkosPrismaService.relationFields = {
         singular: [
           {
             name: "category",
@@ -278,14 +278,14 @@ describe("BaseController", () => {
     it("should fetch records and return 200 status", async () => {
       const mockData = [{ id: 1, title: "Post 1" }];
       const mockTotal = 1;
-      mockBaseService.findMany.mockResolvedValue(mockData);
-      mockBaseService.count.mockResolvedValue(mockTotal);
+      mockArkosPrismaService.findMany.mockResolvedValue(mockData);
+      mockArkosPrismaService.count.mockResolvedValue(mockTotal);
       mockRequest.query = { published: true };
 
       await baseController.findMany(mockRequest, mockResponse, mockNext);
 
       expect(APIFeatures).toHaveBeenCalled();
-      expect(mockBaseService.findMany).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.findMany).toHaveBeenCalledWith(
         { published: true },
         { take: 30, skip: 0 },
         {
@@ -293,7 +293,7 @@ describe("BaseController", () => {
           user: undefined,
         }
       );
-      expect(mockBaseService.count).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.count).toHaveBeenCalledWith(
         { published: true },
         {
           accessToken: undefined,
@@ -323,8 +323,8 @@ describe("BaseController", () => {
 
       const mockData = [{ id: 1, title: "Post 1" }];
       const mockTotal = 1;
-      mockBaseService.findMany.mockResolvedValue(mockData);
-      mockBaseService.count.mockResolvedValue(mockTotal);
+      mockArkosPrismaService.findMany.mockResolvedValue(mockData);
+      mockArkosPrismaService.count.mockResolvedValue(mockTotal);
 
       await baseController.findMany(mockRequest, mockResponse, mockNext);
 
@@ -344,11 +344,11 @@ describe("BaseController", () => {
     });
 
     it("should handle case with no relation fields", async () => {
-      (mockBaseService.relationFields as any) = null;
+      (mockArkosPrismaService.relationFields as any) = null;
       const mockData = [{ id: 1, title: "Post 1" }];
       const mockTotal = 1;
-      mockBaseService.findMany.mockResolvedValue(mockData);
-      mockBaseService.count.mockResolvedValue(mockTotal);
+      mockArkosPrismaService.findMany.mockResolvedValue(mockData);
+      mockArkosPrismaService.count.mockResolvedValue(mockTotal);
 
       await baseController.findMany(mockRequest, mockResponse, mockNext);
 
@@ -371,11 +371,11 @@ describe("BaseController", () => {
       const mockParams = { id: "1" };
       const mockData = { id: 1, title: "Test Post" };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.findOne.mockResolvedValue(mockData);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.findOne).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.findOne).toHaveBeenCalledWith(
         mockParams,
         {},
         {
@@ -392,11 +392,11 @@ describe("BaseController", () => {
       const mockData = { id: 1, title: "Test Post" };
       mockRequest.query = { published: true };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.findOne.mockResolvedValue(mockData);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.findOne).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.findOne).toHaveBeenCalledWith(
         { ...mockParams, published: true },
         {},
         {
@@ -411,7 +411,7 @@ describe("BaseController", () => {
     it("should call next with error if record not found with single id param", async () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(null as any);
+      mockArkosPrismaService.findOne.mockResolvedValue(null as any);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
@@ -422,7 +422,7 @@ describe("BaseController", () => {
     it("should call next with error if record not found with multiple params", async () => {
       const mockParams = { slug: "test-post", category: "tech" };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(null as any);
+      mockArkosPrismaService.findOne.mockResolvedValue(null as any);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
@@ -433,7 +433,7 @@ describe("BaseController", () => {
     it("should not return error if id param is 'me'", async () => {
       const mockParams = { id: "me" };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(null as any);
+      mockArkosPrismaService.findOne.mockResolvedValue(null as any);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
@@ -452,7 +452,7 @@ describe("BaseController", () => {
       const mockParams = { id: "1" };
       const mockData = { id: 1, title: "Test Post" };
       mockRequest.params = mockParams;
-      mockBaseService.findOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.findOne.mockResolvedValue(mockData);
 
       await baseController.findOne(mockRequest, mockResponse, mockNext);
 
@@ -470,11 +470,11 @@ describe("BaseController", () => {
       const mockData = { id: 1, ...mockBody };
       mockRequest.params = mockParams;
       mockRequest.body = mockBody;
-      mockBaseService.updateOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.updateOne.mockResolvedValue(mockData);
 
       await baseController.updateOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.updateOne).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.updateOne).toHaveBeenCalledWith(
         mockParams,
         mockBody,
         {},
@@ -494,11 +494,11 @@ describe("BaseController", () => {
       mockRequest.params = mockParams;
       mockRequest.query = { published: true };
       mockRequest.body = mockBody;
-      mockBaseService.updateOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.updateOne.mockResolvedValue(mockData);
 
       await baseController.updateOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.updateOne).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.updateOne).toHaveBeenCalledWith(
         { ...mockParams, published: true },
         mockBody,
         {},
@@ -515,7 +515,7 @@ describe("BaseController", () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
       mockRequest.body = { title: "Updated Post" };
-      mockBaseService.updateOne.mockResolvedValue(null as any);
+      mockArkosPrismaService.updateOne.mockResolvedValue(null as any);
 
       await baseController.updateOne(mockRequest, mockResponse, mockNext);
 
@@ -527,7 +527,7 @@ describe("BaseController", () => {
       const mockParams = { slug: "test-post", category: "tech" };
       mockRequest.params = mockParams;
       mockRequest.body = { title: "Updated Post" };
-      mockBaseService.updateOne.mockResolvedValue(null as any);
+      mockArkosPrismaService.updateOne.mockResolvedValue(null as any);
 
       await baseController.updateOne(mockRequest, mockResponse, mockNext);
 
@@ -548,7 +548,7 @@ describe("BaseController", () => {
       const mockData = { id: 1, ...mockBody };
       mockRequest.params = mockParams;
       mockRequest.body = mockBody;
-      mockBaseService.updateOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.updateOne.mockResolvedValue(mockData);
 
       await baseController.updateOne(mockRequest, mockResponse, mockNext);
 
@@ -581,12 +581,12 @@ describe("BaseController", () => {
       const mockBody = { published: true };
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.updateMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.updateMany.mockResolvedValue(mockResult as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.updateMany).toHaveBeenCalled();
-      expect(mockBaseService.updateMany).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.updateMany).toHaveBeenCalled();
+      expect(mockArkosPrismaService.updateMany).toHaveBeenCalledWith(
         { AND: { title: "Test" } },
         { published: true },
         {},
@@ -605,7 +605,7 @@ describe("BaseController", () => {
       const mockBody = { published: true };
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.updateMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.updateMany.mockResolvedValue(mockResult as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -617,7 +617,7 @@ describe("BaseController", () => {
       mockRequest.query = { title: "Test" };
       const mockResult = { count: 0 };
       mockRequest.body = { published: true };
-      mockBaseService.updateMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.updateMany.mockResolvedValue(mockResult as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -628,7 +628,7 @@ describe("BaseController", () => {
     it("should call next with error if updateMany returns null", async () => {
       mockRequest.query = { title: "Test" };
       mockRequest.body = { published: true };
-      mockBaseService.updateMany.mockResolvedValue(null as any);
+      mockArkosPrismaService.updateMany.mockResolvedValue(null as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -648,7 +648,7 @@ describe("BaseController", () => {
       const mockBody = { published: true };
       const mockResult = { count: 2 };
       mockRequest.body = mockBody;
-      mockBaseService.updateMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.updateMany.mockResolvedValue(mockResult as any);
 
       await baseController.updateMany(mockRequest, mockResponse, mockNext);
 
@@ -666,11 +666,11 @@ describe("BaseController", () => {
     it("should delete a record and return 204 status", async () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
-      mockBaseService.deleteOne.mockResolvedValue({ id: 1 });
+      mockArkosPrismaService.deleteOne.mockResolvedValue({ id: 1 });
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(mockParams, {
+      expect(mockArkosPrismaService.deleteOne).toHaveBeenCalledWith(mockParams, {
         accessToken: undefined,
         user: undefined,
       });
@@ -682,11 +682,11 @@ describe("BaseController", () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
       mockRequest.query = { published: true };
-      mockBaseService.deleteOne.mockResolvedValue({ id: 1 });
+      mockArkosPrismaService.deleteOne.mockResolvedValue({ id: 1 });
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.deleteOne).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.deleteOne).toHaveBeenCalledWith(
         { ...mockParams, published: true },
         {
           accessToken: undefined,
@@ -700,7 +700,7 @@ describe("BaseController", () => {
     it("should call next with error if record not found with single id param", async () => {
       const mockParams = { id: "1" };
       mockRequest.params = mockParams;
-      mockBaseService.deleteOne.mockResolvedValue(null as any);
+      mockArkosPrismaService.deleteOne.mockResolvedValue(null as any);
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
@@ -711,7 +711,7 @@ describe("BaseController", () => {
     it("should call next with error if record not found with multiple params", async () => {
       const mockParams = { slug: "test-post", category: "tech" };
       mockRequest.params = mockParams;
-      mockBaseService.deleteOne.mockResolvedValue(null as any);
+      mockArkosPrismaService.deleteOne.mockResolvedValue(null as any);
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
@@ -730,7 +730,7 @@ describe("BaseController", () => {
       const mockParams = { id: "1" };
       const mockData = { id: 1 };
       mockRequest.params = mockParams;
-      mockBaseService.deleteOne.mockResolvedValue(mockData);
+      mockArkosPrismaService.deleteOne.mockResolvedValue(mockData);
 
       await baseController.deleteOne(mockRequest, mockResponse, mockNext);
 
@@ -761,11 +761,11 @@ describe("BaseController", () => {
     it("should delete multiple records and return 200 status", async () => {
       mockRequest.query = { title: "Test" };
       const mockResult = { count: 2 };
-      mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.deleteMany).toHaveBeenCalled();
+      expect(mockArkosPrismaService.deleteMany).toHaveBeenCalled();
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({
         results: mockResult.count,
@@ -776,7 +776,7 @@ describe("BaseController", () => {
     it("should throw an error when trying to use OR as filterMode", async () => {
       mockRequest.query = { title: "Test", filterMode: "OR" };
       const mockResult = { count: 2 };
-      mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
       expect(mockNext).toHaveBeenCalled();
@@ -785,7 +785,7 @@ describe("BaseController", () => {
     it("should call next with error if no records deleted", async () => {
       mockRequest.query = { title: "Test" };
       const mockResult = { count: 0 };
-      mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
@@ -795,7 +795,7 @@ describe("BaseController", () => {
 
     it("should call next with error if deleteMany returns null", async () => {
       mockRequest.query = { title: "Test" };
-      mockBaseService.deleteMany.mockResolvedValue(null as any);
+      mockArkosPrismaService.deleteMany.mockResolvedValue(null as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
@@ -813,7 +813,7 @@ describe("BaseController", () => {
 
       mockRequest.query = { title: "Test" };
       const mockResult = { count: 2 };
-      mockBaseService.deleteMany.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.deleteMany.mockResolvedValue(mockResult as any);
 
       await baseController.deleteMany(mockRequest, mockResponse, mockNext);
 
@@ -838,11 +838,11 @@ describe("BaseController", () => {
         { id: 2, title: "Updated Post 2" },
       ];
       mockRequest.body = mockBody;
-      mockBaseService.batchUpdate.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.batchUpdate.mockResolvedValue(mockResult as any);
 
       await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.batchUpdate).toHaveBeenCalledWith(
+      expect(mockArkosPrismaService.batchUpdate).toHaveBeenCalledWith(
         mockBody,
         {},
         {
@@ -859,7 +859,7 @@ describe("BaseController", () => {
 
     it("should call next with error if batchUpdate returns null", async () => {
       mockRequest.body = [{ id: "1", title: "Updated Post 1" }];
-      mockBaseService.batchUpdate.mockResolvedValue(null as any);
+      mockArkosPrismaService.batchUpdate.mockResolvedValue(null as any);
 
       await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
 
@@ -869,7 +869,7 @@ describe("BaseController", () => {
 
     it("should call next with error if batchUpdate returns empty array", async () => {
       mockRequest.body = [{ id: "1", title: "Updated Post 1" }];
-      mockBaseService.batchUpdate.mockResolvedValue([]);
+      mockArkosPrismaService.batchUpdate.mockResolvedValue([]);
 
       await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
 
@@ -888,7 +888,7 @@ describe("BaseController", () => {
       const mockBody = [{ id: "1", title: "Updated Post 1" }];
       const mockResult = [{ id: 1, title: "Updated Post 1" }];
       mockRequest.body = mockBody;
-      mockBaseService.batchUpdate.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.batchUpdate.mockResolvedValue(mockResult as any);
 
       await baseController.batchUpdate(mockRequest, mockResponse, mockNext);
 
@@ -907,11 +907,11 @@ describe("BaseController", () => {
       const mockBody = [{ id: "1" }, { id: "2" }];
       const mockResult = [{ id: 1 }, { id: 2 }];
       mockRequest.body = mockBody;
-      mockBaseService.batchDelete.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.batchDelete.mockResolvedValue(mockResult as any);
 
       await baseController.batchDelete(mockRequest, mockResponse, mockNext);
 
-      expect(mockBaseService.batchDelete).toHaveBeenCalledWith(mockBody, {
+      expect(mockArkosPrismaService.batchDelete).toHaveBeenCalledWith(mockBody, {
         accessToken: undefined,
         user: undefined,
       });
@@ -924,7 +924,7 @@ describe("BaseController", () => {
 
     it("should call next with error if batchDelete returns null", async () => {
       mockRequest.body = [{ id: "1" }];
-      mockBaseService.batchDelete.mockResolvedValue(null as any);
+      mockArkosPrismaService.batchDelete.mockResolvedValue(null as any);
 
       await baseController.batchDelete(mockRequest, mockResponse, mockNext);
 
@@ -934,7 +934,7 @@ describe("BaseController", () => {
 
     it("should call next with error if batchDelete returns empty array", async () => {
       mockRequest.body = [{ id: "1" }];
-      mockBaseService.batchDelete.mockResolvedValue([]);
+      mockArkosPrismaService.batchDelete.mockResolvedValue([]);
 
       await baseController.batchDelete(mockRequest, mockResponse, mockNext);
 
@@ -953,7 +953,7 @@ describe("BaseController", () => {
       const mockBody = [{ id: "1" }, { id: "2" }];
       const mockResult = [{ id: 1 }, { id: 2 }];
       mockRequest.body = mockBody;
-      mockBaseService.batchDelete.mockResolvedValue(mockResult as any);
+      mockArkosPrismaService.batchDelete.mockResolvedValue(mockResult as any);
 
       await baseController.batchDelete(mockRequest, mockResponse, mockNext);
 

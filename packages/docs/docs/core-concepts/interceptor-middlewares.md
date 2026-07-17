@@ -1530,9 +1530,9 @@ export const afterCreateOne = [notifyFollowers, updateSearchIndex];
 export const onCreateOneError = [cleanupFeaturedImage];
 ```
 
-Arkos allows you to customize beyond the request level; it also enables you to customize the flow of the service methods. Let's take the example above: you may want to execute this behavior at any level where a new post is created, whether through an endpoint call or programmatically elsewhere in your code. For this situation, we highly encourage the use of [**Service Hooks**](/docs/guide/service-hooks) together with instances of the [**BaseService Class**](/docs/api-reference/the-base-service-class), which is one of the main strengths of Arkos.js.
+Arkos allows you to customize beyond the request level; it also enables you to customize the flow of the service methods. Let's take the example above: you may want to execute this behavior at any level where a new post is created, whether through an endpoint call or programmatically elsewhere in your code. For this situation, we highly encourage the use of [**Service Hooks**](/docs/guide/service-hooks) together with instances of the [**ArkosPrismaService Class**](/docs/api-reference/the-base-service-class), which is one of the main strengths of Arkos.js.
 
-The BaseService Class generates services for all of your Prisma models, each containing all standard CRUD operations and many features that Arkos offers:
+The ArkosPrismaService Class generates services for all of your Prisma models, each containing all standard CRUD operations and many features that Arkos offers:
 
 - Automatic relation field handling
 - Automatic password hashing for the user model

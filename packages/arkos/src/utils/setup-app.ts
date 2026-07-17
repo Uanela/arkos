@@ -41,7 +41,7 @@ export default function setupApp(app: Arkos) {
     if (typeof middlewaresConfig?.compression === "function") {
       app.use(middlewaresConfig.compression);
     } else {
-      app.use(compression(middlewaresConfig?.compression || {}));
+      app.use(compression(middlewaresConfig?.compression || {}) as any);
     }
   }
 

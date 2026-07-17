@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 > Available from `v1.3.0-beta`
 
-Service Hooks allow you to execute custom business logic at the service layer level during CRUD operations. Unlike [Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares) which run at the HTTP request level, Service Hooks execute whenever BaseService methods are called - whether through API endpoints or programmatic service calls.
+Service Hooks allow you to execute custom business logic at the service layer level during CRUD operations. Unlike [Interceptor Middlewares](/docs/core-concepts/interceptor-middlewares) which run at the HTTP request level, Service Hooks execute whenever ArkosPrismaService methods are called - whether through API endpoints or programmatic service calls.
 
 This ensures your business logic runs consistently across your entire application, regardless of how the data operations are triggered.
 
@@ -27,7 +27,7 @@ Understanding when to use each approach:
 
 | Feature             | Service Hooks                                 | Interceptor Middlewares                                                              |
 | ------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Execution Level** | Service layer (BaseService methods)           | HTTP request layer (Express routes)                                                  |
+| **Execution Level** | Service layer (ArkosPrismaService methods)           | HTTP request layer (Express routes)                                                  |
 | **Scope**           | All service calls (API + programmatic)        | Only HTTP endpoint calls                                                             |
 | **Access to**       | Service context, user info                    | Full Express req/res objects                                                         |
 | **Best for**        | Business logic, data validation, audit trails | Request processing, authentication, response formatting                              |
@@ -75,9 +75,9 @@ This generates:
 
 ```typescript
 // src/modules/post/post.service.ts
-import { BaseService } from "arkos/services";
+import { ArkosPrismaService } from "arkos/services";
 
-class PostService extends BaseService<"post"> {
+class PostService extends ArkosPrismaService<"post"> {
   async getPostsByAuthor(authorId: string) {
     return this.findMany({ authorId }, { include: { author: true } });
   }
@@ -97,10 +97,10 @@ The `"post"` type enables automatic type inference after running `npx arkos pris
 
 ```typescript
 // src/modules/post/post.service.ts
-import { BaseService } from "arkos/service";
+import { ArkosPrismaService } from "arkos/service";
 import { Prisma } from "@prisma/client";
 
-class PostService extends BaseService<Prisma.PostDelegate> {
+class PostService extends ArkosPrismaService<Prisma.PostDelegate> {
   async getPostsByAuthor(authorId: string) {
     return this.findMany({ authorId }, { include: { author: true } });
   }
@@ -169,7 +169,7 @@ export const onCreateOneError = [
 
 ## Available Service Hooks
 
-Service Hooks are available for all CRUD operations provided by the [BaseService class](/docs/api-reference/the-base-service-class):
+Service Hooks are available for all CRUD operations provided by the [ArkosPrismaService class](/docs/api-reference/the-base-service-class):
 
 ### Before Hooks
 

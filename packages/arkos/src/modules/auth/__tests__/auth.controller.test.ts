@@ -2,7 +2,7 @@ import { AuthController, defaultExcludedUserFields } from "../auth.controller";
 import authService from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
 import { getArkosConfig } from "../../../server";
-import { BaseService } from "../../base/base.service";
+import { ArkosPrismaService } from "../../base/base.service";
 import { routeHookReader } from "../../../components/arkos-route-hook/reader";
 
 jest.mock("fs");
@@ -26,11 +26,11 @@ jest.mock("../auth.service", () => ({
 }));
 
 jest.mock("../../base/base.service", () => ({
-  getBaseServices: jest.fn(),
-  BaseService: jest.fn(),
+  getArkosPrismaServices: jest.fn(),
+  ArkosPrismaService: jest.fn(),
 }));
 
-const MockedBaseService = BaseService as jest.MockedClass<typeof BaseService>;
+const MockedArkosPrismaService = ArkosPrismaService as jest.MockedClass<typeof ArkosPrismaService>;
 
 jest.mock("../../../utils/helpers/prisma.helpers", () => ({
   getPrismaInstance: jest.fn(),
@@ -73,7 +73,7 @@ describe("Auth Controller", () => {
         update: jest.fn(),
       },
     };
-    MockedBaseService.mockImplementation(() => userService);
+    MockedArkosPrismaService.mockImplementation(() => userService);
 
     (getPrismaInstance as jest.Mock).mockReturnValue(mockPrisma);
 
@@ -118,7 +118,7 @@ describe("Auth Controller", () => {
       };
 
       userService.findOne.mockResolvedValueOnce(user);
-      MockedBaseService.mockImplementation(() => userService);
+      MockedArkosPrismaService.mockImplementation(() => userService);
 
       await authController.getMe(req, res, next);
 

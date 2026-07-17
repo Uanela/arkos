@@ -63,7 +63,7 @@ interface ServiceOperationConfig {
     args: any[],
     prisma: PrismaClient,
     config: ServiceOperationConfig,
-    context: BaseService<any>
+    context: ArkosPrismaService<any>
   ) => Promise<any>;
   hooks?: ServiceOperationHooks;
 }
@@ -73,13 +73,13 @@ interface ServiceOperationConfig {
  * This class provides standard implementation of data operations that can be extended
  * by model-specific service classes.
  *
- * @class BaseService
+ * @class ArkosPrismaService
  *
  * @example
  * ```ts
- * import { BaseService } from "arkos/services";
+ * import { ArkosPrismaService } from "arkos/services";
  *
- * export class UserService extends BaseService<"user"> {}
+ * export class UserService extends ArkosPrismaService<"user"> {}
  *
  * const userService = new UserService("user");
  * ```
@@ -87,7 +87,7 @@ interface ServiceOperationConfig {
  * @see {@link https://www.arkosjs.com/docs/reference/base-service}
  * @see {@link https://www.arkosjs.com/docs/guide/accessing-request-context-in-services}
  */
-export class BaseService<TModelName extends keyof Models = keyof Models> {
+export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> {
   modelName: TModelName;
   relationFields: ModelGroupRelationFields;
   private prismaInstace?: PrismaClient;

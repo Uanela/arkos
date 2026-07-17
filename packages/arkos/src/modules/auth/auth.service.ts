@@ -153,11 +153,11 @@ export class AuthService {
   }
 
   /**
-   * Is used by default internally by Arkos under `BaseService` class to check if the password is already hashed.
+   * Is used by default internally by Arkos under `ArkosPrismaService` class to check if the password is already hashed.
    *
-   * This was just added to prevent unwanted errors when someone just forgets that the `BaseService` class will automatically hash the password field using `authService.hashPassword` by default.
+   * This was just added to prevent unwanted errors when someone just forgets that the `ArkosPrismaService` class will automatically hash the password field using `authService.hashPassword` by default.
    *
-   * So now before `BaseService` hashes it will test it.
+   * So now before `ArkosPrismaService` hashes it will test it.
    *
    *
    * @param password The password to be tested if is hashed

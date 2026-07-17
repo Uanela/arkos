@@ -49,14 +49,14 @@ Arkos converts the model names to kebab-case and to plural e.g UserProfile to us
 
 ## Behind the Scenes
 
-### The `BaseService` Class
+### The `ArkosPrismaService` Class
 
-Arkos uses a powerful `BaseService` class to handle operations across all models:
+Arkos uses a powerful `ArkosPrismaService` class to handle operations across all models:
 
 #### Mere Behind The Scenes Ilustration
 
 ```ts
-class BaseService {
+class ArkosPrismaService {
   // Class implementation...
 
   async createOne(
@@ -82,7 +82,7 @@ class BaseService {
 }
 ```
 
-This is by default an internal **Arkos** class used behind the scenes to handle your prisma models services in the generated api endpoints, if you would like to setup your own services for CRUD operations (which sucks), you can read about the `BaseService` class and how to implement it on your code [clicking here](/docs/api-reference/the-base-service-class).
+This is by default an internal **Arkos** class used behind the scenes to handle your prisma models services in the generated api endpoints, if you would like to setup your own services for CRUD operations (which sucks), you can read about the `ArkosPrismaService` class and how to implement it on your code [clicking here](/docs/api-reference/the-base-service-class).
 
 This class intelligently:
 
@@ -104,7 +104,7 @@ The `BaseController` class creates standardized controllers that:
 ```ts
 class BaseController {
  constructor(modelName: string){
-   this.baseService = new BaseService(modelName);
+   this.baseService = new ArkosPrismaService(modelName);
  }
   // Create controller methods for all operations...
 

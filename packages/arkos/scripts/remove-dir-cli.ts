@@ -6,6 +6,8 @@ export function getFolderPathFromArgs() {
   let folderPath = "";
   let pathCount = 0;
 
+  if (args.length === 1) return args[0]
+
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "-p" || args[i] === "--path") {
       pathCount++;
