@@ -20,9 +20,4 @@ export default class CreateAuthPermissionDto {
   @ValidateNested()
   @Type(() => RoleConnectDto)
   role!: RoleConnectDto;
-
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => String(value))
-  description?: string;
 }

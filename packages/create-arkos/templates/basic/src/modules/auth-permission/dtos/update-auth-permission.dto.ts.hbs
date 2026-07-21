@@ -11,8 +11,4 @@ export default class UpdateAuthPermissionDto {
   @IsString()
   @Transform(({ value }) => String(value))
   action?: string
-
-  @IsOptional()
-  @IsString()
-  description?: string;
 }

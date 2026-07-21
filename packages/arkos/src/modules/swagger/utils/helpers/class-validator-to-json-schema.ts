@@ -6,7 +6,7 @@ export default function classValidatorToJsonSchema(
   decoratedClass: new (...args: any[]) => object
 ): any {
   const jsonSchemas = validationMetadatasToSchemas({
-    classValidatorMetadataStorage: getMetadataStorage(),
+    classValidatorMetadataStorage: getMetadataStorage() as any, // FIXME: dummy typing because of updates
     classTransformerMetadataStorage: defaultMetadataStorage,
     refPointerPrefix: "#/components/schemas/",
   });

@@ -1,6 +1,7 @@
 import path from "path";
 import inquirer from "inquirer";
 import chalk from "chalk";
+import { detectPackageManagerFromUserAgent } from "./helpers/npm.helpers";
 
 export interface ProjectConfig {
   projectName: string;
@@ -32,13 +33,16 @@ export interface ProjectConfig {
   };
   advanced?: boolean;
   entryPoint: "src/app" | "src/server";
+  packageManager: string;
 }
 
 class ProjectConfigInquirer {
   private config: ProjectConfig;
 
   constructor() {
-    this.config = {} as ProjectConfig;
+    this.config = {
+      packageManager: detectPackageManagerFromUserAgent(),
+    } as ProjectConfig;
   }
 
   async run() {
@@ -223,7 +227,7 @@ class ProjectConfigInquirer {
   private async promptAuthentication() {
     if (this.config.prisma.provider === "none") {
       console.info(
-        `${chalk.green("! ")} ${chalk.bold("Skipping authentication setup as it requires prisma.")}`
+        `${chalk.green("! ")}${chalk.bold("Skipping authentication setup as it requires prisma.")}`
       );
       this.config.authentication = {
         type: "none",
@@ -268,8 +272,9 @@ class ProjectConfigInquirer {
     };
 
     if (
-      authenticationType !== "static" &&
-      this.config.prisma.provider !== "sqlite"
+      authenticationType !== "static" ||
+      (authenticationType == "static" &&
+        this.config.prisma.provider !== "sqlite")
     ) {
       const { multipleRoles } = await inquirer.prompt([
         {
@@ -286,7 +291,7 @@ class ProjectConfigInquirer {
       };
     } else if (this.config.prisma.provider === "sqlite") {
       console.info(
-        `${chalk.green("! ")} ${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
+        `${chalk.green("! ")}${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
       );
     }
   }
