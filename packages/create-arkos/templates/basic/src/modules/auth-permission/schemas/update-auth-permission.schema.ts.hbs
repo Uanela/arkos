@@ -6,7 +6,6 @@ const UpdateAuthPermissionSchema = z.object({
   roles: z.array(z.object({
     id: z.string().min(1, 'Role ID is required'),
   })).optional(),
-  description: z.string().optional(),
 });
 
 export default UpdateAuthPermissionSchema

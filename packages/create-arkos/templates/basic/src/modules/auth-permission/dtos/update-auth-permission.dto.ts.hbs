@@ -23,8 +23,4 @@ export default class UpdateAuthPermissionDto {
   @Type(() => RoleConnectDto)
   @IsOptional()
   roles?: RoleConnectDto[];
-
-  @IsOptional()
-  @IsString()
-  description?: string;
 }
