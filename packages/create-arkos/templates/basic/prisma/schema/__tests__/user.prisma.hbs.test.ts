@@ -65,10 +65,10 @@ describe("User model template rendering", () => {
     expect(result3).toContain("roles                UserRole[]");
   });
 
-  it('should handle "none" authentication type', () => {
+  it('should handle "define later" authentication type', () => {
     const context = {
       authentication: {
-        type: "none",
+        type: "define later",
         usernameField: "email",
       },
       prisma: {

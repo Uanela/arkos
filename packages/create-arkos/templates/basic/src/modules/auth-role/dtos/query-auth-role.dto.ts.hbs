@@ -1,0 +1,81 @@
+{{#if (eq validation.type "zod")}}
+import { z } from 'zod';
+
+const StringFilterSchema = z.object({
+  icontains: z.string().optional(),
+});
+
+const PermissionForQueryAuthRoleDto = z.object({
+  resource: z.string().optional(),
+  action: z.string().optional(),
+});
+
+const QueryAuthRoleDto = z.object({
+  page: z.coerce.number().optional(),
+  limit: z.coerce.number().max(100).optional(),
+  sort: z.string().optional(),
+  fields: z.string().optional(),
+  name: StringFilterSchema.optional(),
+  description: z.string().optional(),
+  permissions: z.array(PermissionForQueryAuthRoleDto).optional(),
+});
+
+export default QueryAuthRoleDto;
+{{#if typescript}}
+export type QueryAuthRoleDtoType = z.infer<typeof QueryAuthRoleDto>;
+{{/if}}
+{{/if}}
+{{#if (eq validation.type "class-validator")}}
+import { IsOptional, IsString, IsArray, ValidateNested } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+
+class StringFilterForAuthRoleDto {
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  icontains?: string;
+}
+
+class PermissionForQueryAuthRoleDto {
+  @IsOptional()
+  @IsString()
+  resource?: string;
+
+  @IsOptional()
+  @IsString()
+  action?: string;
+}
+
+export default class QueryAuthRoleDto {
+  @IsOptional()
+  @Transform(({ value }) => (value ? Number(value) : undefined))
+  page?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => (value ? Number(value) : undefined))
+  limit?: number;
+
+  @IsOptional()
+  @IsString()
+  sort?: string;
+
+  @IsOptional()
+  @IsString()
+  fields?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => StringFilterForAuthRoleDto)
+  name?: StringFilterForAuthRoleDto;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PermissionForQueryAuthRoleDto)
+  permissions?: PermissionForQueryAuthRoleDto[];
+}
+{{/if}}

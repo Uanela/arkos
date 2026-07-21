@@ -16,19 +16,15 @@
     "@types/node": "24.0.12",
     "@types/express": "5.0.0",
     {{/if}}
-    "tsx-strict": "0.7.0",
-    "tsx": "4.22.4"{{#if (neq prisma.provider "none")}},
+    "tsx-strict": "0.4.2",
+    "tsx": "4.21.0",
     "prisma": "6.19.2"
-    {{/if}}
   },
   "dependencies": {
-    "arkos": "2.0.0-next.16", 
+    "arkos": "2.0.0-next.12", 
     "express": "4.22.1",
-    "@scalar/express-api-reference": "0.10.2",
-    "@scalar/api-reference": "1.55.3"{{#if (or (neq prisma.provider "none") validation.type)}},{{/if}}
-    {{#if (neq prisma.provider "none")}}
+    "@scalar/express-api-reference": "0.8.35",
     "@prisma/client": "6.19.2"{{#if validation.type}},{{/if}}
-    {{/if}}
     {{#if (eq validation.type "class-validator")}}
     "reflect-metadata": "0.2.2",
     "class-transformer": "0.5.1",

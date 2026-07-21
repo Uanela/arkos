@@ -358,7 +358,7 @@ export class FileUploadService {
             if (isImageUpload) {
               data = await processImage(req, next, req.file.path, options);
             } else {
-              data = await processFile(req, req.file.path);
+              data = processFile(req, req.file.path);
             }
           } else {
             return reject(

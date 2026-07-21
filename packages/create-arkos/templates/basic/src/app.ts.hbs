@@ -1,14 +1,12 @@
 import arkos from "arkos";
-import router from "@/src/router";
+import router from "@/src/router"
+import loadables from "@/src/loadables"
 
-const app = arkos();
+const app = arkos()
 
-app.set("trust proxy", 1);
+app.set("trust proxy", 1)
 
-app.use(router);
+app.load(loadables)
+app.use(router)
 
-{{#if (eq entryPoint "src/app")}}
-app.listen();
-{{else}}
-export default app;
-{{/if}}
+app.listen()

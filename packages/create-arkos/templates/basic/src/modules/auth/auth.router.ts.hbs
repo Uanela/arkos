@@ -1,0 +1,11 @@
+import { ArkosRouter } from "arkos";
+{{#if authentication}}
+import authPolicy from "@/src/modules/auth/auth.policy";
+{{/if}}
+
+const authRouter = ArkosRouter({ 
+    prefix: "/auth",
+    openapi: { tags: ["Authentication"] } 
+  });
+
+export default authRouter;

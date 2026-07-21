@@ -1,4 +1,4 @@
-{{#if (neq authentication.type "none")}}
+{{#if (neq authentication.type "define later")}}
 model User {
   id                   String    {{{prisma.idDatabaseType}}}
   {{authentication.usernameField}}  String   @unique
@@ -29,9 +29,6 @@ model User {
   role                 UserRole  @default(User)
       {{/if}}
     {{/if}}
-  {{/if}}
-  {{#if (eq authentication.type "dynamic")}}
-  permissions          UserPermission[]
   {{/if}}
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt

@@ -1,11 +1,11 @@
-import { ArkosPrismaService } from "arkos/services";
+import { BaseService } from "arkos/services";
 {{#if typescript}}
 import { Prisma } from "@prisma/client"
 
-class UserService extends ArkosPrismaService<"user"> {}
+class UserService extends BaseService<"user"> {}
 {{else}}
 
-class UserService extends ArkosPrismaService {}
+class UserService extends BaseService {}
 {{/if}}
 
 const userService = new UserService("user");

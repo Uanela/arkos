@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "integrations/*"
+  - "sandbox/arkos/*"
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true

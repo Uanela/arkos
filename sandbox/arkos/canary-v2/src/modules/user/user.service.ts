@@ -1,10 +1,8 @@
-import { BaseService } from "arkos/services";
-import { Prisma } from "@prisma/client"
+import { ArkosPrismaService } from "arkos/services";
+import { Prisma } from "@prisma/client";
 
-class UserService extends BaseService<"user"> {
-  async createOne() {
-
-  }
+class UserService extends ArkosPrismaService<"user"> {
+  async createOne() {}
 }
 
 const userService = new UserService("user");

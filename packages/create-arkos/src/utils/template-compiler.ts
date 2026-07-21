@@ -16,136 +16,87 @@ class TemplateCompiler {
       "auth-permission.prisma.hbs",
       "auth-role.prisma.hbs",
       "user-role.prisma.hbs",
-      "user-permission.prisma.hbs",
     ];
 
-    const sharedAuthZodSchemaFiles = [
-      "login.schema.ts.hbs",
-      "signup.schema.ts.hbs",
-      "update-password.schema.ts.hbs",
-      "update-me.schema.ts.hbs",
-    ];
-
-    const dynamicAuthZodSchemaFiles = [
-      "create-auth-permission.schema.ts.hbs",
-      "update-auth-permission.schema.ts.hbs",
-      "create-auth-role.schema.ts.hbs",
-      "update-auth-role.schema.ts.hbs",
-    ];
-
-    const userZodSchemaFiles = [
-      "create-user.schema.ts.hbs",
-      "update-user.schema.ts.hbs",
-    ];
-
-    const userClassValidatorDtoFiles = [
+    const userDtoFiles = [
       "create-user.dto.ts.hbs",
       "update-user.dto.ts.hbs",
+      "query-user.dto.ts.hbs",
     ];
 
-    const sharedAuthClassValidatorDtoFiles = [
+    const sharedAuthDtoFiles = [
       "login.dto.ts.hbs",
       "signup.dto.ts.hbs",
       "update-password.dto.ts.hbs",
       "update-me.dto.ts.hbs",
     ];
 
-    const dynamicAuthClassValidatorDtoFiles = [
+    const dynamicAuthDtoFiles = [
       "create-auth-permission.dto.ts.hbs",
       "update-auth-permission.dto.ts.hbs",
+      "query-auth-permission.dto.ts.hbs",
       "create-auth-role.dto.ts.hbs",
       "update-auth-role.dto.ts.hbs",
+      "query-auth-role.dto.ts.hbs",
     ];
 
     const authModuleComponents = [
-      "auth.interceptors.ts.hbs",
-      "auth.query.ts.hbs",
+      "auth.route-hook.ts.hbs",
+      "auth.policy.ts.hbs",
+      "auth.router.ts.hbs",
     ];
 
     const authPermissionModuleComponents = [
       "auth-permission.router.ts.hbs",
       "auth-permission.policy.ts.hbs",
-      "auth-permission.query.ts.hbs",
-      "auth-permission.query.ts.hbs",
+      "auth-permission.route-hook.ts.hbs",
       "auth-permission.service.ts.hbs",
     ];
 
     const authRoleModuleComponents = [
       "auth-role.router.ts.hbs",
       "auth-role.policy.ts.hbs",
-      "auth-role.query.ts.hbs",
-      "auth-role.query.ts.hbs",
+      "auth-role.route-hook.ts.hbs",
       "auth-role.service.ts.hbs",
     ];
 
     const userModuleComponents = [
-      "user.interceptors.ts.hbs",
-      "user.query.ts.hbs",
+      "user.route-hook.ts.hbs",
       "user.service.ts.hbs",
       "user.router.ts.hbs",
       "user.policy.ts.hbs",
     ];
 
-    if (config.prisma?.provider === "none")
+    if (
+      !config.authentication?.type ||
+      config.authentication?.type === "define later"
+    )
       files.push(
         ...authSharedPrismaFiles,
         ...dynamicAuthPrismaFiles,
-        "schema.prisma.hbs",
-        ...sharedAuthZodSchemaFiles,
-        ...dynamicAuthZodSchemaFiles,
-        ...sharedAuthClassValidatorDtoFiles,
-        ...dynamicAuthClassValidatorDtoFiles,
+        ...sharedAuthDtoFiles,
+        ...dynamicAuthDtoFiles,
         ...userModuleComponents,
         ...authModuleComponents,
         ...authPermissionModuleComponents,
         ...authRoleModuleComponents,
-        ...userZodSchemaFiles,
-        ...userClassValidatorDtoFiles,
-        "file-upload.auth.ts.hbs",
-        "index.ts.hbs"
-      );
-
-    if (!config.authentication?.type || config.authentication?.type === "none")
-      files.push(
-        ...authSharedPrismaFiles,
-        ...dynamicAuthPrismaFiles,
-        ...sharedAuthZodSchemaFiles,
-        ...dynamicAuthZodSchemaFiles,
-        ...sharedAuthClassValidatorDtoFiles,
-        ...dynamicAuthClassValidatorDtoFiles,
-        ...userModuleComponents,
-        ...authModuleComponents,
-        ...authPermissionModuleComponents,
-        ...authRoleModuleComponents,
-        ...userZodSchemaFiles,
-        ...userClassValidatorDtoFiles,
-        "file-upload.router.ts.hbs",
+        ...userDtoFiles,
         "file-upload.policy.ts.hbs"
       );
 
     if (config.authentication?.type === "static")
       files.push(
         ...dynamicAuthPrismaFiles,
-        ...dynamicAuthZodSchemaFiles,
-        ...dynamicAuthClassValidatorDtoFiles,
+        ...dynamicAuthDtoFiles,
         ...authPermissionModuleComponents,
         ...authRoleModuleComponents
       );
 
-    if (config.validation?.type !== "zod")
+    if (!config.validation?.type)
       files.push(
-        ...sharedAuthZodSchemaFiles,
-        ...dynamicAuthZodSchemaFiles,
-        ...userZodSchemaFiles,
-        "api-actions.hbs.ts"
-      );
-
-    // Ignore class-validator related files when validation is zod
-    if (config.validation?.type !== "class-validator")
-      files.push(
-        ...sharedAuthClassValidatorDtoFiles,
-        ...dynamicAuthClassValidatorDtoFiles,
-        ...userClassValidatorDtoFiles
+        ...sharedAuthDtoFiles,
+        ...dynamicAuthDtoFiles,
+        ...userDtoFiles
       );
 
     // Ignoring typescript related files when typescript false
@@ -153,8 +104,6 @@ class TemplateCompiler {
 
     // Ignoring javascript related files when typescript true
     if (config?.typescript) files.push(...["jsconfig.json.hbs"]);
-
-    if (config.entryPoint === "src/app") files.push("server.ts.hbs");
 
     return files;
   }
@@ -207,10 +156,6 @@ class TemplateCompiler {
 
           fs.mkdirSync(path.dirname(outputPath), { recursive: true });
           fs.writeFileSync(outputPath, content);
-        } else {
-          const outputPath = path.join(outputDir, relativePath);
-          fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-          fs.copyFileSync(fullPath, outputPath);
         }
       });
     }
