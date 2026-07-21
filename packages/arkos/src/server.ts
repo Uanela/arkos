@@ -129,8 +129,7 @@ async function initApp(
 }
 
 process.on("unhandledRejection", (err: AppError) => {
-  if (process.env.NO_CLI === "true" && process.env.__SKIP_LISTEN !== "true"
-  )
+  if (process.env.NO_CLI === "true" && process.env.__SKIP_LISTEN !== "true")
     sheu.error("UNHANDLED REJECTION! SHUTTING DOWN...\n", {
       timestamp: true,
       bold: true,
