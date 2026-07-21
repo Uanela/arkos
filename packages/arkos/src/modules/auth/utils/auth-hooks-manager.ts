@@ -34,7 +34,8 @@ class AuthHookManager {
    */
   async runAuthenticate<TContext extends ArkosBaseContext>(
     adapter: ArkosMiddlewareAdapter<TContext>,
-    getUser: (context: TContext) => Promise<User | null>
+    getUser: (context: TContext) => Promise<User | null>,
+    keyName: "user" | "currentUser" = "user"
   ): Promise<void> {
     const { context, done } = adapter;
     const hooks = getArkosConfig()?.authentication?.hooks?.authenticate;
@@ -56,7 +57,7 @@ class AuthHookManager {
     if (!before.skipped) {
       try {
         const user = await getUser(context);
-        context.user = user ?? undefined;
+        (context as any)[keyName] = user ?? undefined;
       } catch (err) {
         const onError = await this.runErrorHooks(hooks?.onError, err, context);
         if (onError.skipped) {
@@ -79,14 +80,13 @@ class AuthHookManager {
    * Shared by the HTTP `authorize()` middleware and WebSocket per-event authorization.
    *
    * @param adapter.context - The request or socket being authorized.
-   * @param adapter.done - Called with no args on success, or with an error to propagate.
-   * @param action - The action being performed (e.g. `"createOne"`, `"send_message"`).
-   * @param resource - The resource being accessed (e.g. `"user"`, `"chat"`).
-   * @param rule - Optional access control rule — a list of roles, a detailed rule object, or `"*"` for unrestricted.
+   * @param authAction {AuthAction}
+   * @param keyName {"user" | "currentUser"}
    */
   async runAuthorize<TContext extends ArkosBaseContext>(
     adapter: ArkosMiddlewareAdapter<TContext>,
-    authAction: Required<AuthAction>
+    authAction: Required<AuthAction>,
+    keyName: "user" | "currentUser" = "user"
   ): Promise<void> {
     const { context, done } = adapter;
     const hooks = getArkosConfig()?.authentication?.hooks?.authorize;
@@ -114,8 +114,8 @@ class AuthHookManager {
 
     if (!before.skipped) {
       try {
-        if (context.user) {
-          const user = context.user as User;
+        if ((context as any)[keyName]) {
+          const user = (context as any)[keyName] as User;
           const configs = getArkosConfig();
           if (!user.isSuperUser) {
             const notEnoughPermissionsError = new ForbiddenError(

@@ -1,15 +1,23 @@
-import { Server, Socket } from "socket.io";
+import { BroadcastOperator, Socket } from "socket.io";
 import { User } from "../../types";
 import { DefaultEventsMap } from "socket.io";
 import { Validator } from "../../types/validation/validator";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { DetailedAccessControlRule } from "../../types/auth";
-import { AuthAction } from "../../modules/auth/utils/services/auth-action.service";
+///@ts-ignore
+import {
+  AllButLast,
+  DecorateAcknowledgements,
+  DecorateAcknowledgementsWithMultipleResponses,
+  EventNames,
+  EventNamesWithAck,
+  EventNamesWithError,
+  EventParams,
+  FirstNonErrorArg,
+  Last,
+  ///@ts-ignore
+} from "socket.io/dist/typed-events";
 
-/**
- * An events map is an interface that maps event names to their value, which
- * represents the type of the `on` listener.
- */
 export interface EventsMap {
   [event: string]: any;
 }
@@ -23,9 +31,9 @@ export interface ArkosSocket<
 > extends Socket<ListenEvents, EmitEvents, ServerSideEvents, SocketData> {
   /**
    * Populated by Arkos after successful authentication on connection.
-   * Available in all event handlers when authentication: true on the gateway.
+   * Available in all event handlers when `authentication: true` on the gateway.
    */
-  user?: User;
+  currentUser?: User;
 
   /**
    * Populated by Arkos after successful validation.
@@ -33,165 +41,315 @@ export interface ArkosSocket<
    */
   data: SocketData;
 
-  /**
-   * User access token
-   */
+  /** User access token. */
   accessToken?: string;
+
   /**
-   * Metadata associated with the incoming message/event.
+   * Metadata from the incoming message, extracted from `_meta` by Arkos.
    *
-   * - `_mid`: Unique message identifier used for deduplication. When deduplication is enabled,
-   *   Arkos checks this ID to prevent processing the same message multiple times.
-   * - `timestamp`: Timestamp when the message was sent from the client.
-   *
-   * @example
-   * socket.on("send_message", (data) => {
-   *   console.log(socket.meta?._mid); // "abc123"
-   *   console.log(socket.meta?.timestamp); // 2024-01-01T00:00:00.000Z
-   * });
+   * - `mid`: Unique message ID used for deduplication.
+   * - `timestamp`: When the message was sent by the client.
    */
   meta?: {
-    /**
-     * The event message ID sent by the client
-     */
     mid?: string;
-    /**
-     * Message timestamp used by deduplication and freshness checks.
-     *
-     * Required when using `dedup.maxAge`.
-     */
     timestamp?: string | number | Date;
   };
 
   /**
-   * Per-event local data storage, scoped to the current event's pipeline.
-   *
-   * Use this to pass data between pipes and the event handler —
-   * similar to Express's `res.locals`. Reset automatically on each event.
+   * Per-event local storage, scoped to the current event pipeline.
+   * Use to pass data between pipes and the event handler — like Express's `res.locals`.
+   * Reset automatically on each event.
    *
    * @example
-   * chatGateway.pipe((socket, data, io) => {
-   *   socket.locals.user = enrichUser(socket.user)
+   * chatGateway.pipe((socket, data) => {
+   *   socket.locals.enriched = enrichUser(socket.currentUser)
    * })
    *
-   * chatGateway.on({ event: "send_message" }, (socket, data, io) => {
-   *   console.log(socket.locals.user) // set by pipe above
+   * chatGateway.on({ event: "send_message" }, (socket, data) => {
+   *   console.log(socket.locals.enriched)
    * })
    */
   locals?: SocketLocals;
+
+  /**
+   * Internal Arkos context injected by the gateway at connection time.
+   *
+   * @internal
+   */
+  _arkos: {
+    store: ArkosGatewayStore;
+    gatewayConfig: ArkosGatewayConfig;
+  };
+
+  /**
+   * Targets all active socket connections of a user by their user ID.
+   * Uses the internal `arkos::user:{userId}` room convention.
+   *
+   * Supports emit, management, and exclusion operations across all of the
+   * user's active connections.
+   *
+   * @example
+   * socket.user(userId).emit("notification", data)
+   * socket.user(userId).except({ user: otherUserId }).emit("sync", data)
+   * const sockets = await socket.user(userId).fetchSockets()
+   * const online = await socket.user(userId).isOnline()
+   *
+   * @since 1.7.0-canary.29
+   */
+  user(userId: string): ArkosUserTarget;
+
+  /**
+   * Wraps the next `emit` or `emitWithAck` with exponential backoff retry logic.
+   * Chain `.timeout(ms)` before `.emitWithAck()` as usual.
+   *
+   * @example
+   * socket.retry(3).emit("event", data)
+   * socket.retry(3).timeout(5000).emitWithAck("event", data)
+   *
+   * @since 1.7.0-canary.29
+   */
+  retry(
+    times: number,
+    initialDelay?: number,
+    multiplier?: number
+  ): ArkosRetryTarget;
+
+  /**
+   * Emits an event to this client.
+   * Arkos automatically injects `_meta` (`mid` + `timestamp`) into every outgoing payload
+   * for client-side deduplication and freshness checks.
+   *
+   * @example
+   * socket.emit("message", { text: "hello" })
+   * socket.emit("notification", { title: "New order" })
+   */
+  emit<Ev extends EventNames<EmitEvents>>(
+    ev: Ev,
+    ...args: EventParams<EmitEvents, Ev>
+  ): true;
+
+  /**
+   * Emits an event and waits for an acknowledgement from the client.
+   * Arkos injects `_meta` automatically. Use `.timeout(ms)` to avoid hanging indefinitely.
+   *
+   * @example
+   * const response = await socket.timeout(5000).emitWithAck("confirm", data)
+   */
+  emitWithAck<Ev extends EventNamesWithAck<EmitEvents>>(
+    ev: Ev,
+    ...args: AllButLast<EventParams<EmitEvents, Ev>>
+  ): Promise<FirstNonErrorArg<Last<EventParams<EmitEvents, Ev>>>>;
+
+  /**
+   * Targets a room when broadcasting — excludes the sender.
+   * Returns an {@link ArkosBroadcastOperator} with enhanced `.except({ user })` support
+   * and automatic `_meta` injection on every `.emit()`.
+   *
+   * @example
+   * socket.to("room-101").emit("message", data)
+   * socket.to("room-101").except({ user: userId }).emit("message", data)
+   * socket.to("room-101").volatile.emit("typing", data)
+   * await socket.to("room-101").timeout(3000).emitWithAck("confirm", data)
+   *
+   * @since 1.7.0-canary.29
+   */
+  to(
+    room: string | string[]
+  ): ArkosBroadcastOperator<
+    DecorateAcknowledgementsWithMultipleResponses<EmitEvents>,
+    SocketData
+  > &
+    BroadcastOperator<EmitEvents, SocketData>;
+  /**
+   * Broadcasts to all connected clients except the sender.
+   * Returns an {@link ArkosBroadcastOperator} with enhanced `.except({ user })` support
+   * and automatic `_meta` injection on every `.emit()`.
+   *
+   * @example
+   * socket.broadcast.emit("announcement", data)
+   * socket.broadcast.except({ user: userId }).emit("announcement", data)
+   * socket.broadcast.volatile.emit("ping", data)
+   *
+   * @since 1.7.0-canary.29
+   */
+  get broadcast(): ArkosBroadcastOperator<
+    DecorateAcknowledgementsWithMultipleResponses<EmitEvents>,
+    SocketData
+  > &
+    BroadcastOperator<EmitEvents, SocketData>;
+}
+
+/**
+ * Enhanced broadcast/room target returned by `socket.to()` and `socket.broadcast`.
+ * Extends the native `BroadcastOperator` with `{ user }` exclusion support
+ * and automatic `_meta` injection on emit.
+ *
+ * @since 1.7.0-canary.29
+ */
+export interface ArkosBroadcastOperator<
+  EmitEvents extends EventsMap = DefaultEventsMap,
+  SocketData extends Validator = any,
+> extends BroadcastOperator<EmitEvents, SocketData> {
+  /**
+   * Exclude sockets from the broadcast.
+   * Accepts a room name, socket ID, or `{ user: string | string[] }` to exclude
+   * all sockets belonging to one or more users.
+   *
+   * @example
+   * socket.to("room-101").except("room-102").emit("foo", data)
+   * socket.broadcast.except({ user: userId }).emit("foo", data)
+   * socket.broadcast.except({ user: [userId1, userId2] }).emit("foo", data)
+   */
+  except(
+    room: string | string[] | { user: string | string[] }
+  ): ArkosBroadcastOperator<EmitEvents, SocketData>;
+
+  /**
+   * Emits to all clients,`_meta` is injected automatically.
+   *
+   * @example
+   * // the “foo” event will be broadcast to all connected clients
+   * io.emit("foo", "bar");
+   *
+   * // the “foo” event will be broadcast to all connected clients in the “room-101” room
+   * io.to("room-101").emit("foo", "bar");
+   *
+   * // with an acknowledgement expected from all connected clients
+   * io.timeout(1000).emit("some-event", (err, responses) => {
+   *   if (err) {
+   *     // some clients did not acknowledge the event in the given delay
+   *   } else {
+   *     console.log(responses); // one response per client
+   *   }
+   * });
+   *
+   * @return Always true
+   */
+  emit<Ev extends EventNames<EmitEvents>>(
+    ev: Ev,
+    ...args: EventParams<EmitEvents, Ev>
+  ): true;
+
+  /** Chain volatile flag — event may be lost if client is not ready. */
+  get volatile(): ArkosBroadcastOperator<EmitEvents, SocketData>;
+
+  /** Chain compress flag. */
+  compress(value: boolean): ArkosBroadcastOperator<EmitEvents, SocketData>;
+
+  /** Chain timeout for `emitWithAck`. */
+  timeout(
+    ms: number
+  ): ArkosBroadcastOperator<DecorateAcknowledgements<EmitEvents>, SocketData>;
+
+  /**
+   * Emits an event and waits for an acknowledgement from all clients.
+   * `_meta` is injected automatically
+   * @example
+   * try {
+   *   const responses = await io.timeout(1000).emitWithAck("some-event");
+   *   console.log(responses); // one response per client
+   * } catch (e) {
+   *   // some clients did not acknowledge the event in the given delay
+   * }
+   *
+   * @return a Promise that will be fulfilled when all clients have acknowledged the event
+   */
+  emitWithAck<Ev extends EventNamesWithError<EmitEvents>>(
+    ev: Ev,
+    ...args: AllButLast<EventParams<EmitEvents, Ev>>
+  ): Promise<FirstNonErrorArg<Last<EventParams<EmitEvents, Ev>>>>;
+  /**
+   * Returns all unique user IDs currently in the target room(s).
+   *
+   * @example
+   * const users = await socket.to("room-123").users()
+   */
+  users(): Promise<string[]>;
+}
+
+/**
+ * Returned by `socket.retry(n)`. Wraps `emit` and `emitWithAck`
+ * with exponential backoff. Chain `.timeout(ms)` before `.emitWithAck()` as usual.
+ *
+ * @since 1.7.0-canary.29
+ */
+export interface ArkosRetryTarget {
+  /** Emit with ack and retry. `_meta` is injected automatically. */
+  emitWithAck(event: string, data: any, ...rest: any[]): Promise<any>;
+
+  /**
+   * Chain a timeout before `emitWithAck`.
+   *
+   * @example
+   * socket.retry(3).timeout(5000).emitWithAck("event", data)
+   */
+  timeout(ms: number): ArkosRetryTarget;
+}
+
+/**
+ * Returned by `socket.user(userId)`.
+ * Targets all active socket connections of a user.
+ *
+ * @since 1.7.0-canary.29
+ */
+export interface ArkosUserTarget extends ArkosBroadcastOperator {
+  /**
+   * Returns all active rooms for this user.
+   *
+   * @example
+   * const rooms = await socket.user(userId).activeRooms()
+   * console.log(rooms.length) // number of active tabs/connections
+   */
+  activeRooms(): Promise<string[]>;
 }
 
 export type ArkosGatewayPipe = (
   socket: ArkosSocket,
-  data: any,
-  io: Server
+  data: any
 ) => void | Promise<void>;
 
 export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
-  /**
-   * The Socket.io event name to listen for.
-   *
-   * @example
-   * event: "send_message"
-   */
+  /** The Socket.io event name to listen for. */
   event: string;
-  /**
-   * Zod schema or class-validator DTO to validate the incoming event payload.
-   * The validated data is passed as the second argument to the handler
-   * and also available on socket.validatedData.
-   *
-   * @example
-   * validation: z.object({ room: z.string(), content: z.string() })
-   */
+
+  /** Zod schema or class-validator DTO to validate the incoming event payload. */
   validation?: TSchema;
 
-  /**
-   * Per-event rate limiting. Overrides gateway-level rateLimit for this event.
-   * Useful for stricter limits on expensive events like send_message vs typing.
-   *
-   * @example
-   * rateLimit: { windowMs: 10_000, max: 5 }
-   */
+  /** Per-event rate limiting. Overrides gateway-level `rateLimit` for this event. */
   rateLimit?: Partial<RateLimitOptions> | false;
 
   /**
    * Authorization configuration.
    *
-   * @remarks
-   * - Supports ArkosPolicy rules
-   * - gateway authentication config must NOT be false, otherwise this will throw in registration time
-   * - Provide an object to specify resource-based access control with resource name, action, and optional custom rules.
+   * @remarks Gateway `authentication` must NOT be `false` or this throws at registration time.
    */
   authorization?: {
     resource: string;
     action: string;
     rule?: DetailedAccessControlRule | string[] | "*";
-    /**
-     * @private
-     */
-    _authAction?: Required<AuthAction>;
   };
 
   /**
-   * If `true`, the gateway will automatically call `ack({ success: true })`
-   * after the handler finishes, unless the handler already called ack manually.
-   * The ack callback is **always** passed to the handler as the 3rd argument.
+   * When `true`, Arkos automatically calls `ack({ success: true })` after the handler
+   * finishes, unless the handler already called ack manually.
    */
   ack?: boolean;
 
-  /**
-   * Disables this event handler without removing it.
-   * Useful for feature flags or temporary disabling.
-   */
+  /** Disables this event handler without removing it. */
   disabled?: boolean;
+
   /**
    * Maximum age in milliseconds for incoming messages.
-   * Events older than this threshold are rejected.
-   *
-   * Useful for short-lived real-time events such as typing,
-   * presence, and cursor updates.
-   *
-   * Requires `data._meta.timestamp`.
+   * Requires `data._meta.timestamp`. Events older than this are rejected.
    */
   maxAge?: number;
-  /**
-   * Per-event deduplication configuration for incoming gateway handlers.
-   *
-   * Controls whether an incoming event should be processed only once based on its
-   * unique message identifier (`_mid`).
-   *
-   * Deduplication is applied BEFORE the handler executes, ensuring idempotency
-   * at the processing boundary (not at transport/emit level).
-   *
-   * This is typically used to prevent:
-   * - duplicate client submissions
-   * - retry-based re-delivery
-   * - reconnect replay of the same logical event
-   */
 
+  /** Per-event deduplication. Overrides gateway-level `dedup`. */
   dedup?:
     | {
-        /**
-         * Enables or disables deduplication for this event handler.
-         *
-         * When enabled, the gateway will check whether the incoming message ID
-         * has already been processed and skip execution if so.
-         *
-         * Overrides the gateway-level `dedup.enabled` configuration.
-         *
-         * @default true
-         */
+        /** @default true */
         enabled?: boolean;
-        /**
-         * Time-to-live for the deduplication key in seconds.
-         *
-         * Defines how long a processed message ID is remembered to prevent
-         * duplicate execution within that window.
-         *
-         * Overrides the gateway-level `dedup.ttl` configuration.
-         *
-         * @default 3600
-         */
+        /** Time-to-live in seconds for the dedup key. @default 3600 */
         ttl?: number;
       }
     | false;
@@ -232,173 +390,52 @@ export type ArkosGatewayConfig = {
    *
    * @example
    * name: "/chat"
-   * // connects at: http://localhost:3000/chat
    */
   name: string;
 
   /**
-   * Whether this gateway requires authentication on connection.
-   * When true, Arkos runs the auth middleware on socket connection,
-   * populating socket.user. Unauthenticated sockets are rejected.
+   * When `true`, Arkos runs auth middleware on connection and populates `socket.currentUser`.
+   * Unauthenticated sockets are rejected.
    *
    * @default false
    */
   authentication?: boolean;
 
-  /**
-   * Gateway-level rate limiting applied per socket connection.
-   * Can be overridden per event using rateLimit in chatGateway.on().
-   *
-   * @example
-   * rateLimit: { windowMs: 60_000, max: 200 }
-   */
+  /** Gateway-level rate limiting, applied per socket. Can be overridden per event. */
   rateLimit?: Partial<RateLimitOptions>;
+
   /**
-   * Configuration for the deduplication system on this gateway.
-   * Deduplication prevents the same event from being processed
-   * multiple times within a given time window.
-   *
-   * All settings drill down to child gateways and can be overridden per child
-   * or per listener (`gateway.on`)
-   *
-   * @example
-   * ArkosGateway({
-   *   name: "/chat",
-   *   dedup: {
-   *     enabled: true,
-   *     ttl: 3600,
-   *   }
-   * })
+   * Gateway-level deduplication. Drills down to child gateways and can be overridden
+   * per child or per event listener.
    */
   dedup?:
     | {
-        /**
-         * Whether deduplication is enabled for this gateway.
-         * Defaults to `true` — opt out explicitly if you need duplicate events.
-         *
-         * @default true
-         */
+        /** @default true */
         enabled?: boolean;
-
-        /**
-         * Time-to-live in seconds for deduplication keys.
-         * After this period the same message ID can be processed again.
-         *
-         * @default 3600
-         */
+        /** @default 3600 */
         ttl?: number;
       }
     | false;
+
   /**
    * Maximum age in milliseconds for incoming messages.
-   * Events older than this threshold are rejected.
-   *
    * Can be overridden per event via `maxAge` in `gateway.on()`.
-   *
-   * @example
-   * ArkosGateway({
-   *   name: "/chat",
-   *   maxAge: 30_000, // reject messages older than 30s
-   * })
    */
   maxAge?: number;
 };
 
 /**
- * Options available on every Arkos-owned emit method.
- * All fields are optional — defaults are applied at the gateway level.
- *
- * @example
- * gateway.toUser(userId).emit("notification", data, {
- *   timeout: 5000,
- *   retries: 3,
- * })
- */
-export interface ArkosEmitOptions {
-  /**
-   * Timeout in milliseconds to wait for an acknowledgement from the client.
-   * Only applies to `toUser()` and `toSocket()` — broadcasts have no ack.
-   *
-   * @default 5000
-   */
-  timeout?: number;
-
-  /**
-   * Number of retry attempts if the emit times out or fails.
-   * Uses exponential backoff between attempts, capped at 5 seconds.
-   * Only applies to `toUser()` and `toSocket()`.
-   *
-   * @default 0
-   */
-  retries?: number;
-  /**
-   * Whether to expect an acknowledgement from the client.
-   *
-   * When `true`, the emit uses `emitWithAck` under the hood — the server
-   * waits for the client to call its ack callback, and the resolved value
-   * is returned in `result.data`.
-   *
-   * When `false` (default), the emit is fire-and-forget (or fire-and-confirm
-   * if `timeout` is set, using a server-side timeout callback).
-   *
-   * @default false
-   *
-   * // wait for client ack + get response back
-   * const result = await gateway.toUser(userId).emit("order:confirm", data, { ack: true })
-   * if (result.success) console.log(result.data) // client's ack payload
-   */
-  ack?: boolean;
-  /**
-   * Whether to send the event without waiting for room membership or
-   * buffering. Volatile events are discarded if the client is not
-   * immediately reachable (e.g. disconnected or busy).
-   *
-   * Useful for high-frequency, non-critical events like cursor positions
-   * or typing indicators where losing a packet is acceptable.
-   *
-   * @default false
-   *
-   * @example
-   * await gateway.toUser(userId).emit("cursor", data, { volatile: true })
-   */
-  volatile?: boolean;
-
-  /**
-   * Whether to enable per-message deflate compression on the payload.
-   * Disabling compression can improve performance for small, frequent
-   * messages where compression overhead outweighs the size savings.
-   *
-   * @default true
-   *
-   * @example
-   * await gateway.toUser(userId).emit("ping", data, { compress: false })
-   */
-  compress?: boolean;
-}
-
-/**
  * Options for `gateway.register()`.
- * Passed once at the root gateway registration — applies to all child gateways.
- *
- * @example
- * gateway.register(io, {
- *   store: new MultiTierStore([
- *     new MemoryStore(),
- *     new RedisStore(redis)
- *   ])
- * })
+ * Passed once at the root — applies to all child gateways.
  */
 export type ArkosGatewayRegisterOptions = {
   /**
-   * Unified store for rate limiting and deduplication across all gateways.
-   * Defaults to an in-memory store — zero config required for single-instance deployments.
-   *
-   * For distributed deployments (multiple Node processes / instances), plug in a
-   * Redis store or a multi-tier store to share state across instances.
+   * Unified store for rate limiting and deduplication.
+   * Defaults to an in-memory store — zero config for single-instance deployments.
+   * For distributed deployments plug in a Redis-backed store.
    *
    * @example
    * store: new RedisArkosStore(redis)
-   * store: new MultiTierStore([new MemoryStore(), new RedisStore(redis)])
    */
   store?: ArkosGatewayStore;
 };
@@ -409,70 +446,32 @@ export type ArkosGatewayRegisterOptions = {
  *
  * @example
  * class RedisArkosStore implements ArkosGatewayStore {
- *   constructor(private redis: RedisClientType) {}
- *
- *   async increment(key: string, windowMs: number) {
- *     const count = await this.redis.incr(key)
- *     if (count === 1) await this.redis.pExpire(key, windowMs)
- *     const ttl = await this.redis.pTtl(key)
- *     return { count, resetAt: Date.now() + ttl }
- *   }
- *
- *   async clear(prefix: string) {
- *     const keys = await this.redis.keys(`${prefix}*`)
- *     if (keys.length) await this.redis.del(keys)
- *   }
- *
- *   async has(key: string) {
- *     return (await this.redis.exists(key)) === 1
- *   }
- *
- *   async set(key: string, ttl: number) {
- *     await this.redis.setEx(key, ttl, "1")
- *   }
+ *   async increment(key, windowMs) { ... }
+ *   async clear(prefix) { ... }
+ *   async has(key) { ... }
+ *   async set(key, ttl) { ... }
+ *   async setIfNotExists(key, ttl) { ... }
  * }
  */
 export interface ArkosGatewayStore {
-  /**
-   * Increment a rate limit counter for a given key and window.
-   * Called on every event to track request counts.
-   * Key format: `arkos::rl:{socketId}:{event}`
-   */
+  /** Increment a rate limit counter. Key format: `arkos::rl:{socketId}:{event}` */
   increment(
     key: string,
     windowMs: number
   ): Promise<{ count: number; resetAt: number }>;
-  /**
-   * Clear all rate limit entries matching a prefix.
-   * Called on socket disconnect.
-   * Prefix format: `arkos::rl:{socketId}`
-   */
+
+  /** Clear all rate limit entries matching a prefix. Key format: `arkos::rl:{socketId}` */
   clear(prefix: string): Promise<void>;
-  /**
-   * Check if a dedup key exists.
-   * Called before emitting to detect duplicate messages.
-   */
+
+  /** Check if a dedup key exists. */
   has(key: string): Promise<boolean>;
-  /**
-   * Store a dedup key with a TTL in seconds.
-   * Called after emitting to mark a message as seen.
-   */
+
+  /** Store a dedup key with TTL in seconds. */
   set(key: string, ttl: number): Promise<void>;
+
   /**
-   * Atomically stores a deduplication key only if it does not already exist.
-   *
-   * Returns `true` if the key was successfully created and the caller
-   * should continue processing the message.
-   *
-   * Returns `false` if the key already exists, indicating the message
-   * has already been seen and should be treated as a duplicate.
-   *
-   * Implementations should guarantee atomic behavior whenever possible
-   * (for example Redis `SET NX EX`) to prevent race conditions under
-   * concurrent processing.
-   *
-   * @param key Unique deduplication key.
-   * @param ttl Time-to-live in seconds before the key expires.
+   * Atomically store a dedup key only if it does not already exist.
+   * Returns `true` if created (process the message), `false` if duplicate (skip).
    */
   setIfNotExists(key: string, ttl: number): Promise<boolean>;
 }

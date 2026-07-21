@@ -2,7 +2,6 @@ import swaggerJsdoc from "swagger-jsdoc";
 import { getSwaggerRouter, scalarMiddleware } from "../swagger.router";
 import getSwaggerDefaultConfig from "../utils/helpers/get-swagger-default-configs";
 import { importEsmPreventingTsTransformation } from "../../../utils/helpers/global.helpers";
-import authService from "../../auth/auth.service";
 import getOpenApiLoginHtml from "../utils/get-open-api-login-html";
 import { Arkos } from "../../../types/arkos";
 

@@ -1,0 +1,31 @@
+---
+title: Validation
+---
+
+Event validation reuses the exact same validation resolver you already configured for your HTTP routes — Zod or class-validator, whichever you set in `arkos.config.ts`. There's no separate WebSocket validation system.
+
+```ts
+chatGateway.on(
+  { event: "send_message", validation: SendMessageSchema },
+  (socket, data) => {
+    // data is typed and validated against SendMessageSchema
+  }
+);
+```
+
+## What happens under the hood
+
+1. Arkos checks the validator you passed is valid for your configured resolver. If your app is set to `zod` and you pass a class-validator DTO, this throws immediately with a clear message rather than failing silently at runtime.
+2. Your validator can signal one of three outcomes via `shouldValidate`:
+   - **Validate normally** — the default. Data is parsed/validated and the result replaces `data`.
+   - **`"passthrough"`** — validation is skipped entirely for this message; `data` is passed through as-is.
+   - **`"prohibit"`** — the event data is rejected outright with a `BadRequestError`. Useful for events that shouldn't carry a payload at all.
+3. On failure, the error is run through the same error-prettifier used for HTTP requests, so client-facing validation errors look consistent whether they came from a REST call or a socket event.
+
+## Errors
+
+A failed validation throws a `BadRequestError` with code `InvalidData`, caught by the same error pipeline as everything else in the event lifecycle — see [Middlewares and Hooks](/docs/guides/websockets/middlewares-and-hooks#hooks) for how `error` hooks intercept it, or [Handling Events](/docs/guides/websockets/event-handling#full-request-lifecycle-for-one-event) for where validation sits in the request lifecycle.
+
+## `_meta` is not part of your schema
+
+Every payload from the [client SDK](/docs/guides/websockets/advanced/frontend-integrations) carries a `_meta: { mid, timestamp }` field. Arkos strips it out and moves it to `socket.meta` before your validator ever sees the payload — you don't need to account for it in your schema.

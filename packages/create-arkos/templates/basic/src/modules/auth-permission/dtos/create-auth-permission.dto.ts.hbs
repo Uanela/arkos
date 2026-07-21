@@ -22,9 +22,4 @@ export default class CreateAuthPermissionDto {
   @Type(() => RoleConnectDto)
   @IsOptional()
   roles?: RoleConnectDto[];
-
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => String(value))
-  description?: string;
 }

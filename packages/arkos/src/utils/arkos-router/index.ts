@@ -177,7 +177,12 @@ export function generateOpenAPIFromApp(app: Arkos) {
         ? zodToJsonSchema
         : classValidatorToJsonSchema;
 
-    let parameters = [];
+    let parameters: {
+      in: string;
+      name: string;
+      required: boolean;
+      schema: any;
+    }[] = [];
     const validationToParameterMapping = {
       query: "query",
       params: "path",

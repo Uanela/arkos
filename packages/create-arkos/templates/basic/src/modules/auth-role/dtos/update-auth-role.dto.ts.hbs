@@ -4,7 +4,7 @@ import 'reflect-metadata'
 
 export enum ApiAction {
   connect = 'connect',
-  delete = 'delete'
+  disconnect = 'disconnect'
 }
 
 class UpdatePermissionForRoleDto {
@@ -21,11 +21,6 @@ class UpdatePermissionForRoleDto {
   @IsString()
   @Transform(({ value }) => String(value))
   action?: string
-
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value)
-  description?: string;
 
   @IsEnum(ApiAction)
   @IsOptional()

@@ -1,0 +1,83 @@
+---
+title: Enhanced Socket
+---
+
+Every socket your handlers receive is a plain `socket.io` `Socket`, patched with a small set of additions Arkos calls `ArkosSocket`. Everything not covered here — rooms, `socket.id`, `socket.handshake`, `socket.join()` — is untouched `socket.io`, so its docs apply as-is.
+
+## What's already on it
+
+| Property             | Populated when                                                                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `socket.currentUser` | After successful auth, if the Gateway has `authentication: true`. See [Authentication](/docs/guides/websockets/authentication). |
+| `socket.data`        | After validation, if the event has a `validation` schema. See [Validation](/docs/guides/websockets/validation).                 |
+| `socket.meta`        | `{ mid, timestamp }` extracted from the incoming payload's `_meta`, if deduplication is active for that event.                         |
+| `socket.locals`      | Scratch space for passing data between pipes and your handler. Reset automatically before every event.                                 |
+
+## Gotcha: outgoing `_meta` is injected automatically
+
+Every emit — `socket.emit`, `socket.emitWithAck`, `socket.to().emit()`, `socket.broadcast.emit()` — has a `_meta: { mid, timestamp }` field injected into the payload before it goes out. You don't add this yourself, and you shouldn't try to — if you inspect what actually goes over the wire and it has fields you didn't send, this is why.
+
+```ts
+socket.emit("notification", { title: "New order" });
+// client receives: { title: "New order", _meta: { mid: "...", timestamp: 1720000000000 } }
+```
+
+This is what powers dedup and freshness checks on the receiving end — see [Deduplication and Freshness](/docs/guides/websockets/advanced/deduplication-and-freshness).
+
+## Targeting rooms — `socket.to()` and `socket.broadcast`
+
+Both return an enhanced `ArkosBroadcastOperator` — the standard `socket.io` operator plus a few additions:
+
+```ts
+socket.to("room-101").emit("message", data);
+socket.broadcast.emit("announcement", data);
+```
+
+### `.except({ user })`
+
+Standard `socket.io` `.except()` takes a room or socket ID. Arkos adds a `{ user }` shorthand that excludes every active connection belonging to one or more users — handy since one user can have multiple tabs/devices connected:
+
+```ts
+socket.to("room-101").except({ user: currentUserId }).emit("message", data);
+socket.broadcast.except({ user: [id1, id2] }).emit("announcement", data);
+```
+
+### `.users()`
+
+Returns the unique user IDs currently in the target room(s), derived from Arkos's internal `arkos::user:{id}` room convention:
+
+```ts
+const activeUserIds = await socket.to("room-123").users();
+```
+
+### `.volatile`, `.compress()`, `.timeout()`
+
+Same as plain `socket.io` — `.volatile` for events that are fine to drop if the client isn't ready (cursor positions, typing indicators), `.compress(bool)`, `.timeout(ms)` before `.emitWithAck()`.
+
+## Targeting a specific user — `socket.user(userId)`
+
+Targets every active connection of a given user, not just the current socket:
+
+```ts
+socket.user(userId).emit("notification", { title: "New order" });
+
+const rooms = await socket.user(userId).activeRooms(); // rooms across all their tabs/devices
+```
+
+`socket.user()` returns the same `ArkosBroadcastOperator` as `.to()`/`.broadcast`, plus `activeRooms()`.
+
+## Retrying an ack — `socket.retry()`
+
+Wraps `emitWithAck` with exponential backoff:
+
+```ts
+const ack = await socket.retry(3).emitWithAck("confirm", data);
+
+// with a per-attempt timeout
+const ack = await socket.retry(3).timeout(5000).emitWithAck("confirm", data);
+
+// custom base delay (ms) and multiplier — default is 1000ms base, 2x multiplier
+const ack = await socket.retry(3, 500, 1.5).emitWithAck("confirm", data);
+```
+
+Throws if all retries are exhausted.

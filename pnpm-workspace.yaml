@@ -1,0 +1,13 @@
+packages:
+  - "packages/*"
+  - "integrations/*"
+supportedArchitectures:
+  os:
+  - win32
+  - darwin
+  - current
+  cpu:
+  - arm64
+  - arm64v8
+  arch:
+  - arm64v8
