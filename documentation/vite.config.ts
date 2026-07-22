@@ -10,13 +10,12 @@ import { resolve } from "path";
 export default defineConfig({
   server: {
     port: 3001,
-    allowedHosts: true
+    allowedHosts: true,
   },
   preview: {
-    allowedHosts: true 
+    allowedHosts: true,
   },
-  build: {
-  },
+  build: {},
   plugins: [
     mdx(await import("./source.config")),
     tailwindcss(),
@@ -43,10 +42,10 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),
       // path: "path-browserify",
     },
-    dedupe: ['react', 'react-dom']
+    dedupe: ["react", "react-dom"],
   },
   ssr: {
-    noExternal: ["react", "react-dom"],
+    noExternal: [],
     external: [
       "path",
       "node:fs",
