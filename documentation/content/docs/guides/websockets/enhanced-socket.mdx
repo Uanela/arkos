@@ -9,7 +9,7 @@ Every socket your handlers receive is a plain `socket.io` `Socket`, patched with
 | Property             | Populated when                                                                                                                         |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `socket.currentUser` | After successful auth, if the Gateway has `authentication: true`. See [Authentication](/docs/guides/websockets/authentication). |
-| `socket.data`        | After validation, if the event has a `validation` schema. See [Validation](/docs/guides/websockets/validation).                 |
+| `socket.data`        | Incoming data, if the event has a `validation` schema it is the validated and transformed data. See [Validation](/docs/guides/websockets/validation).                 |
 | `socket.meta`        | `{ mid, timestamp }` extracted from the incoming payload's `_meta`, if deduplication is active for that event.                         |
 | `socket.locals`      | Scratch space for passing data between pipes and your handler. Reset automatically before every event.                                 |
 

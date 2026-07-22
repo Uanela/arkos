@@ -9,31 +9,40 @@ Arkos WebSockets are built directly on top of `socket.io`. If you already know `
 ## Creating a Gateway
 
 ```ts
-import ArkosGateway from "arkos/websockets";
+import { ArkosGateway } from "arkos/websockets";
 
-const chatGateway = ArkosGateway({
-  name: "chat",
+const gateway = ArkosGateway({
+  name: "/",
   authentication: true,
 });
 ```
 
-`config.name` becomes the Socket.io namespace. It defaults to `"web-socket"` if omitted.
+`config.name` becomes the Socket.io namespace. It defaults to `"/"` if omitted.
 
 ## Registering it
 
 ```ts
+import arkos from "arkos";
 import { Server } from "socket.io";
-import chatGateway from "./gateways/chat.gateway";
+import http from "node:http";
+import gateway from "@/src/gateway";
 
+const app = arkos()
+
+await app.listen()
+
+const server = http.createServer(app)
 const io = new Server(httpServer);
 
-chatGateway.register(io);
+gateway.register(io);
+
+app.listen(server)
 ```
 
 `register(io, options?)` can only be called once per `io` instance — call it on your root Gateway and compose the rest with `.use()` (see below). Calling it twice throws.
 
 ```ts
-chatGateway.register(io, {
+gateway.register(io, {
   store: myRedisStore, // optional — defaults to an in-memory store
 });
 ```
@@ -45,14 +54,14 @@ The `store` option backs both rate limiting and deduplication. See [Stores and S
 `.use()` accepts either a raw Socket.io connection middleware, or another Gateway to nest under this one:
 
 ```ts
-chatGateway.use((socket, next) => {
+gateway.use((socket, next) => {
   console.log("incoming connection", socket.id);
   next();
 });
 
 // nested gateway — inherits this gateway's name as a namespace prefix,
 // plus its authentication and rateLimit config
-chatGateway.use(adminGateway);
+gateway.use(adminGateway);
 ```
 
 A nested Gateway's namespace becomes `${parent.name}/${child.name}`. It inherits the parent's `authentication` and `rateLimit` unless it sets its own, and it inherits all of the parent's lifecycle hooks. It does **not** automatically inherit the parent's `.pipe()` middlewares — those are scoped to the Gateway that registered them.
@@ -60,7 +69,7 @@ A nested Gateway's namespace becomes `${parent.name}/${child.name}`. It inherits
 ## Attaching an event handler — `.on()`
 
 ```ts
-chatGateway.on({ event: "send_message" }, (socket, data) => {
+gateway.on({ event: "send_message" }, (socket, data) => {
   socket.to(data.room).emit("receive_message", data);
 });
 ```
@@ -69,32 +78,30 @@ This is the shallow version — `.on()` takes a full event config (`validation`,
 
 ## Minimal end-to-end example
 
-```ts
-// gateways/chat.gateway.ts
-import ArkosGateway from "arkos/websockets";
+```ts title="src/gateway.ts"
+import { ArkosGateway } from "arkos/websockets";
 
-const chatGateway = ArkosGateway({ name: "chat" });
+const gateway = ArkosGateway({ name: "/" });
 
-chatGateway.on({ event: "send_message" }, (socket, data) => {
+gateway.on({ event: "send_message" }, (socket, data) => {
   socket.to(data.room).emit("receive_message", data);
 });
 
-export default chatGateway;
+export default gateway;
 ```
 
-```ts
-// src/server.ts
+```ts title="src/server.ts"
 import { Server } from "socket.io";
 import http from "http";
 import app from "@/src/app";
-import chatGateway from "@/src/gateways/chat.gateway";
+import gateway from "@/src/gateway";
 
 await app.build();
 
 const server = http.createServer(app);
 const io = new Server(server);
 
-chatGateway.register(io);
+gateway.register(io);
 
 app.listen(server);
 ```

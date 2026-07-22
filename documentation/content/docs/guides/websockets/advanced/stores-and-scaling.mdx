@@ -5,7 +5,7 @@ title: Stores and Scaling
 Rate limiting and deduplication both need somewhere to keep state. That's the `ArkosGatewayStore` — a single interface backing both features, passed once at registration:
 
 ```ts
-chatGateway.register(io, { store: myStore });
+gateway.register(io, { store: myStore });
 ```
 
 ## The default store
@@ -72,7 +72,7 @@ export class RedisArkosGatewayStore implements ArkosGatewayStore {
 ```
 
 ```ts
-chatGateway.register(io, { store: new RedisArkosGatewayStore(redis) });
+gateway.register(io, { store: new RedisArkosGatewayStore(redis) });
 ```
 
 `clear(prefix)` using `KEYS` is fine at the volume a per-socket rate-limit cleanup runs at; swap it for `SCAN` if you're clearing high-cardinality prefixes elsewhere.
@@ -89,7 +89,7 @@ const store = new MultiTierArkosGatewayStore([
   new RedisArkosGatewayStore(redis),
 ]);
 
-chatGateway.register(io, { store });
+gateway.register(io, { store });
 ```
 
 Rate-limit `increment()` is the one exception to "check in order" — it always increments L1 first and returns that result immediately, syncing the other tiers in the background, so a rate-limit decision never waits on a network round trip.

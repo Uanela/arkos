@@ -28,4 +28,4 @@ A failed validation throws a `BadRequestError` with code `InvalidData`, caught b
 
 ## `_meta` is not part of your schema
 
-Every payload from the [client SDK](/docs/guides/websockets/advanced/frontend-integrations) carries a `_meta: { mid, timestamp }` field. Arkos strips it out and moves it to `socket.meta` before your validator ever sees the payload — you don't need to account for it in your schema.
+Every payload from the [client SDK](/docs/guides/websockets/frontend-integrations/overview) carries a `_meta: { mid, timestamp }` field. Arkos strips it out and moves it to `socket.meta` before your validator ever sees the payload — you don't need to account for it in your schema.
