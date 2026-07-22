@@ -312,7 +312,6 @@ program
   )
   .action(exportAuthActionCommand);
 
-// To resolve arkos g r,c,service -m post
 generate.on("command:*", ([unknownCmd]) => {
   if (unknownCmd.includes(",") && !unknownCmd.includes(" ")) {
     const generateOptions = generate.opts();

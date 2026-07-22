@@ -4,7 +4,7 @@ model AuthRole {
   description String?
   permissions AuthPermission[]
   users       UserRole[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
