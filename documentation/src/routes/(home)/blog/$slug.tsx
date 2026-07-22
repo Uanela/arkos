@@ -21,14 +21,17 @@ const serverLoader = createServerFn({ method: "GET" }).handler(
   async ({ data: slug }) => {
     const page = blog.getPage([slug]);
     if (!page) throw notFound();
-    const pages = blog.getPages();
+    const pages = blog
+      .getPages()
+      .sort(
+        (a, b) =>
+          new Date(a.data.date).getTime() - new Date(b.data.date).getTime() 
+      );
     const index = pages.findIndex((p) => p.slugs[0] === slug);
 
     const contents = page?.data.structuredData.contents;
 
-    const title = page?.data.title
-      ? `${page.data.title} - Arkos.js Blog`
-      : "Arkos.js Blog";
+    const title = page?.data.title ? `${page.data.title}` : "Arkos.js Blog";
 
     const description =
       page?.data.description ||

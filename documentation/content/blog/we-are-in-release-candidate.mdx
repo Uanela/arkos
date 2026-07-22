@@ -1,0 +1,51 @@
+---
+title: "We Are In Release Candidate"
+authors: [uanela]
+tags: [arkosjs, roadmap, stability, lts, v2]
+date: 2026-07-25
+description: v1.7.0-rc marks the point where Arkos stops tagging every minor "beta." Here's what that means, and the road ahead through 1.8 (first stable), 1.10 (first LTS), and v2.0.
+---
+
+Every minor release since 1.5 has shipped with a `-beta` tag. 1.7.0 is the first one tagged `-rc` instead — and that's not a small naming detail. It's the first real signal that Arkos is leaving its beta phase behind.
+
+## What changed
+
+Over six minor releases and a little over a month of hard iteration, something quietly shifted: the issues coming in stopped being "this breaks" and started being "can this do X too." Bug reports on core behavior — routing, validation, auth, the ORM layer — have gotten rare. Most of what lands in the tracker now is feature requests, edge-case polish, or DX suggestions, not "the framework doesn't work as documented." That's the real marker of a framework settling down, more than any version number is.
+
+`ArkosGateway` in this release is a good example of what that looks like in practice: a genuinely new subsystem, built on existing primitives (the auth system, `ArkosPolicy`, the validation resolver) instead of a parallel one-off. That's the pattern we want going forward — new capability that plugs into what's already solid, rather than expanding the surface area of things that still need to prove themselves.
+
+## What's next
+
+Here's the version plan from here, so you can plan your own upgrades around it:
+
+### v1.8.0 — first stable release
+
+The `-beta`/`-rc` qualifiers come off entirely. 1.8 is where we're committing to the current core APIs — routing, `ArkosPolicy`, `RouteHook`, the validation and error-handling layers, and the Gateway API introduced in 1.7 — as the stable v1 surface. Features keep landing after this, but the foundation stops moving under you.
+
+### v1.9.0 — continued feature work
+
+More of the same trajectory: additions, not architecture changes. Anything that fits cleanly on top of the current design keeps shipping here.
+
+### v1.10.0 — first LTS release
+
+This is the one to plan production upgrades around if you value stability over new features. 1.10 will be Arkos's first Long-Term Support release, with **3 years of bug-fix support** after it ships. If you're running Arkos in production and want a version you can sit on without chasing every minor, 1.10 LTS is the target.
+
+### v2.0 — already in development
+
+Some ideas don't fit into the v1 line no matter how we shape them — they need actual architecture changes, not additive config. Rather than force those into v1 and destabilize the thing we just spent a month and a half stabilizing, we've split the work: v1 keeps moving additively through 1.8, 1.9, and 1.10, while v2.0 development has already started in parallel for everything that needs a real breaking change to do properly.
+
+We'll share more on what's actually going into 2.0 as that work solidifies — this post is about the shape of the roadmap, not a features list yet.
+
+## What this means for you
+
+- **On the bleeding edge?** Keep tracking minors through 1.8 and 1.9 as usual.
+- **Running Arkos in production and want stability?** 1.10 LTS is being built with you in mind — 3 years of bug fixes, no feature churn required.
+- **Curious what's structurally next?** v2.0 is where the bigger architectural bets will land, and it's being developed openly alongside the v1 line, not as a surprise fork.
+
+Thanks for filing the bug reports that got us here, and for the feature requests that tell us where to point v1.8 onward. Both are exactly the signal we needed.
+
+**Resources:**
+
+- [Full documentation](https://arkosjs.com/docs)
+- [GitHub repository](https://github.com/uanela/arkos)
+- [GitHub milestones](https://github.com/Uanela/arkos/milestones) — for tracking 1.8/1.9/1.10/2.0 as they take shape
