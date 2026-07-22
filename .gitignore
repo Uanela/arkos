@@ -14,4 +14,5 @@ packages/create-arkos-api
 documentation/.next
 debug.log
 .ignored
+.cache
 .git-backup

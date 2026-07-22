@@ -1,7 +1,7 @@
 import sheu from "../sheu";
 
 export default function ExitError(message: any, code = 1) {
-  console.log("");
+  console.info("");
   sheu.error(message);
   process.exit(code);
 }

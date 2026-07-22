@@ -1,0 +1,4 @@
+{
+  "title": "Advanced",
+  "pages": ["deduplication-and-freshness", "stores-and-scaling"]
+}

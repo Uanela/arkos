@@ -1,8 +1,15 @@
 import { OpenAPIV3 } from "openapi-types";
 import deepmerge from "../helpers/deepmerge.helper";
-import { UploadConfig } from "./types/upload-config";
+import {
+  ArkosRouterBaseUploadConfig,
+  UploadConfig,
+  UploadConfigFieldEntry,
+} from "./types/upload-config";
 
 class ArkosRouterOpenAPIManager {
+  private resolveSchemaFieldName(name: string): string {
+    return name.replace(/\[\]/g, "[0]");
+  }
   /**
    * Generates OpenAPI schema for file upload fields in multipart/form-data requests.
    * Converts upload configuration into OpenAPI-compliant schema and merges with existing body schema.
@@ -22,7 +29,14 @@ class ArkosRouterOpenAPIManager {
    *
    * @example
    * // Multiple fields upload
-   * addUploadFields({ type: 'fields', fields: [{ name: 'avatar', maxCount: 1 }, { name: 'resume', maxCount: 1 }] })
+   * addUploadFields({
+   *   type: 'fields',
+   *   fields: [
+   *     { name: 'avatar', type: 'single', uploadDir: 'images' },
+   *     { name: 'gallery', type: 'array', maxCount: 6, uploadDir: 'gallery' },
+   *     { name: 'banners[][images]', type: 'array', maxCount: 5, uploadDir: 'banners' }
+   *   ]
+   * })
    */
   addUploadFields(
     uploadConfig: UploadConfig,
@@ -35,40 +49,47 @@ class ArkosRouterOpenAPIManager {
     };
 
     if (uploadConfig.type === "single") {
-      uploadSchema.properties[uploadConfig.field] = {
+      const schemaKey = this.resolveSchemaFieldName(uploadConfig.field);
+      uploadSchema.properties[schemaKey] = {
         type: "string",
         format: "binary",
-        description: `Single file field${uploadConfig.maxSize ? `, max size: ${uploadConfig.maxSize} bytes` : ""}`,
+        description:
+          uploadConfig.description ||
+          `Single file field${uploadConfig.maxSize ? `, max size: ${uploadConfig.maxSize} bytes` : ""}`,
       };
       if (uploadConfig.required !== false) {
-        uploadSchema.required.push(uploadConfig.field);
+        uploadSchema.required.push(schemaKey);
       }
     } else if (uploadConfig.type === "array") {
-      uploadSchema.properties[uploadConfig.field] = {
+      const schemaKey = this.resolveSchemaFieldName(uploadConfig.field);
+      uploadSchema.properties[schemaKey] = {
         type: "array",
         items: {
           type: "string",
           format: "binary",
         },
         ...(uploadConfig.maxCount && { maxItems: uploadConfig.maxCount }),
-        description: `Array file field${uploadConfig.maxSize ? `, max size per file: ${uploadConfig.maxSize} bytes` : ""}`,
+        ...(uploadConfig.minCount && { minItems: uploadConfig.minCount }),
+        description:
+          uploadConfig.description ||
+          `Array file field${uploadConfig.maxSize ? `, max size per file: ${uploadConfig.maxSize} bytes` : ""}`,
       };
       if (uploadConfig.required !== false) {
-        uploadSchema.required.push(uploadConfig.field);
+        uploadSchema.required.push(schemaKey);
       }
     } else if (uploadConfig.type === "fields") {
       for (const field of uploadConfig.fields) {
-        uploadSchema.properties[field.name] = {
-          type: "array",
-          items: {
-            type: "string",
-            format: "binary",
-          },
-          ...(field.maxCount && { maxItems: field.maxCount }),
-          description: `Array file field${uploadConfig.maxSize ? `, max size per file: ${uploadConfig.maxSize} bytes` : ""}`,
-        };
-        if (uploadConfig.required !== false) {
-          uploadSchema.required.push(field.name);
+        uploadSchema.properties[this.resolveSchemaFieldName(field.name)] =
+          this.buildFieldSchema(field, uploadConfig);
+
+        // legacy shape has no type and no required — default to required
+        const isRequired =
+          (field as any).type === undefined
+            ? (uploadConfig as any).required !== false
+            : (field as any).required !== false;
+
+        if (isRequired) {
+          uploadSchema.required.push(this.resolveSchemaFieldName(field.name));
         }
       }
     }
@@ -77,6 +98,42 @@ class ArkosRouterOpenAPIManager {
     if (uploadSchema.required.length === 0) delete uploadSchema.required;
 
     return deepmerge(existingSchema as any, uploadSchema);
+  }
+
+  /**
+   * Builds the OpenAPI property schema for a single field entry.
+   * Legacy entries (no type) are treated as array.
+   */
+  private buildFieldSchema(
+    field: UploadConfigFieldEntry,
+    config: ArkosRouterBaseUploadConfig
+  ): object {
+    const maxSize = field.maxSize ?? config.maxSize;
+
+    if (field.type === "single") {
+      return {
+        type: "string",
+        format: "binary",
+        description:
+          field.description ||
+          `Single file field${maxSize ? `, max size: ${maxSize} bytes` : ""}`,
+      };
+    }
+
+    // type === "array" or legacy (no type) — both produce array schema
+    return {
+      type: "array",
+      items: {
+        type: "string",
+        format: "binary",
+      },
+      ...(field.maxCount && { maxItems: field.maxCount }),
+      ...(field.type === "array" &&
+        field.minCount && { minItems: field.minCount }),
+      description:
+        (field.type === "array" && field.description) ||
+        `Array file field${maxSize ? `, max size per file: ${maxSize} bytes` : ""}`,
+    };
   }
 
   /**
@@ -124,16 +181,31 @@ class ArkosRouterOpenAPIManager {
       });
     } else if (uploadConfig?.type === "fields") {
       for (const field of uploadConfig.fields) {
-        expectedFields.push({
-          name: field.name,
-          required: uploadConfig.required !== false,
-          expectedType: "array",
-        });
+        if (!("type" in field)) {
+          expectedFields.push({
+            name: field.name,
+            // legacy shape has no type and no required — default to required
+            required:
+              (uploadConfig as ArkosRouterBaseUploadConfig).required ===
+              undefined
+                ? true
+                : ((uploadConfig as ArkosRouterBaseUploadConfig)
+                    .required as boolean),
+            expectedType: "array",
+          });
+        } else if (field.type)
+          expectedFields.push({
+            name: field.name,
+            required:
+              field.type === undefined ? true : field.required !== false,
+            expectedType: field.type ?? "array",
+          });
       }
     }
 
     for (const { name, required, expectedType } of expectedFields) {
-      const fieldSchema = properties[name];
+      const schemaKey = this.resolveSchemaFieldName(name);
+      const fieldSchema = properties[schemaKey];
 
       if (!fieldSchema) {
         errors.push(
@@ -167,7 +239,7 @@ class ArkosRouterOpenAPIManager {
           );
       }
 
-      const isMarkedRequired = requiredFields.includes(name);
+      const isMarkedRequired = requiredFields.includes(schemaKey);
       if (required && !isMarkedRequired)
         errors.push(
           `Upload field '${name}' is required in config but not marked as required in schema`
