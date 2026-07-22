@@ -40,6 +40,7 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),
       // path: "path-browserify",
     },
+    dedupe: ['react', 'react-dom']
   },
   ssr: {
     noExternal: [],
