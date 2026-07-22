@@ -16,7 +16,6 @@ export default defineConfig({
     allowedHosts: true 
   },
   build: {
-    // concurrency: 4,
   },
   plugins: [
     mdx(await import("./source.config")),
@@ -47,7 +46,7 @@ export default defineConfig({
     dedupe: ['react', 'react-dom']
   },
   ssr: {
-    noExternal: [],
+    noExternal: ["react", "react-dom"],
     external: [
       "path",
       "node:fs",
