@@ -1,0 +1,77 @@
+---
+title: Deduplication and Freshness
+---
+
+Both features key off `_meta`, a `{ mid, timestamp }` object Arkos expects on incoming payloads and injects automatically on outgoing ones (see [Enhanced Socket](/docs/guides/websockets/enhanced-socket#gotcha-outgoing-_meta-is-injected-automatically)). If you're using the [client Library](/docs/guides/websockets/advanced/frontend-integrations/overview), this is handled for you. If you're emitting from a raw `socket.io-client` connection, you need to send `_meta` yourself for these features to work.
+
+## Deduplication
+
+Protects against the same logical message being processed twice — network retries, double-clicks, at-least-once delivery from a queue in front of your sockets.
+
+```ts
+gateway.on({ event: "send_message", dedup: { ttl: 600 } }, handler);
+```
+
+### How it works
+
+1. Deduplication is **on by default** for every event, at a Gateway-wide default of `{ enabled: true, ttl: 3600 }` (seconds).
+2. Every incoming message must carry `data._meta.mid` — a unique string ID for that logical message. If it's missing, empty, or not a string, Arkos throws a `BadRequestError` before your handler ever runs.
+3. Arkos atomically checks-and-sets a key `arkos::dedup:{event}:{mid}` in the configured store. If the key already exists, the message is a duplicate: your handler is skipped, and if the client passed an ack, it receives `{ success: true, duplicate: true }` — not an error, since from the sender's perspective the message did succeed the first time.
+4. `_meta` is stripped from `data` before your handler runs; `mid`/`timestamp` are available on `socket.meta` instead.
+
+### Turning it off
+
+```ts
+// per event
+gateway.on({ event: "cursor_move", dedup: false }, handler);
+
+// per gateway — every event skips dedup unless it opts back in
+const gateway = ArkosGateway({ name: "chat", dedup: false });
+```
+
+Turn it off for high-frequency, order-independent events where a duplicate is harmless (cursor positions, typing indicators) — the check-and-set has a real cost per message.
+
+### Config precedence
+
+`dedup` resolves event → Gateway → parent Gateway, with the event-level config taking priority and merging on top of the rest:
+
+```ts
+const parent = ArkosGateway({ name: "chat", dedup: { ttl: 3600 } });
+const child = ArkosGateway({ name: "rooms" });
+parent.use(child);
+
+child.on({ event: "x", dedup: { ttl: 60 } }, handler); // ttl: 60 wins
+child.on({ event: "y" }, handler); // inherits ttl: 3600 from parent
+```
+
+## Freshness — `maxAge`
+
+Rejects messages that are simply too old to matter — a client that reconnects after being offline for a while can have a backlog of queued actions; `maxAge` lets you drop the stale ones instead of processing them as if they just happened.
+
+```ts
+gateway.on(
+  { event: "cursor_move", maxAge: 5000 }, // reject anything older than 5s
+  handler
+);
+```
+
+### How it works
+
+1. If `maxAge` is set (per event, per Gateway, or inherited from a parent) and the incoming message has no `_meta.timestamp`, Arkos throws immediately — `maxAge` without a timestamp to check is a config error, not a runtime skip.
+2. If `_meta.timestamp` is present, Arkos always validates it (even without `maxAge` set): an unparseable date throws `InvalidTimestamp`, and a timestamp more than 1 second in the future throws `FutureTimestamp` — a cheap clock-skew/tampering guard that applies regardless of whether you configured `maxAge`.
+3. If `maxAge` is set and `Date.now() - timestamp > maxAge`, the message is rejected with `StaleMessage`.
+
+### Config precedence
+
+Same resolution order as `dedup` — event overrides Gateway, Gateway overrides parent:
+
+```ts
+const parent = ArkosGateway({ name: "chat", maxAge: 60_000 });
+const child = ArkosGateway({ name: "rooms" });
+parent.use(child);
+
+child.on({ event: "x", maxAge: 300_000 }, handler); // 5 minutes, overrides parent's 1 minute
+child.on({ event: "y" }, handler); // inherits 1 minute from parent
+```
+
+If neither the event, the Gateway, nor any parent sets `maxAge`, no age check runs at all — only the always-on future-timestamp guard applies (and only if `_meta.timestamp` was sent in the first place).

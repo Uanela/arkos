@@ -4,3 +4,4 @@ allowBuilds:
   esbuild: true
   prisma: true
   sharp: true
+  vue-demi: true

@@ -1,0 +1,79 @@
+---
+title: Event Handling
+---
+
+An event handler is registered with `.on(eventConfig, handler)`. `eventConfig` is where most of a Gateway's behavior is configured per-event.
+
+```ts
+gateway.on(
+  {
+    event: "send_message",
+    validation: SendMessageSchema,
+    ack: true,
+  },
+  (socket, data, ack) => {
+    socket.to(data.room).emit("receive_message", data);
+    ack?.({ status: "ok" });
+  }
+);
+```
+
+## Event config reference
+
+| Field           | Type                                 | Description                                                                                                                        |
+| --------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `event`         | `string`                             | The Socket.io event name to listen for.                                                                                            |
+| `validation`    | Zod schema \| class-validator DTO    | See [Validation](/docs/guides/websockets/validation).                                                                              |
+| `authorization` | `{ resource, action, rule? }`        | See [Authentication](/docs/guides/websockets/authentication).                                                                      |
+| `rateLimit`     | `Partial<RateLimitOptions> \| false` | Overrides the Gateway-level rate limit for this event. `false` disables it entirely.                                               |
+| `ack`           | `boolean`                            | When `true`, Arkos automatically calls `ack({ success: true })` after the handler finishes, unless you already called it manually. |
+| `disabled`      | `boolean`                            | Registers the config but skips wiring the handler. Useful for feature-flagging an event without deleting it.                       |
+| `maxAge`        | `number` (ms)                        | Rejects messages older than this, based on `data._meta.timestamp`.                                                                 |
+| `dedup`         | `{ enabled?, ttl? } \| false`        | Per-event override of deduplication.                                                                                               |
+
+`maxAge` and `dedup` are covered in full in [Deduplication and Freshness](/docs/guides/websockets/advanced/deduplication-and-freshness) — in short: `dedup` protects you from a client firing the same event twice (retries, double-clicks), `maxAge` protects you from processing a message that's simply too old to matter anymore (a queued action from a client that just reconnected after five minutes offline). Both are opt-in per event and both key off `data._meta`, which the [client SDK](/docs/guides/websockets/advanced/frontend-integrations) injects automatically.
+
+## Handler signature
+
+```ts
+(socket: ArkosSocket, data: TData, ack?: (response: any) => void) => void | Promise<void>
+```
+
+- `socket` — see [Enhanced Socket](/docs/guides/websockets/enhanced-socket) for everything it adds on top of a plain `socket.io` socket.
+- `data` — the payload, post-validation, with `_meta` already stripped out (it's moved to `socket.meta` instead).
+- `ack` — present only if the client passed a callback as the last argument. Arkos auto-wraps it so `eventConfig.ack: true` still works even if you never call it yourself.
+
+## Ordering: pipes run before the handler
+
+A pipe is middleware scoped to this Gateway's events, running after auth/rate-limit/validation but before the handler:
+
+```ts
+// runs before every event handler in this gateway
+gateway.pipe((socket, data) => {
+  socket.locals.enrichedUser = enrichUser(socket.currentUser);
+});
+
+// runs only before "send_message"
+gateway.pipe({ event: "send_message" }, (socket, data) => {
+  rateLimitPerRoom(data.room);
+});
+
+gateway.on({ event: "send_message" }, (socket, data) => {
+  console.log(socket.locals.enrichedUser);
+});
+```
+
+If you call `.pipe({ event })` before the matching `.on()` exists yet, Arkos holds onto it and merges it in once you do register the event — order of declaration doesn't matter.
+
+`.pipe()` is a Gateway-composition concern, not really an event-config concern, so the mechanics (global vs. scoped, ordering with nested Gateways, how it differs from `.use()`) live in [Middlewares and Hooks](/docs/guides/websockets/middlewares-and-hooks). This page only covers that pipes run before your handler, in registration order.
+
+## Full request lifecycle for one event
+
+1. Rate limit check (unless `rateLimit: false`)
+2. Authorization check (if `authorization` is set)
+3. Validation (if `validation` is set)
+4. Pipes (global, then event-scoped, in registration order)
+5. Your handler
+6. Auto-ack (if `ack: true` and you didn't call it yourself)
+
+Any error thrown at any step goes to your `error` hook, or Arkos's default error response if you don't have one. See [Middlewares and Hooks](/docs/guides/websockets/middlewares-and-hooks#hooks).

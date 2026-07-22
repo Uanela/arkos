@@ -29,7 +29,8 @@ const showcaseItems = [
     description: "Floral Decoration",
     category: "Corporate",
     url: "https://peleveflowers.com",
-    image: "https://api.peleveflowers.com/api/uploads/images/Full%20Logo%20Peleve%20Flowers-1776932270491-51766670.png",
+    image:
+      "https://api.peleveflowers.com/api/uploads/images/Full%20Logo%20Peleve%20Flowers-1776932270491-51766670.png",
   },
   // {
   //   name: "Mesquita Group",
@@ -112,7 +113,7 @@ function ShowcasePage() {
       <section className="grid md:grid-cols-3 border-b border-fd-border">
         {[
           { value: version, label: "Latest Version" },
-          { value: stars.toLocaleString(), label: "GitHub Stars" },
+          { value: stars?.toLocaleString(), label: "GitHub Stars" },
           {
             value:
               typeof commits === "number" ? commits.toLocaleString() : commits,

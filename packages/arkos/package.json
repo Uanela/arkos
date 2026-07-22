@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.6.6-beta",
+  "version": "1.7.0-canary.40",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -51,6 +51,11 @@
       "import": "./dist/esm/exports/error-handler/index.js",
       "require": "./dist/cjs/exports/error-handler/index.js"
     },
+    "./websockets": {
+      "types": "./dist/types/exports/websockets.d.ts",
+      "import": "./dist/esm/exports/websockets.js",
+      "require": "./dist/cjs/exports/websockets.js"
+    },
     "./utils": {
       "types": "./dist/types/exports/utils/index.d.ts",
       "import": "./dist/esm/exports/utils/index.js",
@@ -78,7 +83,8 @@
       "prisma": ["./dist/types/exports/prisma/index.d.ts"],
       "auth": ["./dist/types/exports/auth/index.d.ts"],
       "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
-      "utils": ["./dist/types/exports/utils/index.d.ts"]
+      "utils": ["./dist/types/exports/utils/index.d.ts"],
+      "websockets": ["./dist/types/exports/websockets.d.ts"]
     }
   },
   "scripts": {
@@ -158,6 +164,7 @@
     "mimetype": "0.0.8",
     "openapi-types": "12.1.3",
     "prisma": "6.19.2",
+    "socket.io": "^4.8.3",
     "ts-jest": "29.3.1",
     "ts-node": "^10.9.2",
     "ts-prune": "0.10.3",
@@ -168,7 +175,8 @@
   "dependencies": {
     "chokidar": "4.0.3",
     "commander": "13.1.0",
-    "pluralize": "8.0.0"
+    "pluralize": "8.0.0",
+    "uuidv7": "^1.2.1"
   },
   "peerDependencies": {
     "@prisma/client": "6.19.2",
@@ -183,14 +191,15 @@
     "cors": "2.8.6",
     "dotenv": "17.4.2",
     "dotenv-expand": "13.0.0",
-    "express": "4.22.1",
+    "express": "4.22.2",
     "express-rate-limit": "8.4.1",
     "html-to-text": "9.0.5",
     "jsonwebtoken": "9.0.3",
     "mimetype": "0.0.8",
+    "multer": "2.1.1",
     "nodemailer": "8.0.7",
     "sharp": "0.34.5",
-    "multer": "2.1.1",
+    "socket.io": "^4.8.3",
     "swagger-jsdoc": "6.2.8",
     "zod": "3.24.2",
     "zod-to-json-schema": "3.24.6"

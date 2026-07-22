@@ -1,0 +1,109 @@
+---
+title: Setup
+---
+
+> Available from 1.7.0-rc
+
+Arkos WebSockets are built directly on top of `socket.io`. If you already know `socket.io`, most of what follows is familiar — Arkos adds structure (validation, auth, dedup, rate limiting) around it, it doesn't replace it.
+
+## Creating a Gateway
+
+```ts
+import { ArkosGateway } from "arkos/websockets";
+
+const gateway = ArkosGateway({
+  name: "/",
+  authentication: true,
+});
+```
+
+`config.name` becomes the Socket.io namespace. It defaults to `"/"` if omitted.
+
+## Registering it
+
+```ts
+import arkos from "arkos";
+import { Server } from "socket.io";
+import http from "node:http";
+import gateway from "@/src/gateway";
+
+const app = arkos()
+
+await app.listen()
+
+const server = http.createServer(app)
+const io = new Server(httpServer);
+
+gateway.register(io);
+
+app.listen(server)
+```
+
+`register(io, options?)` can only be called once per `io` instance — call it on your root Gateway and compose the rest with `.use()` (see below). Calling it twice throws.
+
+```ts
+gateway.register(io, {
+  store: myRedisStore, // optional — defaults to an in-memory store
+});
+```
+
+The `store` option backs both rate limiting and deduplication. See [Stores and Scaling](/docs/guides/websockets/advanced/stores-and-scaling) if you're running more than one instance.
+
+## Attaching connection middleware or nesting Gateways — `.use()`
+
+`.use()` accepts either a raw Socket.io connection middleware, or another Gateway to nest under this one:
+
+```ts
+gateway.use((socket, next) => {
+  console.log("incoming connection", socket.id);
+  next();
+});
+
+// nested gateway — inherits this gateway's name as a namespace prefix,
+// plus its authentication and rateLimit config
+gateway.use(adminGateway);
+```
+
+A nested Gateway's namespace becomes `${parent.name}/${child.name}`. It inherits the parent's `authentication` and `rateLimit` unless it sets its own, and it inherits all of the parent's lifecycle hooks. It does **not** automatically inherit the parent's `.pipe()` middlewares — those are scoped to the Gateway that registered them.
+
+## Attaching an event handler — `.on()`
+
+```ts
+gateway.on({ event: "send_message" }, (socket, data) => {
+  socket.to(data.room).emit("receive_message", data);
+});
+```
+
+This is the shallow version — `.on()` takes a full event config (`validation`, `authorization`, `rateLimit`, `ack`, `dedup`, `maxAge`, `disabled`). The full breakdown, including how it interacts with `.pipe()`, is in [Handling Events](/docs/guides/websockets/event-handling).
+
+## Minimal end-to-end example
+
+```ts title="src/gateway.ts"
+import { ArkosGateway } from "arkos/websockets";
+
+const gateway = ArkosGateway({ name: "/" });
+
+gateway.on({ event: "send_message" }, (socket, data) => {
+  socket.to(data.room).emit("receive_message", data);
+});
+
+export default gateway;
+```
+
+```ts title="src/server.ts"
+import { Server } from "socket.io";
+import http from "http";
+import app from "@/src/app";
+import gateway from "@/src/gateway";
+
+await app.build();
+
+const server = http.createServer(app);
+const io = new Server(server);
+
+gateway.register(io);
+
+app.listen(server);
+```
+
+Next: [Handling Events](/docs/guides/websockets/event-handling) for the full `.on()` config, or [Authentication](/docs/guides/websockets/authentication) if your Gateway needs `socket.currentUser`.

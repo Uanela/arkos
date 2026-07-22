@@ -1,0 +1,18 @@
+model UserPermission {
+  id           String  @id @default(uuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  effect       UserPermissionEffect @default(Allow)
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  permissionId String
+  permission   AuthPermission @relation(fields: [permissionId], references: [id])
+
+  @@unique([userId, permissionId])
+}
+
+enum UserPermissionEffect {
+  Allow
+  Deny
+}
