@@ -25,7 +25,7 @@ function extractText(node: any): string {
 const serverLoader = createServerFn({ method: "GET" }).handler(
   async ({ data: slug }) => {
     const page = tutorials.getPage(
-      slug.split("/").length < 2 ? [slug] : slug.split("/")
+      slug?.split?.("/").length < 2 ? [slug] : slug?.split?.("/")
     );
     if (!page) throw notFound();
     const pages = tutorials.getPages();
@@ -536,10 +536,10 @@ export const Route = createFileRoute("/(home)/learn/tutorials/$")({
   head: ({ loaderData }) => {
     return {
       meta: [
-        { title: loaderData.title },
-        { name: "description", content: loaderData.description },
-        { property: "og:title", content: loaderData.title },
-        { property: "og:description", content: loaderData.description },
+        { title: loaderData?.title },
+        { name: "description", content: loaderData?.description },
+        { property: "og:title", content: loaderData?.title },
+        { property: "og:description", content: loaderData?.description },
       ],
     };
   },

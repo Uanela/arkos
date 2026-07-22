@@ -14,6 +14,9 @@ export default defineConfig({
   preview: {
     allowedHosts: true 
   },
+  build: {
+    // concurrency: 4,
+  },
   plugins: [
     mdx(await import("./source.config")),
     tailwindcss(),
