@@ -51,6 +51,34 @@ app.listen();
 
 Arkos replaces the Express `app` — but it _is_ Express under the hood. You can still use `app.use()`, custom middleware, and raw Express code wherever you need it.
 
+## Automatic CRUD: One Model, Full REST Endpoints
+
+**Define The Prisma model:**
+
+```prisma
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```
+
+**Get a full REST API — instantly:**
+
+```
+POST   /api/posts        Create a post
+GET    /api/posts        List all posts
+GET    /api/posts/:id    Get a post
+PATCH  /api/posts/:id    Update a post
+DELETE /api/posts/:id    Delete a post
+```
+
+Authenticated, validated, and documented. Zero boilerplate.
+
 ## Creating a Router Beyond Express
 
 ```typescript
@@ -95,35 +123,7 @@ export default postPolicy;
 
 Define who can do what, once, per resource. Arkos enforces it across every route that references the policy — no scattered middleware, no repeated role checks.
 
-## Automatic CRUD: One Model, Full REST Endpoints
-
-**Define The Prisma model:**
-
-```prisma
-model Post {
-  id        String   @id @default(uuid())
-  title     String
-  content   String
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-```
-
-**Get a full REST API — instantly:**
-
-```
-POST   /api/posts        Create a post
-GET    /api/posts        List all posts
-GET    /api/posts/:id    Get a post
-PATCH  /api/posts/:id    Update a post
-DELETE /api/posts/:id    Delete a post
-```
-
-Authenticated, validated, and documented. Zero boilerplate.
-
-**Customize just like normal router:**
+**Customize CRUD Routes just like normal router:**
 
 ```typescript
 // src/modules/post/post.router.ts
@@ -190,7 +190,7 @@ For comprehensive guides, API reference, and examples, visit our [official docum
 - [Getting Started Guide](https://arkosjs.com/docs)
 - [Authentication Setup](https://arkosjs.com/docs/core-concepts/authentication/setup)
 - [Using Interceptors](https://arkosjs.com/docs/core-concepts/components/interceptors)
-- [File Uploads](https://arkosjs.com/docs/guides/file-uploads/setup)
+- [File Uploads](https://arkosjs.com/docs/guides/file-handling/file-uploads/setup)
 - [Validation](https://arkosjs.com/docs/guides/validation/setup)
 - [Email Service](https://arkosjs.com/docs/guides/email-service)
 
@@ -262,3 +262,4 @@ Built with ❤️ by [Uanela Como](https://github.com/uanela) and contributors
 _The name "Arkos" comes from the Greek word "ἀρχή" (Arkhē), meaning "beginning" or "foundation", reflecting our goal of providing a solid foundation for backend development._
 
 </div>
+
