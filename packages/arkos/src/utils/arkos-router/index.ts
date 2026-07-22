@@ -9,7 +9,6 @@ import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-
 import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy";
 import { Arkos } from "../../types/arkos";
-import { ArkosRouterBaseUploadConfig } from "./types/upload-config";
 import uploadManager from "./utils/helpers/upload-manager";
 
 export type ArkosRouterOptions = {
@@ -83,12 +82,6 @@ export type ArkosRouterOptions = {
      */
     externalDocs?: OpenAPIV3.ExternalDocumentationObject;
   };
-  /**
-   * Allow customizing uploads on route level
-   *
-   * @since 1.7.0-canary.39
-   */
-  uploads?: ArkosRouterBaseUploadConfig;
 };
 
 /**
@@ -177,12 +170,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
         ? zodToJsonSchema
         : classValidatorToJsonSchema;
 
-    let parameters: {
-      in: string;
-      name: string;
-      required: boolean;
-      schema: any;
-    }[] = [];
+    let parameters = [];
     const validationToParameterMapping = {
       query: "query",
       params: "path",

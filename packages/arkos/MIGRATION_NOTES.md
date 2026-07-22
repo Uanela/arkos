@@ -1,3 +1,5 @@
-v1.7
+v1.6
 
-- ArkosGateway
+- Warnings for .auth.ts in favor of .policy.ts
+- Complety removal of .middlewares.ts in favor of .intercerptors
+- add arkos/config

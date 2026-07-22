@@ -243,22 +243,6 @@ export const generateCommand = {
     });
   },
 
-  routeHook: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "route-hook",
-      fileSuffix: "route-hook",
-      allowedModules: knownModules,
-    });
-  },
-
-  serviceHook: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "service-hook",
-      fileSuffix: "service-hook",
-      allowedModules: kebabPrismaModels,
-    });
-  },
-
   createSchema: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "create-schema",

@@ -6,7 +6,7 @@ import {
 import { getArkosConfig } from "../../../../utils/helpers/arkos-config.helpers";
 import { capitalize } from "../../../../utils/helpers/text.helpers";
 
-export interface AuthAction {
+interface AuthAction {
   roles?: string[] | "*";
   action: string;
   resource: string;

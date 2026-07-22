@@ -190,7 +190,7 @@ For comprehensive guides, API reference, and examples, visit our [official docum
 - [Getting Started Guide](https://arkosjs.com/docs)
 - [Authentication Setup](https://arkosjs.com/docs/core-concepts/authentication/setup)
 - [Using Interceptors](https://arkosjs.com/docs/core-concepts/components/interceptors)
-- [File Uploads](https://arkosjs.com/docs/guides/file-handling/file-uploads/setup)
+- [File Uploads](https://arkosjs.com/docs/guides/file-uploads/setup)
 - [Validation](https://arkosjs.com/docs/guides/validation/setup)
 - [Email Service](https://arkosjs.com/docs/guides/email-service)
 

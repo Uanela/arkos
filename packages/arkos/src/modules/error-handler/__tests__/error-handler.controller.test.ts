@@ -273,7 +273,7 @@ describe("Error Handler Middleware", () => {
 
       expect(
         errorControllerHelper.handlePrismaClientValidationError
-      ).toHaveBeenCalledWith(expect.objectContaining({ isOperational: true }));
+      ).toHaveBeenCalledWith(expect.any(AppError));
     });
 
     it("should handle database errors based on error code", () => {
@@ -345,9 +345,7 @@ describe("Error Handler Middleware", () => {
           mockNext
         );
 
-        expect(handler).toHaveBeenCalledWith(
-          expect.objectContaining({ isOperational: true })
-        );
+        expect(handler).toHaveBeenCalledWith(expect.any(AppError));
       }
     });
 

@@ -7,8 +7,8 @@ const UpdateAuthRoleSchema = z.object({
   permissions: z
     .array(
       CreateAuthPermissionSchema.extend({
-        apiAction: z.enum(["connect", "disconnect"]).optional(),
-      }).omit({ roles: true })
+        apiAction: z.enum(["connect", "delete"]).optional(),
+      }).omit({ role: true })
     )
     .optional()
     .default([]),

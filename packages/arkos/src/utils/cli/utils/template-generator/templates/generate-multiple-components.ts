@@ -205,7 +205,7 @@ export default async function generateMultipleComponents(
   let totalFail = 0;
 
   if (isMultipleModules) {
-    console.info("");
+    console.log("");
     sheu.info(`Generating components for modules: ${moduleNames.join(", ")}\n`);
   }
 
@@ -243,10 +243,10 @@ export default async function generateMultipleComponents(
     }
 
     if (isMultipleModules) {
-      console.info("");
+      console.log("");
       sheu.info(`Module ${readableName}`);
     } else {
-      console.info("");
+      console.log("");
       sheu.info(`Generating components for ${readableName}`);
       if (!options.all)
         sheu.info(`Components: ${componentsToGenerate.join(", ")}\n`);

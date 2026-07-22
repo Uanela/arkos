@@ -137,3 +137,4 @@ Built with ❤️ by [Uanela Como](https://github.com/uanela) and contributors
 _The name "Arkos" comes from the Greek word "ἀρχή" (Arkhē), meaning "beginning" or "foundation", reflecting our goal of providing a solid foundation for backend development._
 
 </div>
+```
