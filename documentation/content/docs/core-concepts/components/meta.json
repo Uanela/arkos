@@ -7,6 +7,7 @@
     "interceptors",
     "services",
     "service-hooks",
-    "validators"
+    "validators",
+    "gateways"
   ]
 }

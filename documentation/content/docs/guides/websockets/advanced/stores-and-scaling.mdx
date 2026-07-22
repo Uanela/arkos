@@ -1,0 +1,95 @@
+---
+title: Stores and Scaling
+---
+
+Rate limiting and deduplication both need somewhere to keep state. That's the `ArkosGatewayStore` — a single interface backing both features, passed once at registration:
+
+```ts
+gateway.register(io, { store: myStore });
+```
+
+## The default store
+
+If you don't pass one, Arkos uses an in-memory store — zero config, works out of the box.
+
+```ts
+export interface ArkosGatewayStore {
+  increment(
+    key: string,
+    windowMs: number
+  ): Promise<{ count: number; resetAt: number }>;
+  clear(prefix: string): Promise<void>;
+  has(key: string): Promise<boolean>;
+  set(key: string, ttl: number): Promise<void>;
+  setIfNotExists(key: string, ttl: number): Promise<boolean>;
+}
+```
+
+- `increment` backs rate limiting — one counter per `arkos::rl:{socketId}:{event}` key, reset every `windowMs`.
+- `has` / `set` / `setIfNotExists` back deduplication — keys are `arkos::dedup:{event}:{mid}`, with `setIfNotExists` doing the atomic check-and-set that makes dedup race-safe.
+- `clear(prefix)` is called on disconnect to drop a socket's rate-limit state (`arkos::rl:{socketId}`).
+
+### Default store is single-instance only
+
+`MemoryGatewayStore` holds everything in a `Map` in process memory. Run more than one instance of your app — multiple Node processes, multiple containers behind a load balancer — and each instance has its own view of rate limits and dedup state. A client can get rate-limited on instance A and sail through on instance B; the same message can be deduplicated on the instance that saw it first and processed again on another. Fine for local dev and single-instance deployments, not fine once you scale horizontally.
+
+## Writing a distributed store
+
+Implement `ArkosGatewayStore` against Redis, Valkey, or whatever your infra already runs:
+
+```ts
+import { ArkosGatewayStore } from "arkos/websockets";
+import Redis from "ioredis";
+
+export class RedisArkosGatewayStore implements ArkosGatewayStore {
+  constructor(private redis: Redis) {}
+
+  async increment(key: string, windowMs: number) {
+    const count = await this.redis.incr(key);
+    if (count === 1) await this.redis.pexpire(key, windowMs);
+    const ttl = await this.redis.pttl(key);
+    return { count, resetAt: Date.now() + ttl };
+  }
+
+  async clear(prefix: string) {
+    const keys = await this.redis.keys(`${prefix}*`);
+    if (keys.length) await this.redis.del(...keys);
+  }
+
+  async has(key: string) {
+    return (await this.redis.exists(key)) === 1;
+  }
+
+  async set(key: string, ttl: number) {
+    await this.redis.set(key, "1", "EX", ttl);
+  }
+
+  async setIfNotExists(key: string, ttl: number) {
+    const result = await this.redis.set(key, "1", "EX", ttl, "NX");
+    return result === "OK";
+  }
+}
+```
+
+```ts
+gateway.register(io, { store: new RedisArkosGatewayStore(redis) });
+```
+
+`clear(prefix)` using `KEYS` is fine at the volume a per-socket rate-limit cleanup runs at; swap it for `SCAN` if you're clearing high-cardinality prefixes elsewhere.
+
+## Multi-tier stores
+
+For a fast local cache in front of a shared distributed store — memory as L1, Redis as L2 — `MultiTierArkosGatewayStore` chains stores together. Writes go to all tiers; reads check tiers in order and promote hits to faster tiers:
+
+```ts
+import { MultiTierArkosGatewayStore } from "arkos/websockets";
+
+const store = new MultiTierArkosGatewayStore([
+  new MemoryGatewayStore(),
+  new RedisArkosGatewayStore(redis),
+]);
+
+gateway.register(io, { store });
+```
+
+Rate-limit `increment()` is the one exception to "check in order" — it always increments L1 first and returns that result immediately, syncing the other tiers in the background, so a rate-limit decision never waits on a network round trip.

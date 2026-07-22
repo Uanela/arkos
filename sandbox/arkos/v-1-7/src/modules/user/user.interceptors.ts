@@ -1,0 +1,47 @@
+export const beforeCreateOne = [];
+
+export const afterCreateOne = [];
+
+export const onCreateOneError = [];
+
+export const beforeFindOne = [];
+
+export const afterFindOne = [];
+
+export const onFindOneError = [];
+
+export const beforeFindMany = [];
+
+export const afterFindMany = [];
+
+export const onFindManyError = [];
+
+export const beforeUpdateOne = [];
+
+export const afterUpdateOne = [];
+
+export const onUpdateOneError = [];
+
+export const beforeDeleteOne = [];
+
+export const afterDeleteOne = [];
+
+export const onDeleteOneError = [];
+
+export const beforeCreateMany = [];
+
+export const afterCreateMany = [];
+
+export const onCreateManyError = [];
+
+export const beforeUpdateMany = [];
+
+export const afterUpdateMany = [];
+
+export const onUpdateManyError = [];
+
+export const beforeDeleteMany = [];
+
+export const afterDeleteMany = [];
+
+export const onDeleteManyError = [];
