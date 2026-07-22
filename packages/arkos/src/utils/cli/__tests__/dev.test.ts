@@ -543,9 +543,11 @@ describe("Dev Command", () => {
           return process.stdin;
         });
 
+        const mockConsoleLog = jest.spyOn(console, "log").mockImplementation();
+
         await devCommand();
 
-        expect(mockConsoleInfo).toHaveBeenCalledWith("");
+        expect(mockConsoleLog).toHaveBeenCalledWith("");
       });
 
       it("should handle stdin data event correctly", async () => {

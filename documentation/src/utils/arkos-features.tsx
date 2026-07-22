@@ -216,7 +216,7 @@ export const arkosFeatures = [
     iconColor: "#fb7185",
     outline: "hover:outline-rose-500/50",
     titleHover: "group-hover:text-rose-500/80",
-    to: "/docs/guides/file-handling/file-uploads/setup",
+    to: "/docs/guides/file-uploads/setup",
     sideContent: (
       <div className="">
         <Image

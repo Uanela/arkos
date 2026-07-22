@@ -2,8 +2,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import authServiceImport from "../auth.service";
 import { getPrismaInstance } from "../../../utils/helpers/prisma.helpers";
+import { getArkosConfig } from "../../../server";
 import {
-  getArkosConfig,
   isAuthenticationEnabled,
   isUsingAuthentication,
 } from "../../../utils/helpers/arkos-config.helpers";
@@ -31,16 +31,7 @@ jest.mock("../../../utils/dynamic-loader", () => ({
 jest.mock("../../../utils/helpers/arkos-config.helpers", () => ({
   isAuthenticationEnabled: jest.fn(() => true),
   isUsingAuthentication: jest.fn(() => true),
-  getArkosConfig: jest.fn(() => ({
-    authentication: {
-      mode: "static",
-      passwordValidation: {
-        regex: /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/,
-        message:
-          "Password must contain at least one uppercase letter, one lowercase letter, and one number",
-      },
-    },
-  })),
+  getArkosConfig: jest.fn(() => {}),
 }));
 
 jest.mock("fs");
@@ -80,9 +71,6 @@ describe("AuthService", () => {
         update: jest.fn(),
       },
       userRole: {
-        findFirst: jest.fn(),
-      },
-      userPermission: {
         findFirst: jest.fn(),
       },
       authPermission: {
@@ -658,11 +646,7 @@ describe("AuthService", () => {
       });
 
       // Execute and Verify
-      await expect(authService.verifyJwtToken(token)).rejects.toThrow(
-        expect.objectContaining({
-          message: "Your auth token is invalid, please login again.",
-        })
-      );
+      await expect(authService.verifyJwtToken(token)).rejects.toEqual(jwtError);
       expect(jwt.verify).toHaveBeenCalledWith(
         token,
         expect.any(String),
@@ -702,7 +686,7 @@ describe("AuthService", () => {
         await authService.getAuthenticatedUser(mockReq);
       } catch (err: any) {
         expect(err?.message).toBe(
-          "Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.ts, see https://www.arkosjs.com/core-concepts/authentication/setup"
+          "ValidationError: Trying to call AuthService.getAuthenticatedUser without setting up authentication"
         );
       }
     });
@@ -788,7 +772,7 @@ describe("AuthService", () => {
       mockReq.headers.authorization = "Bearer invalid-token";
       (authService.verifyJwtToken as any) = jest
         .fn()
-        .mockRejectedValue(new AppError("Token invalid", 401));
+        .mockRejectedValue(new Error("Token invalid"));
 
       // Execute and Verify
       await expect(
@@ -847,7 +831,7 @@ describe("AuthService", () => {
       ).rejects.toBeInstanceOf(AppError);
     });
 
-    it("should not throw password changed error if the operation is logout", async () => {
+    it("should not throw password changed error if path includes logout", async () => {
       // Setup
       mockReq.headers.authorization = "Bearer valid-token";
       mockReq.path = "/auth/logout";
@@ -870,7 +854,7 @@ describe("AuthService", () => {
         .mockReturnValue(true);
 
       // Execute
-      const result = await authService.getAuthenticatedUser(mockReq, "logout");
+      const result = await authService.getAuthenticatedUser(mockReq);
 
       // Verify
       expect(result).toEqual(mockUser);
@@ -894,10 +878,7 @@ describe("AuthService", () => {
 
       await authService.authenticate(mockReq, mockRes, mockNext);
 
-      expect(authService.getAuthenticatedUser).toHaveBeenCalledWith(
-        mockReq,
-        "default"
-      );
+      expect(authService.getAuthenticatedUser).toHaveBeenCalledWith(mockReq);
       expect(mockReq.user).toEqual(mockUser);
       expect(mockNext).toHaveBeenCalledWith();
     });
@@ -1493,9 +1474,9 @@ describe("AuthService", () => {
         mockReq.user = user;
         mockConfig.authentication.mode = "static";
 
-        const middleware = authService.authorize("Cook", "product");
+        const middleware = authService.authorize("View", "product");
 
-        expect(authorizeSpy).toHaveBeenCalledWith("Cook", "product");
+        expect(authorizeSpy).toHaveBeenCalledWith("View", "product");
 
         await middleware(mockReq, mockRes, mockNext);
         expect(mockNext).toHaveBeenCalledWith(
@@ -2049,81 +2030,6 @@ describe("AuthService", () => {
         select: { id: true },
       });
       expect(result).toBe(false);
-    });
-
-    it("should return false when an explicit Deny override exists, even though the user's role grants the permission", async () => {
-      const userId = "user-123";
-      const action = "Delete";
-      const resource = "User";
-
-      mockPrisma.userRole.findFirst.mockResolvedValue({ id: "role-123" });
-      mockPrisma.userPermission.findFirst.mockResolvedValue({ effect: "Deny" });
-
-      const result = await (authService as any).checkDynamicAccessControl(
-        userId,
-        action,
-        resource
-      );
-
-      expect(result).toBe(false);
-    });
-
-    it("should return true when an explicit Allow override exists, even though the user's role does NOT grant the permission", async () => {
-      const userId = "user-123";
-      const action = "Delete";
-      const resource = "User";
-
-      mockPrisma.userRole.findFirst.mockResolvedValue(null);
-      mockPrisma.userPermission.findFirst.mockResolvedValue({
-        effect: "Allow",
-      });
-
-      const result = await (authService as any).checkDynamicAccessControl(
-        userId,
-        action,
-        resource
-      );
-
-      expect(result).toBe(true);
-    });
-
-    it("should fall back to role-derived permission when no UserPermission override row exists", async () => {
-      const userId = "user-123";
-      const action = "Update";
-      const resource = "User";
-
-      mockPrisma.userRole.findFirst.mockResolvedValue({ id: "role-123" });
-      mockPrisma.userPermission.findFirst.mockResolvedValue(null);
-
-      const result = await (authService as any).checkDynamicAccessControl(
-        userId,
-        action,
-        resource
-      );
-
-      expect(result).toBe(true);
-    });
-
-    it("should fall back to role-derived permission when the UserPermission model is not scaffolded (old project)", async () => {
-      const userId = "user-123";
-      const action = "Update";
-      const resource = "User";
-
-      // Simulate an older project's Prisma client: no userPermission delegate at all.
-      const { userPermission, ...prismaWithoutUserPermission } = mockPrisma;
-      (getPrismaInstance as jest.Mock).mockReturnValueOnce(
-        prismaWithoutUserPermission
-      );
-      mockPrisma.userRole.findFirst.mockResolvedValue({ id: "role-123" });
-
-      const result = await (authService as any).checkDynamicAccessControl(
-        userId,
-        action,
-        resource
-      );
-
-      expect(result).toBe(true);
-      expect(mockPrisma.userPermission.findFirst).not.toHaveBeenCalled();
     });
   });
 

@@ -5,11 +5,7 @@ const config: Config = {
   preset: "ts-jest",
   testEnvironment: "node",
   roots: ["<rootDir>/src", "<rootDir>/scripts"],
-  testMatch: [
-    "**/__tests__/**/*.ts?(x)",
-    "**/__specs__/**/*.ts?(x)",
-    "**/?(*.)+(spec|test).ts?(x)",
-  ],
+  testMatch: ["**/__tests__/**/*.ts?(x)", "**/?(*.)+(spec|test).ts?(x)"],
   transformIgnorePatterns: [
     // Allow Jest to transform ESM dependencies
     "node_modules/(?!@scalar/express-api-reference)",

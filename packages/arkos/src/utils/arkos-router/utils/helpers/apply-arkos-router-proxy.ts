@@ -16,8 +16,6 @@ import deepmerge from "../../../helpers/deepmerge.helper";
 import ExitError from "../../../helpers/exit-error";
 import uploadManager from "./upload-manager";
 import { ArkosAnyRequestHandler } from "../../../../types";
-import { ArkosRouterOptions } from "../..";
-import { UploadConfig } from "../../types/upload-config";
 
 const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
   return arr.reduce((flat, item) => {
@@ -27,7 +25,10 @@ const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
 
 export function applyArkosRouterProxy<T extends object>(
   target: T,
-  options?: RouterOptions & ArkosRouterOptions,
+  options?: RouterOptions & {
+    prefix?: string | RegExp | Array<string | RegExp>;
+    openapi?: { tags?: string[] };
+  },
   component: "app" | "router" = "router"
 ): T {
   (target as InternalIArkosRouter)._arkos = {
@@ -81,7 +82,7 @@ export function applyArkosRouterProxy<T extends object>(
 
           if (useConfig.authentication && !authenticationConfig?.mode)
             throw ExitError(
-              `Trying to authenticate route ${path ? `${path}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
+              `Trying to authenticate route use${path ? ` ${path}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
 
 For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
             );
@@ -160,26 +161,6 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
                       options.openapi || {},
                       config?.experimental?.openapi || {}
                     ),
-                  },
-                }
-              : {}),
-            path,
-          };
-
-          config = {
-            ...config,
-            ...(options?.uploads
-              ? {
-                  experimental: {
-                    ...config?.experimental,
-                    ...((config?.experimental?.uploads
-                      ? {
-                          uploads: deepmerge(
-                            options.uploads,
-                            config.experimental.uploads
-                          ),
-                        }
-                      : {}) as UploadConfig),
                   },
                 }
               : {}),

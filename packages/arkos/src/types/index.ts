@@ -170,7 +170,8 @@ export interface AuthPermission {
   deletedAt?: Date;
   resource: string;
   action: AuthPermissionAction;
-  roles: AuthRole;
+  roleId: string;
+  role: AuthRole;
 }
 
 export interface BaseUser extends Record<string, any> {

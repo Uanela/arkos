@@ -458,7 +458,7 @@ export type ArkosConfig = {
   /**
    * Defines file upload configurations
    *
-   * See {@link https://www.arkosjs.com/docs/guides/file-handling/file-uploads/setup}
+   * See {@link https://www.arkosjs.com/docs/guides/file-uploads/setup}
    */
   fileUpload?: {
     /**
@@ -1027,76 +1027,5 @@ export type ArkosConfig = {
         noSchemaFound?: boolean;
       };
     };
-  };
-  /**
-   * Defines static file serving configurations.
-   *
-   * Arkos will automatically serve files from the configured folder using `express.static`.
-   * If the folder does not exist at startup, a warning will be emitted.
-   *
-   * **Note:** The static files route is **not** prefixed with the `globalPrefix`.
-   *
-   * @since 1.7.0-canary.16
-   *
-   * @example
-   * ```ts
-   * import { defineConfig } from "arkos"
-   *
-   * export default defineConfig({
-   *   staticFiles: {
-   *     folder: "assets",
-   *     prefix: "/static",
-   *   }
-   * })   */
-  staticFiles?: {
-    /**
-     * Whether to enable static file serving.
-     *
-     * Set to `false` to disable static file serving entirely and suppress
-     * the warning when the folder is not found.
-     *
-     * @default true
-     */
-    enabled?: boolean;
-
-    /**
-     * The folder to serve static files from, relative to the project root.
-     *
-     * @default "public"
-     */
-    folder?: string;
-
-    /**
-     * The URL path prefix under which static files will be served.
-     *
-     * **Note:** This is not affected by `globalPrefix`.
-     *
-     * @default "/"
-     *
-     * @example "/static" // files served at /static/image.png
-     */
-    prefix?: string;
-
-    /**
-     * Options passed directly to `express.static()`.
-     *
-     * By passing custom options, they will be deep merged with the defaults.
-     *
-     * #### Default:
-     * ```ts
-     * {
-     *   maxAge: "1y",
-     *   etag: true,
-     *   lastModified: true,
-     *   dotfiles: "ignore",
-     *   fallthrough: true,
-     *   index: false,
-     *   cacheControl: true,
-     * }
-     * ```
-     *
-     * @see {@link https://expressjs.com/en/4x/api.html#express.static}
-     */
-    expressStatic?: Parameters<typeof express.static>[1];
   };
 };

@@ -1,29 +1,16 @@
-import arkos, { ArkosRequest } from "arkos";
-import { z } from "zod";
+import arkos from "arkos";
 
 const app = arkos();
 
 app.set("trust proxy", 1);
 
-app.post(
-  {
-    path: "/test-upload-single-one-level",
-    validation: { body: z.object({}) },
-    experimental: {
-      uploads: {
-        type: "fields",
-        fields: [{ name: "banner[][image]", minCount: 1 }],
-      },
-    },
-  },
-  (req, res) => {
-    console.log("body", req.body);
-    console.log("file", req.file);
-    console.log("files", req.files);
-    res.json({ body: req.body, file: req.file, files: req.files });
-  }
-);
-
 app.listen();
 
-// console.log(field, type, required, minCount, maxCount, allowedFileTypes, maxSize)
+/*
+ 
+
+pnpm arkos g cs -m tag -p src/modules/posts/schemas/tags/ - works
+pnpm arkos g cs -m tag,post -p src/modules/posts/test-schemas/tags/ - works
+pnpm arkos g cs,us -m tag -p src/modules/posts/schemas/tags/
+pnpm arkos g c,h -m tag -p src/modules/posts/schemas/tags/
+*/

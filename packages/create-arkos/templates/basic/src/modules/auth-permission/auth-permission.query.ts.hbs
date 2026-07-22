@@ -10,7 +10,11 @@ const authPermissionQueryOptions: PrismaQueryOptions<Prisma.AuthPermissionDelega
 const authPermissionQueryOptions = {
 {{/if}}
   global: {},
-  find: {},
+  find: {
+    include: {
+      role: true
+    },
+  },
   findOne: {},
   findMany: {},
   update: {},

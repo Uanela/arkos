@@ -1,9 +1,5 @@
 import multer from "multer";
-import {
-  ArkosRouterBaseUploadConfig,
-  UploadConfig,
-  UploadConfigFieldEntry,
-} from "../../types/upload-config";
+import { UploadConfig } from "../../types/upload-config";
 import {
   documentsExtensions,
   imagesExtenstions,
@@ -28,6 +24,7 @@ import {
 } from "../../../../modules/file-upload/utils/helpers/file-upload.helpers";
 import deepmerge from "../../../helpers/deepmerge.helper";
 import { catchAsync } from "../../../../exports/error-handler";
+import { pascalCase } from "../../../helpers/change-case.helpers";
 import { ArkosFile } from "../../../../types/upload";
 
 function determineUploadDir(file: Express.Multer.File) {
@@ -67,180 +64,6 @@ const storage = multer.diskStorage({
   },
 });
 
-/**
- * Returns true if a bracket-notation path contains at least one `[]` array marker.
- * e.g. "banners[][images]" → true, "profile[photo]" → false
- */
-function isNestedArrayPath(fieldPath: string): boolean {
-  return fieldPath.includes("[]");
-}
-
-/**
- * Converts a config bracket path (e.g. "banners[][images]") into a RegExp
- * that matches what the client actually sends (e.g. "banners[0][images]").
- * `[]` in the pattern matches `[<digits>]`.
- */
-function buildPathMatcher(pattern: string): RegExp {
-  const escaped = pattern
-    .replace(/\[]/g, "\x00")
-    .replace(/[\[\]]/g, "\\$&")
-    .replace(/\x00/g, "\\[\\d+\\]");
-  return new RegExp(`^${escaped}$`);
-}
-/**
- * Extracts the numeric index from a segment like "[0]", "[12]", etc.
- */
-function extractIndex(segment: string): number {
-  return parseInt(segment.replace(/\[|\]/g, ""), 10);
-}
-
-/**
- * Given a client-sent key like "banners[0][images]" and a pattern like
- * "banners[][images]", extracts an ordered list of array indices.
- */
-function extractIndices(key: string, pattern: string): number[] {
-  const patternParts = pattern.match(/\[[^\]]*\]/g) || [];
-  const keyParts = key.match(/\[[^\]]*\]/g) || [];
-  const indices: number[] = [];
-  for (let i = 0; i < patternParts.length; i++) {
-    if (patternParts[i] === "[]") {
-      indices.push(extractIndex(keyParts[i]));
-    }
-  }
-  return indices;
-}
-
-/**
- * Groups files from req.files by their array indices for a given pattern.
- */
-function groupFilesByPattern(
-  files: { [fieldname: string]: ArkosFile[] },
-  pattern: string
-): Map<string, ArkosFile[]> {
-  const matcher = buildPathMatcher(pattern);
-  const groups = new Map<string, ArkosFile[]>();
-
-  for (const key of Object.keys(files)) {
-    if (!matcher.test(key)) continue;
-    const indices = extractIndices(key, pattern);
-    const groupKey = indices.join(",");
-    if (!groups.has(groupKey)) groups.set(groupKey, []);
-    groups.get(groupKey)!.push(...files[key]);
-  }
-
-  return groups;
-}
-
-/**
- * Validates file type and size for files that bypass multer's own fileFilter
- * (i.e. nested array path fields handled via .any()).
- */
-function validateFileConstraints(
-  file: ArkosFile,
-  allowedFileTypes?: string[] | RegExp,
-  maxSize?: number
-): string | null {
-  if (maxSize && file.size > maxSize) {
-    return `File '${file.originalname}' exceeds the maximum allowed size of ${maxSize} bytes`;
-  }
-
-  if (allowedFileTypes) {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const allowed = Array.isArray(allowedFileTypes)
-      ? allowedFileTypes.includes(ext)
-      : allowedFileTypes.test(ext);
-    if (!allowed) {
-      return `File type '${ext}' is not allowed for '${file.originalname}'`;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Flattens a fields config for multer's fields() call.
- */
-function flattenFieldsForMulter(
-  fields: UploadConfigFieldEntry[]
-): { name: string; maxCount: number }[] {
-  return fields.map((field) => ({
-    name: field.name,
-    maxCount:
-      "type" in field && field.type === "single" ? 1 : (field.maxCount ?? 5),
-  }));
-}
-
-/**
- * Returns true if any field path uses nested array bracket notation.
- */
-function configHasNestedArrayPaths(config: UploadConfig): boolean {
-  if (config.type === "single" || config.type === "array") {
-    return isNestedArrayPath(config.field);
-  }
-  if (config.type === "fields") {
-    return config.fields.some((f) => isNestedArrayPath(f.name));
-  }
-  return false;
-}
-
-/**
- * Narrows a field entry to its typed props.
- * Legacy entries ({ name, maxCount } with no type) are treated as array with defaults.
- */
-function resolveFieldEntry(
-  field: UploadConfigFieldEntry,
-  config: ArkosRouterBaseUploadConfig = {}
-): {
-  name: string;
-  type: "single" | "array";
-  required: boolean;
-  minCount: number | undefined;
-  maxCount: number | undefined;
-  allowedFileTypes: string[] | RegExp | undefined;
-  maxSize: number | undefined;
-  attachToBody: ArkosRouterBaseUploadConfig["attachToBody"];
-} {
-  const isLegacy = !("type" in field) || field.type === undefined;
-  if (isLegacy) {
-    return {
-      ...config,
-      name: field.name,
-      type: "array",
-      required: !!config.required,
-      minCount: field.minCount,
-      maxCount: field.maxCount,
-      allowedFileTypes: config.allowedFileTypes,
-      maxSize: config.maxSize,
-      attachToBody: config.attachToBody,
-    };
-  }
-
-  if (field.type === "single") {
-    return {
-      name: field.name,
-      type: "single",
-      required: field.required !== false,
-      minCount: undefined,
-      maxCount: undefined,
-      allowedFileTypes: field.allowedFileTypes,
-      maxSize: field.maxSize,
-      attachToBody: field.attachToBody,
-    };
-  }
-
-  // type === "array"
-  return {
-    name: field.name,
-    type: "array",
-    required: field.required !== false,
-    minCount: field.minCount,
-    maxCount: field.maxCount,
-    allowedFileTypes: field.allowedFileTypes,
-    maxSize: field.maxSize,
-    attachToBody: field.attachToBody,
-  };
-}
-
 class UploadManager {
   private getUpload({
     maxSize = 1024 * 1024 * 5,
@@ -258,50 +81,29 @@ class UploadManager {
   }
 
   getMiddleware(config: UploadConfig): RequestHandler {
-    if (configHasNestedArrayPaths(config)) {
-      return multer({ storage }).any();
-    }
-
-    if (config.type === "single") {
-      return this.getUpload(config).single(config.field);
-    } else if (config.type === "array") {
-      return this.getUpload(config).array(config.field, config.maxCount ?? 5);
-    } else {
-      const multerOptions =
-        "maxSize" in config || "allowedFileTypes" in config
-          ? {
-              maxSize: (config as any).maxSize,
-              allowedFileTypes: (config as any).allowedFileTypes,
-            }
-          : {};
-      return this.getUpload(multerOptions).fields(
-        flattenFieldsForMulter(config.fields)
+    let upload;
+    if (config.type === "single")
+      upload = this.getUpload(config)[config.type](config.field);
+    else if (config.type === "array")
+      upload = this.getUpload(config)[config.type](
+        config.field,
+        config.maxCount || 5
       );
-    }
+    else upload = this.getUpload(config)[config.type](config.fields);
+    return upload;
   }
 
   handleUpload(config: UploadConfig, oldFilePath?: string) {
     return catchAsync(
       (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
         const middleware = this.getMiddleware(config);
-        req.headers["x-upload-dir"] =
-          "uploadDir" in config ? config.uploadDir : undefined;
+        req.headers["x-upload-dir"] = config.uploadDir;
         middleware(req, res, async (err: any) => {
           if (err) return next(err);
 
-          // .any() gives req.files as File[] — normalize to { [fieldname]: File[] }
-          // so groupFilesByPattern works correctly for nested array paths
-          if (configHasNestedArrayPaths(config) && Array.isArray(req.files)) {
-            const normalized: { [fieldname: string]: ArkosFile[] } = {};
-            for (const file of req.files) {
-              if (!normalized[file.fieldname]) normalized[file.fieldname] = [];
-              normalized[file.fieldname].push(file);
-            }
-            req.files = normalized;
-          }
-
           if (oldFilePath) {
             const { fileUpload: configs } = getArkosConfig();
+
             const filePath = path.resolve(
               process.cwd(),
               removeBothSlashes(configs?.baseUploadDir!),
@@ -321,152 +123,82 @@ class UploadManager {
     );
   }
 
+  /**
+   * Validates that all required upload files are present in the request.
+   * Checks req.file or req.files based on upload configuration type.
+   *
+   * @param {UploadConfig} uploadConfig - The upload configuration from config.experimental.uploads
+   * @throws {AppError} If required files are missing
+   *
+   * @example
+   * // Single file upload - checks req.file
+   * validateRequiredFiles(
+   *   { type: 'single', field: 'avatar', required: true },
+   *   req,
+   *   '/users/:id/avatar'
+   * )
+   *
+   * @example
+   * // Array file upload - checks req.files array
+   * validateRequiredFiles(
+   *   { type: 'array', field: 'photos', required: true },
+   *   req,
+   *   '/gallery/upload'
+   * )
+   *
+   * @example
+   * // Multiple fields - checks req.files object
+   * validateRequiredFiles(
+   *   { type: 'fields', fields: [{ name: 'avatar' }, { name: 'resume' }], required: true },
+   *   req,
+   *   '/profile/upload'
+   * )
+   */
   validateRequiredFiles(uploadConfig: UploadConfig) {
     return catchAsync((req: ArkosRequest, _: any, next: ArkosNextFunction) => {
       const errors: string[] = [];
       const errorCodes: string[] = [];
 
-      const addError = (msg: string, code: string) => {
-        errors.push(msg);
-        errorCodes.push(code);
-      };
-
-      const validateField = (
-        field: string,
-        type: "single" | "array",
-        required: boolean,
-        minCount: number | undefined,
-        maxCount: number | undefined,
-        allowedFileTypes: string[] | RegExp | undefined,
-        maxSize: number | undefined
-      ) => {
-        const isNested = isNestedArrayPath(field);
-
-        if (isNested) {
-          const filesObj = req.files as {
-            [fieldname: string]: ArkosFile[];
-          };
-          if (!filesObj || Array.isArray(filesObj)) {
-            if (required)
-              addError(`Required field '${field}' is missing`, field);
-            return;
-          }
-
-          const groups = groupFilesByPattern(filesObj, field);
-
-          if (groups.size === 0) {
-            if (required)
-              addError(`Required field '${field}' is missing`, field);
-            return;
-          }
-
-          for (const [groupKey, groupFiles] of groups) {
-            const label = `'${field}' (group ${groupKey})`;
-
-            if (type === "single" && groupFiles.length !== 1) {
-              addError(`Field ${label} must have exactly 1 file`, field);
-            }
-
-            if (type === "array") {
-              if (minCount && groupFiles.length < minCount) {
-                addError(
-                  `Field ${label} requires at least ${minCount} files, got ${groupFiles.length}`,
-                  field
-                );
-              }
-              if (maxCount && groupFiles.length > maxCount) {
-                addError(
-                  `Field ${label} allows at most ${maxCount} files, got ${groupFiles.length}`,
-                  field
-                );
-              }
-            }
-
-            for (const file of groupFiles) {
-              const err = validateFileConstraints(
-                file,
-                allowedFileTypes,
-                maxSize
-              );
-              if (err) addError(err, field);
-            }
-          }
-        } else {
-          if (type === "single") {
-            if (required && !req.file) {
-              addError(`Required upload field '${field}' is missing`, field);
-            }
-          } else {
-            const filesObj = req.files as {
-              [fieldname: string]: ArkosFile[];
-            };
-            const files = Array.isArray(req.files)
-              ? req.files
-              : filesObj?.[field];
-
-            if (!files || files.length === 0) {
-              if (required)
-                addError(
-                  `Required upload field '${field}' is missing or empty`,
-                  field
-                );
-            } else if (!Array.isArray(files)) {
-              if (required)
-                addError(`Malformed upload field '${field}'`, field);
-            } else {
-              if (minCount && files.length < minCount) {
-                addError(
-                  `Field '${field}' requires at least ${minCount} files, got ${files.length}`,
-                  field
-                );
-              }
-            }
-          }
-        }
-      };
+      if (uploadConfig.required === false) return next();
 
       if (uploadConfig.type === "single") {
-        validateField(
-          uploadConfig.field,
-          "single",
-          uploadConfig.required !== false,
-          undefined,
-          undefined,
-          isNestedArrayPath(uploadConfig.field)
-            ? uploadConfig.allowedFileTypes
-            : undefined,
-          isNestedArrayPath(uploadConfig.field)
-            ? uploadConfig.maxSize
-            : undefined
-        );
-      } else if (uploadConfig.type === "array") {
-        validateField(
-          uploadConfig.field,
-          "array",
-          uploadConfig.required !== false,
-          uploadConfig.minCount,
-          uploadConfig.maxCount,
-          isNestedArrayPath(uploadConfig.field)
-            ? uploadConfig.allowedFileTypes
-            : undefined,
-          isNestedArrayPath(uploadConfig.field)
-            ? uploadConfig.maxSize
-            : undefined
-        );
-      } else if (uploadConfig.type === "fields") {
-        for (const fieldEntry of uploadConfig.fields) {
-          const resolved = resolveFieldEntry(fieldEntry, uploadConfig);
-          validateField(
-            resolved.name,
-            resolved.type,
-            resolved.required,
-            resolved.minCount,
-            resolved.maxCount,
-            isNestedArrayPath(resolved.name)
-              ? resolved.allowedFileTypes
-              : undefined,
-            isNestedArrayPath(resolved.name) ? resolved.maxSize : undefined
+        if (!req.file) {
+          errors.push(
+            `Required upload field '${uploadConfig.field}' is missing`
           );
+          errorCodes.push(uploadConfig.field);
+        }
+      } else if (uploadConfig.type === "array") {
+        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+          errors.push(
+            `Required upload field '${uploadConfig.field}' is missing or empty`
+          );
+          errorCodes.push(uploadConfig.field);
+        }
+      } else if (uploadConfig.type === "fields") {
+        if (
+          !req.files ||
+          typeof req.files !== "object" ||
+          Array.isArray(req.files)
+        ) {
+          errors.push(
+            `Required upload fields are missing. Expected an object with fields: ${uploadConfig.fields.map((f) => f.name).join(", ")}`
+          );
+          errorCodes.push(...uploadConfig.fields.map((f) => f.name));
+        } else {
+          for (const field of uploadConfig.fields) {
+            const filesForField = (req.files as any)[field.name];
+            if (
+              !filesForField ||
+              !Array.isArray(filesForField) ||
+              filesForField.length === 0
+            ) {
+              errors.push(
+                `Required upload field '${field.name}' is missing or empty`
+              );
+              errorCodes.push(field.name);
+            }
+          }
         }
       }
 
@@ -474,10 +206,10 @@ class UploadManager {
         throw new AppError(
           errors[0],
           400,
-          uploadConfig.type !== "single"
-            ? `MissingUploadFields`
-            : `MissingUploadField`,
-          { errors }
+          `Missing${pascalCase(errorCodes[0]).replaceAll("_", "")}FileField`,
+          {
+            errors,
+          }
         );
       }
 
@@ -492,7 +224,7 @@ class UploadManager {
       _: ArkosResponse,
       next: ArkosNextFunction
     ) => {
-      const deleteFile = async (file: ArkosFile) => {
+      const deleteFile = async (file: Express.Multer.File) => {
         try {
           await fs.promises.unlink(file.path);
         } catch (error: any) {
@@ -507,10 +239,7 @@ class UploadManager {
         if (config.type === "single" && req.file) {
           await deleteFile(req.file);
           delete req.file;
-        } else if (
-          (config.type === "array" || configHasNestedArrayPaths(config)) &&
-          Array.isArray(req.files)
-        ) {
+        } else if (config.type === "array" && Array.isArray(req.files)) {
           for (const file of req.files) {
             await deleteFile(file);
           }
@@ -546,6 +275,7 @@ class UploadManager {
             path.join(process.cwd(), arkosConfig.fileUpload?.baseUploadDir!)
           );
           fullBaseUploadDir = fullBaseUploadDir.replace(process.cwd(), "");
+
           return filePath
             .replaceAll(process.cwd(), "")
             .replace(`/${fullBaseUploadDir}`, "")
@@ -553,20 +283,18 @@ class UploadManager {
             .replace(/\\/g, "/");
         };
 
-        const buildFileURL = (file: ArkosFile): string => {
+        const buildFileURL = (file: Express.Multer.File): string => {
           const relativePath = generateRelativePath(
             file.path,
             req.headers["x-upload-dir"] as string
           );
+
           return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${
             relativePath.startsWith("/") ? relativePath : `/${relativePath}`
           }`;
         };
 
-        const getAttachValue = (
-          file: ArkosFile,
-          attachToBody: ArkosRouterBaseUploadConfig["attachToBody"]
-        ) => {
+        const getAttachValue = (file: ArkosFile) => {
           const url = buildFileURL(file);
 
           file.url = url;
@@ -577,19 +305,18 @@ class UploadManager {
                 ? baseRoute
                 : `/${baseRoute}`) + normalizePath(file.path);
 
-          if (attachToBody === false) return undefined;
-          if (attachToBody === "url") return url;
-          if (attachToBody === "file") return file;
-          if (typeof attachToBody === "function") {
-            const result = attachToBody(file);
-            if (result) return result;
-          }
+          if (config.attachToBody === false) return undefined;
+          if (config.attachToBody === "pathname" || !config.attachToBody)
+            return (file as any).pathname;
+          if (config.attachToBody === "url") return url;
+          if (config.attachToBody === "file") return file;
 
-          return (file as any).pathname;
+          return undefined;
         };
 
         const setNestedValue = (obj: any, path: string, value: any) => {
           const keys = path.match(/[^\[\]]+/g) || [];
+
           let current = obj;
           for (let i = 0; i < keys.length - 1; i++) {
             const key = keys[i];
@@ -599,173 +326,51 @@ class UploadManager {
             }
             current = current[key];
           }
+
           const lastKey = keys[keys.length - 1];
           current[lastKey] = value;
         };
 
-        /**
-         * Reconstructs nested array structure from grouped files.
-         *
-         * Pattern: "banners[][images]"
-         * Groups: { "0": [file1, file2], "1": [file3] }
-         *
-         * Result in req.body:
-         * banners: [
-         *   { images: ["path1", "path2"] },
-         *   { images: ["path3"] }
-         * ]
-         */
-        const reconstructNestedArrayPath = (
-          pattern: string,
-          filesObj: { [fieldname: string]: ArkosFile[] },
-          attachToBody: ArkosRouterBaseUploadConfig["attachToBody"],
-          type: "single" | "array",
-          sharedBodyUpdate?: any
-        ) => {
-          const groups = groupFilesByPattern(filesObj, pattern);
-          if (groups.size === 0) return;
+        try {
+          if (config.type === "single" && req.file) {
+            const value = getAttachValue(req.file);
 
-          // Parse the pattern to build the reconstruction path.
-          // Split into segments: static keys and [] markers.
-          // e.g. "banners[][images]" → ["banners", "[]", "images"]
-          const segments = pattern.match(/[^\[\]]+|\[\]/g) || [];
-
-          // Sort group keys so indices are in order
-          const sortedGroups = [...groups.entries()].sort((a, b) => {
-            const ai = a[0].split(",").map(Number);
-            const bi = b[0].split(",").map(Number);
-            for (let i = 0; i < Math.min(ai.length, bi.length); i++) {
-              if (ai[i] !== bi[i]) return ai[i] - bi[i];
+            if (value !== undefined && config.field) {
+              const bodyUpdate: any = {};
+              setNestedValue(bodyUpdate, config.field, value);
+              req.body = deepmerge(req.body || {}, bodyUpdate);
             }
-            return 0;
-          });
-
-          const bodyUpdate = sharedBodyUpdate ?? {};
-
-          for (const [groupKey, groupFiles] of sortedGroups) {
-            const indices = groupKey.split(",").map(Number);
-            let indexCounter = 0;
-
-            // Build the concrete path for this group by replacing [] with actual indices
-            const concretePath = segments
-              .map((seg) => {
-                if (seg === "[]") return `[${indices[indexCounter++]}]`;
-                return seg;
-              })
-              .reduce((acc, seg, i) => {
-                if (i === 0) return seg;
-                if (seg.startsWith("[")) return acc + seg;
-                return acc + `[${seg}]`;
-              }, "");
-
-            const values = groupFiles
-              .map((f) => getAttachValue(f, attachToBody))
+          } else if (config.type === "array" && Array.isArray(req.files)) {
+            const values = req.files
+              .map((file) => getAttachValue(file))
               .filter((v) => v !== undefined);
 
-            if (values.length === 0) continue;
-
-            const valueToSet = type === "single" ? values[0] : values;
-            setNestedValue(bodyUpdate, concretePath, valueToSet);
-          }
-
-          if (!sharedBodyUpdate) {
-            req.body = deepmerge(req.body || {}, bodyUpdate);
-          }
-        };
-
-        try {
-          if (config.type === "single") {
-            if (isNestedArrayPath(config.field)) {
-              const filesObj = req.files as {
-                [fieldname: string]: ArkosFile[];
-              };
-              if (filesObj && !Array.isArray(filesObj)) {
-                reconstructNestedArrayPath(
-                  config.field,
-                  filesObj,
-                  config.attachToBody,
-                  "single"
-                );
-              }
-            } else if (req.file) {
-              const value = getAttachValue(req.file, config.attachToBody);
-              if (value !== undefined) {
-                const bodyUpdate: any = {};
-                setNestedValue(bodyUpdate, config.field, value);
-                req.body = deepmerge(req.body || {}, bodyUpdate);
-              }
+            if (values.length > 0 && config.field) {
+              const bodyUpdate: any = {};
+              setNestedValue(bodyUpdate, config.field, values);
+              req.body = deepmerge(req.body || {}, bodyUpdate);
             }
-          } else if (config.type === "array") {
-            if (isNestedArrayPath(config.field)) {
-              const filesObj = req.files as {
-                [fieldname: string]: ArkosFile[];
-              };
-              if (filesObj && !Array.isArray(filesObj)) {
-                reconstructNestedArrayPath(
-                  config.field,
-                  filesObj,
-                  config.attachToBody,
-                  "array"
-                );
-              }
-            } else if (Array.isArray(req.files)) {
-              const values = req.files
-                .map((file) => getAttachValue(file, config.attachToBody))
-                .filter((v) => v !== undefined);
-              if (values.length > 0) {
-                const bodyUpdate: any = {};
-                setNestedValue(bodyUpdate, config.field, values);
-                req.body = deepmerge(req.body || {}, bodyUpdate);
-              }
-            }
-          } else if (config.type === "fields") {
-            const filesObj = req.files as {
-              [fieldname: string]: ArkosFile[];
-            };
-            if (!filesObj || Array.isArray(filesObj)) return next();
-
+          } else if (
+            config.type === "fields" &&
+            req.files &&
+            !Array.isArray(req.files)
+          ) {
             const bodyUpdate: any = {};
-            const configAttachToBody =
-              "attachToBody" in config ? config.attachToBody : undefined;
 
-            for (const fieldEntry of config.fields) {
-              const resolved = resolveFieldEntry(fieldEntry);
+            for (const fieldName in req.files) {
+              const files = req.files[fieldName];
+              const values = files
+                .map((file) => getAttachValue(file))
+                .filter((v) => v !== undefined);
 
-              if (isNestedArrayPath(resolved.name)) {
-                reconstructNestedArrayPath(
-                  resolved.name,
-                  filesObj,
-                  resolved.attachToBody ?? configAttachToBody,
-                  resolved.type,
-                  bodyUpdate
-                );
-              } else {
-                const files = filesObj[resolved.name];
-                if (!files || files.length === 0) continue;
-
-                const attachTo = resolved.attachToBody ?? configAttachToBody;
-                const values = files
-                  .map((f) => getAttachValue(f, attachTo))
-                  .filter((v) => v !== undefined);
-
-                if (values.length === 0) continue;
-
-                const valueToAttach =
-                  resolved.type === "single" ? values[0] : values;
-                setNestedValue(bodyUpdate, resolved.name, valueToAttach);
+              if (values.length > 0) {
+                const valueToAttach = values.length === 1 ? values[0] : values;
+                setNestedValue(bodyUpdate, fieldName, valueToAttach);
               }
             }
 
             if (Object.keys(bodyUpdate).length > 0) {
-              req.body = deepmerge(req.body || {}, bodyUpdate, {
-                arrayMerge: (target, source) => {
-                  const result = [...target];
-                  source.forEach((item, i) => {
-                    result[i] = result[i] ? deepmerge(result[i], item) : item;
-                  });
-                  return result;
-                },
-              });
+              req.body = deepmerge(req.body || {}, bodyUpdate);
             }
           }
         } catch (err: any) {
@@ -781,6 +386,11 @@ class UploadManager {
     );
   }
 
+  /**
+   * Validates the file's type and MIME type.
+   * @param {Express.Multer.File} file - The uploaded file.
+   * @param {Function} cb - The callback function to indicate if file is valid.
+   */
   private fileFilter = (
     _: any,
     file: any,
@@ -806,22 +416,9 @@ class UploadManager {
   };
 
   isAllFieldRequired(uploadConfig: UploadConfig): boolean {
-    let isRequired = false;
     if (!uploadConfig) return false;
 
-    if (uploadConfig.type !== "fields")
-      isRequired = uploadConfig.required !== false;
-    else {
-      isRequired =
-        (uploadConfig as any).required !== undefined
-          ? (uploadConfig as any).required
-          : uploadConfig.fields.every(
-              (field) =>
-                (field as any).required || (field as any).required === undefined
-            );
-    }
-
-    return isRequired;
+    return uploadConfig.required !== false;
   }
 }
 

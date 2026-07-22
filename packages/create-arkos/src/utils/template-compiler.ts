@@ -16,7 +16,6 @@ class TemplateCompiler {
       "auth-permission.prisma.hbs",
       "auth-role.prisma.hbs",
       "user-role.prisma.hbs",
-      "user-permission.prisma.hbs",
     ];
 
     const sharedAuthZodSchemaFiles = [
@@ -66,6 +65,7 @@ class TemplateCompiler {
       "auth-permission.router.ts.hbs",
       "auth-permission.policy.ts.hbs",
       "auth-permission.query.ts.hbs",
+
       "auth-permission.query.ts.hbs",
       "auth-permission.service.ts.hbs",
     ];
@@ -74,6 +74,7 @@ class TemplateCompiler {
       "auth-role.router.ts.hbs",
       "auth-role.policy.ts.hbs",
       "auth-role.query.ts.hbs",
+
       "auth-role.query.ts.hbs",
       "auth-role.service.ts.hbs",
     ];
@@ -207,10 +208,6 @@ class TemplateCompiler {
 
           fs.mkdirSync(path.dirname(outputPath), { recursive: true });
           fs.writeFileSync(outputPath, content);
-        } else {
-          const outputPath = path.join(outputDir, relativePath);
-          fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-          fs.copyFileSync(fullPath, outputPath);
         }
       });
     }

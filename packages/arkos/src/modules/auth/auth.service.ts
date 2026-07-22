@@ -4,6 +4,7 @@ import { User } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
 import { callNext } from "../base/base.middlewares";
+import { getArkosConfig } from "../../server";
 import arkosEnv from "../../utils/arkos-env";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import {
@@ -29,15 +30,18 @@ import {
 } from "./utils/auth-error-objects";
 import authActionService from "./utils/services/auth-action.service";
 import {
-  getArkosConfig,
   isAuthenticationEnabled,
   isUsingAuthentication,
 } from "../../utils/helpers/arkos-config.helpers";
+import {
+  AuthenticateHookHandler,
+  AuthenticateAfterHookHandler,
+  AuthenticateErrorHookHandler,
+  AuthorizeHookHandler,
+  AuthorizeAfterHookHandler,
+  AuthorizeErrorHookHandler,
+} from "../../types/arkos-config/utils";
 import { CookieOptions } from "express";
-import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
-import { authenticationDocsLinks } from "./utils/docs-links";
-import authHookManager from "./utils/auth-hooks-manager";
-import { ArkosSocket } from "../../components/arkos-gateway/types";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -48,6 +52,140 @@ export class AuthService {
    */
   actionsPerResource: Record<string, Set<string>> = {};
 
+  /**
+   * Runs a chain of `before` hooks in sequence.
+   *
+   * - If a hook throws — chain aborts, error is forwarded to `onError` hooks.
+   * - If a hook calls `skip()` — chain stops, core logic is bypassed, jumps to `after` hooks.
+   * - If a hook returns — next hook in chain runs.
+   *
+   * @returns Promise resolving to `{ skipped, error? }`
+   */
+  private async runHooks(
+    hooks:
+      | AuthenticateHookHandler
+      | AuthenticateHookHandler[]
+      | AuthorizeHookHandler
+      | AuthorizeHookHandler[]
+      | undefined,
+    req: ArkosRequest,
+    ctx?: {
+      action?: AccessAction;
+      resource?: string;
+      rule?: string[] | DetailedAccessControlRule | "*";
+    }
+  ): Promise<{ skipped: boolean; error?: unknown }> {
+    if (!hooks) return { skipped: false };
+
+    const hookArray = Array.isArray(hooks) ? hooks : [hooks];
+
+    for (const hook of hookArray) {
+      let skipCalled = false;
+
+      try {
+        await (hook as any)({
+          req,
+          skip: () => {
+            skipCalled = true;
+          },
+          ...ctx,
+        });
+      } catch (err) {
+        return { skipped: false, error: err };
+      }
+
+      if (skipCalled) return { skipped: true };
+    }
+
+    return { skipped: false };
+  }
+
+  /**
+   * Runs a chain of `after` hooks in sequence.
+   *
+   * - If a hook throws — chain aborts, error is forwarded to the global error handler.
+   * - If a hook returns — next hook in chain runs.
+   *
+   * @returns Promise resolving to `{ error? }`
+   */
+  private async runAfterHooks(
+    hooks:
+      | AuthenticateAfterHookHandler
+      | AuthenticateAfterHookHandler[]
+      | AuthorizeAfterHookHandler
+      | AuthorizeAfterHookHandler[]
+      | undefined,
+    req: ArkosRequest,
+    ctx?: {
+      action?: AccessAction;
+      resource?: string;
+      rule?: string[] | DetailedAccessControlRule | "*";
+    }
+  ): Promise<{ error?: unknown }> {
+    if (!hooks) return {};
+
+    const hookArray = Array.isArray(hooks) ? hooks : [hooks];
+
+    for (const hook of hookArray) {
+      try {
+        await (hook as any)({ req, ...ctx });
+      } catch (err) {
+        return { error: err };
+      }
+    }
+
+    return {};
+  }
+
+  /**
+   * Runs a chain of `onError` hooks in sequence.
+   *
+   * - If a hook throws — chain aborts, error is forwarded to the global error handler.
+   * - If a hook calls `skip()` — suppresses the error and jumps to `after` hooks.
+   * - If a hook returns — next hook in chain runs.
+   *
+   * @returns Promise resolving to `{ skipped, error? }`
+   */
+  private async runErrorHooks(
+    hooks:
+      | AuthenticateErrorHookHandler
+      | AuthenticateErrorHookHandler[]
+      | AuthorizeErrorHookHandler
+      | AuthorizeErrorHookHandler[]
+      | undefined,
+    error: unknown,
+    req: ArkosRequest,
+    ctx?: {
+      action?: AccessAction;
+      resource?: string;
+      rule?: string[] | DetailedAccessControlRule | "*";
+    }
+  ): Promise<{ skipped: boolean; error?: unknown }> {
+    if (!hooks) return { skipped: false, error };
+
+    const hookArray = Array.isArray(hooks) ? hooks : [hooks];
+
+    for (const hook of hookArray) {
+      let skipCalled = false;
+
+      try {
+        await (hook as any)({
+          req,
+          error,
+          skip: () => {
+            skipCalled = true;
+          },
+          ...ctx,
+        });
+      } catch (err) {
+        return { skipped: false, error: err };
+      }
+
+      if (skipCalled) return { skipped: true };
+    }
+
+    return { skipped: false, error };
+  }
   /**
    * Signs a JWT token for the user.
    *
@@ -269,20 +407,12 @@ export class AuthService {
       process.env.JWT_SECRET ||
       arkosEnv.JWT_SECRET;
 
-    try {
-      const decoded = (await new Promise((resolve, reject) => {
-        jwt.verify(token, secret, (err, decoded) => {
-          if (err) reject(err);
-          else resolve(decoded as AuthJwtPayload);
-        });
-      })) as AuthJwtPayload;
-
-      if (!decoded?.id) throw invaliAuthTokenError;
-
-      return decoded;
-    } catch (err) {
-      throw invaliAuthTokenError;
-    }
+    return new Promise((resolve, reject) => {
+      jwt.verify(token, secret, (err, decoded) => {
+        if (err) reject(err);
+        else resolve(decoded as AuthJwtPayload);
+      });
+    });
   }
 
   private isWildcardAccess(config: AccessControlConfig): config is "*" {
@@ -331,7 +461,7 @@ export class AuthService {
    * @returns True if user has permission, false otherwise
    * @throws Error if user doesn't have role/roles field
    */
-  checkStaticAccessControl(
+  protected checkStaticAccessControl(
     user: User,
     action: string,
     accessControl: AccessControlConfig
@@ -360,36 +490,26 @@ export class AuthService {
    * @param resource - The resource being accessed
    * @returns Promise resolving to true if user has permission, false otherwise
    */
-  async checkDynamicAccessControl(
+  protected async checkDynamicAccessControl(
     userId: string,
     action: string,
     resource: string
   ) {
     const prisma = getPrismaInstance();
-
-    const [userPermission, hasRolePermission] = await Promise.all([
-      prisma.userPermission
-        ? prisma.userPermission.findFirst({
-            where: { userId, permission: { resource, action } },
-            select: { effect: true },
-          })
-        : Promise.resolve(null),
-
-      prisma.userRole.findFirst({
-        where: {
-          userId,
-          role: {
-            permissions: {
-              some: { resource, action },
+    return !!(await prisma.userRole.findFirst({
+      where: {
+        userId,
+        role: {
+          permissions: {
+            some: {
+              resource,
+              action,
             },
           },
         },
-        select: { id: true },
-      }),
-    ]);
-
-    if (userPermission) return userPermission.effect === "Allow";
-    return !!hasRolePermission;
+      },
+      select: { id: true },
+    }));
   }
 
   /**
@@ -460,11 +580,21 @@ export class AuthService {
     );
   }
 
-  private extractRequestToken(
-    req: ArkosRequest,
-    cookie: "arkos_access_token" = "arkos_access_token"
-  ) {
-    let token: string | null = null;
+  /**
+   * Processes the cookies or authoriation token and returns the user.
+   * @param req
+   * @returns {Promise<User | null>} - if authentication is turned off in arkosConfig it returns null
+   * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
+   */
+  async getAuthenticatedUser(req: ArkosRequest): Promise<User | null> {
+    if (!isAuthenticationEnabled())
+      throw Error(
+        "ValidationError: Trying to call AuthService.getAuthenticatedUser without setting up authentication"
+      );
+
+    const prisma = getPrismaInstance();
+
+    let token: string | undefined;
 
     if (
       req?.headers?.authorization &&
@@ -477,38 +607,35 @@ export class AuthService {
       !token &&
       req?.cookies?.arkos_access_token !== "no-token" &&
       req.cookies
-    )
-      token = req?.cookies?.[cookie];
+    ) {
+      token = req?.cookies?.arkos_access_token;
+    }
 
-    return token;
-  }
+    if (!token) return null;
 
-  private extractSocketToken(socket: ArkosSocket, key: "token" = "token") {
-    return (
-      socket.handshake.auth?.[key] ||
-      socket.handshake.headers?.authorization?.replace("Bearer ", "")
-    );
-  }
+    let decoded: AuthJwtPayload | undefined;
 
-  async validateDecodedUser(
-    decoded: AuthJwtPayload,
-    action: "logout" | "default" = "default"
-  ): Promise<User> {
-    const prisma = getPrismaInstance();
-    const user = await (prisma as any).user.findUnique({
-      where: { id: decoded.id },
+    try {
+      decoded = await this.verifyJwtToken(token);
+    } catch (err) {
+      throw invaliAuthTokenError;
+    }
+
+    if (!decoded?.id) throw invaliAuthTokenError;
+    const user: any | null = await (prisma as any).user.findUnique({
+      where: { id: String(decoded.id) },
     });
 
     if (!user)
       throw new AppError(
-        "The user belonging to this token no longer exists",
+        "The user belonging to this token does no longer exists",
         401,
         "UserNoLongerExists"
       );
 
     if (
-      action !== "logout" &&
-      this.userChangedPasswordAfter(user, decoded.iat!)
+      this.userChangedPasswordAfter(user, decoded.iat!) &&
+      !req.path?.includes?.("logout")
     )
       throw new AppError(
         "User recently changed password! Please log in again.",
@@ -516,36 +643,8 @@ export class AuthService {
         "PasswordChanged"
       );
 
+    req.accessToken = token;
     return user;
-  }
-
-  /**
-   * Processes the cookies or authoriation token and returns the user.
-   *
-   * @param ctx | socket
-   * @returns {Promise<User | null>} - if authentication is turned off in arkosConfig it returns null
-   * @throws {AppError} Throws an error if the token is invalid or the user is not logged in.
-   */
-  async getAuthenticatedUser(
-    ctx: ArkosRequest | ArkosSocket,
-    action: "logout" | "default" = "default"
-  ): Promise<User | null> {
-    if (!isAuthenticationEnabled())
-      throw Error(
-        `Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.${getUserFileExtension()}, see ${authenticationDocsLinks.setup}`
-      );
-
-    let token: string | null = null;
-
-    if ("headers" in ctx) token = this.extractRequestToken(ctx);
-    else if ("join" in ctx) token = this.extractSocketToken(ctx);
-
-    if (!token) return null;
-
-    const decoded = await this.verifyJwtToken(token);
-    ctx.accessToken = token;
-
-    return this.validateDecodedUser(decoded, action);
   }
 
   /**
@@ -582,18 +681,43 @@ export class AuthService {
    */
   authenticate = catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      await authHookManager.runAuthenticate(
-        { context: req, done: next },
-        async (req): Promise<any> => {
-          if (!isAuthenticationEnabled()) return null;
-          const user = (await this.getAuthenticatedUser(
-            req,
-            req.path.includes("logout") ? "logout" : "default"
-          )) as User;
-          if (!user) throw loginRequiredError;
-          return user;
+      const hooks = getArkosConfig()?.authentication?.hooks?.authenticate;
+
+      const before = await this.runHooks(hooks?.before, req);
+      if (before.error) {
+        const onError = await this.runErrorHooks(
+          hooks?.onError,
+          before.error,
+          req
+        );
+        if (onError.skipped) {
+          const after = await this.runAfterHooks(hooks?.after, req);
+          return after.error ? next(after.error) : next();
         }
-      );
+        return next(onError.error);
+      }
+
+      if (!before.skipped) {
+        try {
+          if (isAuthenticationEnabled()) {
+            const user = (await this.getAuthenticatedUser(req)) as User;
+            if (!user) throw loginRequiredError;
+            req.user = user;
+          }
+        } catch (err) {
+          const onError = await this.runErrorHooks(hooks?.onError, err, req);
+          if (onError.skipped) {
+            const after = await this.runAfterHooks(hooks?.after, req);
+            return after.error ? next(after.error) : next();
+          }
+          return next(onError.error);
+        }
+      }
+
+      const after = await this.runAfterHooks(hooks?.after, req);
+      if (after.error) return next(after.error);
+
+      next();
     }
   );
 
@@ -646,10 +770,87 @@ export class AuthService {
 
     return catchAsync(
       async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-        await authHookManager.runAuthorize(
-          { context: req, done: next },
-          authAction
-        );
+        const hooks = getArkosConfig()?.authentication?.hooks?.authorize;
+
+        const before = await this.runHooks(hooks?.before, req, {
+          action,
+          resource,
+          rule,
+        });
+        if (before.error) {
+          const onError = await this.runErrorHooks(
+            hooks?.onError,
+            before.error,
+            req,
+            { action, resource, rule }
+          );
+          if (onError.skipped) {
+            const after = await this.runAfterHooks(hooks?.after, req, {
+              action,
+              resource,
+              rule,
+            });
+            return after.error ? next(after.error) : next();
+          }
+          return next(onError.error);
+        }
+
+        if (!before.skipped) {
+          try {
+            if (req.user) {
+              const user = req.user as User;
+              const configs = getArkosConfig();
+
+              if (!user.isSuperUser) {
+                const notEnoughPermissionsError = new AppError(
+                  authAction.errorMessage,
+                  403,
+                  "NotEnoughPermissions"
+                );
+
+                if (configs?.authentication?.mode === "dynamic") {
+                  const hasPermission = await this.checkDynamicAccessControl(
+                    user.id,
+                    action,
+                    resource
+                  );
+                  if (!hasPermission) throw notEnoughPermissionsError;
+                } else if (configs?.authentication?.mode === "static") {
+                  const hasPermission = this.checkStaticAccessControl(
+                    user,
+                    action,
+                    { [action]: rule }
+                  );
+                  if (!hasPermission) throw notEnoughPermissionsError;
+                }
+              }
+            }
+          } catch (err) {
+            const onError = await this.runErrorHooks(hooks?.onError, err, req, {
+              action,
+              resource,
+              rule,
+            });
+            if (onError.skipped) {
+              const after = await this.runAfterHooks(hooks?.after, req, {
+                action,
+                resource,
+                rule,
+              });
+              return after.error ? next(after.error) : next();
+            }
+            return next(onError.error);
+          }
+        }
+
+        const after = await this.runAfterHooks(hooks?.after, req, {
+          action,
+          resource,
+          rule,
+        });
+        if (after.error) return next(after.error);
+
+        next();
       }
     );
   }

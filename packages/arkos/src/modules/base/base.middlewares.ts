@@ -9,11 +9,7 @@ import {
 } from "../../types";
 import { getArkosConfig } from "../../server";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import {
-  AppError,
-  BadRequestError,
-  catchAsync,
-} from "../../exports/error-handler";
+import { AppError, catchAsync } from "../../exports/error-handler";
 import validateDto from "../../utils/validate-dto";
 import validateSchema from "../../utils/validate-schema";
 import { ZodSchema } from "zod";
@@ -22,10 +18,10 @@ import { ValidatorOptions } from "class-validator";
 import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
 import { ArkosRouteConfig } from "../../utils/arkos-router/types";
 import { capitalize } from "../../utils/helpers/text.helpers";
+import { isClass, isZodSchema } from "../../utils/dynamic-loader";
 import errorPrettifier from "./utils/error-prettifier";
 import { lenientDecode } from "../../utils/helpers/url-helpers";
 import { pascalCase } from "../../exports/utils";
-import validationManager from "../../types/validation/validation-manager";
 
 export function callNext(_: Request, _1: Response, next: NextFunction) {
   next();
@@ -257,6 +253,7 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
 export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const arkosConfig = getArkosConfig();
   const validationConfig = arkosConfig.validation;
+  const strictValidation = validationConfig?.strict;
   const validators = routeConfig?.validation;
   const openapi = routeConfig?.experimental?.openapi;
 
@@ -280,13 +277,20 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
       `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`
     );
 
+  const validatorFn: (validator: any, data: any, options: any) => Promise<any> =
+    validationConfig?.resolver == "zod" ? validateSchema : validateDto;
   const validatorsKey: ("body" | "query" | "params")[] = [
     "body",
     "query",
     "params",
   ];
 
-  const { validationFn, validatorNameType, validatorName } = validationManager;
+  const isValidValidator =
+    validationConfig?.resolver == "zod" ? isZodSchema : isClass;
+  const validatorName =
+    validationConfig?.resolver == "zod" ? "zod schema" : "class-validator dto";
+  const validatorNameType =
+    validationConfig?.resolver == "zod" ? "Schema" : "Dto";
 
   if (typeof validators === "object")
     validatorsKey.forEach((key) => {
@@ -320,35 +324,43 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
       }
 
       if (
-        validators?.[key] &&
-        !validationManager.isValidator(validators?.[key])
+        key in (validators || {}) &&
+        validators?.[key] !== undefined &&
+        validators?.[key] !== false &&
+        validators?.[key] !== null &&
+        !isValidValidator(validators[key])
       )
         throw Error(
-          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`
+          `Your validation resolver is set to ${arkosConfig.validation!.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}`
         );
     });
 
   return catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       for (const key of validatorsKey) {
+        const reqInput = Object.keys(req[key] || {}).length > 0;
         const validator = (validators as any)?.[key];
-        const NotAllowedInputError = new BadRequestError(
+        const notAllowedInputError = new AppError(
           `Request ${key} is not allowed on this route`,
+          400,
           `Request${capitalize(key)}NotAllowed`,
           { [key]: req[key] }
         );
 
-        const shouldValidate = validationManager.shouldValidate(
-          validator,
-          req?.[key]
-        );
+        // null explicitly set → always prohibit input
+        if (validator === null && reqInput) throw notAllowedInputError;
 
-        if (shouldValidate === "prohibit") throw NotAllowedInputError;
-        else if (shouldValidate === "passthrough") continue;
+        // strict mode + key not declared or set to undefined → prohibit input
+        if (strictValidation && validator === undefined && reqInput)
+          throw notAllowedInputError;
 
+        // false explicitly set → allow input through without validation
+        if (validator === false) continue;
+
+        // a schema/dto was provided → validate
         if (validator)
           try {
-            req[key] = await (validationFn as any)(
+            req[key] = await validatorFn(
               validator,
               req[key],
               arkosConfig.validation?.validationOptions
