@@ -1,10 +1,10 @@
-import arkos, { ArkosRouter } from "arkos";
+import arkos, { ArkosRequest, ArkosRouter } from "arkos";
 import userRouter from "./modules/user/user.router";
 import z from "zod";
 
-const router = ArkosRouter();
+const router1 = ArkosRouter();
 
-router.post(
+router1.post(
   {
     path: "/testing",
     experimental: {
@@ -20,6 +20,27 @@ router.post(
   }
 );
 
+const router = ArkosRouter();
+
+router.post(
+  {
+    path: "/test-upload-single-one-level",
+    // validation: { body: z.object({}) },
+    experimental: {
+      uploads: {
+        type: "array",
+        field: "banner",
+      },
+    },
+  },
+  (req: ArkosRequest, res) => {
+    console.log("body", req.body);
+    console.log("file", req.file);
+    console.log("files", req.files);
+    res.send("pong");
+  }
+);
+
 arkos.init({
-  use: [userRouter, router], // pass your additional middlewares/routers here
+  use: [userRouter, router, router1], // pass your additional middlewares/routers here
 });

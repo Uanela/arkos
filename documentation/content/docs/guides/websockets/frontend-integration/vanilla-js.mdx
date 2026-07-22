@@ -1,0 +1,84 @@
+---
+title: Vanilla JS
+---
+
+`@arkosjs/websockets-client` wraps a `socket.io-client` `Manager`. This is the layer every framework binding sits on top of — reach for this directly if you're not using one of the framework packages, or if you're building your own binding.
+
+## Setup
+
+```ts
+import { Manager } from "socket.io-client";
+import { createWebsocketClient } from "@arkosjs/websockets-client";
+
+const manager = new Manager("http://localhost:3000", {
+  auth: { token: "your-auth-token" },
+  reconnection: true,
+});
+
+const client = createWebsocketClient(manager);
+```
+
+## Getting a Gateway client
+
+One `GatewayClient` per namespace, matching the `name` you gave `ArkosGateway` on the server:
+
+```ts
+const gateway = client.gateway("/chat");
+```
+
+## Listening
+
+```ts
+const off = gateway.on("receive_message", (data) => {
+  console.log(data);
+});
+
+off(); // cleanup
+```
+
+## Emitting
+
+```ts
+// fire and forget
+gateway.emit("send_message", { room: "general", content: "hello" });
+
+// with ack
+const result = await gateway.emit("send_message", data, {
+  ack: true,
+  timeout: 5000,
+  retries: 3,
+});
+// result: { success, data, error }
+```
+
+`_meta.mid` and `_meta.timestamp` are injected on every emit automatically — this is what makes [deduplication and freshness checks](/docs/guides/websockets/advanced/deduplication-and-freshness) work without you touching them.
+
+## Reacting to connection state
+
+```ts
+const unsub = gateway.subscribe({
+  onStatus: (status) => {
+    // "connected" | "disconnected" | "reconnecting" | "connecting"
+  },
+  onUser: (user) => {
+    // populated when the server emits "authenticated"
+  },
+});
+
+unsub();
+```
+
+Non-reactive, synchronous reads are also available directly:
+
+```ts
+gateway.status;
+gateway.user;
+```
+
+## Cleanup
+
+```ts
+client.destroy();
+```
+
+Framework bindings wrap this in your framework's lifecycle/reactivity primitives so you don't manage `off()`/`unsub()` calls by hand — see [React](/docs/guides/websockets/advanced/frontend-integrations/react) for the shipped example.

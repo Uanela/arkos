@@ -122,3 +122,51 @@
 - separete what goes into `arkos.init()` and `arkos.config.ts`.
 - separete the cli to own package cli (`arkos/cli`) -> it is basically development required.
 - tell about the new support for usernameFields, `user.profile.nickname` can now be written like `user__profile__nickname` to match pattern used in `req.query`
+
+--
+
+# Canary Notes v1.7.0-beta
+
+## TODO
+
+### Add
+
+### Change
+
+### Fix
+
+### Remove
+
+### Deprecate
+
+--
+
+## DOING
+
+### Add
+
+### Change
+
+### Fix
+
+### Remove
+
+### Deprecate
+
+--
+
+## DONE
+
+### Add
+
+- added minCount into array field upload config in ArkosRouter|RouteHook
+- made upload config type: fields work idenpentily to type: single or array with back compat to default array
+- allow passing req.query.orderBy to be used in prisma
+
+### Change
+
+### Fix
+
+### Remove
+
+### Deprecate

@@ -1369,4 +1369,197 @@ describe("arkosRouterOpenApiManager", () => {
       });
     });
   });
+
+  describe("Nested array path field names", () => {
+    describe("addUploadFields", () => {
+      it("should resolve [] to [0] in single type field name", () => {
+        const uploadConfig: UploadConfig = {
+          type: "single",
+          field: "banners[][image]",
+        };
+
+        const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
+
+        expect(result).toEqual({
+          type: "object",
+          properties: {
+            "banners[0][image]": {
+              type: "string",
+              format: "binary",
+              description: "Single file field",
+            },
+          },
+          required: ["banners[0][image]"],
+        });
+      });
+
+      it("should resolve [] to [0] in array type field name", () => {
+        const uploadConfig: UploadConfig = {
+          type: "array",
+          field: "banners[][images]",
+          maxCount: 5,
+        };
+
+        const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
+
+        expect(result).toEqual({
+          type: "object",
+          properties: {
+            "banners[0][images]": {
+              type: "array",
+              description: "Array file field",
+              items: {
+                type: "string",
+                format: "binary",
+              },
+              maxItems: 5,
+            },
+          },
+          required: ["banners[0][images]"],
+        });
+      });
+
+      it("should resolve [] to [0] in fields entries", () => {
+        const uploadConfig: UploadConfig = {
+          type: "fields",
+          fields: [
+            { name: "slides[][mobileImage]", type: "single" },
+            { name: "slides[][tabletImage]", type: "single" },
+            { name: "gallery", maxCount: 5 },
+          ],
+        };
+
+        const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
+
+        expect(result).toEqual({
+          type: "object",
+          properties: {
+            "slides[0][mobileImage]": {
+              type: "string",
+              format: "binary",
+              description: "Single file field",
+            },
+            "slides[0][tabletImage]": {
+              type: "string",
+              format: "binary",
+              description: "Single file field",
+            },
+            gallery: {
+              type: "array",
+              description: "Array file field",
+              items: {
+                type: "string",
+                format: "binary",
+              },
+              maxItems: 5,
+            },
+          },
+          required: [
+            "slides[0][mobileImage]",
+            "slides[0][tabletImage]",
+            "gallery",
+          ],
+        });
+      });
+
+      it("should resolve multiple [] in deeply nested path", () => {
+        const uploadConfig: UploadConfig = {
+          type: "single",
+          field: "a[][b][][c]",
+        };
+
+        const result = arkosRouterOpenApiManager.addUploadFields(uploadConfig);
+
+        expect(result.properties!["a[0][b][0][c]"]).toBeDefined();
+      });
+    });
+
+    describe("validateMultipartFormDocs", () => {
+      it("should validate nested array path by resolving [] to [0]", () => {
+        const userSchema = {
+          type: "object",
+          properties: {
+            "banners[0][image]": {
+              type: "string",
+              format: "binary",
+            },
+          },
+          required: ["banners[0][image]"],
+        };
+
+        const uploadConfig: UploadConfig = {
+          type: "single",
+          field: "banners[][image]",
+        };
+
+        expect(() =>
+          arkosRouterOpenApiManager.validateMultipartFormDocs(
+            userSchema,
+            "/banners",
+            uploadConfig
+          )
+        ).not.toThrow();
+      });
+
+      it("should throw when nested array path field is missing in schema", () => {
+        const userSchema = {
+          type: "object",
+          properties: {
+            "banners[][image]": {
+              type: "string",
+              format: "binary",
+            },
+          },
+        };
+
+        const uploadConfig: UploadConfig = {
+          type: "single",
+          field: "banners[][image]",
+        };
+
+        expect(() =>
+          arkosRouterOpenApiManager.validateMultipartFormDocs(
+            userSchema,
+            "/banners",
+            uploadConfig
+          )
+        ).toThrow(
+          "Missing upload field 'banners[][image]' in multipart/form-data schema"
+        );
+      });
+
+      it("should validate nested array path in fields entries", () => {
+        const userSchema = {
+          type: "object",
+          properties: {
+            "slides[0][mobileImage]": {
+              type: "string",
+              format: "binary",
+            },
+            "slides[0][tabletImage]": {
+              type: "string",
+              format: "binary",
+            },
+          },
+          required: ["slides[0][mobileImage]", "slides[0][tabletImage]"],
+        };
+
+        const uploadConfig: UploadConfig = {
+          type: "fields",
+          fields: [
+            { name: "slides[][mobileImage]", type: "single" },
+            { name: "slides[][tabletImage]", type: "single" },
+          ],
+        };
+
+        expect(() =>
+          arkosRouterOpenApiManager.validateMultipartFormDocs(
+            userSchema,
+            "/slides",
+            uploadConfig
+          )
+        ).not.toThrow();
+      });
+    });
+  });
 });
