@@ -1,0 +1,169 @@
+---
+title: "Announcing Arkos.js v1.7.0-rc"
+authors: [uanela]
+tags: [arkosjs, websockets, gateway, permissions, staticfiles, uploads]
+date: 2026-07-22
+description: v1.7.0 introduces WebSocket Gateways — built on Socket.io, reusing your existing auth, policies, and validation — plus per-user permission overrides in Dynamic mode, static file serving, and smarter uploads.
+---
+
+v1.7-rc is our biggest addition to Arkos since `ArkosRouter`. The headline is real-time: **Gateways** bring WebSockets into the framework without asking you to reinvent auth, authorization, or validation for sockets — they reuse everything you've already set up for HTTP. Here's what shipped.
+
+## WebSocket Gateways
+
+Create a Gateway and register it onto a Socket.io server:
+
+```ts
+// src/gateway.ts
+import { ArkosGateway } from "arkos/websockets";
+
+const gateway = ArkosGateway({ name: "/", authentication: true });
+
+gateway.on({ event: "send_message" }, (socket, data) => {
+  socket.to(data.room).emit("receive_message", data);
+});
+
+export default gateway;
+```
+
+```ts
+// src/server.ts
+import { Server } from "socket.io";
+import http from "http";
+import app from "@/src/app";
+import gateway from "@/src/gateway";
+
+const server = http.createServer(app);
+const io = new Server(server);
+
+gateway.register(io);
+
+app.listen(server);
+```
+
+### Auth you already have
+
+`authentication: true` runs your existing auth middleware before a connection is accepted — no separate WebSocket auth setup. On success, `socket.currentUser` is populated and the socket is automatically joined to a per-user room, which is what makes `socket.user(id)` (below) work. On failure, the connection is rejected before your code ever runs.
+
+Per-event authorization plugs directly into `ArkosPolicy`:
+
+```ts
+const chatPolicy = ArkosPolicy("chat").rule("DeleteMessage", {
+  resource: "message",
+  action: "delete",
+  rule: ["Admin", "Moderator"],
+});
+
+gateway.on(
+  { event: "delete_message", authorization: chatPolicy.DeleteMessage },
+  (socket, data) => {
+    // only reached if the check passes
+  }
+);
+```
+
+If you set `authorization` on an event but the Gateway itself has `authentication: false`, Arkos throws immediately at startup — not on the first request that hits it.
+
+### Validation, dedup, and freshness — for free
+
+Event validation reuses whatever resolver you configured for HTTP — Zod or class-validator, no separate system:
+
+```ts
+gateway.on({ event: "send_message", validation: SendMessageSchema }, handler);
+```
+
+Real-time systems have to deal with retries and duplicate delivery, so **deduplication is on by default** for every event. Every inbound message needs a `data._meta.mid`; a duplicate is skipped (your handler doesn't run, but the client still gets a success ack) rather than treated as an error:
+
+```ts
+gateway.on({ event: "send_message", dedup: { ttl: 600 } }, handler);
+```
+
+`_meta` is injected automatically on every outgoing emit, and our client SDKs handle it for you on the way out too — you only need to think about this if you're wiring a raw `socket.io-client` connection yourself instead of using one of the packages below.
+
+`maxAge` rejects messages that are simply too old to matter — handy for a client reconnecting after being offline with a backlog of stale actions:
+
+```ts
+gateway.on({ event: "cursor_move", maxAge: 5000 }, handler);
+```
+
+### Targeting rooms and users
+
+```ts
+socket.to("room-101").emit("message", data);
+socket.broadcast.except({ user: currentUserId }).emit("announcement", data);
+socket.user(userId).emit("notification", { title: "New order" });
+
+const ack = await socket.retry(3).timeout(5000).emitWithAck("confirm", data);
+```
+
+`socket.user(userId)` targets every active connection a user has open — useful since one person can have multiple tabs or devices connected at once.
+
+### Scaling rate limits and dedup
+
+Rate limiting and dedup share one store interface. The default is in-memory, which is zero-config for local dev and single-instance deployments — but if you run more than one instance, plug in your own store (Redis, Valkey, whatever you already run) so state is shared:
+
+```ts
+gateway.register(io, { store: new RedisArkosGatewayStore(redis) });
+```
+
+## Client packages
+
+Two packages make the frontend side easier:
+
+- **`@arkosjs/websockets-client`** — a framework-agnostic client wrapping a `socket.io-client` `Manager`, with automatic `_meta` handling and ack/retry ergonomics.
+- **`@arkosjs/react-websockets`** — React hooks (`useGateway`, `useEmit`) and a provider.
+
+```tsx
+import { Manager } from "socket.io-client";
+import { ArkosSocketProvider, useGateway } from "@arkosjs/react-websockets";
+
+const manager = new Manager("http://localhost:3000", {
+  auth: { token: "your-auth-token" },
+});
+
+function Chat() {
+  const chat = useGateway("/chat");
+  const sendMessage = chat.useEmit("send_message");
+  // chat.status, chat.user, sendMessage.loading, sendMessage.error...
+}
+```
+
+These are pre-1.0 and still maturing. The vanilla client and the React binding are the ones we've actually used and tested end to end. Vue, Svelte, Solid, and Angular bindings exist as community-contributed starting points but haven't been validated in a real app yet — if you build in one of those frameworks, the [contributing guide](https://github.com/Uanela/arkos/blob/feat/websockets-client/websockets-client/CONTRIBUTING_FRAMEWORK_BINDIND.md) has a sketch to start from, and there's an open issue for each framework if you'd like to help ship it.
+
+---
+
+## Dynamic-mode permission overrides
+
+Role-based permissions cover most cases, but sometimes you need a one-off exception for a specific user without creating a new role. In Dynamic mode, `AuthPermission` now supports being shared across roles (rather than one row per role), and a new `UserPermission` model lets you allow or deny a specific permission for an individual user, layered on top of whatever their role already grants:
+
+```ts
+// grant an extra permission to one user, independent of their role
+await prisma.userPermission.create({
+  data: { userId, permissionId, effect: "Allow" },
+});
+```
+
+If you're upgrading an existing Dynamic-mode project, this is a real schema change, not just a config flag — we've published a [step-by-step migration guide](/blog/adding-user-permissions-in-old-projects) that walks through it safely, including how to handle any duplicate permission rows left over from the old per-role model. Back up your database and run it on staging first.
+
+---
+
+## Also in this release
+
+- **Static file serving** via `express.static`, with a scaffolded favicon. Note: CORS was removed from the default middleware stack as part of this — add `cors()` explicitly if your app depended on it.
+- **Smarter uploads** — nested array upload paths, config inheritance from field/path settings, and a customizable body-attachment function.
+- **`orderBy` passthrough** — `req.query.orderBy` now forwards straight to Prisma's `orderBy` input.
+- **Scalar** is available as an alternative to Swagger for your `/api/docs` endpoint.
+
+## How to upgrade
+
+```bash
+pnpm install arkos@latest
+```
+
+Two things to check on upgrade: add `cors()` explicitly if you relied on the previous default, and if you're on Dynamic-mode permissions, run the migration guide above before adopting per-user overrides.
+
+**Resources:**
+
+- [Full documentation](https://arkosjs.com/docs)
+- [WebSockets setup guide](https://arkosjs.com/docs/guides/websockets/setup)
+- [Dynamic permission overrides migration guide](/blog/adding-user-permissions-in-old-projects)
+- [GitHub repository](https://github.com/uanela/arkos)

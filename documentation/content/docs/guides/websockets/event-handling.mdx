@@ -5,16 +5,16 @@ title: Event Handling
 An event handler is registered with `.on(eventConfig, handler)`. `eventConfig` is where most of a Gateway's behavior is configured per-event.
 
 ```ts
-chatGateway.on(
-    {
-        event: "send_message",
-        validation: SendMessageSchema,
-        ack: true,
-    },
-    (socket, data, ack) => {
-        socket.to(data.room).emit("receive_message", data);
-        ack?.({ status: "ok" });
-    }
+gateway.on(
+  {
+    event: "send_message",
+    validation: SendMessageSchema,
+    ack: true,
+  },
+  (socket, data, ack) => {
+    socket.to(data.room).emit("receive_message", data);
+    ack?.({ status: "ok" });
+  }
 );
 ```
 
@@ -49,17 +49,17 @@ A pipe is middleware scoped to this Gateway's events, running after auth/rate-li
 
 ```ts
 // runs before every event handler in this gateway
-chatGateway.pipe((socket, data) => {
-    socket.locals.enrichedUser = enrichUser(socket.currentUser);
+gateway.pipe((socket, data) => {
+  socket.locals.enrichedUser = enrichUser(socket.currentUser);
 });
 
 // runs only before "send_message"
-chatGateway.pipe({ event: "send_message" }, (socket, data) => {
-    rateLimitPerRoom(data.room);
+gateway.pipe({ event: "send_message" }, (socket, data) => {
+  rateLimitPerRoom(data.room);
 });
 
-chatGateway.on({ event: "send_message" }, (socket, data) => {
-    console.log(socket.locals.enrichedUser);
+gateway.on({ event: "send_message" }, (socket, data) => {
+  console.log(socket.locals.enrichedUser);
 });
 ```
 

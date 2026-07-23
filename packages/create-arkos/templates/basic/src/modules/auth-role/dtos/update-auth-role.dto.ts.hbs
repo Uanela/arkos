@@ -45,11 +45,7 @@ class UpdatePermissionForRoleDto {
   @IsNotEmpty()
   action!: string;
 
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value)
-  description?: string;
-
+  @IsEnum(ApiAction)
   @IsOptional()
   @IsString()
   apiAction?: ApiAction;

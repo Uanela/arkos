@@ -29,13 +29,8 @@ class CreatePermissionForRoleDto {
   resource!: string;
 
   @IsString()
-  @Transform(({ value }) => value || 'View')
-  action: string = 'View';
-
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }) => value)
-  description?: string;
+  @Transform(({ value }) => String(value))
+  action!: string;
 }
 
 export default class CreateAuthRoleDto {

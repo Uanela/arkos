@@ -24,11 +24,13 @@ export default class UpdateAuthPermissionDto {
 
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => value)
-  action?: string;
+  @Transform(({ value }) => String(value))
+  action?: string
 
+  @ValidateNested({ each: true })
+  @IsArray()
+  @Type(() => RoleConnectDto)
   @IsOptional()
-  @IsString()
-  description?: string;
+  roles?: RoleConnectDto[];
 }
 {{/if}}

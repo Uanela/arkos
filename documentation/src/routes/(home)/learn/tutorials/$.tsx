@@ -25,7 +25,7 @@ function extractText(node: any): string {
 const serverLoader = createServerFn({ method: "GET" }).handler(
   async ({ data: slug }) => {
     const page = tutorials.getPage(
-      slug.split("/").length < 2 ? [slug] : slug.split("/")
+      slug?.split?.("/").length < 2 ? [slug] : slug?.split?.("/")
     );
     if (!page) throw notFound();
     const pages = tutorials.getPages();
@@ -39,9 +39,9 @@ const serverLoader = createServerFn({ method: "GET" }).handler(
       isCurrent: i === index,
     }));
 
-    const contents = page?.data.structuredData.contents;
+    const contents = page?.data?.structuredData.contents;
 
-    const title = page?.data.title
+    const title = page?.data?.title
       ? `${page.data.title} - Arkos.js Blog`
       : "Arkos.js Blog";
 
@@ -182,8 +182,8 @@ function ChapterListOverlay({
           {/* Introduction row */}
           {chapters[0] && (
             <Link
-              to="/learn/tutorials/$slug"
-              params={{ slug: chapters[0].slug }}
+              to="/learn/tutorials/$"
+              params={{ _splat: chapters[0].slug }}
               onClick={onClose}
               className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-muted/60 transition-colors mb-1"
             >
@@ -200,8 +200,8 @@ function ChapterListOverlay({
             {numbered.map((chapter, idx) => (
               <Link
                 key={chapter.slug}
-                to="/learn/tutorials/$slug"
-                params={{ slug: chapter.slug }}
+                to="/learn/tutorials/$"
+                params={{ _splat: chapter.slug }}
                 onClick={onClose}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-muted/60 transition-colors ${
                   chapter.isCurrent
@@ -387,8 +387,8 @@ const clientLoader = browserCollections.tutorialColletions.createClientLoader({
 
               {next && (
                 <Link
-                  to="/learn/tutorials/$slug"
-                  params={{ slug: next.slug }}
+                  to="/learn/tutorials/$"
+                  params={{ _splat: next.slug }}
                   className="w-full max-w-sm"
                 >
                   <div className="border border-border rounded-2xl p-6 hover:bg-muted/40 transition-colors text-left">
@@ -428,8 +428,8 @@ const clientLoader = browserCollections.tutorialColletions.createClientLoader({
                 </p>
               </div>
               <Link
-                to="/learn/tutorials/$slug"
-                params={{ slug: next.slug }}
+                to="/learn/tutorials/$"
+                params={{ _splat: next.slug }}
                 className="w-full max-w-sm"
               >
                 <div className="border border-border rounded-2xl p-6 hover:bg-muted/40 transition-colors text-left">
@@ -455,8 +455,8 @@ const clientLoader = browserCollections.tutorialColletions.createClientLoader({
               <div className="flex items-stretch gap-4">
                 {prev ? (
                   <Link
-                    to="/learn/tutorials/$slug"
-                    params={{ slug: prev.slug }}
+                    to="/learn/tutorials/$"
+                    params={{ _splat: prev.slug }}
                     className="flex-1 group"
                   >
                     <div className="h-full p-4 rounded-xl border border-border hover:bg-muted/50 transition-colors">
@@ -481,8 +481,8 @@ const clientLoader = browserCollections.tutorialColletions.createClientLoader({
 
                 {next ? (
                   <Link
-                    to="/learn/tutorials/$slug"
-                    params={{ slug: next.slug }}
+                    to="/learn/tutorials/$"
+                    params={{ _splat: next.slug }}
                     className="flex-1 group text-right"
                   >
                     <div className="h-full p-4 rounded-xl border border-border hover:bg-muted/50 transition-colors">
@@ -536,10 +536,10 @@ export const Route = createFileRoute("/(home)/learn/tutorials/$")({
   head: ({ loaderData }) => {
     return {
       meta: [
-        { title: loaderData.title },
-        { name: "description", content: loaderData.description },
-        { property: "og:title", content: loaderData.title },
-        { property: "og:description", content: loaderData.description },
+        { title: loaderData?.title },
+        { name: "description", content: loaderData?.description },
+        { property: "og:title", content: loaderData?.title },
+        { property: "og:description", content: loaderData?.description },
       ],
     };
   },

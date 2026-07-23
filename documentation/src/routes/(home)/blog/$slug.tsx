@@ -21,14 +21,17 @@ const serverLoader = createServerFn({ method: "GET" }).handler(
   async ({ data: slug }) => {
     const page = blog.getPage([slug]);
     if (!page) throw notFound();
-    const pages = blog.getPages();
+    const pages = blog
+      .getPages()
+      .sort(
+        (a, b) =>
+          new Date(a.data.date).getTime() - new Date(b.data.date).getTime() 
+      );
     const index = pages.findIndex((p) => p.slugs[0] === slug);
 
     const contents = page?.data.structuredData.contents;
 
-    const title = page?.data.title
-      ? `${page.data.title} - Arkos.js Blog`
-      : "Arkos.js Blog";
+    const title = page?.data?.title ? `${page.data?.title}` : "Arkos.js Blog";
 
     const description =
       page?.data.description ||
@@ -56,20 +59,20 @@ const serverLoader = createServerFn({ method: "GET" }).handler(
       date: page.data.date,
       tags: page.data.tags || [],
       toc: page.data.toc.map((item) => ({
-        title: extractText(item.title),
+        title: extractText(item?.title),
         url: item.url,
         depth: item.depth,
       })),
       url: page.url,
       prev: pages[index - 1]
         ? {
-            title: pages[index - 1].data.title,
+            title: pages[index - 1].data?.title,
             slug: pages[index - 1].slugs[0],
           }
         : null,
       next: pages[index + 1]
         ? {
-            title: pages[index + 1].data.title,
+            title: pages[index + 1].data?.title,
             slug: pages[index + 1].slugs[0],
           }
         : null,
@@ -183,7 +186,7 @@ const clientLoader = browserCollections.blogPosts.createClientLoader({
                     style={{ paddingLeft: `${(item.depth - 1) * 14 + 12}px` }}
                     className="text-xs text-fd-muted-foreground hover:text-fd-foreground transition-colors py-1.5 border-l border-transparent hover:border-fd-foreground -ml-px"
                   >
-                    {item.title}
+                    {item?.title}
                   </a>
                 )
               )}
@@ -213,10 +216,10 @@ export const Route = createFileRoute("/(home)/blog/$slug")({
   head: ({ loaderData }) => {
     return {
       meta: [
-        { title: loaderData.title },
-        { name: "description", content: loaderData.description },
-        { property: "og:title", content: loaderData.title },
-        { property: "og:description", content: loaderData.description },
+        { title: loaderData?.title },
+        { name: "description", content: loaderData?.description },
+        { property: "og:title", content: loaderData?.title },
+        { property: "og:description", content: loaderData?.description },
       ],
     };
   },

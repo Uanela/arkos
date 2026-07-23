@@ -24,7 +24,7 @@ export const blogPosts = defineCollections({
     frontmatterSchema.extend({
       title: z.string(),
       description: z.string().optional(),
-      date: z.date(),
+      date: z.coerce.date(),
       authors: z.array(z.string()),
       tags: z.array(z.string()).optional(),
     }),

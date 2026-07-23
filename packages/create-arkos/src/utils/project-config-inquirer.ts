@@ -1,6 +1,7 @@
 import path from "path";
 import inquirer from "inquirer";
 import chalk from "chalk";
+import { detectPackageManagerFromUserAgent } from "./helpers/npm.helpers";
 
 export interface ProjectConfig {
   projectName: string;
@@ -30,13 +31,17 @@ export interface ProjectConfig {
     strict?: boolean;
   };
   advanced?: boolean;
+  entryPoint: "src/app" | "src/server";
+  packageManager: string;
 }
 
 class ProjectConfigInquirer {
   private config: ProjectConfig;
 
   constructor() {
-    this.config = {} as ProjectConfig;
+    this.config = {
+      packageManager: detectPackageManagerFromUserAgent(),
+    } as ProjectConfig;
   }
 
   async run() {
@@ -229,64 +234,74 @@ class ProjectConfigInquirer {
   }
 
   private async promptAuthentication() {
-    const { useAuthentication } = await inquirer.prompt([
+if (this.config.prisma.provider === "none") {
+      console.info(
+        `${chalk.green("! ")}${chalk.bold("Skipping authentication setup as it requires prisma.")}`
+      );
+      this.config.authentication = {
+        type: "none",
+      };
+      return;
+    }
+
+    const { authenticationType } = await inquirer.prompt([
       {
-        type: "confirm",
-        name: "useAuthentication",
-        message: `Would you like to set up ${chalk.cyan("Authentication")}?`,
-        default: true,
+        type: "list",
+        name: "authenticationType",
+        message: `Which ${chalk.cyan("Authentication")} mode would you like to use?`,
+        choices: ["static", "dynamic", "none"],
+        default: "static",
       },
     ]);
 
-    if (useAuthentication) {
-      const { authenticationType } = await inquirer.prompt([
-        {
-          type: "list",
-          name: "authenticationType",
-          message: "Choose authentication type:",
-          choices: ["static", "dynamic"],
-        },
-      ]);
+    if (authenticationType === "none") {
+      this.config.authentication = { type: "none", multipleRoles: false };
+      return;
+    }
 
-      const { usernameField } = await inquirer.prompt([
+    const { usernameField } = await inquirer.prompt([
+      {
+        type: "input",
+        name: "usernameField",
+        message: "Enter the Prisma field name to use as the login username:",
+        default: "email",
+        validate: (input: string) => {
+          if (!input || input.length === 0) return "Field name cannot be empty";
+          if (!/^[a-z][a-zA-Z0-9]*$/.test(input))
+            return "Must be a valid Prisma field name (camelCase, starts with lowercase, letters and numbers only)";
+          return true;
+        },
+      },
+    ]);
+
+    this.config.authentication = {
+      type: authenticationType as "static" | "dynamic",
+      usernameField,
+      multipleRoles: false,
+    };
+
+    if (
+      authenticationType !== "static" ||
+      (authenticationType == "static" &&
+        this.config.prisma.provider !== "sqlite")
+    ) {
+      const { multipleRoles } = await inquirer.prompt([
         {
-          type: "list",
-          name: "usernameField",
-          message: "Choose default username field for login:",
-          choices: ["email", "username", "define later"],
+          type: "confirm",
+          name: "multipleRoles",
+          default: true,
+          message: `Would you like to use authentication with ${chalk.cyan("Multiple Roles")}?`,
         },
       ]);
 
       this.config.authentication = {
-        type: authenticationType,
-        usernameField:
-          usernameField === "define later" ? "custom" : usernameField,
-        multipleRoles: false,
+        ...this.config.authentication,
+        multipleRoles,
       };
-
-      if (
-        authenticationType !== "define later" &&
-        this.config.prisma.provider !== "sqlite" &&
-        authenticationType !== "static"
-      ) {
-        const { multipleRoles } = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "multipleRoles",
-            default: true,
-            message: `Would you like to use authentication with ${chalk.cyan("Multiple Roles")}?`,
-          },
-        ]);
-
-        this.config.authentication = {
-          ...this.config.authentication,
-          multipleRoles,
-        };
-      } else if (this.config.prisma.provider === "sqlite") {
-        console.info(
-          `Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.`
-        );
-      }
+    } else if (this.config.prisma.provider === "sqlite") {
+      console.info(
+        `${chalk.green("! ")}${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
+      );
     }
   }
 
