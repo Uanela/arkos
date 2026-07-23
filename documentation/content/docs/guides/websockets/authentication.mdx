@@ -8,7 +8,7 @@ WebSocket authentication and authorization plug directly into Arkos's existing [
 
 ```ts
 const chatGateway = ArkosGateway({
-  name: "chat",
+  name: "/chat",
   authentication: true,
 });
 ```
@@ -33,15 +33,25 @@ A child Gateway registered via `.use()` inherits its parent's `authentication` s
 
 Authentication answers "who is this," authorization answers "can they do this." It's set per event:
 
+```ts title="src/modules/chat/chat.policy.ts"
+import { ArkosPolicy } from "arkos";
+
+const chatPolicy = ArkosPolicy("chat").rule("DeleteMessage", {
+  resource: "message",
+  action: "delete",
+  rule: ["Admin", "Moderator"],
+});
+
+export default chatPolicy;
+```
+
 ```ts
+import chatPolicy from "@/src/modules/chat/chat.policy"
+
 chatGateway.on(
   {
     event: "delete_message",
-    authorization: {
-      resource: "message",
-      action: "delete",
-      rule: ["Admin", "Moderator"],
-    },
+    authorization: chatPolicy.DeleteMessage,
   },
   (socket, data) => {
     // only reached if the check passes
@@ -49,7 +59,7 @@ chatGateway.on(
 );
 ```
 
-`rule` accepts the same shapes as your HTTP access control rules — a role array, a `DetailedAccessControlRule`, or `"*"`.
+`authorization` accepts the same object shape provided by `ArkosPolicy` instances.
 
 ### Gotcha: authorization requires gateway-level authentication
 
@@ -59,7 +69,7 @@ const chatGateway = ArkosGateway({ name: "chat", authentication: false });
 chatGateway.on(
   {
     event: "delete_message",
-    authorization: { resource: "message", action: "delete" },
+    authorization: chatPolicy.DeleteMessage,
   },
   handler
 );

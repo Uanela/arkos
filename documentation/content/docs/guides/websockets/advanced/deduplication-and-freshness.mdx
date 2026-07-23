@@ -9,7 +9,7 @@ Both features key off `_meta`, a `{ mid, timestamp }` object Arkos expects on in
 Protects against the same logical message being processed twice — network retries, double-clicks, at-least-once delivery from a queue in front of your sockets.
 
 ```ts
-chatGateway.on({ event: "send_message", dedup: { ttl: 600 } }, handler);
+gateway.on({ event: "send_message", dedup: { ttl: 600 } }, handler);
 ```
 
 ### How it works
@@ -23,7 +23,7 @@ chatGateway.on({ event: "send_message", dedup: { ttl: 600 } }, handler);
 
 ```ts
 // per event
-chatGateway.on({ event: "cursor_move", dedup: false }, handler);
+gateway.on({ event: "cursor_move", dedup: false }, handler);
 
 // per gateway — every event skips dedup unless it opts back in
 const gateway = ArkosGateway({ name: "chat", dedup: false });
@@ -49,9 +49,9 @@ child.on({ event: "y" }, handler); // inherits ttl: 3600 from parent
 Rejects messages that are simply too old to matter — a client that reconnects after being offline for a while can have a backlog of queued actions; `maxAge` lets you drop the stale ones instead of processing them as if they just happened.
 
 ```ts
-chatGateway.on(
-    { event: "cursor_move", maxAge: 5000 }, // reject anything older than 5s
-    handler
+gateway.on(
+  { event: "cursor_move", maxAge: 5000 }, // reject anything older than 5s
+  handler
 );
 ```
 

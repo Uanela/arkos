@@ -1,7 +1,7 @@
 import { type ReactElement, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGithub } from "@fortawesome/free-brands-svg-icons";
-import { faBook } from "@fortawesome/free-solid-svg-icons";
+import { faGithub } from "@fortawesome/free-brands-svg-icons/faGithub";
+import { faBook } from "@fortawesome/free-solid-svg-icons/faBook";
 import { Tooltip } from "react-tooltip";
 import { Link } from "@tanstack/react-router";
 

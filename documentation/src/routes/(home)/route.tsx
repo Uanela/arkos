@@ -6,7 +6,7 @@ export const Route = createFileRoute("/(home)")({
   component: HomeGroupLayout,
 });
 
-export default function HomeGroupLayout() {
+function HomeGroupLayout() {
   return (
     <>
       {/* <HomeLayout {...baseOptions()}> */}
