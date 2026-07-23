@@ -9,24 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
-import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
 import { Route as homeRouteRouteImport } from './routes/(home)/route'
+import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
+import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
 import { Route as homeIndexRouteImport } from './routes/(home)/index'
-import { Route as DocsSplatRouteImport } from './routes/docs/$'
-import { Route as ApiSearchRouteImport } from './routes/api/search'
-import { Route as homeSponsorsRouteImport } from './routes/(home)/sponsors'
 import { Route as homeShowcaseRouteImport } from './routes/(home)/showcase'
-import { Route as homeLearnIndexRouteImport } from './routes/(home)/learn/index'
+import { Route as homeSponsorsRouteImport } from './routes/(home)/sponsors'
+import { Route as ApiSearchRouteImport } from './routes/api/search'
+import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as homeBlogIndexRouteImport } from './routes/(home)/blog/index'
-import { Route as LlmsDotmdxDocsSplatRouteImport } from './routes/llms[.]mdx.docs.$'
 import { Route as homeBlogSlugRouteImport } from './routes/(home)/blog/$slug'
+import { Route as homeLearnIndexRouteImport } from './routes/(home)/learn/index'
+import { Route as LlmsDotmdxDocsSplatRouteImport } from './routes/llms[.]mdx.docs.$'
 import { Route as homeLearnTutorialsIndexRouteImport } from './routes/(home)/learn/tutorials/index'
 import { Route as homeLearnTutorialsSplatRouteImport } from './routes/(home)/learn/tutorials/$'
 
-const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
-  id: '/llms.txt',
-  path: '/llms.txt',
+const homeRouteRoute = homeRouteRouteImport.update({
+  id: '/(home)',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
@@ -34,8 +33,9 @@ const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
   path: '/llms-full.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
-const homeRouteRoute = homeRouteRouteImport.update({
-  id: '/(home)',
+const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
+  id: '/llms.txt',
+  path: '/llms.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const homeIndexRoute = homeIndexRouteImport.update({
@@ -43,24 +43,34 @@ const homeIndexRoute = homeIndexRouteImport.update({
   path: '/',
   getParentRoute: () => homeRouteRoute,
 } as any)
-const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: '/docs/$',
-  path: '/docs/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiSearchRoute = ApiSearchRouteImport.update({
-  id: '/api/search',
-  path: '/api/search',
-  getParentRoute: () => rootRouteImport,
+const homeShowcaseRoute = homeShowcaseRouteImport.update({
+  id: '/showcase',
+  path: '/showcase',
+  getParentRoute: () => homeRouteRoute,
 } as any)
 const homeSponsorsRoute = homeSponsorsRouteImport.update({
   id: '/sponsors',
   path: '/sponsors',
   getParentRoute: () => homeRouteRoute,
 } as any)
-const homeShowcaseRoute = homeShowcaseRouteImport.update({
-  id: '/showcase',
-  path: '/showcase',
+const ApiSearchRoute = ApiSearchRouteImport.update({
+  id: '/api/search',
+  path: '/api/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsSplatRoute = DocsSplatRouteImport.update({
+  id: '/docs/$',
+  path: '/docs/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const homeBlogIndexRoute = homeBlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => homeRouteRoute,
+} as any)
+const homeBlogSlugRoute = homeBlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
   getParentRoute: () => homeRouteRoute,
 } as any)
 const homeLearnIndexRoute = homeLearnIndexRouteImport.update({
@@ -68,20 +78,10 @@ const homeLearnIndexRoute = homeLearnIndexRouteImport.update({
   path: '/learn/',
   getParentRoute: () => homeRouteRoute,
 } as any)
-const homeBlogIndexRoute = homeBlogIndexRouteImport.update({
-  id: '/blog/',
-  path: '/blog/',
-  getParentRoute: () => homeRouteRoute,
-} as any)
 const LlmsDotmdxDocsSplatRoute = LlmsDotmdxDocsSplatRouteImport.update({
   id: '/llms.mdx/docs/$',
   path: '/llms.mdx/docs/$',
   getParentRoute: () => rootRouteImport,
-} as any)
-const homeBlogSlugRoute = homeBlogSlugRouteImport.update({
-  id: '/blog/$slug',
-  path: '/blog/$slug',
-  getParentRoute: () => homeRouteRoute,
 } as any)
 const homeLearnTutorialsIndexRoute = homeLearnTutorialsIndexRouteImport.update({
   id: '/learn/tutorials/',
@@ -201,11 +201,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/llms.txt': {
-      id: '/llms.txt'
-      path: '/llms.txt'
-      fullPath: '/llms.txt'
-      preLoaderRoute: typeof LlmsDottxtRouteImport
+    '/(home)': {
+      id: '/(home)'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof homeRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/llms-full.txt': {
@@ -215,11 +215,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LlmsFullDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/(home)': {
-      id: '/(home)'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof homeRouteRouteImport
+    '/llms.txt': {
+      id: '/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(home)/': {
@@ -229,19 +229,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof homeIndexRouteImport
       parentRoute: typeof homeRouteRoute
     }
-    '/docs/$': {
-      id: '/docs/$'
-      path: '/docs/$'
-      fullPath: '/docs/$'
-      preLoaderRoute: typeof DocsSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/search': {
-      id: '/api/search'
-      path: '/api/search'
-      fullPath: '/api/search'
-      preLoaderRoute: typeof ApiSearchRouteImport
-      parentRoute: typeof rootRouteImport
+    '/(home)/showcase': {
+      id: '/(home)/showcase'
+      path: '/showcase'
+      fullPath: '/showcase'
+      preLoaderRoute: typeof homeShowcaseRouteImport
+      parentRoute: typeof homeRouteRoute
     }
     '/(home)/sponsors': {
       id: '/(home)/sponsors'
@@ -250,11 +243,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof homeSponsorsRouteImport
       parentRoute: typeof homeRouteRoute
     }
-    '/(home)/showcase': {
-      id: '/(home)/showcase'
-      path: '/showcase'
-      fullPath: '/showcase'
-      preLoaderRoute: typeof homeShowcaseRouteImport
+    '/api/search': {
+      id: '/api/search'
+      path: '/api/search'
+      fullPath: '/api/search'
+      preLoaderRoute: typeof ApiSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/$': {
+      id: '/docs/$'
+      path: '/docs/$'
+      fullPath: '/docs/$'
+      preLoaderRoute: typeof DocsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(home)/blog/': {
+      id: '/(home)/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof homeBlogIndexRouteImport
+      parentRoute: typeof homeRouteRoute
+    }
+    '/(home)/blog/$slug': {
+      id: '/(home)/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof homeBlogSlugRouteImport
       parentRoute: typeof homeRouteRoute
     }
     '/(home)/learn/': {
@@ -264,26 +278,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof homeLearnIndexRouteImport
       parentRoute: typeof homeRouteRoute
     }
-    '/(home)/blog/': {
-      id: '/(home)/blog/'
-      path: '/blog'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof homeBlogIndexRouteImport
-      parentRoute: typeof homeRouteRoute
-    }
     '/llms.mdx/docs/$': {
       id: '/llms.mdx/docs/$'
       path: '/llms.mdx/docs/$'
       fullPath: '/llms.mdx/docs/$'
       preLoaderRoute: typeof LlmsDotmdxDocsSplatRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/(home)/blog/$slug': {
-      id: '/(home)/blog/$slug'
-      path: '/blog/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof homeBlogSlugRouteImport
-      parentRoute: typeof homeRouteRoute
     }
     '/(home)/learn/tutorials/': {
       id: '/(home)/learn/tutorials/'
