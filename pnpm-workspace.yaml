@@ -12,14 +12,11 @@ allowBuilds:
   vue-demi: true
 supportedArchitectures:
   os:
-    - win32
-    - darwin
     - current
   cpu:
-    - arm64
-    - arm64v8
+    - current
   arch:
-    - arm64v8
+    - current
 sharedWorkspaceLockfile: false
 shamefullyHoist: true
 preferLocal: true
