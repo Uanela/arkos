@@ -6,6 +6,7 @@
     "outDir": "./dist",
     "strict": true,
     "sourceMap": true,
+    "skipLibCheck": true,
     "inlineSources": true,
     "removeComments": true,
     "esModuleInterop": true,
