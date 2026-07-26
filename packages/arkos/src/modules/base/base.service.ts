@@ -34,23 +34,13 @@ import {
   UpdateOneOptions,
 } from "./types/base.service.types";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
-import {
-  ArkosServiceHookMethodConfigs,
-  ServiceHookContext,
-} from "../../components/arkos-service-hook/types";
-
-export interface ServiceOperationHooks {
-  beforeOperation?: (params: any) => void | Promise<void>;
-  afterOperation?: (result: any, params: any) => void | Promise<void>;
-  beforePrisma?: (prismaArgs: any, params: any) => any | Promise<any>;
-  afterPrisma?: (result: any, params: any) => any | Promise<any>;
-}
+import { ServiceHookContext } from "./types/base.service.types";
 
 interface ServiceOperationConfig {
   operationType:
-    | keyof ArkosServiceHookMethodConfigs<any, any>
-    | "batchDelete"
-    | "batchUpdate";
+  | keyof ArkosPrismaService
+  | "batchDelete"
+  | "batchUpdate";
   prismaMethod: string;
   requiresPasswordHashing?: boolean;
   relationFieldsHandling?: string[];
@@ -61,7 +51,6 @@ interface ServiceOperationConfig {
     config: ServiceOperationConfig,
     context: ArkosPrismaService<any>
   ) => Promise<any>;
-  hooks?: ServiceOperationHooks;
 }
 
 /**
@@ -110,121 +99,59 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
 
   private executeOperation = (config: ServiceOperationConfig) => {
     return async (...args: any[]): Promise<any> => {
-        let argsWithRelationFieldsHandled =
-          await this.processRelationFieldsInBody(args, config);
-        let prismaFinalArgs = await this.handlePasswordHashing(
+      let argsWithRelationFieldsHandled =
+        await this.processRelationFieldsInBody(args, config);
+      let prismaFinalArgs = await this.handlePasswordHashing(
+        argsWithRelationFieldsHandled,
+        config
+      );
+
+
+
+
+      const prisma = getPrismaInstance();
+      let result: any;
+
+      if (config.customPrismaLogic) {
+        result = await config.customPrismaLogic(
           argsWithRelationFieldsHandled,
-          config
+          prisma,
+          config,
+          this
         );
+      } else {
+        const prismaArgs = this.buildPrismaArgs(prismaFinalArgs, config);
+        result = await (
+          prisma[this.modelName as string] as Delegate<TModelName>
+        )[config.prismaMethod](prismaArgs);
+      }
 
-
-        if (config.hooks?.beforeOperation)
-          await config.hooks.beforeOperation(
-            this.buildHookParams(argsWithRelationFieldsHandled, config)
-          );
-
-        if (config.hooks?.beforePrisma) {
-          argsWithRelationFieldsHandled = await config.hooks.beforePrisma(
-            argsWithRelationFieldsHandled,
-            this.buildHookParams(argsWithRelationFieldsHandled, config)
-          );
-        }
-
-        const prisma = getPrismaInstance();
-        let result: any;
-
-        if (config.customPrismaLogic) {
-          result = await config.customPrismaLogic(
-            argsWithRelationFieldsHandled,
-            prisma,
-            config,
-            this
-          );
-        } else {
-          const prismaArgs = this.buildPrismaArgs(prismaFinalArgs, config);
-          result = await (
-            prisma[this.modelName as string] as Delegate<TModelName>
-          )[config.prismaMethod](prismaArgs);
-        }
-
-        if (config.hooks?.afterPrisma) {
-          result = await config.hooks.afterPrisma(
-            result,
-            this.buildHookParams(argsWithRelationFieldsHandled, config)
-          );
-        }
-
-
-        if (config.hooks?.afterOperation) {
-          await config.hooks.afterOperation(
-            result,
-            this.buildHookParams(argsWithRelationFieldsHandled, config)
-          );
-        }
-
-        return result;
+      return result;
     };
   };
 
   private executeTransactionOperation = (config: ServiceOperationConfig) => {
     return async (...args: any[]): Promise<any> => {
 
-        let argsWithRelationFieldsHandled =
-          await this.processRelationFieldsInBody(args, config);
-        let prismaFinalArgs = await this.handlePasswordHashing(
-          argsWithRelationFieldsHandled,
-          config
-        );
+      let argsWithRelationFieldsHandled =
+        await this.processRelationFieldsInBody(args, config);
+      let prismaFinalArgs = await this.handlePasswordHashing(
+        argsWithRelationFieldsHandled,
+        config
+      );
 
 
-        const prisma = getPrismaInstance();
-        const results = await this.executeTransactionLogic(
-          prismaFinalArgs,
-          config,
-          prisma
-        );
+      const prisma = getPrismaInstance();
+      const results = await this.executeTransactionLogic(
+        prismaFinalArgs,
+        config,
+        prisma
+      );
 
-        return results;
-  } };
-
-
-  private buildHookParams(args: any[], config: ServiceOperationConfig): any {
-    const context = args[args.length - 1];
-
-    switch (config.operationType) {
-      case "createOne":
-      case "createMany":
-        return { data: args[0], queryOptions: args[1], context };
-      case "findMany":
-        return { filters: args[0], queryOptions: args[1], context };
-      case "findById":
-        return { id: args[0], queryOptions: args[1], context };
-      case "findOne":
-        return { filters: args[0], queryOptions: args[1], context };
-      case "updateOne":
-        return {
-          filters: args[0],
-          data: args[1],
-          queryOptions: args[2],
-          context,
-        };
-      case "updateMany":
-        return {
-          filters: args[0],
-          data: args[1],
-          queryOptions: args[2],
-          context,
-        };
-      case "deleteOne":
-        return { filters: args[0], context };
-      case "deleteMany":
-        return { filters: args[0], context };
-      case "count":
-        return { filters: args[0], context };
-      default:
-        return { context };
+      return results;
     }
-  }
+  };
+
 
   private async handlePasswordHashing(
     args: any[],
