@@ -1,5 +1,5 @@
 import fs, { realpathSync } from "fs";
-import  { fileURLToPath } from "url";
+import { fileURLToPath } from "url";
 
 export function getFolderPathFromArgs() {
   const args = process.argv.slice(2);
@@ -44,9 +44,6 @@ export function removeDir(folderPath: string) {
 }
 
 export function isEntryPoint(): boolean {
-  console.log(typeof __filename !== "undefined"
-    ? __filename
-    : fileURLToPath(import.meta.url))
   return realpathSync(process.argv[1]) === realpathSync(typeof __filename !== "undefined"
     ? __filename
     : fileURLToPath(import.meta.url))
