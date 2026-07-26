@@ -8,12 +8,12 @@ export interface ProjectConfig {
   argProjectName?: string;
   typescript: boolean;
   validation?: {
-    type?: "zod" | "class-validator";
+    type?: "zod" | "class-validator" | "none";
   };
   authentication?: {
-    type?: "static" | "dynamic" | "define later";
+    type?: "static" | "dynamic" | "none";
     usernameField?: "username" | "email" | "custom";
-    multipleRoles: boolean;
+    multipleRoles?: boolean;
   };
   prisma: {
     provider:
@@ -22,7 +22,8 @@ export interface ProjectConfig {
       | "sqlite"
       | "sqlserver"
       | "cockroachdb"
-      | "mongodb";
+      | "mongodb"
+      | "none";
     idDatabaseType: string;
     defaultDBurl: string;
   };
@@ -234,7 +235,7 @@ class ProjectConfigInquirer {
   }
 
   private async promptAuthentication() {
-if (this.config.prisma.provider === "none") {
+    if (this.config.prisma.provider === "none") {
       console.info(
         `${chalk.green("! ")}${chalk.bold("Skipping authentication setup as it requires prisma.")}`
       );
