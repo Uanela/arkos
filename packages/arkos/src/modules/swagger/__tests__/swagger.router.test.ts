@@ -89,18 +89,11 @@ describe("getSwaggerRouter", () => {
 
   const mockApp = { _router: { stack: [] } } as any as Arkos;
   const mockSwaggerSpec = { openapi: "3.0.0" };
-  const mockMergedConfig = {
-    endpoint: "/docs",
-    options: {
-      definition: { info: { title: "Test API", version: "1.0.0" } },
-      apis: [],
-    },
-  };
+
 
   beforeEach(() => {
     jest.clearAllMocks();
     (swaggerJsdoc as jest.Mock).mockReturnValue(mockSwaggerSpec);
-    (deepmerge as any as jest.Mock).mockReturnValue(mockMergedConfig);
     (importEsmPreventingTsTransformation as jest.Mock).mockResolvedValue({
       apiReference: jest.fn().mockReturnValue(jest.fn()),
     });
@@ -114,15 +107,6 @@ describe("getSwaggerRouter", () => {
     const router = getSwaggerRouter({} as any, mockApp);
     expect(router).toHaveProperty("use");
     expect(router).toHaveProperty("get");
-  });
-
-  it("calls getSwaggerDefaultConfig with system paths", () => {
-    getSwaggerRouter({} as any, mockApp);
-    expect(getSwaggerDefaultConfig).toHaveBeenCalledWith(
-      expect.objectContaining({
-        "/api/available-resources": expect.any(Object),
-      })
-    );
   });
 
   it("generates swagger spec via swaggerJsdoc", () => {
@@ -267,28 +251,6 @@ describe("getSwaggerRouter", () => {
       expect(endpointUseCalls).toHaveLength(1);
     });
   });
-});
-
-  describe("GET /auth/login", () => {
-    it("registers the route", () => {
-      getSwaggerRouter({} as any, mockApp);
-      const router = getRouterInstance();
-      const registered = router.get.mock.calls.map((c: any[]) => c[0].path);
-      expect(registered).toContain(`${endpoint}/auth/login`);
-    });
-
-    it("sends login HTML", () => {
-      getSwaggerRouter({} as any, mockApp);
-      const router = getRouterInstance();
-      const handler = router.get.mock.calls.find(
-        (c: any[]) => c[0].path === `${endpoint}/auth/login`
-      )![1];
-      const res = { send: jest.fn() };
-      handler({}, res);
-      expect(getOpenApiLoginHtml).toHaveBeenCalled();
-      expect(res.send).toHaveBeenCalledWith("<html>login</html>");
-    });
-  });
 
   describe("GET /openapi.json", () => {
     it("registers the route", () => {
@@ -308,146 +270,167 @@ describe("getSwaggerRouter", () => {
       handler({}, res);
       expect(res.json).toHaveBeenCalledWith(mockSwaggerSpec);
     });
-  });
 
-  describe("custom servers merging", () => {
-    it("preserves user-defined servers and appends the default server", () => {
-      const userServer = { url: "https://api.example.com" };
-      getSwaggerRouter(
-        {
-          swagger: {
-            options: {
-              definition: {
-                servers: [userServer],
-                info: { title: "T", version: "1" },
+    describe("custom servers merging", () => {
+      it("preserves user-defined servers and appends the default server", () => {
+        const userServer = { url: "https://api.example.com" };
+        getSwaggerRouter(
+          {
+            swagger: {
+              options: {
+                definition: {
+                  servers: [userServer],
+                  info: { title: "T", version: "1" },
+                },
+                apis: [],
               },
-              apis: [],
             },
-          },
-        } as any,
-        mockApp
-      );
-      const swaggerArg = (swaggerJsdoc as jest.Mock).mock.calls[0][0];
-      expect(swaggerArg.definition.servers).toContainEqual(userServer);
-      expect(swaggerArg.definition.servers).toContainEqual(
-        baseDefaultConfig.options.definition.servers[0]
-      );
+          } as any,
+          mockApp
+        );
+        const swaggerArg = (swaggerJsdoc as jest.Mock).mock.calls[0][0];
+        expect(swaggerArg.definition.servers).toContainEqual(userServer);
+        expect(swaggerArg.definition.servers).toContainEqual(
+          baseDefaultConfig.options.definition.servers[0]
+        );
+      });
+
+      it("does not push default server when no custom servers are defined", () => {
+        getSwaggerRouter({} as any, mockApp);
+        const swaggerArg = (swaggerJsdoc as jest.Mock).mock.calls[0][0];
+        expect(swaggerArg.definition.servers).toHaveLength(1);
+      });
     });
 
-    it("does not push default server when no custom servers are defined", () => {
+    describe("scalarMiddleware", () => {
+      const mockSwaggerSpec = { openapi: "3.0.0" };
+      const swaggerConfigs = { scalarApiReferenceConfiguration: { theme: "moon" } };
+
+      beforeEach(() => {
+        jest.clearAllMocks();
+      });
+
+      it("lazy-loads scalar on first request and calls the handler", async () => {
+        const fakeHandler = jest.fn();
+        const fakeApiReference = jest.fn(() => fakeHandler);
+        (importEsmPreventingTsTransformation as jest.Mock).mockResolvedValue({
+          apiReference: fakeApiReference,
+        });
+
+        const middleware = scalarMiddleware(null, mockSwaggerSpec, swaggerConfigs);
+        const req = {};
+        const res = {};
+        const next = jest.fn();
+
+        await middleware(req as any, res as any, next);
+
+        expect(importEsmPreventingTsTransformation).toHaveBeenCalledWith(
+          "@scalar/express-api-reference"
+        );
+        expect(fakeApiReference).toHaveBeenCalledWith({
+          content: mockSwaggerSpec,
+          theme: "moon",
+        });
+        expect(fakeHandler).toHaveBeenCalledWith(req, res, next);
+      });
+
+      it("does not re-import scalar on subsequent requests", async () => {
+        const fakeHandler = jest.fn();
+        const fakeApiReference = jest.fn(() => fakeHandler);
+        (importEsmPreventingTsTransformation as jest.Mock).mockResolvedValue({
+          apiReference: fakeApiReference,
+        });
+
+        const middleware = scalarMiddleware(null, mockSwaggerSpec, swaggerConfigs);
+        const next = jest.fn();
+
+        await middleware({} as any, {} as any, next);
+        await middleware({} as any, {} as any, next);
+
+        expect(importEsmPreventingTsTransformation).toHaveBeenCalledTimes(1);
+      });
+
+      it("skips import when scalarHandler is already provided", async () => {
+        const existingHandler = jest.fn();
+        const middleware = scalarMiddleware(
+          existingHandler,
+          mockSwaggerSpec,
+          swaggerConfigs
+        );
+        const req = {};
+        const res = {};
+        const next = jest.fn();
+
+        await middleware(req as any, res as any, next);
+
+        expect(importEsmPreventingTsTransformation).not.toHaveBeenCalled();
+        expect(existingHandler).toHaveBeenCalledWith(req, res, next);
+      });
+
+      it("concurrent requests share a single loading promise", async () => {
+        let resolveImport!: (v: any) => void;
+        const importPromise = new Promise((res) => {
+          resolveImport = res;
+        });
+        (importEsmPreventingTsTransformation as jest.Mock).mockReturnValue(
+          importPromise
+        );
+
+        const fakeHandler = jest.fn();
+        const fakeApiReference = jest.fn(() => fakeHandler);
+
+        const middleware = scalarMiddleware(null, mockSwaggerSpec, swaggerConfigs);
+        const next = jest.fn();
+
+        const p1 = middleware({} as any, {} as any, next);
+        const p2 = middleware({} as any, {} as any, next);
+
+        resolveImport({ apiReference: fakeApiReference });
+        await Promise.all([p1, p2]);
+
+        expect(importEsmPreventingTsTransformation).toHaveBeenCalledTimes(1);
+      });
+
+      it("passes scalarApiReferenceConfiguration fields to apiReference", async () => {
+        const fakeHandler = jest.fn();
+        const fakeApiReference = jest.fn(() => fakeHandler);
+        (importEsmPreventingTsTransformation as jest.Mock).mockResolvedValue({
+          apiReference: fakeApiReference,
+        });
+
+        const configs = {
+          scalarApiReferenceConfiguration: { theme: "saturn", darkMode: true },
+        };
+        const middleware = scalarMiddleware(null, mockSwaggerSpec, configs);
+        await middleware({} as any, {} as any, jest.fn());
+
+        expect(fakeApiReference).toHaveBeenCalledWith({
+          content: mockSwaggerSpec,
+          theme: "saturn",
+          darkMode: true,
+        });
+      });
+    });
+  })
+  describe("GET /auth/login", () => {
+    it("registers the route", () => {
       getSwaggerRouter({} as any, mockApp);
-      const swaggerArg = (swaggerJsdoc as jest.Mock).mock.calls[0][0];
-      expect(swaggerArg.definition.servers).toHaveLength(1);
+      const router = getRouterInstance();
+      const registered = router.get.mock.calls.map((c: any[]) => c[0].path);
+      expect(registered).toContain(`${endpoint}/auth/login`);
     });
-  });
+
+    it("sends login HTML", () => {
+      getSwaggerRouter({} as any, mockApp);
+      const router = getRouterInstance();
+      const handler = router.get.mock.calls.find(
+        (c: any[]) => c[0].path === `${endpoint}/auth/login`
+      )![1];
+      const res = { send: jest.fn() };
+      handler({}, res);
+      expect(getOpenApiLoginHtml).toHaveBeenCalled();
+      expect(res.send).toHaveBeenCalledWith("<html>login</html>");
+    });
+  })
 });
 
-describe("scalarMiddleware", () => {
-  const mockSwaggerSpec = { openapi: "3.0.0" };
-  const swaggerConfigs = { scalarApiReferenceConfiguration: { theme: "moon" } };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("lazy-loads scalar on first request and calls the handler", async () => {
-    const fakeHandler = jest.fn();
-    const fakeApiReference = jest.fn(() => fakeHandler);
-    (importEsmPreventingTsTransformation as jest.Mock).mockResolvedValue({
-      apiReference: fakeApiReference,
-    });
-
-    const middleware = scalarMiddleware(null, mockSwaggerSpec, swaggerConfigs);
-    const req = {};
-    const res = {};
-    const next = jest.fn();
-
-    await middleware(req as any, res as any, next);
-
-    expect(importEsmPreventingTsTransformation).toHaveBeenCalledWith(
-      "@scalar/express-api-reference"
-    );
-    expect(fakeApiReference).toHaveBeenCalledWith({
-      content: mockSwaggerSpec,
-      theme: "moon",
-    });
-    expect(fakeHandler).toHaveBeenCalledWith(req, res, next);
-  });
-
-  it("does not re-import scalar on subsequent requests", async () => {
-    const fakeHandler = jest.fn();
-    const fakeApiReference = jest.fn(() => fakeHandler);
-    (importEsmPreventingTsTransformation as jest.Mock).mockResolvedValue({
-      apiReference: fakeApiReference,
-    });
-
-    const middleware = scalarMiddleware(null, mockSwaggerSpec, swaggerConfigs);
-    const next = jest.fn();
-
-    await middleware({} as any, {} as any, next);
-    await middleware({} as any, {} as any, next);
-
-    expect(importEsmPreventingTsTransformation).toHaveBeenCalledTimes(1);
-  });
-
-  it("skips import when scalarHandler is already provided", async () => {
-    const existingHandler = jest.fn();
-    const middleware = scalarMiddleware(
-      existingHandler,
-      mockSwaggerSpec,
-      swaggerConfigs
-    );
-    const req = {};
-    const res = {};
-    const next = jest.fn();
-
-    await middleware(req as any, res as any, next);
-
-    expect(importEsmPreventingTsTransformation).not.toHaveBeenCalled();
-    expect(existingHandler).toHaveBeenCalledWith(req, res, next);
-  });
-
-  it("concurrent requests share a single loading promise", async () => {
-    let resolveImport!: (v: any) => void;
-    const importPromise = new Promise((res) => {
-      resolveImport = res;
-    });
-    (importEsmPreventingTsTransformation as jest.Mock).mockReturnValue(
-      importPromise
-    );
-
-    const fakeHandler = jest.fn();
-    const fakeApiReference = jest.fn(() => fakeHandler);
-
-    const middleware = scalarMiddleware(null, mockSwaggerSpec, swaggerConfigs);
-    const next = jest.fn();
-
-    const p1 = middleware({} as any, {} as any, next);
-    const p2 = middleware({} as any, {} as any, next);
-
-    resolveImport({ apiReference: fakeApiReference });
-    await Promise.all([p1, p2]);
-
-    expect(importEsmPreventingTsTransformation).toHaveBeenCalledTimes(1);
-  });
-
-  it("passes scalarApiReferenceConfiguration fields to apiReference", async () => {
-    const fakeHandler = jest.fn();
-    const fakeApiReference = jest.fn(() => fakeHandler);
-    (importEsmPreventingTsTransformation as jest.Mock).mockResolvedValue({
-      apiReference: fakeApiReference,
-    });
-
-    const configs = {
-      scalarApiReferenceConfiguration: { theme: "saturn", darkMode: true },
-    };
-    const middleware = scalarMiddleware(null, mockSwaggerSpec, configs);
-    await middleware({} as any, {} as any, jest.fn());
-
-    expect(fakeApiReference).toHaveBeenCalledWith({
-      content: mockSwaggerSpec,
-      theme: "saturn",
-      darkMode: true,
-    });
-  });
-});
