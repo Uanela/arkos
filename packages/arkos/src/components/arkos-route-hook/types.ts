@@ -20,8 +20,8 @@ type PrismaQueryFor<
   TOp extends string,
 > = TModel extends keyof PrismaModels<any>
   ? TOp extends keyof PrismaModels<any>[TModel]
-    ? Partial<PrismaModels<any>[TModel][TOp]>
-    : Record<string, any>
+  ? Partial<PrismaModels<any>[TModel][TOp]>
+  : Record<string, any>
   : Record<string, any>;
 
 /**
@@ -39,10 +39,6 @@ export type ArkosRouteHookMethodConfig<
      * Typed against the model's actual Prisma args for this operation.
      */
     prismaArgs?: PrismaQueryFor<TModel, TOp>;
-    /**
-     * ArkosPrismaService instace for such model
-     */
-    service?: ArkosPrismaService<TModel>
   };
 
 /**
@@ -59,6 +55,9 @@ export type ArkosModuleType = "auth" | "file-upload" | Models;
 export interface ArkosRouteHookInstance<TModel extends Models> {
   readonly __type: "ArkosRouteHook";
   readonly moduleName: TModel;
+  readonly _configs: {
+    readonly service?: ArkosPrismaService;
+  }
 
   createOne(config: ArkosRouteHookMethodConfig<TModel, "CreateArgs">): this;
   findOne(config: ArkosRouteHookMethodConfig<TModel, "FindFirstArgs">): this;
@@ -116,5 +115,5 @@ export interface ArkosFileUploadRouteHookInstance {
 export type ArkosRouteHookReturn<T extends ArkosModuleType> = T extends "auth"
   ? ArkosAuthRouteHookInstance
   : T extends "file-upload"
-    ? ArkosFileUploadRouteHookInstance
-    : ArkosRouteHookInstance<T>;
+  ? ArkosFileUploadRouteHookInstance
+  : ArkosRouteHookInstance<T>;

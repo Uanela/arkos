@@ -24,9 +24,9 @@ export interface OperationHooks {
 
 interface OperationConfig {
   operationType:
-    | keyof Omit<ArkosRouteHookInstance<any>, "__type" | "moduleName">
-    | "batchUpdate"
-    | "batchDelete";
+  | keyof Omit<ArkosRouteHookInstance<any>, "__type" | "moduleName">
+  | "batchUpdate"
+  | "batchDelete";
   serviceMethod: string;
   successStatus: number;
   queryFeatures: ("filter" | "sort" | "limitFields" | "paginate")[];
@@ -165,10 +165,29 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
         if (config.hooks?.beforeService)
           serviceArgs = await config.hooks.beforeService(serviceArgs, req);
 
-        const serviceMethod = this.service[
-          config.serviceMethod as keyof ArkosPrismaService<any>
-        ] as Function;
-        let result = await serviceMethod.apply(this.service, serviceArgs);
+        const routeHook = this.getRouteHook();
+        const isRouteHookMethod =
+          routeHook._configs.service &&
+            routeHook._configs.service[
+            config.serviceMethod as keyof ArkosPrismaService<any>
+            ]
+            ? true
+            : false;
+
+        const serviceMethod = (
+          isRouteHookMethod
+            ? routeHook._configs.service![
+            config.serviceMethod as keyof ArkosPrismaService<any>
+            ]
+            : this.service[
+            config.serviceMethod as keyof ArkosPrismaService<any>
+            ]
+        ) as Function;
+
+        let result = await serviceMethod.apply(
+          isRouteHookMethod ? routeHook._configs.service : this.service,
+          serviceArgs
+        );
 
         if (config.hooks?.afterService)
           result = await config.hooks.afterService(result, req);
@@ -213,15 +232,13 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
         let responseData = config.responseBuilder
           ? config.responseBuilder(data, additionalData)
           : this.defaultResponseBuilder(
-              data,
-              additionalData,
-              config.operationType
-            );
+            data,
+            additionalData,
+            config.operationType
+          );
 
         if (config.hooks?.beforeResponse)
           responseData = await config.hooks.beforeResponse(responseData, req);
-
-        const routeHook = this.getRouteHook();
 
         if (
           routeHook &&

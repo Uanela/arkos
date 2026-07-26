@@ -1,3 +1,4 @@
+import { ArkosPrismaService } from "../../exports/services";
 import {
   ArkosModuleType,
   ArkosRouteHookReturn,
@@ -32,7 +33,12 @@ interface InterceptorStore {
  * @see {@link https://www.arkosjs.com/docs/core-concepts/components/route-hooks}
  */
 export function ArkosRouteHook<T extends ArkosModuleType>(
-  moduleName: T
+  moduleName: T, configs?: {
+    /**
+     * ArkosPrismaService instace for such model
+     */
+    service?: ArkosPrismaService<T>
+  }
 ): ArkosRouteHookReturn<T> {
   const store: InterceptorStore = {};
 
@@ -46,6 +52,7 @@ export function ArkosRouteHook<T extends ArkosModuleType>(
     __type: "ArkosRouteHook" as const,
     moduleName,
     _store: store,
+    _configs: configs || {},
   };
 
   const methods: Record<

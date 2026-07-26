@@ -12,15 +12,15 @@ import { kebabCase } from "../../exports/utils";
 
 type PrismaOperations = keyof Omit<
   ArkosRouteHookInstance<any>,
-  "__type" | "moduleName"
+  "__type" | "moduleName" | "_configs"
 >;
 
 export type OperationByModule<TModule extends ArkosModuleType> =
   TModule extends "file-upload"
-    ? keyof Omit<ArkosFileUploadRouteHookInstance, "__type" | "moduleName">
-    : TModule extends "auth"
-      ? keyof Omit<ArkosAuthRouteHookInstance, "__type" | "moduleName">
-      : PrismaOperations;
+  ? keyof Omit<ArkosFileUploadRouteHookInstance, "__type" | "moduleName" | "service">
+  : TModule extends "auth"
+  ? keyof Omit<ArkosAuthRouteHookInstance, "__type" | "moduleName" | "service">
+  : PrismaOperations;
 
 /**
  * Reader for `ArkosRouteHook` instances.
