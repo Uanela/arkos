@@ -5,7 +5,6 @@ import {
   ArkosFileUploadRouteHookInstance,
   ArkosRouteHookInstance,
 } from "../components/arkos-route-hook/types";
-import { ArkosServiceHookInstance } from "../components/arkos-service-hook/types";
 import { IArkosRouter } from "../exports";
 
 type ArkosRouterMethods =
@@ -66,7 +65,7 @@ type ArkosRouterMethods =
  */
 export interface Arkos
   extends Omit<Express, "listen" | ArkosRouterMethods>,
-    Pick<IArkosRouter, ArkosRouterMethods> {
+  Pick<IArkosRouter, ArkosRouterMethods> {
   (req: IncomingMessage, res: ServerResponse): void;
   /**
    * Applies all loaded items to the app by adding them as middleware,
@@ -103,4 +102,3 @@ export type ArkosLoadable =
   | ArkosRouteHookInstance<any>
   | ArkosAuthRouteHookInstance
   | ArkosFileUploadRouteHookInstance
-  | ArkosServiceHookInstance<any, any>;

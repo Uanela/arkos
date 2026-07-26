@@ -14,7 +14,6 @@ import { ArkosConfig } from "../types/new-arkos-config";
 import { loadEnvironmentVariables } from "../utils/dotenv.helpers";
 import { arkos } from "../app";
 import { ArkosRouteHook } from "../components/arkos-route-hook";
-import { ArkosServiceHook } from "../components/arkos-service-hook";
 import { ArkosRouteHookInstance } from "../components/arkos-route-hook/types";
 import { ArkosPolicy } from "../components/arkos-policy";
 import { IArkosPolicy } from "../components/arkos-policy/types";
@@ -36,7 +35,6 @@ export {
   loadEnvironmentVariables,
   getArkosConfig,
   ArkosRouteHook,
-  ArkosServiceHook,
   ArkosRouter,
   ArkosRouteConfig,
   ArkosRouteHookInstance,

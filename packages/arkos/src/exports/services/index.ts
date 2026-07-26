@@ -7,37 +7,7 @@ import authService, { AuthService } from "../../modules/auth/auth.service";
 import emailService, { EmailService } from "../../modules/email/email.service";
 import { ArkosPrismaService } from "../../modules/base/base.service";
 import authActionService from "../../modules/auth/utils/services/auth-action.service";
-import {
-  ServiceHookContext,
-  BeforeCreateOneHookArgs,
-  AfterCreateOneHookArgs,
-  BeforeCreateManyHookArgs,
-  AfterCreateManyHookArgs,
-  BeforeCountHookArgs,
-  AfterCountHookArgs,
-  BeforeFindManyHookArgs,
-  AfterFindManyHookArgs,
-  BeforeFindOneHookArgs,
-  AfterFindOneHookArgs,
-  BeforeUpdateOneHookArgs,
-  AfterUpdateOneHookArgs,
-  BeforeUpdateManyHookArgs,
-  AfterUpdateManyHookArgs,
-  BeforeDeleteOneHookArgs,
-  AfterDeleteOneHookArgs,
-  BeforeDeleteManyHookArgs,
-  AfterDeleteManyHookArgs,
-  OnCreateOneErrorHookArgs,
-  OnCreateManyErrorHookArgs,
-  OnCountErrorHookArgs,
-  OnFindManyErrorHookArgs,
-  OnFindByIdErrorHookArgs,
-  OnFindOneErrorHookArgs,
-  OnUpdateOneErrorHookArgs,
-  OnUpdateManyErrorHookArgs,
-  OnDeleteOneErrorHookArgs,
-  OnDeleteManyErrorHookArgs,
-} from "../../components/arkos-service-hook/types";
+import { ServiceHookContext } from "../../modules/base/types/base.service.types";
 
 /**
  * Authentication service.
@@ -50,34 +20,6 @@ export { authService, AuthService, authActionService };
 export {
   ArkosPrismaService,
   ServiceHookContext,
-  BeforeCreateOneHookArgs,
-  AfterCreateOneHookArgs,
-  BeforeCreateManyHookArgs,
-  AfterCreateManyHookArgs,
-  BeforeCountHookArgs,
-  AfterCountHookArgs,
-  BeforeFindManyHookArgs,
-  AfterFindManyHookArgs,
-  BeforeFindOneHookArgs,
-  AfterFindOneHookArgs,
-  BeforeUpdateOneHookArgs,
-  AfterUpdateOneHookArgs,
-  BeforeUpdateManyHookArgs,
-  AfterUpdateManyHookArgs,
-  BeforeDeleteOneHookArgs,
-  AfterDeleteOneHookArgs,
-  BeforeDeleteManyHookArgs,
-  AfterDeleteManyHookArgs,
-  OnCreateOneErrorHookArgs,
-  OnCreateManyErrorHookArgs,
-  OnCountErrorHookArgs,
-  OnFindManyErrorHookArgs,
-  OnFindByIdErrorHookArgs,
-  OnFindOneErrorHookArgs,
-  OnUpdateOneErrorHookArgs,
-  OnUpdateManyErrorHookArgs,
-  OnDeleteOneErrorHookArgs,
-  OnDeleteManyErrorHookArgs,
 };
 
 /**
