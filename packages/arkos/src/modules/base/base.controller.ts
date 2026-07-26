@@ -7,9 +7,9 @@ import pluralize from "pluralize";
 import { APIFeatures } from "../../exports/utils";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import loadableRegistry from "../../components/arkos-loadable-registry";
-import { ArkosRouteHookInstance } from "../../components/arkos-route-hook/types";
 import { routeHookReader } from "../../components/arkos-route-hook/reader";
 import { PrismaModels } from "../../generated";
+import { ArkosRouteHookInstance } from "../../components/arkos-route-hook/types";
 
 export interface OperationHooks {
   beforeQuery?: (req: ArkosRequest) => void | Promise<void>;
@@ -94,7 +94,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
     return loadableRegistry.getItem(
       "ArkosRouteHook",
       kebabCase(kebabCase(this.modelName))
-    ) as ArkosRouteHookInstance<TModuleName>;
+    ) as ArkosRouteHookInstance<TModuleName> | null;
   }
 
   private executeOperation = (config: OperationConfig) => {
@@ -166,8 +166,9 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
           serviceArgs = await config.hooks.beforeService(serviceArgs, req);
 
         const routeHook = this.getRouteHook();
+
         const isRouteHookMethod =
-          routeHook._configs.service &&
+          routeHook && routeHook._configs.service &&
             routeHook._configs.service[
             config.serviceMethod as keyof ArkosPrismaService<any>
             ]
@@ -176,7 +177,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
 
         const serviceMethod = (
           isRouteHookMethod
-            ? routeHook._configs.service![
+            ? routeHook!._configs.service![
             config.serviceMethod as keyof ArkosPrismaService<any>
             ]
             : this.service[
@@ -185,7 +186,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
         ) as Function;
 
         let result = await serviceMethod.apply(
-          isRouteHookMethod ? routeHook._configs.service : this.service,
+          isRouteHookMethod ? routeHook!._configs.service : this.service,
           serviceArgs
         );
 

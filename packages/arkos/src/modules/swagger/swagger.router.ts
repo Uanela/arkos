@@ -12,7 +12,6 @@ import {
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { Arkos } from "../../types/arkos";
 import { UserArkosConfig } from "../../utils/define-config";
-import authService from "../auth/auth.service";
 import AppError from "../error-handler/utils/app-error";
 import getOpenApiLoginHtml from "./utils/get-open-api-login-html";
 import { isProduction } from "../../utils/helpers/arkos-config.helpers";

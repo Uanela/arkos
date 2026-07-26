@@ -64,13 +64,13 @@ describe("BaseController", () => {
     mockGetItem.mockReturnValue(null);
     mockGetHooks.mockReturnValue(null);
 
-    (APIFeatures as jest.Mock).mockImplementation(function (
+    (APIFeatures as jest.Mock).mockImplementation(function(
       req: any,
       _: string
     ) {
       return {
         filters: {},
-        filter: jest.fn().mockImplementation(function (this: any) {
+        filter: jest.fn().mockImplementation(function(this: any) {
           let whereClause = req.query;
           if (req.query.filterMode) {
             const { filterMode, ...restOfQuery } = req.query;
@@ -81,7 +81,7 @@ describe("BaseController", () => {
         }),
         sort: jest.fn().mockReturnThis(),
         limitFields: jest.fn().mockReturnThis(),
-        paginate: jest.fn().mockImplementation(function (this: any) {
+        paginate: jest.fn().mockImplementation(function(this: any) {
           this.filters = {
             ...this.filters,
             take: 30,
@@ -151,9 +151,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterCreateOne hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterCreateOne: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterCreateOne: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "createOne") return { after: jest.fn() };
+        if (op === "createOne") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -232,9 +232,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterCreateMany hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterCreateMany: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterCreateMany: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "createMany") return { after: jest.fn() };
+        if (op === "createMany") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -314,9 +314,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterFindMany hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterFindMany: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterFindMany: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "findMany") return { after: jest.fn() };
+        if (op === "findMany") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -442,9 +442,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterFindOne hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterFindOne: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterFindOne: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "findOne") return { after: jest.fn() };
+        if (op === "findOne") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -536,9 +536,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterUpdateOne hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterUpdateOne: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterUpdateOne: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "updateOne") return { after: jest.fn() };
+        if (op === "updateOne") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -637,9 +637,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterUpdateMany hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterUpdateMany: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterUpdateMany: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "updateMany") return { after: jest.fn() };
+        if (op === "updateMany") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -720,9 +720,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with additionalData if afterDeleteOne hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterDeleteOne: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterDeleteOne: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "deleteOne") return { after: jest.fn() };
+        if (op === "deleteOne") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -804,9 +804,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterDeleteMany hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterDeleteMany: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterDeleteMany: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "deleteMany") return { after: jest.fn() };
+        if (op === "deleteMany") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -878,9 +878,9 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterBatchUpdate hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterBatchUpdate: jest.fn() });
+      mockGetItem.mockReturnValue({ _configs: {}, afterBatchUpdate: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "batchUpdate") return { after: jest.fn() };
+        if (op === "batchUpdate") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
@@ -943,9 +943,10 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterBatchDelete hook exists", async () => {
-      mockGetItem.mockReturnValue({ afterBatchDelete: jest.fn() });
+      console.log("hellofromworld")
+      mockGetItem.mockReturnValue({ _configs: {}, afterBatchDelete: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
-        if (op === "batchDelete") return { after: jest.fn() };
+        if (op === "batchDelete") return { _configs: {}, after: jest.fn() };
         return null;
       });
       baseController = new BaseController("Post");
