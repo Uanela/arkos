@@ -15,4 +15,4 @@ const CreateUserSchema = z.object({
 
 export default CreateUserSchema
 
-export type CreateUserSchemaType = z.infer<typeof CreateUserSchema>
+export type CreateUserSchema = z.infer<typeof CreateUserSchema>
