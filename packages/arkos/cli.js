@@ -9,12 +9,10 @@
     const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
     useEsm = pkg.type === "module";
   }
-  const tsSrc = join(process.cwd(), "tsconfig.json");
   const entryPoint = join(
     __dirname,
     `dist/${useEsm ? "esm" : "cjs"}/utils/cli/index.js`
   );
-  const useTs = existsSync(tsSrc);
   const args = [
     ...["--import", "tsx"],
     entryPoint,
