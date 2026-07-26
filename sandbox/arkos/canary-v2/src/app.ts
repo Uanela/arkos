@@ -1,8 +1,5 @@
-import arkos, { ArkosRouteHook, ArkosServiceHook } from "arkos";
-import { BaseService } from "arkos/services";
+import arkos from "arkos";
 import http from "http";
-import z from "zod";
-import userRouteHook from "./modules/user/user-route-hook";
 import appLoadables from "./loadables";
 
 export const app = arkos();

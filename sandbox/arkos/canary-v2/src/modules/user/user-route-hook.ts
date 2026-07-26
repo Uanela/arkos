@@ -1,12 +1,15 @@
 import { ArkosRouteHook } from "arkos";
 // import { mw } from "../../app";
 import z from "zod";
+import userService from "./user.service";
 
 export const mw = (msg?: any) => (req: any, res: any, next: any) => {
   console.log(msg);
   next();
 };
-const userRouteHook = ArkosRouteHook("user");
+const userRouteHook = ArkosRouteHook("user", {
+  service: userService
+});
 
 userRouteHook.findMany({
   before: [mw("hello bro")],
