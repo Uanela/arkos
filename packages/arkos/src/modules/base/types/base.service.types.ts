@@ -4,8 +4,21 @@ import {
   ExtractPrismaQueryOptions,
   PrismaModels,
 } from "../../../generated";
+import { User } from "../../../types";
 
 export type Models = PrismaModels<any>;
+
+
+export interface ServiceHookContext {
+  /**
+   * The authenticated user making the request.
+   */
+  user?: User;
+  /**
+   * The access token from the request for authorization.
+   */
+  accessToken?: string;
+}
 
 export type Delegate<TModelName extends keyof Models> =
   Models[TModelName]["Delegate"];
