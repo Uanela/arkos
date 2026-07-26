@@ -20,7 +20,8 @@ type ArkosRouterMethods =
   | "use"
   | "trace"
   | "route"
-  | "use";
+  | "use"
+  | "load";
 
 /**
  * Creates and configures an Arkos application instance.
@@ -67,20 +68,6 @@ export interface Arkos
   extends Omit<Express, "listen" | ArkosRouterMethods>,
     Pick<IArkosRouter, ArkosRouterMethods> {
   (req: IncomingMessage, res: ServerResponse): void;
-
-  /**
-   * Loads Arkos-specific instances into the app for internal usage.
-   * Unlike use(), load() has no order — it simply makes the loaded
-   * data available for Arkos to apply where needed.
-   */
-  load(...items: ArkosLoadable[]): this;
-  /**
-   * Loads Arkos-specific instances into the app for internal usage.
-   * Unlike use(), load() has no order — it simply makes the loaded
-   * data available for Arkos to apply where needed.
-   */
-  load(items: ArkosLoadable[] | ArkosLoadable): this;
-
   /**
    * Applies all loaded items to the app by adding them as middleware,
    * routers, or handlers at the end of the stack.

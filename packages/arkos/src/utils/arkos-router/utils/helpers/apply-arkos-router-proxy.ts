@@ -1,8 +1,9 @@
-import { RouterOptions } from "express";
+import { IRouter, RouterOptions } from "express";
 import {
   ArkosRouteConfig,
   ArkosUseConfig,
   IArkosRoute,
+  IArkosRouter,
   InternalIArkosRouter,
   PathParams,
 } from "../../types";
@@ -18,6 +19,9 @@ import uploadManager from "./upload-manager";
 import { ArkosAnyRequestHandler } from "../../../../types";
 import { ArkosRouterOptions } from "../..";
 import { UploadConfig } from "../../types/upload-config";
+import { Arkos, ArkosLoadable } from "../../../../types/arkos";
+import { Express } from "express";
+import loadableRegistry from "../../../../components/arkos-loadable-registry";
 
 const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
   return arr.reduce((flat, item) => {
@@ -25,17 +29,31 @@ const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
   }, []);
 };
 
-export function applyArkosRouterProxy<T extends object>(
+export function applyArkosRouterProxy<T extends Express | IRouter>(
   target: T,
   options?: RouterOptions & ArkosRouterOptions,
   component: "app" | "router" = "router"
-): T {
+): T extends Express ? Arkos : IArkosRouter {
   (target as InternalIArkosRouter)._arkos = {
     options,
     routes: [],
   };
 
-  return new Proxy(target, {
+  (target as any).load = (...items: ArkosLoadable[]) => {
+    // TODO: probably just remove, because we can't track this here
+    // if (state !== "idle")
+    //   throw ExitError(
+    //     `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`
+    //   );
+
+    if (Array.isArray(items[0])) items = items[0];
+    items = Array.isArray(items) ? items : [items];
+
+    items.forEach((item) => loadableRegistry.register(item));
+    return target;
+  };
+
+  return new Proxy(target as any, {
     get(target, prop, receiver) {
       const originalMethod = Reflect.get(target, prop, receiver) as Function;
 

@@ -33,15 +33,11 @@ import {
   UpdateOneFilters,
   UpdateOneOptions,
 } from "./types/base.service.types";
-import serviceHooksManager from "./utils/service-hooks-manager";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
-import loadableRegistry from "../../components/arkos-loadable-registry";
 import {
-  ArkosServiceHookInstance,
   ArkosServiceHookMethodConfigs,
   ServiceHookContext,
 } from "../../components/arkos-service-hook/types";
-import { serviceHookReader } from "../../components/arkos-service-hook/reader";
 
 export interface ServiceOperationHooks {
   beforeOperation?: (params: any) => void | Promise<void>;
@@ -112,18 +108,8 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
     return this.prismaInstace!;
   }
 
-  private getServiceHook() {
-    return loadableRegistry.getItem(
-      "ArkosServiceHook",
-      kebabCase(this.modelName)
-    ) as ArkosServiceHookInstance<TModelName>;
-  }
-
   private executeOperation = (config: ServiceOperationConfig) => {
     return async (...args: any[]): Promise<any> => {
-      const context = args[args.length - 1] as ServiceHookContext;
-
-      try {
         let argsWithRelationFieldsHandled =
           await this.processRelationFieldsInBody(args, config);
         let prismaFinalArgs = await this.handlePasswordHashing(
@@ -131,12 +117,6 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
           config
         );
 
-        await this.executeHooks(
-          "before",
-          config.operationType,
-          this.buildHookParams(argsWithRelationFieldsHandled, config),
-          context
-        );
 
         if (config.hooks?.beforeOperation)
           await config.hooks.beforeOperation(
@@ -174,15 +154,6 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
           );
         }
 
-        await this.executeHooks(
-          "after",
-          config.operationType,
-          {
-            ...this.buildHookParams(argsWithRelationFieldsHandled, config),
-            result,
-          },
-          context
-        );
 
         if (config.hooks?.afterOperation) {
           await config.hooks.afterOperation(
@@ -192,24 +163,12 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
         }
 
         return result;
-      } catch (err: any) {
-        await this.executeHooks(
-          "error",
-          config.operationType,
-          { ...this.buildHookParams(args, config), error: err },
-          context
-        );
-        if (context?.throwOnError !== false) throw err;
-        return config.returnsFallback;
-      }
     };
   };
 
   private executeTransactionOperation = (config: ServiceOperationConfig) => {
     return async (...args: any[]): Promise<any> => {
-      const context = args[args.length - 1] as ServiceHookContext;
 
-      try {
         let argsWithRelationFieldsHandled =
           await this.processRelationFieldsInBody(args, config);
         let prismaFinalArgs = await this.handlePasswordHashing(
@@ -217,15 +176,6 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
           config
         );
 
-        await this.executeHooks(
-          "before",
-          config.operationType,
-          this.buildTransactionHookParams(
-            argsWithRelationFieldsHandled,
-            config
-          ),
-          context
-        );
 
         const prisma = getPrismaInstance();
         const results = await this.executeTransactionLogic(
@@ -234,68 +184,9 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
           prisma
         );
 
-        await this.executeHooks(
-          "after",
-          config.operationType,
-          {
-            ...this.buildTransactionHookParams(
-              argsWithRelationFieldsHandled,
-              config
-            ),
-            results,
-          },
-          context
-        );
         return results;
-      } catch (err: any) {
-        await this.executeHooks(
-          "error",
-          config.operationType,
-          { ...this.buildTransactionHookParams(args, config), error: err },
-          context
-        );
-        if (context?.throwOnError !== false) throw err;
-        return config.returnsFallback;
-      }
-    };
-  };
+  } };
 
-  private async executeHooks(
-    hookType: "before" | "after" | "error",
-    operationType:
-      | keyof ArkosServiceHookMethodConfigs<any, any>
-      | "batchUpdate"
-      | "batchDelete",
-    params: any,
-    context?: ServiceHookContext
-  ): Promise<void> {
-    const serviceHook = this.getServiceHook();
-    if (!serviceHook) return;
-
-    const skipCondition =
-      context?.skip === hookType ||
-      context?.skip === "all" ||
-      (Array.isArray(context?.skip) && context.skip.includes(hookType));
-
-    if (skipCondition || ["batchDelete", "batchUpdate"].includes(operationType))
-      return;
-
-    const hooks = serviceHookReader.getHooks(
-      this.modelName,
-      operationType as any
-    );
-    if (!hooks) return;
-
-    const handlers =
-      hookType === "before"
-        ? hooks.before
-        : hookType === "after"
-          ? hooks.after
-          : hooks.onError;
-
-    if (handlers?.length)
-      await serviceHooksManager.handleHook(handlers, params);
-  }
 
   private buildHookParams(args: any[], config: ServiceOperationConfig): any {
     const context = args[args.length - 1];
@@ -330,22 +221,6 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
         return { filters: args[0], context };
       case "count":
         return { filters: args[0], context };
-      default:
-        return { context };
-    }
-  }
-
-  private buildTransactionHookParams(
-    args: any[],
-    config: ServiceOperationConfig
-  ): any {
-    const context = args[args.length - 1];
-
-    switch (config.operationType) {
-      case "batchUpdate":
-        return { data: args[0], queryOptions: args[1], context };
-      case "batchDelete":
-        return { batchFilters: args[0], context };
       default:
         return { context };
     }

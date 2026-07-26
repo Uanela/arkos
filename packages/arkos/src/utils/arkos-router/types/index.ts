@@ -21,6 +21,7 @@ import { UploadConfig } from "./upload-config";
 import { BodyParserConfig } from "./body-parser-config";
 import { ArkosRouterOptions } from "..";
 import { Validator } from "../../../types/validation/validator";
+import { ArkosLoadable } from "../../../exports";
 
 export type ArkosUseConfig = Pick<
   ArkosRouteConfig,
@@ -305,6 +306,18 @@ export interface IArkosRouter extends IRouter {
   use: UseMethodHandler<this>;
   route<T extends string>(prefix: T): IArkosRoute;
   route(prefix: PathParams): IArkosRoute;
+  /**
+   * Loads Arkos-specific instances into the app for internal usage.
+   * Unlike use(), load() has no order — it simply makes the loaded
+   * data available for Arkos to apply where needed.
+   */
+  load(...items: ArkosLoadable[]): this;
+  /**
+   * Loads Arkos-specific instances into the app for internal usage.
+   * Unlike use(), load() has no order — it simply makes the loaded
+   * data available for Arkos to apply where needed.
+   */
+  load(items: ArkosLoadable[] | ArkosLoadable): this;
 }
 
 /**

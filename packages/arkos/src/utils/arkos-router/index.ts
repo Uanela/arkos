@@ -120,7 +120,7 @@ export default function ArkosRouter(
   options?: RouterOptions & ArkosRouterOptions
 ): IArkosRouter {
   const router = Router(options);
-  return applyArkosRouterProxy(router, options) as IArkosRouter;
+  return applyArkosRouterProxy(router, options);
 }
 
 const hasDuplicatedPath = (path: string) => /^(\/.+)\1/.test(path);

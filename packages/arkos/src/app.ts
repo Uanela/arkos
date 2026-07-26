@@ -1,13 +1,12 @@
 import "./utils/helpers/arkos-config.helpers";
 import express, { Express } from "express";
 import setupApp from "./utils/setup-app";
-import { Arkos, ArkosLoadable } from "./types/arkos";
+import { Arkos } from "./types/arkos";
 import initializeApp, { addGlobalErrorHandler } from "./utils/initialize-app";
 import { logAppStartup } from "./server";
 import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
 import { IncomingMessage, Server, ServerResponse } from "http";
 import ExitError from "./utils/helpers/exit-error";
-import loadableRegistry from "./components/arkos-loadable-registry";
 import { applyArkosRouterProxy } from "./utils/arkos-router/utils/helpers/apply-arkos-router-proxy";
 import {
   isProduction,
@@ -74,18 +73,6 @@ export function arkos(): Arkos {
   type AppState = "idle" | "building" | "built" | "listening";
   let state: AppState = "idle";
 
-  app.load = (...items: ArkosLoadable[]) => {
-    if (state !== "idle")
-      throw ExitError(
-        `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`
-      );
-
-    if (Array.isArray(items[0])) items = items[0];
-    items = Array.isArray(items) ? items : [items];
-
-    items.forEach((item) => loadableRegistry.register(item));
-    return app;
-  };
 
   function loadApp() {
     let _app = initializeApp(app);

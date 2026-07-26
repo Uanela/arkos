@@ -30,39 +30,10 @@ export interface ServiceHookContext {
    * The authenticated user making the request.
    */
   user?: User;
-
   /**
    * The access token from the request for authorization.
    */
   accessToken?: string;
-
-  /**
-   * Hook types to skip for this operation.
-   * - `"before"`: Skip before hooks
-   * - `"after"`: Skip after hooks
-   * - `"error"`: Skip error hooks
-   * - `"all"`: Skip all hooks
-   *
-   * @example
-   * ```ts
-   * { skip: ["before", "error"] }
-   * { skip: "all" }
-   * ```
-   */
-  skip?:
-    | ("before" | "after" | "error")[]
-    | "before"
-    | "after"
-    | "error"
-    | "all";
-
-  /**
-   * Whether to re-throw errors after error hooks have run.
-   * - `true` (default): re-throws the error
-   * - `false`: returns the fallback value instead
-   * @default true
-   */
-  throwOnError?: boolean;
 }
 
 export type ServiceHookHandler<TArgs> = (args: TArgs) => void | Promise<void>;
