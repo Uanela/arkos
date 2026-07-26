@@ -1,10 +1,7 @@
 import { PrismaJsonSchemaGenerator } from "../prisma-json-schema-generator";
 import prismaSchemaParser from "../prisma-schema-parser";
-import { getArkosConfig } from "../../../exports";
 import loadableRegistry from "../../../components/arkos-loadable-registry";
-import { isAuthenticationEnabled } from "../../helpers/arkos-config.helpers";
 
-jest.mock("../../../modules/swagger/utils/helpers/swagger.router.helpers");
 jest.mock("../../../exports", () => ({
   ...jest.requireActual("../../../exports"),
   getArkosConfig: jest.fn(),
@@ -224,13 +221,10 @@ describe("PrismaJsonSchemaGenerator", () => {
     jest.clearAllMocks();
     (loadableRegistry as any).items = new Map();
     mockPrismaSchemaParser.parse = jest.fn().mockReturnValue(mockSchema);
-    (getArkosConfig as jest.Mock).mockReturnValue(mockArkosConfig);
-    (isAuthenticationEnabled as jest.Mock).mockReturnValue(true);
+    mockPrismaSchemaParser.models = mockSchema.models;
+    (generator as any).schema = mockSchema;
   });
 
-  mockPrismaSchemaParser.models = mockSchema.models;
-  (generator as any).schema = mockSchema;
-  mockDeepmerge.mockImplementation((a, b) => ({ ...a, ...b }));
 
   describe("generateCreateSchema", () => {
     it("should generate create schema excluding ID and auto fields", () => {
@@ -777,6 +771,11 @@ describe("PrismaJsonSchemaGenerator", () => {
     });
 
     describe("generateQueryFilterParameters", () => {
+      beforeEach(() => {
+        (generator as any).schema = mockSchema;
+      });
+
+
       it("should NOT include pagination and sorting parameters when options.modelFieldsOnly = true", () => {
         const userModel = mockSchema.models.find((m) => m.name === "User")!;
         const params = generator.generateQueryFilterParameters(userModel, {

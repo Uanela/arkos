@@ -189,8 +189,8 @@ export class PrismaJsonSchemaGenerator {
             const relationSchema = this.generateNestedRelationSchema(
               relationModel,
               includeRelations?.[field.name] ||
-                selectFields?.[field.name] ||
-                omittedFields?.[field.name]
+              selectFields?.[field.name] ||
+              omittedFields?.[field.name]
             );
             properties[field.name] = field.isArray
               ? { type: "array", items: relationSchema }
@@ -258,8 +258,8 @@ export class PrismaJsonSchemaGenerator {
             const nestedSchema = this.generateNestedRelationSchema(
               relationModel,
               nestedIncludes?.[field.name] ||
-                selectFields?.[field.name] ||
-                ommittedFields?.[field.name]
+              selectFields?.[field.name] ||
+              ommittedFields?.[field.name]
             );
             properties[field.name] = field.isArray
               ? { type: "array", items: nestedSchema }
@@ -409,33 +409,34 @@ export class PrismaJsonSchemaGenerator {
 
       if (this.isModelRelation(field.type) && field.isArray) continue;
 
-      if (this.isModelRelation(field.type) && !field.isArray) {
-        const referencedModel = prismaSchemaParser.models.find(
-          (m) => m.name === field.type
-        );
-        if (referencedModel) {
-          const refField = field.foreignReferenceField || "id";
-          const refFieldDef = referencedModel.fields.find(
-            (f) => f.name === refField
+      if (field.type === "Profile")
+        if (this.isModelRelation(field.type) && !field.isArray) {
+          const referencedModel = prismaSchemaParser.models.find(
+            (m) => m.name === field.type
           );
-          parameters.push({
-            name: field.name,
-            in: "query",
-            description: `Filter by ${field.name} (matches on ${refField})`,
-            schema: {
-              type: "object",
-              properties: {
-                [refField]: {
-                  type: this.mapPrismaTypeToJsonSchema(
-                    refFieldDef?.type || "String"
-                  ),
+          if (referencedModel) {
+            const refField = field.foreignReferenceField || "id";
+            const refFieldDef = referencedModel.fields.find(
+              (f) => f.name === refField
+            );
+            parameters.push({
+              name: field.name,
+              in: "query",
+              description: `Filter by ${field.name} (matches on ${refField})`,
+              schema: {
+                type: "object",
+                properties: {
+                  [refField]: {
+                    type: this.mapPrismaTypeToJsonSchema(
+                      refFieldDef?.type || "String"
+                    ),
+                  },
                 },
               },
-            },
-          });
+            });
+          }
+          continue;
         }
-        continue;
-      }
 
       if (this.isEnum(field.type)) {
         const enumDef = this.schema.enums.find((e) => e.name === field.type);
