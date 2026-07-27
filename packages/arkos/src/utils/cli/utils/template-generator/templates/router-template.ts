@@ -19,7 +19,7 @@ ${isKnown ? `const ${routeHookName} = ArkosRouteHook("${modelName.kebab}")` : ""
 
 const ${routerName} = ArkosRouter({ 
   prefix: ${modelName.kebab === "auth" ? '"/auth"' : modelName.kebab === "file-upload" ? `config?.fileUpload?.baseUploadRoute || "/uploads"` : `"/${pluralize(modelName.kebab)}"`},
-  openapi: { tags: ["${modelName.kebab === "auth" ? "Authentication" : pluralize(capitalize(modelName.kebab.replaceAll("-", " ")))}"] }
+  openapi: { tags: ["${modelName.kebab === "auth" ? "Authentication" : modelName.kebab === "file-upload" ? "File Upload" : pluralize(capitalize(modelName.kebab.replaceAll("-", " ")))}"] }
 })
 
 ${isKnown ? `${routerName}.load(${routeHookName})\n` : ""}
