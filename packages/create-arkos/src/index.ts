@@ -61,7 +61,8 @@ export async function main() {
   \n${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
 
   ${chalk.bold("Next Steps:")}
-  ${argProjectName !== "."
+  ${
+    argProjectName !== "."
       ? `1. cd ${config.projectName}
   2. setup your ${chalk.cyan("DATABASE_URL")} under .env
   3. npx arkos prisma generate
@@ -73,7 +74,7 @@ export async function main() {
   3. npx prisma db push
   4. ${packageManager} run dev
 `
-    }
+  }
     `);
 }
 

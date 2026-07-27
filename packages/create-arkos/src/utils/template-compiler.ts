@@ -16,12 +16,7 @@ class TemplateCompiler {
       "auth-permission.prisma.hbs",
       "auth-role.prisma.hbs",
       "user-role.prisma.hbs",
-    ];
-
-    const userDtoFiles = [
-      "create-user.dto.ts.hbs",
-      "update-user.dto.ts.hbs",
-      "query-user.dto.ts.hbs",
+      "user-permission.prisma.hbs",
     ];
 
     const sharedAuthDtoFiles = [
@@ -40,8 +35,13 @@ class TemplateCompiler {
       "query-auth-role.dto.ts.hbs",
     ];
 
+    const userDtoFiles = [
+      "create-user.dto.ts.hbs",
+      "update-user.dto.ts.hbs",
+      "query-user.dto.ts.hbs",
+    ];
+
     const authModuleComponents = [
-      "auth.route-hook.ts.hbs",
       "auth.policy.ts.hbs",
       "auth.router.ts.hbs",
     ];
@@ -49,28 +49,37 @@ class TemplateCompiler {
     const authPermissionModuleComponents = [
       "auth-permission.router.ts.hbs",
       "auth-permission.policy.ts.hbs",
-      "auth-permission.route-hook.ts.hbs",
       "auth-permission.service.ts.hbs",
     ];
 
     const authRoleModuleComponents = [
       "auth-role.router.ts.hbs",
       "auth-role.policy.ts.hbs",
-      "auth-role.route-hook.ts.hbs",
       "auth-role.service.ts.hbs",
     ];
 
     const userModuleComponents = [
-      "user.route-hook.ts.hbs",
       "user.service.ts.hbs",
       "user.router.ts.hbs",
       "user.policy.ts.hbs",
     ];
 
-    if (
-      !config.authentication?.type ||
-      config.authentication?.type === "none"
-    )
+    if (config.prisma?.provider === "none")
+      files.push(
+        ...authSharedPrismaFiles,
+        ...dynamicAuthPrismaFiles,
+        "schema.prisma.hbs",
+        ...sharedAuthDtoFiles,
+        ...dynamicAuthDtoFiles,
+        ...userModuleComponents,
+        ...authModuleComponents,
+        ...authPermissionModuleComponents,
+        ...authRoleModuleComponents,
+        ...userDtoFiles,
+        "file-upload.auth.ts.hbs",
+      );
+
+    if (!config.authentication?.type || config.authentication?.type === "none")
       files.push(
         ...authSharedPrismaFiles,
         ...dynamicAuthPrismaFiles,
@@ -92,6 +101,7 @@ class TemplateCompiler {
         ...authRoleModuleComponents
       );
 
+    // Ignore all DTOs when no validation library is selected
     if (!config.validation?.type)
       files.push(
         ...sharedAuthDtoFiles,
@@ -104,6 +114,8 @@ class TemplateCompiler {
 
     // Ignoring javascript related files when typescript true
     if (config?.typescript) files.push(...["jsconfig.json.hbs"]);
+
+    if (config.entryPoint === "src/app") files.push("server.ts.hbs");
 
     return files;
   }
@@ -156,6 +168,10 @@ class TemplateCompiler {
 
           fs.mkdirSync(path.dirname(outputPath), { recursive: true });
           fs.writeFileSync(outputPath, content);
+        } else {
+          const outputPath = path.join(outputDir, relativePath);
+          fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+          fs.copyFileSync(fullPath, outputPath);
         }
       });
     }

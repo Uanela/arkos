@@ -8,22 +8,22 @@ export interface ProjectConfig {
   argProjectName?: string;
   typescript: boolean;
   validation?: {
-    type?: "zod" | "class-validator" | "none";
+    type?: "zod" | "class-validator";
   };
   authentication?: {
     type?: "static" | "dynamic" | "none";
-    usernameField?: string
+    usernameField?: string;
     multipleRoles?: boolean;
   };
   prisma: {
     provider:
-    | "postgresql"
-    | "mysql"
-    | "sqlite"
-    | "sqlserver"
-    | "cockroachdb"
-    | "mongodb"
-    | "none";
+      | "postgresql"
+      | "mysql"
+      | "sqlite"
+      | "sqlserver"
+      | "cockroachdb"
+      | "mongodb"
+      | "none";
     idDatabaseType: string;
     defaultDatabaseUrl: string;
   };
@@ -52,6 +52,7 @@ class ProjectConfigInquirer {
     await this.promptValidation();
     await this.promptAuthentication();
     await this.promptStrictRouting();
+    await this.promptEntryPoint();
 
     if (this.config.projectName === ".") {
       this.config.projectName = path.basename(process.cwd());
@@ -89,7 +90,6 @@ class ProjectConfigInquirer {
       ]);
       projectName = result.projectName;
     } else {
-      // Validate the project name from command line args
       const validation = this.validateProjectName(projectName);
       if (validation !== true) {
         console.error(chalk.red(`\nError: ${validation}`));
@@ -161,14 +161,13 @@ class ProjectConfigInquirer {
       },
     ]);
 
-    // Set the correct idDatabaseType based on provider
     let idDatabaseType: string;
     let defaultDatabaseUrl: string;
 
     switch (prismaProvider) {
       case "mongodb":
         idDatabaseType = '@id @default(auto()) @map("_id") @db.ObjectId';
-        defaultDatabaseUrl = `mongodb://localhost:27017/${this.config.projectName}`;
+        defaultDatabaseUrl = `mongodb://localhost:27017/{{projectName}}`;
         break;
       case "sqlite":
         idDatabaseType = "@id @default(cuid())";
@@ -176,69 +175,53 @@ class ProjectConfigInquirer {
         break;
       case "mysql":
         idDatabaseType = "@id @default(uuid())";
-        defaultDatabaseUrl = `mysql://username:password@localhost:3306/${this.config.projectName}`;
+        defaultDatabaseUrl = `mysql://username:password@localhost:3306/{{projectName}}`;
         break;
       case "postgresql":
         idDatabaseType = "@id @default(uuid())";
-        defaultDatabaseUrl = `postgresql://username:password@localhost:5432/${this.config.projectName}`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:5432/{{projectName}}`;
         break;
       case "sqlserver":
         idDatabaseType = "@id @default(uuid())";
-        defaultDatabaseUrl = `sqlserver://localhost:1433;database=${this.config.projectName};username=sa;password=password;encrypt=DANGER_PLAINTEXT`;
+        defaultDatabaseUrl = `sqlserver://localhost:1433;database={{projectName}};username=sa;password=password;encrypt=DANGER_PLAINTEXT`;
         break;
       case "cockroachdb":
         idDatabaseType = "@id @default(uuid())";
-        defaultDatabaseUrl = `postgresql://username:password@localhost:26257/${this.config.projectName}?sslmode=require`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:26257/{{projectName}}?sslmode=require`;
         break;
       default:
         idDatabaseType = "@id @default(uuid())";
-        defaultDatabaseUrl = `postgresql://username:password@localhost:5432/${this.config.projectName}`;
+        defaultDatabaseUrl = `postgresql://username:password@localhost:5432/{{projectName}}`;
     }
 
     this.config.prisma = {
       provider: prismaProvider,
-      idDatabaseType: idDatabaseType,
-      defaultDatabaseUrl: defaultDatabaseUrl,
+      idDatabaseType,
+      defaultDatabaseUrl,
     };
   }
 
   private async promptValidation() {
-    const { useValidation } = await inquirer.prompt([
+    const choices = this.config.typescript
+      ? ["zod", "class-validator", "none"]
+      : ["zod", "none"];
+
+    const { validationType } = await inquirer.prompt([
       {
-        type: "confirm",
-        name: "useValidation",
-        message: `Would you like to set up ${chalk.cyan("Validation")}?`,
-        default: true,
+        type: "list",
+        name: "validationType",
+        message: `Which ${chalk.cyan("Validation")} library would you like to use?`,
+        choices,
+        default: "zod",
       },
     ]);
 
-    if (useValidation) {
-      let validationTypeResponse: {
-        validationType: "zod" | "class-validator";
-      } = { validationType: "zod" };
-
-      if (this.config.typescript)
-        validationTypeResponse = await inquirer.prompt([
-          {
-            type: "list",
-            name: "validationType",
-            message: "Choose validation library:",
-            choices: ["zod", "class-validator"],
-          },
-        ]);
-      else {
-        console.info(
-          chalk.bold(
-            `${chalk.greenBright("?")} Validation library set to zod (class-validator is not supported on JavaScript):`
-          ),
-          chalk.cyan("zod")
-        );
-      }
+    if (validationType !== "none") {
       this.config.validation = {
-        type: validationTypeResponse.validationType,
+        type: validationType as "zod" | "class-validator",
       };
-    } else if (!this.config.typescript) {
     }
+    // validation stays undefined when "none" is chosen — matches original behaviour
   }
 
   private async promptAuthentication() {
@@ -325,6 +308,21 @@ class ProjectConfigInquirer {
     this.config.routing = {
       strict: strictRouting,
     };
+  }
+
+  private async promptEntryPoint() {
+    const ext = this.config.typescript ? "ts" : "js";
+    const { entryPoint } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "entryPoint",
+        message: `Which ${chalk.cyan("Entry Point")} would you like to use?`,
+        choices: [`src/app.${ext}`, `src/server.${ext}`],
+        default: `src/app.${ext}`,
+      },
+    ]);
+
+    this.config.entryPoint = entryPoint.replace(`.${ext}`, "");
   }
 }
 
