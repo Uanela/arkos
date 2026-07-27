@@ -1,6 +1,5 @@
 import { prismaSchemaParser } from "../../../../exports/prisma";
 import { getArkosConfig } from "../../../../utils/helpers/arkos-config.helpers";
-import { getModuleComponents } from "../../../../utils/dynamic-loader";
 import prismaJsonSchemaGenerator from "../../../../utils/prisma/prisma-json-schema-generator";
 import authPrismaJsonSchemaGenerator from "../auth-prisma-json-schema-generator";
 

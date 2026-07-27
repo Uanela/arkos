@@ -27,7 +27,7 @@ type PrismaQueryFor<
 /**
  * Full config for an interceptor method — inherits all ArkosRouteConfig options
  * (validation, auth, rate limiting, etc.) minus `path`, plus lifecycle hooks,
- * plus `prismaQuery` typed to the specific model and operation's Prisma args.
+ * plus `prismaArgs` typed to the specific model and operation's Prisma args.
  */
 export type ArkosRouteHookMethodConfig<
   TModel extends string = string,

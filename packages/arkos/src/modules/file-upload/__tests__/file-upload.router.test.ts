@@ -96,23 +96,23 @@ describe("File Upload Router", () => {
     getFileUploadRouter();
 
     expect(mockRouter.get).toHaveBeenCalledWith(
-      { path: "/api/uploads/*" },
+      expect.objectContaining({ path: "/api/uploads/*" }),
       expect.any(Function), // adjustRequestUrl
       "mockedStaticMiddleware",
       expect.any(Function) // file not found handler
     );
     expect(mockRouter.post).toHaveBeenCalledWith(
-      { path: "/api/uploads/:fileType" },
+      expect.objectContaining({ path: "/api/uploads/:fileType" }),
       fileUploadController.uploadFile,
       sendResponse
     );
     expect(mockRouter.patch).toHaveBeenCalledWith(
-      { path: "/api/uploads/:fileType/:fileName" },
+      expect.objectContaining({ path: "/api/uploads/:fileType/:fileName" }),
       fileUploadController.updateFile,
       sendResponse
     );
     expect(mockRouter.delete).toHaveBeenCalledWith(
-      { path: "/api/uploads/:fileType/:fileName" },
+      expect.objectContaining({ path: "/api/uploads/:fileType/:fileName" }),
       fileUploadController.deleteFile,
       sendResponse
     );
@@ -144,11 +144,11 @@ describe("File Upload Router", () => {
     mockForOperation.mockImplementation((_, op) =>
       op === "uploadFile"
         ? {
-            before: [beforeUploadFile],
-            after: [],
-            onError: [],
-            routeConfig: {},
-          }
+          before: [beforeUploadFile],
+          after: [],
+          onError: [],
+          routeConfig: {},
+        }
         : emptyHook()
     );
 
@@ -187,11 +187,11 @@ describe("File Upload Router", () => {
     mockForOperation.mockImplementation((_, op) =>
       op === "uploadFile"
         ? {
-            before: [],
-            after: [],
-            onError: [onUploadFileError],
-            routeConfig: {},
-          }
+          before: [],
+          after: [],
+          onError: [onUploadFileError],
+          routeConfig: {},
+        }
         : emptyHook()
     );
 
@@ -217,7 +217,8 @@ describe("File Upload Router", () => {
     getFileUploadRouter();
 
     expect(mockRouter.post).toHaveBeenCalledWith(
-      { ...routeConfig, path: "/api/uploads/:fileType" },
+      expect.objectContaining({ ...routeConfig, path: "/api/uploads/:fileType" }
+      ),
       fileUploadController.uploadFile,
       sendResponse
     );
@@ -231,11 +232,11 @@ describe("File Upload Router", () => {
     mockForOperation.mockImplementation((_, op) =>
       op === "uploadFile"
         ? {
-            before: [before],
-            after: [after],
-            onError: [onError],
-            routeConfig: {},
-          }
+          before: [before],
+          after: [after],
+          onError: [onError],
+          routeConfig: {},
+        }
         : emptyHook()
     );
 
@@ -315,7 +316,9 @@ describe("File Upload Router", () => {
       expect(mockRouter.get).toHaveBeenCalledWith(
         expect.objectContaining({ path: `${expectedBase}*` }),
         expect.any(Function),
-        "mockedStaticMiddleware"
+        "mockedStaticMiddleware",
+        expect.any(Function), // Error handler
+
       );
       expect(mockRouter.post).toHaveBeenCalledWith(
         expect.objectContaining({ path: `${expectedBase}:fileType` }),
@@ -335,7 +338,8 @@ describe("File Upload Router", () => {
     expect(mockRouter.get).toHaveBeenCalledWith(
       expect.objectContaining({ path: "/api/uploads/*" }),
       expect.any(Function),
-      "mockedStaticMiddleware"
+      "mockedStaticMiddleware",
+      expect.any(Function), // Error handler
     );
   });
 
