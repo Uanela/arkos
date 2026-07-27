@@ -8,7 +8,7 @@ const LoginDto = z.object({
 
 export default LoginDto;
 {{#if typescript}}
-export type LoginDtoType = z.infer<typeof LoginDto>;
+export type LoginDto = z.infer<typeof LoginDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}

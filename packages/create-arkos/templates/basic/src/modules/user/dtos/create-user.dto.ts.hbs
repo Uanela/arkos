@@ -40,7 +40,7 @@ const CreateUserDto = z.object({
 
 export default CreateUserDto;
 {{#if typescript}}
-export type CreateUserDtoType = z.infer<typeof CreateUserDto>;
+export type CreateUserDto = z.infer<typeof CreateUserDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}

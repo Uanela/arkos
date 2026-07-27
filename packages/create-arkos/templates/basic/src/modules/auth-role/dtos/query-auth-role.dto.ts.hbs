@@ -22,7 +22,7 @@ const QueryAuthRoleDto = z.object({
 
 export default QueryAuthRoleDto;
 {{#if typescript}}
-export type QueryAuthRoleDtoType = z.infer<typeof QueryAuthRoleDto>;
+export type QueryAuthRoleDto = z.infer<typeof QueryAuthRoleDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}

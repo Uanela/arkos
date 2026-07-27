@@ -7,7 +7,7 @@ const UpdateMeDto = z.object({
 
 export default UpdateMeDto;
 {{#if typescript}}
-export type UpdateMeDtoType = z.infer<typeof UpdateMeDto>;
+export type UpdateMeDto = z.infer<typeof UpdateMeDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}

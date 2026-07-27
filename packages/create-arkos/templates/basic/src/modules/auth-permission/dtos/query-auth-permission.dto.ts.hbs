@@ -18,7 +18,7 @@ const QueryAuthPermissionDto = z.object({
 
 export default QueryAuthPermissionDto;
 {{#if typescript}}
-export type QueryAuthPermissionDtoType = z.infer<typeof QueryAuthPermissionDto>;
+export type QueryAuthPermissionDto = z.infer<typeof QueryAuthPermissionDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}

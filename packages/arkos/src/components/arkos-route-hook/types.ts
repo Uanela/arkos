@@ -1,14 +1,14 @@
 import { ArkosRouteConfig } from "../../exports";
 import { ArkosPrismaService } from "../../exports/services";
 import { PrismaModels } from "../../generated";
-import { ArkosRequestHandler } from "../../types";
+import { ArkosErrorRequestHandler, ArkosRequestHandler } from "../../types";
 
 export type Models = keyof PrismaModels<any>;
 
 export interface ArkosRouteHookHooks {
-  before?: ArkosRequestHandler[];
-  after?: ArkosRequestHandler[];
-  onError?: ArkosRequestHandler[];
+  before?: ArkosRequestHandler[] | ArkosRequestHandler;
+  after?: ArkosRequestHandler[] | ArkosRequestHandler;
+  onError?: ArkosErrorRequestHandler[] | ArkosErrorRequestHandler;
 }
 
 /**

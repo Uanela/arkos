@@ -12,7 +12,7 @@ const UpdateAuthPermissionDto = z.object({
 
 export default UpdateAuthPermissionDto;
 {{#if typescript}}
-export type UpdateAuthPermissionDtoType = z.infer<typeof UpdateAuthPermissionDto>;
+export type UpdateAuthPermissionDto = z.infer<typeof UpdateAuthPermissionDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}

@@ -15,7 +15,7 @@ const CreateAuthRoleDto = z.object({
 
 export default CreateAuthRoleDto;
 {{#if typescript}}
-export type CreateAuthRoleDtoType = z.infer<typeof CreateAuthRoleDto>;
+export type CreateAuthRoleDto = z.infer<typeof CreateAuthRoleDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}

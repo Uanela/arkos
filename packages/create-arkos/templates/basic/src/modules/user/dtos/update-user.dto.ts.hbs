@@ -46,7 +46,7 @@ const UpdateUserDto = z.object({
 
 export default UpdateUserDto;
 {{#if typescript}}
-export type UpdateUserDtoType = z.infer<typeof UpdateUserDto>;
+export type UpdateUserDto = z.infer<typeof UpdateUserDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}

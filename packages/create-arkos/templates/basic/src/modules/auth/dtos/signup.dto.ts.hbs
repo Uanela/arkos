@@ -8,7 +8,7 @@ const SignupDto = z.object({
 
 export default SignupDto;
 {{#if typescript}}
-export type SignupDtoType = z.infer<typeof SignupDto>;
+export type SignupDto = z.infer<typeof SignupDto>;
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}
