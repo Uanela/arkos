@@ -3,7 +3,6 @@ import {
   PrismaQueryOptions,
   ArkosNextFunction,
   ArkosRequest,
-  ArkosRequestHandler,
   ArkosResponse,
   AuthPrismaQueryOptions,
 } from "../../types";
@@ -14,11 +13,6 @@ import {
   BadRequestError,
   catchAsync,
 } from "../../exports/error-handler";
-import validateDto from "../../utils/validate-dto";
-import validateSchema from "../../utils/validate-schema";
-import z from "zod";
-import { ClassConstructor } from "class-transformer";
-import { ValidatorOptions } from "class-validator";
 import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
 import { ArkosRouteConfig } from "../../utils/arkos-router/types";
 import { capitalize } from "../../utils/helpers/text.helpers";
@@ -26,10 +20,6 @@ import errorPrettifier from "./utils/error-prettifier";
 import { lenientDecode } from "../../utils/helpers/url-helpers";
 import { pascalCase } from "../../exports/utils";
 import validationManager from "../../types/validation/validation-manager";
-
-export function callNext(_: Request, _1: Response, next: NextFunction) {
-  next();
-}
 
 /**
  * Deep comparison helper for objects
@@ -212,45 +202,6 @@ export function handleRequestLogs(
   next();
 }
 
-/**
- * @deprecated Will be removed in v2.0, please ArkosRouter instead.
- */
-export function handleRequestBodyValidationAndTransformation<T extends object>(
-  schemaOrDtoClass?: ClassConstructor<T>,
-  classValidatorValidationOptions?: ValidatorOptions
-): ArkosRequestHandler;
-export function handleRequestBodyValidationAndTransformation<T extends object>(
-  schemaOrDtoClass?: z.core.$ZodType<T>
-): ArkosRequestHandler;
-export function handleRequestBodyValidationAndTransformation<T extends object>(
-  schemaOrDtoClass?: z.core.$ZodType<T> | ClassConstructor<T>,
-  classValidatorValidationOptions?: ValidatorOptions
-) {
-  return catchAsync(
-    async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-      const validationConfigs = getArkosConfig()?.validation;
-      let body = req.body;
-
-      if (validationConfigs?.resolver === "class-validator" && schemaOrDtoClass)
-        req.body = await validateDto(
-          schemaOrDtoClass as ClassConstructor<T>,
-          body,
-          deepmerge(
-            {
-              whitelist: true,
-              forbidNonWhitelisted: true,
-              ...classValidatorValidationOptions,
-            },
-            validationConfigs?.validationOptions || {}
-          )
-        );
-      else if (validationConfigs?.resolver === "zod" && schemaOrDtoClass)
-        req.body = await validateSchema(schemaOrDtoClass as any, body);
-
-      next();
-    }
-  );
-}
 
 export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const arkosConfig = getArkosConfig();
@@ -346,11 +297,16 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
 
         if (validator)
           try {
-            req[key] = await (validationFn as any)(
-              validator,
-              req[key],
-              arkosConfig.validation?.validationOptions
-            );
+            Object.defineProperty(req, key, {
+              value: await (validationFn as any)(
+                validator,
+                req[key],
+                arkosConfig.validation?.validationOptions
+              ),
+              writable: false,
+              configurable: true,
+              enumerable: true,
+            });
           } catch (err: any) {
             const resolver = validationConfig?.resolver;
             const isZod = validationConfig?.resolver === "zod";

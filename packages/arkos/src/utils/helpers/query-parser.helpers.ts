@@ -11,33 +11,6 @@ export interface Options {
   parseDoubleUnderscore?: boolean;
 }
 
-function parseDoubleUnderscore(
-  query: Record<string, any>
-): Record<string, any> {
-  const result: Record<string, any> = {};
-
-  for (const [key, value] of Object.entries(query)) {
-    const parts = key.split("__");
-
-    if (parts.length === 1) {
-      result[key] = value;
-    } else {
-      let current = result;
-
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (!current[parts[i]]) {
-          current[parts[i]] = {};
-        }
-        current = current[parts[i]];
-      }
-
-      current[parts[parts.length - 1]] = value;
-    }
-  }
-
-  return result;
-}
-
 export const parse = (target: ParsedQuery, options: Options): ParsedQuery => {
   switch (typeof target) {
     case "string":
@@ -74,7 +47,13 @@ export const parse = (target: ParsedQuery, options: Options): ParsedQuery => {
 
 export const queryParser =
   (options: Options) =>
-  (req: ArkosRequest, res: ArkosResponse, next: ArkosNextFunction) => {
-    req.query = parse(req.query, options);
-    next();
-  };
+    (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
+      Object.defineProperty(req, "query", {
+        value: parse(req.query, options),
+        writable: false,
+        configurable: true,
+        enumerable: true,
+      });
+
+      next();
+    };
