@@ -66,7 +66,7 @@ export function getFileUploadRouter() {
       {
         authentication: { action: "View", resource: "file-upload" },
         ...routeConfig,
-        path: `${basePathname}*`,
+        path: `${basePathname}*slug`,
       },
       ...processMiddleware(before),
       adjustRequestUrl,

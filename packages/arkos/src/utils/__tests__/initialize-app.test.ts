@@ -231,7 +231,7 @@ describe("initializeApp", () => {
       addGlobalErrorHandler(app as any);
 
       const wildcardCall = (app.use as jest.Mock).mock.calls.find(
-        (call) => call[0].path === "*"
+        (call) => call[0].path === "*slug"
       );
       expect(wildcardCall).toBeDefined();
 

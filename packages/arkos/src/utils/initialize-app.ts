@@ -90,7 +90,7 @@ export default function initializeApp(app: Arkos) {
 }
 
 export function addGlobalErrorHandler(app: Arkos) {
-  app.use({ path: "*" }, (req) => {
+  app.use({ path: "*slug" }, (req) => {
     const url = lenientDecode(req.originalUrl);
     throw new AppError(
       `Route ${req.method.toUpperCase()} ${url} was not found`,

@@ -96,7 +96,7 @@ describe("File Upload Router", () => {
     getFileUploadRouter();
 
     expect(mockRouter.get).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/uploads/*" }),
+      expect.objectContaining({ path: "/api/uploads/*slug" }),
       expect.any(Function), // adjustRequestUrl
       "mockedStaticMiddleware",
       expect.any(Function) // file not found handler
@@ -314,7 +314,7 @@ describe("File Upload Router", () => {
       getFileUploadRouter();
 
       expect(mockRouter.get).toHaveBeenCalledWith(
-        expect.objectContaining({ path: `${expectedBase}*` }),
+        expect.objectContaining({ path: `${expectedBase}*slug` }),
         expect.any(Function),
         "mockedStaticMiddleware",
         expect.any(Function), // Error handler
@@ -336,7 +336,7 @@ describe("File Upload Router", () => {
     getFileUploadRouter();
 
     expect(mockRouter.get).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/api/uploads/*" }),
+      expect.objectContaining({ path: "/api/uploads/*slug" }),
       expect.any(Function),
       "mockedStaticMiddleware",
       expect.any(Function), // Error handler
