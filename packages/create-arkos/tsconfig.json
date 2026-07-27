@@ -17,6 +17,6 @@
       "@arkos/shared": ["../shared/src"]
     }
   },
-  "include": ["srca/**/*.ts", "srca/**/*.tsx"],
-  "exclude": ["node_modules", "dist", "srca/**/__tests__/**", "srca/**/*.test.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist", "src/**/__tests__/**", "src/**/*.test.ts"]
 }
