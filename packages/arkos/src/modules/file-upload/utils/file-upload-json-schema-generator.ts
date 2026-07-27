@@ -142,7 +142,7 @@ class FileUploadJsonSchemaGenerator {
             `Serves static files from the upload directory (${arkosConfig.fileUpload?.baseUploadDir || "uploads"}). Uses wildcard path matching to serve files from any subdirectory.`,
           operationId:
             existingOpenApi?.operationId?.includes(pathname) ||
-            !existingOpenApi?.operationId
+              !existingOpenApi?.operationId
               ? "findFile"
               : existingOpenApi.operationId,
           parameters: [
@@ -150,7 +150,7 @@ class FileUploadJsonSchemaGenerator {
             ...(
               [
                 {
-                  name: "path",
+                  name: "slug",
                   in: "path",
                   required: true,
                   schema: { type: "string" },
@@ -198,7 +198,7 @@ class FileUploadJsonSchemaGenerator {
             "Upload one or multiple files. Supports image processing options for image uploads.",
           operationId:
             existingOpenApi?.operationId?.includes(pathname) ||
-            !existingOpenApi?.operationId
+              !existingOpenApi?.operationId
               ? "uploadFile"
               : existingOpenApi.operationId,
           parameters: [
@@ -279,7 +279,7 @@ class FileUploadJsonSchemaGenerator {
             "Replace an existing file with a new one. Deletes the old file and uploads the new one.",
           operationId:
             existingOpenApi?.operationId?.includes(pathname) ||
-            !existingOpenApi?.operationId
+              !existingOpenApi?.operationId
               ? "updateFile"
               : existingOpenApi.operationId,
           parameters: [
@@ -370,7 +370,7 @@ class FileUploadJsonSchemaGenerator {
             "Delete an uploaded file from the server",
           operationId:
             existingOpenApi?.operationId?.includes(pathname) ||
-            !existingOpenApi?.operationId
+              !existingOpenApi?.operationId
               ? "deleteFile"
               : existingOpenApi.operationId,
           parameters: [
