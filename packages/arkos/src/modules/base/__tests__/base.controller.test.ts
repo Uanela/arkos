@@ -943,7 +943,6 @@ describe("BaseController", () => {
     });
 
     it("should call next with responseData if afterBatchDelete hook exists", async () => {
-      console.log("hellofromworld")
       mockGetItem.mockReturnValue({ _configs: {}, afterBatchDelete: jest.fn() });
       mockGetHooks.mockImplementation((_: string, op: string) => {
         if (op === "batchDelete") return { _configs: {}, after: jest.fn() };

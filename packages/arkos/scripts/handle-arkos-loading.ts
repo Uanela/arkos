@@ -8,17 +8,6 @@ interface ServerReplacement {
 
 const serverReplacements: ServerReplacement[] = [
   {
-    filePath: "dist/cjs/utils/helpers/arkos-config.helpers.js",
-    replacement:
-      'process.env.NO_CLI === "true" ? __importDefault(require(`${fs_helpers_1.crd()}/arkos.config.${fs_helpers_1.getUserFileExtension()}`)) : () => {}',
-    old: '"ReplaceWithDynamicImport"',
-  },
-  {
-    filePath: "dist/cjs/utils/helpers/arkos-config.helpers.js",
-    replacement: `const fs_helpers_1 = require("./fs.helpers");`,
-    old: '("ReplaceWithNeededImportsForArkosConfig");',
-  },
-  {
     filePath: "dist/esm/utils/helpers/arkos-config.helpers.js",
     replacement:
       'process.env.NO_CLI === "true" ? await importModule(`${crd()}/arkos.config.${getUserFileExtension()}`) : () => {}',

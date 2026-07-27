@@ -2,14 +2,14 @@
   "name": "arkos",
   "version": "2.0.0-next.17",
   "description": "The Express & Prisma RESTful Framework",
-  "main": "dist/cjs/exports/index.js",
+  "main": "dist/esm/exports/index.js",
   "module": "dist/esm/exports/index.js",
   "types": "dist/types/exports/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/types/exports/index.d.ts",
       "import": "./dist/esm/exports/index.js",
-      "require": "./dist/cjs/exports/index.js"
+      "require": "./dist/esm/exports/index.js"
     },
     "./types": {
       "types": "./dist/types/exports/index.d.ts",
@@ -19,61 +19,61 @@
     "./prisma": {
       "types": "./dist/types/exports/prisma/index.d.ts",
       "import": "./dist/esm/exports/prisma/index.js",
-      "require": "./dist/cjs/exports/prisma/index.js"
+      "require": "./dist/esm/exports/prisma/index.js"
     },
     "./auth": {
       "types": "./dist/types/exports/auth/index.d.ts",
       "import": "./dist/esm/exports/auth/index.js",
-      "require": "./dist/cjs/exports/auth/index.js"
+      "require": "./dist/esm/exports/auth/index.js"
     },
     "./services": {
       "types": "./dist/types/exports/services/index.d.ts",
       "import": "./dist/esm/exports/services/index.js",
-      "require": "./dist/cjs/exports/services/index.js"
+      "require": "./dist/esm/exports/services/index.js"
     },
     "./controllers": {
       "types": "./dist/types/exports/controllers/index.d.ts",
       "import": "./dist/esm/exports/controllers/index.js",
-      "require": "./dist/cjs/exports/controllers/index.js"
+      "require": "./dist/esm/exports/controllers/index.js"
     },
     "./middlewares": {
       "types": "./dist/types/exports/middlewares/index.d.ts",
       "import": "./dist/esm/exports/middlewares/index.js",
-      "require": "./dist/cjs/exports/middlewares/index.js"
+      "require": "./dist/esm/exports/middlewares/index.js"
     },
     "./validation": {
       "types": "./dist/types/exports/validation/index.d.ts",
       "import": "./dist/esm/exports/validation/index.js",
-      "require": "./dist/cjs/exports/validation/index.js"
+      "require": "./dist/esm/exports/validation/index.js"
     },
     "./error-handler": {
       "types": "./dist/types/exports/error-handler/index.d.ts",
       "import": "./dist/esm/exports/error-handler/index.js",
-      "require": "./dist/cjs/exports/error-handler/index.js"
+      "require": "./dist/esm/exports/error-handler/index.js"
     },
     "./websockets": {
       "types": "./dist/types/exports/websockets.d.ts",
       "import": "./dist/esm/exports/websockets.js",
-      "require": "./dist/cjs/exports/websockets.js"
+      "require": "./dist/esm/exports/websockets.js"
     },
     "./utils": {
       "types": "./dist/types/exports/utils/index.d.ts",
       "import": "./dist/esm/exports/utils/index.js",
-      "require": "./dist/cjs/exports/utils/index.js"
+      "require": "./dist/esm/exports/utils/index.js"
     },
     "./config": {
       "types": "./dist/types/exports/config.d.ts",
       "import": "./dist/esm/exports/config.js",
-      "require": "./dist/cjs/exports/config.js"
+      "require": "./dist/esm/exports/config.js"
     },
     "./cli": {
       "import": "./dist/esm/utils/cli/index.js",
-      "require": "./dist/cjs/utils/cli/index.js"
+      "require": "./dist/esm/utils/cli/index.js"
     },
     "./*": {
       "types": "./dist/types/exports/*.d.ts",
       "import": "./dist/esm/exports/*.js",
-      "require": "./dist/cjs/exports/*.js"
+      "require": "./dist/esm/exports/*.js"
     }
   },
   "bin": {
@@ -116,10 +116,8 @@
   "scripts": {
     "build:esm": "tsc -p tsconfig.esm.json && npx tsx scripts/fix-esm-imports.ts",
     "build:types": "tsc -p tsconfig.types.json",
-    "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build": "pnpm clean dist && pnpm run build:cjs && pnpm run build:esm && pnpm run build:types && tsx scripts/post-build-scripts.ts",
+    "build": "pnpm clean dist && pnpm run build:esm && pnpm run build:types && tsx scripts/post-build-scripts.ts",
     "buildTsup": "tsup && tsx scripts/post-build-scripts.ts",
-    "minifyOld": "esbuild dist/cjs/**/*.js --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "minify": "esbuild $(find dist -type f -name '*.js') --minify --outdir=dist --allow-overwrite --log-limit=0 --define:process.env.NODE_ENV=process.env.NODE_ENV",
     "clean": "tsx scripts/remove-dir-cli.ts",
     "dev": "tsx --watch",

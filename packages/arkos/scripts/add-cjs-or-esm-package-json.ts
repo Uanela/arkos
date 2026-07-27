@@ -6,9 +6,6 @@ interface PackageJsonConfig {
 }
 
 const configs: Record<string, PackageJsonConfig> = {
-  "dist/cjs/package.json": {
-    type: "commonjs",
-  },
   "dist/esm/package.json": {
     type: "module",
   },
