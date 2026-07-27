@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { getArkosConfig } from "./helpers/arkos-config.helpers";
-import deepmerge from "./helpers/deepmerge.helper";
 
 export type ZodValidationOptions = { forbidNonWhitelisted?: boolean };
 /**
