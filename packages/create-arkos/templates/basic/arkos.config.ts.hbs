@@ -11,7 +11,7 @@ const arkosConfig = defineConfig({
     entryPoint: "{{entryPoint}}{{#if typescript}}.ts{{else}}.js{{/if}}"
   },
   {{/if}}
-  {{#if (neq authentication.type "node")}}
+  {{#if (neq authentication.type "none")}}
   authentication: {
     mode: '{{authentication.type}}',
     login: {

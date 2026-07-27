@@ -1,5 +1,5 @@
 import { ArkosRouter, ArkosRouteHook } from 'arkos';
-{{#if (neq authentication.type "node")}}
+{{#if (neq authentication.type "none")}}
 import authPermissionPolicy from '@/src/modules/auth-permission/auth-permission.policy';
 {{/if}}
 {{#if validation.type}}
@@ -12,25 +12,25 @@ const authPermissionRouteHook = ArkosRouteHook("auth-permission");
 
 authPermissionRouteHook.createOne({
   {{#if validation.type}}validation: { body: CreateAuthPermissionDto },{{/if}}
-  {{#if (neq authentication.type "node")}}authentication: authPermissionPolicy.Create,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: authPermissionPolicy.Create,{{/if}}
 });
 
 authPermissionRouteHook.findOne({
-  {{#if (neq authentication.type "node")}}authentication: authPermissionPolicy.View,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: authPermissionPolicy.View,{{/if}}
 });
 
 authPermissionRouteHook.findMany({
   {{#if validation.type}}validation: { query: QueryAuthPermissionDto },{{/if}}
-  {{#if (neq authentication.type "node")}}authentication: authPermissionPolicy.View,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: authPermissionPolicy.View,{{/if}}
 });
 
 authPermissionRouteHook.updateOne({
   {{#if validation.type}}validation: { body: UpdateAuthPermissionDto },{{/if}}
-  {{#if (neq authentication.type "node")}}authentication: authPermissionPolicy.Update,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: authPermissionPolicy.Update,{{/if}}
 });
 
 authPermissionRouteHook.deleteOne({
-  {{#if (neq authentication.type "node")}}authentication: authPermissionPolicy.Delete,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: authPermissionPolicy.Delete,{{/if}}
 });
 
 const authPermissionRouter = ArkosRouter({

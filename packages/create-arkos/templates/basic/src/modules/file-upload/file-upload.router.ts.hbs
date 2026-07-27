@@ -1,5 +1,5 @@
 import { ArkosRouter, ArkosRouteHook } from 'arkos';
-{{#if (neq authentication.type "node")}}
+{{#if (neq authentication.type "none")}}
 import fileUploadPolicy from '@/src/modules/file-upload/file-upload.policy';
 {{/if}}
 import config from '@/arkos.config';
@@ -7,19 +7,19 @@ import config from '@/arkos.config';
 const fileUploadRouteHook = ArkosRouteHook("file-upload");
 
 fileUploadRouteHook.findFile({
-  {{#if (neq authentication.type "node")}}authentication: fileUploadPolicy.View,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: fileUploadPolicy.View,{{/if}}
 });
 
 fileUploadRouteHook.uploadFile({
-  {{#if (neq authentication.type "node")}}authentication: fileUploadPolicy.Create,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: fileUploadPolicy.Create,{{/if}}
 });
 
 fileUploadRouteHook.updateFile({
-  {{#if (neq authentication.type "node")}}authentication: fileUploadPolicy.Update,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: fileUploadPolicy.Update,{{/if}}
 });
 
 fileUploadRouteHook.deleteFile({
-  {{#if (neq authentication.type "node")}}authentication: fileUploadPolicy.Delete,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: fileUploadPolicy.Delete,{{/if}}
 });
 
 const fileUploadRouter = ArkosRouter({

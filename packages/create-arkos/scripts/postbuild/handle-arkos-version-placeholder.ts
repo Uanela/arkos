@@ -1,4 +1,4 @@
-import { getNpmPackageVersion } from "../../src/utils/helpers/npm.helpers";
+import { getNpmPackageVersion } from "../../srca/utils/helpers/npm.helpers";
 import fs from "fs";
 
 export default function handleArkosVersionPlaceholder() {

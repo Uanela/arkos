@@ -1,5 +1,5 @@
 import { ArkosRouter, ArkosRouteHook } from 'arkos';
-{{#if (neq authentication.type "node")}}
+{{#if (neq authentication.type "none")}}
 import userPolicy from '@/src/modules/user/user.policy';
 {{/if}}
 {{#if validation.type}}
@@ -11,14 +11,14 @@ const userRouteHook = ArkosRouteHook("user");
 
 userRouteHook.createOne({
   {{#if validation.type}}validation: { body: CreateUserDto },{{/if}}
-  {{#if (neq authentication.type "node")}}authentication: userPolicy.Create,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: userPolicy.Create,{{/if}}
   prismaArgs: {
     omit: { password: true },
   },
 });
 
 userRouteHook.findOne({
-  {{#if (neq authentication.type "node")}}authentication: userPolicy.View,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: userPolicy.View,{{/if}}
   prismaArgs: {
     omit: { password: true },
     {{#if (eq authentication.type "dynamic")}}
@@ -50,7 +50,7 @@ userRouteHook.findOne({
 });
 
 userRouteHook.findMany({
-  {{#if (neq authentication.type "node")}}authentication: userPolicy.View,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: userPolicy.View,{{/if}}
   prismaArgs: {
     omit: { password: true },
     {{#if (eq authentication.type "dynamic")}}
@@ -75,14 +75,14 @@ userRouteHook.findMany({
 
 userRouteHook.updateOne({
   {{#if validation.type}}validation: { body: UpdateUserDto },{{/if}}
-  {{#if (neq authentication.type "node")}}authentication: userPolicy.Update,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: userPolicy.Update,{{/if}}
   prismaArgs: {
     omit: { password: true },
   },
 });
 
 userRouteHook.deleteOne({
-  {{#if (neq authentication.type "node")}}authentication: userPolicy.Delete,{{/if}}
+  {{#if (neq authentication.type "none")}}authentication: userPolicy.Delete,{{/if}}
 });
 
 const userRouter = ArkosRouter({
