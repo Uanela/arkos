@@ -16,6 +16,7 @@ import generateMultipleComponents, {
 } from "./utils/template-generator/templates/generate-multiple-components";
 import ExitError from "../helpers/exit-error";
 
+
 export const kebabPrismaModels = prismaSchemaParser
   .getModelsAsArrayOfStrings()
   .map((val) => kebabCase(val));
@@ -181,6 +182,8 @@ const generateFile = async (
 };
 
 export const generateCommand = {
+
+
   controller: async (options: GenerateOptions) => {
     await generateFile(options, {
       templateName: "controller",
@@ -216,62 +219,6 @@ export const generateCommand = {
       templateName: "policy",
       fileSuffix: "policy",
       allowedModules: "*",
-    });
-  },
-
-  routeHook: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "route-hook",
-      fileSuffix: "route-hook",
-      allowedModules: knownModules,
-    });
-  },
-
-  serviceHook: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "service-hook",
-      fileSuffix: "service-hook",
-      allowedModules: kebabPrismaModels,
-    });
-  },
-
-  createSchema: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "create-schema",
-      fileSuffix: "schema",
-      customPath: "src/modules/{{module-name}}/schemas",
-      prefix: "create-",
-      allowedModules: kebabPrismaModels,
-    });
-  },
-
-  updateSchema: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "update-schema",
-      fileSuffix: "schema",
-      customPath: "src/modules/{{module-name}}/schemas",
-      prefix: "update-",
-      allowedModules: kebabPrismaModels,
-    });
-  },
-
-  baseSchema: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "schema",
-      fileSuffix: "schema",
-      customPath: "src/modules/{{module-name}}/schemas",
-      prefix: "",
-      allowedModules: kebabPrismaModels,
-    });
-  },
-
-  querySchema: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "query-schema",
-      fileSuffix: "schema",
-      customPath: "src/modules/{{module-name}}/schemas",
-      prefix: "query-",
-      allowedModules: kebabPrismaModels,
     });
   },
 
@@ -321,50 +268,6 @@ export const generateCommand = {
       allowedModules: "*",
       ext: "prisma",
       customPath: "prisma/schema",
-    });
-  },
-
-  loginSchema: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "login-schema",
-      fileSuffix: "schema",
-      customPath: "src/modules/auth/schemas",
-      prefix: "login",
-      allowedModules: ["auth"],
-      attachModuleName: false,
-    });
-  },
-
-  signupSchema: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "signup-schema",
-      fileSuffix: "schema",
-      customPath: "src/modules/auth/schemas",
-      prefix: "signup",
-      allowedModules: ["auth"],
-      attachModuleName: false,
-    });
-  },
-
-  updateMeSchema: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "update-me-schema",
-      fileSuffix: "schema",
-      customPath: "src/modules/auth/schemas",
-      prefix: "update-me",
-      allowedModules: ["auth"],
-      attachModuleName: false,
-    });
-  },
-
-  updatePasswordSchema: async (options: GenerateOptions) => {
-    await generateFile(options, {
-      templateName: "update-password-schema",
-      fileSuffix: "schema",
-      customPath: "src/modules/auth/schemas",
-      prefix: "update-password",
-      allowedModules: ["auth"],
-      attachModuleName: false,
     });
   },
 

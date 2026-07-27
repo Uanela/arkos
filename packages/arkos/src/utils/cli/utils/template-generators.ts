@@ -5,6 +5,7 @@ import classValidatorDtoGenerator from "./template-generator/templates/class-val
 import zodSchemaGenerator from "./template-generator/templates/zod-schema-generator";
 import prismaSchemaParser from "../../prisma/prisma-schema-parser";
 import { generatePolicyTemplate } from "./template-generator/templates/policy-template";
+import { getArkosConfig } from "../../../server";
 
 interface ModelName {
   pascal: string;
@@ -28,6 +29,9 @@ export function generateTemplate(
   type: string,
   options: TemplateOptions
 ): string {
+  const { validation } = getArkosConfig()
+  const resolver = validation?.resolver ?? "zod"
+
   switch (type) {
     case "controller":
       return generateControllerTemplate(options);
@@ -38,43 +42,42 @@ export function generateTemplate(
     case "policy":
       return generatePolicyTemplate(options);
 
-    case "create-schema":
-      return zodSchemaGenerator.generateCreateSchema(options);
-    case "update-schema":
-      return zodSchemaGenerator.generateUpdateSchema(options);
-    case "schema":
-      return zodSchemaGenerator.generateBaseSchema(options);
-    case "query-schema":
-      return zodSchemaGenerator.generateQuerySchema(options);
-
     case "create-dto":
-      return classValidatorDtoGenerator.generateCreateDto(options);
+      return resolver === "class-validator"
+        ? classValidatorDtoGenerator.generateCreateDto(options)
+        : zodSchemaGenerator.generateCreateSchema(options);
     case "update-dto":
-      return classValidatorDtoGenerator.generateUpdateDto(options);
+      return resolver === "class-validator"
+        ? classValidatorDtoGenerator.generateUpdateDto(options)
+        : zodSchemaGenerator.generateUpdateSchema(options);
     case "dto":
-      return classValidatorDtoGenerator.generateBaseDto(options);
+      return resolver === "class-validator"
+        ? classValidatorDtoGenerator.generateBaseDto(options)
+        : zodSchemaGenerator.generateBaseSchema(options);
     case "query-dto":
-      return classValidatorDtoGenerator.generateQueryDto(options);
+      return resolver === "class-validator"
+        ? classValidatorDtoGenerator.generateQueryDto(options)
+        : zodSchemaGenerator.generateQuerySchema(options);
 
     case "prisma-model":
       return prismaSchemaParser.generatePrismaModel(options);
 
-    case "login-schema":
-      return zodSchemaGenerator.generateLoginSchema(options);
-    case "signup-schema":
-      return zodSchemaGenerator.generateSignupSchema(options);
-    case "update-me-schema":
-      return zodSchemaGenerator.generateUpdateMeSchema(options);
-    case "update-password-schema":
-      return zodSchemaGenerator.generateUpdatePasswordSchema(options);
     case "login-dto":
-      return classValidatorDtoGenerator.generateLoginDto(options);
+      return resolver === "class-validator"
+        ? classValidatorDtoGenerator.generateLoginDto(options)
+        : zodSchemaGenerator.generateLoginSchema(options);
     case "signup-dto":
-      return classValidatorDtoGenerator.generateSignupDto(options);
+      return resolver === "class-validator"
+        ? classValidatorDtoGenerator.generateSignupDto(options)
+        : zodSchemaGenerator.generateSignupSchema(options);
     case "update-me-dto":
-      return classValidatorDtoGenerator.generateUpdateMeDto(options);
+      return resolver === "class-validator"
+        ? classValidatorDtoGenerator.generateUpdateMeDto(options)
+        : zodSchemaGenerator.generateUpdateMeSchema(options);
     case "update-password-dto":
-      return classValidatorDtoGenerator.generateUpdatePasswordDto(options);
+      return resolver === "class-validator"
+        ? classValidatorDtoGenerator.generateUpdatePasswordDto(options)
+        : zodSchemaGenerator.generateUpdatePasswordSchema(options);
 
     default:
       throw new Error(`Unknown template type: ${type}`);

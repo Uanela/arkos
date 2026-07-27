@@ -71,46 +71,10 @@ generate
   });
 
 generate
-  .command("create-schema")
-  .alias("cs")
-  .description("Generate a new zod create schema file for a prisma model")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.createSchema({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("update-schema")
-  .alias("us")
-  .description("Generate a new zod update schema file for a prisma model")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.updateSchema({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("schema")
-  .alias("sc")
-  .description("Generate a new zod create schema file for a prisma model")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.baseSchema({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("query-schema")
-  .alias("qs")
-  .description("Generate a new zod update schema file for a prisma model")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.querySchema({ ...generateOptions, ...options });
-  });
-
-generate
   .command("create-dto")
   .alias("cd")
   .description(
-    "Generate a new class-validator create dto file for a prisma model"
+    "Generate a new class-validator or zod create dto file for a prisma model"
   )
   .action((options) => {
     const generateOptions = generate.opts();
@@ -121,7 +85,7 @@ generate
   .command("update-dto")
   .alias("ud")
   .description(
-    "Generate a new class-validator update dto file for a prisma model"
+    "Generate a new class-validator or zod update dto file for a prisma model"
   )
   .action((options) => {
     const generateOptions = generate.opts();
@@ -132,7 +96,7 @@ generate
   .command("dto")
   .alias("d")
   .description(
-    "Generate a new class-validator base dto file for a prisma model"
+    "Generate a new class-validator or zod base dto file for a prisma model"
   )
   .action((options) => {
     const generateOptions = generate.opts();
@@ -143,7 +107,7 @@ generate
   .command("query-dto")
   .alias("qd")
   .description(
-    "Generate a new class-validator base dto file for a prisma model"
+    "Generate a new class-validator or zod base dto file for a prisma model"
   )
   .action((options) => {
     const generateOptions = generate.opts();
@@ -170,45 +134,9 @@ generate
   });
 
 generate
-  .command("login-schema")
-  .alias("ls")
-  .description("Generate zod login schema for auth module")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.loginSchema({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("signup-schema")
-  .alias("ss")
-  .description("Generate zod signup schema for auth module")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.signupSchema({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("update-me-schema")
-  .alias("ums")
-  .description("Generate zod update-me schema for auth module")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.updateMeSchema({ ...generateOptions, ...options });
-  });
-
-generate
-  .command("update-password-schema")
-  .alias("ups")
-  .description("Generate zod update-password schema for auth module")
-  .action((options) => {
-    const generateOptions = generate.opts();
-    generateCommand.updatePasswordSchema({ ...generateOptions, ...options });
-  });
-
-generate
   .command("login-dto")
   .alias("ld")
-  .description("Generate class-validator login dto for auth module")
+  .description("Generate class-validator or zod login dto for auth module")
   .action((options) => {
     const generateOptions = generate.opts();
     generateCommand.loginDto({ ...generateOptions, ...options });
@@ -217,7 +145,7 @@ generate
 generate
   .command("signup-dto")
   .alias("sd")
-  .description("Generate class-validator signup dto for auth module")
+  .description("Generate class-validator or zod signup dto for auth module")
   .action((options) => {
     const generateOptions = generate.opts();
     generateCommand.signupDto({ ...generateOptions, ...options });
@@ -226,7 +154,7 @@ generate
 generate
   .command("update-me-dto")
   .alias("umd")
-  .description("Generate class-validator update-me dto for auth module")
+  .description("Generate class-validator or zod update-me dto for auth module")
   .action((options) => {
     const generateOptions = generate.opts();
     generateCommand.updateMeDto({ ...generateOptions, ...options });
@@ -235,7 +163,7 @@ generate
 generate
   .command("update-password-dto")
   .alias("upd")
-  .description("Generate class-validator update-password dto for auth module")
+  .description("Generate class-validator or zod update-password dto for auth module")
   .action((options) => {
     const generateOptions = generate.opts();
     generateCommand.updatePasswordDto({ ...generateOptions, ...options });
@@ -250,7 +178,7 @@ generate
   .option("-a, --all", "Generate all components")
   .option(
     "-n, --names <names>",
-    "Comma-separated list of components (e.g., s,sc,m or service,schema,model)"
+    "Comma-separated list of components (e.g., s,sc,m or service,dto,model)"
   )
   .action((options) => {
     const generateOptions = generate.opts();

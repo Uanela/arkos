@@ -7,10 +7,6 @@ jest.mock("../../../../generate", () => ({
     service: jest.fn(),
     controller: jest.fn(),
     router: jest.fn(),
-    baseSchema: jest.fn(),
-    createSchema: jest.fn(),
-    updateSchema: jest.fn(),
-    querySchema: jest.fn(),
     baseDto: jest.fn(),
     createDto: jest.fn(),
     updateDto: jest.fn(),
@@ -18,10 +14,6 @@ jest.mock("../../../../generate", () => ({
     prismaModel: jest.fn(),
     queryOptions: jest.fn(),
     policy: jest.fn(),
-    loginSchema: jest.fn(),
-    signupSchema: jest.fn(),
-    updateMeSchema: jest.fn(),
-    updatePasswordSchema: jest.fn(),
     loginDto: jest.fn(),
     signupDto: jest.fn(),
     updateMeDto: jest.fn(),
@@ -83,34 +75,32 @@ describe("generateMultipleComponents", () => {
       expect(generateCommand.controller).toHaveBeenCalled();
       expect(generateCommand.router).toHaveBeenCalled();
       expect(generateCommand.prismaModel).toHaveBeenCalled();
-      expect(generateCommand.createSchema).toHaveBeenCalled();
+      expect(generateCommand.createDto).toHaveBeenCalled();
       expect(sheu.done).toHaveBeenCalled();
     });
 
     it("should not generate auth-only components when --all for prisma model", async () => {
       await generateMultipleComponents({ module: "user", all: true });
 
-      expect(generateCommand.loginSchema).not.toHaveBeenCalled();
-      expect(generateCommand.signupSchema).not.toHaveBeenCalled();
-      expect(generateCommand.updateMeSchema).not.toHaveBeenCalled();
-      expect(generateCommand.updatePasswordSchema).not.toHaveBeenCalled();
+      expect(generateCommand.loginDto).not.toHaveBeenCalled();
+      expect(generateCommand.signupDto).not.toHaveBeenCalled();
+      expect(generateCommand.updateMeDto).not.toHaveBeenCalled();
+      expect(generateCommand.updatePasswordDto).not.toHaveBeenCalled();
     });
 
     it("should generate all auth components when --all for auth module", async () => {
       await generateMultipleComponents({ module: "auth", all: true });
 
-      expect(generateCommand.loginSchema).toHaveBeenCalled();
-      expect(generateCommand.signupSchema).toHaveBeenCalled();
-      expect(generateCommand.updateMeSchema).toHaveBeenCalled();
-      expect(generateCommand.updatePasswordSchema).toHaveBeenCalled();
       expect(generateCommand.loginDto).toHaveBeenCalled();
+      expect(generateCommand.signupDto).toHaveBeenCalled();
+      expect(generateCommand.updateMeDto).toHaveBeenCalled();
+      expect(generateCommand.updatePasswordDto).toHaveBeenCalled();
     });
 
     it("should not generate prisma-only components when --all for auth module", async () => {
       await generateMultipleComponents({ module: "auth", all: true });
 
       expect(generateCommand.prismaModel).not.toHaveBeenCalled();
-      expect(generateCommand.createSchema).not.toHaveBeenCalled();
       expect(generateCommand.createDto).not.toHaveBeenCalled();
     });
   });
@@ -130,12 +120,12 @@ describe("generateMultipleComponents", () => {
     it("should generate specific components using full names", async () => {
       await generateMultipleComponents({
         module: "user",
-        names: "service,controller,create-schema",
+        names: "service,controller,create-dto",
       });
 
       expect(generateCommand.service).toHaveBeenCalled();
       expect(generateCommand.controller).toHaveBeenCalled();
-      expect(generateCommand.createSchema).toHaveBeenCalled();
+      expect(generateCommand.createDto).toHaveBeenCalled();
     });
 
     it("should warn and skip unknown components", async () => {
@@ -153,7 +143,7 @@ describe("generateMultipleComponents", () => {
     it("should use correct default paths for components", async () => {
       await generateMultipleComponents({
         module: "user",
-        names: "model,create-dto,create-schema",
+        names: "model,create-dto",
       });
 
       expect(generateCommand.prismaModel).toHaveBeenCalledWith(
@@ -161,9 +151,6 @@ describe("generateMultipleComponents", () => {
       );
       expect(generateCommand.createDto).toHaveBeenCalledWith(
         expect.objectContaining({ path: "src/modules/{{module-name}}/dtos" })
-      );
-      expect(generateCommand.createSchema).toHaveBeenCalledWith(
-        expect.objectContaining({ path: "src/modules/{{module-name}}/schemas" })
       );
     });
 
@@ -179,26 +166,26 @@ describe("generateMultipleComponents", () => {
     it("should skip auth-only components for non-auth module with warning", async () => {
       await generateMultipleComponents({
         module: "user",
-        names: "s,login-schema",
+        names: "s,login-dto",
       });
 
       expect(generateCommand.service).toHaveBeenCalled();
-      expect(generateCommand.loginSchema).not.toHaveBeenCalled();
+      expect(generateCommand.loginDto).not.toHaveBeenCalled();
       expect(sheu.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Skipping "login-schema" for module "user"')
+        expect.stringContaining('Skipping "login-dto" for module "user"')
       );
     });
 
     it("should skip prisma-only components for auth module with warning", async () => {
       await generateMultipleComponents({
         module: "auth",
-        names: "login-schema,create-schema",
+        names: "login-dto,create-dto",
       });
 
-      expect(generateCommand.loginSchema).toHaveBeenCalled();
-      expect(generateCommand.createSchema).not.toHaveBeenCalled();
+      expect(generateCommand.loginDto).toHaveBeenCalled();
+      expect(generateCommand.createDto).not.toHaveBeenCalled();
       expect(sheu.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Skipping "create-schema" for module "auth"')
+        expect.stringContaining('Skipping "create-dto" for module "auth"')
       );
     });
   });
@@ -236,12 +223,12 @@ describe("generateMultipleComponents", () => {
       );
 
       // auth components called for auth
-      expect(generateCommand.loginSchema).toHaveBeenCalledWith(
+      expect(generateCommand.loginDto).toHaveBeenCalledWith(
         expect.objectContaining({ module: "auth" })
       );
 
       // auth-only not called for user
-      expect(generateCommand.loginSchema).not.toHaveBeenCalledWith(
+      expect(generateCommand.loginDto).not.toHaveBeenCalledWith(
         expect.objectContaining({ module: "user" })
       );
 

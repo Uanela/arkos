@@ -14,10 +14,6 @@ export type MultipleComponentsGenerateOptions = GenerateOptions & {
 };
 
 const authOnlyComponents = new Set([
-  "login-schema",
-  "signup-schema",
-  "update-me-schema",
-  "update-password-schema",
   "login-dto",
   "signup-dto",
   "update-me-dto",
@@ -26,10 +22,6 @@ const authOnlyComponents = new Set([
 
 const prismaOnlyComponents = new Set([
   "model",
-  "schema",
-  "create-schema",
-  "update-schema",
-  "query-schema",
   "dto",
   "create-dto",
   "update-dto",
@@ -61,18 +53,6 @@ export default async function generateMultipleComponents(
     controller: generateCommand.controller,
     r: generateCommand.router,
     router: generateCommand.router,
-    rh: generateCommand.routeHook,
-    routeHook: generateCommand.routeHook,
-    sh: generateCommand.serviceHook,
-    serviceHook: generateCommand.serviceHook,
-    sc: generateCommand.baseSchema,
-    schema: generateCommand.baseSchema,
-    cs: generateCommand.createSchema,
-    "create-schema": generateCommand.createSchema,
-    us: generateCommand.updateSchema,
-    "update-schema": generateCommand.updateSchema,
-    qs: generateCommand.querySchema,
-    "query-schema": generateCommand.querySchema,
     d: generateCommand.baseDto,
     dto: generateCommand.baseDto,
     cd: generateCommand.createDto,
@@ -85,14 +65,6 @@ export default async function generateMultipleComponents(
     model: generateCommand.prismaModel,
     p: generateCommand.policy,
     policy: generateCommand.policy,
-    ls: generateCommand.loginSchema,
-    "login-schema": generateCommand.loginSchema,
-    ss: generateCommand.signupSchema,
-    "signup-schema": generateCommand.signupSchema,
-    ums: generateCommand.updateMeSchema,
-    "update-me-schema": generateCommand.updateMeSchema,
-    ups: generateCommand.updatePasswordSchema,
-    "update-password-schema": generateCommand.updatePasswordSchema,
     ld: generateCommand.loginDto,
     "login-dto": generateCommand.loginDto,
     sd: generateCommand.signupDto,
@@ -105,10 +77,6 @@ export default async function generateMultipleComponents(
 
   const allComponents = [
     "model",
-    "schema",
-    "create-schema",
-    "update-schema",
-    "query-schema",
     "dto",
     "create-dto",
     "update-dto",
@@ -120,10 +88,6 @@ export default async function generateMultipleComponents(
   ];
 
   const allAuthComponents = [
-    "login-schema",
-    "signup-schema",
-    "update-me-schema",
-    "update-password-schema",
     "login-dto",
     "signup-dto",
     "update-me-dto",
@@ -133,19 +97,11 @@ export default async function generateMultipleComponents(
   ];
 
   const defaultPaths: Record<string, string> = {
-    "create-schema": "src/modules/{{module-name}}/schemas",
-    "update-schema": "src/modules/{{module-name}}/schemas",
-    "query-schema": "src/modules/{{module-name}}/schemas",
-    schema: "src/modules/{{module-name}}/schemas",
     "create-dto": "src/modules/{{module-name}}/dtos",
     "update-dto": "src/modules/{{module-name}}/dtos",
     "query-dto": "src/modules/{{module-name}}/dtos",
     dto: "src/modules/{{module-name}}/dtos",
     model: "prisma/schema",
-    "login-schema": "src/modules/auth/schemas",
-    "signup-schema": "src/modules/auth/schemas",
-    "update-me-schema": "src/modules/auth/schemas",
-    "update-password-schema": "src/modules/auth/schemas",
     "login-dto": "src/modules/auth/dtos",
     "signup-dto": "src/modules/auth/dtos",
     "update-me-dto": "src/modules/auth/dtos",
