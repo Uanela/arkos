@@ -1,6 +1,7 @@
 import { prismaSchemaParser } from "../../../../exports/prisma";
 import { getArkosConfig } from "../../../../utils/helpers/arkos-config.helpers";
 import prismaJsonSchemaGenerator from "../../../../utils/prisma/prisma-json-schema-generator";
+import { routeHookReader } from "../../../../components/arkos-route-hook/reader";
 import authPrismaJsonSchemaGenerator from "../auth-prisma-json-schema-generator";
 
 jest.mock("../../../../utils/helpers/arkos-config.helpers", () => ({
@@ -12,8 +13,11 @@ jest.mock("../../../../exports/prisma", () => ({
     models: [],
   },
 }));
-jest.mock("../../../../utils/helpers/arkos-config.helpers");
-jest.mock("../../../../utils/dynamic-loader");
+jest.mock("../../../../components/arkos-route-hook/reader", () => ({
+  routeHookReader: {
+    getPrismaArgs: jest.fn(),
+  },
+}));
 
 describe("AuthPrismaJsonSchemaGenerator", () => {
   const mockUserModel = {
@@ -144,9 +148,10 @@ describe("AuthPrismaJsonSchemaGenerator", () => {
     ],
   };
 
-  const mockGetModuleComponents = getModuleComponents as jest.Mock;
   const mockGetArkosConfig = getArkosConfig as jest.Mock;
   const mockPrismaSchemaParser = prismaSchemaParser as any;
+  const mockRouteHookReaderGetPrismaArgs =
+    routeHookReader.getPrismaArgs as jest.Mock;
   const mockPrismaJsonSchemaGenerator =
     prismaJsonSchemaGenerator as jest.Mocked<typeof prismaJsonSchemaGenerator>;
 
@@ -156,10 +161,8 @@ describe("AuthPrismaJsonSchemaGenerator", () => {
     // Setup the parser to return the user model
     mockPrismaSchemaParser.models = [mockUserModel];
 
-    // Default module components mock
-    mockGetModuleComponents.mockReturnValue({
-      prismaQueryOptions: {},
-    });
+    // Default: no prisma args configured for any operation
+    mockRouteHookReaderGetPrismaArgs.mockReturnValue(undefined);
 
     // Default arkos config
     mockGetArkosConfig.mockReturnValue({
@@ -217,8 +220,7 @@ describe("AuthPrismaJsonSchemaGenerator", () => {
       required: ["email", "password"],
     });
 
-    // Reset the cached user model by re-requiring the module
-    // The singleton instance caches `userModel`, so we clear it via the private field trick
+    // Reset the cached user model by clearing the private field
     (authPrismaJsonSchemaGenerator as any).userModel = undefined;
   });
 
@@ -226,11 +228,21 @@ describe("AuthPrismaJsonSchemaGenerator", () => {
   // generateGetMeResponse
   // ---------------------------------------------------------------------------
   describe("generateGetMeResponse", () => {
+    it("should read prisma args for the 'getMe' operation from the auth route hook", () => {
+      const mockGetMeArgs = { select: { id: true, email: true } };
+      mockRouteHookReaderGetPrismaArgs.mockReturnValue(mockGetMeArgs);
+
+      authPrismaJsonSchemaGenerator.generateGetMeResponse();
+
+      expect(mockRouteHookReaderGetPrismaArgs).toHaveBeenCalledWith(
+        "auth",
+        "getMe"
+      );
+    });
+
     it("should call generateResponseSchema with the User model and getMe prisma args", () => {
       const mockGetMeArgs = { select: { id: true, email: true } };
-      mockGetModuleComponents.mockReturnValue({
-        prismaQueryOptions: { getMe: mockGetMeArgs },
-      });
+      mockRouteHookReaderGetPrismaArgs.mockReturnValue(mockGetMeArgs);
 
       const result = authPrismaJsonSchemaGenerator.generateGetMeResponse();
 
@@ -241,10 +253,8 @@ describe("AuthPrismaJsonSchemaGenerator", () => {
       expect(result.type).toBe("object");
     });
 
-    it("should use empty object for prisma args when getMe is not configured", () => {
-      mockGetModuleComponents.mockReturnValue({
-        prismaQueryOptions: {},
-      });
+    it("should use empty object for prisma args when the route hook has none registered", () => {
+      mockRouteHookReaderGetPrismaArgs.mockReturnValue(undefined);
 
       authPrismaJsonSchemaGenerator.generateGetMeResponse();
 
@@ -253,8 +263,8 @@ describe("AuthPrismaJsonSchemaGenerator", () => {
       ).toHaveBeenCalledWith(mockUserModel, {});
     });
 
-    it("should use empty object for prisma args when getModuleComponents returns null", () => {
-      mockGetModuleComponents.mockReturnValue(null);
+    it("should use empty object for prisma args when the route hook returns null", () => {
+      mockRouteHookReaderGetPrismaArgs.mockReturnValue(null);
 
       authPrismaJsonSchemaGenerator.generateGetMeResponse();
 

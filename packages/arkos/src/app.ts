@@ -15,9 +15,11 @@ import {
 export const app: express.Express = express();
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
-const docsLink =
+export const docsLink =
   "https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app";
 let instanciated = false;
+type AppState = "idle" | "building" | "built" | "listening";
+export let state: AppState = "idle";
 
 /**
  * Creates and configures an Arkos application instance.
@@ -70,8 +72,6 @@ export function arkos(): Arkos {
   setupApp(app);
   instanciated = true;
 
-  type AppState = "idle" | "building" | "built" | "listening";
-  let state: AppState = "idle";
 
 
   function loadApp() {
@@ -81,7 +81,7 @@ export function arkos(): Arkos {
     return _app;
   }
 
-  app.build = function () {
+  app.build = function() {
     if (state === "built" || state === "building")
       throw ExitError(`app.build() must only be called once, see ${docsLink}`);
     if (state === "listening")
@@ -104,10 +104,10 @@ export function arkos(): Arkos {
     cb?: UserCallback
   ) => {
     logAppStartup(port, host);
-    return cb || function () {};
+    return cb || function() { };
   };
 
-  app.listen = async function (...args: any[]): Promise<Server> {
+  app.listen = async function(...args: any[]): Promise<Server> {
     process.env.__ARKOS_SERVER_LISTENER = "arkos";
 
     if (state === "listening")
