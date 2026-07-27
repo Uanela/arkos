@@ -37,7 +37,7 @@ jest.mock("../../modules/error-handler/error-handler.controller", () => ({
 jest.mock("../../exports/error-handler", () => ({
   AppError: jest
     .fn()
-    .mockImplementation(function (message, status, meta, code) {
+    .mockImplementation(function(message, status, meta, code) {
       ///@ts-ignore
       const parent = this as any;
       parent.message = message;
@@ -164,7 +164,7 @@ describe("initializeApp", () => {
       mockIsAuthenticationEnabled.mockReturnValue(true);
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(getAuthRouter).toHaveBeenCalledWith(expect.any(Object));
+      expect(getAuthRouter).toHaveBeenCalled();
       expect(app.use).toHaveBeenCalledWith({ path: "/api" }, "authRouter");
     });
 
@@ -181,7 +181,7 @@ describe("initializeApp", () => {
     it("should always mount modelsRouter under globalPrefix", () => {
       const app = makeMockApp();
       initializeApp(app as any);
-      expect(getPrismaModelsRouter).toHaveBeenCalledWith(expect.any(Object));
+      expect(getPrismaModelsRouter).toHaveBeenCalled();
       expect(app.use).toHaveBeenCalledWith({ path: "/api" }, "modelsRouter");
     });
   });

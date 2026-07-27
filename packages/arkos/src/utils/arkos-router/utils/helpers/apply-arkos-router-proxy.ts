@@ -22,6 +22,8 @@ import { UploadConfig } from "../../types/upload-config";
 import { Arkos, ArkosLoadable } from "../../../../types/arkos";
 import { Express } from "express";
 import loadableRegistry from "../../../../components/arkos-loadable-registry";
+import { state } from "../../../../app";
+import { docsLink } from "../../../../app";
 
 const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
   return arr.reduce((flat, item) => {
@@ -40,11 +42,10 @@ export function applyArkosRouterProxy<T extends Express | IRouter>(
   };
 
   (target as any).load = (...items: ArkosLoadable[]) => {
-    // TODO: probably just remove, because we can't track this here
-    // if (state !== "idle")
-    //   throw ExitError(
-    //     `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`
-    //   );
+    if (state !== "idle")
+      throw ExitError(
+        `app.load() must be called before app.${state === "listening" ? "listen" : "build"}(), see ${docsLink}`
+      );
 
     if (Array.isArray(items[0])) items = items[0];
     items = Array.isArray(items) ? items : [items];
@@ -70,7 +71,7 @@ export function applyArkosRouterProxy<T extends Express | IRouter>(
       ] as const;
 
       if (prop === "use") {
-        return function (
+        return function(
           config: ArkosUseConfig | PathParams | ArkosAnyRequestHandler,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
@@ -115,8 +116,8 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             return "param" in handler
               ? handler
               : catchAsync(handler, {
-                  type: handler.length > 3 ? "error" : "normal",
-                });
+                type: handler.length > 3 ? "error" : "normal",
+              });
           });
 
           const middlewareStack = getMiddlewareStack(useConfig);
@@ -127,11 +128,11 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
       }
 
       if (prop === "route") {
-        return function (path: PathParams) {
+        return function(path: PathParams) {
           const routeChain: any = {};
 
           httpMethods.forEach((method) => {
-            routeChain[method] = function (
+            routeChain[method] = function(
               config: ArkosAnyRequestHandler | Omit<ArkosRouteConfig, "path">,
               ...handlers: ArkosAnyRequestHandler[]
             ) {
@@ -155,7 +156,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
       }
 
       if (httpMethods.includes(prop as any)) {
-        return function (
+        return function(
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
@@ -172,14 +173,14 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             ...config,
             ...(options?.openapi
               ? {
-                  experimental: {
-                    ...config?.experimental,
-                    openapi: deepmerge(
-                      options.openapi || {},
-                      config?.experimental?.openapi || {}
-                    ),
-                  },
-                }
+                experimental: {
+                  ...config?.experimental,
+                  openapi: deepmerge(
+                    options.openapi || {},
+                    config?.experimental?.openapi || {}
+                  ),
+                },
+              }
               : {}),
             path,
           };
@@ -188,18 +189,18 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             ...config,
             ...(options?.uploads
               ? {
-                  experimental: {
-                    ...config?.experimental,
-                    ...((config?.experimental?.uploads
-                      ? {
-                          uploads: deepmerge(
-                            options.uploads,
-                            config.experimental.uploads
-                          ),
-                        }
-                      : {}) as UploadConfig),
-                  },
-                }
+                experimental: {
+                  ...config?.experimental,
+                  ...((config?.experimental?.uploads
+                    ? {
+                      uploads: deepmerge(
+                        options.uploads,
+                        config.experimental.uploads
+                      ),
+                    }
+                    : {}) as UploadConfig),
+                },
+              }
               : {}),
             path,
           };
