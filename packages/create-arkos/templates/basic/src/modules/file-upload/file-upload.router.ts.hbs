@@ -1,12 +1,32 @@
-import { ArkosRouter } from "arkos";
+import { ArkosRouter, ArkosRouteHook } from 'arkos';
 {{#if authentication}}
-import fileUploadPolicy from "@/src/modules/file-upload/file-upload.policy";
+import fileUploadPolicy from '@/src/modules/file-upload/file-upload.policy';
 {{/if}}
-import config from "@/arkos.config"
+import config from '@/arkos.config';
 
-const fileUploadRouter = ArkosRouter({ 
-    prefix: config?.fileUpload?.baseRoute,
-    openapi: { tags: ["File Uploads"] } 
-  });
+const fileUploadRouteHook = ArkosRouteHook("file-upload");
+
+fileUploadRouteHook.findFile({
+  {{#if authentication}}authentication: fileUploadPolicy.View,{{/if}}
+});
+
+fileUploadRouteHook.uploadFile({
+  {{#if authentication}}authentication: fileUploadPolicy.Create,{{/if}}
+});
+
+fileUploadRouteHook.updateFile({
+  {{#if authentication}}authentication: fileUploadPolicy.Update,{{/if}}
+});
+
+fileUploadRouteHook.deleteFile({
+  {{#if authentication}}authentication: fileUploadPolicy.Delete,{{/if}}
+});
+
+const fileUploadRouter = ArkosRouter({
+  prefix: config?.fileUpload?.baseRoute,
+  openapi: { tags: ["File Uploads"] },
+});
+
+fileUploadRouter.load(fileUploadRouteHook);
 
 export default fileUploadRouter;
