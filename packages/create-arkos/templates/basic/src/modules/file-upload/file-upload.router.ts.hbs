@@ -24,7 +24,7 @@ fileUploadRouteHook.deleteFile({
 
 const fileUploadRouter = ArkosRouter({
   prefix: config?.fileUpload?.baseRoute,
-  openapi: { tags: ["File Uploads"] },
+  openapi: { tags: ["File Upload"] },
 });
 
 fileUploadRouter.load(fileUploadRouteHook);

@@ -403,10 +403,6 @@ describe("FileUploadController", () => {
         "mockRes.json calls:",
         JSON.stringify(mockRes.json.mock.calls)
       );
-      console.log(
-        "processFile calls:",
-        (mockProcessFile as jest.Mock).mock.calls.length
-      );
       expect(mockRes.json).toHaveBeenCalledWith({
         success: true,
         data: [
