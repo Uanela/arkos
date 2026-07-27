@@ -1,5 +1,51 @@
-import { PrismaClient } from "@prisma/client";
+{{#if (eq prisma.provider "postgresql")}}
+import { PrismaClient } from "@/src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-export const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL{{#if typescript}} as string{{/if}} });
+export const prisma = new PrismaClient({ adapter });
+{{/if}}
+{{#if (eq prisma.provider "cockroachdb")}}
+import { PrismaClient } from "@/src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+// CockroachDB uses the PostgreSQL wire protocol, so it shares the pg adapter
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL{{#if typescript}} as string{{/if}} });
+export const prisma = new PrismaClient({ adapter });
+{{/if}}
+{{#if (eq prisma.provider "mysql")}}
+import { PrismaClient } from "@/src/generated/prisma/client";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+
+const dbUrl = new URL(process.env.DATABASE_URL{{#if typescript}} as string{{/if}});
+const adapter = new PrismaMariaDb({
+  host: dbUrl.hostname,
+  port: Number(dbUrl.port) || 3306,
+  user: decodeURIComponent(dbUrl.username),
+  password: decodeURIComponent(dbUrl.password),
+  database: dbUrl.pathname.replace(/^\//, ""),
+  connectionLimit: 5,
+});
+export const prisma = new PrismaClient({ adapter });
+{{/if}}
+{{#if (eq prisma.provider "sqlite")}}
+import { PrismaClient } from "@/src/generated/prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+
+const adapter = new PrismaBetterSqlite3({
+  url: process.env.DATABASE_URL || "file:./dev.db",
+});
+export const prisma = new PrismaClient({ adapter });
+{{/if}}
+{{#if (eq prisma.provider "sqlserver")}}
+import { PrismaClient } from "@/src/generated/prisma/client";
+import { PrismaMssql } from "@prisma/adapter-mssql";
+
+const adapter = new PrismaMssql(process.env.DATABASE_URL{{#if typescript}} as string{{/if}});
+export const prisma = new PrismaClient({ adapter });
+{{/if}}
+{{#if (eq prisma.provider "none")}}
+export const prisma = null;
+{{/if}}
 
 export default prisma;

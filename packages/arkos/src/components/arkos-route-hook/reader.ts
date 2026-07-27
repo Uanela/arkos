@@ -7,7 +7,7 @@ import {
   ArkosAuthRouteHookInstance,
   ArkosFileUploadRouteHookInstance,
 } from "./types";
-import { ArkosRequestHandler, ArkosRouteConfig } from "../../exports";
+import { ArkosRouteConfig } from "../../exports";
 import { kebabCase } from "../../exports/utils";
 
 type PrismaOperations = keyof Omit<
@@ -110,10 +110,7 @@ class ArkosRouteHookReader {
   forOperation<TModule extends ArkosModuleType>(
     moduleName: TModule,
     operation: OperationByModule<TModule>
-  ): {
-    before: ArkosRequestHandler[];
-    after: ArkosRequestHandler[];
-    onError: ArkosRequestHandler[];
+  ): ArkosRouteHookHooks & {
     prismaArgs?: Record<string, any>;
     routeConfig: Omit<ArkosRouteConfig, "path">;
   } {

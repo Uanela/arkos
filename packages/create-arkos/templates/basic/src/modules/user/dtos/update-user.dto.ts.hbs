@@ -22,9 +22,9 @@ const UpdateUserDto = z.object({
   role: z.string().optional(),
   {{else}}
   {{#if authentication.multipleRoles}}
-  roles: z.array(z.nativeEnum(UserRole)).optional(),
+  roles: z.array(z.enum(UserRole)).optional(),
   {{else}}
-  role: z.nativeEnum(UserRole).optional(),
+  role: z.enum(UserRole).optional(),
   {{/if}}
   {{/if}}
   {{else}}

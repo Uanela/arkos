@@ -4,4 +4,7 @@ allowBuilds:
   esbuild: true
   prisma: true
   sharp: true
+  unrs-resolver: true
   vue-demi: true
+minimumReleaseAgeExclude:
+  - express-rate-limit@8.6.1

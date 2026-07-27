@@ -20,9 +20,9 @@ const CreateUserDto = z.object({
   role: z.string(),
   {{else}}
   {{#if authentication.multipleRoles}}
-  roles: z.array(z.nativeEnum(UserRole)),
+  roles: z.array(z.enum(UserRole)),
   {{else}}
-  role: z.nativeEnum(UserRole),
+  role: z.enum(UserRole),
   {{/if}}
   {{/if}}
   {{else}}
