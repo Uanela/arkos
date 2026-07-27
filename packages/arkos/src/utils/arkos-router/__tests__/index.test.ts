@@ -74,7 +74,7 @@ describe("generateOpenAPIFromApp", () => {
     ];
 
     mockApp = {
-      _router: {
+      router: {
         stack: [
           {
             route: {
@@ -108,7 +108,7 @@ describe("generateOpenAPIFromApp", () => {
         (r) =>
           r.path === "/users" &&
           r.method === "GET" &&
-          handler === mockApp._router.stack[0].route.stack[0].handle
+          handler === mockApp.router.stack[0].route.stack[0].handle
       );
 
       if (route) return route.config;
@@ -117,7 +117,7 @@ describe("generateOpenAPIFromApp", () => {
         (r) =>
           r.path === "/users/:id" &&
           r.method === "POST" &&
-          handler === mockApp._router.stack[1].route.stack[0].handle
+          handler === mockApp.router.stack[1].route.stack[0].handle
       );
       if (route2) return route2.config;
 
@@ -163,7 +163,7 @@ describe("generateOpenAPIFromApp", () => {
     };
 
     const app: any = {
-      _router: {
+      router: {
         stack: [
           {
             name: "router",
@@ -209,7 +209,7 @@ describe("generateOpenAPIFromApp", () => {
     };
 
     const app: any = {
-      _router: {
+      router: {
         stack: [
           {
             name: "router",
@@ -254,7 +254,7 @@ describe("generateOpenAPIFromApp", () => {
   it("should export path parameters from route path", async () => {
     const routePath = "/products/{id}/views/{viewId}/{userId}";
     const app: any = {
-      _router: {
+      router: {
         stack: [
           {
             route: {
@@ -279,7 +279,7 @@ describe("generateOpenAPIFromApp", () => {
   it("should throw an error when try to define path parameter that is not contained on the route pathname", async () => {
     const routePath = "/products/:id/:viewId";
     const app: any = {
-      _router: {
+      router: {
         stack: [
           {
             route: {
@@ -303,7 +303,7 @@ describe("generateOpenAPIFromApp", () => {
 
   // it("should use default values when openapi config is not provided", async () => {
   //   // Add a route without openapi config
-  //   mockApp._router.stack.push({
+  //   mockApp.router.stack.push({
   //     route: {
   //       path: "/products",
   //       methods: { get: true },
@@ -345,7 +345,7 @@ describe("generateOpenAPIFromApp", () => {
 
   it("should handle empty app with no routes", async () => {
     const emptyApp: any = {
-      _router: {
+      router: {
         stack: [],
       },
     };

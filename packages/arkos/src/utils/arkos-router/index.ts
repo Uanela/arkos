@@ -147,13 +147,6 @@ export function generateOpenAPIFromApp(app: Arkos) {
       );
     }
 
-    let wildcardCount = (path.match(/\*/g) || []).length;
-    let wildcardIndex = 0;
-    path = path.replace(/\*/g, () => {
-      wildcardIndex++;
-      return wildcardCount === 1 ? "{path}" : `{path${wildcardIndex}}`;
-    });
-
     if (!paths[path]) paths[path] = {};
 
     if (typeof config?.experimental?.openapi === "boolean") {
@@ -168,7 +161,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
 
     const openapi =
       typeof config?.experimental?.openapi === "object" &&
-      config.experimental.openapi !== null
+        config.experimental.openapi !== null
         ? config.experimental.openapi
         : {};
 
@@ -273,65 +266,65 @@ export function generateOpenAPIFromApp(app: Arkos) {
       ...(!convertedOpenAPI.requestBody &&
         config?.validation &&
         config?.validation?.body && {
-          requestBody: {
-            content: (() => {
-              const schema = validatorToJsonSchema(
-                config?.validation?.body as any
-              );
+        requestBody: {
+          content: (() => {
+            const schema = validatorToJsonSchema(
+              config?.validation?.body as any
+            );
 
-              return {
-                ...convertedOpenAPI?.requestBody?.content,
-                ...(hasUploadFields && {
-                  "multipart/form-data": {
-                    schema: openApiSchemaConverter.flattenSchema(
-                      arkosRouterOpenApiManager.addUploadFields(
-                        config.experimental?.uploads!,
-                        schema
-                      )
-                    ),
-                  },
-                }),
-                ...(!allUploadFieldsAreRequired && {
-                  "application/json": {
-                    schema,
-                  },
-                }),
-              };
-            })(),
-          },
-        }),
-      ...(!multipartFormSchema &&
-        !(config as any)?.validation?.body &&
-        hasUploadFields && {
-          requestBody: {
-            content: (() => {
-              const schema =
-                convertedOpenAPI?.requestBody?.content?.["application/json"]
-                  ?.schema || {};
-
-              delete convertedOpenAPI?.requestBody?.content?.[
-                "application/json"
-              ];
-
-              return {
+            return {
+              ...convertedOpenAPI?.requestBody?.content,
+              ...(hasUploadFields && {
                 "multipart/form-data": {
                   schema: openApiSchemaConverter.flattenSchema(
                     arkosRouterOpenApiManager.addUploadFields(
-                      config?.experimental?.uploads! || {},
+                      config.experimental?.uploads!,
                       schema
                     )
                   ),
                 },
-                ...convertedOpenAPI?.requestBody?.content,
-                ...(!allUploadFieldsAreRequired && {
-                  "application/json": {
-                    schema,
-                  },
-                }),
-              };
-            })(),
-          },
-        }),
+              }),
+              ...(!allUploadFieldsAreRequired && {
+                "application/json": {
+                  schema,
+                },
+              }),
+            };
+          })(),
+        },
+      }),
+      ...(!multipartFormSchema &&
+        !(config as any)?.validation?.body &&
+        hasUploadFields && {
+        requestBody: {
+          content: (() => {
+            const schema =
+              convertedOpenAPI?.requestBody?.content?.["application/json"]
+                ?.schema || {};
+
+            delete convertedOpenAPI?.requestBody?.content?.[
+              "application/json"
+            ];
+
+            return {
+              "multipart/form-data": {
+                schema: openApiSchemaConverter.flattenSchema(
+                  arkosRouterOpenApiManager.addUploadFields(
+                    config?.experimental?.uploads! || {},
+                    schema
+                  )
+                ),
+              },
+              ...convertedOpenAPI?.requestBody?.content,
+              ...(!allUploadFieldsAreRequired && {
+                "application/json": {
+                  schema,
+                },
+              }),
+            };
+          })(),
+        },
+      }),
     } as OpenAPIV3.PathItemObject;
   });
 

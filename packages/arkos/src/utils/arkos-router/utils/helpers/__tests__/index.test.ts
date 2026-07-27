@@ -41,7 +41,7 @@ describe("extractArkosRoutes", () => {
 
   it("should extract routes with their methods and configs", () => {
     const app = {
-      _router: {
+      router: {
         stack: [
           {
             route: {
@@ -87,7 +87,7 @@ describe("extractArkosRoutes", () => {
     });
 
     const app = {
-      _router: {
+      router: {
         stack: [
           {
             name: "router",
@@ -171,16 +171,16 @@ describe("extractPathParams", () => {
     expect(result).toEqual(["userId"]);
   });
 
-  it("should extract wildcard * as path", () => {
-    const path = "/api/uploads/*";
+  it("should extract wildcard *slug as slug", () => {
+    const path = "/api/uploads/*slug";
     const result = extractPathParams(path);
-    expect(result).toEqual(["path"]);
+    expect(result).toEqual(["slug"]);
   });
 
-  it("should extract wildcard * alongside other params", () => {
-    const path = "/api/:version/uploads/*";
+  it("should extract wildcard *slug alongside other params", () => {
+    const path = "/api/:version/uploads/*slug";
     const result = extractPathParams(path);
-    expect(result).toEqual(["version", "path"]);
+    expect(result).toEqual(["version", "slug"]);
   });
 
   it("should strip regex constraint from :param(\\d+)", () => {

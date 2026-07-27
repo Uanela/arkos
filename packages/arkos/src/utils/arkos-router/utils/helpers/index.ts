@@ -84,7 +84,7 @@ export function extractArkosRoutes(
     });
   }
 
-  const stack = app._router?.stack || app.stack;
+  const stack = app.router?.stack || app.stack;
   if (stack)
     extractFromStack(stack, basePath, app._arkos?.options || undefined);
 
@@ -160,23 +160,10 @@ export function getMiddlewareStack(
 export function extractPathParams(path: string): string[] {
   const params: string[] = [];
   const segments = path.split("/");
-  let wildcardCount = 0;
 
   for (const segment of segments) {
-    if (segment === "*") {
-      wildcardCount++;
-    } else if (segment.startsWith(":")) {
-      const clean = segment.substring(1).replace(/\(.*\)$/, "");
-      params.push(clean);
-    }
-  }
-
-  if (wildcardCount === 1) {
-    params.push("path");
-  } else {
-    for (let i = 1; i <= wildcardCount; i++) {
-      params.push(`path${i}`);
-    }
+    if (segment.startsWith(":") || segment.startsWith("*"))
+      params.push(segment.substring(1).replace(/\(.*\)$/, ""));
   }
 
   return params;
