@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import { User } from "../../types";
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
-import { callNext } from "../base/base.middlewares";
 import arkosEnv from "../../utils/arkos-env";
 import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
 import {
@@ -16,7 +15,6 @@ import {
   AuthJwtPayload,
   AccessAction,
   AccessControlConfig,
-  AuthenticationControlConfig,
   AccessControlRules,
   DetailedAccessControlRule,
 } from "../../types/auth";
@@ -125,13 +123,13 @@ export class AuthService {
     return {
       expires: new Date(
         Date.now() +
-          Number(
-            toMs(
-              authConfigs?.jwt?.expiresIn ||
-                (process.env.JWT_EXPIRES_IN as MsDuration) ||
-                (arkosEnv.JWT_EXPIRES_IN as MsDuration)
-            )
+        Number(
+          toMs(
+            authConfigs?.jwt?.expiresIn ||
+            (process.env.JWT_EXPIRES_IN as MsDuration) ||
+            (arkosEnv.JWT_EXPIRES_IN as MsDuration)
           )
+        )
       ),
       httpOnly:
         authConfigs?.jwt?.cookie?.httpOnly ??
@@ -189,32 +187,6 @@ export class AuthService {
    */
   async hashPassword(password: string): Promise<string> {
     return await bcrypt.hash(password, 12);
-  }
-
-  /**
-   * Checks if a password is strong, requiring uppercase, lowercase, and numeric characters as the default.
-   *
-   * **NB**: You must pay attention when using custom validation with zod or class-validator, try to use the same regex always.
-   *
-   * **Note**: You can define it when calling arkos.init()
-   * ```ts
-   * arkos.init({
-   *  authentication: {
-   *    passwordValidation:{ regex: /your-desired-regex/, message: 'password must contain...'}
-   *  }
-   * })
-   * ```
-   *
-   * @param {string} password - The password to check.
-   * @returns {boolean} Returns true if the password meets the strength criteria, otherwise false.
-   */
-  public isPasswordStrong(password: string): boolean {
-    const initAuthConfigs = getArkosConfig()?.authentication;
-
-    const strongPasswordRegex =
-      initAuthConfigs?.passwordValidation?.regex ||
-      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/;
-    return strongPasswordRegex.test(password);
   }
 
   /**
@@ -368,9 +340,9 @@ export class AuthService {
     const [userPermission, hasRolePermission] = await Promise.all([
       prisma.userPermission
         ? prisma.userPermission.findFirst({
-            where: { userId, permission: { resource, action } },
-            select: { effect: true },
-          })
+          where: { userId, permission: { resource, action } },
+          select: { effect: true },
+        })
         : Promise.resolve(null),
 
       prisma.userRole.findFirst({
@@ -388,66 +360,6 @@ export class AuthService {
 
     if (userPermission) return userPermission.effect === "Allow";
     return !!hasRolePermission;
-  }
-
-  /**
-   * Middleware function to handle access control based on user roles and permissions.
-   *
-   * @param {AccessAction} action - The action being performed (e.g., create, update, delete, view).
-   * @param {string} resource - The resource name that the action is being performed on (e.g., "User", "Post").
-   * @param {AccessControlConfig} accessControl - The access control configuration.
-   * @returns {ArkosRequestHandler} The middleware function that checks if the user has permission to perform the action.
-   *
-   * @deprecated Will be removed on v2.0, use AuthService.authorize instead
-   */
-  handleAccessControl(
-    action: AccessAction,
-    resource: string,
-    accessControl?: AccessControlConfig
-  ): ArkosRequestHandler {
-    const authAction = authActionService.add(action, resource, accessControl);
-
-    return catchAsync(
-      async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
-        if (req.user) {
-          const user = req.user as User;
-          const configs = getArkosConfig();
-
-          if (user.isSuperUser) {
-            next();
-            return;
-          }
-
-          const notEnoughPermissionsError = new AppError(
-            authAction.errorMessage,
-            403,
-            "NotEnoughPermissions"
-          );
-
-          if (configs?.authentication?.mode === "dynamic") {
-            const hasPermission = await this.checkDynamicAccessControl(
-              user.id,
-              action,
-              resource
-            );
-
-            if (!hasPermission) return next(notEnoughPermissionsError);
-          } else if (configs?.authentication?.mode === "static") {
-            if (!accessControl) return next(notEnoughPermissionsError);
-
-            const hasPermission = this.checkStaticAccessControl(
-              user,
-              action,
-              accessControl
-            );
-
-            if (!hasPermission) return next(notEnoughPermissionsError);
-          }
-        }
-
-        next();
-      }
-    );
   }
 
   private extractRequestToken(
@@ -642,27 +554,6 @@ export class AuthService {
         );
       }
     );
-  }
-
-  /**
-   * Handles authentication control by checking the `authenticationControl` configuration in the `authConfigs`.
-   *
-   * @param {ControllerActions} action - The action being performed (e.g., create, update, delete, view).
-   * @param {AuthenticationControlConfig} authenticationControl - The authentication configuration object.
-   * @returns {ArkosRequestHandler} The middleware function that checks if authentication is required.
-   *
-   * @deprecated Will be removed on v2.0, use AuthService.authenticate instead
-   */
-  handleAuthenticationControl(
-    action: AccessAction,
-    authenticationControl?: AuthenticationControlConfig | undefined
-  ): ArkosRequestHandler {
-    if (authenticationControl && typeof authenticationControl === "object") {
-      if (authenticationControl[action] === false) return callNext;
-      else if (authenticationControl[action] === true) return this.authenticate;
-    } else return this.authenticate;
-
-    return this.authenticate;
   }
 
   /**

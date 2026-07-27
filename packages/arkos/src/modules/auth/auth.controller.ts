@@ -304,9 +304,6 @@ export class AuthController {
         String(user.password)
       );
 
-      const configs = getArkosConfig();
-      const initAuthConfigs = configs?.authentication;
-
       if (!isPasswordCorrect)
         return next(
           new AppError(
@@ -316,19 +313,6 @@ export class AuthController {
           )
         );
 
-      if (
-        !authService.isPasswordStrong(String(newPassword)) &&
-        !configs?.validation
-      ) {
-        return next(
-          new AppError(
-            initAuthConfigs?.passwordValidation?.message ||
-              "The new password must contain at least one uppercase letter, one lowercase letter, and one number",
-            400,
-            "PasswordDoesNotMeetRequirements"
-          )
-        );
-      }
 
       await this.getUserService().updateOne(
         { id: user.id },

@@ -17,7 +17,6 @@ jest.mock("../auth.service", () => ({
   ...jest.requireActual("../auth.service"),
   isCorrectPassword: jest.fn(),
   signJwtToken: jest.fn(),
-  isPasswordStrong: jest.fn(),
   hashPassword: jest.fn(),
   authenticate: jest.fn(),
   handleAuthenticationControl: jest.fn(),
@@ -675,31 +674,6 @@ describe("Auth Controller", () => {
       );
     });
 
-    it("should return 400 if new password is not strong enough", async () => {
-      req.user = {
-        id: "user-id-123",
-        username: "testuser",
-        password: "hashedPassword",
-        isVerified: true,
-      };
-
-      req.body = {
-        currentPassword: "CurrentPassword123",
-        newPassword: "weakpassword",
-      };
-
-      (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.isPasswordStrong as jest.Mock).mockReturnValue(false);
-
-      await authController.updatePassword(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(
-        expect.objectContaining({
-          statusCode: 400,
-          message: expect.stringContaining("The new password must contain"),
-        })
-      );
-    });
 
     it("should update password and return 200 on success", async () => {
       req.user = {
@@ -715,7 +689,6 @@ describe("Auth Controller", () => {
       };
 
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.isPasswordStrong as jest.Mock).mockReturnValue(true);
       (authService.hashPassword as jest.Mock).mockResolvedValueOnce(
         "newHashedPassword"
       );
@@ -759,7 +732,6 @@ describe("Auth Controller", () => {
       };
 
       (authService.isCorrectPassword as jest.Mock).mockResolvedValueOnce(true);
-      (authService.isPasswordStrong as jest.Mock).mockReturnValue(true);
       (authService.hashPassword as jest.Mock).mockResolvedValueOnce(
         "newHashedPassword123"
       );
