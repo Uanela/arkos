@@ -87,7 +87,7 @@ describe("getSwaggerRouter", () => {
     scalarApiReferenceConfiguration: {},
   };
 
-  const mockApp = { _router: { stack: [] } } as any as Arkos;
+  const mockApp = { router: { stack: [] } } as any as Arkos;
   const mockSwaggerSpec = { openapi: "3.0.0" };
 
 

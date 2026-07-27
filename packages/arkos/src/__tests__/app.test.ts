@@ -41,7 +41,7 @@ jest.mock("../utils/helpers/exit-error", () => ({
 }));
 
 describe("arkos()", () => {
-  let arkos: typeof import("../app").arkos;
+  let arkos: typeof import("../app").default;
   let getAppServer: typeof import("../app").getAppServer;
   let mockExpressApp: any;
   let mockServer: any;
@@ -67,7 +67,7 @@ describe("arkos()", () => {
     mockListenFn = expressMock.__mockListen;
     mockListenFn.mockReturnValue(mockServer);
 
-    arkos = require("../app").arkos;
+    arkos = require("../app").default;
     getAppServer = require("../app").getAppServer;
     initializeAppModule = require("../utils/initialize-app");
     serverModule = require("../server");

@@ -59,7 +59,7 @@ export let state: AppState = "idle";
  *
  * @see {@link https://www.arkosjs.com/docs/core-concepts/routing/setup}
  */
-export function arkos(): Arkos {
+export default function arkos(): Arkos {
   if (process.env.__ARKOS_CLI !== "true")
     throw ExitError(
       `Arkos.js application must be started the built-in cli ${isProduction() ? "'arkos start' in production" : `'arkos dev' in development`} see https://www.arkosjs.com/docs/getting-started/installation#7-set-up-packagejson-scripts`
