@@ -12,6 +12,10 @@ import { fileURLToPath } from "url";
 
 handlebars.registerHelper("eq", (a: any, b: any) => a === b);
 handlebars.registerHelper("neq", (a: any, b: any) => a !== b);
+handlebars.registerHelper("or", (...args: any[]) => {
+  const conditions = args.slice(0, -1);
+  return conditions.some((a) => !!a);
+});
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -57,8 +61,7 @@ export async function main() {
   \n${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
 
   ${chalk.bold("Next Steps:")}
-  ${
-    argProjectName !== "."
+  ${argProjectName !== "."
       ? `1. cd ${config.projectName}
   2. setup your ${chalk.cyan("DATABASE_URL")} under .env
   3. npx arkos prisma generate
@@ -70,7 +73,7 @@ export async function main() {
   3. npx prisma db push
   4. ${packageManager} run dev
 `
-  }
+    }
     `);
 }
 
