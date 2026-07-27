@@ -77,20 +77,20 @@ type BasePrismaQueryOptions<T extends Record<string, any>> = {
    * General save options for createOne, createMany, updateOne, updateMany operations
    */
   save?:
-    | Partial<Parameters<T["create"]>[0]>
-    | Partial<Parameters<T["update"]>[0]>;
+  | Partial<Parameters<T["create"]>[0]>
+  | Partial<Parameters<T["update"]>[0]>;
   /**
    * Save options for single record operations (createOne, updateOne)
    */
   saveOne?:
-    | Partial<Parameters<T["create"]>[0]>
-    | Partial<Parameters<T["update"]>[0]>;
+  | Partial<Parameters<T["create"]>[0]>
+  | Partial<Parameters<T["update"]>[0]>;
   /**
    * Save options for multiple record operations (createMany, updateMany)
    */
   saveMany?:
-    | Partial<Parameters<T["createMany"]>[0]>
-    | Partial<Parameters<T["updateMany"]>[0]>;
+  | Partial<Parameters<T["createMany"]>[0]>
+  | Partial<Parameters<T["updateMany"]>[0]>;
   /**
    * Options for finding a single record (first match)
    */
@@ -149,25 +149,26 @@ export interface BaseUser extends Record<string, any> {
 
 type UserModelPayload =
   PrismaModels<{}> extends { user: infer U }
-    ? U extends { GetPayload: infer P }
-      ? P
-      : never
-    : never;
+  ? U extends { GetPayload: infer P }
+  ? P
+  : never
+  : never;
 
 export type User = UserModelPayload extends never ? BaseUser : UserModelPayload;
 
 export type UserRole = User extends { roles: infer R extends any[] }
   ? R[number]
   : User extends { role: infer R }
-    ? R
-    : string;
+  ? R
+  : string;
 
 export interface ArkosRequest<
   P extends Record<string, any> = any,
   ResBody = any,
   ReqBody = any,
   Query extends Record<string, any> = any,
-> extends Request<P, ResBody, ReqBody, Query> {
+  Locals extends Record<string, any> = Record<string, any>,
+> extends Request<P, ResBody, ReqBody, Query, Locals> {
   // /**
   //  * Request signals used to control Arkos's built-in request handling pipeline.
   //  *
@@ -266,9 +267,9 @@ export interface ArkosRequest<
 export interface ArkosResponse<
   ResBody = any,
   Locals extends Record<string, any> = Record<string, any>,
-> extends Response<ResBody, Locals> {}
+> extends Response<ResBody, Locals> { }
 
-export interface ArkosNextFunction extends NextFunction {}
+export interface ArkosNextFunction extends NextFunction { }
 
 export type ArkosRequestHandler<
   P extends Record<string, any> = any,
@@ -280,7 +281,7 @@ export type ArkosRequestHandler<
   req: ArkosRequest<P, ResBody, ReqBody, ReqQuery>,
   res: ArkosResponse<ResBody, Locals>,
   next: ArkosNextFunction
-) => void | Promise<void>;
+) => unknown;
 
 export type ArkosErrorRequestHandler<
   P extends Record<string, any> = any,
@@ -293,7 +294,7 @@ export type ArkosErrorRequestHandler<
   req: ArkosRequest<P, ResBody, ReqBody, ReqQuery>,
   res: ArkosResponse<ResBody, Locals>,
   next: ArkosNextFunction
-) => void | Promise<void>;
+) => unknown;
 
 export type ArkosAnyRequestHandler<
   P extends Record<string, any> = any,
@@ -305,6 +306,6 @@ export type ArkosAnyRequestHandler<
   | ArkosRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
   | ArkosErrorRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
   | Array<
-      | ArkosRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
-      | ArkosErrorRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
-    >;
+    | ArkosRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
+    | ArkosErrorRequestHandler<P, ResBody, ReqBody, ReqQuery, Locals>
+  >;

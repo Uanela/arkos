@@ -31,7 +31,7 @@ describe("validateSchema", () => {
     it("should return validated data when validation succeeds", async () => {
       const testSchema = z.object({
         name: z.string(),
-        email: z.string().email(),
+        email: z.email(),
       });
       const validData = { name: "John Doe", email: "john@example.com" };
 
@@ -43,7 +43,7 @@ describe("validateSchema", () => {
     it("should throw ZodError when validation fails", async () => {
       const testSchema = z.object({
         name: z.string(),
-        email: z.string().email(),
+        email: z.email(),
       });
       const invalidData = { name: "John Doe", email: "invalid-email" };
 
@@ -95,7 +95,7 @@ describe("validateSchema", () => {
       const userSchema = z.object({
         name: z.string().min(3),
         age: z.number().min(18),
-        email: z.string().email(),
+        email: z.email(),
       });
       const invalidData = {
         name: "Jo",
@@ -135,7 +135,7 @@ describe("validateSchema", () => {
       const schema = z.array(
         z.object({
           name: z.string(),
-          email: z.string().email(),
+          email: z.email(),
         })
       );
 
@@ -215,7 +215,7 @@ describe("validateSchema", () => {
     it("should combine validation errors with whitelist errors", async () => {
       const testSchema = z.object({
         name: z.string().min(3),
-        email: z.string().email(),
+        email: z.email(),
       });
       const invalidData = {
         name: "Jo",

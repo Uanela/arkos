@@ -1,5 +1,5 @@
 import { ValidationError } from "class-validator";
-import { ZodError, ZodIssue } from "zod";
+import z, { ZodError } from "zod";
 import { pascalCase } from "../../../utils/helpers/change-case.helpers";
 
 /**
@@ -189,13 +189,19 @@ export class ErrorPrettifier {
    * @param issue - Zod validation issue
    * @returns Class-validator style constraint name
    */
-  private mapZodToConstraintName(issue: ZodIssue): string {
+  private mapZodToConstraintName(issue: z.core.$ZodIssue): string {
     switch (issue.code) {
       case "invalid_type":
         const expected = issue.expected;
         switch (expected) {
           case "string":
             return "IsStringConstraint";
+          case "email":
+            return "IsEmailConstraint";
+          case "uuid":
+            return "IsUuidConstraint";
+          case "url":
+            return "IsUrlConstraint";
           case "number":
             return "IsNumberConstraint";
           case "boolean":
@@ -207,58 +213,68 @@ export class ErrorPrettifier {
           case "date":
             return "IsDateConstraint";
           default:
+            if (typeof expected === "object" && "includes" in expected)
+              return "ContainsConstraint";
+            if (typeof expected === "object" && "startsWith" in expected)
+              return "StartsWithConstraint";
+            if (typeof expected === "object" && "endsWith" in expected)
+              return "EndsWithConstraint";
             return "InvalidTypeConstraint";
         }
 
       case "too_small":
-        if (issue.type === "string") {
+        if (issue.origin === "string") {
           return "MinLengthConstraint";
-        } else if (issue.type === "number") {
+        } else if (issue.origin === "number") {
           return "MinConstraint";
-        } else if (issue.type === "array") {
+        } else if (issue.origin === "array") {
           return "ArrayMinSizeConstraint";
         }
         return "TooSmallConstraint";
 
       case "too_big":
-        if (issue.type === "string") {
+        if (issue.origin === "string") {
           return "MaxLengthConstraint";
-        } else if (issue.type === "number") {
+        } else if (issue.origin === "number") {
           return "MaxConstraint";
-        } else if (issue.type === "array") {
+        } else if (issue.origin === "array") {
           return "ArrayMaxSizeConstraint";
         }
         return "TooBigConstraint";
 
-      case "invalid_string":
-        if ("validation" in issue) {
-          const validation = issue.validation;
-          if (validation === "email") return "IsEmailConstraint";
-          if (validation === "uuid") return "IsUuidConstraint";
-          if (validation === "url") return "IsUrlConstraint";
-          if (typeof validation === "object" && "includes" in validation)
-            return "ContainsConstraint";
-          if (typeof validation === "object" && "startsWith" in validation)
-            return "StartsWithConstraint";
-          if (typeof validation === "object" && "endsWith" in validation)
-            return "EndsWithConstraint";
+      // case "invalid_string":
+      //   if ("expected" in issue) {
+      //     const validation = issue.expected;
+      //     if (validation === "email") return "IsEmailConstraint";
+      //     if (validation === "uuid") return "IsUuidConstraint";
+      //     if (validation === "url") return "IsUrlConstraint";
+      //     if (typeof validation === "object" && "includes" in validation)
+      //       return "ContainsConstraint";
+      //     if (typeof validation === "object" && "startsWith" in validation)
+      //       return "StartsWithConstraint";
+      //     if (typeof validation === "object" && "endsWith" in validation)
+      //       return "EndsWithConstraint";
+      //   }
+      //   return "InvalidStringConstraint";
+      //
+      case "invalid_value":
+        if (issue.values.length > 1) {
+          return "IsEnumConstraint";
+        } else {
+          return "EqualsConstraint";
         }
-        return "InvalidStringConstraint";
 
-      case "invalid_enum_value":
-        return "IsEnumConstraint";
+      // case "invalid_enum_value":
+      //   return "IsEnumConstraint";
 
-      case "invalid_literal":
-        return "EqualsConstraint";
+      // case "invalid_literal":
+      //   return "EqualsConstraint";
 
       case "unrecognized_keys":
         return "UnrecognizedKeysConstraint";
 
       case "invalid_union":
         return "InvalidUnionConstraint";
-
-      case "invalid_date":
-        return "IsDateConstraint";
 
       case "custom":
         return "CustomConstraint";
@@ -287,7 +303,7 @@ export class ErrorPrettifier {
             return `[${segment}]`;
           }
           // First segment doesn't need a dot prefix
-          return index === 0 ? segment : `.${segment}`;
+          return index === 0 ? segment : `.${String(segment)}`;
         })
         .join("")
         .replace(/\.\[/g, "["); // Clean up .[ to just [
@@ -335,7 +351,7 @@ export class ErrorPrettifier {
   private injectFieldPathInZodMessage(
     message: string,
     fieldPath: string,
-    issue: ZodIssue
+    _: z.core.$ZodIssue
   ): string {
     if (!fieldPath) {
       return message;

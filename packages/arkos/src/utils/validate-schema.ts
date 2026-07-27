@@ -34,12 +34,23 @@ export default async function validateSchema<T extends z.ZodTypeAny>(
   options?: ZodValidationOptions
 ): Promise<z.infer<T>> {
   const arkosConfig = getArkosConfig();
+
+  const validationOptions = {
+    ...(arkosConfig?.validation?.validationOptions || {}),
+    ...(options || {}),
+  };
+
   const result = parseWithWhitelistCheck(
     schema,
     data,
-    deepmerge(arkosConfig?.validation?.validationOptions || {}, options || {})
+    validationOptions
   );
-  if (!result.success) throw result.error;
+
+
+  if (!result.success)
+    throw result.error;
+
+
   return result.data;
 }
 
@@ -47,79 +58,102 @@ export function parseWithWhitelistCheck<T extends z.ZodTypeAny>(
   schema: T,
   data: unknown,
   options?: ZodValidationOptions
-): { success: true; data: z.infer<T> } | { success: false; error: z.ZodError } {
-  const errors: z.ZodIssue[] = [];
+):
+  | { success: true; data: z.infer<T> }
+  | { success: false; error: z.ZodError } {
+  const errors: z.core.$ZodIssue[] = [];
 
   function checkNestedKeys(
-    schemaType: any,
-    dataValue: any,
+    schemaType: z.ZodTypeAny,
+    dataValue: unknown,
     path: (string | number)[] = []
   ): void {
-    if (typeof dataValue !== "object" || dataValue === null) return;
-
-    // Handle arrays
-    if (Array.isArray(dataValue) && schemaType._def?.typeName === "ZodArray") {
-      const arrayElement = schemaType._def.type;
-      dataValue.forEach((item, index) => {
-        checkNestedKeys(arrayElement, item, [...path, index]);
-      });
+    if (typeof dataValue !== "object" || dataValue === null) {
       return;
     }
 
-    // Handle objects
-    if (schemaType._def?.typeName === "ZodObject") {
-      const schemaShape = schemaType._def.shape();
-      const allowedKeys = Object.keys(schemaShape);
+    const def = (schemaType as any)._zod.def;
+
+    if (def.type === "array" && Array.isArray(dataValue)) {
+      dataValue.forEach((item: unknown, index: number) => {
+        checkNestedKeys(
+          def.element,
+          item,
+          [...path, index]
+        );
+      });
+
+      return;
+    }
+
+    if (def.type === "object") {
+      const shape = def.shape;
+
+      const allowedKeys = Object.keys(shape);
       const actualKeys = Object.keys(dataValue);
-      const extraKeys = actualKeys.filter((key) => !allowedKeys.includes(key));
+
+      const extraKeys = actualKeys.filter(
+        (key) => !allowedKeys.includes(key)
+      );
 
       extraKeys.forEach((key) => {
         errors.push({
-          code: z.ZodIssueCode.unrecognized_keys,
+          code: "unrecognized_keys",
           keys: [key],
           path: [...path, key],
           message: `Unrecognized key(s) in object: ${key}`,
         });
       });
 
-      // Check nested fields
       allowedKeys.forEach((key) => {
-        const schemaField = schemaShape[key];
-        const nestedValue = dataValue[key];
-        if (nestedValue === undefined || nestedValue === null) return;
+        const schemaField = shape[key];
 
-        // Handle optional/nullable wrappers
-        let unwrappedSchema = schemaField;
-        if (
-          schemaField._def?.typeName === "ZodOptional" ||
-          schemaField._def?.typeName === "ZodNullable"
-        ) {
-          unwrappedSchema = schemaField._def.innerType;
+        const nestedValue = (
+          dataValue as Record<string, unknown>
+        )[key];
+
+        if (nestedValue === undefined || nestedValue === null) {
+          return;
         }
 
-        checkNestedKeys(unwrappedSchema, nestedValue, [...path, key]);
+        let unwrappedSchema = schemaField;
+
+        while (
+          ["optional", "nullable"].includes(
+            (unwrappedSchema as any)._zod.def.type
+          )
+        ) {
+          unwrappedSchema = (unwrappedSchema as any)._zod.def.innerType;
+        }
+
+        checkNestedKeys(
+          unwrappedSchema,
+          nestedValue,
+          [...path, key]
+        );
       });
     }
   }
 
-  if (options?.forbidNonWhitelisted !== false && data !== null) {
+  if (options?.forbidNonWhitelisted !== false) {
     checkNestedKeys(schema, data);
   }
 
   const parseResult = schema.safeParse(data);
-  if (!parseResult.success) {
-    errors.push(...parseResult.error.issues);
-  }
 
-  if (errors.length > 0) {
+  if (!parseResult.success)
+    errors.push(...parseResult.error.issues);
+
+
+  if (errors.length > 0)
     return {
       success: false,
-      error: new z.ZodError(errors),
+      error: new z.ZodRealError(errors),
     };
-  }
+
 
   return {
     success: true,
-    data: parseResult.data as z.infer<T>,
+    data: parseResult.data!,
   };
 }

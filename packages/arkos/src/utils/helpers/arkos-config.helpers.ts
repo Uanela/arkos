@@ -46,6 +46,7 @@ export function getArkosConfig(): UserArkosConfig {
 
   if (
     (config as any).__loader !== "defineConfig" &&
+    //@ts-ignore
     typeof jest == "undefined" &&
     typeof definedArkosConfig === "object"
   ) {

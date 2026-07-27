@@ -16,7 +16,7 @@ import {
 } from "../../exports/error-handler";
 import validateDto from "../../utils/validate-dto";
 import validateSchema from "../../utils/validate-schema";
-import { ZodSchema } from "zod";
+import z from "zod";
 import { ClassConstructor } from "class-transformer";
 import { ValidatorOptions } from "class-validator";
 import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
@@ -203,10 +203,8 @@ export function handleRequestLogs(
     const statusColor = getStatusColor(res.statusCode);
 
     console.info(
-      `[\x1b[36mInfo\x1b[0m] \x1b[90m${timestamp}\x1b[0m ${methodColor}${
-        req.method
-      }\x1b[0m ${lenientDecode(req.originalUrl)} ${statusColor}${
-        res.statusCode
+      `[\x1b[36mInfo\x1b[0m] \x1b[90m${timestamp}\x1b[0m ${methodColor}${req.method
+      }\x1b[0m ${lenientDecode(req.originalUrl)} ${statusColor}${res.statusCode
       }\x1b[0m \x1b[35m${duration}ms\x1b[0m`
     );
   });
@@ -222,10 +220,10 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
   classValidatorValidationOptions?: ValidatorOptions
 ): ArkosRequestHandler;
 export function handleRequestBodyValidationAndTransformation<T extends object>(
-  schemaOrDtoClass?: ZodSchema<T>
+  schemaOrDtoClass?: z.core.$ZodType<T>
 ): ArkosRequestHandler;
 export function handleRequestBodyValidationAndTransformation<T extends object>(
-  schemaOrDtoClass?: ZodSchema<T> | ClassConstructor<T>,
+  schemaOrDtoClass?: z.core.$ZodType<T> | ClassConstructor<T>,
   classValidatorValidationOptions?: ValidatorOptions
 ) {
   return catchAsync(

@@ -21,7 +21,6 @@ import { removeBothSlashes } from "../../../helpers/text.helpers";
 import { promisify } from "util";
 import sheu from "../../../sheu";
 import AppError from "../../../../modules/error-handler/utils/app-error";
-import { RequestHandler } from "express";
 import {
   extractRequestInfo,
   generateRelativePath,
@@ -29,6 +28,7 @@ import {
 import deepmerge from "../../../helpers/deepmerge.helper";
 import { catchAsync } from "../../../../exports/error-handler";
 import { ArkosFile } from "../../../../types/upload";
+import { RequestHandler } from "express";
 
 function determineUploadDir(file: Express.Multer.File) {
   if (file.mimetype.includes?.("image")) return "/images";
@@ -248,7 +248,7 @@ class UploadManager {
   }: {
     maxSize?: number;
     allowedFileTypes?: string[] | RegExp;
-  }): multer.Multer {
+  }) {
     return multer({
       storage,
       fileFilter: (req, file, cb) =>
@@ -270,9 +270,9 @@ class UploadManager {
       const multerOptions =
         "maxSize" in config || "allowedFileTypes" in config
           ? {
-              maxSize: (config as any).maxSize,
-              allowedFileTypes: (config as any).allowedFileTypes,
-            }
+            maxSize: (config as any).maxSize,
+            allowedFileTypes: (config as any).allowedFileTypes,
+          }
           : {};
       return this.getUpload(multerOptions).fields(
         flattenFieldsForMulter(config.fields)
@@ -558,9 +558,8 @@ class UploadManager {
             file.path,
             req.headers["x-upload-dir"] as string
           );
-          return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${
-            relativePath.startsWith("/") ? relativePath : `/${relativePath}`
-          }`;
+          return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${relativePath.startsWith("/") ? relativePath : `/${relativePath}`
+            }`;
         };
 
         const getAttachValue = (
@@ -816,9 +815,9 @@ class UploadManager {
         (uploadConfig as any).required !== undefined
           ? (uploadConfig as any).required
           : uploadConfig.fields.every(
-              (field) =>
-                (field as any).required || (field as any).required === undefined
-            );
+            (field) =>
+              (field as any).required || (field as any).required === undefined
+          );
     }
 
     return isRequired;

@@ -1,6 +1,7 @@
 {
   "name": "arkos",
   "version": "2.0.0-next.18",
+  "type": "module",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/esm/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -124,7 +125,7 @@
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "pnpm run build",
     "prelinkOnly": "npm run build",
-    "test": "jest",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:create": "tsx src/scripts/create-test.ts",
@@ -167,7 +168,6 @@
     "README.md"
   ],
   "devDependencies": {
-    "@babel/preset-typescript": "8.0.1",
     "@scalar/express-api-reference": "0.10.11",
     "@types/bcrypt": "6.0.0",
     "@types/body-parser": "1.19.6",
@@ -198,7 +198,7 @@
     "ts-prune": "0.10.3",
     "tsx": "4.23.1",
     "type-fest": "5.8.0",
-    "typescript": "7.0.2"
+    "typescript": "6.0.3"
   },
   "dependencies": {
     "chokidar": "5.0.0",
@@ -228,7 +228,7 @@
     "nodemailer": "9.0.3",
     "sharp": "0.35.3",
     "socket.io": "^4.8.3",
-    "swagger-jsdoc": "6.3.0",
+    "swagger-jsdoc": "6.2.8",
     "zod": "4.4.3",
     "zod-to-json-schema": "3.25.2"
   },

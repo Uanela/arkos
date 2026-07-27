@@ -155,7 +155,7 @@ describe("AuthService", () => {
       let result: string | undefined = undefined;
       try {
         result = authService.signJwtToken(userId);
-      } catch {}
+      } catch { }
 
       expect(jwt.sign).not.toHaveBeenCalledWith(
         { id: userId },
@@ -693,7 +693,7 @@ describe("AuthService", () => {
         await authService.getAuthenticatedUser(mockReq);
       } catch (err: any) {
         expect(err?.message).toBe(
-          "Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.ts, see https://www.arkosjs.com/core-concepts/authentication/setup"
+          "Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.js, see https://www.arkosjs.com/core-concepts/authentication/setup"
         );
       }
     });
@@ -1102,7 +1102,7 @@ describe("AuthService", () => {
 
       it("should suppress error and run after hooks if onError calls ctx.skip()", async () => {
         const originalErr = new AppError("Invalid token", 401, "InvalidToken");
-        const after = jest.fn((_ctx) => {});
+        const after = jest.fn((_ctx) => { });
         const onError = jest.fn(({ skip }) => skip());
 
         (getArkosConfig as jest.Mock).mockReturnValue({
@@ -1146,7 +1146,7 @@ describe("AuthService", () => {
 
     describe("before hooks", () => {
       it("should run before hook and continue if nothing is called", async () => {
-        const before = jest.fn(async (_ctx) => {});
+        const before = jest.fn(async (_ctx) => { });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: { mode: "static", hooks: { authorize: { before } } },
@@ -1274,7 +1274,7 @@ describe("AuthService", () => {
       });
 
       it("should suppress error and run after hooks if onError calls ctx.skip()", async () => {
-        const after = jest.fn((_ctx) => {});
+        const after = jest.fn((_ctx) => { });
         const onError = jest.fn(({ skip }) => skip());
 
         (getArkosConfig as jest.Mock).mockReturnValue({
@@ -1323,7 +1323,7 @@ describe("AuthService", () => {
 
     describe("after hooks", () => {
       it("should run after hook on successful authorization", async () => {
-        const after = jest.fn((_ctx) => {});
+        const after = jest.fn((_ctx) => { });
 
         (getArkosConfig as jest.Mock).mockReturnValue({
           authentication: { mode: "static", hooks: { authorize: { after } } },
@@ -2131,7 +2131,7 @@ describe("AuthService", () => {
         expect(authService.permission("create", "User")).rejects.toThrow(
           expect.any(Error)
         );
-      } catch {}
+      } catch { }
     });
 
     it("should not throw error when called with shallow call stack", async () => {

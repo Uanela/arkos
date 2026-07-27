@@ -1,4 +1,3 @@
-import { Router } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import getSwaggerDefaultConfig from "./utils/helpers/get-swagger-default-configs";
 import { importEsmPreventingTsTransformation } from "../../utils/helpers/global.helpers";
@@ -21,7 +20,7 @@ const swaggerRouter = ArkosRouter();
 export function getSwaggerRouter(
   arkosConfig: UserArkosConfig,
   app: Arkos
-): Router {
+) {
   const pathsFromCustomArkosRouters = generateOpenAPIFromApp(app);
   const defaultSwaggerConfig = getSwaggerDefaultConfig({
     ...pathsFromCustomArkosRouters,

@@ -1,4 +1,4 @@
-import { ZodTypeAny } from "zod";
+import { ZodType } from "zod";
 import prismaSchemaParser from "./prisma/prisma-schema-parser";
 
 export function isClass(value: any): boolean {
@@ -8,8 +8,8 @@ export function isClass(value: any): boolean {
   );
 }
 
-export function isZodSchema(value: any): value is ZodTypeAny {
-  return value?._def?.typeName?.startsWith("Zod");
+export function isZodSchema(value: any): value is ZodType {
+  return value instanceof ZodType;
 }
 
 export const appModules = Array.from(
