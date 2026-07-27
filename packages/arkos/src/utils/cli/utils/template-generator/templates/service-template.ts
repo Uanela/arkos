@@ -30,11 +30,11 @@ export default ${modelName.camel}Service;
     ? modelName.camel
     : "base";
   let serviceName: string =
-    (serviceType !== "base" ? `Arkos${modelName.pascal}` : "Base") + "Service";
+    (serviceType !== "base" ? `Arkos${modelName.pascal}` : "ArkosPrisma") + "Service";
   let serviceImport: string =
     imports?.[`${serviceType}Service`] || "arkos/services";
 
-  const serviceClassImport = `import { ${serviceName.startsWith("Arkos") ? `${serviceName.replace("Arkos", "")} as ${serviceName}` : serviceName} } from "${serviceImport}";`;
+  const serviceClassImport = `import { ${!serviceName.startsWith("ArkosPrisma") ? `${serviceName.replace("Arkos", "")} as ${serviceName}` : serviceName} } from "${serviceImport}";`;
   const typeParameter =
     isTypeScript && serviceType === "base" ? `<"${modelName.kebab}">` : "";
 

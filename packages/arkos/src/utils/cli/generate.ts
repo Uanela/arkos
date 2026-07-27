@@ -148,7 +148,6 @@ const generateFile = async (
       modelName: names,
       ...restOfOptions,
       ...(config.customImports && { imports: config.customImports(names) }),
-      config,
     };
 
     const content = generateTemplate(config.templateName, templateData);

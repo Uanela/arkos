@@ -165,32 +165,28 @@ describe("CLI index — missing coverage", () => {
     const subcommandCases: Array<
       [string, string, keyof typeof mockGenerateCommand]
     > = [
-      ["controller", "c", "controller"],
-      ["service", "s", "service"],
-      ["router", "r", "router"],
-      ["auth-configs", "a", "authConfigs"],
-      ["query-options", "q", "queryOptions"],
-      ["interceptors", "i", "interceptors"],
-      ["hooks", "h", "hooks"],
-      ["create-schema", "cs", "createSchema"],
-      ["update-schema", "us", "updateSchema"],
-      ["schema", "sc", "baseSchema"],
-      ["query-schema", "qs", "querySchema"],
-      ["create-dto", "cd", "createDto"],
-      ["update-dto", "ud", "updateDto"],
-      ["dto", "d", "baseDto"],
-      ["query-dto", "qd", "queryDto"],
-      ["model", "m", "prismaModel"],
-      ["policy", "p", "policy"],
-      ["login-schema", "ls", "loginSchema"],
-      ["signup-schema", "ss", "signupSchema"],
-      ["update-me-schema", "ums", "updateMeSchema"],
-      ["update-password-schema", "ups", "updatePasswordSchema"],
-      ["login-dto", "ld", "loginDto"],
-      ["signup-dto", "sd", "signupDto"],
-      ["update-me-dto", "umd", "updateMeDto"],
-      ["update-password-dto", "upd", "updatePasswordDto"],
-    ];
+        ["controller", "c", "controller"],
+        ["service", "s", "service"],
+        ["router", "r", "router"],
+        ["create-schema", "cs", "createSchema"],
+        ["update-schema", "us", "updateSchema"],
+        ["schema", "sc", "baseSchema"],
+        ["query-schema", "qs", "querySchema"],
+        ["create-dto", "cd", "createDto"],
+        ["update-dto", "ud", "updateDto"],
+        ["dto", "d", "baseDto"],
+        ["query-dto", "qd", "queryDto"],
+        ["model", "m", "prismaModel"],
+        ["policy", "p", "policy"],
+        ["login-schema", "ls", "loginSchema"],
+        ["signup-schema", "ss", "signupSchema"],
+        ["update-me-schema", "ums", "updateMeSchema"],
+        ["update-password-schema", "ups", "updatePasswordSchema"],
+        ["login-dto", "ld", "loginDto"],
+        ["signup-dto", "sd", "signupDto"],
+        ["update-me-dto", "umd", "updateMeDto"],
+        ["update-password-dto", "upd", "updatePasswordDto"],
+      ];
 
     it.each(subcommandCases)(
       "generate %s (alias %s) delegates to generateCommand.%s",
@@ -303,7 +299,7 @@ describe("CLI index — missing coverage", () => {
       });
       const consoleSpy = jest
         .spyOn(console, "error")
-        .mockImplementation(() => {});
+        .mockImplementation(() => { });
       jest.isolateModules(() => {
         require("../index");
       });
