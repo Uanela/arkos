@@ -1,5 +1,5 @@
 import { ArkosRouter, ArkosRouteHook } from 'arkos';
-{{#if authentication}}
+{{#if (neq authentication.type "define later")}}
 import authRolePolicy from '@/src/modules/auth-role/auth-role.policy';
 {{/if}}
 {{#if validation.type}}
@@ -12,25 +12,25 @@ const authRoleRouteHook = ArkosRouteHook("auth-role");
 
 authRoleRouteHook.createOne({
   {{#if validation.type}}validation: { body: CreateAuthRoleDto },{{/if}}
-  {{#if authentication}}authentication: authRolePolicy.Create,{{/if}}
+  {{#if (neq authentication.type "define later")}}authentication: authRolePolicy.Create,{{/if}}
 });
 
 authRoleRouteHook.findOne({
-  {{#if authentication}}authentication: authRolePolicy.View,{{/if}}
+  {{#if (neq authentication.type "define later")}}authentication: authRolePolicy.View,{{/if}}
 });
 
 authRoleRouteHook.findMany({
   {{#if validation.type}}validation: { query: QueryAuthRoleDto },{{/if}}
-  {{#if authentication}}authentication: authRolePolicy.View,{{/if}}
+  {{#if (neq authentication.type "define later")}}authentication: authRolePolicy.View,{{/if}}
 });
 
 authRoleRouteHook.updateOne({
   {{#if validation.type}}validation: { body: UpdateAuthRoleDto },{{/if}}
-  {{#if authentication}}authentication: authRolePolicy.Update,{{/if}}
+  {{#if (neq authentication.type "define later")}}authentication: authRolePolicy.Update,{{/if}}
 });
 
 authRoleRouteHook.deleteOne({
-  {{#if authentication}}authentication: authRolePolicy.Delete,{{/if}}
+  {{#if (neq authentication.type "define later")}}authentication: authRolePolicy.Delete,{{/if}}
 });
 
 const authRoleRouter = ArkosRouter({

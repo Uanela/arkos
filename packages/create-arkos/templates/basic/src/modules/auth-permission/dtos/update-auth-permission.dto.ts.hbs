@@ -5,6 +5,9 @@ const UpdateAuthPermissionDto = z.object({
   resource: z.string().optional(),
   action: z.string().optional(),
   description: z.string().optional(),
+  roles: z.array(z.object({
+    id: z.string().min(1, 'Role ID is required'),
+  })).optional(),
 });
 
 export default UpdateAuthPermissionDto;
@@ -13,9 +16,15 @@ export type UpdateAuthPermissionDtoType = z.infer<typeof UpdateAuthPermissionDto
 {{/if}}
 {{/if}}
 {{#if (eq validation.type "class-validator")}}
-import { IsString, IsOptional } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import 'reflect-metadata';
+
+class RoleConnectDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Role ID is required' })
+  id!: string;
+}
 
 export default class UpdateAuthPermissionDto {
   @IsOptional()
@@ -25,7 +34,11 @@ export default class UpdateAuthPermissionDto {
   @IsOptional()
   @IsString()
   @Transform(({ value }) => String(value))
-  action?: string
+  action?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @ValidateNested({ each: true })
   @IsArray()

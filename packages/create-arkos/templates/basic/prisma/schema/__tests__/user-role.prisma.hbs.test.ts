@@ -24,10 +24,10 @@ describe("UserRole model template rendering", () => {
     const result1 = renderTemplate(templatePath, context1);
     expect(result1.trim()).toBe("");
 
-    // Test case 2: Define later authentication
+    // Test case 2: none authentication
     const context2 = {
       authentication: {
-        type: "define later",
+        type: "none",
         multipleRoles: false,
       },
       prisma: {

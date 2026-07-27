@@ -17,13 +17,13 @@ export interface ProjectConfig {
   };
   prisma: {
     provider:
-      | "postgresql"
-      | "mysql"
-      | "sqlite"
-      | "sqlserver"
-      | "cockroachdb"
-      | "mongodb"
-      | "none";
+    | "postgresql"
+    | "mysql"
+    | "sqlite"
+    | "sqlserver"
+    | "cockroachdb"
+    | "mongodb"
+    | "none";
     idDatabaseType: string;
     defaultDBurl: string;
   };
@@ -150,6 +150,7 @@ class ProjectConfigInquirer {
           "sqlite",
           "sqlserver",
           "cockroachdb",
+          "none",
         ],
       },
     ]);

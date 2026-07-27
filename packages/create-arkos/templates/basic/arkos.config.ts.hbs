@@ -6,7 +6,12 @@ const arkosConfig = defineConfig({
   prisma: {
     instance: prisma
   },
-  {{#if authentication.type}}
+  {{#if (eq entryPoint "src/server")}}
+  source: {
+    entryPoint: "{{entryPoint}}{{#if typescript}}.ts{{else}}.js{{/if}}"
+  },
+  {{/if}}
+  {{#if (neq authentication.type "define later")}}
   authentication: {
     mode: '{{authentication.type}}',
     login: {
@@ -30,10 +35,18 @@ const arkosConfig = defineConfig({
     strict: false,
   },
   middlewares: {
-    cors: {
-      allowedOrigins: process.env.NODE_ENV !== "production" ? "*" : "your-production-url"
+    cors: {},
+  }
+  {{#if (eq prisma.provider "none")}}
+  warnings: {
+    suppress: {
+      prisma: {
+        noInstanceFound: true,
+        noSchemaFound: true,
+      },
     },
   }
+  {{/if}}
 })
 
 export default arkosConfig

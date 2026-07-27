@@ -1,5 +1,5 @@
 import { ArkosRouter, ArkosRouteHook } from 'arkos';
-{{#if authentication}}
+{{#if (neq authentication.type "none")}}
 import authPolicy from '@/src/modules/auth/auth.policy';
 {{/if}}
 {{#if validation.type}}

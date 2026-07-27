@@ -1,6 +1,6 @@
 import { ArkosRouter } from "arkos";
 import fileUploadRouter from "@/src/modules/file-upload/file-upload.router";
-{{#if authentication.type}}
+{{#if (neq authentication.type "none")}}
 import authRouter from "@/src/modules/auth/auth.router";
 import userRouter from "@/src/modules/user/user.router";
 {{/if}}
@@ -12,7 +12,7 @@ import authPermissionRouter from "@/src/modules/auth-permission/auth-permission.
 const router = ArkosRouter();
 
 router.use(fileUploadRouter);
-{{#if authentication.type}}
+{{#if (neq authentication.type "none")}}
 router.use(userRouter);
 router.use(authRouter);
 {{/if}}
