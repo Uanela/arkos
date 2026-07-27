@@ -12,7 +12,7 @@ export interface ProjectConfig {
   };
   authentication?: {
     type?: "static" | "dynamic" | "none";
-    usernameField?: "username" | "email" | "custom";
+    usernameField?: string
     multipleRoles?: boolean;
   };
   prisma: {
@@ -63,6 +63,12 @@ class ProjectConfigInquirer {
       );
 
     if (process?.argv?.includes?.("--advanced")) this.config.advanced = true;
+    if (this.config.prisma.defaultDatabaseUrl)
+      this.config.prisma.defaultDatabaseUrl =
+        this.config.prisma.defaultDatabaseUrl.replaceAll(
+          "{{projectName}}",
+          this.config.projectName
+        );
 
     return this.config;
   }
@@ -131,7 +137,7 @@ class ProjectConfigInquirer {
         type: "confirm",
         name: "typescript",
         message: `Would you like to use ${chalk.cyan("TypeScript")}?`,
-        default: false,
+        default: true,
       },
     ]);
     this.config.typescript = typescript;
