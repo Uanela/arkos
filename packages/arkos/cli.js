@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 (async () => {
-  const { join } = await import("path");
+  const { join, dirname } = await import("path");
   const { existsSync, readFileSync } = await import("fs");
   const { spawn } = await import("child_process");
+  const { fileURLToPath } = await import("node:url");
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+
   const pkgPath = join(process.cwd(), "package.json");
   let useEsm = false;
   if (existsSync(pkgPath)) {
@@ -31,3 +36,5 @@
   });
   child.on("exit", (code) => process.exit(code ?? 0));
 })();
+
+
