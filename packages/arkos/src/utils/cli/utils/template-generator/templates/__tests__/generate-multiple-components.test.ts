@@ -87,7 +87,6 @@ describe("generateMultipleComponents", () => {
       expect(generateCommand.router).toHaveBeenCalled();
       expect(generateCommand.prismaModel).toHaveBeenCalled();
       expect(generateCommand.createSchema).toHaveBeenCalled();
-      expect(generateCommand.queryOptions).toHaveBeenCalled();
       expect(sheu.done).toHaveBeenCalled();
     });
 
@@ -108,8 +107,6 @@ describe("generateMultipleComponents", () => {
       expect(generateCommand.updateMeSchema).toHaveBeenCalled();
       expect(generateCommand.updatePasswordSchema).toHaveBeenCalled();
       expect(generateCommand.loginDto).toHaveBeenCalled();
-      expect(generateCommand.interceptors).toHaveBeenCalled();
-      expect(generateCommand.hooks).toHaveBeenCalled();
     });
 
     it("should not generate prisma-only components when --all for auth module", async () => {

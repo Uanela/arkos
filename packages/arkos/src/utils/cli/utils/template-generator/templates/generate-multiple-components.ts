@@ -113,13 +113,9 @@ export default async function generateMultipleComponents(
     "create-dto",
     "update-dto",
     "query-dto",
-    "query-options",
     "service",
     "controller",
     "router",
-    "interceptors",
-    "hooks",
-    "auth-configs",
     "policy",
   ];
 
@@ -132,9 +128,6 @@ export default async function generateMultipleComponents(
     "signup-dto",
     "update-me-dto",
     "update-password-dto",
-    "query-options",
-    "interceptors",
-    "hooks",
     "router",
     "policy",
   ];
@@ -190,9 +183,9 @@ export default async function generateMultipleComponents(
   } else {
     throw new Error(
       "Please specify either --all or --names flag.\n" +
-        "Examples:\n" +
-        "  arkos g components -m user --all\n" +
-        "  arkos g components -m user,post,auth --names s,sc,m"
+      "Examples:\n" +
+      "  arkos g components -m user --all\n" +
+      "  arkos g components -m user,post,auth --names s,sc,m"
     );
   }
 
