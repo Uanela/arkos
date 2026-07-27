@@ -4,9 +4,6 @@ import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { sendResponse } from "../base/base.middlewares";
 import { processMiddleware } from "../../utils/helpers/routers.helpers";
 import { adjustRequestUrl } from "./utils/helpers/file-upload.helpers";
-import debuggerService from "../debugger/debugger.service";
-import routerValidator from "../base/utils/router-validator";
-import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import { ArkosNextFunction, ArkosRequest, ArkosResponse } from "../../exports";
 import path from "path";
 import ArkosRouter from "../../utils/arkos-router";
@@ -30,11 +27,11 @@ export function getFileUploadRouter() {
     let components = routeHook
       ? routeHookReader.forOperation("file-upload", operation)
       : {
-          before: [],
-          after: [],
-          onError: [],
-          routeConfig: {},
-        };
+        before: [],
+        after: [],
+        onError: [],
+        routeConfig: {},
+      };
 
     let endpointConfig = components.routeConfig || {};
     if (endpointConfig?.experimental?.openapi !== false)

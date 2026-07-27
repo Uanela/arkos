@@ -25,6 +25,7 @@ const config: Config = {
   coverageReporters: ["text", "lcov"],
   silent: false,
   setupFiles: ["<rootDir>/jest.setup.ts"],
+  maxWorkers: '50%',
 };
 
 export default config;

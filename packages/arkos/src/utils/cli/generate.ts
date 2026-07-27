@@ -32,7 +32,7 @@ export type GenerateOptions = {
   isBulk?: boolean;
 };
 
-interface GenerateConfig {
+export interface GenerateConfig {
   templateName: string;
   fileSuffix?: string;
   customValidation?: (modelName: string) => void;
@@ -148,6 +148,7 @@ const generateFile = async (
       modelName: names,
       ...restOfOptions,
       ...(config.customImports && { imports: config.customImports(names) }),
+      config,
     };
 
     const content = generateTemplate(config.templateName, templateData);
