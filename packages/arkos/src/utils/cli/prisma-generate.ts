@@ -4,9 +4,14 @@ import fs from "fs";
 import { execSync } from "child_process";
 import sheu from "../sheu";
 import path from "path";
+import { crd } from "../helpers/fs.helpers";
 
 function getGeneratedPackageDir(): string {
   return path.resolve(process.cwd(), `.arkos`);
+}
+
+function getPrismaGeneratedPath() {
+  return prismaSchemaParser.config.clientOutput ? path.resolve(path.join(crd(), prismaSchemaParser.config.clientOutput)) : "@prisma/client"
 }
 
 function buildTypesContent(): string {
@@ -30,7 +35,7 @@ function buildTypesContent(): string {
     .join("");
 
   return `
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "${getPrismaGeneratedPath()}";
 import { ServiceBaseContext } from "arkos/services";
 import { ArkosPrismaInput } from "arkos/prisma";
 
@@ -59,11 +64,9 @@ export { PrismaClient };
 `;
 }
 
-
-
 function buildEsmContent(): string {
   return `
-export { PrismaClient } from "@prisma/client";
+export { PrismaClient } from "${getPrismaGeneratedPath()}";
 `;
 }
 
@@ -86,3 +89,4 @@ export default function prismaGenerateCommand() {
     `Types and values for arkos and prisma client generated successfully!`
   );
 }
+
