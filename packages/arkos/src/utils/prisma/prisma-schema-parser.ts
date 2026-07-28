@@ -508,14 +508,13 @@ ${fieldDefinitions}${mapDirective}
           config.datasourceProvider = match[1];
       }
 
-
       if (inGenerator && trimmed.includes("output")) {
         const match = trimmed.match(/output\s*=\s*"([^"]+)"/);
         if (match)
           config.clientOutput = match[1];
       }
 
-      if (inGenerator && trimmed.includes("url")) {
+      if (inDatasource && trimmed.includes("url")) {
         const match = trimmed.match(/url\s*=\s*(env\("([^"]+)"\)|"([^"]+)")/);
         if (match) {
           config.datasourceUrl = match[1];

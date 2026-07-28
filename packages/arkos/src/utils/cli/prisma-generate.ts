@@ -11,7 +11,7 @@ function getGeneratedPackageDir(): string {
 }
 
 function getPrismaGeneratedPath() {
-  return path.resolve(path.join(crd(), prismaSchemaParser.config.clientOutput))
+  return prismaSchemaParser.config.clientOutput ? path.resolve(path.join(crd(), prismaSchemaParser.config.clientOutput)) : "@prisma/client"
 }
 
 function buildTypesContent(): string {
@@ -89,3 +89,4 @@ export default function prismaGenerateCommand() {
     `Types and values for arkos and prisma client generated successfully!`
   );
 }
+
