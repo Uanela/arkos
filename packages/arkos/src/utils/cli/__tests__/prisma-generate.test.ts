@@ -13,7 +13,7 @@ jest.mock("child_process");
 jest.mock("../../sheu");
 jest.mock("path");
 
-const GENERATED_PACKAGE_NAME = "@arkosjs/generated";
+const GENERATED_PACKAGE_NAME = ".arkos";
 const MOCK_PKG_DIR = `/project/node_modules/${GENERATED_PACKAGE_NAME}`;
 
 describe("prismaGenerateCommand", () => {
@@ -41,7 +41,7 @@ describe("prismaGenerateCommand", () => {
 
     expect(path.resolve).toHaveBeenCalledWith(
       process.cwd(),
-      `node_modules/${GENERATED_PACKAGE_NAME}`
+      `${GENERATED_PACKAGE_NAME}`
     );
 
     expect(fs.mkdirSync).toHaveBeenCalledWith(`${MOCK_PKG_DIR}/cjs`, {
