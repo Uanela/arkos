@@ -4,11 +4,16 @@ import fs from "fs";
 import { execSync } from "child_process";
 import sheu from "../sheu";
 import path from "path";
+import { crd } from "../helpers/fs.helpers";
 
 const GENERATED_PACKAGE_NAME = "@arkosjs/generated";
 
 function getGeneratedPackageDir(): string {
   return path.resolve(process.cwd(), `node_modules/${GENERATED_PACKAGE_NAME}`);
+}
+
+function getPrismaGeneratedPath() {
+  return path.resolve(path.join(crd(), prismaSchemaParser.config.clientOutput))
 }
 
 function buildTypesContent(): string {
@@ -32,7 +37,7 @@ function buildTypesContent(): string {
     .join("");
 
   return `
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "${getPrismaGeneratedPath()}";
 import { ServiceBaseContext } from "arkos/services";
 import { ArkosPrismaInput } from "arkos/prisma";
 
@@ -66,14 +71,14 @@ function buildCjsContent(): string {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PrismaClient = void 0;
-const client_1 = require("@prisma/client");
+const client_1 = require("${getPrismaGeneratedPath()}");
 exports.PrismaClient = client_1.PrismaClient;
 `;
 }
 
 function buildEsmContent(): string {
   return `
-export { PrismaClient } from "@prisma/client";
+export { PrismaClient } from "${getPrismaGeneratedPath()}";
 `;
 }
 
@@ -123,6 +128,6 @@ export default function prismaGenerateCommand() {
   });
 
   sheu.done(
-    `Types and values for ${GENERATED_PACKAGE_NAME} and @prisma/client generated successfully!`
+    `Types and values for ${GENERATED_PACKAGE_NAME} and prisma client generated successfully!`
   );
 }

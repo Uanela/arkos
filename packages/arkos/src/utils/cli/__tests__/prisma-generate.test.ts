@@ -55,7 +55,7 @@ describe("prismaGenerateCommand", () => {
     expect(fs.writeFileSync).toHaveBeenCalledTimes(4);
 
     expect(sheu.done).toHaveBeenCalledWith(
-      `Types and values for ${GENERATED_PACKAGE_NAME} and @prisma/client generated successfully!`
+      `Types and values for ${GENERATED_PACKAGE_NAME} and prisma client generated successfully!`
     );
   });
 
