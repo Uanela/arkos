@@ -57,7 +57,7 @@ describe("FileUploadJsonSchemaGenerator", () => {
         "findFile"
       );
       expect(result.parameters).toHaveLength(1);
-      expect((result.parameters as any[])[0].name).toBe("path");
+      expect((result.parameters as any[])[0].name).toBe("slug");
     });
 
     it("should return 200 and 404 responses", () => {

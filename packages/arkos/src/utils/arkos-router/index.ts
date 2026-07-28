@@ -141,10 +141,8 @@ export function generateOpenAPIFromApp(app: Arkos) {
 
     const pathParatemersFromRoutePath = extractPathParams(path);
     for (const parameter of pathParatemersFromRoutePath) {
-      path = path.replaceAll(
-        `:${parameter}`,
-        parameter.endsWith("?") ? `{${parameter}}?` : `{${parameter}}`
-      );
+      path = path.replaceAll(`:${parameter}`, parameter.endsWith("?") ? `{${parameter}}?` : `{${parameter}}`);
+      path = path.replaceAll(`*${parameter}`, parameter.endsWith("?") ? `{${parameter}}?` : `{${parameter}}`);
     }
 
     if (!paths[path]) paths[path] = {};

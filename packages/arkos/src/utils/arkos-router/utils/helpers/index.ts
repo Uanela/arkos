@@ -1,7 +1,6 @@
 import rateLimit from "express-rate-limit";
 import authService from "../../../../modules/auth/auth.service";
 import { validateRequestInputs } from "../../../../modules/base/base.middlewares";
-import RouteConfigRegistry from "../../route-config-registry";
 import { ArkosRouteConfig } from "../../types";
 import express from "express";
 import compression from "compression";
@@ -10,85 +9,144 @@ import uploadManager from "./upload-manager";
 import multer from "multer";
 import { catchAsync } from "../../../../exports/error-handler";
 import { ArkosRouterOptions } from "../..";
+import RouteConfigRegistry from "../../route-config-registry";
 
 export function extractArkosRoutes(
   app: any,
-  basePath = ""
-): Array<{
-  path: string;
-  method: string;
-  config?: ArkosRouteConfig;
-  routeOptions?: ArkosRouterOptions;
-}> {
-  const routes: Array<{
-    path: string;
-    method: string;
-    config?: ArkosRouteConfig;
-    routeOptions?: ArkosRouterOptions;
-  }> = [];
+  basePath = "",
+  inheritedRouteOptions?: ArkosRouterOptions
+) {
+  if (
+    inheritedRouteOptions &&
+    Object.keys(inheritedRouteOptions).length === 0
+  )
+    inheritedRouteOptions = undefined;
+
+
+  const routes: any[] = [];
 
   function extractFromStack(
     stack: any[],
     prefix = "",
     inheritedRouteOptions?: ArkosRouterOptions
   ) {
-    if (Object.keys(inheritedRouteOptions || {}).length === 0)
-      inheritedRouteOptions = undefined;
+    if (!stack || !Array.isArray(stack)) return;
 
-    stack.forEach((layer: any) => {
+    for (const layer of stack) {
       if (layer.route) {
-        const fullPath = prefix + layer.route.path;
-        const methods = Object.keys(layer.route.methods);
+        const fullPath = joinPaths(prefix, layer.route.path);
+        const methods = Object.keys(layer.route.methods || {});
 
-        methods.forEach((method) => {
+        for (const method of methods) {
           const handlers = layer.route.stack || [];
+          let routeConfig = null;
+          let routeOptions = inheritedRouteOptions;
 
           for (const handler of handlers) {
-            const foundConfig = RouteConfigRegistry.get(handler.handle);
-
-            if (foundConfig) {
+            const registryConfig = RouteConfigRegistry.get(handler.handle);
+            if (registryConfig) {
+              routeConfig = registryConfig;
               routes.push({
                 path: fullPath,
                 method: method.toUpperCase(),
-                config: foundConfig,
-                routeOptions: inheritedRouteOptions,
-              });
-
+                routeOptions,
+                config: routeConfig || {
+                  method: method.toUpperCase(),
+                  path: layer.route.path,
+                },
+              })
               break;
             }
-          }
-        });
-      } else if (layer.name === "router" && layer.handle?.stack) {
-        let nestedPrefix = prefix;
 
-        if (layer.regexp) {
-          const match = layer.regexp
-            .toString()
-            .match(/\/\^?(\\\/[^?]+|\/[^?]+)/);
-          if (match) {
-            nestedPrefix = prefix + "/" + match[1].replace(/\\\//g, "/");
-            nestedPrefix = nestedPrefix
-              .replace(/\/\//g, "/")
-              .replace(/\/$/, "");
+            const arkosMeta = handler.handle?._arkos || handler._arkos;
+            if (arkosMeta) {
+              routeOptions = arkosMeta.options || routeOptions;
+            }
           }
         }
+      } else if (
+        layer.name === "router" ||
+        layer.name === "bound dispatch" ||
+        layer.handle?.stack
+      ) {
+        let nestedPrefix = prefix;
 
-        extractFromStack(
-          layer.handle.stack,
-          nestedPrefix,
-          layer.handle._arkos?.options?.openapi
-            ? layer.handle._arkos.options
-            : inheritedRouteOptions
-        );
+        if (layer.path) {
+          nestedPrefix = joinPaths(prefix, layer.path);
+        } else if (layer.regexp) {
+          const mountPath = extractLayerPath(layer);
+          nestedPrefix = joinPaths(prefix, mountPath);
+        }
+
+        const routerStack = layer.handle?.stack || layer.handle?._router?.stack;
+        if (routerStack) {
+          const currentOptions =
+            layer.handle?._arkos?.options?.openapi
+              ? layer.handle._arkos.options
+              : inheritedRouteOptions;
+
+          extractFromStack(routerStack, nestedPrefix, currentOptions);
+        }
       }
-    });
+    }
   }
 
-  const stack = app.router?.stack || app.stack;
+  const stack = app._router?.stack || app.router?.stack || app.stack;
+
   if (stack)
-    extractFromStack(stack, basePath, app._arkos?.options || undefined);
+    extractFromStack(stack, basePath, app._arkos?.options);
+
 
   return routes;
+}
+
+function joinPaths(prefix: string, path: string | undefined): string {
+  if (!path) return prefix || "";
+
+  if (!prefix) {
+    return path.startsWith("/") ? path : `/${path}`;
+  }
+
+  return `${prefix.replace(/\/$/, "")}/${path.replace(/^\//, "")}`.replace(
+    /\/+/g,
+    "/"
+  );
+}
+
+export function extractLayerPath(layer: any): string {
+  if (layer.path && typeof layer.path === "string") return layer.path;
+
+  if (layer.regexp) {
+    const source = layer.regexp.source;
+
+    if (source === "^\\/?(?=\\/|$)")
+      return "";
+
+
+    let cleaned = source
+      .replace(/^\^\\?\//, "/")
+      .replace(/^\^/, "")
+      .replace(/\\\/\?\(\?=\\\/\|\$\)/g, "")
+      .replace(/\(\?=\\\/\|\$\)/g, "")
+      .replace(/\\\//g, "/")
+      .replace(/\(\?:\\\/\?\)?/g, "")
+      .replace(/\(\?:\(\[\^\\\/\]\+\?\)\)/g, ":param")
+      .replace(/\/\?\$?$/, "")
+      .replace(/\$$/, "")
+      .replace(/\/+\/+/g, "/");
+
+    if (cleaned && !cleaned.startsWith("/"))
+      cleaned = "/" + cleaned;
+
+
+    if (cleaned.includes("?") || cleaned.includes("(") || cleaned.includes(")")) {
+      return typeof layer.path === "string" ? layer.path : "";
+    }
+
+    return cleaned;
+  }
+
+  return "";
 }
 
 export function getMiddlewareStack(
@@ -159,16 +217,25 @@ export function getMiddlewareStack(
  */
 export function extractPathParams(path: string): string[] {
   const params: string[] = [];
+
   const segments = path.split("/");
 
   for (const segment of segments) {
-    if (segment.startsWith(":") || segment.startsWith("*"))
+    if (segment.startsWith(":")) {
       params.push(segment.substring(1).replace(/\(.*\)$/, ""));
+    }
+
+    if (segment.startsWith("{*") && segment.endsWith("}")) {
+      params.push(segment.slice(2, -1));
+    }
+
+    if (segment.startsWith("*")) {
+      params.push(segment.substring(1));
+    }
   }
 
   return params;
 }
-
 type PathLike = string | RegExp;
 type PathInput = PathLike | PathLike[];
 
