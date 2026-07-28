@@ -1,8 +1,7 @@
-import pluralize, { singular } from "pluralize";
+import pluralize from "pluralize";
 import { getUserFileExtension } from "../../../../helpers/fs.helpers";
 import { kebabPrismaModels } from "../../../generate";
 import { TemplateOptions } from "../../template-generators";
-import { pascalCase } from "../../../../helpers/change-case.helpers";
 import { capitalize } from "../../../../helpers/text.helpers";
 
 export function generateRouterTemplate(options: TemplateOptions): string {
