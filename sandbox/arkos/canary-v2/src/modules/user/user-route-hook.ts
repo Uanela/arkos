@@ -1,10 +1,10 @@
-import { ArkosRouteHook } from "arkos";
+import { ArkosRequest, ArkosRouteHook } from "arkos";
 // import { mw } from "../../app";
 import z from "zod";
 import userService from "./user.service";
 
-export const mw = (msg?: any) => (req: any, res: any, next: any) => {
-  console.log(msg);
+export const mw = (msg?: any) => (req: ArkosRequest, res: any, next: any) => {
+  console.log(msg, req.user);
   next();
 };
 const userRouteHook = ArkosRouteHook("user", {

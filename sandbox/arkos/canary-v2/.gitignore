@@ -86,3 +86,5 @@ $RECYCLE.BIN/
 
 *.db
 t.json
+.arkos
+src/generated
