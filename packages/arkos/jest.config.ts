@@ -11,12 +11,9 @@ const config: Config = {
     "**/?(*.)+(spec|test).ts?(x)",
   ],
   transformIgnorePatterns: [
-    // Allow Jest to transform ESM dependencies
     "node_modules/(?!@scalar/express-api-reference)",
   ],
   transform: {
-    // "^.+\\.tsx?$": "ts-jest",
-    // "^.+\\.(js|jsx|ts|tsx)$": "babel-jest",
     "^.+\\.tsx?$": "ts-jest",
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
@@ -25,7 +22,7 @@ const config: Config = {
   coverageReporters: ["text", "lcov"],
   silent: false,
   setupFiles: ["<rootDir>/jest.setup.ts"],
-  maxWorkers: '50%',
+  maxWorkers: '2',
 };
 
 export default config;

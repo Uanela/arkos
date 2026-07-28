@@ -125,7 +125,7 @@
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "pnpm run build",
     "prelinkOnly": "npm run build",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test": "NODE_OPTIONS='--experimental-vm-modules --max-old-space-size=2048' jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:create": "tsx src/scripts/create-test.ts",
