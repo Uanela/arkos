@@ -9,6 +9,7 @@ interface SchemaConfig {
   generatorProvider: string;
   datasourceProvider: string;
   datasourceUrl: string;
+  clientOutput: string;
 }
 
 /**
@@ -463,6 +464,7 @@ ${fieldDefinitions}${mapDirective}
       generatorProvider: "",
       datasourceProvider: "",
       datasourceUrl: "",
+      clientOutput: "",
     };
 
     const lines = this.getPrismaSchemasContent().split("\n");
@@ -505,6 +507,12 @@ ${fieldDefinitions}${mapDirective}
         if (match) {
           config.datasourceProvider = match[1];
         }
+      }
+
+      if (inGenerator && trimmed.includes("output")) {
+        const match = trimmed.match(/output\s*=\s*"([^"]+)"/);
+        if (match)
+          config.clientOutput = match[1];
       }
 
       if (inDatasource && trimmed.includes("url")) {
