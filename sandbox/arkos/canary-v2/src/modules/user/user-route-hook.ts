@@ -11,7 +11,7 @@ const userRouteHook = ArkosRouteHook("user", {
   service: userService
 });
 
-userRouteHook.findMany({
+userRouteHook.createOne({
   before: [mw("hello bro")],
   after: [mw("hello from after")],
   validation: { body: z.object({ the: z.string() }) },
