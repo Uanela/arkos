@@ -47,35 +47,16 @@ export async function devCommand(options: DevOptions = {}) {
 
     const baseServiceTypesPath = path.resolve(
       process.cwd(),
-      `node_modules/@arkosjs/generated/cjs/index.js`
+      `.arkos/index.d.ts`
     );
     if (
       fileExt === "ts" &&
       !fs.existsSync(baseServiceTypesPath) &&
       fs.existsSync(path.resolve(path.join(process.cwd(), "prisma")))
     ) {
-      const answer = await new Promise<boolean>((resolve) => {
-        sheu.warn(
-          'Missing base services types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client'
-        );
-        process.stdout.write(
-          `\n${sheu.green("?", { bold: true })} Would you like to run "npx arkos prisma generate"? (Y/n): `
-        );
-        process.stdin.once("data", (data) => {
-          const result = data.toString().trim().toLowerCase();
-          process.stdin.pause();
-          resolve(result === "y" || result.length === 0);
-        });
-      });
-
-      if (answer) {
-        console.info("\nSyncing base service with @prisma/client...");
-        console.info("");
-        execSync(`npx arkos prisma generate`);
-      } else
-        throw Error(
-          'Missing ArkosPrismaService types please run "npx arkos prisma generate" to generate and sync the types from @prisma/client, see more at https://www.arkosjs.com/docs/tooling/cli/overviewarkos-cli#typescript-types-generation.'
-        );
+      console.info("\nGenerating arkos types and prisma client...");
+      console.log("");
+      execSync(`npx arkos prisma generate`);
     }
 
     const getEnv = () =>

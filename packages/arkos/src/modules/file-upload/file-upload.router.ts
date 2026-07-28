@@ -18,7 +18,8 @@ import AppError from "../error-handler/utils/app-error";
 
 export function getFileUploadRouter() {
   const router = ArkosRouter();
-  const { fileUpload } = getArkosConfig();
+  const { fileUpload, globalPrefix } = getArkosConfig();
+
   if (!fileUpload?.enabled === false) return router;
 
   const routeHook = loadableRegistry.getItem("ArkosRouteHook", "file-upload");
@@ -93,7 +94,7 @@ export function getFileUploadRouter() {
       ) => {
         if (err.code === "ENOENT") {
           const filepath = req.path.replace(
-            `/api/${fileUpload?.baseRoute}`.replace("//", "/"),
+            `${globalPrefix}/${fileUpload?.baseRoute}`.replace("//", "/"),
             ""
           );
           throw new AppError(

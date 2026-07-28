@@ -1,10 +1,8 @@
 import { ArkosPrismaService } from "arkos/services";
-{{#if typescript}}
-import { Prisma } from "@prisma/client"
 
+{{#if typescript}}
 class AuthRoleService extends ArkosPrismaService<"auth-role"> {}
 {{else}}
-
 class AuthRoleService extends ArkosPrismaService {}
 {{/if}}
 

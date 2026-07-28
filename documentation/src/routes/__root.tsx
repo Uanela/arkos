@@ -78,6 +78,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <HomeLayout {...baseOptions()}>{children}</HomeLayout>
         </RootProvider>
         <Scripts />
+        <script async src="https://conviz.app/c.js" data-site="cvz_c1ab7ff7257f3424b93bfe9233edcd0549d9" data-endpoint="https://doting-caribou-417.convex.site/ingest/v2"></script>
       </body>
     </html>
   );

@@ -6,10 +6,8 @@ import sheu from "../sheu";
 import path from "path";
 import { crd } from "../helpers/fs.helpers";
 
-const GENERATED_PACKAGE_NAME = "@arkosjs/generated";
-
 function getGeneratedPackageDir(): string {
-  return path.resolve(process.cwd(), `node_modules/${GENERATED_PACKAGE_NAME}`);
+  return path.resolve(process.cwd(), `.arkos`);
 }
 
 function getPrismaGeneratedPath() {
@@ -66,41 +64,10 @@ export { PrismaClient };
 `;
 }
 
-function buildCjsContent(): string {
-  return `
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.PrismaClient = void 0;
-const client_1 = require("${getPrismaGeneratedPath()}");
-exports.PrismaClient = client_1.PrismaClient;
-`;
-}
-
 function buildEsmContent(): string {
   return `
 export { PrismaClient } from "${getPrismaGeneratedPath()}";
 `;
-}
-
-function buildPackageJson(): string {
-  return JSON.stringify(
-    {
-      name: GENERATED_PACKAGE_NAME,
-      version: "1.0.0",
-      types: "./index.d.ts",
-      main: "./cjs/index.js",
-      module: "./esm/index.js",
-      exports: {
-        ".": {
-          require: "./cjs/index.js",
-          import: "./esm/index.js",
-          types: "./index.d.ts",
-        },
-      },
-    },
-    null,
-    2
-  );
 }
 
 export default function prismaGenerateCommand() {
@@ -108,14 +75,9 @@ export default function prismaGenerateCommand() {
 
   const pkgDir = getGeneratedPackageDir();
 
-  fs.mkdirSync(path.join(pkgDir, "cjs"), { recursive: true });
   fs.mkdirSync(path.join(pkgDir, "esm"), { recursive: true });
 
   fs.writeFileSync(path.join(pkgDir, "index.d.ts"), buildTypesContent(), {
-    encoding: "utf8",
-  });
-
-  fs.writeFileSync(path.join(pkgDir, "cjs", "index.js"), buildCjsContent(), {
     encoding: "utf8",
   });
 
@@ -123,11 +85,7 @@ export default function prismaGenerateCommand() {
     encoding: "utf8",
   });
 
-  fs.writeFileSync(path.join(pkgDir, "package.json"), buildPackageJson(), {
-    encoding: "utf8",
-  });
-
   sheu.done(
-    `Types and values for ${GENERATED_PACKAGE_NAME} and prisma client generated successfully!`
+    `Types and values for arkos and prisma client generated successfully!`
   );
 }
