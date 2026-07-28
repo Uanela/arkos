@@ -387,7 +387,7 @@ describe("Dev Command", () => {
       beforeEach(() => {
         // Mock existsSync to return false for base.service.d.ts
         (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
-          if (path.includes("@arkosjs/generated")) {
+          if (path.includes(".arkos")) {
             return false;
           }
           return true; // app.ts exists
@@ -684,7 +684,7 @@ describe("Dev Command", () => {
       it("should check correct path for base.service.d.ts file", async () => {
         const expectedPath = path.resolve(
           process.cwd(),
-          "node_modules/@arkosjs/generated/cjs/index.js"
+          ".arkos"
         );
 
         (fs.existsSync as jest.Mock).mockImplementation((checkPath: string) => {
