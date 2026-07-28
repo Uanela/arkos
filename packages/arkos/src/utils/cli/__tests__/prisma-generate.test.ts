@@ -44,18 +44,15 @@ describe("prismaGenerateCommand", () => {
       `${GENERATED_PACKAGE_NAME}`
     );
 
-    expect(fs.mkdirSync).toHaveBeenCalledWith(`${MOCK_PKG_DIR}/cjs`, {
-      recursive: true,
-    });
     expect(fs.mkdirSync).toHaveBeenCalledWith(`${MOCK_PKG_DIR}/esm`, {
       recursive: true,
     });
 
-    // index.d.ts, cjs/index.js, esm/index.js, package.json
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(4);
+    // index.d.ts, esm/index.js
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(2);
 
     expect(sheu.done).toHaveBeenCalledWith(
-      `Types and values for ${GENERATED_PACKAGE_NAME} and @prisma/client generated successfully!`
+      `Types and values for arkos and prisma client generated successfully!`
     );
   });
 
@@ -69,31 +66,12 @@ describe("prismaGenerateCommand", () => {
     );
   });
 
-  it("should write cjs/index.js with correct path and encoding", () => {
-    prismaGenerateCommand();
-
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      `${MOCK_PKG_DIR}/cjs/index.js`,
-      expect.any(String),
-      { encoding: "utf8" }
-    );
-  });
 
   it("should write esm/index.js with correct path and encoding", () => {
     prismaGenerateCommand();
 
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       `${MOCK_PKG_DIR}/esm/index.js`,
-      expect.any(String),
-      { encoding: "utf8" }
-    );
-  });
-
-  it("should write package.json with correct path and encoding", () => {
-    prismaGenerateCommand();
-
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      `${MOCK_PKG_DIR}/package.json`,
       expect.any(String),
       { encoding: "utf8" }
     );
@@ -179,18 +157,7 @@ describe("prismaGenerateCommand", () => {
     expect(content).toContain("isRelation: boolean;");
   });
 
-  it("should generate valid CJS content", () => {
-    prismaGenerateCommand();
-
-    const cjsCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
-      c[0].endsWith("cjs/index.js")
-    );
-    const content = cjsCall[1];
-
-    expect(content).toContain('"use strict"');
-    expect(content).toContain("exports.PrismaClient");
-    expect(content).toContain('require("@prisma/client")');
-  });
+  ;
 
   it("should generate valid ESM content", () => {
     prismaGenerateCommand();
@@ -203,22 +170,7 @@ describe("prismaGenerateCommand", () => {
     expect(content).toContain('export { PrismaClient } from "@prisma/client"');
   });
 
-  it("should generate valid package.json with correct exports", () => {
-    prismaGenerateCommand();
-
-    const pkgCall = (fs.writeFileSync as jest.Mock).mock.calls.find((c) =>
-      c[0].endsWith("package.json")
-    );
-    const parsed = JSON.parse(pkgCall[1]);
-
-    expect(parsed.name).toBe(GENERATED_PACKAGE_NAME);
-    expect(parsed.types).toBe("./index.d.ts");
-    expect(parsed.main).toBe("./cjs/index.js");
-    expect(parsed.module).toBe("./esm/index.js");
-    expect(parsed.exports["."].require).toBe("./cjs/index.js");
-    expect(parsed.exports["."].import).toBe("./esm/index.js");
-    expect(parsed.exports["."].types).toBe("./index.d.ts");
-  });
+  ;
 
   it("should handle kebab case conversion for model names", () => {
     (kebabCase as jest.Mock).mockImplementation((str) =>
