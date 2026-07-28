@@ -24,4 +24,6 @@ userRouter.get(
   }
 );
 
+console.log(userRouter)
+
 export default userRouter;
