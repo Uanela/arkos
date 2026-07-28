@@ -1,5 +1,3 @@
 import { defineConfig } from "../utils/define-config";
 
-export {
-  defineConfig,
-};
+export { defineConfig };
