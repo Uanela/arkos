@@ -93,7 +93,7 @@ describe("generateRouterTemplate", () => {
       expect(result).toContain(
         `prefix: config?.fileUpload?.baseUploadRoute || "/uploads"`
       );
-      expect(result).toContain(`openapi: { tags: ["File Uploads"] }`);
+      expect(result).toContain(`openapi: { tags: ["File Upload"] }`);
     });
 
     it("should pluralize the kebab name for the prefix of a normal module", () => {

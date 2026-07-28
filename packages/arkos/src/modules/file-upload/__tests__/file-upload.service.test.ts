@@ -479,7 +479,7 @@ describe("FileUploadService", () => {
       expect(result).toBe("http://localhost:3000/api/uploads/images/test.jpg");
     });
 
-    it("should handle multiple file uploads successfully", async () => {
+    it("should handle multiple File Upload successfully", async () => {
       // Setup mocks for multiple files
       mockReq.query = { multiple: "true" };
       mockReq.files = [
