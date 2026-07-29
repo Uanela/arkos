@@ -1,7 +1,7 @@
 import { applyArkosRouterProxy } from "../apply-arkos-router-proxy";
 import { Router } from "express";
 import RouteConfigRegistry from "../../../route-config-registry";
-import { getArkosConfig } from "../../../../../server";
+import { getArkosConfig, isUsingAuthentication } from "../../../../helpers/arkos-config.helpers";
 import ExitError from "../../../../helpers/exit-error";
 
 jest.mock("../../../../helpers/exit-error", () => ({
@@ -14,8 +14,10 @@ jest.mock("fs", () => ({
 jest.mock("../../../../../exports/error-handler", () => ({
   catchAsync: jest.fn((fn: any) => fn),
 }));
-jest.mock("../../../../../server", () => ({
+jest.mock("../../../../helpers/arkos-config.helpers", () => ({
+  ...jest.requireActual("../../../../helpers/arkos-config.helpers"),
   getArkosConfig: jest.fn(() => ({})),
+  isUsingAuthentication: jest.fn(() => "static"),
 }));
 
 RouteConfigRegistry.register = jest.fn();
@@ -90,7 +92,7 @@ describe("applymakeRouterProxy", () => {
 
     expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
       handler,
-      config,
+      { ...config, authentication: true },
       "get"
     );
   });
@@ -104,7 +106,7 @@ describe("applymakeRouterProxy", () => {
 
     expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
       h2,
-      config,
+      { ...config, authentication: true },
       "post"
     );
   });
@@ -162,7 +164,7 @@ describe("applymakeRouterProxy", () => {
       jest.clearAllMocks();
       RouteConfigRegistry.register = jest.fn();
       RouteConfigRegistry.get = jest.fn();
-      (ExitError as jest.Mock).mockImplementation(() => {}); // re-setup after clearAllMocks
+      (ExitError as jest.Mock).mockImplementation(() => { }); // re-setup after clearAllMocks
     });
 
     it("should fall through to native express use when passed a function", () => {
@@ -342,6 +344,7 @@ describe("applymakeRouterProxy", () => {
       jest.clearAllMocks();
       RouteConfigRegistry.register = jest.fn();
       RouteConfigRegistry.get = jest.fn();
+      (isUsingAuthentication as jest.Mock).mockReturnValue(true);
     });
 
     it("should handle route().get() and merge path into config", () => {
@@ -352,7 +355,7 @@ describe("applymakeRouterProxy", () => {
 
       expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
         handler,
-        { validation: {}, path: "/users" },
+        { validation: {}, path: "/users", authentication: true },
         "get"
       );
     });
@@ -373,7 +376,7 @@ describe("applymakeRouterProxy", () => {
       expect(RouteConfigRegistry.register).toHaveBeenNthCalledWith(
         1,
         getHandler,
-        { validation: {}, path: "/api/resource" },
+        { validation: {}, path: "/api/resource", authentication: true },
         "get"
       );
       expect(RouteConfigRegistry.register).toHaveBeenNthCalledWith(
@@ -392,7 +395,7 @@ describe("applymakeRouterProxy", () => {
 
       expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
         handler,
-        { path: "/api/users" },
+        { path: "/api/users", authentication: true },
         "get"
       );
     });
@@ -405,7 +408,7 @@ describe("applymakeRouterProxy", () => {
 
       expect(RouteConfigRegistry.register).toHaveBeenCalledWith(
         handler,
-        { path: "/test" },
+        { path: "/test", authentication: true },
         "delete"
       );
     });

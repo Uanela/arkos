@@ -92,6 +92,11 @@ describe("extractArkosRoutes", () => {
           {
             name: "router",
             handle: {
+              _arkos: {
+                options: {
+                  prefix: "/nested"
+                }
+              },
               stack: [
                 {
                   route: {

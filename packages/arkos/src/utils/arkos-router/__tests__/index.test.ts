@@ -159,7 +159,7 @@ describe("generateOpenAPIFromApp", () => {
           },
         },
       ],
-      _arkos: { options: { openapi: { tags: ["Inherited"] } } },
+      _arkos: { options: { openapi: { tags: ["Inherited"] }, prefix: "/api", } },
     };
 
     const app: any = {
@@ -167,7 +167,6 @@ describe("generateOpenAPIFromApp", () => {
         stack: [
           {
             name: "router",
-            regexp: /^\/api\/?(?=\/|$)/i,
             handle: nestedRouter,
           },
         ],
@@ -194,18 +193,17 @@ describe("generateOpenAPIFromApp", () => {
           },
         },
       ],
-      _arkos: { options: {} },
+      _arkos: { options: { prefix: "/v1" } },
     };
 
     const middleRouter = {
       stack: [
         {
           name: "router",
-          regexp: /^\/v1\/?(?=\/|$)/i,
           handle: deepNestedRouter,
         },
       ],
-      _arkos: { options: {} },
+      _arkos: { options: { prefix: "/v1" } },
     };
 
     const app: any = {
@@ -213,16 +211,14 @@ describe("generateOpenAPIFromApp", () => {
         stack: [
           {
             name: "router",
-            regexp: /^\/api\/?(?=\/|$)/i,
             handle: {
               stack: [
                 {
                   name: "router",
-                  regexp: /^\/v1\/?(?=\/|$)/i,
                   handle: middleRouter,
                 },
               ],
-              _arkos: { options: { openapi: { tags: ["Grandparent"] } } },
+              _arkos: { options: { openapi: { tags: ["Grandparent"] }, prefix: "/api" } },
             },
           },
         ],

@@ -10,7 +10,6 @@ import {
 import RouteConfigValidator from "../../route-config-validator";
 import { applyPrefix, getMiddlewareStack } from ".";
 import { getUserFileExtension } from "../../../helpers/fs.helpers";
-import { getArkosConfig } from "../../../../server";
 import RouteConfigRegistry from "../../route-config-registry";
 import { catchAsync } from "../../../../exports/error-handler";
 import deepmerge from "../../../helpers/deepmerge.helper";
@@ -24,6 +23,7 @@ import { Express } from "express";
 import loadableRegistry from "../../../../components/arkos-loadable-registry";
 import { state } from "../../../../app";
 import { docsLink } from "../../../../app";
+import { isUsingAuthentication, getArkosConfig } from "../../../helpers/arkos-config.helpers";
 
 const flattenHandlers = (arr: any[]): ArkosAnyRequestHandler[] => {
   return arr.reduce((flat, item) => {
@@ -153,10 +153,11 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
                   `First argument of ${component}.route("${path}").${method}() must be a valid ArkosRouteConfig object without path field, but received ${typeof config === "object" ? JSON.stringify(config, null, 2) : config}`
                 );
 
+
               const fullConfig: ArkosRouteConfig = {
                 ...config,
                 path,
-                authentication: config.authentication === undefined ? true : config.authentication
+                authentication: config.authentication === undefined && isUsingAuthentication() ? true : config.authentication
               };
 
               receiver[method](fullConfig, ...handlers);
@@ -183,6 +184,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           const path = applyPrefix(options?.prefix, config.path);
 
           config = {
+            authentication: config?.authentication === undefined && isUsingAuthentication() ? true : config?.authentication,
             ...config,
             ...(options?.openapi
               ? {
@@ -275,7 +277,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               `Trying to pass validators into route ${route} config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })`
             );
 
-          if (config.authentication && !authenticationConfig?.mode)
+          if (config.authentication && !isUsingAuthentication())
             throw ExitError(
               `Trying to authenticate route ${route} without choosing an authentication mode under arkos.config.${getUserFileExtension()}
 
