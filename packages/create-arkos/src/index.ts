@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import fs from "fs";
+import fs, { existsSync } from "fs";
 import path, { dirname } from "path";
 import chalk from "chalk";
 import { execSync } from "child_process";
@@ -51,9 +51,16 @@ export async function main() {
   console.info(chalk.bold("\nInstalling dependencies..."));
   console.info(`Using ${packageManager}.\n`);
 
-  const installCmd = `${packageManager} install`;
-  execSync(installCmd, { stdio: "inherit", cwd: projectPath });
-  execSync(installCmd, { stdio: "pipe", cwd: projectPath });
+  try {
+    const installCmd = `${packageManager} install`;
+    execSync(installCmd, { stdio: "inherit", cwd: projectPath });
+    execSync(installCmd, { stdio: "pipe", cwd: projectPath });
+  } catch { }
+
+  if (packageManager === "pnpm" && existsSync(path.join(projectPath, "node_modules"))) {
+    console.warn(chalk.yellow("\nDependencies installed, but pnpm requires build approval."));
+    console.info(`Run ${chalk.cyan("pnpm approve-builds")} and then ${chalk.cyan("pnpm rebuild")}.\n`);
+  }
 
   process.chdir(projectPath);
 
@@ -61,8 +68,7 @@ export async function main() {
   \n${chalk.bold(chalk.cyan("Arkos.js"))} project created successfully!
 
   ${chalk.bold("Next Steps:")}
-  ${
-    argProjectName !== "."
+  ${argProjectName !== "."
       ? `1. cd ${config.projectName}
   2. setup your ${chalk.cyan("DATABASE_URL")} under .env
   3. npx arkos prisma generate
@@ -74,7 +80,7 @@ export async function main() {
   3. npx prisma db push
   4. ${packageManager} run dev
 `
-  }
+    }
     `);
 }
 
