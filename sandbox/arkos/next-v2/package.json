@@ -18,7 +18,7 @@
     "prisma": "7.9.0"
   },
   "dependencies": {
-    "arkos": "2.0.0-next.22", 
+    "arkos": "2.0.0-next.23", 
     "express": "5.2.1",
     "@scalar/express-api-reference": "0.10.11",
     "@scalar/api-reference": "1.63.0",
