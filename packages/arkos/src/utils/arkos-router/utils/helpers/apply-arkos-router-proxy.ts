@@ -144,6 +144,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               const fullConfig: ArkosRouteConfig = {
                 ...config,
                 path,
+                authentication: config.authentication === undefined ? true : config.authentication
               };
 
               receiver[method](fullConfig, ...handlers);
