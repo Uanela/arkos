@@ -2,7 +2,7 @@
 import { z } from "zod";
 {{#if (eq authentication.type "static")}}
 {{#if (neq prisma.provider "sqlite")}}
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/src/generated/prisma/client";
 {{/if}}
 {{/if}}
 
@@ -59,7 +59,7 @@ import {
 import { Type } from "class-transformer";
 {{#if (eq authentication.type "static")}}
 {{#if (neq prisma.provider "sqlite")}}
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/src/generated/prisma/client";
 {{/if}}
 {{/if}}
 {{#if (eq authentication.type "dynamic")}}

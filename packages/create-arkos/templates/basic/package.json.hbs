@@ -9,9 +9,6 @@
     "start": "arkos start",
     "arkos": "arkos"
   },
-  "prisma": {
-    "schema": "prisma/schema/"
-  },
   "devDependencies": {
     {{#if typescript}}
     "typescript": "7.0.2",
@@ -44,8 +41,6 @@
     {{/if}}
     {{#if (eq prisma.provider "sqlserver")}}
     "@prisma/adapter-mssql": "7.9.0",
-    {{/if}}
-    {{#if validation.type}},{{/if}}
     {{/if}}
     {{#if (eq validation.type "class-validator")}}
     "reflect-metadata": "0.2.2",
