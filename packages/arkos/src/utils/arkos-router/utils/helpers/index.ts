@@ -70,12 +70,14 @@ export function extractArkosRoutes(
         layer.handle?.stack
       ) {
         let nestedPrefix = prefix;
+        const arkosPrefix = layer.handle?._arkos?.options?.prefix;
 
-        if (layer.path) {
+        if (arkosPrefix) {
+          nestedPrefix = joinPaths(prefix, arkosPrefix);
+        } else if (layer.path) {
           nestedPrefix = joinPaths(prefix, layer.path);
         } else if (layer.regexp) {
-          const mountPath = extractLayerPath(layer);
-          nestedPrefix = joinPaths(prefix, mountPath);
+          nestedPrefix = joinPaths(prefix, extractLayerPath(layer));
         }
 
         const routerStack = layer.handle?.stack || layer.handle?._router?.stack;
@@ -116,8 +118,8 @@ function joinPaths(prefix: string, path: string | undefined): string {
 export function extractLayerPath(layer: any): string {
   if (layer.path && typeof layer.path === "string") return layer.path;
 
-  if (layer.regexp) {
-    const source = layer.regexp.source;
+  if (layer.path) {
+    const source = layer.path;
 
     if (source === "^\\/?(?=\\/|$)")
       return "";
