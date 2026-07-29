@@ -17,13 +17,13 @@ export interface ProjectConfig {
   };
   prisma: {
     provider:
-      | "postgresql"
-      | "mysql"
-      | "sqlite"
-      | "sqlserver"
-      | "cockroachdb"
-      | "mongodb"
-      | "none";
+    | "postgresql"
+    | "mysql"
+    | "sqlite"
+    | "sqlserver"
+    | "cockroachdb"
+    | "mongodb"
+    | "none";
     idDatabaseType: string;
     defaultDatabaseUrl: string;
   };
@@ -51,7 +51,6 @@ class ProjectConfigInquirer {
     await this.promptPrismaProvider();
     await this.promptValidation();
     await this.promptAuthentication();
-    await this.promptStrictRouting();
     await this.promptEntryPoint();
 
     if (this.config.projectName === ".") {
@@ -294,20 +293,6 @@ class ProjectConfigInquirer {
         `${chalk.green("! ")}${chalk.bold("Skipping multiple roles option because it is not supported with sqlite prisma provider and static authentication mode.")}`
       );
     }
-  }
-
-  private async promptStrictRouting() {
-    const { strictRouting } = await inquirer.prompt([
-      {
-        type: "confirm",
-        name: "strictRouting",
-        message: `Would you like to use ${chalk.cyan("Strict Routing")}?`,
-        default: false,
-      },
-    ]);
-    this.config.routing = {
-      strict: strictRouting,
-    };
   }
 
   private async promptEntryPoint() {
