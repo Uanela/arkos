@@ -3,7 +3,7 @@ import { IArkosRouter } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import { extractArkosRoutes, extractPathParams } from "./utils/helpers";
 import { getArkosConfig } from "../../exports";
-import zodToJsonSchema from "zod-to-json-schema";
+import z, { ZodType } from "zod";
 import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
@@ -165,7 +165,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
 
     const validatorToJsonSchema =
       arkosConfig?.validation?.resolver === "zod"
-        ? zodToJsonSchema
+        ? (schema: ZodType) => { return z.toJSONSchema(schema, { target: "openapi-3.0" }) }
         : classValidatorToJsonSchema;
 
     let parameters: {

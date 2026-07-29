@@ -1,12 +1,12 @@
 import openApiSchemaConverter from "../openapi-schema-converter";
 import { getArkosConfig } from "../../../../../server";
 import { isClass, isZodSchema } from "../../../../../utils/dynamic-loader";
-import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "../class-validator-to-json-schema";
+import z from "zod"
 
 jest.mock("../../../../../server");
 jest.mock("../../../../../utils/dynamic-loader");
-jest.mock("zod-to-json-schema");
+jest.mock("zod");
 jest.mock("../../helpers/class-validator-to-json-schema");
 jest.mock("fs");
 
@@ -15,9 +15,9 @@ const mockGetArkosConfig = getArkosConfig as jest.MockedFunction<
 >;
 const mockIsZodSchema = isZodSchema as jest.MockedFunction<typeof isZodSchema>;
 const mockIsClass = isClass as jest.MockedFunction<typeof isClass>;
-const mockZodToJsonSchema = zodToJsonSchema as jest.MockedFunction<
-  typeof zodToJsonSchema
->;
+const mockZodToJsonSchema = z.toJSONSchema as jest.MockedFunction<
+  typeof z.toJSONSchema
+> as any;
 const mockClassValidatorToJsonSchema =
   classValidatorToJsonSchema as jest.MockedFunction<
     typeof classValidatorToJsonSchema
@@ -125,7 +125,7 @@ describe("OpenAPISchemaConverter", () => {
 
     it("should convert full format with multiple content types", () => {
       const mockSchema1 = { _def: {} };
-      const mockSchema2 = class TestDto {};
+      const mockSchema2 = class TestDto { };
       const definition = {
         description: "Multi-format response",
         content: {
@@ -162,7 +162,7 @@ describe("OpenAPISchemaConverter", () => {
     });
 
     it("should handle class schemas", () => {
-      class TestDto {}
+      class TestDto { }
       mockIsClass.mockReturnValue(true);
       mockGetArkosConfig.mockReturnValue({
         validation: { resolver: "class-validator" },
@@ -248,7 +248,7 @@ describe("OpenAPISchemaConverter", () => {
 
     it("should convert full format with multiple content types", () => {
       const mockSchema1 = { _def: {} };
-      const mockSchema2 = class TestDto {};
+      const mockSchema2 = class TestDto { };
       const definition = {
         required: true,
         description: "Upload file",
@@ -519,7 +519,7 @@ describe("OpenAPISchemaConverter", () => {
 
   describe("resolver switching", () => {
     it("should use class-validator converter when resolver is class-validator", () => {
-      class TestDto {}
+      class TestDto { }
       mockGetArkosConfig.mockReturnValue({
         validation: { resolver: "class-validator" },
       } as any);
@@ -542,7 +542,7 @@ describe("OpenAPISchemaConverter", () => {
 
       openApiSchemaConverter.convertResponseDefinition("200", zodSchema);
 
-      expect(mockZodToJsonSchema).toHaveBeenCalledWith(zodSchema);
+      expect(mockZodToJsonSchema).toHaveBeenCalledWith(zodSchema, { target: "openapi-3.0" });
       expect(mockClassValidatorToJsonSchema).not.toHaveBeenCalled();
     });
   });
