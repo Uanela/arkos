@@ -25,12 +25,12 @@ export function getAuthRouter() {
     const components = routeHook
       ? routeHookReader.forOperation("auth", operation)
       : {
-          before: [],
-          after: [],
-          onError: [],
-          prismaArgs: {},
-          routeConfig: {},
-        };
+        before: [],
+        after: [],
+        onError: [],
+        prismaArgs: {},
+        routeConfig: {},
+      };
 
     let endpointConfig = components.routeConfig || {};
 
@@ -77,6 +77,7 @@ export function getAuthRouter() {
 
     router.patch(
       {
+        authentication: true,
         ...routeConfig,
         path: "/users/me",
       },
