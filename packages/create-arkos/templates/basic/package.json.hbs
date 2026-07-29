@@ -21,12 +21,13 @@
     {{/if}}
   },
   "dependencies": {
-    "arkos": "2.0.0-next.19", 
+    "arkos": "2.0.0-next.22", 
     "express": "5.2.1",
     "@scalar/express-api-reference": "0.10.11",
     "@scalar/api-reference": "1.63.0"{{#if (or (neq prisma.provider "none") validation.type)}},{{/if}}
     {{#if (neq prisma.provider "none")}}
     "@prisma/client": "7.9.0",
+    {{/if}}
     {{#if (eq prisma.provider "postgresql")}}
     "@prisma/adapter-pg": "7.9.0",
     {{/if}}

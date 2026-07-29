@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "2.0.0-next.19",
+  "version": "2.0.0-next.22",
   "type": "module",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/esm/exports/index.js",
