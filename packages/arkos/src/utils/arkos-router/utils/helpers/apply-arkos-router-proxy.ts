@@ -73,7 +73,7 @@ export function applyArkosRouterProxy<T extends Express | IRouter>(
       if (prop === "use") {
         return function(
           config: ArkosUseConfig | PathParams | ArkosAnyRequestHandler,
-          ...handlers: ArkosAnyRequestHandler[]
+          ...handlers: (ArkosAnyRequestHandler | IArkosRouter)[]
         ) {
           // normalize function/router to ArkosUseConfig
           if (typeof config === "function" || Array.isArray(config)) {
@@ -97,6 +97,18 @@ export function applyArkosRouterProxy<T extends Express | IRouter>(
 
           const arkosConfig = getArkosConfig();
           const authenticationConfig = arkosConfig.authentication;
+
+          // This is done because of Express v5 no longer
+          // contains layer.regexp so we gotta build
+          // the route reverse feature from ground up
+          handlers.forEach((h: any) => {
+            if (h && typeof h === "function" && h._arkos) {
+              h._arkos.options = {
+                ...h._arkos.options,
+                prefix: path,
+              };
+            }
+          });
 
           if (useConfig.authentication && !authenticationConfig?.mode)
             throw ExitError(
