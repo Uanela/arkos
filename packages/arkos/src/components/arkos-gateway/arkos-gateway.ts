@@ -10,9 +10,11 @@ import {
   ArkosGatewayConnectionHandler,
   ArkosSocket,
   ArkosGatewayRegisterOptions,
+  ArkosBroadcastOperator,
+  ArkosEmitTarget,
 } from "./types";
 import { Validator } from "../../types/validation/validator";
-import { Server } from "socket.io";
+import { Namespace, Server } from "socket.io";
 import { authActionService, authService } from "../../exports/services";
 import { checkRateLimit, clearRateLimitForSocket } from "./utils/rate-limiter";
 import {
@@ -28,7 +30,7 @@ import { loginRequiredError } from "../../modules/auth/utils/auth-error-objects"
 import errorPrettifier from "../../modules/base/utils/error-prettifier";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { defaultGatewayStore } from "./utils/memory-gateway-store";
-import { mountArkosSocketExtensions } from "./socket-extensions";
+import { ArkosBroadcastOperatorImpl, mountArkosSocketExtensions } from "./socket-extensions";
 import {
   isAuthenticationEnabled,
   isUsingAuthentication,
@@ -49,10 +51,16 @@ export class IArkosGateway {
     type: ArkosGatewayHookType;
     handler: ArkosGatewayHookHandler;
   }[] = [];
+  private _nsp!: Namespace
 
   constructor(config: ArkosGatewayConfig) {
     this.config = config;
     this.config.name = config.name ?? "web-socket";
+  }
+
+  get nsp(): Namespace & Omit<ArkosEmitTarget, "emitWithAck"> {
+    if (!this._nsp) throw new Error(`gateway.nsp accessed before register()`);
+    return new ArkosBroadcastOperatorImpl(this._nsp.sockets, this._nsp) as any;
   }
 
   /**
@@ -156,7 +164,7 @@ export class IArkosGateway {
     if (eventConfig.authorization && this.config.authentication === false) {
       throw new Error(
         `Event "${eventConfig.event}" on "${this.config.name}" gateway defines authorization rules ` +
-          `but the gateway has authentication: false. Enable authentication on the gateway to use per-event authentication.`
+        `but the gateway has authentication: false. Enable authentication on the gateway to use per-event authentication.`
       );
     }
 
@@ -230,7 +238,7 @@ export class IArkosGateway {
   register(io: Server, options: ArkosGatewayRegisterOptions = {}): void {
     if ((io as any)._arkosGatewayRegistered)
       throw new Error(
-        `The method gateway.register() can only be called once per io server instance. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/components/advanced-guides/web-sockets/setup.`
+        `The method gateway.register() can only be called once per io server instance. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/guides/web-sockets/setup.`
       );
     (io as any)._arkosGatewayRegistered = true;
     this._register(io, undefined, this.hooks || [], this.pipes || [], options);
@@ -262,6 +270,7 @@ export class IArkosGateway {
       : (ownName ?? "");
 
     const ns = io.of(namespaceName);
+    this._nsp = ns;
 
     const resolvedAuth =
       this.config.authentication !== false &&
@@ -388,9 +397,9 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           let ackCalled = false;
           const wrappedAck = ack
             ? (...response: any) => {
-                ackCalled = true;
-                ack(...response);
-              }
+              ackCalled = true;
+              ack(...response);
+            }
             : undefined;
 
           function resolveDedup() {
@@ -497,7 +506,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               isAuthenticationEnabled()
             ) {
               await authHookManager.runAuthorize(
-                { context: socket, done: () => {} },
+                { context: socket, done: () => { } },
                 (eventConfig?.authorization as any)?._authAction,
                 "currentUser"
               );
@@ -515,8 +524,8 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               if (!isValidValidator(eventConfig.validation))
                 throw new Error(
                   `Your validation resolver is set to ${arkosConfig.validation!.resolver}, ` +
-                    `please provide a valid ${validatorName} in order to use { validation: ${validatorNameType} } ` +
-                    `under event handler "${eventConfig.event}" in "${this.config.name}" gateway.`
+                  `please provide a valid ${validatorName} in order to use { validation: ${validatorNameType} } ` +
+                  `under event handler "${eventConfig.event}" in "${this.config.name}" gateway.`
                 );
 
               const shouldValidate = validationManager.shouldValidate(
