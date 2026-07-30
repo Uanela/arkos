@@ -6,7 +6,7 @@ import {
   ArkosSocket,
   ArkosUserTarget,
 } from "./types";
-import { BroadcastOperator, Namespace, Socket } from "socket.io";
+import { Socket } from "socket.io";
 
 function injectMeta<T>(
   data: T
@@ -52,6 +52,10 @@ export class ArkosBroadcastOperatorImpl {
       configurable: true,
     });
     return instance;
+  }
+
+  user(userId: string) {
+    return applyUserTarget(this.sockets, this.operator)(userId)
   }
 
   /**
@@ -279,10 +283,23 @@ export function mountArkosSocketExtensions(socket: ArkosSocket): void {
     configurable: true,
   });
 
-  socket.user = function(userId: string): ArkosUserTarget {
+  socket.user = applyUserTarget(socket.nsp.sockets, socket.nsp)
+
+
+  socket.retry = function(
+    times: number,
+    baseDelay: number = 1000,
+    multiplier: number = 2
+  ): ArkosRetryTarget {
+    return new ArkosRetryTargetImpl(socket, times, baseDelay, multiplier);
+  };
+}
+
+function applyUserTarget(sockets: Map<string, Socket>, operator: { to: Function }) {
+  return (userId: string): ArkosUserTarget => {
     const target = new ArkosBroadcastOperatorImpl(
-      socket.nsp.sockets,
-      socket.nsp.to(`arkos::user:${userId}`)
+      sockets,
+      operator.to(`arkos::user:${userId}`)
     ) as any as ArkosUserTarget;
 
     target.activeRooms = async () => {
@@ -300,11 +317,6 @@ export function mountArkosSocketExtensions(socket: ArkosSocket): void {
 
     return target;
   };
-  socket.retry = function(
-    times: number,
-    baseDelay: number = 1000,
-    multiplier: number = 2
-  ): ArkosRetryTarget {
-    return new ArkosRetryTargetImpl(socket, times, baseDelay, multiplier);
-  };
+
 }
+

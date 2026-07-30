@@ -258,6 +258,23 @@ export interface ArkosBroadcastOperator<
     ev: Ev,
     ...args: AllButLast<EventParams<EmitEvents, Ev>>
   ): Promise<FirstNonErrorArg<Last<EventParams<EmitEvents, Ev>>>>;
+
+  /**
+   * Targets all active socket connections of a user by their user ID.
+   * Uses the internal `arkos::user:{userId}` room convention.
+   *
+   * Supports emit, management, and exclusion operations across all of the
+   * user's active connections.
+   *
+   * @example
+   * socket.user(userId).emit("notification", data)
+   * socket.user(userId).except({ user: otherUserId }).emit("sync", data)
+   * const sockets = await socket.user(userId).fetchSockets()
+   * const online = await socket.user(userId).isOnline()
+   *
+   * @since 1.7.0-canary.29
+   */
+  user(userId: string): ArkosUserTarget;
   /**
    * Returns all unique user IDs currently in the target room(s).
    *
@@ -541,6 +558,8 @@ export interface ArkosEmitTarget<EmitEvents extends EventsMap = DefaultEventsMap
    * const sockets = await socket.to("room-101").fetchSockets()
    */
   fetchSockets(): Promise<any[]>;
+
+  to(room: string | string[]): ArkosEmitTarget
 
   /**
    * Sets the volatile flag — the event may be dropped if the client is not ready.

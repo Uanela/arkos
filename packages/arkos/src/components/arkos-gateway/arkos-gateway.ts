@@ -14,7 +14,7 @@ import {
   ArkosEmitTarget,
 } from "./types";
 import { Validator } from "../../types/validation/validator";
-import { Namespace, Server } from "socket.io";
+import { BroadcastOperator, Namespace, Server } from "socket.io";
 import { authActionService, authService } from "../../exports/services";
 import { checkRateLimit, clearRateLimitForSocket } from "./utils/rate-limiter";
 import {
@@ -58,7 +58,7 @@ export class IArkosGateway {
     this.config.name = config.name ?? "web-socket";
   }
 
-  get nsp(): Namespace & Omit<ArkosEmitTarget, "emitWithAck"> {
+  get nsp(): Omit<Namespace, keyof ArkosEmitTarget | keyof BroadcastOperator<any, any>> & ArkosBroadcastOperator {
     if (!this._nsp) throw new Error(`gateway.nsp accessed before register()`);
     return new ArkosBroadcastOperatorImpl(this._nsp.sockets, this._nsp) as any;
   }
