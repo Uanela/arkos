@@ -5,6 +5,7 @@ import { execSync } from "child_process";
 import sheu from "../sheu";
 import path from "path";
 import { crd } from "../helpers/fs.helpers";
+import { bundler } from "../bundler";
 
 function getGeneratedPackageDir(): string {
   return path.resolve(process.cwd(), `.arkos`);
@@ -70,23 +71,65 @@ export { PrismaClient } from "${getPrismaGeneratedPath()}";
 `;
 }
 
+/**
+ * Adds/updates the `@arkosjs/generated` path alias in the project's
+ * tsconfig.json, pointing it at the generated `.arkos/index.d.ts` file.
+ * Reuses Bundler's tolerant JSONC parser so comments/trailing commas in
+ * the user's tsconfig don't break parsing.
+ */
+function updateTsConfigPaths(): void {
+  const tsconfigPath = path.join(crd(), "tsconfig.json");
+
+  if (!fs.existsSync(tsconfigPath)) {
+    sheu.warn(
+      "tsconfig.json not found, skipping @arkosjs/generated path mapping.", { timestamp: true }
+    );
+    return;
+  }
+
+  let tsconfig: any;
+  try {
+    tsconfig = bundler.readJsonWithComments(tsconfigPath);
+  } catch (err) {
+    sheu.warn(
+      `Failed to parse tsconfig.json, skipping @arkosjs/generated path mapping: ${(err as Error).message
+      }`
+    );
+    return;
+  }
+
+  tsconfig.compilerOptions ??= {};
+  tsconfig.compilerOptions.paths ??= {};
+
+  const generatedDtsPath = "./.arkos/index.d.ts";
+  const existing = tsconfig.compilerOptions.paths["@arkosjs/generated"];
+
+  if (Array.isArray(existing) && existing.includes(generatedDtsPath))
+    return
+
+  tsconfig.compilerOptions.paths["@arkosjs/generated"] = [generatedDtsPath];
+
+  fs.writeFileSync(
+    tsconfigPath,
+    JSON.stringify(tsconfig, null, 2) + "\n",
+    "utf8"
+  );
+
+  sheu.done(`@arkosjs/generated path mapping added to tsconfig.json!`);
+}
+
 export default function prismaGenerateCommand() {
   execSync("npx prisma generate", { stdio: "inherit" });
-
   const pkgDir = getGeneratedPackageDir();
-
   fs.mkdirSync(path.join(pkgDir, "esm"), { recursive: true });
-
   fs.writeFileSync(path.join(pkgDir, "index.d.ts"), buildTypesContent(), {
     encoding: "utf8",
   });
-
   fs.writeFileSync(path.join(pkgDir, "esm", "index.js"), buildEsmContent(), {
     encoding: "utf8",
   });
-
+  updateTsConfigPaths();
   sheu.done(
     `Types and values for arkos and prisma client generated successfully!`
   );
 }
-
