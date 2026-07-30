@@ -482,7 +482,7 @@ export interface ArkosGatewayStore {
  * Arkos actually calls, so both a `BroadcastOperator` (from `socket.to()`) and a
  * raw `Namespace` (from `gateway.nsp`) satisfy it structurally.
  *
- * @since 1.7.1-canary.2
+ * @since 1.7.1-canary.3
  */
 export interface ArkosEmitTarget<EmitEvents extends EventsMap = DefaultEventsMap> {
   /**
