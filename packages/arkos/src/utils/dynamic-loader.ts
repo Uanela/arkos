@@ -61,46 +61,46 @@ export function getFileModuleComponentsFileStructure(modelName: string) {
     },
     dtos: isAuthModule
       ? {
-          login: `login.dto.${ext}`,
-          signup: `signup.dto.${ext}`,
-          getMe: `get-me.dto.${ext}`,
-          updateMe: `update-me.dto.${ext}`,
-          updatePassword: `update-password.dto.${ext}`,
-        }
+        login: `login.dto.${ext}`,
+        signup: `signup.dto.${ext}`,
+        getMe: `get-me.dto.${ext}`,
+        updateMe: `update-me.dto.${ext}`,
+        updatePassword: `update-password.dto.${ext}`,
+      }
       : {
-          model: `${kebabModelName}.dto.${ext}`,
-          create: `create-${kebabModelName}.dto.${ext}`,
-          createOne: `create-${kebabModelName}.dto.${ext}`, // just for sake of completion and reusability around other parts of code
-          createMany: ``,
-          update: `update-${kebabModelName}.dto.${ext}`,
-          updateOne: `update-${kebabModelName}.dto.${ext}`, // same as createOne
-          updateMany: ``,
-          query: ``,
-          // looking for some better naming convetion
-          findOne: ``,
-          findMany: ``,
-        },
+        model: `${kebabModelName}.dto.${ext}`,
+        create: `create-${kebabModelName}.dto.${ext}`,
+        createOne: `create-${kebabModelName}.dto.${ext}`, // just for sake of completion and reusability around other parts of code
+        createMany: ``,
+        update: `update-${kebabModelName}.dto.${ext}`,
+        updateOne: `update-${kebabModelName}.dto.${ext}`, // same as createOne
+        updateMany: ``,
+        query: ``,
+        // looking for some better naming convetion
+        findOne: ``,
+        findMany: ``,
+      },
     schemas: isAuthModule
       ? {
-          login: `login.schema.${ext}`,
-          signup: `signup.schema.${ext}`,
-          getMe: `get-me.schema.${ext}`,
-          updateMe: `update-me.schema.${ext}`,
-          updatePassword: `update-password.schema.${ext}`,
-        }
+        login: `login.schema.${ext}`,
+        signup: `signup.schema.${ext}`,
+        getMe: `get-me.schema.${ext}`,
+        updateMe: `update-me.schema.${ext}`,
+        updatePassword: `update-password.schema.${ext}`,
+      }
       : {
-          model: `${kebabModelName}.schema.${ext}`,
-          create: `create-${kebabModelName}.schema.${ext}`,
-          createOne: `create-${kebabModelName}.schema.${ext}`,
-          createMany: ``, // just for sake of completion and reusability around other parts of code
-          update: `update-${kebabModelName}.schema.${ext}`,
-          updateOne: `update-${kebabModelName}.schema.${ext}`, // same as createOne
-          updateMany: ``,
-          query: ``,
-          // looking for some better naming convetion
-          findOne: ``,
-          findMany: ``,
-        },
+        model: `${kebabModelName}.schema.${ext}`,
+        create: `create-${kebabModelName}.schema.${ext}`,
+        createOne: `create-${kebabModelName}.schema.${ext}`,
+        createMany: ``, // just for sake of completion and reusability around other parts of code
+        update: `update-${kebabModelName}.schema.${ext}`,
+        updateOne: `update-${kebabModelName}.schema.${ext}`, // same as createOne
+        updateMany: ``,
+        query: ``,
+        // looking for some better naming convetion
+        findOne: ``,
+        findMany: ``,
+      },
   };
 }
 
@@ -177,7 +177,7 @@ type ImportModuleComponentsReturnType = {
   interceptors?: Record<string, Function | Function[]>;
   authConfigs?: AuthConfigs;
   prismaQueryOptions?: PrismaQueryOptions<any>;
-  router?: { config?: RouteHook<any>; hook?: RouteHook<any>; default: any };
+  router?: { config?: RouteHook<any>; hook?: RouteHook<any>; default: any; };
   dtos?: {
     create?: any;
     update?: any;
@@ -313,7 +313,7 @@ export async function importModuleComponents(
               killServerChildProcess();
               process.exit(1);
             }
-          } catch (err) {}
+          } catch (err) { }
         });
 
         if (!module && key === "router" && usingStrictRouting) module = {};
@@ -448,13 +448,13 @@ const DEPRECATION_GROUPS = [
   // },
   {
     key: "dtos",
-    fileKey: (moduleName: string, ext: string) => `${moduleName}/dtos/`,
+    fileKey: (moduleName: string, _: string) => `${moduleName}/dtos/`,
     label: "DTOs (dtos/ folder)",
     migration: "https://www.arkosjs.com/blog/migrate-validators-to-route-hook",
   },
   {
     key: "schemas",
-    fileKey: (moduleName: string, ext: string) => `${moduleName}/schemas/`,
+    fileKey: (moduleName: string, _: string) => `${moduleName}/schemas/`,
     label: "Zod Schemas (schemas/ folder)",
     migration: "https://www.arkosjs.com/blog/migrate-validators-to-route-hook",
   },
@@ -491,10 +491,15 @@ export function warnDeprecatedModuleComponents(
     for (const group of groups) {
       let found = false;
 
-      if (group.key === "dtos") {
-        found = Object.keys(components.dtos || {}).length > 0;
-      } else if (group.key === "schemas") {
-        found = Object.keys(components.schemas || {}).length > 0;
+      if (group.key === "dtos" || group.key === "schemas") {
+        const dtos = components[group.key] || {};
+        const routerConfig = components.router?.config as any || {};
+        const hasUnused = Object.keys(dtos).some((validatorName: any) => {
+          if (["create", "update"].includes(validatorName)) return;
+          const config = routerConfig[validatorName] || {};
+          return config?.validation?.body === undefined && config?.disabled !== true;
+        });
+        found = hasUnused;
       } else if (group.key === "routerConfig") {
         found =
           !!(components.router as any)?.config &&
