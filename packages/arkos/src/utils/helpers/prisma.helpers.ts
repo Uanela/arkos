@@ -15,11 +15,11 @@ export function loadPrismaModule() {
 }
 
 export function handlePrismaGet(target: any, prop: string, receiver: any) {
-  const originalProperty = (Reflect.get(target, prop, receiver) || {}) as any;
+  const originalProperty = (Reflect.get(target, prop, receiver)) as any;
 
   const isModel =
     typeof originalProperty === "object"
-      ? "findMany" in originalProperty
+      ? "findMany" in (originalProperty || {})
       : false;
 
   if (isModel && originalProperty) {
@@ -32,7 +32,7 @@ export function handlePrismaGet(target: any, prop: string, receiver: any) {
         );
 
         if (typeof originalMethod === "function") {
-          return function (...args: any[]) {
+          return function(...args: any[]) {
             const config = getArkosConfig();
             const debugLevel = config.debugging?.requests?.level || 0;
 

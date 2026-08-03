@@ -1,6 +1,6 @@
 import { spawn, ChildProcess, execSync } from "child_process";
 import { fullCleanCwd, getUserFileExtension } from "../helpers/fs.helpers";
-import { loadEnvironmentVariables } from "../dotenv.helpers";
+import { lastLoadedEnvFiles } from "../dotenv.helpers";
 import fs from "fs";
 import path from "path";
 import sheu from "../sheu";
@@ -14,7 +14,6 @@ interface DevOptions {
 }
 
 let child: ChildProcess | null = null;
-let envFiles: string[] | undefined;
 
 /**
  * Dev server command for the arkos CLI
@@ -23,7 +22,6 @@ export async function devCommand(options: DevOptions = {}) {
   process.env.NO_CLI = "true";
 
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "development";
-  envFiles = loadEnvironmentVariables();
   child = null;
   let restartTimeout: NodeJS.Timeout | null = null;
 
@@ -66,7 +64,7 @@ export async function devCommand(options: DevOptions = {}) {
         ...(port && { CLI_PORT: port }),
         ...(host && { CLI_HOST: host }),
         CLI: "false",
-      }) as { [x: string]: string };
+      }) as { [x: string]: string; };
 
     const env = getEnv();
     const hostAndPort = await portAndHostAllocator.getHostAndAvailablePort(
@@ -76,7 +74,7 @@ export async function devCommand(options: DevOptions = {}) {
 
     watermarkStamper.stamp({
       ...hostAndPort,
-      envFiles,
+      envFiles: lastLoadedEnvFiles,
     });
 
     process.env.__PORT = hostAndPort.port || "";

@@ -21,10 +21,11 @@ const mockGenerateCommand = {
 
 jest.mock("../../prisma/prisma-schema-parser", () => ({
   __esModule: true,
-  default: {
-    getModelsAsArrayOfStrings: jest.fn(() => []),
-    parse: jest.fn(),
-  },
+  default: { getModelsAsArrayOfStrings: jest.fn(() => []), parse: jest.fn() },
+}));
+
+jest.mock("../utils/cli.helpers", () => ({
+  getVersion: jest.fn(() => "1.2.3"),
 }));
 
 jest.mock("../generate", () => ({ generateCommand: mockGenerateCommand }));
@@ -39,12 +40,11 @@ jest.mock("../export-auth-action", () => ({
 jest.mock("../build", () => ({ buildCommand: jest.fn() }));
 jest.mock("../dev", () => ({ devCommand: jest.fn() }));
 jest.mock("../start", () => ({ startCommand: jest.fn() }));
+jest.mock("../../dotenv.helpers", () => ({
+  loadEnvironmentVariables: jest.fn(() => []),
+}));
 
 jest.mock("commander", () => {
-  const actions: Record<string, Function> = {};
-  const commandHandlers: Record<string, Function> = {};
-  let onCommandStarHandler: Function | null = null;
-
   const makeSubCmd = (name: string) => {
     const sub: any = {
       _name: name,
@@ -52,15 +52,9 @@ jest.mock("commander", () => {
       description: jest.fn().mockReturnThis(),
       option: jest.fn().mockReturnThis(),
       opts: jest.fn().mockReturnValue({}),
-      action: jest.fn().mockImplementation((fn) => {
-        actions[name] = fn;
-        return sub;
-      }),
-      command: jest.fn().mockImplementation((n) => makeSubCmd(`${name}:${n}`)),
-      on: jest.fn().mockImplementation((event, fn) => {
-        if (event === "command:*") onCommandStarHandler = fn;
-        return sub;
-      }),
+      action: jest.fn().mockReturnThis(),
+      command: jest.fn().mockImplementation((n: string) => makeSubCmd(`${name}:${n}`)),
+      on: jest.fn().mockReturnThis(),
     };
     return sub;
   };
@@ -75,35 +69,15 @@ jest.mock("commander", () => {
     alias: jest.fn().mockReturnThis(),
     requiredOption: jest.fn().mockReturnThis(),
     opts: jest.fn().mockReturnValue({}),
-    on: jest.fn().mockImplementation((event, fn) => {
-      if (event === "command:*") onCommandStarHandler = fn;
-      return mockProgram;
-    }),
-    command: jest.fn().mockImplementation((n) => {
-      const sub = makeSubCmd(n);
-      commandHandlers[n] = sub;
-      return sub;
-    }),
-    _actions: actions,
-    _commandHandlers: commandHandlers,
-    _getOnCommandStar: () => onCommandStarHandler,
+    hook: jest.fn().mockReturnThis(),
+    on: jest.fn().mockReturnThis(),
+    command: jest.fn().mockImplementation((n: string) => makeSubCmd(n)),
   };
 
   return { Command: jest.fn().mockImplementation(() => mockProgram) };
 });
 
-jest.mock("fs", () => ({
-  ...jest.requireActual("fs"),
-  readFileSync: jest.fn(() => '{"version":"1.2.3"}'),
-  readdirSync: jest.fn(),
-}));
-
-jest.mock("path", () => ({
-  join: jest.fn().mockReturnValue("/mocked/path/to/package.json"),
-  resolve: jest.fn(),
-}));
-
-describe("CLI index — missing coverage", () => {
+describe("CLI index — registration structure (fake Commander)", () => {
   let mockProgram: any;
 
   beforeEach(() => {
@@ -111,15 +85,17 @@ describe("CLI index — missing coverage", () => {
     mockProgram = new Command();
   });
 
+  const findSub = (parent: any, name: string) =>
+    parent.command.mock.results.find((r: any) => r.value._name === name)
+      ?.value;
+
   describe("generate command registration", () => {
     it("registers the generate command with alias g", () => {
       jest.isolateModules(() => {
         require("../index");
       });
       expect(mockProgram.command).toHaveBeenCalledWith("generate");
-      const generateSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "generate"
-      )?.value;
+      const generateSub = findSub(mockProgram, "generate");
       expect(generateSub?.alias).toHaveBeenCalledWith("g");
     });
 
@@ -127,9 +103,7 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const generateSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "generate"
-      )?.value;
+      const generateSub = findSub(mockProgram, "generate");
       expect(generateSub?.option).toHaveBeenCalledWith(
         "-m, --module <name>",
         expect.any(String)
@@ -174,13 +148,9 @@ describe("CLI index — missing coverage", () => {
         jest.isolateModules(() => {
           require("../index");
         });
-        const generateSub = mockProgram.command.mock.results.find(
-          (r: any) => r.value._name === "generate"
-        )?.value;
+        const generateSub = findSub(mockProgram, "generate");
         expect(generateSub?.command).toHaveBeenCalledWith(subName);
-        const sub = generateSub?.command.mock.results.find(
-          (r: any) => r.value._name === `generate:${subName}`
-        )?.value;
+        const sub = findSub(generateSub, `generate:${subName}`);
         expect(sub?.alias).toHaveBeenCalledWith(alias);
         sub?.action.mock.calls[0]?.[0]({});
         expect(mockGenerateCommand[method]).toHaveBeenCalled();
@@ -193,13 +163,9 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const generateSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "generate"
-      )?.value;
+      const generateSub = findSub(mockProgram, "generate");
       expect(generateSub?.command).toHaveBeenCalledWith("components");
-      const componentsSub = generateSub?.command.mock.results.find(
-        (r: any) => r.value._name === "generate:components"
-      )?.value;
+      const componentsSub = findSub(generateSub, "generate:components");
       expect(componentsSub?.alias).toHaveBeenCalledWith("co");
       expect(componentsSub?.option).toHaveBeenCalledWith(
         "-a, --all",
@@ -215,12 +181,8 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const generateSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "generate"
-      )?.value;
-      const componentsSub = generateSub?.command.mock.results.find(
-        (r: any) => r.value._name === "generate:components"
-      )?.value;
+      const generateSub = findSub(mockProgram, "generate");
+      const componentsSub = findSub(generateSub, "generate:components");
       componentsSub?.action.mock.calls[0]?.[0]({ all: true });
       expect(mockGenerateCommand.multipleComponents).toHaveBeenCalledWith(
         expect.objectContaining({ all: true })
@@ -233,9 +195,7 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const generateSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "generate"
-      )?.value;
+      const generateSub = findSub(mockProgram, "generate");
       expect(generateSub?.command).toHaveBeenCalledWith("all");
     });
 
@@ -243,12 +203,8 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const generateSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "generate"
-      )?.value;
-      const allSub = generateSub?.command.mock.results.find(
-        (r: any) => r.value._name === "generate:all"
-      )?.value;
+      const generateSub = findSub(mockProgram, "generate");
+      const allSub = findSub(generateSub, "generate:all");
       allSub?.action.mock.calls[0]?.[0]();
       expect(mockGenerateCommand.multipleComponents).toHaveBeenCalledWith(
         expect.objectContaining({ all: true })
@@ -261,9 +217,7 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const generateSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "generate"
-      )?.value;
+      const generateSub = findSub(mockProgram, "generate");
       const handler = generateSub?.on.mock.calls.find(
         (c: any) => c[0] === "command:*"
       )?.[1];
@@ -283,9 +237,7 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const generateSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "generate"
-      )?.value;
+      const generateSub = findSub(mockProgram, "generate");
       const handler = generateSub?.on.mock.calls.find(
         (c: any) => c[0] === "command:*"
       )?.[1];
@@ -305,9 +257,7 @@ describe("CLI index — missing coverage", () => {
         require("../index");
       });
       expect(mockProgram.command).toHaveBeenCalledWith("prisma");
-      const prismaSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "prisma"
-      )?.value;
+      const prismaSub = findSub(mockProgram, "prisma");
       expect(prismaSub?.command).toHaveBeenCalledWith("generate");
     });
 
@@ -315,12 +265,8 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const prismaSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "prisma"
-      )?.value;
-      const prismaGenerateSub = prismaSub?.command.mock.results.find(
-        (r: any) => r.value._name === "prisma:generate"
-      )?.value;
+      const prismaSub = findSub(mockProgram, "prisma");
+      const prismaGenerateSub = findSub(prismaSub, "prisma:generate");
       prismaGenerateSub?.action.mock.calls[0]?.[0]();
       expect(prismaGenerateCommand).toHaveBeenCalled();
     });
@@ -332,13 +278,9 @@ describe("CLI index — missing coverage", () => {
         require("../index");
       });
       expect(mockProgram.command).toHaveBeenCalledWith("export");
-      const exportSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "export"
-      )?.value;
+      const exportSub = findSub(mockProgram, "export");
       expect(exportSub?.command).toHaveBeenCalledWith("auth-action");
-      const authActionSub = exportSub?.command.mock.results.find(
-        (r: any) => r.value._name === "export:auth-action"
-      )?.value;
+      const authActionSub = findSub(exportSub, "export:auth-action");
       expect(authActionSub?.option).toHaveBeenCalledWith(
         "-o, --overwrite",
         expect.any(String)
@@ -354,12 +296,8 @@ describe("CLI index — missing coverage", () => {
       jest.isolateModules(() => {
         require("../index");
       });
-      const exportSub = mockProgram.command.mock.results.find(
-        (r: any) => r.value._name === "export"
-      )?.value;
-      const authActionSub = exportSub?.command.mock.results.find(
-        (r: any) => r.value._name === "export:auth-action"
-      )?.value;
+      const exportSub = findSub(mockProgram, "export");
+      const authActionSub = findSub(exportSub, "export:auth-action");
       authActionSub?.action.mock.calls[0]?.[0]();
       expect(exportAuthActionCommand).toHaveBeenCalled();
     });

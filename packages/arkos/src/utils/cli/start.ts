@@ -1,11 +1,11 @@
 import path from "path";
 import fs from "fs";
 import { ChildProcess, spawn } from "child_process";
-import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { fullCleanCwd } from "../helpers/fs.helpers";
 import watermarkStamper from "./utils/watermark-stamper";
 import sheu from "../sheu";
 import { getArkosConfig } from "../helpers/arkos-config.helpers";
+import { lastLoadedEnvFiles } from '../dotenv.helpers';
 
 interface StartOptions {
   port?: string;
@@ -15,7 +15,6 @@ interface StartOptions {
 }
 
 let child: ChildProcess | null = null;
-let envFiles: string[] | undefined;
 
 /**
  * Production start command for the arkos CLI
@@ -26,7 +25,6 @@ export async function startCommand(options: StartOptions = {}) {
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "production";
   process.env.ARKOS_BUILD = "true";
 
-  envFiles = loadEnvironmentVariables();
 
   try {
     const { port, host } = options;
@@ -46,7 +44,7 @@ export async function startCommand(options: StartOptions = {}) {
       process.exit(1);
     }
 
-    const env: { [x: string]: string } = {
+    const env: { [x: string]: string; } = {
       NODE_ENV: "production",
       ...process.env,
       ...(port && { CLI_PORT: port }),
@@ -64,7 +62,7 @@ export async function startCommand(options: StartOptions = {}) {
 
     if (options.stamp !== false)
       watermarkStamper.stamp({
-        envFiles,
+        envFiles: lastLoadedEnvFiles,
         port: env.__PORT,
         host: env.__HOST,
       });
@@ -81,7 +79,7 @@ export async function startCommand(options: StartOptions = {}) {
     });
 
     await new Promise((resolve) => {
-      child?.on?.("message", (m: { started: boolean }) => {
+      child?.on?.("message", (m: { started: boolean; }) => {
         if (m.started === true) {
           if (process.env.__SKIP_LISTEN === "true") resolve(child?.kill?.());
           else resolve(null);

@@ -6,13 +6,14 @@ import { getPrismaInstance } from "./prisma.helpers";
 ("ReplaceWithNeededImportsForArkosConfig"); // This will be filled by post build script
 
 let definedArkosConfig: any = {};
+const configFilename = `arkos.config.${fsHelpers.getUserFileExtension()}`;
 
 try {
   definedArkosConfig = "ReplaceWithDynamicImport"; // This will be filled by post build script
 } catch (err: any) {
-  if (err.message.toLowerCase().includes("cannot find module"))
+  if (err.message.toLowerCase().includes(`${configFilename}'`))
     sheu.warn(
-      `Using default configs, because arkos.config.${fsHelpers.getUserFileExtension()} was not found`,
+      `Using default configs, because ${configFilename} was not found`,
       {
         timestamp: true,
       }

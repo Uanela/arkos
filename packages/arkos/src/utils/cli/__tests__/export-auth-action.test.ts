@@ -1,5 +1,5 @@
 import { ChildProcess, spawn } from "child_process";
-import { loadEnvironmentVariables } from "../../dotenv.helpers";
+import { lastLoadedEnvFiles } from "../../dotenv.helpers";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
 import path from "path";
 import fs from "fs";
@@ -7,7 +7,12 @@ import watermarkStamper from "../utils/watermark-stamper";
 import exportAuthActionCommand from "../export-auth-action";
 
 jest.mock("child_process");
-jest.mock("../../dotenv.helpers");
+jest.mock("../../dotenv.helpers", () => ({
+  lastLoadedEnvFiles: [
+    ".env",
+    ".env.local",
+  ]
+}));
 jest.mock("../../helpers/fs.helpers");
 jest.mock("path");
 jest.mock("fs");
@@ -45,10 +50,6 @@ describe("exportAuthActionCommand", () => {
     };
 
     (spawn as jest.Mock).mockReturnValue(mockChild);
-    (loadEnvironmentVariables as jest.Mock).mockReturnValue([
-      ".env",
-      ".env.local",
-    ]);
     (getUserFileExtension as jest.Mock).mockReturnValue("ts");
     (path.resolve as jest.Mock).mockReturnValue("/project/src/app.ts");
     (path.relative as jest.Mock).mockReturnValue("/project/src/app.ts");
@@ -97,23 +98,6 @@ describe("exportAuthActionCommand", () => {
     });
   });
 
-  describe("environment loading", () => {
-    it("loads environment variables", async () => {
-      await exportAuthActionCommand({});
-
-      expect(loadEnvironmentVariables).toHaveBeenCalledTimes(1);
-    });
-
-    it("handles when no environment files are loaded", async () => {
-      (loadEnvironmentVariables as jest.Mock).mockReturnValue(null);
-
-      await exportAuthActionCommand({});
-
-      expect(watermarkStamper.stamp).toHaveBeenCalledWith({
-        envFiles: [],
-      });
-    });
-  });
 
   describe("entry point validation", () => {
     it("resolves entry point path correctly", async () => {
@@ -206,13 +190,16 @@ describe("exportAuthActionCommand", () => {
 
   describe("watermark stamping", () => {
     it("stamps watermark with environment files", async () => {
-      const envFiles = [".env", ".env.local", ".env.development"];
-      (loadEnvironmentVariables as jest.Mock).mockReturnValue(envFiles);
 
       await exportAuthActionCommand({});
 
       expect(watermarkStamper.stamp).toHaveBeenCalledWith({
-        envFiles,
+        envFiles:
+          [
+            ".env",
+            ".env.local",
+          ]
+        ,
       });
     });
   });
@@ -304,7 +291,7 @@ describe("exportAuthActionCommand", () => {
 
       try {
         sigintHandler();
-      } catch (e) {}
+      } catch (e) { }
 
       expect(mockChild.kill).toHaveBeenCalledWith("SIGTERM");
 
@@ -328,7 +315,7 @@ describe("exportAuthActionCommand", () => {
 
       try {
         sigintHandler();
-      } catch (e) {}
+      } catch (e) { }
 
       jest.advanceTimersByTime(5000);
 
@@ -341,7 +328,7 @@ describe("exportAuthActionCommand", () => {
     it("does not force kill if child is null after timeout", async () => {
       jest.useFakeTimers();
 
-      let capturedChild = mockChild;
+      mockChild;
       (spawn as jest.Mock).mockReturnValue(mockChild);
 
       await exportAuthActionCommand({});
@@ -350,11 +337,9 @@ describe("exportAuthActionCommand", () => {
         (call) => call[0] === "SIGINT"
       )?.[1] as Function;
 
-      capturedChild = null as any;
-
       try {
         sigintHandler();
-      } catch (e) {}
+      } catch (e) { }
 
       jest.advanceTimersByTime(5000);
 
