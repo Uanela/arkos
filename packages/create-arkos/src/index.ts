@@ -57,11 +57,6 @@ export async function main() {
     execSync(installCmd, { stdio: "pipe", cwd: projectPath });
   } catch { }
 
-  if (packageManager === "pnpm" && existsSync(path.join(projectPath, "node_modules"))) {
-    console.warn(chalk.yellow("\nDependencies installed, but pnpm requires build approval."));
-    console.info(`Run ${chalk.cyan("pnpm approve-builds")} and then ${chalk.cyan("pnpm rebuild")}.\n`);
-  }
-
   process.chdir(projectPath);
 
   console.info(`

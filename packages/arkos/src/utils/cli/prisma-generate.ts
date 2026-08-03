@@ -71,7 +71,9 @@ export { PrismaClient } from "${getPrismaGeneratedPath()}";
 }
 
 export default function prismaGenerateCommand() {
-  execSync("npx prisma generate", { stdio: "inherit" });
+  // TODO: is throwing because of memory do not yet why
+  // workaround is generate apart
+  // execSync("npx prisma generate", { stdio: "inherit" });
 
   const pkgDir = getGeneratedPackageDir();
 
