@@ -2,7 +2,6 @@ import path from "path";
 import fs from "fs";
 import { execFileSync, execSync } from "child_process";
 import { getUserFileExtension } from "../helpers/fs.helpers";
-import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { detectPackageManagerFromUserAgent } from "../helpers/global.helpers";
 import sheu from "../sheu";
 import watermarkStamper from "./utils/watermark-stamper";
@@ -10,6 +9,7 @@ import { removeDir } from "../remove-dir";
 import { bundler } from "../bundler";
 import portAndHostAllocator from "../features/port-and-host-allocator";
 import { startCommand } from "./start";
+import { lastLoadedEnvFiles } from '../dotenv.helpers';
 
 const BUILD_DIR = ".build";
 const MODULE_TYPES = ["cjs", "esm"] as const;
@@ -30,12 +30,11 @@ export async function buildCommand(options: BuildOptions = {}) {
   process.env.ARKOS_BUILD = "true";
   process.env.__SKIP_LISTEN = "true";
 
-  const envFiles = loadEnvironmentVariables();
   const moduleType = validateModuleType(options.module);
 
   try {
     watermarkStamper.stamp({
-      envFiles,
+      envFiles: lastLoadedEnvFiles,
     });
 
     console.info(`\n  Creating an optimized production build...`);

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import sheu from "./sheu";
 import { expandEnv } from "./expand-env";
 
+export let lastLoadedEnvFiles: string[] = [];
 /**
  * Loads and expands environment variables in a prioritized order
  *
@@ -21,9 +22,9 @@ export function loadEnvironmentVariables() {
     path.resolve(cwd, ".env.local"),
     ...(ENV
       ? [
-          path.resolve(cwd, `.env.${ENV}`),
-          path.resolve(cwd, `.env.${ENV}.local`),
-        ]
+        path.resolve(cwd, `.env.${ENV}`),
+        path.resolve(cwd, `.env.${ENV}.local`),
+      ]
       : []),
   ];
 
@@ -51,5 +52,6 @@ export function loadEnvironmentVariables() {
 
   Object.assign(process.env, expanded.parsed || mergedParsed);
 
-  return existingEnvFiles.reverse();
+  lastLoadedEnvFiles = existingEnvFiles.reverse();
+  return lastLoadedEnvFiles;
 }
