@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.7.1-canary.1",
+  "version": "1.7.3-canary.1",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -76,14 +76,30 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/types/exports/*/index.d.ts"],
-      "services": ["./dist/types/exports/services/index.d.ts"],
-      "validation": ["./dist/types/exports/validation/index.d.ts"],
-      "error-handler": ["./dist/types/exports/error-handler/index.d.ts"],
-      "prisma": ["./dist/types/exports/prisma/index.d.ts"],
-      "auth": ["./dist/types/exports/auth/index.d.ts"],
-      "middlewares": ["./dist/types/exports/middlewares/index.d.ts"],
-      "utils": ["./dist/types/exports/utils/index.d.ts"],
+      "*": [
+        "./dist/types/exports/*/index.d.ts"
+      ],
+      "services": [
+        "./dist/types/exports/services/index.d.ts"
+      ],
+      "validation": [
+        "./dist/types/exports/validation/index.d.ts"
+      ],
+      "error-handler": [
+        "./dist/types/exports/error-handler/index.d.ts"
+      ],
+      "prisma": [
+        "./dist/types/exports/prisma/index.d.ts"
+      ],
+      "auth": [
+        "./dist/types/exports/auth/index.d.ts"
+      ],
+      "middlewares": [
+        "./dist/types/exports/middlewares/index.d.ts"
+      ],
+      "utils": [
+        "./dist/types/exports/utils/index.d.ts"
+      ],
       "websockets": ["./dist/types/exports/websockets.d.ts"]
     }
   },
@@ -100,7 +116,7 @@
     "lint": "eslint src --ext .ts",
     "prepublishOnly": "pnpm run build",
     "prelinkOnly": "npm run build",
-    "test": "jest",
+    "test": "NODE_OPTIONS=--max-old-space-size=1024 jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:create": "tsx src/scripts/create-test.ts",
@@ -137,10 +153,15 @@
     "url": "https://github.com/uanela/arkos/issues"
   },
   "homepage": "https://www.arkosjs.com",
-  "files": ["dist", "cli.js", "README.md"],
+  "files": [
+    "dist",
+    "cli.js",
+    "README.md"
+  ],
   "devDependencies": {
     "@babel/preset-typescript": "7.27.1",
-    "@scalar/express-api-reference": "0.8.32",
+    "@prisma/client": "6.19.3",
+    "@scalar/express-api-reference": "0.10.2",
     "@types/bcrypt": "5.0.2",
     "@types/body-parser": "1.19.5",
     "@types/compression": "1.7.5",
@@ -151,26 +172,28 @@
     "@types/jest": "29.5.14",
     "@types/jsonwebtoken": "9.0.9",
     "@types/multer": "2.0.0",
-    "@types/node": "22.13.13",
+    "@types/node": "24.0.12",
     "@types/nodemailer": "8.0.0",
     "@types/pluralize": "0.0.33",
     "@types/swagger-jsdoc": "6.0.4",
     "@typescript-eslint/eslint-plugin": "6.0.0",
     "@typescript-eslint/parser": "6.0.0",
     "esbuild": "0.25.1",
+    "express": "4.22.2",
     "fast-glob": "3.3.3",
     "jest": "29.7.0",
     "knip": "6.0.1",
     "mimetype": "0.0.8",
     "openapi-types": "12.1.3",
-    "prisma": "6.19.2",
     "socket.io": "^4.8.3",
+    "prisma": "6.19.3",
     "ts-jest": "29.3.1",
     "ts-node": "^10.9.2",
     "ts-prune": "0.10.3",
-    "tsx": "4.20.3",
+    "tsx": "4.23.1",
     "type-fest": "4.41.0",
-    "typescript": "5.8.2"
+    "typescript": "5.8.2",
+    "zod": "3.25.76"
   },
   "dependencies": {
     "chokidar": "4.0.3",
@@ -179,12 +202,12 @@
     "uuidv7": "^1.2.1"
   },
   "peerDependencies": {
-    "@prisma/client": "6.19.2",
+    "@prisma/client": "6.19.3",
     "@scalar/api-reference": "1.55.3",
-    "@scalar/express-api-reference": "0.8.35",
+    "@scalar/express-api-reference": "0.10.12",
     "bcryptjs": "3.0.2",
     "class-transformer": "0.5.1",
-    "class-validator": "0.14.1",
+    "class-validator": "0.15.1",
     "class-validator-jsonschema": "5.0.2",
     "compression": "1.8.1",
     "cookie-parser": "1.4.7",
@@ -192,16 +215,16 @@
     "dotenv": "17.4.2",
     "dotenv-expand": "13.0.0",
     "express": "4.22.2",
-    "express-rate-limit": "8.4.1",
+    "socket.io": "^4.8.3",
+    "express-rate-limit": "8.6.1",
     "html-to-text": "9.0.5",
     "jsonwebtoken": "9.0.3",
     "mimetype": "0.0.8",
-    "multer": "2.1.1",
-    "nodemailer": "8.0.7",
-    "sharp": "0.34.5",
-    "socket.io": "^4.8.3",
+    "multer": "2.2.0",
+    "nodemailer": "9.0.3",
+    "sharp": "0.35.3",
     "swagger-jsdoc": "6.2.8",
-    "zod": "3.24.2",
+    "zod": "3.25.76",
     "zod-to-json-schema": "3.24.6"
   },
   "engines": {

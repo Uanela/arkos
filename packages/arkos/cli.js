@@ -1,30 +1,28 @@
 #!/usr/bin/env node
 (async () => {
-  const { join } = await import("path");
+  const { join, dirname } = await import("path");
   const { existsSync, readFileSync } = await import("fs");
   const { spawn } = await import("child_process");
+  const { fileURLToPath } = await import("node:url");
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
 
   const pkgPath = join(process.cwd(), "package.json");
   let useEsm = false;
-
   if (existsSync(pkgPath)) {
     const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
     useEsm = pkg.type === "module";
   }
-
-  const tsSrc = join(process.cwd(), "tsconfig.json");
   const entryPoint = join(
     __dirname,
     `dist/${useEsm ? "esm" : "cjs"}/utils/cli/index.js`
   );
-  const useTs = existsSync(tsSrc);
-
   const args = [
-    ...(useTs ? ["--experimental-strip-types"] : []),
+    ...["--import", "tsx"],
     entryPoint,
     ...process.argv.slice(2),
   ];
-
   process.env.NO_CLI = "true";
   process.env.FORCE_COLOR = "3";
   process.env.__ARKOS_CLI = "true";

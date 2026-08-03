@@ -399,6 +399,50 @@ describe("EmailService", () => {
 
       expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
     });
+
+    it('should use email "user" (without password) as "from" address when auth has no pass', async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({
+        email: {
+          host: "smtp.example.com",
+          auth: {
+            user: "useronly@example.com",
+            // no pass provided
+          },
+        },
+      });
+      delete process.env.EMAIL_PASSWORD;
+
+      await emailService.send(testEmailOptions);
+
+      // auth should NOT be built since pass is missing
+      expect(nodemailer.createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({
+          auth: undefined,
+        })
+      );
+
+      // but "from" should still fall back to the bare user
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: "useronly@example.com",
+        })
+      );
+    });
+
+    it('should use EMAIL_USER env var (without EMAIL_PASSWORD) as "from" address', async () => {
+      (getArkosConfig as jest.Mock).mockReturnValue({ email: null });
+      delete process.env.EMAIL_PASSWORD;
+      process.env.EMAIL_HOST = "env.smtp.com";
+      process.env.EMAIL_USER = "envuseronly@example.com";
+
+      await emailService.send(testEmailOptions);
+
+      expect(mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: "envuseronly@example.com",
+        })
+      );
+    });
   });
 
   describe("custom transporter caching", () => {
@@ -520,4 +564,6 @@ describe("EmailService", () => {
       );
     });
   });
+
+
 });

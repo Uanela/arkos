@@ -1,11 +1,12 @@
 import { uuidv7 } from "uuidv7";
 import {
   ArkosBroadcastOperator,
+  ArkosEmitTarget,
   ArkosRetryTarget,
   ArkosSocket,
   ArkosUserTarget,
 } from "./types";
-import { BroadcastOperator } from "socket.io";
+import { Socket } from "socket.io";
 
 function injectMeta<T>(
   data: T
@@ -17,12 +18,13 @@ function injectMeta<T>(
 }
 
 function resolveUserSocketIds(
-  socket: ArkosSocket,
+  sockets: Map<string, Socket>,
   userId: string | string[]
 ): string[] {
   const ids = Array.isArray(userId) ? userId : [userId];
+
   const result: string[] = [];
-  for (const [id, s] of socket.nsp.sockets) {
+  for (const [id, s] of sockets) {
     for (const uid of ids) {
       if (s.rooms.has(`arkos::user:${uid}`)) {
         result.push(id);
@@ -35,8 +37,8 @@ function resolveUserSocketIds(
 
 export class ArkosBroadcastOperatorImpl {
   constructor(
-    private readonly socket: ArkosSocket,
-    private readonly operator: BroadcastOperator<any, any>
+    private readonly sockets: Map<string, Socket>,
+    private readonly operator: ArkosEmitTarget
   ) {
     const instance = Object.create(operator) as this;
     instance.emit = this.emit.bind(this);
@@ -50,6 +52,10 @@ export class ArkosBroadcastOperatorImpl {
       configurable: true,
     });
     return instance;
+  }
+
+  user(userId: string) {
+    return applyUserTarget(this.sockets, this.operator)(userId)
   }
 
   /**
@@ -87,14 +93,14 @@ export class ArkosBroadcastOperatorImpl {
   except(room: string | string[] | { user: string | string[] }) {
     if (typeof room === "string" || Array.isArray(room)) {
       return new ArkosBroadcastOperatorImpl(
-        this.socket,
+        this.sockets,
         this.operator.except(room)
       );
     }
-    const socketIds = resolveUserSocketIds(this.socket, room.user);
+    const socketIds = resolveUserSocketIds(this.sockets, room.user);
     let op = this.operator;
     for (const id of socketIds) op = op.except(id);
-    return new ArkosBroadcastOperatorImpl(this.socket, op);
+    return new ArkosBroadcastOperatorImpl(this.sockets, op);
   }
 
   /**
@@ -117,7 +123,7 @@ export class ArkosBroadcastOperatorImpl {
    * socket.to("room-101").volatile.emit("cursor", position)
    */
   get volatile() {
-    return new ArkosBroadcastOperatorImpl(this.socket, this.operator.volatile);
+    return new ArkosBroadcastOperatorImpl(this.sockets, this.operator.volatile);
   }
 
   /**
@@ -128,7 +134,7 @@ export class ArkosBroadcastOperatorImpl {
    */
   compress(value: boolean) {
     return new ArkosBroadcastOperatorImpl(
-      this.socket,
+      this.sockets,
       this.operator.compress(value)
     );
   }
@@ -142,7 +148,7 @@ export class ArkosBroadcastOperatorImpl {
    */
   timeout(ms: number) {
     return new ArkosBroadcastOperatorImpl(
-      this.socket,
+      this.sockets,
       this.operator.timeout(ms)
     );
   }
@@ -156,7 +162,11 @@ export class ArkosBroadcastOperatorImpl {
    */
   async emitWithAck(event: string, ...args: any[]): Promise<any[]> {
     const [data, ...rest] = args;
-    return this.operator.emitWithAck(event, injectMeta(data), ...rest);
+    if (!this.operator?.emitWithAck)
+      throw Error("emitWithAck is not supported on this target — call .timeout(ms) first if targeting a Namespace.")
+
+    return this.operator.emitWithAck!(event, injectMeta(data), ...rest);
+
   }
 }
 
@@ -168,7 +178,7 @@ class ArkosRetryTargetImpl implements ArkosRetryTarget {
     private readonly maxRetries: number,
     private readonly baseDelay: number,
     private readonly multiplier: number
-  ) {}
+  ) { }
 
   /**
    * Sets a timeout in milliseconds applied on each `emitWithAck` attempt.
@@ -231,25 +241,25 @@ export function mountArkosSocketExtensions(socket: ArkosSocket): void {
   const originalTo = socket.to.bind(socket);
   const originalTimeout = socket.timeout.bind(socket);
 
-  socket.emit = function (event: string, data?: any, ...rest: any[]) {
+  socket.emit = function(event: string, data?: any, ...rest: any[]) {
     return originalEmit(event, injectMeta(data), ...rest);
   };
 
-  socket.emitWithAck = function (event: string, data?: any, ...rest: any[]) {
+  socket.emitWithAck = function(event: string, data?: any, ...rest: any[]) {
     return originalEmitWithAck(event, injectMeta(data), ...rest);
   };
 
-  socket.to = function (room: string | string[]) {
+  socket.to = function(room: string | string[]) {
     return new ArkosBroadcastOperatorImpl(
-      socket,
+      socket.nsp.sockets,
       originalTo(room)
     ) as any as ArkosBroadcastOperator;
   };
 
-  socket.timeout = function (ms: number) {
+  socket.timeout = function(ms: number) {
     const timedSocket = originalTimeout(ms);
     const originalTimedEmitWithAck = timedSocket.emitWithAck.bind(timedSocket);
-    timedSocket.emitWithAck = function (
+    timedSocket.emitWithAck = function(
       event: string,
       data?: any,
       ...rest: any[]
@@ -268,15 +278,28 @@ export function mountArkosSocketExtensions(socket: ArkosSocket): void {
   Object.defineProperty(socket, "broadcast", {
     get() {
       const operator = broadcastDescriptor!.get!.call(socket);
-      return new ArkosBroadcastOperatorImpl(socket, operator);
+      return new ArkosBroadcastOperatorImpl(socket.nsp.sockets, operator);
     },
     configurable: true,
   });
 
-  socket.user = function (userId: string): ArkosUserTarget {
+  socket.user = applyUserTarget(socket.nsp.sockets, socket.nsp)
+
+
+  socket.retry = function(
+    times: number,
+    baseDelay: number = 1000,
+    multiplier: number = 2
+  ): ArkosRetryTarget {
+    return new ArkosRetryTargetImpl(socket, times, baseDelay, multiplier);
+  };
+}
+
+function applyUserTarget(sockets: Map<string, Socket>, operator: { to: Function }) {
+  return (userId: string): ArkosUserTarget => {
     const target = new ArkosBroadcastOperatorImpl(
-      socket,
-      socket.nsp.to(`arkos::user:${userId}`)
+      sockets,
+      operator.to(`arkos::user:${userId}`)
     ) as any as ArkosUserTarget;
 
     target.activeRooms = async () => {
@@ -294,11 +317,6 @@ export function mountArkosSocketExtensions(socket: ArkosSocket): void {
 
     return target;
   };
-  socket.retry = function (
-    times: number,
-    baseDelay: number = 1000,
-    multiplier: number = 2
-  ): ArkosRetryTarget {
-    return new ArkosRetryTargetImpl(socket, times, baseDelay, multiplier);
-  };
+
 }
+

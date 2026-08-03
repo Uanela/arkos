@@ -1,5 +1,5 @@
 import { ChildProcess, spawn } from "child_process";
-import { loadEnvironmentVariables } from "../dotenv.helpers";
+import { lastLoadedEnvFiles } from "../dotenv.helpers";
 import path from "path";
 import fs from "fs";
 import watermarkStamper from "./utils/watermark-stamper";
@@ -15,7 +15,6 @@ export default async function exportAuthActionCommand(options: {
 
   if (!process.env.NODE_ENV) process.env.NODE_ENV = "development";
 
-  const envFiles = loadEnvironmentVariables() || [];
   let child: ChildProcess | null = null;
 
   try {
@@ -35,7 +34,7 @@ export default async function exportAuthActionCommand(options: {
         NODE_ENV: "development",
         ...process.env,
         CLI: "false",
-      }) as { [x: string]: string };
+      }) as { [x: string]: string; };
 
     const startServer = () => {
       if (child) {
@@ -64,7 +63,7 @@ export default async function exportAuthActionCommand(options: {
     startServer();
 
     watermarkStamper.stamp({
-      envFiles,
+      envFiles: lastLoadedEnvFiles,
     });
 
     const cleanup = () => {

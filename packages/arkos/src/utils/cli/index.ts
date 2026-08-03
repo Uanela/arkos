@@ -1,3 +1,4 @@
+import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { Command } from "commander";
 import { buildCommand } from "./build";
 import { devCommand } from "./dev";
@@ -332,6 +333,21 @@ generate
     const opts = generate.opts();
     generateCommand.multipleComponents({ ...opts, all: true });
   });
+
+const NODE_ENV_DEFAULTS: Record<string, string> = {
+  dev: "development",
+  start: "production",
+  build: "production",
+};
+
+program.hook("preAction", (_thisCommand, actionCommand) => {
+  process.env.NO_CLI = "true";
+  const cmdName = actionCommand.name();
+  if (!process.env.NODE_ENV)
+    process.env.NODE_ENV = NODE_ENV_DEFAULTS[cmdName] ?? "development";
+
+  loadEnvironmentVariables();
+});
 
 program.parse(process.argv);
 

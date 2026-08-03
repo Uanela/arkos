@@ -258,6 +258,23 @@ export interface ArkosBroadcastOperator<
     ev: Ev,
     ...args: AllButLast<EventParams<EmitEvents, Ev>>
   ): Promise<FirstNonErrorArg<Last<EventParams<EmitEvents, Ev>>>>;
+
+  /**
+   * Targets all active socket connections of a user by their user ID.
+   * Uses the internal `arkos::user:{userId}` room convention.
+   *
+   * Supports emit, management, and exclusion operations across all of the
+   * user's active connections.
+   *
+   * @example
+   * socket.user(userId).emit("notification", data)
+   * socket.user(userId).except({ user: otherUserId }).emit("sync", data)
+   * const sockets = await socket.user(userId).fetchSockets()
+   * const online = await socket.user(userId).isOnline()
+   *
+   * @since 1.7.0-canary.29
+   */
+  user(userId: string): ArkosUserTarget;
   /**
    * Returns all unique user IDs currently in the target room(s).
    *
@@ -346,13 +363,13 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
 
   /** Per-event deduplication. Overrides gateway-level `dedup`. */
   dedup?:
-    | {
-        /** @default true */
-        enabled?: boolean;
-        /** Time-to-live in seconds for the dedup key. @default 3600 */
-        ttl?: number;
-      }
-    | false;
+  | {
+    /** @default true */
+    enabled?: boolean;
+    /** Time-to-live in seconds for the dedup key. @default 3600 */
+    ttl?: number;
+  }
+  | false;
 };
 
 export type ArkosGatewayAckFn = (response: any) => void;
@@ -409,13 +426,13 @@ export type ArkosGatewayConfig = {
    * per child or per event listener.
    */
   dedup?:
-    | {
-        /** @default true */
-        enabled?: boolean;
-        /** @default 3600 */
-        ttl?: number;
-      }
-    | false;
+  | {
+    /** @default true */
+    enabled?: boolean;
+    /** @default 3600 */
+    ttl?: number;
+  }
+  | false;
 
   /**
    * Maximum age in milliseconds for incoming messages.
@@ -476,4 +493,81 @@ export interface ArkosGatewayStore {
   setIfNotExists(key: string, ttl: number): Promise<boolean>;
 }
 
-export class ArkosGatewayController {}
+/**
+ * Minimal broadcast/emit contract that {@link ArkosBroadcastOperatorImpl} wraps.
+ * Deliberately narrower than socket.io's `BroadcastOperator` — only the methods
+ * Arkos actually calls, so both a `BroadcastOperator` (from `socket.to()`) and a
+ * raw `Namespace` (from `gateway.nsp`) satisfy it structurally.
+ *
+ * @since 1.7.1-canary.3
+ */
+export interface ArkosEmitTarget<EmitEvents extends EventsMap = DefaultEventsMap> {
+  /**
+   * Emits an event to the target. `_meta` (`mid` + `timestamp`) is injected automatically.
+   *
+   * @example
+   * socket.to("room-101").emit("message", { text: "hello" })
+   * socket.broadcast.emit("announcement", data)
+   */
+  emit(event: string, ...args: any[]): boolean;
+
+  /**
+   * Emits an event and waits for an acknowledgement from all matched clients.
+   * `_meta` is injected automatically.
+   *
+   * Optional — not every target supports ack collection directly (e.g. a raw
+   * `Namespace` requires `.timeout(ms)` first). Throws at runtime if called on
+   * a target that doesn't implement it natively.
+   *
+   * @example
+   * const responses = await socket.to("room-101").timeout(3000).emitWithAck("confirm", data)
+   */
+  emitWithAck?(event: string, ...args: any[]): Promise<any>;
+
+  /**
+   * Excludes sockets from the broadcast.
+   * Accepts a room name, socket ID, or array of rooms/IDs.
+   * For `{ user }` exclusion, see {@link ArkosBroadcastOperatorImpl.except}.
+   *
+   * @example
+   * socket.to("room-101").except("room-102").emit("foo", data)
+   */
+  except(room: string | string[]): ArkosEmitTarget<EmitEvents>;
+
+  /**
+   * Sets the compress flag for the next emission.
+   *
+   * @example
+   * socket.broadcast.compress(false).emit("ping", data)
+   */
+  compress(value: boolean): ArkosEmitTarget<EmitEvents>;
+
+  /**
+   * Sets a timeout in milliseconds for `emitWithAck`.
+   * Rejects the promise if no client acknowledges within the given delay.
+   *
+   * @example
+   * socket.to("room-101").timeout(3000).emitWithAck("confirm", data)
+   */
+  timeout(ms: number): ArkosEmitTarget
+
+  /**
+   * Returns all sockets currently matched by this target.
+   *
+   * @example
+   * const sockets = await socket.to("room-101").fetchSockets()
+   */
+  fetchSockets(): Promise<any[]>;
+
+  to(room: string | string[]): ArkosEmitTarget
+
+  /**
+   * Sets the volatile flag — the event may be dropped if the client is not ready.
+   * Useful for high-frequency non-critical events like cursor positions or typing indicators.
+   *
+   * @example
+   * socket.to("room-101").volatile.emit("cursor", position)
+   */
+  readonly volatile: ArkosEmitTarget<EmitEvents>;
+}
+export class ArkosGatewayController { }

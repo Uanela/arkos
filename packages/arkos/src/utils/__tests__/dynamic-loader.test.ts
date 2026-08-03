@@ -80,7 +80,7 @@ describe("Dynamic Prisma Model Loader", () => {
     (path.join as jest.Mock).mockImplementation((...args) => args.join("/"));
 
     // Mock console methods
-    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => { });
     jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
     // Default pathExists to true
@@ -181,7 +181,7 @@ describe("Dynamic Prisma Model Loader", () => {
       (pathExists as jest.Mock).mockImplementation((filePath) => {
         return filePath.includes("user.dto.js") || filePath.includes("dtos");
       });
-      class UserDto {}
+      class UserDto { }
 
       (importModule as jest.Mock).mockResolvedValue({
         default: UserDto,
@@ -256,7 +256,7 @@ describe("Dynamic Prisma Model Loader", () => {
 
         expect(consoleSpy).toHaveBeenCalled();
         expect(result).toEqual({});
-      } catch {}
+      } catch { }
     });
   });
 
@@ -757,7 +757,7 @@ describe("Dynamic Prisma Model Loader", () => {
       warnDeprecatedModuleComponents([
         {
           moduleName: "post",
-          components: { dtos: { create: class {} }, schemas: {} },
+          components: { dtos: { createOne: class { } }, schemas: {} },
         },
       ]);
       const calls = mockWarn.mock.calls.map((c) => c[0]);
@@ -773,7 +773,7 @@ describe("Dynamic Prisma Model Loader", () => {
       warnDeprecatedModuleComponents([
         {
           moduleName: "post",
-          components: { dtos: {}, schemas: { create: {} as any } },
+          components: { dtos: {}, schemas: { createOne: {} as any } },
         },
       ]);
       const calls = mockWarn.mock.calls.map((c) => c[0]);
@@ -836,7 +836,7 @@ describe("Dynamic Prisma Model Loader", () => {
           moduleName: "user",
           components: {
             dtos: {},
-            schemas: { create: {} },
+            schemas: { createOne: {} },
             // interceptors: { beforeCreateOne: jest.fn() },
           },
         },
@@ -844,7 +844,7 @@ describe("Dynamic Prisma Model Loader", () => {
           moduleName: "post",
           components: {
             dtos: {},
-            schemas: { create: {} },
+            schemas: { createOne: {} },
             // interceptors: { beforeCreateOne: jest.fn() },
           },
         },
@@ -866,7 +866,7 @@ describe("Dynamic Prisma Model Loader", () => {
       warnDeprecatedModuleComponents([
         {
           moduleName: "user",
-          components: { dtos: {}, schemas: { create: {} } },
+          components: { dtos: {}, schemas: { createOne: {} } },
         },
       ]);
 

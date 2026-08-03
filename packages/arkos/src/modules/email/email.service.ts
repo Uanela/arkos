@@ -27,6 +27,8 @@ export type SMTPConnectionOptions = {
   secure?: boolean;
   auth?: SMTPAuthOptions;
   name?: string;
+  user?: string;
+  pass?: string;
 };
 
 /**
@@ -81,7 +83,7 @@ export class EmailService {
     if (!host) {
       throw new AppError(
         "You are trying to use emailService without setting email configurations. " +
-          "Please configure either arkosConfig.email or environment variables (EMAIL_HOST)",
+        "Please configure either arkosConfig.email or environment variables (EMAIL_HOST)",
         500,
         {
           docs: "Read more about emailService at https://www.arkosjs.com/docs/guides/email-service",
@@ -97,11 +99,13 @@ export class EmailService {
       auth:
         user && pass
           ? {
-              user,
-              pass,
-            }
+            user,
+            pass,
+          }
           : undefined,
       name,
+      user,
+      pass
     };
   }
 
@@ -117,7 +121,7 @@ export class EmailService {
     }
 
     if (!this.transporter) {
-      const { name, ...config } = this.getEmailConfig() || {};
+      const { name, user, pass, ...config } = this.getEmailConfig() || {};
       this.transporter = nodemailer.createTransport(config);
     }
     return this.transporter;
@@ -143,7 +147,7 @@ export class EmailService {
       : this.getTransporter();
 
     const fromAddress =
-      options.from || connectionOptions?.auth?.user || config.auth?.user;
+      options.from || connectionOptions?.auth?.user || config.auth?.user || config?.user;
 
     if (connectionOptions || !skipVerification) {
       const isConnected = await this.verifyConnection(transporter);

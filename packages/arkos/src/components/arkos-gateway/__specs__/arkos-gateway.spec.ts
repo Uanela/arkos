@@ -146,6 +146,7 @@ function createMockSocket(overrides: any = {}) {
     emitWithAck: jest.fn(),
     rooms: new Set(["arkos::user:user-1"]),
     ...overrides,
+    nsp: { sockets: new Map() }
   };
 }
 
