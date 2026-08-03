@@ -180,7 +180,9 @@ type ImportModuleComponentsReturnType = {
   router?: { config?: RouteHook<any>; hook?: RouteHook<any>; default: any; };
   dtos?: {
     create?: any;
+    createOne?: any;
     update?: any;
+    updateOne?: any;
     signup?: any;
     login?: any;
     updatePassword?: any;
@@ -188,7 +190,9 @@ type ImportModuleComponentsReturnType = {
   };
   schemas?: {
     create?: any;
+    createOne?: any;
     update?: any;
+    updateOne?: any;
     signup?: any;
     login?: any;
     updatePassword?: any;
