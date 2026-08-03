@@ -27,6 +27,13 @@ jest.mock("path", () => ({
   ...jest.requireActual("path"),
   join: jest.fn((...args) => args.join("/")),
 }));
+jest.mock("../../dotenv.helpers", () => ({
+  lastLoadedEnvFiles:
+    [
+      "/mock/project/root/.env",
+      "/mock/project/root/.env.production",
+    ]
+}));
 
 jest.mock("../../../utils/features/port-and-host-allocator");
 
@@ -50,10 +57,6 @@ jest.mock("../../helpers/arkos-config.helpers", () => ({
       entryPoint: "src/app.js",
     },
   }),
-}));
-
-jest.mock("../../dotenv.helpers", () => ({
-  loadEnvironmentVariables: jest.fn().mockReturnValue([".env"]),
 }));
 
 jest.mock("../../helpers/global.helpers");
@@ -113,10 +116,8 @@ describe("startCommand", () => {
       };
     });
 
-    // Reset environment
     process.env = { ...process.env, NODE_ENV: "production" };
 
-    // Mock process.cwd
     jest.spyOn(process, "cwd").mockReturnValue("/mock/project/root");
   });
 
@@ -324,14 +325,6 @@ describe("startCommand", () => {
           host: "example.com",
         }),
       });
-
-    const loadEnvMock = jest.requireMock(
-      "../../dotenv.helpers"
-    ).loadEnvironmentVariables;
-    loadEnvMock.mockReturnValue([
-      "/mock/project/root/.env",
-      "/mock/project/root/.env.production",
-    ]);
 
     (
       portAndHostAllocator.getHostAndAvailablePort as jest.Mock

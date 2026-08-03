@@ -1,163 +1,240 @@
-import { Command } from "commander";
-import { buildCommand } from "../build";
-import { devCommand } from "../dev";
-import { startCommand } from "../start";
-import { getVersion } from "../utils/cli.helpers";
+import { loadEnvironmentVariables } from "../../dotenv.helpers";
 
 jest.mock("../../prisma/prisma-schema-parser", () => ({
   __esModule: true,
-  default: {
-    getModelsAsArrayOfStrings: jest.fn(() => []),
-    parse: jest.fn(),
+  default: { getModelsAsArrayOfStrings: jest.fn(() => []), parse: jest.fn() },
+}));
+
+jest.mock("../utils/cli.helpers", () => ({
+  getVersion: jest.fn(() => "1.2.3"),
+}));
+
+jest.mock("../build", () => ({ buildCommand: jest.fn() }));
+jest.mock("../dev", () => ({ devCommand: jest.fn() }));
+jest.mock("../start", () => ({ startCommand: jest.fn() }));
+
+jest.mock("../generate", () => ({
+  generateCommand: {
+    controller: jest.fn(),
+    service: jest.fn(),
+    router: jest.fn(),
+    authConfigs: jest.fn(),
+    queryOptions: jest.fn(),
+    interceptors: jest.fn(),
+    hooks: jest.fn(),
+    createSchema: jest.fn(),
+    updateSchema: jest.fn(),
+    baseSchema: jest.fn(),
+    querySchema: jest.fn(),
+    createDto: jest.fn(),
+    updateDto: jest.fn(),
+    baseDto: jest.fn(),
+    queryDto: jest.fn(),
+    prismaModel: jest.fn(),
+    policy: jest.fn(),
+    loginSchema: jest.fn(),
+    signupSchema: jest.fn(),
+    updateMeSchema: jest.fn(),
+    updatePasswordSchema: jest.fn(),
+    loginDto: jest.fn(),
+    signupDto: jest.fn(),
+    updateMeDto: jest.fn(),
+    updatePasswordDto: jest.fn(),
+    multipleComponents: jest.fn(),
   },
 }));
-jest.mock("commander", () => {
-  const mockCommand: any = {
-    name: jest.fn().mockReturnThis(),
-    description: jest.fn().mockReturnThis(),
-    version: jest.fn().mockReturnThis(),
-    command: jest.fn(() => mockCommand),
-    option: jest.fn().mockReturnThis(),
-    action: jest.fn().mockReturnThis(),
-    parse: jest.fn().mockReturnThis(),
-    alias: jest.fn().mockReturnThis(),
-    requiredOption: jest.fn().mockReturnThis(),
-    on: jest.fn(),
-  };
-  return {
-    Command: jest.fn().mockImplementation(() => mockCommand),
-  };
-});
 
-jest.mock("../build", () => ({
-  buildCommand: jest.fn(),
+jest.mock("../prisma-generate", () => ({
+  __esModule: true,
+  default: jest.fn(),
 }));
 
-jest.mock("../dev", () => ({
-  devCommand: jest.fn(),
+jest.mock("../export-auth-action", () => ({
+  __esModule: true,
+  default: jest.fn(),
 }));
 
-jest.mock("../start", () => ({
-  startCommand: jest.fn(),
+jest.mock("../../dotenv.helpers", () => ({
+  loadEnvironmentVariables: jest.fn(() => ["/project/.env"]),
 }));
 
-jest.mock("fs", () => ({
-  ...jest.requireActual("fs"),
-  readFileSync: jest.fn(() => '{ "version": "1.2.3"}'),
-  readdirSync: jest.fn(),
-}));
+const ORIGINAL_ARGV = process.argv;
+const ORIGINAL_ENV = process.env;
 
-jest.mock("path", () => ({
-  join: jest.fn().mockReturnValue("/mocked/path/to/package.json"),
-  resolve: jest.fn(),
-}));
+function run(argv: string[]) {
+  let mod: any;
+  process.argv = ["node", "arkos", ...argv];
+  jest.isolateModules(() => {
+    mod = require("../index");
+  });
+  return mod;
+}
 
 describe("CLI Index", () => {
-  let mockProgram: any;
-
   beforeEach(() => {
-    // Clear all mocks
     jest.clearAllMocks();
-
-    // Get mock program from Commander
-    mockProgram = new Command();
+    process.env = { ...ORIGINAL_ENV };
+    delete process.env.NODE_ENV;
+    delete process.env.NO_CLI;
   });
 
-  describe("program configuration", () => {
-    it("should configure program with correct name, description and version", () => {
-      // Import to trigger the program setup code
-      jest.isolateModules(() => {
-        require("../index");
-      });
+  afterAll(() => {
+    process.argv = ORIGINAL_ARGV;
+    process.env = ORIGINAL_ENV;
+  });
 
-      expect(mockProgram.name).toHaveBeenCalledWith("arkos");
-      expect(mockProgram.description).toHaveBeenCalledWith("Arkos.js CLI");
-      expect(mockProgram.version).toHaveBeenCalledWith(getVersion());
+  describe("top-level commands", () => {
+    it("dispatches build with parsed options", () => {
+      const { buildCommand } = require("../build");
+      run(["build", "-m", "esm"]);
+      expect(buildCommand.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ module: "esm" })
+      );
     });
 
-    it("should register the build command with correct options", () => {
-      jest.isolateModules(() => {
-        require("../index");
-      });
-
-      expect(mockProgram.command).toHaveBeenCalledWith("build");
-      expect(mockProgram.description).toHaveBeenCalledWith(
-        "Build your Arkos project"
+    it("defaults build --module to cjs", () => {
+      const { buildCommand } = require("../build");
+      run(["build"]);
+      expect(buildCommand.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ module: "cjs" })
       );
-      expect(mockProgram.option).toHaveBeenCalledWith(
-        "-m, --module <type>",
-        "Module type (cjs or esm)",
-        "cjs"
-      );
-
-      // Verify action was registered
-      const buildAction = mockProgram.action.mock.calls[0][0];
-      expect(buildAction).toBe(buildCommand);
     });
 
-    it("should register the dev command with correct options", () => {
-      jest.isolateModules(() => {
-        require("../index");
-      });
-
-      expect(mockProgram.command).toHaveBeenCalledWith("dev");
-      expect(mockProgram.description).toHaveBeenCalledWith(
-        "Run development server"
+    it("dispatches dev with port/host options", () => {
+      const { devCommand } = require("../dev");
+      run(["dev", "-p", "4000", "-h", "0.0.0.0"]);
+      expect(devCommand.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ port: "4000", host: "0.0.0.0" })
       );
-      expect(mockProgram.option).toHaveBeenCalledWith(
-        "-p, --port <number>",
-        "Port number"
-      );
-      expect(mockProgram.option).toHaveBeenCalledWith(
-        "-h, --host <host>",
-        "Host to bind to"
-      );
-
-      // Verify action was registered
-      const devAction = mockProgram.action.mock.calls[1][0];
-      expect(devAction).toBe(devCommand);
     });
 
-    it("should register the start command with correct options", () => {
-      jest.isolateModules(() => {
-        require("../index");
-      });
-
-      expect(mockProgram.command).toHaveBeenCalledWith("start");
-      expect(mockProgram.description).toHaveBeenCalledWith(
-        "Run production server"
+    it("dispatches export auth-action with default path", () => {
+      const exportAuthActionCommand = require("../export-auth-action").default;
+      run(["export", "auth-action"]);
+      expect(exportAuthActionCommand.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ path: "src/modules/auth/utils" })
       );
-      expect(mockProgram.option).toHaveBeenCalledWith(
-        "-p, --port <number>",
-        "Port number"
-      );
-      expect(mockProgram.option).toHaveBeenCalledWith(
-        "-h, --host <host>",
-        "Host to bind to"
-      );
-
-      // Verify action was registered
-      const startAction = mockProgram.action.mock.calls[2][0];
-      expect(startAction).toBe(startCommand);
     });
 
-    it("should parse process.argv", () => {
-      jest.isolateModules(() => {
-        require("../index");
-      });
+    it("respects a custom --path for export auth-action", () => {
+      const exportAuthActionCommand = require("../export-auth-action").default;
+      run(["export", "auth-action", "-p", "custom/dir"]);
+      expect(exportAuthActionCommand.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ path: "custom/dir" })
+      );
+    });
 
-      expect(mockProgram.parse).toHaveBeenCalledWith(process.argv);
+    it("dispatches start", () => {
+      const { startCommand } = require("../start");
+      run(["start"]);
+      expect(startCommand).toHaveBeenCalled();
+    });
+  });
+
+  describe("preAction hook", () => {
+    it("sets NO_CLI and loads env vars before the command runs", () => {
+      run(["dev"]);
+      expect(process.env.NO_CLI).toBe("true");
+      expect(loadEnvironmentVariables).toHaveBeenCalled();
+    });
+
+    it("defaults NODE_ENV per command", () => {
+      run(["build"]);
+      expect(process.env.NODE_ENV).toBe("production");
+    });
+
+    it("does not override an already-set NODE_ENV", () => {
+      process.env.NODE_ENV = "test";
+      run(["dev"]);
+      expect(process.env.NODE_ENV).toBe("test");
+    });
+
+    it("falls back to development for commands with no explicit default", () => {
+      run(["generate", "controller"]);
+      expect(process.env.NODE_ENV).toBe("development");
+    });
+  });
+
+  describe("generate subcommands", () => {
+    it("merges parent and child options for controller", () => {
+      const { generateCommand } = require("../generate");
+      run(["generate", "controller", "-m", "post", "-o"]);
+      expect(generateCommand.controller).toHaveBeenCalledWith(
+        expect.objectContaining({ module: "post", overwrite: true })
+      );
+    });
+
+    it("supports the g/c aliases", () => {
+      const { generateCommand } = require("../generate");
+      run(["g", "c", "-m", "user"]);
+      expect(generateCommand.controller).toHaveBeenCalledWith(
+        expect.objectContaining({ module: "user" })
+      );
+    });
+
+    it("resolves comma-separated shorthand via multipleComponents", () => {
+      const { generateCommand } = require("../generate");
+      run(["generate", "r,c,service", "-m", "post"]);
+      expect(generateCommand.multipleComponents).toHaveBeenCalledWith(
+        expect.objectContaining({ module: "post", names: "r,c,service" })
+      );
+    });
+
+    it("exits with an error on a genuinely unknown subcommand", () => {
+      const exitSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation(() => undefined as never);
+      const errorSpy = jest.spyOn(console, "error").mockImplementation(() => { });
+      run(["generate", "not a real command"]);
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Unknown command")
+      );
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      exitSpy.mockRestore();
+      errorSpy.mockRestore();
+    });
+
+    it("generates all components with --all flag", () => {
+      const { generateCommand } = require("../generate");
+      run(["generate", "all", "-m", "post"]);
+      expect(generateCommand.multipleComponents).toHaveBeenCalledWith(
+        expect.objectContaining({ module: "post", all: true })
+      );
+    });
+  });
+
+  describe("prisma and export commands", () => {
+    it("dispatches prisma generate", () => {
+      const prismaGenerateCommand = require("../prisma-generate").default;
+      run(["prisma", "generate"]);
+      expect(prismaGenerateCommand).toHaveBeenCalled();
+    });
+
+    it("dispatches export auth-action with default path", () => {
+      const exportAuthActionCommand = require("../export-auth-action").default;
+      run(["export", "auth-action"]);
+      expect(exportAuthActionCommand.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ path: "src/modules/auth/utils" })
+      );
+    });
+
+    it("respects a custom --path for export auth-action", () => {
+      const exportAuthActionCommand = require("../export-auth-action").default;
+      run(["export", "auth-action", "-p", "custom/dir"]);
+      expect(exportAuthActionCommand.mock.calls[0][0]).toEqual(
+        expect.objectContaining({ path: "custom/dir" })
+      );
     });
   });
 
   describe("exports", () => {
-    it("should export the required functions and objects", () => {
-      const exports = jest.requireActual("../index");
-
+    it("exposes program and command functions", () => {
+      const exports = run(["--version"].length ? ["dev"] : []); // any valid subcommand
       expect(exports).toHaveProperty("program");
       expect(exports).toHaveProperty("buildCommand");
       expect(exports).toHaveProperty("devCommand");
       expect(exports).toHaveProperty("startCommand");
+      expect(exports).toHaveProperty("generateCommand");
     });
   });
 });
