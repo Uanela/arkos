@@ -62,7 +62,7 @@ jest.mock("../export-auth-action", () => ({
 jest.mock("../../dotenv.helpers", () => ({
   loadEnvironmentVariables: jest.fn(() => []),
 }));
-
+jest.mock("../../helpers/fs.helpers");
 const ORIGINAL_ARGV = process.argv;
 const ORIGINAL_ENV = process.env;
 
@@ -72,10 +72,6 @@ async function run(argv: string[]) {
   jest.isolateModules(() => {
     mod = require("../index");
   });
-
-  // Wait for parseAsync to complete
-  await mod.program.parseAsync(process.argv);
-
   return mod;
 }
 

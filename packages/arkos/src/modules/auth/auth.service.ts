@@ -127,13 +127,13 @@ export class AuthService {
     return {
       expires: new Date(
         Date.now() +
-          Number(
-            toMs(
-              authConfigs?.jwt?.expiresIn ||
-                (process.env.JWT_EXPIRES_IN as MsDuration) ||
-                (arkosEnv.JWT_EXPIRES_IN as MsDuration)
-            )
+        Number(
+          toMs(
+            authConfigs?.jwt?.expiresIn ||
+            (process.env.JWT_EXPIRES_IN as MsDuration) ||
+            (arkosEnv.JWT_EXPIRES_IN as MsDuration)
           )
+        )
       ),
       httpOnly:
         authConfigs?.jwt?.cookie?.httpOnly ??
@@ -198,9 +198,9 @@ export class AuthService {
    *
    * **NB**: You must pay attention when using custom validation with zod or class-validator, try to use the same regex always.
    *
-   * **Note**: You can define it when calling arkos.init()
+   * **Note**: You can define it in configuration
    * ```ts
-   * arkos.init({
+   * const config = defineConfig({
    *  authentication: {
    *    passwordValidation:{ regex: /your-desired-regex/, message: 'password must contain...'}
    *  }
@@ -370,9 +370,9 @@ export class AuthService {
     const [userPermission, hasRolePermission] = await Promise.all([
       prisma.userPermission
         ? prisma.userPermission.findFirst({
-            where: { userId, permission: { resource, action } },
-            select: { effect: true },
-          })
+          where: { userId, permission: { resource, action } },
+          select: { effect: true },
+        })
         : Promise.resolve(null),
 
       prisma.userRole.findFirst({
@@ -714,7 +714,7 @@ export class AuthService {
     authActionService.add(action, resource, accessControl);
 
     return async (user: User | undefined): Promise<boolean> => {
-      // getArkosConfig must not be called the same time as arkos.init()
+      // getArkosConfig must not be called the same time as arkos()
       const configs = getArkosConfig();
 
       if (!isUsingAuthentication())

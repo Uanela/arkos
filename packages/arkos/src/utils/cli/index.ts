@@ -7,7 +7,6 @@ import { generateCommand } from "./generate";
 import { getVersion } from "./utils/cli.helpers";
 import prismaGenerateCommand from "./prisma-generate";
 import exportAuthActionCommand from "./export-auth-action";
-import { readArkosConfig } from '../helpers/arkos-config.helpers';
 
 const program = new Command();
 
@@ -341,15 +340,14 @@ const NODE_ENV_DEFAULTS: Record<string, string> = {
   build: "production",
 };
 
-program.hook("preAction", async (_thisCommand, actionCommand) => {
+program.hook("preAction", (_thisCommand, actionCommand) => {
   process.env.NO_CLI = "true";
   const cmdName = actionCommand.name();
   if (!process.env.NODE_ENV)
     process.env.NODE_ENV = NODE_ENV_DEFAULTS[cmdName] ?? "development";
   loadEnvironmentVariables();
-  await readArkosConfig();
 });
 
-program.parseAsync(process.argv).catch(console.error);
+program.parse(process.argv);
 
 export { program, buildCommand, devCommand, startCommand, generateCommand };

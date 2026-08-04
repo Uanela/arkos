@@ -85,7 +85,7 @@ export function arkos(): Arkos {
     return _app;
   }
 
-  app.build = async function () {
+  app.build = async function() {
     if (state === "built" || state === "building")
       throw ExitError(`app.build() must only be called once, see ${docsLink}`);
     if (state === "listening")
@@ -108,10 +108,10 @@ export function arkos(): Arkos {
     cb?: UserCallback
   ) => {
     logAppStartup(port, host);
-    return cb || function () {};
+    return cb || function() { };
   };
 
-  app.listen = async function (...args: any[]): Promise<Server> {
+  app.listen = async function(...args: any[]): Promise<Server> {
     process.env.__ARKOS_SERVER_LISTENER = "arkos";
 
     if (state === "listening")
