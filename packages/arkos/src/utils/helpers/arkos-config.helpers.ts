@@ -1,23 +1,23 @@
-import { createRequire } from 'module';
 import { defineConfig, UserArkosConfig } from "../define-config";
 import sheu from "../sheu";
 import ExitError from "./exit-error";
 import { crd, getUserFileExtension } from './fs.helpers';
 import { getPrismaInstance } from "./prisma.helpers";
+import { userRequire } from './global.helpers';
 
 let definedArkosConfig: any = {};
+
 const configFilename = `arkos.config.${getUserFileExtension()}`;
 const configPath = `${crd()}/${configFilename}`;
-
 try {
+  // loadEnvironmentVariables();
   let requireFunc: Function;
   if (typeof jest !== "undefined")
     requireFunc = () => ({});
   else if (typeof require !== "undefined") {
     requireFunc = require;
   } else {
-    const metaUrl = new Function("return import.meta.url")();
-    requireFunc = createRequire(metaUrl);
+    requireFunc = userRequire;
   }
   definedArkosConfig = requireFunc(configPath);
   if ("default" in definedArkosConfig)
