@@ -27,7 +27,7 @@ export function applyArkosRouterProxy<T extends object>(
   target: T,
   options?: RouterOptions & {
     prefix?: string | RegExp | Array<string | RegExp>;
-    openapi?: { tags?: string[] };
+    openapi?: { tags?: string[]; };
   },
   component: "app" | "router" = "router"
 ): T {
@@ -53,7 +53,7 @@ export function applyArkosRouterProxy<T extends object>(
       ] as const;
 
       if (prop === "use") {
-        return function (
+        return function(
           config: ArkosUseConfig | PathParams | ArkosAnyRequestHandler,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
@@ -98,8 +98,8 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             return "param" in handler
               ? handler
               : catchAsync(handler, {
-                  type: handler.length > 3 ? "error" : "normal",
-                });
+                type: handler.length > 3 ? "error" : "normal",
+              });
           });
 
           const middlewareStack = getMiddlewareStack(useConfig);
@@ -110,11 +110,11 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
       }
 
       if (prop === "route") {
-        return function (path: PathParams) {
+        return function(path: PathParams) {
           const routeChain: any = {};
 
           httpMethods.forEach((method) => {
-            routeChain[method] = function (
+            routeChain[method] = function(
               config: ArkosAnyRequestHandler | Omit<ArkosRouteConfig, "path">,
               ...handlers: ArkosAnyRequestHandler[]
             ) {
@@ -138,7 +138,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
       }
 
       if (httpMethods.includes(prop as any)) {
-        return function (
+        return function(
           config: ArkosRouteConfig,
           ...handlers: ArkosAnyRequestHandler[]
         ) {
@@ -155,14 +155,14 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             ...config,
             ...(options?.openapi
               ? {
-                  experimental: {
-                    ...config?.experimental,
-                    openapi: deepmerge(
-                      options.openapi || {},
-                      config?.experimental?.openapi || {}
-                    ),
-                  },
-                }
+                experimental: {
+                  ...config?.experimental,
+                  openapi: deepmerge(
+                    options.openapi || {},
+                    config?.experimental?.openapi || {}
+                  ),
+                },
+              }
               : {}),
             path,
           };
@@ -221,7 +221,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             Object.keys(config.validation || {}).length > 0
           )
             throw ExitError(
-              `Trying to pass validators into route ${route} config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })`
+              `Trying to pass validators into route ${route} config validation option without choosing a validation resolver under configuration as defineConfig({ validation: { resolver: '' } })`
             );
 
           if (config.authentication && !authenticationConfig?.mode)

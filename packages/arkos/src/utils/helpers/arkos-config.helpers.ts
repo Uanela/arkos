@@ -1,27 +1,38 @@
-import { ArkosConfig } from '../../exports';
+import { createRequire } from 'module';
 import { defineConfig, UserArkosConfig } from "../define-config";
 import sheu from "../sheu";
 import ExitError from "./exit-error";
 import { crd, getUserFileExtension } from './fs.helpers';
-import { importModule } from './global.helpers';
 import { getPrismaInstance } from "./prisma.helpers";
 
-let definedArkosConfig: ArkosConfig = {};
+let definedArkosConfig: any = {};
+const configFilename = `arkos.config.${getUserFileExtension()}`;
+const configPath = `${crd()}/${configFilename}`;
 
-export async function readArkosConfig() {
-  const configFilename = `arkos.config.${getUserFileExtension()}`;
+try {
+  let requireFunc: Function;
+  if (typeof jest !== "undefined")
+    requireFunc = () => ({});
+  else if (typeof require !== "undefined") {
+    requireFunc = require;
+  } else {
+    const metaUrl = new Function("return import.meta.url")();
+    requireFunc = createRequire(metaUrl);
+  }
+  definedArkosConfig = requireFunc(configPath);
+  if ("default" in definedArkosConfig)
+    definedArkosConfig = definedArkosConfig.default;
 
-  try {
-    definedArkosConfig = await importModule(`${crd()}/${configFilename}`) as ArkosConfig;
-  } catch (err: any) {
-    if (err.message.toLowerCase().includes(`${configFilename}'`))
-      sheu.warn(
-        `Using default configs, because ${configFilename} was not found`,
-        {
-          timestamp: true,
-        }
-      );
-    else throw err;
+} catch (err: any) {
+  if (err.message.toLowerCase().includes(`${configFilename}`)) {
+    sheu.warn(
+      `Using default configs, because ${configFilename} was not found`,
+      {
+        timestamp: true,
+      }
+    );
+  } else {
+    throw err;
   }
 }
 

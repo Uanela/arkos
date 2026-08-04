@@ -21,7 +21,7 @@ import {
 } from "./arkos-config/utils";
 
 /**
- * Defines the initial configs of the api to be loaded at startup when arkos.init() is called.
+ * Defines the initial configs of the api to be loaded at startup.
  */
 export type ArkosConfig = {
   /**
@@ -295,7 +295,7 @@ export type ArkosConfig = {
      * **message**: (Optional) A custom error message to display when the password does not meet the required strength criteria.
      * @deprecated will stop working on v2.0
      */
-    passwordValidation?: { regex: RegExp; message?: string };
+    passwordValidation?: { regex: RegExp; message?: string; };
     /**
      * Allows to specify the request rate limit for all authentication endpoints but `/api/users/me`.
      * 
@@ -386,10 +386,7 @@ export type ArkosConfig = {
   /** Allows to customize and toggle the built-in validation, by default it is set to `false`. If true is passed it will use validation with the default resolver set to `class-validator` if you intend to change the resolver to `zod` do the following:
    *
    *```ts
-   * // src/app.ts
-   * import arkos from 'arkos'
-   *
-   * arkos.init({
+   * const config = defineConfig({
    *    validation: {
    *        resolver: "zod"
    *    }
@@ -426,34 +423,34 @@ export type ArkosConfig = {
     strict?: boolean;
   } & (
     | {
-        resolver: "class-validator";
-        /**
-         * ValidatorOptions to used while validating request data.
-         *
-         * **Default**:
-         * ```ts
-         * {
-         *  whitelist: true
-         *  forbidNonWhitelisted: true
-         * }
-         * ```
-         */
-        validationOptions?: ValidatorOptions;
-      }
+      resolver: "class-validator";
+      /**
+       * ValidatorOptions to used while validating request data.
+       *
+       * **Default**:
+       * ```ts
+       * {
+       *  whitelist: true
+       *  forbidNonWhitelisted: true
+       * }
+       * ```
+       */
+      validationOptions?: ValidatorOptions;
+    }
     | {
-        resolver: "zod";
+      resolver: "zod";
+      /**
+       * @since v1.5.0-beta
+       */
+      validationOptions?: {
         /**
-         * @since v1.5.0-beta
+         * Throws an error for know whitelisted fields
+         *
+         * @default true
          */
-        validationOptions?: {
-          /**
-           * Throws an error for know whitelisted fields
-           *
-           * @default true
-           */
-          forbidNonWhitelisted?: boolean;
-        };
-      }
+        forbidNonWhitelisted?: boolean;
+      };
+    }
   );
   /**
    * Defines file upload configurations
@@ -593,38 +590,38 @@ export type ArkosConfig = {
      * See https://www.npmjs.com/package/cors
      */
     cors?:
-      | false
-      | cors.CorsOptions
-      | cors.CorsOptionsDelegate
-      | {
-          /**
-           * Defines allowed origins to access the API.
-           *
-           * @deprecated Use `cors: { origin: string | string[] }` (cors.CorsOptions) directly instead.
-           */
-          allowedOrigins?: string | string[] | "*" | true;
-          /**
-           * Additional cors options.
-           *
-           * @deprecated Pass cors.CorsOptions directly instead: `cors: { origin: "...", credentials: true }`.
-           */
-          options?: cors.CorsOptions;
-          /**
-           * If you would like to override the entire middleware.
-           *
-           * @deprecated Pass the handler directly instead: `cors: myCorsHandler`.
-           */
-          customHandler?: cors.CorsOptionsDelegate;
-        }
-      | ArkosRequestHandler;
+    | false
+    | cors.CorsOptions
+    | cors.CorsOptionsDelegate
+    | {
+      /**
+       * Defines allowed origins to access the API.
+       *
+       * @deprecated Use `cors: { origin: string | string[] }` (cors.CorsOptions) directly instead.
+       */
+      allowedOrigins?: string | string[] | "*" | true;
+      /**
+       * Additional cors options.
+       *
+       * @deprecated Pass cors.CorsOptions directly instead: `cors: { origin: "...", credentials: true }`.
+       */
+      options?: cors.CorsOptions;
+      /**
+       * If you would like to override the entire middleware.
+       *
+       * @deprecated Pass the handler directly instead: `cors: myCorsHandler`.
+       */
+      customHandler?: cors.CorsOptionsDelegate;
+    }
+    | ArkosRequestHandler;
     /**
      * Defines options for the built-in express.json() middleware
      * Nothing is passed by default.
      */
     expressJson?:
-      | false
-      | Parameters<typeof express.json>[0]
-      | ArkosRequestHandler;
+    | false
+    | Parameters<typeof express.json>[0]
+    | ArkosRequestHandler;
     /**
      * Allows to pass paremeters to cookieParser from npm package cookie-parser
      * Nothing is passed by default.
@@ -632,12 +629,12 @@ export type ArkosConfig = {
      * See [www.npmjs.com/package/cookie-parser](https://www.npmjs.com/package/cookie-parser) for further details.
      */
     cookieParser?:
-      | false
-      | {
-          secret?: string | string[];
-          options?: Parameters<typeof cookieParser>[1];
-        }
-      | ArkosRequestHandler;
+    | false
+    | {
+      secret?: string | string[];
+      options?: Parameters<typeof cookieParser>[1];
+    }
+    | ArkosRequestHandler;
     /**
    * Options to define how query must be parsed.
    *
@@ -755,11 +752,7 @@ export type ArkosConfig = {
    * **Usage**
    *
    * ```ts
-   * // src/app.ts
-   *
-   * import arkos from "arkos"
-   *
-   *  arkos.init({
+   * const config = defineConfig({
    *    // other configs
    *    swagger: {
    *      mode: "zod",
@@ -858,7 +851,7 @@ export type ArkosConfig = {
          *
          * @default [{ url: "http://localhost:8000", description: "Development server" }]
          *
-         * This can be overridden automatically by Arkos based on CLI, .env, or `arkos.init()`.
+         * This can be overridden automatically by Arkos based on CLI, .env, or config.
          */
         servers?: {
           /**
