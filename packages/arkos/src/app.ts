@@ -1,9 +1,7 @@
 import {
   isProduction,
-  readArkosConfig,
   validateArkosConfig,
 } from "./utils/helpers/arkos-config.helpers";
-readArkosConfig();
 import express from "express";
 import setupApp from "./utils/setup-app";
 import { Arkos } from "./types/arkos";

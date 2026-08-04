@@ -4,10 +4,12 @@ import ExitError from "./exit-error";
 import { crd, getUserFileExtension } from './fs.helpers';
 import { getPrismaInstance } from "./prisma.helpers";
 import { userRequire } from './global.helpers';
+import { loadEnvironmentVariables } from '../dotenv.helpers';
 
 let definedArkosConfig: any = {};
 
 export function readArkosConfig() {
+  loadEnvironmentVariables();
   const configFilename = `arkos.config.${getUserFileExtension()}`;
   const configPath = `${crd()}/${configFilename}`;
   try {

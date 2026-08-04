@@ -1,4 +1,3 @@
-import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { Command } from "commander";
 import { buildCommand } from "./build";
 import { devCommand } from "./dev";
@@ -347,7 +346,6 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
   const cmdName = actionCommand.name();
   if (!process.env.NODE_ENV)
     process.env.NODE_ENV = NODE_ENV_DEFAULTS[cmdName] ?? "development";
-  loadEnvironmentVariables();
   readArkosConfig();
 });
 
