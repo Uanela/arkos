@@ -6,7 +6,7 @@ import { getPrismaInstance } from "./prisma.helpers";
 import { userRequire } from './global.helpers';
 import { loadEnvironmentVariables } from '../dotenv.helpers';
 
-let definedArkosConfig: any = {};
+let definedArkosConfig: any;
 
 export function readArkosConfig() {
   loadEnvironmentVariables();
@@ -24,6 +24,7 @@ export function readArkosConfig() {
     definedArkosConfig = requireFunc(configPath);
   } catch (err: any) {
     if (err.message.toLowerCase().includes(`${configFilename}`)) {
+      definedArkosConfig = {};
       sheu.warn(
         `Using default configs, because ${configFilename} was not found`,
         {
@@ -54,6 +55,8 @@ export function isAuthenticationEnabled() {
  * @returns {ArkosConfig}
  */
 export function getArkosConfig(): UserArkosConfig {
+  if (definedArkosConfig === undefined) readArkosConfig();
+
   const config =
     typeof definedArkosConfig === "string"
       ? { __loader: "defineConfig" }
@@ -114,3 +117,4 @@ export function validateArkosConfig() {
       `Arkos' authentication system relies on prisma instance, please disabled your authentication or see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup to setup a prisma instance`
     );
 }
+
