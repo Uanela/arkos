@@ -4,35 +4,38 @@ import ExitError from "./exit-error";
 import { crd, getUserFileExtension } from './fs.helpers';
 import { getPrismaInstance } from "./prisma.helpers";
 import { userRequire } from './global.helpers';
+import { loadEnvironmentVariables } from '../dotenv.helpers';
 
 let definedArkosConfig: any = {};
 
-const configFilename = `arkos.config.${getUserFileExtension()}`;
-const configPath = `${crd()}/${configFilename}`;
-try {
-  // loadEnvironmentVariables();
-  let requireFunc: Function;
-  if (typeof jest !== "undefined")
-    requireFunc = () => ({});
-  else if (typeof require !== "undefined") {
-    requireFunc = require;
-  } else {
-    requireFunc = userRequire;
-  }
-  definedArkosConfig = requireFunc(configPath);
-  if ("default" in definedArkosConfig)
-    definedArkosConfig = definedArkosConfig.default;
+export function readArkosConfig() {
+  loadEnvironmentVariables();
+  const configFilename = `arkos.config.${getUserFileExtension()}`;
+  const configPath = `${crd()}/${configFilename}`;
+  try {
+    let requireFunc: Function;
+    if (typeof jest !== "undefined")
+      requireFunc = () => ({});
+    else if (typeof require !== "undefined") {
+      requireFunc = require;
+    } else {
+      requireFunc = userRequire;
+    }
+    definedArkosConfig = requireFunc(configPath);
+    if ("default" in definedArkosConfig)
+      definedArkosConfig = definedArkosConfig.default;
 
-} catch (err: any) {
-  if (err.message.toLowerCase().includes(`${configFilename}`)) {
-    sheu.warn(
-      `Using default configs, because ${configFilename} was not found`,
-      {
-        timestamp: true,
-      }
-    );
-  } else {
-    throw err;
+  } catch (err: any) {
+    if (err.message.toLowerCase().includes(`${configFilename}`)) {
+      sheu.warn(
+        `Using default configs, because ${configFilename} was not found`,
+        {
+          timestamp: true,
+        }
+      );
+    } else {
+      throw err;
+    }
   }
 }
 

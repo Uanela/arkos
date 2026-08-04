@@ -1,4 +1,3 @@
-import { loadEnvironmentVariables } from "../dotenv.helpers";
 import { Command } from "commander";
 import { buildCommand } from "./build";
 import { devCommand } from "./dev";
@@ -7,6 +6,7 @@ import { generateCommand } from "./generate";
 import { getVersion } from "./utils/cli.helpers";
 import prismaGenerateCommand from "./prisma-generate";
 import exportAuthActionCommand from "./export-auth-action";
+import { readArkosConfig } from '../helpers/arkos-config.helpers';
 
 const program = new Command();
 
@@ -346,7 +346,7 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
   const cmdName = actionCommand.name();
   if (!process.env.NODE_ENV)
     process.env.NODE_ENV = NODE_ENV_DEFAULTS[cmdName] ?? "development";
-  loadEnvironmentVariables();
+  readArkosConfig();
 });
 
 program.parse(process.argv);
