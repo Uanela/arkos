@@ -117,3 +117,4 @@ export function validateArkosConfig() {
       `Arkos' authentication system relies on prisma instance, please disabled your authentication or see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup to setup a prisma instance`
     );
 }
+
