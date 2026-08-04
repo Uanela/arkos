@@ -22,9 +22,6 @@ export function readArkosConfig() {
       requireFunc = userRequire;
     }
     definedArkosConfig = requireFunc(configPath);
-    if ("default" in definedArkosConfig)
-      definedArkosConfig = definedArkosConfig.default;
-
   } catch (err: any) {
     if (err.message.toLowerCase().includes(`${configFilename}`)) {
       sheu.warn(
