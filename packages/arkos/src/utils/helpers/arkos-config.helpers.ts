@@ -1,24 +1,28 @@
+import { ArkosConfig } from '../../exports';
 import { defineConfig, UserArkosConfig } from "../define-config";
 import sheu from "../sheu";
 import ExitError from "./exit-error";
-import * as fsHelpers from "./fs.helpers";
+import { crd, getUserFileExtension } from './fs.helpers';
+import { importModule } from './global.helpers';
 import { getPrismaInstance } from "./prisma.helpers";
-("ReplaceWithNeededImportsForArkosConfig"); // This will be filled by post build script
 
-let definedArkosConfig: any = {};
-const configFilename = `arkos.config.${fsHelpers.getUserFileExtension()}`
+let definedArkosConfig: ArkosConfig = {};
 
-try {
-  definedArkosConfig = "ReplaceWithDynamicImport"; // This will be filled by post build script
-} catch (err: any) {
-  if (err.message.toLowerCase().includes(`${configFilename}'`))
-    sheu.warn(
-      `Using default configs, because ${configFilename} was not found`,
-      {
-        timestamp: true,
-      }
-    );
-  else throw err
+export async function readArkosConfig() {
+  const configFilename = `arkos.config.${getUserFileExtension()}`;
+
+  try {
+    definedArkosConfig = await importModule(`${crd()}/${configFilename}`) as ArkosConfig;
+  } catch (err: any) {
+    if (err.message.toLowerCase().includes(`${configFilename}'`))
+      sheu.warn(
+        `Using default configs, because ${configFilename} was not found`,
+        {
+          timestamp: true,
+        }
+      );
+    else throw err;
+  }
 }
 
 export function isUsingAuthentication() {
@@ -43,7 +47,7 @@ export function getArkosConfig(): UserArkosConfig {
     typeof definedArkosConfig === "string"
       ? { __loader: "defineConfig" }
       : (definedArkosConfig as any)?.default || { __loader: "defineConfig" };
-  const configFile = `arkos.config.${fsHelpers.getUserFileExtension()}`;
+  const configFile = `arkos.config.${getUserFileExtension()}`;
 
   if (
     (config as any).__loader !== "defineConfig" &&
