@@ -12,20 +12,20 @@ export default function CompaniesLogos(): ReactElement {
   ];
 
   return (
-    <div className="mx-auto md:mt-20 sm:mt-16 mt-10 px-4">
+    <div className="mx-auto sm:mt-12 mt-10 px-4">
       <div className="flex md:gap-24 sm:gap-20 gap-6 items-center w-fit mx-auto">
-        {logos.map((logo) => (
-          <div key={logo.url}>
+        { logos.map((logo) => (
+          <div key={ logo.url }>
             <Image
-              src={`/img/${logo.url}`}
-              alt={logo.url}
-              className={twMerge(
+              src={ `/img/${logo.url}` }
+              alt={ logo.url }
+              className={ twMerge(
                 "h-14 object-contain grayscale hover:filter-none brightness-150 opacity-90 transition-all",
                 logo.className
-              )}
+              ) }
             />
           </div>
-        ))}
+        )) }
       </div>
     </div>
   );
