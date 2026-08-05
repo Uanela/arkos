@@ -140,7 +140,7 @@ export default function HeroSection({ stats }: { stats: HeroStats; }): ReactElem
             <h2 className="lg:text-6xl md:text-5xl text-4xl font-semibold z-10 mt-5 leading-tight">
               Build <span className="">fast</span> and <span className="">scalable</span> softwares under <span className="underline decoration-sky-500">tight deadlines</span>
             </h2>
-            <div className="mt-8 md:w-92 mx-auto md:mx-0">
+            <div className="md:mt-8 mt-16 md:w-92 mx-auto md:mx-0">
               <CreateArkosToolTip />
               <div className="flex justify-center md:justify-start z-10 flex-col items-center md:items-start gap-2 sm:flex-row md:mt-3 mt-2">
 
@@ -240,7 +240,7 @@ function StatsPanel({ stars, latestRelease, monthlyDownloads }: HeroStats) {
   if (rows.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-1.5 items-end md:mt-16 mt-2">
+    <div className="flex flex-col gap-1.5 items-end md:mt-16 mt-8">
       { rows.map((row) => (
         <div key={ row.label } className="flex items-baseline gap-3 text-sm">
           <span className="text-gray-400">{ row.label }</span>
@@ -256,9 +256,9 @@ function StatsPanel({ stars, latestRelease, monthlyDownloads }: HeroStats) {
 function CreateArkosToolTip() {
   const [tooltipText, setTooltip] = useState("Copy Code!");
   return (
-    <div className="mt-3 w-full text-center md:text-left cursor-pointer bg-slate-950/80 group mx-auto md:mx-0">
+    <div className="mt-3 w-full text-center md:text-left cursor-pointer group mx-auto md:mx-0">
       <div
-        className="rounded-md bg-sky-500/5 outline outline-sky-500 py-2 max-w-[370px] mx-auto md:mx-0 relative group cursor-pointer hover:[box-shadow:0px_0px_20px_0px_#0ea5e9aa] create-arkos-cmd px-8 text-center"
+        className="rounded-md bg-slate-950/80 outline outline-sky-500 py-2 max-w-[370px] mx-auto md:mx-0 relative group cursor-pointer hover:[box-shadow:0px_0px_20px_0px_#0ea5e9aa] create-arkos-cmd px-8 text-center"
         onClick={ () => {
           navigator.clipboard.writeText("npx create-arkos@latest");
           setTooltip("Copied!");

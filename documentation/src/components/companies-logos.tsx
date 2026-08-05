@@ -12,7 +12,7 @@ export default function CompaniesLogos(): ReactElement {
   ];
 
   return (
-    <div className="mx-auto sm:mt-12 mt-10 px-4">
+    <div className="mx-auto sm:mt-12 mt-0 px-4">
       <div className="flex md:gap-24 sm:gap-20 gap-6 items-center w-fit mx-auto">
         { logos.map((logo) => (
           <div key={ logo.url }>

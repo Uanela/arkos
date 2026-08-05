@@ -50,7 +50,7 @@ function Home() {
       {/* Features Section */ }
       <section
         id="tailwind"
-        className="text-white md:py-10 pb-8 tailwind  flex justify-center"
+        className="text-white md:py-10 md:mt-0 mt-8 pb-8 p-4 tailwind  flex justify-center"
       >
         <div className="container mx-auto relative max-w-6xl">
           <div className="absolute top-[25%] left-[70%] md:size-[700px] size-[200px] bg-sky-500 rounded-full opacity-20 blur-3xl z-[1]"></div>
