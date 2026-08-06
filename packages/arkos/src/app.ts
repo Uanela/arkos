@@ -1,4 +1,7 @@
-import "./utils/helpers/arkos-config.helpers"; // just to trigger loading of arkos config
+import {
+  isProduction,
+  validateArkosConfig,
+} from "./utils/helpers/arkos-config.helpers";
 import express from "express";
 import setupApp from "./utils/setup-app";
 import { Arkos } from "./types/arkos";
@@ -11,10 +14,6 @@ import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
 import { IncomingMessage, Server, ServerResponse } from "http";
 import ExitError from "./utils/helpers/exit-error";
 import { applyArkosRouterProxy } from "./utils/arkos-router/utils/helpers/apply-arkos-router-proxy";
-import {
-  isProduction,
-  validateArkosConfig,
-} from "./utils/helpers/arkos-config.helpers";
 export const app: express.Express = express();
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
@@ -85,7 +84,7 @@ export function arkos(): Arkos {
     return _app;
   }
 
-  app.build = async function () {
+  app.build = async function() {
     if (state === "built" || state === "building")
       throw ExitError(`app.build() must only be called once, see ${docsLink}`);
     if (state === "listening")
@@ -108,10 +107,10 @@ export function arkos(): Arkos {
     cb?: UserCallback
   ) => {
     logAppStartup(port, host);
-    return cb || function () {};
+    return cb || function() { };
   };
 
-  app.listen = async function (...args: any[]): Promise<Server> {
+  app.listen = async function(...args: any[]): Promise<Server> {
     process.env.__ARKOS_SERVER_LISTENER = "arkos";
 
     if (state === "listening")
