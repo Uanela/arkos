@@ -258,7 +258,7 @@ function CreateArkosToolTip() {
   return (
     <div className="mt-3 w-full text-center md:text-left cursor-pointer group mx-auto md:mx-0">
       <div
-        className="rounded-md bg-slate-950/80 outline outline-sky-500 py-2 max-w-[370px] mx-auto md:mx-0 relative group cursor-pointer hover:[box-shadow:0px_0px_20px_0px_#0ea5e9aa] create-arkos-cmd px-8 text-center"
+        className="rounded-md bg-slate-950/80 outline outline-sky-500 py-2 mx-auto md:mx-0 relative group cursor-pointer hover:[box-shadow:0px_0px_20px_0px_#0ea5e9aa] create-arkos-cmd px-8 text-center"
         onClick={ () => {
           navigator.clipboard.writeText("npx create-arkos@latest");
           setTooltip("Copied!");
