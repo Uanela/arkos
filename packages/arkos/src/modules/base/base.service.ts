@@ -21,6 +21,7 @@ import {
 import { ServiceBaseContext } from "./types/base.service.types";
 import serviceHooksManager from "./utils/service-hooks-manager";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
+import { ArkosPrismaInput } from '../../types/arkos-prisma-input';
 
 type Models = PrismaModels<any>;
 
@@ -518,7 +519,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
             deepmerge(
               finalPrismaQueryParams.batchedData?.update,
               queryOptions || {}
-            ) as { where: any; data: any }
+            ) as { where: any; data: any; }
           );
         });
 
@@ -592,7 +593,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
    * ```
    */
   async createOne<TOptions extends CreateOptions<TModelName>>(
-    data: CreateData<TModelName>,
+    data: CreateData<TModelName> | ArkosPrismaInput<CreateData<TModelName>>,
     queryOptions?: TOptions,
     context?: ServiceBaseContext
   ): Promise<GetPayload<TModelName, TOptions>> {
@@ -621,7 +622,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
    * ```
    */
   async createMany<TOptions extends CreateManyOptions<TModelName>>(
-    data: CreateManyData<TModelName>,
+    data: CreateManyData<TModelName> | ArkosPrismaInput<CreateManyData<TModelName>>,
     queryOptions?: TOptions,
     context?: ServiceBaseContext
   ): Promise<GetPayload<TModelName, TOptions>[]> {
@@ -768,7 +769,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
    */
   async updateOne<TOptions extends UpdateOneOptions<TModelName>>(
     filters: UpdateOneFilters<TModelName>,
-    data: UpdateOneData<TModelName>,
+    data: UpdateOneData<TModelName> | ArkosPrismaInput<UpdateOneData<TModelName>>,
     queryOptions?: TOptions,
     context?: ServiceBaseContext
   ): Promise<GetPayload<TModelName, TOptions>> {
@@ -796,7 +797,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
    */
   async updateById<TOptions extends UpdateOneOptions<TModelName>>(
     id: string | number,
-    data: UpdateOneData<TModelName>,
+    data: UpdateOneData<TModelName> | ArkosPrismaInput<UpdateOneData<TModelName>>,
     queryOptions?: TOptions,
     context?: ServiceBaseContext
   ): Promise<GetPayload<TModelName, TOptions>> {
@@ -827,10 +828,10 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
    */
   async updateMany<TOptions extends UpdateManyOptions<TModelName>>(
     filters: UpdateManyFilters<TModelName>,
-    data: UpdateManyData<TModelName>,
+    data: UpdateManyData<TModelName> | ArkosPrismaInput<UpdateManyData<TModelName>>,
     queryOptions?: TOptions,
     context?: ServiceBaseContext
-  ): Promise<{ count: number }> {
+  ): Promise<{ count: number; }> {
     return this.executeOperation({
       operationType: "updateMany",
       prismaMethod: "updateMany",
@@ -898,7 +899,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
   async deleteMany(
     filters: DeleteManyFilters<TModelName>,
     context?: ServiceBaseContext
-  ): Promise<{ count: number }> {
+  ): Promise<{ count: number; }> {
     return this.executeOperation({
       operationType: "deleteMany",
       prismaMethod: "deleteMany",
@@ -922,7 +923,7 @@ export class BaseService<TModelName extends keyof Models = keyof Models> {
    * ```
    */
   async batchUpdate<TOptions extends UpdateOneOptions<TModelName>>(
-    dataArray: UpdateOneData<TModelName>[],
+    dataArray: UpdateOneData<TModelName>[] | ArkosPrismaInput<UpdateOneData<TModelName>>[],
     queryOptions?: TOptions,
     context?: ServiceBaseContext
   ): Promise<GetPayload<TModelName, TOptions>[]> {
