@@ -58,7 +58,6 @@ arkos g p -m post
 
 They still work. Nothing breaks. But they log a deprecation warning at startup and will be removed in v2.0. The [migration guide](/blog/how-migrate-from-auth-files-to-arkos-policy) walks through the conversion — it's usually a five-minute change per module.
 
----
 
 ## RouteHook — the new name for RouterConfig
 
@@ -81,7 +80,6 @@ export const hook: RouteHook = { ... };
 
 `RouteHook` now accepts the same configuration object as `ArkosRouter` route definitions — authentication, validation, rate limiting, disabled — across all three built-in route categories (Prisma model routes, auth routes, file upload routes). See the [Route Hook guide](/docs/core-concepts/components/route-hooks) for the full reference.
 
----
 
 ## New app initialization model
 
@@ -113,7 +111,6 @@ export default defineConfig({
 
 Access the underlying HTTP server before listening via `app.build()` for WebSocket setups and similar use cases.
 
----
 
 ## Authentication hooks
 
@@ -141,7 +138,6 @@ export default defineConfig({
 
 Each hook accepts a single function or an array. `skip()` lets a before hook bypass the core step and jump directly to after hooks.
 
----
 
 ## OpenAPI: authenticated docs in production
 
@@ -159,7 +155,6 @@ export default defineConfig({
 
 `GET /api/posts` in your OpenAPI docs now shows the actual filterable fields derived from your Prisma schema — not a generic `filters: string` parameter. String fields show `icontains`, numeric fields show `equals / gte / lte`, booleans show as boolean, enums show allowed values. Pagination and sorting parameters (`page`, `limit`, `sort`, `fields`) are included automatically on `findMany`.
 
----
 
 ## Built-in HTTP error classes
 
@@ -192,7 +187,6 @@ Multer errors are now caught globally and mapped to clean HTTP responses:
 | `LIMIT_FILE_COUNT`      | 400    | `TooManyFiles`        |
 | `MISSING_FIELD_NAME`    | 400    | `MissingFieldName`    |
 
----
 
 ## CLI improvements
 
@@ -221,7 +215,6 @@ arkos g update-password-dto -m auth
 
 The `--path` flag now works correctly for all generation commands, including bulk generation.
 
----
 
 ## Prisma-optional mode
 
@@ -239,7 +232,6 @@ export default defineConfig({
 
 `create-arkos` now supports `none` as a database provider option, generating a project without Prisma or authentication boilerplate.
 
----
 
 ## How to try it
 
