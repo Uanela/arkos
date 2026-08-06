@@ -9,11 +9,13 @@ import sheu from "../../utils/sheu";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import { APIFeatures } from "../../exports/utils";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
+import { BaseRouteHook } from '../../types/router-config';
+import ExitError from '../../utils/helpers/exit-error';
 
 export interface OperationHooks {
   beforeQuery?: (req: ArkosRequest) => void | Promise<void>;
   afterQuery?: (
-    queryData: { where: any; queryOptions: any },
+    queryData: { where: any; queryOptions: any; },
     req: ArkosRequest
   ) => void | Promise<void>;
   beforeService?: (args: any[], req: ArkosRequest) => any[] | Promise<any[]>;
@@ -89,12 +91,17 @@ export class BaseController {
    */
   constructor(modelName: string) {
     const components = getModuleComponents(modelName);
+    const configuredService = (components?.router?.config as BaseRouteHook | undefined)?.service;
+
+    if (configuredService && !(configuredService instanceof BaseService))
+      throw ExitError(
+        `Invalid service configured for model "${modelName}": expected an instance of BaseService, please make your service object extend the BaseService class see https://www.arkosjs.com/docs/reference/base-service`,
+      );
 
     this.modelName = modelName;
-    this.service = new BaseService(modelName);
+    this.service = configuredService ?? new BaseService(modelName);
     this.interceptors = components?.interceptors || {};
   }
-
   private executeOperation = (config: OperationConfig) => {
     return catchAsync(
       async (
@@ -212,10 +219,10 @@ export class BaseController {
         let responseData = config.responseBuilder
           ? config.responseBuilder(data, additionalData)
           : this.defaultResponseBuilder(
-              data,
-              additionalData,
-              config.operationType
-            );
+            data,
+            additionalData,
+            config.operationType
+          );
 
         if (config.hooks?.beforeResponse) {
           responseData = await config.hooks.beforeResponse(responseData, req);

@@ -1,4 +1,5 @@
 import { ArkosRouteConfig } from "../exports";
+import { BaseService } from '../exports/services';
 
 export type RouterEndpoint =
   | "createOne"
@@ -27,7 +28,13 @@ export type FileUploadRouterEndpoint =
   | "updateFile"
   | "deleteFile";
 
-type BaseRouterConfig = {
+export type BaseRouteHook = {
+  /**
+   *
+   * 
+   * @since 1.8.0-canary.1
+   */
+  service?: BaseService<any>;
   /**
    * Backward compatibility (prior 1.4.0-beta) - disables/enables endpoints
    *
@@ -42,12 +49,13 @@ type BaseRouterConfig = {
    * ```
    */
   disable?:
-    | boolean
-    | {
-        [K in RouterEndpoint]?: boolean;
-      };
+  | boolean
+  | {
+    [K in RouterEndpoint]?: boolean;
+  };
 } & {
   [K in RouterEndpoint]?: Omit<ArkosRouteConfig, "path">;
+
 };
 
 type AuthRouterConfig = {
@@ -65,10 +73,10 @@ type AuthRouterConfig = {
    * ```
    */
   disable?:
-    | boolean
-    | {
-        [K in AuthRouterEndpoint]?: boolean;
-      };
+  | boolean
+  | {
+    [K in AuthRouterEndpoint]?: boolean;
+  };
 } & {
   [K in AuthRouterEndpoint]?: Omit<ArkosRouteConfig, "path">;
 };
@@ -88,10 +96,10 @@ type FileUploadRouterConfig = {
    * ```
    */
   disable?:
-    | boolean
-    | {
-        [K in FileUploadRouterEndpoint]?: boolean;
-      };
+  | boolean
+  | {
+    [K in FileUploadRouterEndpoint]?: boolean;
+  };
 } & {
   [K in FileUploadRouterEndpoint]?: Omit<ArkosRouteConfig, "path" | "uploads">;
 };
@@ -102,8 +110,8 @@ type FileUploadRouterConfig = {
 export type RouterConfig<T extends string = string> = T extends "auth"
   ? AuthRouterConfig
   : T extends "file-upload"
-    ? FileUploadRouterConfig
-    : BaseRouterConfig;
+  ? FileUploadRouterConfig
+  : BaseRouteHook;
 
 /**
  * Represents a Route Hook configuration for Arkos auto-generated routes.
@@ -115,7 +123,7 @@ export type RouterConfig<T extends string = string> = T extends "auth"
  * @template T - The hook type:
  * - `"auth"` → Uses {@link AuthRouterConfig} for authentication routes
  * - `"file-upload"` → Uses {@link FileUploadRouterConfig} for file upload routes
- * - `string` (default) → Uses {@link BaseRouterConfig} for standard model routes
+ * - `string` (default) → Uses {@link BaseRouteHook} for standard model routes
  *
  * @example
  * ```ts
@@ -152,5 +160,5 @@ export type RouterConfig<T extends string = string> = T extends "auth"
 export type RouteHook<T extends string = string> = T extends "auth"
   ? AuthRouterConfig
   : T extends "file-upload"
-    ? FileUploadRouterConfig
-    : BaseRouterConfig;
+  ? FileUploadRouterConfig
+  : BaseRouteHook;
