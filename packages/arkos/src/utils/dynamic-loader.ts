@@ -216,12 +216,17 @@ export function assignModuleToResult(
   const ext = getUserFileExtension();
   const filenameTempalte = `${kebabCase(appModule)}.suffix.${ext}`;
 
-  if (key === "authConfigs") {
+  if (key === "authConfigs")
     sheu.warn(
       `${kebabCase(appModule)}.auth.${ext} is deprecated and will be removed in v2.0, please migrate to ArkosPolicy see https://www.arkosjs.com/blog/how-migrate-from-auth-files-to-arkos-policy`,
       { timestamp: true }
     );
-  }
+
+  if (key === "hooks")
+    sheu.warn(
+      `${kebabCase(appModule)}.hooks.${ext} is deprecated and will be removed in v2.0, please migrate it to RouteHook see https://www.arkosjs.com/blog/how-to-service-hooks-to-route-hooks-v1`,
+      { timestamp: true }
+    );
 
   if (key === "interceptors") result.interceptors = module;
   else if (key === "router") {
@@ -441,8 +446,8 @@ const DEPRECATION_GROUPS = [
   // {
   //   key: "hooks",
   //   fileKey: (moduleName: string, ext: string) => `${moduleName}.hooks.${ext}`,
-  //   label: "Service Hooks (.hooks.ts)",
-  //   migration: "https://www.arkosjs.com/blog/hooks-to-service-hook",
+  //   label: `Service Hooks (.hooks.${getUserFileExtension()})`,
+  //   migration: "https://www.arkosjs.com/blog/hooks-to-route-hook-v1",
   // },
   // {
   //   key: "prismaQueryOptions",
