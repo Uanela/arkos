@@ -263,15 +263,8 @@ type StripPrismaFilters<T> = T extends
   >
   : T;
 
-type StripToScalar<T> = T extends
-  | string
-  | number
-  | boolean
-  | Date
-  | null
-  | undefined
-  ? T
-  : never;
+type ScalarValue = string | number | boolean | Date | null | undefined;
+type StripToScalar<T> = T extends Array<ScalarValue> ? T : T extends ScalarValue ? T : never;
 
 type FlattenRelations<T> = {
   [K in keyof T]: IsArrayRelation<T[K]> extends true
