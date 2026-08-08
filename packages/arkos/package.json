@@ -1,6 +1,6 @@
 {
   "name": "arkos",
-  "version": "1.8.0-canary.1",
+  "version": "1.8.0-canary.2",
   "description": "The Express & Prisma RESTful Framework",
   "main": "dist/cjs/exports/index.js",
   "module": "dist/esm/exports/index.js",
@@ -194,7 +194,7 @@
     "ts-prune": "0.10.3",
     "tsx": "4.23.1",
     "type-fest": "4.41.0",
-    "typescript": "5.8.2",
+    "typescript": "5.8.2"
   },
   "dependencies": {
     "chokidar": "4.0.3",
