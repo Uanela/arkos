@@ -1,5 +1,5 @@
 import { ValidationError } from "class-validator";
-import { ZodError, ZodIssue } from "zod";
+import { ZodError, z } from "zod";
 import { ErrorPrettifier } from "../error-prettifier";
 
 describe("ErrorPrettifier", () => {
@@ -269,7 +269,7 @@ describe("ErrorPrettifier", () => {
             received: "number",
             path: ["name"],
             message: "Expected string, received number",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -290,7 +290,7 @@ describe("ErrorPrettifier", () => {
             received: "string",
             path: ["age"],
             message: "Expected number, received string",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -308,12 +308,12 @@ describe("ErrorPrettifier", () => {
           {
             code: "too_small",
             minimum: 100,
-            type: "string",
+            origin: "string",
             inclusive: true,
             exact: false,
             path: ["id"],
             message: "String must contain at least 100 character(s)",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -331,12 +331,12 @@ describe("ErrorPrettifier", () => {
           {
             code: "too_small",
             minimum: 18,
-            type: "number",
+            origin: "number",
             inclusive: true,
             exact: false,
             path: ["age"],
             message: "Number must be greater than or equal to 18",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -354,12 +354,12 @@ describe("ErrorPrettifier", () => {
           {
             code: "too_big",
             maximum: 50,
-            type: "string",
+            origin: "string",
             inclusive: true,
             exact: false,
             path: ["name"],
             message: "String must contain at most 50 character(s)",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -372,14 +372,14 @@ describe("ErrorPrettifier", () => {
         ]);
       });
 
-      it("should prettify invalid_string error for email", () => {
+      it("should prettify invalid_type error for email", () => {
         const zodError = new ZodError([
           {
-            code: "invalid_string",
-            validation: "email",
+            code: "invalid_type",
+            expected: "email",
             path: ["email"],
             message: "Invalid email",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -392,14 +392,14 @@ describe("ErrorPrettifier", () => {
         ]);
       });
 
-      it("should prettify invalid_string error for UUID", () => {
+      it("should prettify invalid_type error for UUID", () => {
         const zodError = new ZodError([
           {
-            code: "invalid_string",
-            validation: "uuid",
+            code: "invalid_type",
+            expected: "uuid",
             path: ["id"],
             message: "Invalid uuid",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -420,7 +420,7 @@ describe("ErrorPrettifier", () => {
             received: "undefined",
             path: ["email"],
             message: "Required",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -433,14 +433,14 @@ describe("ErrorPrettifier", () => {
         ]);
       });
 
-      it("should prettify invalid_enum_value error", () => {
+      it("should prettify invalid_value error", () => {
         const zodError = new ZodError([
           {
-            code: "invalid_enum_value",
-            options: ["admin", "user"],
+            code: "invalid_value",
+            values: ["admin", "user"],
             path: ["role"],
             message: "Invalid enum value",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -461,7 +461,7 @@ describe("ErrorPrettifier", () => {
             received: "string",
             path: ["isActive"],
             message: "Expected boolean, received string",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -485,7 +485,7 @@ describe("ErrorPrettifier", () => {
             received: "number",
             path: ["user", "id"],
             message: "Expected string, received number",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -502,11 +502,11 @@ describe("ErrorPrettifier", () => {
       it("should prettify deeply nested errors", () => {
         const zodError = new ZodError([
           {
-            code: "invalid_string",
-            validation: "email",
+            code: "invalid_type",
+            expected: "email",
             path: ["user", "contact", "email"],
             message: "Invalid email",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -524,12 +524,12 @@ describe("ErrorPrettifier", () => {
           {
             code: "too_small",
             minimum: 100,
-            type: "string",
+            origin: "string",
             inclusive: true,
             exact: false,
             path: ["user", "id"],
             message: "String must contain at least 100 character(s)",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -552,7 +552,7 @@ describe("ErrorPrettifier", () => {
             received: "number",
             path: ["tags", 0],
             message: "Expected string, received number",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -569,11 +569,11 @@ describe("ErrorPrettifier", () => {
       it("should prettify nested array element error", () => {
         const zodError = new ZodError([
           {
-            code: "invalid_string",
-            validation: "email",
+            code: "invalid_type",
+            expected: "email",
             path: ["users", 0, "email"],
             message: "Invalid email",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -594,7 +594,7 @@ describe("ErrorPrettifier", () => {
             received: "number",
             path: ["posts", 1, "tags", 2, "name"],
             message: "Expected string, received number",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -613,12 +613,12 @@ describe("ErrorPrettifier", () => {
           {
             code: "too_small",
             minimum: 1,
-            type: "array",
+            origin: "array",
             inclusive: true,
             exact: false,
             path: ["tags"],
             message: "Array must contain at least 1 element(s)",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -641,13 +641,13 @@ describe("ErrorPrettifier", () => {
             received: "undefined",
             path: ["name"],
             message: "Required",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
           {
-            code: "invalid_string",
-            validation: "email",
+            code: "invalid_type",
+            expected: "email",
             path: ["email"],
             message: "Invalid email",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -666,17 +666,17 @@ describe("ErrorPrettifier", () => {
       it("should prettify mixed top-level and nested errors", () => {
         const zodError = new ZodError([
           {
-            code: "invalid_string",
-            validation: "uuid",
+            code: "invalid_type",
+            expected: "uuid",
             path: ["id"],
             message: "Invalid uuid",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
           {
-            code: "invalid_string",
-            validation: "email",
+            code: "invalid_type",
+            expected: "email",
             path: ["user", "email"],
             message: "Invalid email",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -702,7 +702,7 @@ describe("ErrorPrettifier", () => {
             received: "string",
             path: [],
             message: "Expected object, received string",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -721,7 +721,7 @@ describe("ErrorPrettifier", () => {
             code: "custom",
             path: ["password"],
             message: "Password too weak",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -737,11 +737,11 @@ describe("ErrorPrettifier", () => {
       it("should handle URL validation", () => {
         const zodError = new ZodError([
           {
-            code: "invalid_string",
-            validation: "url",
+            code: "invalid_type",
+            expected: "url",
             path: ["website"],
             message: "Invalid url",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -762,7 +762,7 @@ describe("ErrorPrettifier", () => {
             received: "string",
             path: ["birthDate"],
             message: "Expected date, received string",
-          } as ZodIssue,
+          } as z.core.$ZodIssue,
         ]);
 
         const result = prettifier.prettify("zod", zodError);
@@ -822,20 +822,20 @@ describe("ErrorPrettifier", () => {
     it("should handle zod with complex nested array structures", () => {
       const zodError = new ZodError([
         {
-          code: "invalid_string",
-          validation: "uuid",
+          code: "invalid_type",
+          expected: "uuid",
           path: ["orders", 0, "items", 1, "productId"],
           message: "Invalid uuid",
-        } as ZodIssue,
+        } as z.core.$ZodIssue,
         {
           code: "too_small",
           minimum: 1,
-          type: "number",
+          origin: "number",
           inclusive: true,
           exact: false,
           path: ["orders", 0, "items", 1, "quantity"],
           message: "Number must be greater than or equal to 1",
-        } as ZodIssue,
+        } as z.core.$ZodIssue,
       ]);
 
       const result = prettifier.prettify("zod", zodError);
@@ -940,7 +940,7 @@ describe("ErrorPrettifier", () => {
         received: "string",
         path: ["field"],
         message: "Expected unknown, received string",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -958,12 +958,12 @@ describe("ErrorPrettifier", () => {
       {
         code: "too_small",
         minimum: 5,
-        type: "unknown" as any,
+        origin: "unknown" as any,
         inclusive: true,
         exact: false,
         path: ["field"],
         message: "Value is too small",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -981,12 +981,12 @@ describe("ErrorPrettifier", () => {
       {
         code: "too_big",
         maximum: 100,
-        type: "unknown" as any,
+        origin: "unknown" as any,
         inclusive: true,
         exact: false,
         path: ["field"],
         message: "Value is too big",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -999,14 +999,14 @@ describe("ErrorPrettifier", () => {
     ]);
   });
 
-  it("should handle invalid_string with includes validation", () => {
+  it("should handle invalid_type with includes validation", () => {
     const zodError = new ZodError([
       {
-        code: "invalid_string",
-        validation: { includes: "test" } as any,
+        code: "invalid_type",
+        expected: { includes: "test" } as any,
         path: ["text"],
         message: "Invalid string",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1019,14 +1019,14 @@ describe("ErrorPrettifier", () => {
     ]);
   });
 
-  it("should handle invalid_string with startsWith validation", () => {
+  it("should handle invalid_type with startsWith validation", () => {
     const zodError = new ZodError([
       {
-        code: "invalid_string",
-        validation: { startsWith: "prefix" } as any,
+        code: "invalid_type",
+        expected: { startsWith: "prefix" } as any,
         path: ["code"],
         message: "Invalid string",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1039,14 +1039,14 @@ describe("ErrorPrettifier", () => {
     ]);
   });
 
-  it("should handle invalid_string with endsWith validation", () => {
+  it("should handle invalid_type with endsWith validation", () => {
     const zodError = new ZodError([
       {
-        code: "invalid_string",
-        validation: { endsWith: "suffix" } as any,
+        code: "invalid_type",
+        expected: { endsWith: "suffix" } as any,
         path: ["filename"],
         message: "Invalid string",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1059,13 +1059,14 @@ describe("ErrorPrettifier", () => {
     ]);
   });
 
-  it("should handle invalid_string without specific validation", () => {
+  it("should handle invalid_type without specific validation", () => {
     const zodError = new ZodError([
       {
-        code: "invalid_string",
+        code: "invalid_type",
+        expected: "string",
         path: ["text"],
         message: "Invalid string format",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1073,19 +1074,19 @@ describe("ErrorPrettifier", () => {
     expect(result).toEqual([
       {
         message: "'text' must be a valid string format",
-        code: "TextInvalidStringConstraint",
+        code: "TextIsStringConstraint",
       },
     ]);
   });
 
-  it("should handle invalid_literal", () => {
+  it("should handle invalid_value", () => {
     const zodError = new ZodError([
       {
-        code: "invalid_literal",
-        expected: "admin",
+        code: "invalid_value",
+        values: ["admin"],
         path: ["role"],
         message: "Invalid literal value",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1105,7 +1106,7 @@ describe("ErrorPrettifier", () => {
         keys: ["extra"],
         path: [],
         message: "Unrecognized key(s) in object",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1122,10 +1123,10 @@ describe("ErrorPrettifier", () => {
     const zodError = new ZodError([
       {
         code: "invalid_union",
-        unionErrors: [],
+        errors: [],
         path: ["value"],
         message: "Invalid union value",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1141,10 +1142,11 @@ describe("ErrorPrettifier", () => {
   it("should handle invalid_date", () => {
     const zodError = new ZodError([
       {
-        code: "invalid_date",
+        code: "invalid_type",
+        expected: "date",
         path: ["createdAt"],
         message: "Invalid date",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1163,7 +1165,7 @@ describe("ErrorPrettifier", () => {
         code: "unknown_code" as any,
         path: ["field"],
         message: "Unknown error",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1184,7 +1186,7 @@ describe("ErrorPrettifier", () => {
         received: "string",
         path: ["items"],
         message: "Expected array, received string",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1205,7 +1207,7 @@ describe("ErrorPrettifier", () => {
         received: "string",
         path: ["data"],
         message: "Expected object, received string",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1224,7 +1226,7 @@ describe("ErrorPrettifier", () => {
         code: "custom",
         path: ["field"],
         message: "This is a completely custom error message",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1242,12 +1244,12 @@ describe("ErrorPrettifier", () => {
       {
         code: "too_big",
         maximum: 100,
-        type: "number",
+        origin: "number",
         inclusive: true,
         exact: false,
         path: ["score"],
         message: "Number must be less than or equal to 100",
-      } as ZodIssue,
+      } as z.core.$ZodIssue,
     ]);
 
     const result = prettifier.prettify("zod", zodError);
@@ -1260,3 +1262,4 @@ describe("ErrorPrettifier", () => {
     ]);
   });
 });
+

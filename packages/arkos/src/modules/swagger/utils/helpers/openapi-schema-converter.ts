@@ -1,8 +1,8 @@
 import { OpenAPIV3 } from "openapi-types";
 import { isClass, isZodSchema } from "../../../../utils/dynamic-loader";
-import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "./class-validator-to-json-schema";
 import { getArkosConfig } from "../../../../server";
+import z, { ZodType } from 'zod';
 
 /**
  * Singleton class responsible for converting various schema formats (Zod, Class DTOs, JSON Schema)
@@ -17,7 +17,7 @@ class OpenAPIchemaConverter {
       const validationResolver = getArkosConfig()?.validation?.resolver;
       const fn =
         validationResolver === "zod"
-          ? zodToJsonSchema
+          ? (schema: ZodType) => { return z.toJSONSchema(schema, { target: "openapi-3.0" }); }
           : classValidatorToJsonSchema;
 
       return fn(schema);
@@ -108,8 +108,8 @@ class OpenAPIchemaConverter {
     schema: any,
     prefix = "",
     visitedRefs = new Set<string>()
-  ): Array<{ name: string; schema: any; required: boolean }> {
-    const flattened: Array<{ name: string; schema: any; required: boolean }> =
+  ): Array<{ name: string; schema: any; required: boolean; }> {
+    const flattened: Array<{ name: string; schema: any; required: boolean; }> =
       [];
 
     if (schema.$ref) {
