@@ -233,11 +233,7 @@
     "cors": "2.8.6",
     "dotenv": "17.4.2",
     "dotenv-expand": "13.0.0",
-<<<<<<< HEAD
     "express": "5.2.1",
-=======
-    "express": "4.22.2",
->>>>>>> 45bedea1ecc6ac62dc93ef9099e79d43f77795df
     "express-rate-limit": "8.6.1",
     "html-to-text": "10.0.0",
     "jsonwebtoken": "9.0.3",
