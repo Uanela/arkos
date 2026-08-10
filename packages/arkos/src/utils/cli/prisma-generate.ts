@@ -1,18 +1,20 @@
-import prismaSchemaParser from "../prisma/prisma-schema-parser";
-import { kebabCase } from "../helpers/change-case.helpers";
-import fs from "fs";
-import { execSync } from "child_process";
-import sheu from "../sheu";
-import path from "path";
-import { crd } from "../helpers/fs.helpers";
-import { bundler } from "../bundler";
+import prismaSchemaParser from '../prisma/prisma-schema-parser';
+import { kebabCase } from '../helpers/change-case.helpers';
+import fs from 'fs';
+import { execSync } from 'child_process';
+import sheu from '../sheu';
+import path from 'path';
+import { crd } from '../helpers/fs.helpers';
+import { bundler } from '../bundler';
 
 function getGeneratedPackageDir(): string {
   return path.resolve(process.cwd(), `.arkos`);
 }
 
 function getPrismaGeneratedPath() {
-  return prismaSchemaParser.config.clientOutput ? path.resolve(path.join(crd(), prismaSchemaParser.config.clientOutput)) : "@prisma/client"
+  return prismaSchemaParser.config.clientOutput
+    ? path.resolve(path.join(crd(), prismaSchemaParser.config.clientOutput))
+    : '@prisma/client';
 }
 
 function buildTypesContent(): string {
@@ -31,9 +33,9 @@ function buildTypesContent(): string {
     DeleteArgs: Prisma.${model.name}DeleteArgs;
     DeleteManyArgs: Prisma.${model.name}DeleteManyArgs;
     CountArgs: Prisma.${model.name}CountArgs;
-  };`
+  };`,
     )
-    .join("");
+    .join('');
 
   return `
 import { Prisma, PrismaClient } from "${getPrismaGeneratedPath()}";
@@ -78,11 +80,12 @@ export { PrismaClient } from "${getPrismaGeneratedPath()}";
  * the user's tsconfig don't break parsing.
  */
 function updateTsConfigPaths(): void {
-  const tsconfigPath = path.join(crd(), "tsconfig.json");
+  const tsconfigPath = path.join(crd(), 'tsconfig.json');
 
   if (!fs.existsSync(tsconfigPath)) {
     sheu.warn(
-      "tsconfig.json not found, skipping @arkosjs/generated path mapping.", { timestamp: true }
+      'tsconfig.json not found, skipping @arkosjs/generated path mapping.',
+      { timestamp: true },
     );
     return;
   }
@@ -92,8 +95,9 @@ function updateTsConfigPaths(): void {
     tsconfig = bundler.readJsonWithComments(tsconfigPath);
   } catch (err) {
     sheu.warn(
-      `Failed to parse tsconfig.json, skipping @arkosjs/generated path mapping: ${(err as Error).message
-      }`
+      `Failed to parse tsconfig.json, skipping @arkosjs/generated path mapping: ${
+        (err as Error).message
+      }`,
     );
     return;
   }
@@ -101,62 +105,58 @@ function updateTsConfigPaths(): void {
   tsconfig.compilerOptions ??= {};
   tsconfig.compilerOptions.paths ??= {};
 
-  const generatedDtsPath = "./.arkos/index.d.ts";
-  const existing = tsconfig.compilerOptions.paths["@arkosjs/generated"];
+  const generatedDtsPath = './.arkos/index.d.ts';
+  const existing = tsconfig.compilerOptions.paths['@arkosjs/generated'];
 
-  if (Array.isArray(existing) && existing.includes(generatedDtsPath))
-    return
+  if (Array.isArray(existing) && existing.includes(generatedDtsPath)) return;
 
-  tsconfig.compilerOptions.paths["@arkosjs/generated"] = [generatedDtsPath];
+  tsconfig.compilerOptions.paths['@arkosjs/generated'] = [generatedDtsPath];
 
   fs.writeFileSync(
     tsconfigPath,
-    JSON.stringify(tsconfig, null, 2) + "\n",
-    "utf8"
+    JSON.stringify(tsconfig, null, 2) + '\n',
+    'utf8',
   );
 
   sheu.done(`@arkosjs/generated path mapping added to tsconfig.json!`);
 }
 
 function updateGitIgnore(): void {
-  const gitignorePath = path.join(crd(), ".gitignore");
+  const gitignorePath = path.join(crd(), '.gitignore');
 
   if (!fs.existsSync(gitignorePath)) {
-    sheu.warn(
-      ".gitignore not found, skipping .arkos ignore entry.",
-      { timestamp: true }
-    );
+    sheu.warn('.gitignore not found, skipping .arkos ignore entry.', {
+      timestamp: true,
+    });
     return;
   }
 
-  const content = fs.readFileSync(gitignorePath, "utf8");
-  const lines = content
-    .split(/\r?\n/)
-    .map((line) => line.trim());
+  const content = fs.readFileSync(gitignorePath, 'utf8');
+  const lines = content.split(/\r?\n/).map((line) => line.trim());
 
-  if (lines.includes(".arkos")) return;
+  if (lines.includes('.arkos/')) return;
 
-  const updated =
-    content.replace(/\s*$/, "") + "\n.arkos\n";
+  const updated = content.replace(/\s*$/, '') + '\n.arkos\n';
 
-  fs.writeFileSync(gitignorePath, updated, "utf8");
+  fs.writeFileSync(gitignorePath, updated, 'utf8');
 
-  sheu.done(".arkos added to .gitignore!");
+  sheu.done('.arkos added to .gitignore!');
 }
 
 export default function prismaGenerateCommand() {
-  execSync("npx prisma generate", { stdio: "inherit" });
+  execSync('npx prisma generate', { stdio: 'inherit' });
   const pkgDir = getGeneratedPackageDir();
-  fs.mkdirSync(path.join(pkgDir, "esm"), { recursive: true });
-  fs.writeFileSync(path.join(pkgDir, "index.d.ts"), buildTypesContent(), {
-    encoding: "utf8",
+  fs.mkdirSync(path.join(pkgDir, 'esm'), { recursive: true });
+  fs.writeFileSync(path.join(pkgDir, 'index.d.ts'), buildTypesContent(), {
+    encoding: 'utf8',
   });
-  fs.writeFileSync(path.join(pkgDir, "esm", "index.js"), buildEsmContent(), {
-    encoding: "utf8",
+  fs.writeFileSync(path.join(pkgDir, 'esm', 'index.js'), buildEsmContent(), {
+    encoding: 'utf8',
   });
   updateTsConfigPaths();
   updateGitIgnore();
   sheu.done(
-    `Types and values for arkos and prisma client generated successfully!`
+    `Types and values for arkos and prisma client generated successfully!`,
   );
 }
+
