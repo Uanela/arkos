@@ -1,25 +1,25 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from 'express';
 import {
   PrismaQueryOptions,
   ArkosNextFunction,
   ArkosRequest,
   ArkosResponse,
   AuthPrismaQueryOptions,
-} from "../../types";
-import { getArkosConfig } from "../../server";
-import deepmerge from "../../utils/helpers/deepmerge.helper";
+} from '../../types';
+import { getArkosConfig } from '../../server';
+import deepmerge from '../../utils/helpers/deepmerge.helper';
 import {
   AppError,
   BadRequestError,
   catchAsync,
-} from "../../exports/error-handler";
-import { resolvePrismaQueryOptions } from "./utils/helpers/base.middlewares.helpers";
-import { ArkosRouteConfig } from "../../utils/arkos-router/types";
-import { capitalize } from "../../utils/helpers/text.helpers";
-import errorPrettifier from "./utils/error-prettifier";
-import { lenientDecode } from "../../utils/helpers/url-helpers";
-import { pascalCase } from "../../exports/utils";
-import validationManager from "../../types/validation/validation-manager";
+} from '../../exports/error-handler';
+import { resolvePrismaQueryOptions } from './utils/helpers/base.middlewares.helpers';
+import { ArkosRouteConfig } from '../../utils/arkos-router/types';
+import { capitalize } from '../../utils/helpers/text.helpers';
+import errorPrettifier from './utils/error-prettifier';
+import { lenientDecode } from '../../utils/helpers/url-helpers';
+import { pascalCase } from '../../exports/utils';
+import validationManager from '../../types/validation/validation-manager';
 
 /**
  * Deep comparison helper for objects
@@ -27,7 +27,7 @@ import validationManager from "../../types/validation/validation-manager";
 function deepEqual(a: any, b: any): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
-  if (typeof a !== "object" || typeof b !== "object") return a === b;
+  if (typeof a !== 'object' || typeof b !== 'object') return a === b;
 
   const keysA = Object.keys(a);
   const keysB = Object.keys(b);
@@ -104,7 +104,7 @@ export function sendResponse(req: ArkosRequest, res: ArkosResponse) {
     res.status(Number(responseStatus)).send();
   } else {
     res.status(500).json({
-      message: "No status or data attached to the response",
+      message: 'No status or data attached to the response',
     });
   }
 }
@@ -127,19 +127,19 @@ export type ControllerActions =
  */
 export function addPrismaQueryOptionsToRequest<T extends Record<string, any>>(
   prismaQueryOptions: PrismaQueryOptions<T> | AuthPrismaQueryOptions<T>,
-  action: ControllerActions
+  action: ControllerActions,
 ) {
   return (req: ArkosRequest, _: ArkosResponse, next: NextFunction) => {
     const configs = getArkosConfig();
 
     const resolvedOptions = resolvePrismaQueryOptions(
       prismaQueryOptions,
-      action
+      action,
     );
 
     const requestQueryOptions = configs?.request?.parameters
       ?.allowDangerousPrismaQueryOptions
-      ? JSON.parse((req.query?.prismaQueryOptions as string) || "{}")
+      ? JSON.parse((req.query?.prismaQueryOptions as string) || '{}')
       : {};
 
     req.prismaQueryOptions = deepmerge(resolvedOptions, requestQueryOptions);
@@ -155,53 +155,54 @@ export function addPrismaQueryOptionsToRequest<T extends Record<string, any>>(
 export function handleRequestLogs(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const startTime = Date.now();
 
   const methodColors = {
-    GET: "\x1b[36m", // Cyan
-    POST: "\x1b[32m", // Green
-    PUT: "\x1b[33m", // Orange/Yellow
-    PATCH: "\x1b[33m", // Orange/Yellow
-    DELETE: "\x1b[31m", // Red
-    HEAD: "\x1b[34m", // Blue
-    OPTIONS: "\x1b[34m", // Blue
+    GET: '\x1b[36m', // Cyan
+    POST: '\x1b[32m', // Green
+    PUT: '\x1b[33m', // Orange/Yellow
+    PATCH: '\x1b[33m', // Orange/Yellow
+    DELETE: '\x1b[31m', // Red
+    HEAD: '\x1b[34m', // Blue
+    OPTIONS: '\x1b[34m', // Blue
   };
 
   const getStatusColor = (statusCode: number) => {
-    if (statusCode >= 200 && statusCode < 300) return "\x1b[32m";
-    if (statusCode >= 300 && statusCode < 400) return "\x1b[33m";
-    if (statusCode >= 400 && statusCode < 500) return "\x1b[33m";
-    if (statusCode >= 500) return "\x1b[31m";
-    return "\x1b[0m";
+    if (statusCode >= 200 && statusCode < 300) return '\x1b[32m';
+    if (statusCode >= 300 && statusCode < 400) return '\x1b[33m';
+    if (statusCode >= 400 && statusCode < 500) return '\x1b[33m';
+    if (statusCode >= 500) return '\x1b[31m';
+    return '\x1b[0m';
   };
 
-  res.on("finish", () => {
-    const isProduction = process.env.ARKOS_BUILD == "true";
+  res.on('finish', () => {
+    const isProduction = process.env.ARKOS_BUILD == 'true';
     const duration = Date.now() - startTime;
 
     const now = new Date();
 
-    const date = now.toISOString().split("T")[0];
-    const time = now.toTimeString().split(" ")[0];
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().split(' ')[0];
 
     const timestamp = isProduction ? `${date} ${time}` : time;
 
     const methodColor =
-      methodColors[req.method as keyof typeof methodColors] || "\x1b[0m";
+      methodColors[req.method as keyof typeof methodColors] || '\x1b[0m';
     const statusColor = getStatusColor(res.statusCode);
 
     console.info(
-      `[\x1b[36mInfo\x1b[0m] \x1b[90m${timestamp}\x1b[0m ${methodColor}${req.method
-      }\x1b[0m ${lenientDecode(req.originalUrl)} ${statusColor}${res.statusCode
-      }\x1b[0m \x1b[35m${duration}ms\x1b[0m`
+      `[\x1b[36mInfo\x1b[0m] \x1b[90m${timestamp}\x1b[0m ${methodColor}${
+        req.method
+      }\x1b[0m ${lenientDecode(req.originalUrl)} ${statusColor}${
+        res.statusCode
+      }\x1b[0m \x1b[35m${duration}ms\x1b[0m`,
     );
   });
 
   next();
 }
-
 
 export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const arkosConfig = getArkosConfig();
@@ -210,10 +211,10 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
   const openapi = routeConfig?.experimental?.openapi;
 
   const validationToParameterMapping = {
-    query: "query",
-    params: "path",
-    headers: "header",
-    cookies: "cookie",
+    query: 'query',
+    params: 'path',
+    headers: 'header',
+    cookies: 'cookie',
   };
 
   if (
@@ -221,30 +222,31 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
     Object.keys(routeConfig.validation || {}).length > 0
   )
     throw Error(
-      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`
+      `Trying to pass validators into route \"${routeConfig.path}\" config validation option without choosing a validation resolver under arkos config { validation: {} }.`,
     );
 
   if ((validators as any) === true)
     throw Error(
-      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`
+      `Invalid value ${validators} passed to validation option, it can only receive false or object of { query, body, params }.`,
     );
 
-  const validatorsKey: ("body" | "query" | "params")[] = [
-    "body",
-    "query",
-    "params",
+  const validatorsKey: ('body' | 'query' | 'params')[] = [
+    'body',
+    'query',
+    'params',
   ];
 
   const { validationFn, validatorNameType, validatorName } = validationManager;
 
-  if (typeof validators === "object")
+  if (typeof validators === 'object')
     validatorsKey.forEach((key) => {
       if (
         openapi &&
-        typeof openapi === "object" &&
-        key != "body" &&
+        typeof openapi === 'object' &&
+        key != 'body' &&
         openapi.parameters?.some(
-          (parameter: any) => parameter.in === validationToParameterMapping[key]
+          (parameter: any) =>
+            parameter.in === validationToParameterMapping[key],
         ) &&
         validators?.[key]
       ) {
@@ -252,19 +254,19 @@ export function validateRequestInputs(routeConfig: ArkosRouteConfig) {
           `Error in ${routeConfig.path}: when usign validation.${key} you must not define parameters under openapi.parameters as documentation of req.${key} because the ${validatorName} you passed under validation.${key} will be added as jsonSchema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.
 
 Read more about strict validation at https://www.arkosjs.com/docs/guides/validation/setup#strict-mode.
-`
+`,
         );
       }
 
       if (
         openapi &&
-        typeof openapi === "object" &&
+        typeof openapi === 'object' &&
         openapi.requestBody &&
         validators?.[key] &&
-        key === "body"
+        key === 'body'
       ) {
         throw Error(
-          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`
+          `When usign validation.${key} you must not define json-schema under openapi.requestBody as documentation for req.${key}, because the ${validatorName} you passed under validation.${key} will be added as json-schema into the api documenation, if you wish to define documenation by yourself do not define validation.${key}.`,
         );
       }
 
@@ -273,7 +275,7 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         !validationManager.isValidator(validators?.[key])
       )
         throw Error(
-          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`
+          `Your validation resolver is set to ${arkosConfig?.validation?.resolver}, please provide a valid ${validatorName} in order to use in { validation: { ${key}: ${validatorNameType} } } under route ${routeConfig.path}. Received ${validators?.[key]}`,
         );
     });
 
@@ -284,16 +286,16 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
         const NotAllowedInputError = new BadRequestError(
           `Request ${key} is not allowed on this route`,
           `Request${capitalize(key)}NotAllowed`,
-          { [key]: req[key] }
+          { [key]: req[key] },
         );
 
         const shouldValidate = validationManager.shouldValidate(
           validator,
-          req?.[key]
+          req?.[key],
         );
 
-        if (shouldValidate === "prohibit") throw NotAllowedInputError;
-        else if (shouldValidate === "passthrough") continue;
+        if (shouldValidate === 'prohibit') throw NotAllowedInputError;
+        else if (shouldValidate === 'passthrough') continue;
 
         if (validator)
           try {
@@ -301,7 +303,7 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
               value: await (validationFn as any)(
                 validator,
                 req[key],
-                arkosConfig.validation?.validationOptions
+                arkosConfig.validation?.validationOptions,
               ),
               writable: false,
               configurable: true,
@@ -309,23 +311,24 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
             });
           } catch (err: any) {
             const resolver = validationConfig?.resolver;
-            const isZod = validationConfig?.resolver === "zod";
+            const isZod = validationConfig?.resolver === 'zod';
 
             const prettifiedError = errorPrettifier.prettify(
               resolver as any,
-              err
+              err,
             );
             const error = prettifiedError[0];
             throw new AppError(
               error.message,
               400,
               `InvalidRequest${pascalCase(key)}`,
-              isZod ? err.format() : err
+              isZod ? err.format() : err,
             );
           }
       }
 
       next();
-    }
+    },
   );
 }
+

@@ -1,39 +1,39 @@
-import jwt, { SignOptions } from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import { User } from "../../types";
-import catchAsync from "../error-handler/utils/catch-async";
-import AppError from "../error-handler/utils/app-error";
-import arkosEnv from "../../utils/arkos-env";
-import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
+import jwt, { SignOptions } from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+import { User } from '../../types';
+import catchAsync from '../error-handler/utils/catch-async';
+import AppError from '../error-handler/utils/app-error';
+import arkosEnv from '../../utils/arkos-env';
+import { getPrismaInstance } from '../../utils/helpers/prisma.helpers';
 import {
   ArkosRequest,
   ArkosResponse,
   ArkosNextFunction,
   ArkosRequestHandler,
-} from "../../types";
+} from '../../types';
 import {
   AuthJwtPayload,
   AccessAction,
   AccessControlConfig,
   AccessControlRules,
   DetailedAccessControlRule,
-} from "../../types/auth";
-import { MsDuration, toMs } from "./utils/helpers/auth.controller.helpers";
+} from '../../types/auth';
+import { MsDuration, toMs } from './utils/helpers/auth.controller.helpers';
 import {
   invaliAuthTokenError,
   loginRequiredError,
-} from "./utils/auth-error-objects";
-import authActionService from "./utils/services/auth-action.service";
+} from './utils/auth-error-objects';
+import authActionService from './utils/services/auth-action.service';
 import {
   getArkosConfig,
   isAuthenticationEnabled,
   isUsingAuthentication,
-} from "../../utils/helpers/arkos-config.helpers";
-import { CookieOptions } from "express";
-import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
-import { authenticationDocsLinks } from "./utils/docs-links";
-import authHookManager from "./utils/auth-hooks-manager";
-import { ArkosSocket } from "../../components/arkos-gateway/types";
+} from '../../utils/helpers/arkos-config.helpers';
+import { CookieOptions } from 'express';
+import { getUserFileExtension } from '../../utils/helpers/fs.helpers';
+import { authenticationDocsLinks } from './utils/docs-links';
+import authHookManager from './utils/auth-hooks-manager';
+import { ArkosSocket } from '../../components/arkos-gateway/types';
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -55,19 +55,19 @@ export class AuthService {
   signJwtToken(
     id: number | string,
     expiresIn?: MsDuration | number,
-    secret?: string
+    secret?: string,
   ): string {
     const { authentication: configs } = getArkosConfig();
 
     if (
-      process.env.ARKOS_BUILD === "true" &&
+      process.env.ARKOS_BUILD === 'true' &&
       !process.env.JWT_SECRET &&
       !configs?.jwt?.secret
     )
       throw new AppError(
-        "Missing JWT secret on production!",
+        'Missing JWT secret on production!',
         500,
-        "MissingJWTOnProduction"
+        'MissingJWTOnProduction',
       );
 
     secret =
@@ -79,7 +79,7 @@ export class AuthService {
     expiresIn = (expiresIn ||
       configs?.jwt?.expiresIn ||
       process.env.JWT_EXPIRES_IN ||
-      arkosEnv.JWT_EXPIRES_IN) as keyof SignOptions["expiresIn"];
+      arkosEnv.JWT_EXPIRES_IN) as keyof SignOptions['expiresIn'];
 
     return jwt.sign({ id }, secret, {
       expiresIn: expiresIn as MsDuration,
@@ -109,40 +109,37 @@ export class AuthService {
     const authConfigs = arkosConfig?.authentication;
 
     if (!req)
-      throw new Error("Missing req object in order get jwt cookie options");
+      throw new Error('Missing req object in order get jwt cookie options');
 
     const sameSite =
       authConfigs?.jwt?.cookie?.sameSite ||
       (process.env.JWT_COOKIE_SAME_SITE as
-        | "none"
-        | "lax"
-        | "strict"
-        | undefined) ||
-      "lax";
+        'none' | 'lax' | 'strict' | undefined) ||
+      'lax';
 
     return {
       expires: new Date(
         Date.now() +
-        Number(
-          toMs(
-            authConfigs?.jwt?.expiresIn ||
-            (process.env.JWT_EXPIRES_IN as MsDuration) ||
-            (arkosEnv.JWT_EXPIRES_IN as MsDuration)
-          )
-        )
+          Number(
+            toMs(
+              authConfigs?.jwt?.expiresIn ||
+                (process.env.JWT_EXPIRES_IN as MsDuration) ||
+                (arkosEnv.JWT_EXPIRES_IN as MsDuration),
+            ),
+          ),
       ),
       httpOnly:
         authConfigs?.jwt?.cookie?.httpOnly ??
         (process.env.JWT_COOKIE_HTTP_ONLY !== undefined
-          ? process.env.JWT_COOKIE_HTTP_ONLY === "true"
+          ? process.env.JWT_COOKIE_HTTP_ONLY === 'true'
           : undefined) ??
         true,
       secure: (() => {
         if (authConfigs?.jwt?.cookie?.secure !== undefined)
           return authConfigs?.jwt?.cookie?.secure;
         else if (process.env.JWT_COOKIE_SECURE !== undefined)
-          return process.env.JWT_COOKIE_SECURE === "true";
-        else return req.secure || req.headers["x-forwarded-proto"] === "https";
+          return process.env.JWT_COOKIE_SECURE === 'true';
+        else return req.secure || req.headers['x-forwarded-proto'] === 'https';
       })(),
       sameSite,
       domain: authConfigs?.jwt?.cookie?.domain || process.env.JWT_COOKIE_DOMAIN,
@@ -174,7 +171,7 @@ export class AuthService {
    */
   async isCorrectPassword(
     candidatePassword: string,
-    userPassword: string
+    userPassword: string,
   ): Promise<boolean> {
     return await bcrypt.compare(candidatePassword, userPassword);
   }
@@ -200,7 +197,7 @@ export class AuthService {
     if (user.passwordChangedAt) {
       const convertedTimestamp = parseInt(
         String(new Date(user.passwordChangedAt).getTime() / 1000),
-        10
+        10,
       );
 
       return JWTTimestamp < convertedTimestamp;
@@ -218,19 +215,19 @@ export class AuthService {
    */
   async verifyJwtToken(
     token: string,
-    secret?: string
+    secret?: string,
   ): Promise<AuthJwtPayload> {
     const { authentication: configs } = getArkosConfig();
 
     if (
-      process.env.ARKOS_BUILD === "true" &&
+      process.env.ARKOS_BUILD === 'true' &&
       !process.env.JWT_SECRET &&
       !configs?.jwt?.secret
     )
       throw new AppError(
-        "Missing JWT secret in production",
+        'Missing JWT secret in production',
         500,
-        "MissingJWTSecretInProduction"
+        'MissingJWTSecretInProduction',
       );
 
     secret =
@@ -255,8 +252,8 @@ export class AuthService {
     }
   }
 
-  private isWildcardAccess(config: AccessControlConfig): config is "*" {
-    return config === "*";
+  private isWildcardAccess(config: AccessControlConfig): config is '*' {
+    return config === '*';
   }
 
   private isRoleList(config: AccessControlConfig): config is string[] {
@@ -264,27 +261,27 @@ export class AuthService {
   }
 
   private isAccessRules(
-    config: AccessControlConfig
+    config: AccessControlConfig,
   ): config is Partial<AccessControlRules> {
     return (
-      typeof config === "object" && config !== null && !Array.isArray(config)
+      typeof config === 'object' && config !== null && !Array.isArray(config)
     );
   }
 
   private normalizeRuleToRoles(
-    rule: string[] | DetailedAccessControlRule | "*" | undefined
+    rule: string[] | DetailedAccessControlRule | '*' | undefined,
   ): string[] {
     if (!rule) return [];
-    if (rule === "*") return ["*"];
+    if (rule === '*') return ['*'];
     if (Array.isArray(rule)) return rule;
-    return rule.roles === "*" ? ["*"] : (rule.roles ?? []);
+    return rule.roles === '*' ? ['*'] : (rule.roles ?? []);
   }
 
   private resolveAuthorizedRoles(
     action: AccessAction,
-    accessControl: AccessControlConfig
+    accessControl: AccessControlConfig,
   ): string[] {
-    if (this.isWildcardAccess(accessControl)) return ["*"];
+    if (this.isWildcardAccess(accessControl)) return ['*'];
     if (this.isRoleList(accessControl)) return accessControl;
     if (this.isAccessRules(accessControl))
       return this.normalizeRuleToRoles(accessControl[action]);
@@ -304,11 +301,11 @@ export class AuthService {
   checkStaticAccessControl(
     user: User,
     action: string,
-    accessControl: AccessControlConfig
+    accessControl: AccessControlConfig,
   ) {
     if (!user?.role && !user.roles)
       throw Error(
-        "Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles."
+        'Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles.',
       );
 
     let authorizedRoles = this.resolveAuthorizedRoles(action, accessControl);
@@ -316,7 +313,7 @@ export class AuthService {
     const userRoles = Array.isArray(user?.roles) ? user.roles : [user.role];
 
     return (
-      authorizedRoles?.[0] === "*" ||
+      authorizedRoles?.[0] === '*' ||
       !!userRoles.some((role: string) => authorizedRoles.includes(role))
     );
   }
@@ -333,16 +330,16 @@ export class AuthService {
   async checkDynamicAccessControl(
     userId: string,
     action: string,
-    resource: string
+    resource: string,
   ) {
     const prisma = getPrismaInstance();
 
     const [userPermission, hasRolePermission] = await Promise.all([
       prisma.userPermission
         ? prisma.userPermission.findFirst({
-          where: { userId, permission: { resource, action } },
-          select: { effect: true },
-        })
+            where: { userId, permission: { resource, action } },
+            select: { effect: true },
+          })
         : Promise.resolve(null),
 
       prisma.userRole.findFirst({
@@ -358,26 +355,26 @@ export class AuthService {
       }),
     ]);
 
-    if (userPermission) return userPermission.effect === "Allow";
+    if (userPermission) return userPermission.effect === 'Allow';
     return !!hasRolePermission;
   }
 
   private extractRequestToken(
     req: ArkosRequest,
-    cookie: "arkos_access_token" = "arkos_access_token"
+    cookie: 'arkos_access_token' = 'arkos_access_token',
   ) {
     let token: string | null = null;
 
     if (
       req?.headers?.authorization &&
-      req?.headers?.authorization.startsWith("Bearer") &&
-      req?.headers?.authorization.split?.(" ")?.[1]
+      req?.headers?.authorization.startsWith('Bearer') &&
+      req?.headers?.authorization.split?.(' ')?.[1]
     )
-      token = req?.headers?.authorization.split(" ")[1];
+      token = req?.headers?.authorization.split(' ')[1];
 
     if (
       !token &&
-      req?.cookies?.arkos_access_token !== "no-token" &&
+      req?.cookies?.arkos_access_token !== 'no-token' &&
       req.cookies
     )
       token = req?.cookies?.[cookie];
@@ -385,16 +382,16 @@ export class AuthService {
     return token;
   }
 
-  private extractSocketToken(socket: ArkosSocket, key: "token" = "token") {
+  private extractSocketToken(socket: ArkosSocket, key: 'token' = 'token') {
     return (
       socket.handshake.auth?.[key] ||
-      socket.handshake.headers?.authorization?.replace("Bearer ", "")
+      socket.handshake.headers?.authorization?.replace('Bearer ', '')
     );
   }
 
   async validateDecodedUser(
     decoded: AuthJwtPayload,
-    action: "logout" | "default" = "default"
+    action: 'logout' | 'default' = 'default',
   ): Promise<User> {
     const prisma = getPrismaInstance();
     const user = await (prisma as any).user.findUnique({
@@ -403,19 +400,19 @@ export class AuthService {
 
     if (!user)
       throw new AppError(
-        "The user belonging to this token no longer exists",
+        'The user belonging to this token no longer exists',
         401,
-        "UserNoLongerExists"
+        'UserNoLongerExists',
       );
 
     if (
-      action !== "logout" &&
+      action !== 'logout' &&
       this.userChangedPasswordAfter(user, decoded.iat!)
     )
       throw new AppError(
-        "User recently changed password! Please log in again.",
+        'User recently changed password! Please log in again.',
         401,
-        "PasswordChanged"
+        'PasswordChanged',
       );
 
     return user;
@@ -430,17 +427,17 @@ export class AuthService {
    */
   async getAuthenticatedUser(
     ctx: ArkosRequest | ArkosSocket,
-    action: "logout" | "default" = "default"
+    action: 'logout' | 'default' = 'default',
   ): Promise<User | null> {
     if (!isAuthenticationEnabled())
       throw Error(
-        `Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.${getUserFileExtension()}, see ${authenticationDocsLinks.setup}`
+        `Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.${getUserFileExtension()}, see ${authenticationDocsLinks.setup}`,
       );
 
     let token: string | null = null;
 
-    if ("headers" in ctx) token = this.extractRequestToken(ctx);
-    else if ("join" in ctx) token = this.extractSocketToken(ctx);
+    if ('headers' in ctx) token = this.extractRequestToken(ctx);
+    else if ('join' in ctx) token = this.extractSocketToken(ctx);
 
     if (!token) return null;
 
@@ -490,13 +487,13 @@ export class AuthService {
           if (!isAuthenticationEnabled()) return null;
           const user = (await this.getAuthenticatedUser(
             req,
-            req.path.includes("logout") ? "logout" : "default"
+            req.path.includes('logout') ? 'logout' : 'default',
           )) as User;
           if (!user) throw loginRequiredError;
           return user;
-        }
+        },
       );
-    }
+    },
   );
 
   /**
@@ -540,7 +537,7 @@ export class AuthService {
   authorize(
     action: AccessAction,
     resource: string,
-    rule?: string[] | DetailedAccessControlRule | "*"
+    rule?: string[] | DetailedAccessControlRule | '*',
   ): ArkosRequestHandler {
     const authAction = authActionService.add(action, resource, {
       [action]: rule,
@@ -550,9 +547,9 @@ export class AuthService {
       async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         await authHookManager.runAuthorize(
           { context: req, done: next },
-          authAction
+          authAction,
         );
-      }
+      },
     );
   }
 
@@ -582,34 +579,34 @@ export class AuthService {
   permission(
     action: string,
     resource: string,
-    accessControl?: AccessControlConfig
+    accessControl?: AccessControlConfig,
   ) {
     // Check if called during request handling (deep call stack indicates handler execution)
     const stack = new Error().stack;
 
-    if (stack?.includes("node_modules/express/lib/router/index.js"))
+    if (stack?.includes('node_modules/express/lib/router/index.js'))
       throw new Error(
-        "authService.permission() should be called during application initialization level."
+        'authService.permission() should be called during application initialization level.',
       );
 
     authActionService.add(action, resource, accessControl);
 
     return async (user: User | undefined): Promise<boolean> => {
-      // getArkosConfig must not be called the same time as arkos.init()
+      // getArkosConfig must not be called the same time as arkos()
       const configs = getArkosConfig();
 
       if (!isUsingAuthentication())
         throw Error(
-          "Validation Error: Trying to use authService.permission without setting up authentication."
+          'Validation Error: Trying to use authService.permission without setting up authentication.',
         );
 
       if (!isAuthenticationEnabled()) return false;
       if (!user) throw loginRequiredError;
       if (user?.isSuperUser) return true;
 
-      if (configs?.authentication?.mode === "dynamic") {
+      if (configs?.authentication?.mode === 'dynamic') {
         return await this.checkDynamicAccessControl(user?.id, action, resource);
-      } else if (configs?.authentication?.mode === "static") {
+      } else if (configs?.authentication?.mode === 'static') {
         return (
           !!accessControl &&
           this.checkStaticAccessControl(user as any, action, accessControl)
@@ -626,3 +623,4 @@ export class AuthService {
 const authService = new AuthService();
 
 export default authService;
+

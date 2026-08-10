@@ -33,5 +33,5 @@ export function useSocketOn<T = any>(
     return off;
     // deps spread lets callers control re-subscription (e.g. room change)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gateway, event, ...deps]);
+  }, [gateway, event, handler, ...deps]);
 }

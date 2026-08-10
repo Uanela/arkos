@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { getArkosConfig } from "./helpers/arkos-config.helpers";
+import { z } from 'zod';
+import { getArkosConfig } from './helpers/arkos-config.helpers';
 
 export type ZodValidationOptions = { forbidNonWhitelisted?: boolean };
 /**
@@ -30,7 +30,7 @@ export type ZodValidationOptions = { forbidNonWhitelisted?: boolean };
 export default async function validateSchema<T extends z.ZodTypeAny>(
   schema: T,
   data: unknown,
-  options?: ZodValidationOptions
+  options?: ZodValidationOptions,
 ): Promise<z.infer<T>> {
   const arkosConfig = getArkosConfig();
 
@@ -39,16 +39,9 @@ export default async function validateSchema<T extends z.ZodTypeAny>(
     ...(options || {}),
   };
 
-  const result = parseWithWhitelistCheck(
-    schema,
-    data,
-    validationOptions
-  );
+  const result = parseWithWhitelistCheck(schema, data, validationOptions);
 
-
-  if (!result.success)
-    throw result.error;
-
+  if (!result.success) throw result.error;
 
   return result.data;
 }
@@ -56,48 +49,40 @@ export default async function validateSchema<T extends z.ZodTypeAny>(
 export function parseWithWhitelistCheck<T extends z.ZodTypeAny>(
   schema: T,
   data: unknown,
-  options?: ZodValidationOptions
-):
-  | { success: true; data: z.infer<T> }
-  | { success: false; error: z.ZodError } {
+  options?: ZodValidationOptions,
+): { success: true; data: z.infer<T> } | { success: false; error: z.ZodError } {
   const errors: z.core.$ZodIssue[] = [];
 
   function checkNestedKeys(
     schemaType: z.ZodTypeAny,
     dataValue: unknown,
-    path: (string | number)[] = []
+    path: (string | number)[] = [],
   ): void {
-    if (typeof dataValue !== "object" || dataValue === null) {
+    if (typeof dataValue !== 'object' || dataValue === null) {
       return;
     }
 
     const def = (schemaType as any)._zod.def;
 
-    if (def.type === "array" && Array.isArray(dataValue)) {
+    if (def.type === 'array' && Array.isArray(dataValue)) {
       dataValue.forEach((item: unknown, index: number) => {
-        checkNestedKeys(
-          def.element,
-          item,
-          [...path, index]
-        );
+        checkNestedKeys(def.element, item, [...path, index]);
       });
 
       return;
     }
 
-    if (def.type === "object") {
+    if (def.type === 'object') {
       const shape = def.shape;
 
       const allowedKeys = Object.keys(shape);
       const actualKeys = Object.keys(dataValue);
 
-      const extraKeys = actualKeys.filter(
-        (key) => !allowedKeys.includes(key)
-      );
+      const extraKeys = actualKeys.filter((key) => !allowedKeys.includes(key));
 
       extraKeys.forEach((key) => {
         errors.push({
-          code: "unrecognized_keys",
+          code: 'unrecognized_keys',
           keys: [key],
           path: [...path, key],
           message: `Unrecognized key(s) in object: ${key}`,
@@ -107,9 +92,7 @@ export function parseWithWhitelistCheck<T extends z.ZodTypeAny>(
       allowedKeys.forEach((key) => {
         const schemaField = shape[key];
 
-        const nestedValue = (
-          dataValue as Record<string, unknown>
-        )[key];
+        const nestedValue = (dataValue as Record<string, unknown>)[key];
 
         if (nestedValue === undefined || nestedValue === null) {
           return;
@@ -118,18 +101,14 @@ export function parseWithWhitelistCheck<T extends z.ZodTypeAny>(
         let unwrappedSchema = schemaField;
 
         while (
-          ["optional", "nullable"].includes(
-            (unwrappedSchema as any)._zod.def.type
+          ['optional', 'nullable'].includes(
+            (unwrappedSchema as any)._zod.def.type,
           )
         ) {
           unwrappedSchema = (unwrappedSchema as any)._zod.def.innerType;
         }
 
-        checkNestedKeys(
-          unwrappedSchema,
-          nestedValue,
-          [...path, key]
-        );
+        checkNestedKeys(unwrappedSchema, nestedValue, [...path, key]);
       });
     }
   }
@@ -140,9 +119,7 @@ export function parseWithWhitelistCheck<T extends z.ZodTypeAny>(
 
   const parseResult = schema.safeParse(data);
 
-  if (!parseResult.success)
-    errors.push(...parseResult.error.issues);
-
+  if (!parseResult.success) errors.push(...parseResult.error.issues);
 
   if (errors.length > 0)
     return {
@@ -150,9 +127,9 @@ export function parseWithWhitelistCheck<T extends z.ZodTypeAny>(
       error: new z.ZodRealError(errors),
     };
 
-
   return {
     success: true,
     data: parseResult.data!,
   };
 }
+

@@ -398,3 +398,4 @@ export class ErrorPrettifier {
 const errorPrettifier = new ErrorPrettifier();
 
 export default errorPrettifier;
+

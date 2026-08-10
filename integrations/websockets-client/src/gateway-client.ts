@@ -20,6 +20,8 @@ export class GatewayClient {
   private socket: Socket;
   private dedup: ClientDedupStore;
   private subscribers = new Set<GatewayStateSubscriber>();
+  private handlers = new Map<string, Set<ArkosEventHandler>>();
+  private boundEvents = new Set<string>();
 
   public status: GatewayStatus = "disconnected";
   public user: any = null;
@@ -83,26 +85,39 @@ export class GatewayClient {
    * })
    */
   on<T = any>(event: string, handler: ArkosEventHandler<T>): () => void {
-    const wrappedHandler = (payload: any) => {
-      // Dedup based on _meta.mid if present (server used dedup on emit)
-      const mid = payload?._meta?.mid ?? payload?.id ?? payload?.messageId;
-      if (mid && this.dedup.checkAndSet(event, mid)) return;
+    if (!this.handlers.has(event)) {
+      this.handlers.set(event, new Set());
+    }
+    this.handlers.get(event)!.add(handler);
 
-      // Strip _meta before handing to user — it's internal plumbing
-      const { _meta, ...data } = payload ?? {};
-      handler(data as T);
+    if (!this.boundEvents.has(event)) {
+      this.boundEvents.add(event);
+      this.socket.on(event, (payload: any) => {
+        const mid = payload?._meta?.mid ?? payload?.id ?? payload?.messageId;
+        if (mid && this.dedup.checkAndSet(event, mid)) return;
+
+        const { _meta, ...data } = payload ?? {};
+        // snapshot to avoid issues if a handler unsubscribes mid-iteration
+        for (const h of [...(this.handlers.get(event) ?? [])]) {
+          h(data as T);
+        }
+      });
+    }
+
+    return () => {
+      this.handlers.get(event)?.delete(handler);
     };
-
-    this.socket.on(event, wrappedHandler);
-    return () => this.socket.off(event, wrappedHandler);
   }
 
   /**
    * Remove a specific handler or all handlers for an event.
    */
   off(event: string, handler?: ArkosEventHandler): void {
-    if (handler) this.socket.off(event, handler);
-    else this.socket.removeAllListeners(event);
+    if (handler)
+      this.handlers.get(event)?.delete(handler);
+    else
+      this.handlers.delete(event);
+
   }
 
   /**
@@ -122,7 +137,7 @@ export class GatewayClient {
   emit<T extends Record<string, any>, R = any>(
     event: string,
     data: T,
-    options: ArkosEmitOptions & { ack: true }
+    options: ArkosEmitOptions & { ack: true; }
   ): Promise<ArkosEmitResult<R>>;
 
   emit<T extends Record<string, any>, R = any>(
@@ -188,6 +203,8 @@ export class GatewayClient {
 
   destroy(): void {
     this.socket.removeAllListeners();
+    this.handlers.clear();
+    this.boundEvents.clear();
     this.dedup.destroy();
     this.subscribers.clear();
   }

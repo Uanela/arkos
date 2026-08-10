@@ -274,7 +274,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             Object.keys(config.validation || {}).length > 0
           )
             throw ExitError(
-              `Trying to pass validators into route ${route} config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })`
+              `Trying to pass validators into route ${route} config validation option without choosing a validation resolver under configuration as defineConfig({ validation: { resolver: '' } })`
             );
 
           if (config.authentication && !isUsingAuthentication())

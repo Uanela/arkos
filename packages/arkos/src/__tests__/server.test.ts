@@ -14,6 +14,7 @@ import portAndHostAllocator from "../utils/features/port-and-host-allocator";
 import * as arkosConfigHelpers from "../utils/helpers/arkos-config.helpers";
 import * as appModule from "../app";
 
+jest.mock("../utils/helpers/arkos-config.helpers");
 jest.mock("../app", () => ({ getAppServer: jest.fn() }));
 jest.mock("../utils/features/port-and-host-allocator");
 jest.mock("../utils/sheu", () => ({
@@ -24,7 +25,6 @@ jest.mock("../utils/sheu", () => ({
     error: jest.fn(),
   },
 }));
-jest.mock("../utils/helpers/arkos-config.helpers");
 jest.mock("fs");
 jest.mock("http", () => {
   const mockServer = {
@@ -290,7 +290,7 @@ describe("Server Module", () => {
       try {
         (process as any).emit("unhandledRejection", error);
         jest.runAllTimers();
-      } catch {}
+      } catch { }
       expect(console.error).toHaveBeenCalledWith(error);
     });
 
@@ -300,7 +300,7 @@ describe("Server Module", () => {
       try {
         (process as any).emit("unhandledRejection", error);
         jest.runAllTimers();
-      } catch {}
+      } catch { }
       expect(sheu.error).toHaveBeenCalledWith(
         "UNHANDLED REJECTION! SHUTTING DOWN...\n",
         { timestamp: true, bold: true }
@@ -313,7 +313,7 @@ describe("Server Module", () => {
       try {
         (process as any).emit("unhandledRejection", error);
         jest.runAllTimers();
-      } catch {}
+      } catch { }
       expect(sheu.error).not.toHaveBeenCalled();
     });
 
@@ -322,7 +322,7 @@ describe("Server Module", () => {
       try {
         (process as any).emit("unhandledRejection", error);
         jest.runAllTimers();
-      } catch {}
+      } catch { }
       expect(mockServer.close).toHaveBeenCalled();
     });
 

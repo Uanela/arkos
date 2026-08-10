@@ -22,7 +22,7 @@ interface GameRoom {
 const rooms = new Map<string, GameRoom>();
 
 // Single waiting player slot — first to join waits here for an opponent
-let waitingPlayer: { socketId: string; username: string } | null = null;
+let waitingPlayer: { socketId: string; username: string; } | null = null;
 
 function emptyBoard(): Board {
   return Array(9).fill(null);
@@ -107,7 +107,7 @@ tictactoeGateway.on({ event: "join_game", ack: true }, (socket, data, ack) => {
 
     // Put both sockets in the same socket.io room
     socket.join(roomId);
-    tictactoeGateway.socket(playerX.socketId).join(roomId);
+    socket.to(playerX.socketId).socketsJoin(roomId);
 
     const basePayload = {
       roomId,
@@ -116,7 +116,7 @@ tictactoeGateway.on({ event: "join_game", ack: true }, (socket, data, ack) => {
     };
 
     // Notify waiting player (X)
-    tictactoeGateway.socket(playerX.socketId).emit("game_start", {
+    socket.to(playerX.socketId).emit("game_start", {
       ...basePayload,
       yourMark: "X",
       opponentUsername: username,
@@ -192,7 +192,7 @@ tictactoeGateway.on({ event: "make_move", ack: true }, (socket, data, ack) => {
     currentTurn: room.currentTurn,
   };
 
-  tictactoeGateway.room(roomId).emit("move_made", moveMadePayload);
+  socket.to(roomId).emit("move_made", moveMadePayload);
   ack?.({ success: true });
 
   // Check win / draw
@@ -205,7 +205,7 @@ tictactoeGateway.on({ event: "make_move", ack: true }, (socket, data, ack) => {
         ? room.players.find((p) => p.mark === result)
         : undefined;
 
-    tictactoeGateway.room(roomId).emit("game_over", {
+    socket.to(roomId).emit("game_over", {
       board: room.board,
       result,
       winnerUsername: winnerPlayer?.username ?? null,
@@ -235,7 +235,7 @@ tictactoeGateway.hook("disconnect", (socket) => {
   room.status = "finished";
 
   const opp = opponent(room, socket.id);
-  tictactoeGateway.socket(opp.socketId).emit("opponent_left", {
+  socket.to(opp.socketId).emit("opponent_left", {
     message: "Your opponent disconnected. You win by default!",
   });
 

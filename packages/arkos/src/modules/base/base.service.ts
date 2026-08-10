@@ -2,15 +2,15 @@ import {
   camelCase,
   kebabCase,
   pascalCase,
-} from "../../utils/helpers/change-case.helpers";
-import deepmerge from "../../utils/helpers/deepmerge.helper";
+} from '../../utils/helpers/change-case.helpers';
+import deepmerge from '../../utils/helpers/deepmerge.helper';
 import {
   handleRelationFieldsInBody,
   ModelGroupRelationFields,
-} from "./utils/helpers/base.service.helpers";
-import { getPrismaInstance } from "../../utils/helpers/prisma.helpers";
-import authService from "../auth/auth.service";
-import { PrismaClient } from "../../generated";
+} from './utils/helpers/base.service.helpers';
+import { getPrismaInstance } from '../../utils/helpers/prisma.helpers';
+import authService from '../auth/auth.service';
+import { PrismaClient } from '../../generated';
 import {
   CountFilters,
   CreateData,
@@ -32,15 +32,13 @@ import {
   UpdateOneData,
   UpdateOneFilters,
   UpdateOneOptions,
-} from "./types/base.service.types";
-import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
-import { ServiceHookContext } from "./types/base.service.types";
+} from './types/base.service.types';
+import prismaSchemaParser from '../../utils/prisma/prisma-schema-parser';
+import { ServiceHookContext } from './types/base.service.types';
+import { ArkosPrismaInput } from '../../types/arkos-prisma-input';
 
 interface ServiceOperationConfig {
-  operationType:
-  | keyof ArkosPrismaService
-  | "batchDelete"
-  | "batchUpdate";
+  operationType: keyof ArkosPrismaService | 'batchDelete' | 'batchUpdate';
   prismaMethod: string;
   requiresPasswordHashing?: boolean;
   relationFieldsHandling?: string[];
@@ -49,7 +47,7 @@ interface ServiceOperationConfig {
     args: any[],
     prisma: PrismaClient,
     config: ServiceOperationConfig,
-    context: ArkosPrismaService<any>
+    context: ArkosPrismaService<any>,
   ) => Promise<any>;
 }
 
@@ -72,7 +70,9 @@ interface ServiceOperationConfig {
  * @see {@link https://www.arkosjs.com/docs/reference/base-service}
  * @see {@link https://www.arkosjs.com/docs/guide/accessing-request-context-in-services}
  */
-export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> {
+export class ArkosPrismaService<
+  TModelName extends keyof Models = keyof Models,
+> {
   modelName: TModelName;
   relationFields: ModelGroupRelationFields;
   private prismaInstace?: PrismaClient;
@@ -80,7 +80,7 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
   constructor(modelName: TModelName) {
     this.modelName = camelCase(modelName as string) as TModelName;
     const modelFields = prismaSchemaParser?.getModelRelations?.(
-      modelName as string
+      modelName as string,
     );
 
     this.relationFields = {
@@ -103,11 +103,8 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
         await this.processRelationFieldsInBody(args, config);
       let prismaFinalArgs = await this.handlePasswordHashing(
         argsWithRelationFieldsHandled,
-        config
+        config,
       );
-
-
-
 
       const prisma = getPrismaInstance();
       let result: any;
@@ -117,7 +114,7 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
           argsWithRelationFieldsHandled,
           prisma,
           config,
-          this
+          this,
         );
       } else {
         const prismaArgs = this.buildPrismaArgs(prismaFinalArgs, config);
@@ -132,42 +129,39 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
 
   private executeTransactionOperation = (config: ServiceOperationConfig) => {
     return async (...args: any[]): Promise<any> => {
-
       let argsWithRelationFieldsHandled =
         await this.processRelationFieldsInBody(args, config);
       let prismaFinalArgs = await this.handlePasswordHashing(
         argsWithRelationFieldsHandled,
-        config
+        config,
       );
-
 
       const prisma = getPrismaInstance();
       const results = await this.executeTransactionLogic(
         prismaFinalArgs,
         config,
-        prisma
+        prisma,
       );
 
       return results;
-    }
+    };
   };
-
 
   private async handlePasswordHashing(
     args: any[],
-    config: ServiceOperationConfig
+    config: ServiceOperationConfig,
   ): Promise<any[]> {
     let processedArgs = [...args];
 
     if (config.requiresPasswordHashing) {
-      const dataIndex = config.operationType.includes("update") ? 1 : 0;
+      const dataIndex = config.operationType.includes('update') ? 1 : 0;
       const data = processedArgs[dataIndex];
 
       if (Array.isArray(data)) {
         for (const i in data) {
           if (this.shouldHashPassword(data[i]))
             processedArgs[dataIndex][i] = await this.processPasswordHashing(
-              data[i]
+              data[i],
             );
         }
       } else if (this.shouldHashPassword(data)) {
@@ -180,43 +174,43 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
 
   private async processRelationFieldsInBody(
     args: any[],
-    config: ServiceOperationConfig
+    config: ServiceOperationConfig,
   ): Promise<any[]> {
     let processedArgs = [...args];
 
     if (config.relationFieldsHandling) {
-      const dataIndex = config.operationType.includes("update") ? 1 : 0;
+      const dataIndex = config.operationType.includes('update') ? 1 : 0;
 
-      if (config.operationType === "batchUpdate") {
+      if (config.operationType === 'batchUpdate') {
         const dataArray = processedArgs[0];
         if (Array.isArray(dataArray)) {
           processedArgs[0] = dataArray.map((data) =>
             handleRelationFieldsInBody(
               data as Record<string, any>,
               this.relationFields,
-              config.relationFieldsHandling
-            )
+              config.relationFieldsHandling,
+            ),
           );
         }
-      } else if (config.operationType === "batchDelete") {
+      } else if (config.operationType === 'batchDelete') {
         const batchFilters = processedArgs[0];
         if (Array.isArray(batchFilters)) {
           processedArgs[0] = batchFilters.map((filters) =>
             handleRelationFieldsInBody(
               filters as Record<string, any>,
-              this.relationFields
-            )
+              this.relationFields,
+            ),
           );
         }
-      } else if (config.operationType === "createMany") {
+      } else if (config.operationType === 'createMany') {
         const data = processedArgs[dataIndex];
         if (Array.isArray(data)) {
           processedArgs[dataIndex] = data.map((item) =>
             handleRelationFieldsInBody(
               item as Record<string, any>,
               this.relationFields,
-              config.relationFieldsHandling
-            )
+              config.relationFieldsHandling,
+            ),
           );
         }
       } else {
@@ -225,7 +219,7 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
           processedArgs[dataIndex] = handleRelationFieldsInBody(
             data as Record<string, any>,
             this.relationFields,
-            config.relationFieldsHandling
+            config.relationFieldsHandling,
           );
         }
       }
@@ -236,24 +230,24 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
 
   private buildPrismaArgs(args: any[], config: ServiceOperationConfig): any {
     switch (config.operationType) {
-      case "createOne":
-      case "createMany":
+      case 'createOne':
+      case 'createMany':
         return deepmerge({ data: args[0] }, args[1] || {});
-      case "findMany":
+      case 'findMany':
         return deepmerge({ where: args[0] }, args[1] || {});
-      case "findById":
+      case 'findById':
         return deepmerge({ where: { id: args[0] } }, args[1] || {});
-      case "findOne":
+      case 'findOne':
         return deepmerge({ where: args[0] }, args[1] || {});
-      case "updateOne":
+      case 'updateOne':
         return deepmerge({ where: args[0], data: args[1] }, args[2] || {});
-      case "updateMany":
+      case 'updateMany':
         const firstMerge = deepmerge({ data: args[1] }, args[2] || {});
         return deepmerge({ where: args[0] }, firstMerge);
-      case "deleteOne":
-      case "deleteMany":
+      case 'deleteOne':
+      case 'deleteMany':
         return { where: args[0] };
-      case "count":
+      case 'count':
         return { where: args[0] };
       default:
         return {};
@@ -263,9 +257,9 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
   private async executeTransactionLogic(
     args: any[],
     config: ServiceOperationConfig,
-    prisma: PrismaClient
+    prisma: PrismaClient,
   ): Promise<any> {
-    if (config.operationType === "batchUpdate") {
+    if (config.operationType === 'batchUpdate') {
       const dataArray = args[0];
       const queryOptions = args[1];
 
@@ -280,7 +274,7 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
             {
               batchedData: {
                 ...processedData,
-                apiAction: "update",
+                apiAction: 'update',
               },
             } as Record<string, any>,
             {
@@ -289,18 +283,18 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
                   ...prismaSchemaParser.getField({
                     type: pascalCase(this.modelName as string),
                   })!,
-                  name: "batchedData",
+                  name: 'batchedData',
                 },
               ],
               list: [],
-            }
+            },
           );
 
           return await tx[this.modelName as string].update(
             deepmerge(
               finalPrismaQueryParams.batchedData?.update,
-              queryOptions || {}
-            ) as { where: any; data: any }
+              queryOptions || {},
+            ) as { where: any; data: any },
           );
         });
 
@@ -308,7 +302,7 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
       });
     }
 
-    if (config.operationType === "batchDelete") {
+    if (config.operationType === 'batchDelete') {
       const batchFilters = args[0];
 
       return await (prisma as any).$transaction(async (tx: any) => {
@@ -324,7 +318,7 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
   }
 
   private shouldHashPassword(data: any): boolean {
-    return kebabCase(this.modelName as string) === "user" && data?.password;
+    return kebabCase(this.modelName as string) === 'user' && data?.password;
   }
 
   private async processPasswordHashing(data: any): Promise<any> {
@@ -333,7 +327,7 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
       for (let i = 0; i < data.length; i++) {
         const curr = data[i];
         if (
-          "password" in curr &&
+          'password' in curr &&
           !authService.isPasswordHashed(curr.password!)
         ) {
           processedArray[i] = {
@@ -374,15 +368,15 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    * ```
    */
   async createOne<TOptions extends CreateOptions<TModelName>>(
-    data: CreateData<TModelName>,
+    data: CreateData<TModelName> | ArkosPrismaInput<CreateData<TModelName>>,
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, TOptions>> {
     return this.executeOperation({
-      operationType: "createOne",
-      prismaMethod: "create",
+      operationType: 'createOne',
+      prismaMethod: 'create',
       requiresPasswordHashing: true,
-      relationFieldsHandling: ["delete", "disconnect", "update"],
+      relationFieldsHandling: ['delete', 'disconnect', 'update'],
       returnsFallback: undefined,
     })(data, queryOptions, context);
   }
@@ -403,15 +397,16 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    * ```
    */
   async createMany<TOptions extends CreateManyOptions<TModelName>>(
-    data: CreateManyData<TModelName>,
+    data:
+      CreateManyData<TModelName> | ArkosPrismaInput<CreateManyData<TModelName>>,
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, TOptions>[]> {
     return this.executeOperation({
-      operationType: "createMany",
-      prismaMethod: "createMany",
+      operationType: 'createMany',
+      prismaMethod: 'createMany',
       requiresPasswordHashing: true,
-      relationFieldsHandling: ["delete", "disconnect", "update"],
+      relationFieldsHandling: ['delete', 'disconnect', 'update'],
       returnsFallback: undefined,
     })(data, queryOptions, context);
   }
@@ -430,11 +425,11 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    */
   async count(
     filters?: CountFilters<TModelName>,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<number> {
     return this.executeOperation({
-      operationType: "count",
-      prismaMethod: "count",
+      operationType: 'count',
+      prismaMethod: 'count',
       returnsFallback: 0,
     })(filters, context);
   }
@@ -457,11 +452,11 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
   async findMany<TOptions extends FindManyOptions<TModelName>>(
     filters?: FindManyFilters<TModelName>,
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, TOptions>[]> {
     return this.executeOperation({
-      operationType: "findMany",
-      prismaMethod: "findMany",
+      operationType: 'findMany',
+      prismaMethod: 'findMany',
       returnsFallback: [],
     })(filters, queryOptions, context);
   }
@@ -481,11 +476,11 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
   async findById<TOptions extends FindOneOptions<TModelName>>(
     id: string | number,
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, TOptions> | null> {
     return this.executeOperation({
-      operationType: "findById",
-      prismaMethod: "findUnique",
+      operationType: 'findById',
+      prismaMethod: 'findUnique',
       returnsFallback: undefined,
     })(id, queryOptions, context);
   }
@@ -505,11 +500,11 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
   async findOne<TOptions extends FindOneOptions<TModelName>>(
     filters: FindOneFilters<TModelName>,
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, TOptions> | null> {
     return this.executeOperation({
-      operationType: "findOne",
-      prismaMethod: "findFirst",
+      operationType: 'findOne',
+      prismaMethod: 'findFirst',
       returnsFallback: undefined,
       customPrismaLogic: async (args, prisma, _, serviceContext) => {
         const filters = args[0];
@@ -517,15 +512,15 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
 
         if (
           Object.keys(filters as Record<string, any>).length === 1 &&
-          "id" in (filters as Record<string, any>) &&
-          (filters as any).id !== "me"
+          'id' in (filters as Record<string, any>) &&
+          (filters as any).id !== 'me'
         ) {
           return await (prisma as any)[serviceContext.modelName].findUnique(
-            deepmerge({ where: filters }, queryOptions || {})
+            deepmerge({ where: filters }, queryOptions || {}),
           );
         } else {
           return await (prisma as any)[serviceContext.modelName].findFirst(
-            deepmerge({ where: filters }, queryOptions || {})
+            deepmerge({ where: filters }, queryOptions || {}),
           );
         }
       },
@@ -550,13 +545,14 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    */
   async updateOne<TOptions extends UpdateOneOptions<TModelName>>(
     filters: UpdateOneFilters<TModelName>,
-    data: UpdateOneData<TModelName>,
+    data:
+      UpdateOneData<TModelName> | ArkosPrismaInput<UpdateOneData<TModelName>>,
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, TOptions>> {
     return this.executeOperation({
-      operationType: "updateOne",
-      prismaMethod: "update",
+      operationType: 'updateOne',
+      prismaMethod: 'update',
       requiresPasswordHashing: true,
       relationFieldsHandling: [],
       returnsFallback: undefined,
@@ -578,13 +574,14 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    */
   async updateById<TOptions extends UpdateOneOptions<TModelName>>(
     id: string | number,
-    data: UpdateOneData<TModelName>,
+    data:
+      UpdateOneData<TModelName> | ArkosPrismaInput<UpdateOneData<TModelName>>,
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, TOptions>> {
     return this.executeOperation({
-      operationType: "updateOne",
-      prismaMethod: "update",
+      operationType: 'updateOne',
+      prismaMethod: 'update',
       requiresPasswordHashing: true,
       relationFieldsHandling: [],
       returnsFallback: undefined,
@@ -609,13 +606,14 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    */
   async updateMany<TOptions extends UpdateManyOptions<TModelName>>(
     filters: UpdateManyFilters<TModelName>,
-    data: UpdateManyData<TModelName>,
+    data:
+      UpdateManyData<TModelName> | ArkosPrismaInput<UpdateManyData<TModelName>>,
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<{ count: number }> {
     return this.executeOperation({
-      operationType: "updateMany",
-      prismaMethod: "updateMany",
+      operationType: 'updateMany',
+      prismaMethod: 'updateMany',
       requiresPasswordHashing: true,
       relationFieldsHandling: [],
       returnsFallback: undefined,
@@ -635,11 +633,11 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    */
   async deleteById(
     id: string | number,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, any>> {
     return this.executeOperation({
-      operationType: "deleteOne",
-      prismaMethod: "delete",
+      operationType: 'deleteOne',
+      prismaMethod: 'delete',
       returnsFallback: undefined,
     })({ id }, context);
   }
@@ -657,11 +655,11 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    */
   async deleteOne(
     filters: DeleteOneFilters<TModelName>,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, any>> {
     return this.executeOperation({
-      operationType: "deleteOne",
-      prismaMethod: "delete",
+      operationType: 'deleteOne',
+      prismaMethod: 'delete',
       returnsFallback: undefined,
     })(filters, context);
   }
@@ -679,11 +677,11 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    */
   async deleteMany(
     filters: DeleteManyFilters<TModelName>,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<{ count: number }> {
     return this.executeOperation({
-      operationType: "deleteMany",
-      prismaMethod: "deleteMany",
+      operationType: 'deleteMany',
+      prismaMethod: 'deleteMany',
       returnsFallback: undefined,
     })(filters, context);
   }
@@ -704,13 +702,15 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    * ```
    */
   async batchUpdate<TOptions extends UpdateOneOptions<TModelName>>(
-    dataArray: UpdateOneData<TModelName>[],
+    dataArray:
+      | UpdateOneData<TModelName>[]
+      | ArkosPrismaInput<UpdateOneData<TModelName>>[],
     queryOptions?: TOptions,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, TOptions>[]> {
     return this.executeTransactionOperation({
-      operationType: "batchUpdate",
-      prismaMethod: "update",
+      operationType: 'batchUpdate',
+      prismaMethod: 'update',
       requiresPasswordHashing: true,
       relationFieldsHandling: [],
       returnsFallback: undefined,
@@ -733,13 +733,14 @@ export class ArkosPrismaService<TModelName extends keyof Models = keyof Models> 
    */
   async batchDelete(
     batchFilters: Array<DeleteOneFilters<TModelName>>,
-    context?: ServiceHookContext
+    context?: ServiceHookContext,
   ): Promise<GetPayload<TModelName, any>[]> {
     return this.executeTransactionOperation({
-      operationType: "batchDelete",
-      prismaMethod: "delete",
+      operationType: 'batchDelete',
+      prismaMethod: 'delete',
       relationFieldsHandling: [],
       returnsFallback: undefined,
     })(batchFilters, context);
   }
 }
+

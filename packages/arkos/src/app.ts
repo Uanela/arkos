@@ -1,25 +1,24 @@
-import "./utils/helpers/arkos-config.helpers";
-import express, { Express } from "express";
-import setupApp from "./utils/setup-app";
-import { Arkos } from "./types/arkos";
-import initializeApp, { addGlobalErrorHandler } from "./utils/initialize-app";
-import { logAppStartup } from "./server";
-import runtimeCliCommander from "./utils/cli/utils/runtime-cli-commander";
-import { IncomingMessage, Server, ServerResponse } from "http";
-import ExitError from "./utils/helpers/exit-error";
-import { applyArkosRouterProxy } from "./utils/arkos-router/utils/helpers/apply-arkos-router-proxy";
 import {
   isProduction,
   validateArkosConfig,
-} from "./utils/helpers/arkos-config.helpers";
+} from './utils/helpers/arkos-config.helpers';
+import express, { Express } from 'express';
+import setupApp from './utils/setup-app';
+import { Arkos } from './types/arkos';
+import initializeApp, { addGlobalErrorHandler } from './utils/initialize-app';
+import { logAppStartup } from './server';
+import runtimeCliCommander from './utils/cli/utils/runtime-cli-commander';
+import { IncomingMessage, Server, ServerResponse } from 'http';
+import ExitError from './utils/helpers/exit-error';
+import { applyArkosRouterProxy } from './utils/arkos-router/utils/helpers/apply-arkos-router-proxy';
 export const app: express.Express = express();
 
 let appServer: Server<typeof IncomingMessage, typeof ServerResponse>;
 export const docsLink =
-  "https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app";
+  'https://www.arkosjs.com/docs/core-concepts/routing/setup#setting-up-your-app';
 let instanciated = false;
-type AppState = "idle" | "building" | "built" | "listening";
-export let state: AppState = "idle";
+type AppState = 'idle' | 'building' | 'built' | 'listening';
+export let state: AppState = 'idle';
 
 /**
  * Creates and configures an Arkos application instance.
@@ -60,19 +59,17 @@ export let state: AppState = "idle";
  * @see {@link https://www.arkosjs.com/docs/core-concepts/routing/setup}
  */
 export default function arkos(): Arkos {
-  if (process.env.__ARKOS_CLI !== "true")
+  if (process.env.__ARKOS_CLI !== 'true')
     throw ExitError(
-      `Arkos.js application must be started the built-in cli ${isProduction() ? "'arkos start' in production" : `'arkos dev' in development`} see https://www.arkosjs.com/docs/getting-started/installation#7-set-up-packagejson-scripts`
+      `Arkos.js application must be started the built-in cli ${isProduction() ? "'arkos start' in production" : `'arkos dev' in development`} see https://www.arkosjs.com/docs/getting-started/installation#7-set-up-packagejson-scripts`,
     );
 
   if (instanciated)
     throw ExitError(`arkos() must be called only once, see ${docsLink}`);
 
-  const app = applyArkosRouterProxy(express(), {}, "app") as any as Arkos;
+  const app = applyArkosRouterProxy(express(), {}, 'app') as any as Arkos;
   setupApp(app);
   instanciated = true;
-
-
 
   function loadApp() {
     let _app = initializeApp(app);
@@ -81,66 +78,66 @@ export default function arkos(): Arkos {
     return _app;
   }
 
-  app.build = function() {
-    if (state === "built" || state === "building")
+  app.build = function () {
+    if (state === 'built' || state === 'building')
       throw ExitError(`app.build() must only be called once, see ${docsLink}`);
-    if (state === "listening")
+    if (state === 'listening')
       throw ExitError(
-        `app.build() must be called before app.listen(), see ${docsLink}`
+        `app.build() must be called before app.listen(), see ${docsLink}`,
       );
 
-    state = "building";
+    state = 'building';
     const _app = loadApp();
-    state = "built";
+    state = 'built';
     return _app;
   };
 
-  const originalListen = app.listen.bind(app) as any as Express["listen"];
+  const originalListen = app.listen.bind(app) as any as Express['listen'];
   type UserCallback = (err?: Error) => void;
 
   const defaultCb = (
     port: number | string,
     host: string,
-    cb?: UserCallback
+    cb?: UserCallback,
   ) => {
     logAppStartup(port, host);
-    return cb || function() { };
+    return cb || function () {};
   };
 
-  app.listen = async function(...args: any[]): Promise<Server> {
-    process.env.__ARKOS_SERVER_LISTENER = "arkos";
+  app.listen = async function (...args: any[]): Promise<Server> {
+    process.env.__ARKOS_SERVER_LISTENER = 'arkos';
 
-    if (state === "listening")
+    if (state === 'listening')
       throw ExitError(`app.listen() must only be called once, see ${docsLink}`);
-    if (state === "building")
+    if (state === 'building')
       throw ExitError(
-        `app.build() must be awaited before calling app.listen(), see ${docsLink}`
+        `app.build() must be awaited before calling app.listen(), see ${docsLink}`,
       );
 
-    if (state === "idle") {
-      state = "listening";
+    if (state === 'idle') {
+      state = 'listening';
       loadApp();
     }
 
     validateArkosConfig();
 
-    const port = Number(process.env.__PORT || process.env.PORT || "8000");
-    const host = process.env.__HOST! || process.env.HOST || "0.0.0.0";
+    const port = Number(process.env.__PORT || process.env.PORT || '8000');
+    const host = process.env.__HOST! || process.env.HOST || '0.0.0.0';
 
     process.send?.({ started: true });
-    if (process.env.__SKIP_LISTEN == "true") return appServer;
+    if (process.env.__SKIP_LISTEN == 'true') return appServer;
 
-    if ((args as any)?.length === 0 || typeof args[0] === "function")
+    if ((args as any)?.length === 0 || typeof args[0] === 'function')
       appServer = originalListen(
         port,
         host,
-        defaultCb(port, host, args[0] as UserCallback)
+        defaultCb(port, host, args[0] as UserCallback),
       );
-    else if (args[0] instanceof Server || typeof args[0] === "object")
+    else if (args[0] instanceof Server || typeof args[0] === 'object')
       appServer = args[0].listen(
         port,
         host,
-        defaultCb(port, host, args[1] as UserCallback)
+        defaultCb(port, host, args[1] as UserCallback),
       );
 
     return appServer;
@@ -152,3 +149,4 @@ export default function arkos(): Arkos {
 export function getAppServer() {
   return appServer;
 }
+

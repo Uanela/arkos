@@ -172,8 +172,13 @@ importers:
         specifier: 5.8.0
         version: 5.8.0
       typescript:
+<<<<<<< HEAD
         specifier: 6.0.3
         version: 6.0.3
+=======
+        specifier: 5.8.2
+        version: 5.8.2
+>>>>>>> 45bedea1ecc6ac62dc93ef9099e79d43f77795df
 
 packages:
 
@@ -4766,9 +4771,12 @@ packages:
     engines: {node: '>=8.0.0'}
     hasBin: true
 
+<<<<<<< HEAD
   zeptomatch@2.1.0:
     resolution: {integrity: sha512-KiGErG2J0G82LSpniV0CtIzjlJ10E04j02VOudJsPyPwNZgGnRKQy7I1R7GMyg/QswnE4l7ohSGrQbQbjXPPDA==}
 
+=======
+>>>>>>> 45bedea1ecc6ac62dc93ef9099e79d43f77795df
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
@@ -10185,11 +10193,14 @@ snapshots:
     optionalDependencies:
       commander: 2.20.3
 
+<<<<<<< HEAD
   zeptomatch@2.1.0:
     dependencies:
       grammex: 3.1.13
       graphmatch: 1.1.1
 
+=======
+>>>>>>> 45bedea1ecc6ac62dc93ef9099e79d43f77795df
   zod@4.4.3: {}
 
   zwitch@2.0.4: {}

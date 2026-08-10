@@ -1,29 +1,28 @@
 // jest.config.ts
-import type { Config } from "jest";
+import type { Config } from 'jest';
 
 const config: Config = {
-  preset: "ts-jest",
-  testEnvironment: "node",
-  roots: ["<rootDir>/src", "<rootDir>/scripts"],
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/src', '<rootDir>/scripts'],
   testMatch: [
-    "**/__tests__/**/*.ts?(x)",
-    "**/__specs__/**/*.ts?(x)",
-    "**/?(*.)+(spec|test).ts?(x)",
+    '**/__tests__/**/*.ts?(x)',
+    '**/__specs__/**/*.ts?(x)',
+    '**/?(*.)+(spec|test).ts?(x)',
   ],
-  transformIgnorePatterns: [
-    "node_modules/(?!@scalar/express-api-reference)",
-  ],
+  transformIgnorePatterns: ['node_modules/(?!@scalar/express-api-reference)'],
   transform: {
-    "^.+\\.tsx?$": "ts-jest",
+    '^.+\\.tsx?$': 'ts-jest',
   },
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverage: true,
-  coverageDirectory: "coverage",
-  coverageReporters: ["text", "lcov"],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov'],
   silent: false,
-  setupFiles: ["<rootDir>/jest.setup.ts"],
+  setupFiles: ['<rootDir>/jest.setup.ts'],
   maxWorkers: '2',
-  workerIdleMemoryLimit: '512MB'
+  workerIdleMemoryLimit: '512MB',
 };
 
 export default config;
+

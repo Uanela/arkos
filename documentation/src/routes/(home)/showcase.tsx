@@ -25,6 +25,13 @@ const showcaseItems = [
     image: "https://noticeme.site/NoticemeOfficialLogo.png",
   },
   {
+    name: "Tic Tac Toe Online",
+    description: "A tic tac toe realtime game built with arkos' gateway",
+    category: "All",
+    url: "https://games.arkosjs.com",
+    image: "/img/superm7-logo.webp",
+  },
+  {
     name: "Peleve Flowers",
     description: "Floral Decoration",
     category: "Corporate",
@@ -111,7 +118,7 @@ function ShowcasePage() {
       </section>
 
       <section className="grid md:grid-cols-3 border-b border-fd-border">
-        {[
+        { [
           { value: version, label: "Latest Version" },
           { value: stars?.toLocaleString(), label: "GitHub Stars" },
           {
@@ -122,15 +129,15 @@ function ShowcasePage() {
           ,
         ].map((stat) => (
           <div
-            key={stat?.label}
+            key={ stat?.label }
             className="flex flex-col items-center justify-center py-12 gap-1 border-r border-fd-border last:border-r-0"
           >
-            <span className="text-4xl font-bold">{stat?.value}</span>
+            <span className="text-4xl font-bold">{ stat?.value }</span>
             <span className="text-sm text-fd-muted-foreground">
-              {stat?.label}
+              { stat?.label }
             </span>
           </div>
-        ))}
+        )) }
       </section>
 
       <section className="flex flex-col items-center px-4 py-16 gap-8 max-w-[1200px] mx-auto w-full">
@@ -139,63 +146,62 @@ function ShowcasePage() {
         </h2>
 
         <div className="flex flex-wrap gap-2 justify-center">
-          {categories.map((cat) => (
+          { categories.map((cat) => (
             <button
-              key={cat}
-              onClick={() => setActive(cat)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
-                active === cat
-                  ? "bg-fd-primary text-fd-primary-foreground border-fd-primary"
-                  : "border-fd-border text-fd-muted-foreground hover:text-fd-foreground hover:border-fd-foreground"
-              }`}
+              key={ cat }
+              onClick={ () => setActive(cat) }
+              className={ `px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${active === cat
+                ? "bg-fd-primary text-fd-primary-foreground border-fd-primary"
+                : "border-fd-border text-fd-muted-foreground hover:text-fd-foreground hover:border-fd-foreground"
+                }` }
             >
-              {cat}
+              { cat }
             </button>
-          ))}
+          )) }
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-          {filtered.map((item) => (
+          { filtered.map((item) => (
             <a
-              key={item.name}
-              href={item.url}
+              key={ item.name }
+              href={ item.url }
               target="_blank"
               rel="noopener noreferrer"
               className="group flex flex-col border border-fd-border rounded-xl overflow-hidden hover:border-fd-primary transition-colors bg-fd-card"
             >
               <div className="relative w-full aspect-video bg-fd-muted overflow-hidden">
-                {item.image ? (
+                { item.image ? (
                   <img
-                    src={item.image}
-                    alt={item.name}
+                    src={ item.image }
+                    alt={ item.name }
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-fd-muted-foreground text-sm">
                     No preview
                   </div>
-                )}
+                ) }
               </div>
               <div className="flex flex-col gap-1 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm">{item.name} ↗</span>
+                  <span className="font-semibold text-sm">{ item.name } ↗</span>
                   <span className="text-xs text-fd-muted-foreground border border-fd-border rounded-full px-2 py-0.5">
-                    {item.category}
+                    { item.category }
                   </span>
                 </div>
                 <p className="text-xs text-fd-muted-foreground">
-                  {item.description}
+                  { item.description }
                 </p>
               </div>
             </a>
-          ))}
+          )) }
         </div>
 
-        {filtered.length === 0 && (
+        { filtered.length === 0 && (
           <p className="text-fd-muted-foreground text-sm">
             No projects in this category yet.
           </p>
-        )}
+        ) }
       </section>
 
       <section className="flex flex-col items-center text-center px-4 py-16 gap-4 border-t border-fd-border">

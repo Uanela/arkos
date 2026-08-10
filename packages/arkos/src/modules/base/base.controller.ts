@@ -1,21 +1,21 @@
-import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
-import catchAsync from "../error-handler/utils/catch-async";
-import { ArkosPrismaService } from "./base.service";
-import AppError from "../error-handler/utils/app-error";
-import { kebabCase, pascalCase } from "../../utils/helpers/change-case.helpers";
-import pluralize from "pluralize";
-import { APIFeatures } from "../../exports/utils";
-import deepmerge from "../../utils/helpers/deepmerge.helper";
-import loadableRegistry from "../../components/arkos-loadable-registry";
-import { routeHookReader } from "../../components/arkos-route-hook/reader";
-import { PrismaModels } from "../../generated";
-import { ArkosRouteHookInstance } from "../../components/arkos-route-hook/types";
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from '../../types';
+import catchAsync from '../error-handler/utils/catch-async';
+import { ArkosPrismaService } from './base.service';
+import AppError from '../error-handler/utils/app-error';
+import { kebabCase, pascalCase } from '../../utils/helpers/change-case.helpers';
+import pluralize from 'pluralize';
+import { APIFeatures } from '../../exports/utils';
+import deepmerge from '../../utils/helpers/deepmerge.helper';
+import loadableRegistry from '../../components/arkos-loadable-registry';
+import { routeHookReader } from '../../components/arkos-route-hook/reader';
+import { PrismaModels } from '../../generated';
+import { ArkosRouteHookInstance } from '../../components/arkos-route-hook/types';
 
 export interface OperationHooks {
   beforeQuery?: (req: ArkosRequest) => void | Promise<void>;
   afterQuery?: (
     queryData: { where: any; queryOptions: any },
-    req: ArkosRequest
+    req: ArkosRequest,
   ) => void | Promise<void>;
   beforeService?: (args: any[], req: ArkosRequest) => any[] | Promise<any[]>;
   afterService?: (data: any, req: ArkosRequest) => any | Promise<any>;
@@ -24,19 +24,19 @@ export interface OperationHooks {
 
 interface OperationConfig {
   operationType:
-  | keyof Omit<ArkosRouteHookInstance<any>, "__type" | "moduleName">
-  | "batchUpdate"
-  | "batchDelete";
+    | keyof Omit<ArkosRouteHookInstance<any>, '__type' | 'moduleName'>
+    | 'batchUpdate'
+    | 'batchDelete';
   serviceMethod: string;
   successStatus: number;
-  queryFeatures: ("filter" | "sort" | "limitFields" | "paginate")[];
+  queryFeatures: ('filter' | 'sort' | 'limitFields' | 'paginate')[];
   requiresQueryForBulk?: boolean;
   preventORFilter?: boolean;
   responseBuilder?: (data: any, additionalData?: any) => any;
   errorHandler?: (
     data: any,
     req: ArkosRequest,
-    modelName: string
+    modelName: string,
   ) => AppError | null;
   usesRequestParams?: boolean;
   usesRequestBody?: boolean;
@@ -92,8 +92,8 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
 
   private getRouteHook() {
     return loadableRegistry.getItem(
-      "ArkosRouteHook",
-      kebabCase(kebabCase(this.modelName))
+      'ArkosRouteHook',
+      kebabCase(kebabCase(this.modelName)),
     ) as ArkosRouteHookInstance<TModuleName> | null;
   }
 
@@ -102,49 +102,49 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
         if (config.hooks?.beforeQuery) await config.hooks.beforeQuery(req);
 
         if (config.requiresQueryForBulk) {
           if (
             Object.keys(req.query).every((key) =>
-              ["filterMode", "prismaQueryOptions"].includes(key)
+              ['filterMode', 'prismaQueryOptions'].includes(key),
             )
           ) {
             return next(
               new AppError(
-                `Filter criteria not provided for bulk ${config.operationType.replace(/Many$/, "")}.`,
+                `Filter criteria not provided for bulk ${config.operationType.replace(/Many$/, '')}.`,
                 400,
-                "MissingRequestQueryParameters"
-              )
+                'MissingRequestQueryParameters',
+              ),
             );
           }
         }
 
-        if (config.preventORFilter && req.query.filterMode === "OR") {
+        if (config.preventORFilter && req.query.filterMode === 'OR') {
           throw new AppError(
             `req.query.filterMode === OR is not valid for ${config.operationType} operation`,
-            400
+            400,
           );
         }
 
-        if (config.preventORFilter) req.query.filterMode = "AND";
+        if (config.preventORFilter) req.query.filterMode = 'AND';
 
         let apiFeatures = new APIFeatures(req, this.modelName);
 
         config.queryFeatures.forEach((feature) => {
           switch (feature) {
-            case "filter":
+            case 'filter':
               apiFeatures = apiFeatures.filter();
               break;
-            case "sort":
+            case 'sort':
               apiFeatures = apiFeatures.sort();
               break;
-            case "limitFields":
+            case 'limitFields':
               apiFeatures = apiFeatures.limitFields();
               break;
-            case "paginate":
+            case 'paginate':
               apiFeatures = apiFeatures.paginate();
               break;
           }
@@ -159,7 +159,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
           config,
           req,
           where,
-          queryOptions
+          queryOptions,
         );
 
         if (config.hooks?.beforeService)
@@ -168,26 +168,27 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
         const routeHook = this.getRouteHook();
 
         const isRouteHookMethod =
-          routeHook && routeHook._configs.service &&
-            routeHook._configs.service[
+          routeHook &&
+          routeHook._configs.service &&
+          routeHook._configs.service[
             config.serviceMethod as keyof ArkosPrismaService<any>
-            ]
+          ]
             ? true
             : false;
 
         const serviceMethod = (
           isRouteHookMethod
             ? routeHook!._configs.service![
-            config.serviceMethod as keyof ArkosPrismaService<any>
-            ]
+                config.serviceMethod as keyof ArkosPrismaService<any>
+              ]
             : this.service[
-            config.serviceMethod as keyof ArkosPrismaService<any>
-            ]
+                config.serviceMethod as keyof ArkosPrismaService<any>
+              ]
         ) as Function;
 
         let result = await serviceMethod.apply(
           isRouteHookMethod ? routeHook!._configs.service : this.service,
-          serviceArgs
+          serviceArgs,
         );
 
         if (config.hooks?.afterService)
@@ -196,7 +197,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
         let data = result;
         let additionalData: any = null;
 
-        if (config.operationType === "findMany") {
+        if (config.operationType === 'findMany') {
           const [records, total] = await Promise.all([
             result,
             this.service.count(where, {
@@ -233,10 +234,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
         let responseData = config.responseBuilder
           ? config.responseBuilder(data, additionalData)
           : this.defaultResponseBuilder(
-            data,
-            additionalData,
-            config.operationType
-          );
+              data,
+              additionalData,
+              config.operationType,
+            );
 
         if (config.hooks?.beforeResponse)
           responseData = await config.hooks.beforeResponse(responseData, req);
@@ -251,13 +252,13 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
           return;
         }
 
-        if (config.operationType === "deleteOne") {
+        if (config.operationType === 'deleteOne') {
           res.status(config.successStatus).send();
           return;
         }
 
         res.status(config.successStatus).json(responseData);
-      }
+      },
     );
   };
 
@@ -268,7 +269,7 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
     req: ArkosRequest,
     res: ArkosResponse,
     data: any,
-    status: number
+    status: number,
   ): void {
     (res as any).originalData = data;
     req.responseData = data;
@@ -292,40 +293,40 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
     config: OperationConfig,
     req: ArkosRequest,
     where: any,
-    queryOptions: any
+    queryOptions: any,
   ): any[] {
     const context = { user: req?.user, accessToken: req?.accessToken };
     const mergedOptions = deepmerge(req.prismaQueryOptions || {}, queryOptions);
 
     switch (config.operationType) {
-      case "createOne":
-      case "createMany":
+      case 'createOne':
+      case 'createMany':
         return [req.body, mergedOptions, context];
 
-      case "findMany":
+      case 'findMany':
         return [where, queryOptions, context];
 
-      case "findOne":
+      case 'findOne':
         return [{ ...req.params, ...where }, mergedOptions, context];
 
-      case "updateOne":
+      case 'updateOne':
         return [{ ...req.params, ...where }, req.body, mergedOptions, context];
 
-      case "updateMany":
+      case 'updateMany':
         // Remove include for bulk operations
         delete queryOptions.include;
         return [where, req.body, queryOptions, context];
 
-      case "batchUpdate":
+      case 'batchUpdate':
         return [req.body, mergedOptions, context];
 
-      case "deleteOne":
+      case 'deleteOne':
         return [{ ...req.params, ...where }, context];
 
-      case "deleteMany":
+      case 'deleteMany':
         return [where, context];
 
-      case "batchDelete":
+      case 'batchDelete':
         return [req.body, context];
 
       default:
@@ -339,53 +340,53 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
   private defaultErrorHandler(
     data: any,
     req: ArkosRequest,
-    operationType: string
+    operationType: string,
   ): AppError | null {
     if (!data || (Array.isArray(data) && data.length === 0)) {
       // Handle different error scenarios
-      if (operationType.includes("create") || operationType.includes("batch")) {
+      if (operationType.includes('create') || operationType.includes('batch')) {
         return new AppError(
-          "Failed to create the resources. Please check your input.",
+          'Failed to create the resources. Please check your input.',
           400,
-          { body: req.body }
+          { body: req.body },
         );
       }
 
       if (
-        operationType === "findOne" ||
-        operationType === "updateOne" ||
-        operationType === "deleteOne"
+        operationType === 'findOne' ||
+        operationType === 'updateOne' ||
+        operationType === 'deleteOne'
       ) {
         if (
           Object.keys(req.params).length === 1 &&
-          "id" in req.params &&
-          req.params.id !== "me"
+          'id' in req.params &&
+          req.params.id !== 'me'
         ) {
           return new AppError(
             `${pascalCase(String(this.modelName))} with ID ${req.params?.id} not found`,
             404,
             {},
-            "NotFound"
+            'NotFound',
           );
         } else {
           return new AppError(
             `${pascalCase(String(this.modelName))} not found`,
             404,
             {},
-            "NotFound"
+            'NotFound',
           );
         }
       }
 
-      if (operationType === "updateMany" || operationType === "deleteMany") {
-        const isUpdate = operationType === "updateMany";
+      if (operationType === 'updateMany' || operationType === 'deleteMany') {
+        const isUpdate = operationType === 'updateMany';
         return new AppError(
           isUpdate
             ? `${pluralize(pascalCase(String(this.modelName)))} not found`
             : `No records found to delete`,
           404,
           {},
-          "NotFound"
+          'NotFound',
         );
       }
     }
@@ -393,17 +394,17 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
     // Special handling for operations that return count
     if (
       data &&
-      typeof data === "object" &&
-      "count" in data &&
+      typeof data === 'object' &&
+      'count' in data &&
       data.count === 0
     ) {
       return new AppError(
-        operationType === "updateMany"
+        operationType === 'updateMany'
           ? `${pluralize(pascalCase(String(this.modelName)))} not found`
           : `No records found to delete`,
         404,
         {},
-        "NotFound"
+        'NotFound',
       );
     }
 
@@ -416,23 +417,23 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
   private defaultResponseBuilder(
     data: any,
     additionalData: any,
-    operationType: string
+    operationType: string,
   ): any {
-    if (operationType === "findMany" && additionalData)
+    if (operationType === 'findMany' && additionalData)
       return {
         ...additionalData,
         data,
       };
 
     if (
-      operationType.includes("Many") &&
+      operationType.includes('Many') &&
       data &&
-      typeof data === "object" &&
-      "count" in data
+      typeof data === 'object' &&
+      'count' in data
     )
       return { results: data.count, data };
 
-    if (operationType.includes("batch") && Array.isArray(data))
+    if (operationType.includes('batch') && Array.isArray(data))
       return { results: data.length, data };
 
     return { data };
@@ -442,10 +443,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Creates a single resource
    */
   createOne = this.executeOperation({
-    operationType: "createOne",
-    serviceMethod: "createOne",
+    operationType: 'createOne',
+    serviceMethod: 'createOne',
     successStatus: 201,
-    queryFeatures: ["limitFields"],
+    queryFeatures: ['limitFields'],
     usesRequestBody: true,
   });
 
@@ -453,19 +454,19 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Creates multiple resources in a single operation
    */
   createMany = this.executeOperation({
-    operationType: "createMany",
-    serviceMethod: "createMany",
+    operationType: 'createMany',
+    serviceMethod: 'createMany',
     successStatus: 201,
-    queryFeatures: ["limitFields"],
+    queryFeatures: ['limitFields'],
     usesRequestBody: true,
     hooks: {
       async beforeQuery(req) {
         if (!req.body || (Array.isArray(req.body) && req.body.length === 0))
           throw new AppError(
-            "Expected request body array to contain at least on item but received none",
+            'Expected request body array to contain at least on item but received none',
             400,
             { body: req.body },
-            "MissingArrayRequestBody"
+            'MissingArrayRequestBody',
           );
       },
     },
@@ -475,20 +476,20 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Retrieves multiple resources with filtering, sorting, pagination, and field selection
    */
   findMany = this.executeOperation({
-    operationType: "findMany",
-    serviceMethod: "findMany",
+    operationType: 'findMany',
+    serviceMethod: 'findMany',
     successStatus: 200,
-    queryFeatures: ["filter", "sort", "limitFields", "paginate"],
+    queryFeatures: ['filter', 'sort', 'limitFields', 'paginate'],
   });
 
   /**
    * Retrieves a single resource by its identifier
    */
   findOne = this.executeOperation({
-    operationType: "findOne",
-    serviceMethod: "findOne",
+    operationType: 'findOne',
+    serviceMethod: 'findOne',
     successStatus: 200,
-    queryFeatures: ["limitFields", "filter"],
+    queryFeatures: ['limitFields', 'filter'],
     usesRequestParams: true,
   });
 
@@ -496,10 +497,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Updates a single resource by its identifier
    */
   updateOne = this.executeOperation({
-    operationType: "updateOne",
-    serviceMethod: "updateOne",
+    operationType: 'updateOne',
+    serviceMethod: 'updateOne',
     successStatus: 200,
-    queryFeatures: ["limitFields", "filter"],
+    queryFeatures: ['limitFields', 'filter'],
     usesRequestParams: true,
     usesRequestBody: true,
   });
@@ -508,10 +509,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Updates multiple resources that match specified criteria
    */
   updateMany = this.executeOperation({
-    operationType: "updateMany",
-    serviceMethod: "updateMany",
+    operationType: 'updateMany',
+    serviceMethod: 'updateMany',
     successStatus: 200,
-    queryFeatures: ["filter", "limitFields"],
+    queryFeatures: ['filter', 'limitFields'],
     requiresQueryForBulk: true,
     preventORFilter: true,
     usesRequestBody: true,
@@ -521,10 +522,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Updates multiple resources with different data in a single transaction
    */
   batchUpdate = this.executeOperation({
-    operationType: "batchUpdate",
-    serviceMethod: "batchUpdate",
+    operationType: 'batchUpdate',
+    serviceMethod: 'batchUpdate',
     successStatus: 200,
-    queryFeatures: ["limitFields", "filter"],
+    queryFeatures: ['limitFields', 'filter'],
     usesRequestBody: true,
   });
 
@@ -532,10 +533,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Deletes a single resource by its identifier
    */
   deleteOne = this.executeOperation({
-    operationType: "deleteOne",
-    serviceMethod: "deleteOne",
+    operationType: 'deleteOne',
+    serviceMethod: 'deleteOne',
     successStatus: 204,
-    queryFeatures: ["filter"],
+    queryFeatures: ['filter'],
     usesRequestParams: true,
   });
 
@@ -543,10 +544,10 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Deletes multiple resources that match specified criteria
    */
   deleteMany = this.executeOperation({
-    operationType: "deleteMany",
-    serviceMethod: "deleteMany",
+    operationType: 'deleteMany',
+    serviceMethod: 'deleteMany',
     successStatus: 200,
-    queryFeatures: ["filter"],
+    queryFeatures: ['filter'],
     requiresQueryForBulk: true,
     preventORFilter: true,
   });
@@ -555,10 +556,11 @@ export class BaseController<TModuleName extends keyof PrismaModels<any>> {
    * Deletes multiple resources with different filters in a single transaction
    */
   batchDelete = this.executeOperation({
-    operationType: "batchDelete",
-    serviceMethod: "batchDelete",
+    operationType: 'batchDelete',
+    serviceMethod: 'batchDelete',
     successStatus: 200,
-    queryFeatures: ["filter"],
+    queryFeatures: ['filter'],
     usesRequestBody: true,
   });
 }
+

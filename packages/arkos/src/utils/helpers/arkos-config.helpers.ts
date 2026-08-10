@@ -1,24 +1,39 @@
-import { defineConfig, UserArkosConfig } from "../define-config";
-import sheu from "../sheu";
-import ExitError from "./exit-error";
-import * as fsHelpers from "./fs.helpers";
-import { getPrismaInstance } from "./prisma.helpers";
-("ReplaceWithNeededImportsForArkosConfig"); // This will be filled by post build script
+import { defineConfig, UserArkosConfig } from '../define-config';
+import sheu from '../sheu';
+import ExitError from './exit-error';
+import { crd, getUserFileExtension } from './fs.helpers';
+import { getPrismaInstance } from './prisma.helpers';
+import { userRequire } from './global.helpers';
+import { loadEnvironmentVariables } from '../dotenv.helpers';
 
-let definedArkosConfig: any = {};
-const configFilename = `arkos.config.${fsHelpers.getUserFileExtension()}`;
+let definedArkosConfig: any;
 
-try {
-  definedArkosConfig = "ReplaceWithDynamicImport"; // This will be filled by post build script
-} catch (err: any) {
-  if (err.message.toLowerCase().includes(`${configFilename}'`))
-    sheu.warn(
-      `Using default configs, because ${configFilename} was not found`,
-      {
-        timestamp: true,
-      }
-    );
-  else throw err;
+export function readArkosConfig() {
+  loadEnvironmentVariables();
+  const configFilename = `arkos.config.${getUserFileExtension()}`;
+  const configPath = `${crd()}/${configFilename}`;
+  try {
+    let requireFunc: Function;
+    if (typeof jest !== 'undefined') requireFunc = () => ({});
+    else if (typeof require !== 'undefined') {
+      requireFunc = require;
+    } else {
+      requireFunc = userRequire;
+    }
+    definedArkosConfig = requireFunc(configPath);
+  } catch (err: any) {
+    if (err.message.toLowerCase().includes(`${configFilename}`)) {
+      definedArkosConfig = {};
+      sheu.warn(
+        `Using default configs, because ${configFilename} was not found`,
+        {
+          timestamp: true,
+        },
+      );
+    } else {
+      throw err;
+    }
+  }
 }
 
 export function isUsingAuthentication() {
@@ -37,17 +52,19 @@ export function isAuthenticationEnabled() {
  * @returns {ArkosConfig}
  */
 export function getArkosConfig(): UserArkosConfig {
+  if (definedArkosConfig === undefined) readArkosConfig();
+
   const config =
-    typeof definedArkosConfig === "string"
-      ? { __loader: "defineConfig" }
-      : (definedArkosConfig as any)?.default || { __loader: "defineConfig" };
-  const configFile = `arkos.config.${fsHelpers.getUserFileExtension()}`;
+    typeof definedArkosConfig === 'string'
+      ? { __loader: 'defineConfig' }
+      : (definedArkosConfig as any)?.default || { __loader: 'defineConfig' };
+  const configFile = `arkos.config.${getUserFileExtension()}`;
 
   if (
-    (config as any).__loader !== "defineConfig" &&
+    (config as any).__loader !== 'defineConfig' &&
     //@ts-ignore
-    typeof jest == "undefined" &&
-    typeof definedArkosConfig === "object"
+    typeof jest == 'undefined' &&
+    typeof definedArkosConfig === 'object'
   ) {
     sheu.error(
       `From v1.6 config under ${configFile} must be wrapped in \`defineConfig()\` function from \`arkos/config\`. You can do the following under your ${configFile}:
@@ -57,7 +74,7 @@ import { defineConfig } from "arkos/config"
 const config = defineConfig({ ... })
 
 export default config
-`
+`,
     );
     process.exit(1);
   }
@@ -71,7 +88,7 @@ export default config
  * @since 1.5.16-beta
  */
 export function isProduction() {
-  return process.env.ARKOS_BUILD === "true";
+  return process.env.ARKOS_BUILD === 'true';
 }
 
 export function validateArkosConfig() {
@@ -80,7 +97,7 @@ export function validateArkosConfig() {
 
   if (!config?.source?.entryPoint)
     throw ExitError(
-      `Invalid value for 'arkosConfig.source.entryPoint', please pass a valid path from the current working directory`
+      `Invalid value for 'arkosConfig.source.entryPoint', please pass a valid path from the current working directory`,
     );
 
   if (
@@ -90,11 +107,12 @@ export function validateArkosConfig() {
     !config.authentication?.jwt?.secret
   )
     throw ExitError(
-      `Missing jwt secret in production, see https://www.arkosjs.com/docs/core-concepts/authentication/setup#configuration`
+      `Missing jwt secret in production, see https://www.arkosjs.com/docs/core-concepts/authentication/setup#configuration`,
     );
 
   if (authenticationEnabled && !getPrismaInstance())
     throw ExitError(
-      `Arkos' authentication system relies on prisma instance, please disabled your authentication or see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup to setup a prisma instance`
+      `Arkos' authentication system relies on prisma instance, please disabled your authentication or see https://www.arkosjs.com/docs/core-concepts/prisma-orm/setup to setup a prisma instance`,
     );
 }
+

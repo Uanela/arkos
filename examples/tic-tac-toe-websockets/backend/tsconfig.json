@@ -12,15 +12,42 @@
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "lib": ["es6", "dom"],
+    "lib": [
+      "es6",
+      "dom"
+    ],
     "noImplicitAny": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ],
+      "@arkosjs/generated": [
+        "./.arkos/index.d.ts"
+      ]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.tsx",  "src/**/*.jsx", "arkos.config.ts"],
-  "exclude": ["node_modules", ".build", "src/**/__tests__/**", "src/**/*.test", "src/**/*.spec", "temp", "dist", "build", "uploads"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.tsx",
+    "src/**/*.jsx",
+    "arkos.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".build",
+    "src/**/__tests__/**",
+    "src/**/*.test",
+    "src/**/*.spec",
+    "temp",
+    "dist",
+    "build",
+    "uploads"
+  ],
   "watchOptions": {
-    "excludeDirectories": ["**/node_modules", "node_modules"]
+    "excludeDirectories": [
+      "**/node_modules",
+      "node_modules"
+    ]
   }
 }
