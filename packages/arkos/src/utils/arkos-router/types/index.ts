@@ -6,7 +6,7 @@ import {
   IRouterMatcher,
   Locals,
 } from "express";
-import { z, ZodType } from "zod";
+import { ZodType } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
 import { DetailedAccessControlRule } from "../../../types/auth";

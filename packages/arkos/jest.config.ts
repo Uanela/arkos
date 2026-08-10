@@ -23,6 +23,7 @@ const config: Config = {
   silent: false,
   setupFiles: ["<rootDir>/jest.setup.ts"],
   maxWorkers: '2',
+  workerIdleMemoryLimit: '512MB'
 };
 
 export default config;
