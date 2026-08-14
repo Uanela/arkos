@@ -28,7 +28,7 @@ class WatermarkStamper {
         console.info(`  - Network:      http://${nonLocalIp}:${port}`);
     }
 
-    if (envFiles?.length || 0 > 1)
+    if (envFiles?.length)
       console.info(
         `  - Environments: ${fullCleanCwd(envFiles?.join(", ") || "")
           .replaceAll(`\\`, "")

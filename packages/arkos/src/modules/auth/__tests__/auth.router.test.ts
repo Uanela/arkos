@@ -65,8 +65,8 @@ jest.mock("../../../server", () => ({
 }));
 jest.mock("../../base/base.middlewares", () => ({
   ...jest.requireActual("../../base/base.middlewares"),
-  handleRequestBodyValidationAndTransformation: jest.fn(() => () => {}),
-  addPrismaQueryOptionsToRequest: jest.fn(() => () => {}),
+  handleRequestBodyValidationAndTransformation: jest.fn(() => () => { }),
+  addPrismaQueryOptionsToRequest: jest.fn(() => () => { }),
   sendResponse: jest.fn(),
 }));
 jest.mock("../../base/utils/helpers/base.router.helpers", () => ({
@@ -82,6 +82,7 @@ jest.mock("../../base/utils/router-validator", () => ({
 }));
 jest.mock("../../../utils/helpers/fs.helpers", () => ({
   getUserFileExtension: jest.fn().mockReturnValue("ts"),
+  crd: jest.fn()
 }));
 jest.mock("../../debugger/debugger.service", () => ({
   __esModule: true,

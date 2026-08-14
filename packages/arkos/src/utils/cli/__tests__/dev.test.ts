@@ -1,7 +1,6 @@
 import { spawn, ChildProcess } from "child_process";
 import { getUserFileExtension } from "../../helpers/fs.helpers";
 import { getVersion } from "../utils/cli.helpers";
-import { loadEnvironmentVariables } from "../../dotenv.helpers";
 import { importModule } from "../../helpers/global.helpers";
 import fs from "fs";
 import sheu from "../../sheu";
@@ -17,11 +16,18 @@ jest.mock("../../helpers/fs.helpers", () => ({
   getUserFileExtension: jest.fn(),
 }));
 jest.mock("../utils/cli.helpers");
-jest.mock("../../dotenv.helpers");
+jest.mock("../../dotenv.helpers", () => ({
+  lastLoadedEnvFiles:
+    [
+      `/test/project/.env`,
+      `/test/project/.env.local`,
+    ]
+}));
 jest.mock("../../helpers/global.helpers");
 jest.mock("fs");
 jest.mock("../../sheu");
 jest.mock("../../features/port-and-host-allocator");
+
 
 describe("Dev Command", () => {
   let mockSpawn: jest.MockedFunction<typeof spawn>;
@@ -30,9 +36,7 @@ describe("Dev Command", () => {
   let mockConsoleInfo: jest.SpyInstance;
   let mockProcessExit: jest.SpyInstance;
   let mockProcessOn: jest.SpyInstance;
-  let mockProcessCwd: jest.SpyInstance;
   let mockSetTimeout: jest.SpyInstance;
-  let mockClearTimeout: jest.SpyInstance;
 
   beforeEach(() => {
     process.env.NODE_ENV = "development";
@@ -54,7 +58,7 @@ describe("Dev Command", () => {
     // Mock process methods
     mockProcessExit = jest.spyOn(process, "exit").mockImplementation();
     mockProcessOn = jest.spyOn(process, "on").mockImplementation();
-    mockProcessCwd = jest
+    jest
       .spyOn(process, "cwd")
       .mockReturnValue("/test/project");
 
@@ -65,14 +69,10 @@ describe("Dev Command", () => {
       cb();
       return "Timeout";
     }) as any);
-    mockClearTimeout = jest.spyOn(global, "clearTimeout").mockImplementation();
+    jest.spyOn(global, "clearTimeout").mockImplementation();
 
     // Mock other dependencies
     (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-    (loadEnvironmentVariables as jest.Mock).mockImplementation(() => [
-      `${process.cwd()}/.env`,
-      `${process.cwd()}/.env.local`,
-    ]);
     (getVersion as jest.Mock).mockReturnValue("1.0.0");
     (sheu.info as jest.Mock).mockImplementation();
     (
@@ -106,10 +106,6 @@ describe("Dev Command", () => {
       expect(process.env.NODE_ENV).toBe("development");
     });
 
-    it("should load environment variables", async () => {
-      await devCommand();
-      expect(loadEnvironmentVariables).toHaveBeenCalled();
-    });
 
     it("should exit if entry point doesn't exist", async () => {
       (fs.existsSync as jest.Mock).mockReturnValue(false);
@@ -275,10 +271,6 @@ describe("Dev Command", () => {
 
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
       (fs.existsSync as jest.Mock).mockReturnValue(true);
-      (loadEnvironmentVariables as jest.Mock).mockReturnValue([
-        ".env",
-        ".env.local",
-      ]);
       (importModule as jest.Mock).mockResolvedValue({
         getArkosConfig: () => ({
           available: true,
@@ -356,7 +348,6 @@ describe("Dev Command", () => {
   describe("TypeScript Types Missing Scenario", () => {
     let mockStdoutWrite: jest.SpyInstance;
     let mockStdinOnce: jest.SpyInstance;
-    let mockStdinPause: jest.SpyInstance;
     let mockExecSync: jest.SpyInstance;
 
     beforeEach(() => {
@@ -367,14 +358,14 @@ describe("Dev Command", () => {
         .spyOn(process.stdout, "write")
         .mockImplementation();
       mockStdinOnce = jest.spyOn(process.stdin, "once").mockImplementation();
-      mockStdinPause = jest.spyOn(process.stdin, "pause").mockImplementation();
+      jest.spyOn(process.stdin, "pause").mockImplementation();
       mockExecSync = jest
         .spyOn(require("child_process"), "execSync")
         .mockImplementation();
 
       // Default mocks
       (getUserFileExtension as jest.Mock).mockReturnValue("ts");
-      (loadEnvironmentVariables as jest.Mock).mockReturnValue([".env"]);
+      // (loadEnvironmentVariables as jest.Mock).mockReturnValue([".env"]);
       (
         portAndHostAllocator.getHostAndAvailablePort as jest.Mock
       ).mockResolvedValue({
@@ -420,7 +411,7 @@ describe("Dev Command", () => {
       });
 
       it("should handle execSync throwing an error", async () => {
-        mockStdinOnce.mockImplementation((event, callback) => {
+        mockStdinOnce.mockImplementation((_, callback) => {
           callback(Buffer.from("y\n"));
           return process.stdin;
         });
@@ -452,7 +443,7 @@ describe("Dev Command", () => {
           return true;
         });
 
-        mockStdinOnce.mockImplementation((event, callback) => {
+        mockStdinOnce.mockImplementation((_, callback) => {
           callback(Buffer.from("n\n"));
           return process.stdin;
         });

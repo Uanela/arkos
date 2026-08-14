@@ -138,7 +138,7 @@ describe("applymakeRouterProxy", () => {
       proxied.get({ path: "/api/cacilda", validation: {} });
     } catch (err: any) {
       expect(err.message).toBe(
-        "Trying to pass validators into route GET /api/cacilda config validation option without choosing a validation resolver under arkos.init({ validation: { resolver: '' } })"
+        "Trying to pass validators into route GET /api/cacilda config validation option without choosing a validation resolver under configuration as defineConfig({ validation: { resolver: '' } })"
       );
     }
   });
@@ -162,7 +162,7 @@ describe("applymakeRouterProxy", () => {
       jest.clearAllMocks();
       RouteConfigRegistry.register = jest.fn();
       RouteConfigRegistry.get = jest.fn();
-      (ExitError as jest.Mock).mockImplementation(() => {}); // re-setup after clearAllMocks
+      (ExitError as jest.Mock).mockImplementation(() => { }); // re-setup after clearAllMocks
     });
 
     it("should fall through to native express use when passed a function", () => {

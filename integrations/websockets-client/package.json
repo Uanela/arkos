@@ -1,6 +1,6 @@
 {
   "name": "@arkosjs/websockets-client",
-  "version": "0.1.0-canary.3",
+  "version": "0.2.0",
   "description": "Framework-agnostic WebSocket client for Arkos Gateway",
   "main": "dist/exports/index.js",
   "module": "dist/exports/index.js",
@@ -17,7 +17,7 @@
   },
   "homepage": "https://www.arkosjs.com",
   "scripts": {
-    "build": "rm -r ./dist && tsc",
+    "build": "rm -r ./dist && tsc && tsx script/post-build.ts",
     "prepublishOnly": "pnpm build",
     "typecheck": "tsc --noEmit"
   },
