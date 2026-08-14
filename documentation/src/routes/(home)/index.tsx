@@ -9,19 +9,48 @@ import { Image } from "fumadocs-core/framework";
 import SponsorsSection from "./-components/sponsors";
 
 export const Route = createFileRoute("/(home)/")({
+  loader: async () => {
+    const [repoRes, releasesRes, downloadsRes] = await Promise.all([
+      fetch("https://api.github.com/repos/uanela/arkos"),
+      fetch("https://api.github.com/repos/uanela/arkos/releases/latest"),
+      fetch("https://api.npmjs.org/downloads/point/last-month/arkos"),
+    ]);
+
+    const repo = await repoRes.json();
+    const release = await releasesRes.json();
+    const downloads = await downloadsRes.json();
+
+    const stars = (repo.stargazers_count as number).toLocaleString();
+
+    const releaseDate = new Date(release.published_at as string);
+    const latestRelease = `${releaseDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    })} / ${(release.tag_name as string).replace(/^v/, "")}`;
+
+    const monthlyDownloads = (downloads.downloads as number).toLocaleString();
+
+    return {
+      stats: {
+        stars, latestRelease, monthlyDownloads
+      }
+    };
+  },
   component: Home,
 });
 
 function Home() {
+  const { stats } = Route.useLoaderData();
+
   return (
     <div className="tailwind overflow-hidden max-w-[100vw]">
-      <HeroSection />
+      <HeroSection stats={ stats } />
       <CompaniesLogos />
 
-      {/* Features Section */}
+      {/* Features Section */ }
       <section
         id="tailwind"
-        className="text-white md:py-24 pt-11 pb-8 tailwind  flex justify-center"
+        className="text-white md:py-10 md:mt-0 mt-8 pb-8 p-4 tailwind  flex justify-center"
       >
         <div className="container mx-auto relative max-w-6xl">
           <div className="absolute top-[25%] left-[70%] md:size-[700px] size-[200px] bg-sky-500 rounded-full opacity-20 blur-3xl z-[1]"></div>
@@ -52,15 +81,15 @@ function Home() {
             id="tailwind"
             className="tailwind grid md:gap-12 gap-8 p-2  mx-auto max-w-3xl md:max-w-6xl z-10 items-start md:mt-24 mt-16"
           >
-            {arkosFeatures.map((feature, i) => (
-              <ArkosFeatureCard key={i} {...feature} reverse={!!(i % 2 == 0)} />
-            ))}
+            { arkosFeatures.map((feature, i) => (
+              <ArkosFeatureCard key={ i } { ...feature } reverse={ !!(i % 2 == 0) } />
+            )) }
           </div>
         </div>
       </section>
 
       <h2 className="md:text-2xl uppercase text-center text-lg font-bold z-10 mx-auto md:mb-8 px-4">
-        Already Trusted By{" "}
+        Already Trusted By{ " " }
         <span className="text-emerald-400">Great Developers</span> Building
         Daily
       </h2>
@@ -68,12 +97,12 @@ function Home() {
         <TestimonialCard
           name="Gelson Matavela"
           role="Founder"
-          projectName={"Grupo Vergui"}
-          avatar={"https://github.com/gelsonmatavela.png"}
+          projectName={ "Grupo Vergui" }
+          avatar={ "https://github.com/gelsonmatavela.png" }
         >
           Arkos.js changed how I work on the backend: with a Prisma model I
           already get CRUD routes, auth, and validation out-of-the-box — I saved
-          a lot of time and could focus on business logic.{" "}
+          a lot of time and could focus on business logic.{ " " }
         </TestimonialCard>
         <TestimonialCard
           name="Keven Gonçalves"
@@ -100,7 +129,7 @@ function Home() {
               Dintell
             </a>
           }
-          avatar={"https://github.com/arnaldo-tomo.png"}
+          avatar={ "https://github.com/arnaldo-tomo.png" }
         >
           Arkos keeps my code clean and scalable, which is fundamental for the
           systems I build. For any developer who values productivity and best
@@ -168,7 +197,7 @@ function Home() {
               Corneleder
             </a>
           }
-          avatar={"https://github.com/thuggerhacks.png"}
+          avatar={ "https://github.com/thuggerhacks.png" }
         >
           Arkos provides a clear structure and intuitive tools that remove
           backend complexity. My workflow is now faster and more organized,
@@ -183,7 +212,7 @@ function Home() {
               SparkTech
             </a>
           }
-          avatar={"https://github.com/blaze380.png"}
+          avatar={ "https://github.com/blaze380.png" }
         >
           With Arkos.js, I can build backends in just a few minutes. It removes
           the boilerplate and lets me focus entirely on the core logic. Fast,
@@ -197,7 +226,7 @@ function Home() {
               SuperM7.com
             </a>
           }
-          avatar={"/img/uanela-como-profile.webp"}
+          avatar={ "/img/uanela-como-profile.webp" }
         >
           Every line of boilerplate code is a missed opportunity for innovation.
           Arkos.js exists to give developers back their time so they can build

@@ -44,7 +44,7 @@ export default defineConfig({
     dedupe: ["react", "react-dom"],
   },
   ssr: {
-    noExternal: [],
+    // noExternal: ['lucide-react'],
     external: [
       "path",
       "node:fs",
