@@ -65,7 +65,7 @@ function RootComponent() {
   );
 }
 
-function RootDocument({ children }: { children: React.ReactNode; }) {
+function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning>
       <head>
@@ -73,12 +73,18 @@ function RootDocument({ children }: { children: React.ReactNode; }) {
       </head>
       <body className="flex flex-col min-h-screen bg-[#020d1f]">
         <RootProvider>
-          <AnnoucementBanner />
-          <HomeLayout { ...baseOptions() }>{ children }</HomeLayout>
+          {/* <AnnoucementBanner /> */}
+          <HomeLayout {...baseOptions()}>{children}</HomeLayout>
         </RootProvider>
         <Scripts />
-        <script async src="https://conviz.app/c.js" data-site="cvz_c1ab7ff7257f3424b93bfe9233edcd0549d9" data-endpoint="https://doting-caribou-417.convex.site/ingest/v2"></script>
+        <script
+          async
+          src="https://conviz.app/c.js"
+          data-site="cvz_c1ab7ff7257f3424b93bfe9233edcd0549d9"
+          data-endpoint="https://doting-caribou-417.convex.site/ingest/v2"
+        ></script>
       </body>
     </html>
   );
 }
+
