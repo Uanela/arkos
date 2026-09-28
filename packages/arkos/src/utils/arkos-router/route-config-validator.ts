@@ -10,7 +10,8 @@ export default class RouteConfigValidator {
 
   static validate(config: ArkosRouteConfig) {
     const arkosConfig = getArkosConfig();
-    const swaggerMode = arkosConfig?.swagger?.mode;
+    const swaggerMode =
+      arkosConfig?.swagger?.mode || arkosConfig.validation?.resolver;
 
     if (config.validation) {
       const validators = [
@@ -25,17 +26,20 @@ export default class RouteConfigValidator {
         const isZod = isZodSchema(schema);
         const isClassValidator = isClass(schema);
 
-        if (isZod && swaggerMode !== "zod") {
+        if (isZod && !["hybrid", "zod"].includes(swaggerMode as string)) {
           throw new Error(
             `Zod schema used in validation.${key} but Swagger mode is '${swaggerMode}'. ` +
-              `Zod schemas are only supported when swagger.mode is 'zod'.`
+              `Zod schemas are only supported when swagger.mode is 'zod' or 'hybrid'.`,
           );
         }
 
-        if (isClassValidator && swaggerMode !== "class-validator") {
+        if (
+          isClassValidator &&
+          !["hybrid", "class-validator"].includes(swaggerMode as string)
+        ) {
           throw new Error(
             `Class validator used in validation.${key} but Swagger mode is '${swaggerMode}'. ` +
-              `Class validators are only supported when swagger.mode is 'class-validator'.`
+              `Class validators are only supported when swagger.mode is 'class-validator' or 'hybrid'.`,
           );
         }
       }
@@ -52,7 +56,7 @@ export default class RouteConfigValidator {
         throw new Error(
           "Duplicate query validation definitions. " +
             "When using validation.query, do not define query parameters in openapi.parameters. " +
-            "They will be automatically migrated to OpenAPI specification."
+            "They will be automatically migrated to OpenAPI specification.",
         );
       }
 
@@ -63,7 +67,7 @@ export default class RouteConfigValidator {
         throw new Error(
           "Duplicate path parameter validation definitions. " +
             "When using validation.params, do not define path parameters in openapi.parameters. " +
-            "They will be automatically migrated to OpenAPI specification."
+            "They will be automatically migrated to OpenAPI specification.",
         );
       }
 
@@ -71,9 +75,10 @@ export default class RouteConfigValidator {
         throw new Error(
           "Duplicate request body validation definitions. " +
             "When using validation.body, do not define openapi.requestBody in openapi. " +
-            "It will be automatically migrated to OpenAPI specification."
+            "It will be automatically migrated to OpenAPI specification.",
         );
       }
     }
   }
 }
+

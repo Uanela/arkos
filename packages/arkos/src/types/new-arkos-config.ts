@@ -7,7 +7,9 @@ import { Options as QueryParserOptions } from "../utils/helpers/query-parser.hel
 import { ValidatorOptions } from "class-validator";
 import { MsDuration } from "../modules/auth/utils/helpers/auth.controller.helpers";
 import { OpenAPIV3 } from "openapi-types";
-import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with { "resolution-mode": "import" };
+import type { ApiReferenceConfiguration } from "@scalar/express-api-reference" with {
+  "resolution-mode": "import",
+};
 import nodemailer from "nodemailer";
 import { ModuleComponents } from "../utils/dynamic-loader";
 import { ArkosRequestHandler } from ".";
@@ -295,7 +297,7 @@ export type ArkosConfig = {
      * **message**: (Optional) A custom error message to display when the password does not meet the required strength criteria.
      * @deprecated will stop working on v2.0
      */
-    passwordValidation?: { regex: RegExp; message?: string; };
+    passwordValidation?: { regex: RegExp; message?: string };
     /**
      * Allows to specify the request rate limit for all authentication endpoints but `/api/users/me`.
      * 
@@ -423,34 +425,34 @@ export type ArkosConfig = {
     strict?: boolean;
   } & (
     | {
-      resolver: "class-validator";
-      /**
-       * ValidatorOptions to used while validating request data.
-       *
-       * **Default**:
-       * ```ts
-       * {
-       *  whitelist: true
-       *  forbidNonWhitelisted: true
-       * }
-       * ```
-       */
-      validationOptions?: ValidatorOptions;
-    }
-    | {
-      resolver: "zod";
-      /**
-       * @since v1.5.0-beta
-       */
-      validationOptions?: {
+        resolver: "class-validator";
         /**
-         * Throws an error for know whitelisted fields
+         * ValidatorOptions to used while validating request data.
          *
-         * @default true
+         * **Default**:
+         * ```ts
+         * {
+         *  whitelist: true
+         *  forbidNonWhitelisted: true
+         * }
+         * ```
          */
-        forbidNonWhitelisted?: boolean;
-      };
-    }
+        validationOptions?: ValidatorOptions;
+      }
+    | {
+        resolver: "zod" | "hybrid";
+        /**
+         * @since v1.5.0-beta
+         */
+        validationOptions?: {
+          /**
+           * Throws an error for know whitelisted fields
+           *
+           * @default true
+           */
+          forbidNonWhitelisted?: boolean;
+        };
+      }
   );
   /**
    * Defines file upload configurations
@@ -590,38 +592,36 @@ export type ArkosConfig = {
      * See https://www.npmjs.com/package/cors
      */
     cors?:
-    | false
-    | cors.CorsOptions
-    | cors.CorsOptionsDelegate
-    | {
-      /**
-       * Defines allowed origins to access the API.
-       *
-       * @deprecated Use `cors: { origin: string | string[] }` (cors.CorsOptions) directly instead.
-       */
-      allowedOrigins?: string | string[] | "*" | true;
-      /**
-       * Additional cors options.
-       *
-       * @deprecated Pass cors.CorsOptions directly instead: `cors: { origin: "...", credentials: true }`.
-       */
-      options?: cors.CorsOptions;
-      /**
-       * If you would like to override the entire middleware.
-       *
-       * @deprecated Pass the handler directly instead: `cors: myCorsHandler`.
-       */
-      customHandler?: cors.CorsOptionsDelegate;
-    }
-    | ArkosRequestHandler;
+      | false
+      | cors.CorsOptions
+      | cors.CorsOptionsDelegate
+      | {
+          /**
+           * Defines allowed origins to access the API.
+           *
+           * @deprecated Use `cors: { origin: string | string[] }` (cors.CorsOptions) directly instead.
+           */
+          allowedOrigins?: string | string[] | "*" | true;
+          /**
+           * Additional cors options.
+           *
+           * @deprecated Pass cors.CorsOptions directly instead: `cors: { origin: "...", credentials: true }`.
+           */
+          options?: cors.CorsOptions;
+          /**
+           * If you would like to override the entire middleware.
+           *
+           * @deprecated Pass the handler directly instead: `cors: myCorsHandler`.
+           */
+          customHandler?: cors.CorsOptionsDelegate;
+        }
+      | ArkosRequestHandler;
     /**
      * Defines options for the built-in express.json() middleware
      * Nothing is passed by default.
      */
     expressJson?:
-    | false
-    | Parameters<typeof express.json>[0]
-    | ArkosRequestHandler;
+      false | Parameters<typeof express.json>[0] | ArkosRequestHandler;
     /**
      * Allows to pass paremeters to cookieParser from npm package cookie-parser
      * Nothing is passed by default.
@@ -629,12 +629,12 @@ export type ArkosConfig = {
      * See [www.npmjs.com/package/cookie-parser](https://www.npmjs.com/package/cookie-parser) for further details.
      */
     cookieParser?:
-    | false
-    | {
-      secret?: string | string[];
-      options?: Parameters<typeof cookieParser>[1];
-    }
-    | ArkosRequestHandler;
+      | false
+      | {
+          secret?: string | string[];
+          options?: Parameters<typeof cookieParser>[1];
+        }
+      | ArkosRequestHandler;
     /**
    * Options to define how query must be parsed.
    *
@@ -793,6 +793,7 @@ export type ArkosConfig = {
      * - "class-validator": Uses class-validator and class-transformer DTO classes
      * - "zod": Uses OpenAPI-compliant schemas directly
      *
+     * @deprecated This will be removed in v2
      */
     mode: "prisma" | "class-validator" | "zod";
     /**
@@ -1093,3 +1094,4 @@ export type ArkosConfig = {
     expressStatic?: Parameters<typeof express.static>[1];
   };
 };
+
