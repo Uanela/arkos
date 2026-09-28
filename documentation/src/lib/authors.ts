@@ -1,7 +1,7 @@
 export const authors = {
   uanela: {
     name: "Uanela Como",
-    title: "Fullstack Developer@Mesquita Group & SuperM7.com Founder",
+    title: "Maintainer & Founder@SuperM7.com",
     url: "https://uanelacomo.com",
     image_url: "https://github.com/uanela.png",
     socials: {

@@ -1,0 +1,141 @@
+---
+title: "Why We Decided To Kill Service Hooks"
+authors: [uanela]
+tags: [arkosjs, dx, architecture, basecontroller, baseservice, routehook]
+date: 2026-08-06
+description: The *.hooks.ts pattern shipped with good intentions — before/after/onError arrays for every operation, discovered by file convention. The real problem wasn't typing or boilerplate — it was that the framework, not you, decided where your logic had to live. Here's why we replaced it with plain subclassing.
+---
+
+# Why We Decided To Kill Service Hooks
+
+Every Arkos.js module used to ship a `*.hooks.ts` file. The convention: export up to 27 arrays — `beforeCreateOne`, `afterCreateOne`, `onCreateOneError`, and the same triad for every other operation — and Arkos would run whatever you put in them at the right point in the request lifecycle.
+
+## The audit
+
+We ran the numbers on a production app:
+
+```bash
+find src/modules -type f -name "*.hooks.ts" | wc -l
+# 8
+
+find src/modules -type f -name "*.hooks.ts" -exec wc -l {} + | tail -1
+# 384 total
+```
+
+Eight files, 384 lines. One of them, `product.hooks.ts`, used 3 of the 27 exports and was 7 lines long. The other seven carried the remaining ~350 lines almost entirely as unused boilerplate — exports the convention required to exist whether or not they did anything.
+
+That's a real cost, but it's not the reason we killed the pattern.
+
+## The actual problem
+
+You could type a hook properly. Arkos already exported things like `BeforeCreateOneHookArgs<Prisma.ModelDelegate>` for exactly this, so `args: any` was never a hard requirement — that part of the old pattern was a typing discipline problem, not a design problem.
+
+The design problem was this: **the framework decided where your logic had to live, not you.**
+
+A hook is a function registered in an array under a lifecycle name. Two pieces of logic that belong together conceptually — say, "validate this, then write it, then update something that depends on it" — end up as two separate functions sitting in the same array, connected only by both being under `beforeCreateOne`. Nothing about reading one tells you the other exists, or that order matters between them. You have to know the convention to know the relationship. That's true no matter how well-typed the arguments are.
+
+Compare that to what you'd naturally write if you were just writing TypeScript, with no framework in the picture:
+
+```typescript
+async function createPost(data: CreatePostSchema): Promise<Post> {
+  const slug: string = ensureUniqueSlug(data.title);
+  const created: Post = await write({ ...data, slug });
+  await incrementAuthorPostCount(created.authorId);
+  return created;
+}
+```
+
+One function. The order is the order of the lines. The relationship between "build the slug" and "update the author's count" is a plain function call, not a shared array index.
+
+Here's what that same logic looked like as a real `.hooks.ts` file, before this change:
+
+```typescript
+// post.hooks.ts
+import postService from "./post.service";
+
+export const beforeCreateOne = [
+  async (args: BeforeCreateOneHookArgs<Prisma.PostDelegate>) =>
+    postService.ensureUniqueSlug(args),
+];
+export const afterCreateOne = [
+  async (args: AfterCreateOneHookArgs<Prisma.PostDelegate>) =>
+    postService.incrementAuthorPostCount(args),
+];
+export const onCreateOneError = [];
+
+export const beforeFindOne = [];
+export const afterFindOne = [];
+export const onFindOneError = [];
+
+// ...20 more empty exports for beforeUpdateOne, afterDeleteMany,
+// onFindManyError, and everything else this module doesn't use
+```
+
+Even fully typed, `ensureUniqueSlug` and `incrementAuthorPostCount` are two unrelated-looking entries in two different arrays. Nothing in either signature tells you one runs before the write and the other after, or that they're even part of the same operation — you have to already know the `beforeCreateOne`/`afterCreateOne` convention to reconstruct that relationship. That's the thing typing can't fix.
+
+## The core point: subclassing gives you that back
+
+`BaseController` no longer owns this decision. A module's `model.router.ts` can export a `RouteHook` that supplies a custom service instance:
+
+```typescript
+// model.router.ts
+import { RouteHook } from "arkos";
+import postService from "./post.service";
+
+export const hook: RouteHook = {
+  service: postService,
+};
+```
+
+And `postService` is just a subclass:
+
+```typescript
+// post.service.ts
+import { BaseService } from "arkos/services";
+import { Prisma, Post } from "@prisma/client";
+import CreatePostSchema from "./schemas/create-post.schema";
+
+export class PostService extends BaseService<"post"> {
+  async createOne(
+    data: CreatePostSchema,
+    queryOptions?: Omit<Prisma.PostCreateArgs, "data">,
+    context?: { user?: unknown; accessToken?: string }
+  ): Promise<Post> {
+    const slug: string = this.ensureUniqueSlug(data.title);
+    const created: Post = await super.createOne(
+      { ...data, slug },
+      queryOptions,
+      context
+    );
+    await this.incrementAuthorPostCount(created.authorId);
+    return created;
+  }
+}
+
+const postService = new PostService("post");
+export default postService;
+```
+
+This is the whole point: you write it exactly like you'd write it if Arkos weren't involved at all. `super.createOne(...)` is your on-ramp back into the framework's default behavior when you want it. Everything else is a normal method calling normal methods. Coupling and decoupling become *your* decisions, expressed through ordinary function calls and class structure — not something the framework's lifecycle-name convention imposes on you from outside. Tight where you need it tight, loose where you need it loose, because you wrote it that way, not because a `before`/`after` split forced it.
+
+Notice `data` is typed as `CreatePostSchema` — your own schema/DTO, not a raw Prisma input type. That's deliberate, and it's the second win.
+
+## A second, quieter win: one data shape, not two
+
+Before this, the shape of data flowing through a hook and the shape of data you'd pass calling `service.someMethod()` directly weren't guaranteed to line up. A hook could receive `data` in effectively any shape Prisma would accept — nested relation `connect`/`create` blocks, flat foreign keys, whatever the request happened to send — with nothing enforcing a single contract between the auto-generated route's input and a manual service call's input.
+
+With a typed override like `createOne(data: CreatePostSchema, ...)` above, there's exactly one signature, backed by your own schema. The auto-generated route validates against it and calls it. Your own code calling `postService.createOne(...)` directly calls the exact same method with the exact same contract. Same type, same validation, same behavior, every time — because it's the same method, not a hook re-implementing a parallel contract.
+
+## What we kept
+
+This isn't a rejection of hooking into the request lifecycle in general. Controller-level interceptors — response shaping after the service has already run, error translation, that kind of thing — are a genuinely different layer and they're still there. What we killed specifically is the service-level `before`/`after`/`onError` triad, because that layer was trying to be "just write a method" while making it structurally harder to do exactly that.
+
+## One more thing: `req.user` never needed a hook
+
+A lot of the old hook logic existed purely to get `req.user` somewhere a hook could see it, via a separate Express middleware. Every `BaseService` method already receives `user` through its `context` argument, so that kind of logic moves straight into the overridden method, next to the code that uses it — no middleware file required.
+
+## One more thing worth knowing
+
+This wasn't originally scoped as a 1.8 change. It started as a preview feature on the v2 branch, where bigger API shifts were fair game. Once it worked there, it became clear it wasn't a breaking change at all — `service` on `RouteHook` is additive and opt-in; modules that don't provide one keep using the default `BaseService` exactly as before. DX improvements that clean and that low-risk didn't need to wait for a major version, so it got backported to `1.8.0-canary.1` instead.
+
+If you're ready to move a module over yourself, the step-by-step walkthrough is here: [Migrating From `.hooks.ts` To The Route Hook Service Approach](/blog/migrating-service-hooks-to-route-hook-service).

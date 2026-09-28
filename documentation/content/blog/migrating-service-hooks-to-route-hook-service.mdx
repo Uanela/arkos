@@ -1,0 +1,146 @@
+---
+title: "Migrating From .hooks.ts To The Route Hook Service Approach"
+authors: [uanela]
+tags: [arkosjs, migration, routehook, baseservice, dx]
+date: 2026-08-06
+description: Arkos.js v1.8.0-canary introduces a `service` field on the RouteHook exported from your model's router file, replacing *.hooks.ts entirely. Here's exactly how to move a module over, with a simple worked example.
+---
+
+# Migrating From `.hooks.ts` To The Service Approach
+
+Starting with `v1.8.0-canary.1`, a module's `model.router.ts` can export a `RouteHook` that supplies a custom service instance:
+
+```typescript
+import { RouteHook } from "arkos";
+
+export const hook: RouteHook = {
+  service: myService,
+};
+```
+
+When `service` is provided, Arkos uses that instance to run the module's operations instead of the default `BaseService` it would otherwise construct for the model. Anything you override on it runs in place of the default; anything you don't override falls through to `BaseService`, since your class extends it.
+
+This post walks through migrating a module from the old `.hooks.ts` convention to this approach, using a simple `Post` model — for the reasoning behind the change, see [Why We Decided To Kill Service Hooks](/blog/why-we-decided-to-kill-service-hooks).
+
+## The old way
+
+```typescript
+// post.hooks.ts
+import postService from "./post.service";
+
+export const beforeCreateOne = [
+  async (args: any) => postService.ensureUniqueSlug(args),
+];
+export const afterCreateOne = [
+  async (args: any) => postService.incrementAuthorPostCount(args),
+];
+export const onCreateOneError = [];
+
+export const beforeFindOne = [];
+export const afterFindOne = [];
+export const onFindOneError = [];
+
+// ...20 more empty exports for beforeUpdateOne, afterDeleteMany,
+// onFindManyError, and everything else this module doesn't use
+```
+
+## Step 1 — Move the logic into a `BaseService` subclass
+
+```typescript
+// post.service.ts
+import { BaseService } from "arkos/services";
+import { Prisma, Post } from "@prisma/client";
+import CreatePostSchema from "./schemas/create-post.schema";
+
+interface RequestContext {
+  user?: { id: string };
+  accessToken?: string;
+}
+
+export class PostService extends BaseService<"post"> {
+  async createOne(
+    data: CreatePostSchema,
+    queryOptions?: Omit<Prisma.PostCreateArgs, "data">,
+    context?: RequestContext
+  ): Promise<Post> {
+    const slug: string = await this.ensureUniqueSlug(data.title);
+
+    const created: Post = await super.createOne(
+      { ...data, slug },
+      queryOptions,
+      context
+    );
+
+    await this.incrementAuthorPostCount(created.authorId);
+
+    return created;
+  }
+
+  private async ensureUniqueSlug(title: string): Promise<string> {
+    // ...
+    return title.toLowerCase().replace(/\s+/g, "-");
+  }
+
+  private async incrementAuthorPostCount(authorId: string): Promise<void> {
+    // ...
+  }
+}
+
+const postService = new PostService("post");
+export default postService;
+```
+
+Both steps that used to be two separate hook functions — one under `beforeCreateOne`, one under `afterCreateOne` — are now two calls inside a single method, in the order they actually happen: build the slug, write the record via `super.createOne(...)`, then update the author's count.
+
+## Step 2 — Register it on `RouteHook`
+
+```typescript
+// post.router.ts
+import { RouteHook } from "arkos";
+import postService from "./post.service";
+
+export const hook: RouteHook = {
+  service: postService,
+};
+```
+
+If `service` isn't an instance of `BaseService` — for example, in JavaScript, or in TypeScript with a stray `any` cast — Arkos throws an error at startup rather than letting a broken service reach request handling. Extend `BaseService` and this never comes up.
+
+## Step 3 — Delete the `.hooks.ts` file
+
+Once the logic lives on the subclass and the subclass is registered through `hook.service`, `post.hooks.ts` has nothing left to do.
+
+## Method signature convention
+
+Type `data` as strictly as you need. The example above passes your own `CreatePostSchema` — that's the point: `data` no longer has to be a raw Prisma input type, it can be whatever DTO or schema your validation layer already defines. The auto-generated route validates against the same schema and calls this same method, so there's one contract instead of two.
+
+Leave `queryOptions` (and `where`, for update methods) typed the way the base method types them: `Omit<Prisma.<Model><Method>Args, "data">` for create methods, with `"where"` added to the omit for updates. Don't narrow or replace this type. It keeps your override structurally compatible with the method it's overriding, and it means callers passing extra Prisma options (`include`, `select`, and so on) keep working exactly as they did against the default service.
+
+## What about hooks that only needed `req.user`?
+
+If a module's old hooks depended on a separate Express middleware just to read `req.user`, that middleware usually isn't needed anymore. Every `BaseService` method already receives `user` through its `context` argument:
+
+```typescript
+async createOne(
+  data: CreatePostSchema,
+  queryOptions?: Omit<Prisma.PostCreateArgs, "data">,
+  context?: RequestContext
+): Promise<Post> {
+  const authorId: string = context?.user?.id!;
+  return super.createOne({ ...data, authorId }, queryOptions, context);
+}
+```
+
+That logic moves directly into the method that needs it, and the middleware file that used to exist purely to smuggle `req.user` in can be deleted.
+
+## Migration checklist
+
+- [ ] List every non-empty export in the module's `.hooks.ts` file.
+- [ ] Move each one into the matching method on a `BaseService` subclass (`createOne`, `updateOne`, `deleteMany`, etc.).
+- [ ] Call `super.<method>(...)` wherever the default Prisma write still needs to happen.
+- [ ] Fold in any middleware that only existed to read `req.user`, using `context.user` instead.
+- [ ] Type `data` as strictly as the method needs; type `queryOptions` (and `where`, for updates) via `Omit<Prisma.<Model><Method>Args, ...>`.
+- [ ] Export `hook: RouteHook = { service }` from the module's `model.router.ts`.
+- [ ] Delete the `.hooks.ts` file, and the middleware file if it's now empty.
+
+Do this module by module rather than all at once — a module without a `RouteHook.service` just keeps using the default `BaseService`, so old and new modules coexist fine while you work through the rest.
