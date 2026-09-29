@@ -2,15 +2,12 @@ import { Router, RouterOptions } from "express";
 import { IArkosRouter } from "./types";
 import { OpenAPIV3 } from "openapi-types";
 import { extractArkosRoutes, extractPathParams } from "./utils/helpers";
-import { getArkosConfig } from "../../exports";
-import classValidatorToJsonSchema from "../../modules/swagger/utils/helpers/class-validator-to-json-schema";
 import openApiSchemaConverter from "../../modules/swagger/utils/helpers/openapi-schema-converter";
 import arkosRouterOpenApiManager from "./arkos-router-openapi-manager";
 import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy";
 import { Arkos } from "../../types/arkos";
 import { ArkosRouterBaseUploadConfig } from "./types/upload-config";
 import uploadManager from "./utils/helpers/upload-manager";
-import z, { ZodType } from "zod";
 
 export type ArkosRouterOptions = {
   /**
