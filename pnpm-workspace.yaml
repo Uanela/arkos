@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "integrations/*"
+  - "sandbox/arkos/*"
   - "documentation"
 allowBuilds:
   '@prisma/client': true
@@ -22,5 +23,6 @@ shamefullyHoist: true
 preferLocal: true
 minimumReleaseAgeExclude:
   - '@arkosjs/websockets-client@0.2.0'
+  - arkos@1.8.0-canary.6
 overrides:
   style-to-js: 1.1.16
