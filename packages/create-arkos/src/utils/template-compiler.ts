@@ -103,6 +103,7 @@ class TemplateCompiler {
         ...userClassValidatorDtoFiles,
         "file-upload.auth.ts.hbs",
         "index.ts.hbs",
+        "prisma.config.ts.hbs",
       );
 
     if (!config.authentication?.type || config.authentication?.type === "none")
