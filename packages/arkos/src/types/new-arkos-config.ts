@@ -793,9 +793,9 @@ export type ArkosConfig = {
      * - "class-validator": Uses class-validator and class-transformer DTO classes
      * - "zod": Uses OpenAPI-compliant schemas directly
      *
-     * @deprecated This will be removed in v2
+     * @deprecated This will be removed in v2, let `validation.resolver` decided for you
      */
-    mode: "prisma" | "class-validator" | "zod";
+    mode: "prisma" | "class-validator" | "zod" | "hybrid";
     /**
      * Allows `Arkos.js` to fallback to prisma schema and use them as json schema for defining request body and response data
      * when a given zod Schema or class-validator Class is not found to be transformed to json schema.

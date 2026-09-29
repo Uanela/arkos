@@ -10,7 +10,7 @@ import { applyArkosRouterProxy } from "./utils/helpers/apply-arkos-router-proxy"
 import { Arkos } from "../../types/arkos";
 import { ArkosRouterBaseUploadConfig } from "./types/upload-config";
 import uploadManager from "./utils/helpers/upload-manager";
-import z, { ZodType } from 'zod';
+import z, { ZodType } from "zod";
 
 export type ArkosRouterOptions = {
   /**
@@ -117,7 +117,7 @@ export type ArkosRouterOptions = {
  * @since 1.4.0-beta
  */
 export default function ArkosRouter(
-  options?: RouterOptions & ArkosRouterOptions
+  options?: RouterOptions & ArkosRouterOptions,
 ): IArkosRouter {
   const router = Router(options);
   return applyArkosRouterProxy(router, options) as IArkosRouter;
@@ -127,7 +127,6 @@ const hasDuplicatedPath = (path: string) => /^(\/.+)\1/.test(path);
 
 export function generateOpenAPIFromApp(app: Arkos) {
   const routes = extractArkosRoutes(app);
-  const arkosConfig = getArkosConfig();
 
   let paths: Record<
     string,
@@ -143,7 +142,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
     for (const parameter of pathParatemersFromRoutePath) {
       path = path.replaceAll(
         `:${parameter}`,
-        parameter.endsWith("?") ? `{${parameter}}?` : `{${parameter}}`
+        parameter.endsWith("?") ? `{${parameter}}?` : `{${parameter}}`,
       );
     }
 
@@ -168,14 +167,9 @@ export function generateOpenAPIFromApp(app: Arkos) {
 
     const openapi =
       typeof config?.experimental?.openapi === "object" &&
-        config.experimental.openapi !== null
+      config.experimental.openapi !== null
         ? config.experimental.openapi
         : {};
-
-    const validatorToJsonSchema =
-      arkosConfig?.validation?.resolver === "zod"
-        ? (schema: ZodType) => { return z.toJSONSchema(schema, { target: "openapi-3.0" }); }
-        : classValidatorToJsonSchema;
 
     let parameters: {
       in: string;
@@ -194,10 +188,12 @@ export function generateOpenAPIFromApp(app: Arkos) {
       for (const [key, val] of Object.entries(config?.validation)) {
         if (["body"].includes(key)) continue;
         if ((config?.validation as any)[key]) {
-          const jsonSchema = validatorToJsonSchema(val as any);
+          const jsonSchema = openApiSchemaConverter.validatorToJsonSchema(
+            val as any,
+          );
           const params = openApiSchemaConverter.jsonSchemaToOpenApiParameters(
             (validationToParameterMapping as any)[key],
-            jsonSchema
+            jsonSchema,
           );
           parameters.push(...params);
         }
@@ -216,7 +212,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
       if (
         !allParameters.find(
           ({ name, in: paramIn }) =>
-            name === parameter.replace("?", "") && paramIn === "path"
+            name === parameter.replace("?", "") && paramIn === "path",
         )
       )
         allParameters.push({
@@ -235,7 +231,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
         param.name !== "*"
       )
         throw new Error(
-          `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`
+          `ValidationError: Trying to define path parameter '${param.name}' but it is not present in your pathname ${originalPath}`,
         );
     }
 
@@ -253,7 +249,7 @@ export function generateOpenAPIFromApp(app: Arkos) {
       arkosRouterOpenApiManager.validateMultipartFormDocs(
         multipartFormSchema,
         path,
-        config?.experimental?.uploads
+        config?.experimental?.uploads,
       );
 
     (paths as any)[path][method.toLowerCase()] = {
@@ -273,67 +269,68 @@ export function generateOpenAPIFromApp(app: Arkos) {
       ...(!convertedOpenAPI.requestBody &&
         config?.validation &&
         config?.validation?.body && {
-        requestBody: {
-          content: (() => {
-            const schema = validatorToJsonSchema(
-              config?.validation?.body as any
-            );
+          requestBody: {
+            content: (() => {
+              const schema = openApiSchemaConverter.validatorToJsonSchema(
+                config?.validation?.body as any,
+              );
 
-            return {
-              ...convertedOpenAPI?.requestBody?.content,
-              ...(hasUploadFields && {
-                "multipart/form-data": {
-                  schema: openApiSchemaConverter.flattenSchema(
-                    arkosRouterOpenApiManager.addUploadFields(
-                      config.experimental?.uploads!,
-                      schema
-                    )
-                  ),
-                },
-              }),
-              ...(!allUploadFieldsAreRequired && {
-                "application/json": {
-                  schema,
-                },
-              }),
-            };
-          })(),
-        },
-      }),
+              return {
+                ...convertedOpenAPI?.requestBody?.content,
+                ...(hasUploadFields && {
+                  "multipart/form-data": {
+                    schema: openApiSchemaConverter.flattenSchema(
+                      arkosRouterOpenApiManager.addUploadFields(
+                        config.experimental?.uploads!,
+                        schema,
+                      ),
+                    ),
+                  },
+                }),
+                ...(!allUploadFieldsAreRequired && {
+                  "application/json": {
+                    schema,
+                  },
+                }),
+              };
+            })(),
+          },
+        }),
       ...(!multipartFormSchema &&
         !(config as any)?.validation?.body &&
         hasUploadFields && {
-        requestBody: {
-          content: (() => {
-            const schema =
-              convertedOpenAPI?.requestBody?.content?.["application/json"]
-                ?.schema || {};
+          requestBody: {
+            content: (() => {
+              const schema =
+                convertedOpenAPI?.requestBody?.content?.["application/json"]
+                  ?.schema || {};
 
-            delete convertedOpenAPI?.requestBody?.content?.[
-              "application/json"
-            ];
+              delete convertedOpenAPI?.requestBody?.content?.[
+                "application/json"
+              ];
 
-            return {
-              "multipart/form-data": {
-                schema: openApiSchemaConverter.flattenSchema(
-                  arkosRouterOpenApiManager.addUploadFields(
-                    config?.experimental?.uploads! || {},
-                    schema
-                  )
-                ),
-              },
-              ...convertedOpenAPI?.requestBody?.content,
-              ...(!allUploadFieldsAreRequired && {
-                "application/json": {
-                  schema,
+              return {
+                "multipart/form-data": {
+                  schema: openApiSchemaConverter.flattenSchema(
+                    arkosRouterOpenApiManager.addUploadFields(
+                      config?.experimental?.uploads! || {},
+                      schema,
+                    ),
+                  ),
                 },
-              }),
-            };
-          })(),
-        },
-      }),
+                ...convertedOpenAPI?.requestBody?.content,
+                ...(!allUploadFieldsAreRequired && {
+                  "application/json": {
+                    schema,
+                  },
+                }),
+              };
+            })(),
+          },
+        }),
     } as OpenAPIV3.PathItemObject;
   });
 
   return paths;
 }
+
