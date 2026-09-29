@@ -31,13 +31,13 @@
     {{#if (neq prisma.provider "none")}}
     "@prisma/client": "6.19.3"{{#if validation.type}},{{/if}}
     {{/if}}
-    {{#if (eq validation.type "class-validator")}}
+    {{#if (or (eq validation.type "class-validator") (eq validation.type "hybrid"))}}
     "reflect-metadata": "0.2.2",
     "class-transformer": "0.5.1",
-    "class-validator": "0.15.1"
+    "class-validator": "0.15.1"{{#if (eq validation.type "hybrid")}},{{/if}}
     {{/if}}
-    {{#if (eq validation.type "zod")}}
-    "zod": "3.25.76"
+    {{#if (or (eq validation.type "zod") (eq validation.type "hybrid"))}}
+    "zod": "4.4.3"
     {{/if}}
   }
 }
