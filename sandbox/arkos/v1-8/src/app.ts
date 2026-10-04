@@ -15,8 +15,8 @@ class QueryDto {
   small!: string;
 }
 
-app.get({ path: "/hello", validation: { query: QueryDto } }, (req, res) => {
-  req.query;
+app.get({ path: "/hello", validation: { query: Query } }, (req, res) => {
+  req.query.greetings;
   res.json({ message: true });
 });
 

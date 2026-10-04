@@ -14,7 +14,7 @@ const gateway = ArkosGateway({ name: "hello" });
 
 gateway.on(
   { event: "greetings", validation: z.object({ good: z.number() }) },
-  (socket, data) => {
+  (_socket, data) => {
     data.good;
   },
 );

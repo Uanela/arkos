@@ -1,28 +1,30 @@
-import { defineConfig } from "arkos/config"
+import { defineConfig } from "arkos/config";
 
 const arkosConfig = defineConfig({
   source: {
-    entryPoint: "src/server.ts"
+    entryPoint: "src/server.ts",
   },
   authentication: {
-    mode: 'dynamic',
+    mode: "dynamic",
     login: {
-      allowedUsernames: ['email'],
-    }
+      allowedUsernames: ["email"],
+    },
+    enabled: false,
   },
   routers: {
-    strict: "no-bulk"
+    strict: "no-bulk",
   },
   validation: {
-    resolver: 'hybrid'
+    resolver: "hybrid",
   },
   swagger: {
-    mode: 'hybrid',
+    mode: "hybrid",
     strict: false,
   },
   middlewares: {
     cors: {},
   },
-})
+});
 
-export default arkosConfig
+export default arkosConfig;
+
