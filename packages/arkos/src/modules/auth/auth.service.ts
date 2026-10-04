@@ -20,7 +20,25 @@ import {
   AccessControlRules,
   DetailedAccessControlRule,
 } from "../../types/auth";
-import { MsDuration, toMs } from "./utils/helpers/auth.controller.helpers";
+import {
+  MsDuration,
+  toMs,
+  createPrismaWhereClause,
+} from "./utils/helpers/auth.controller.helpers";
+import { BaseService } from "../base/base.service";
+import {
+  AuthUser,
+  DeleteMeOptions,
+  GetMeOptions,
+  LoginInput,
+  LoginOptions,
+  LoginUsernameField,
+  SignupDto,
+  SignupOptions,
+  UpdateMeDto,
+  UpdateMeOptions,
+  UpdatePasswordInput,
+} from "./auth.types";
 import { appModules, getModuleComponents } from "../../utils/dynamic-loader";
 import { kebabCase } from "../../exports/utils";
 import {
@@ -38,6 +56,7 @@ import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import { authenticationDocsLinks } from "./utils/docs-links";
 import authHookManager from "./utils/auth-hooks-manager";
 import { ArkosSocket } from "../../components/arkos-gateway/types";
+import { BadRequestError } from "../error-handler/utils/errors";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -47,6 +66,13 @@ export class AuthService {
    * Object containing a combination of actions per resource, tracked by each set of calls of `authService.handleAccessControl`, this can be accessed through the `authService` object or through the endpoint
    */
   actionsPerResource: Record<string, Set<string>> = {};
+
+  private _userService?: BaseService<"user">;
+
+  protected get userService(): BaseService<"user"> {
+    if (!this._userService) this._userService = new BaseService("user");
+    return this._userService;
+  }
 
   /**
    * Signs a JWT token for the user.
@@ -59,7 +85,7 @@ export class AuthService {
   signJwtToken(
     id: number | string,
     expiresIn?: MsDuration | number,
-    secret?: string
+    secret?: string,
   ): string {
     const { authentication: configs } = getArkosConfig();
 
@@ -71,7 +97,7 @@ export class AuthService {
       throw new AppError(
         "Missing JWT secret on production!",
         500,
-        "MissingJWTOnProduction"
+        "MissingJWTOnProduction",
       );
 
     secret =
@@ -118,22 +144,19 @@ export class AuthService {
     const sameSite =
       authConfigs?.jwt?.cookie?.sameSite ||
       (process.env.JWT_COOKIE_SAME_SITE as
-        | "none"
-        | "lax"
-        | "strict"
-        | undefined) ||
+        "none" | "lax" | "strict" | undefined) ||
       "lax";
 
     return {
       expires: new Date(
         Date.now() +
-        Number(
-          toMs(
-            authConfigs?.jwt?.expiresIn ||
-            (process.env.JWT_EXPIRES_IN as MsDuration) ||
-            (arkosEnv.JWT_EXPIRES_IN as MsDuration)
-          )
-        )
+          Number(
+            toMs(
+              authConfigs?.jwt?.expiresIn ||
+                (process.env.JWT_EXPIRES_IN as MsDuration) ||
+                (arkosEnv.JWT_EXPIRES_IN as MsDuration),
+            ),
+          ),
       ),
       httpOnly:
         authConfigs?.jwt?.cookie?.httpOnly ??
@@ -178,7 +201,7 @@ export class AuthService {
    */
   async isCorrectPassword(
     candidatePassword: string,
-    userPassword: string
+    userPassword: string,
   ): Promise<boolean> {
     return await bcrypt.compare(candidatePassword, userPassword);
   }
@@ -230,7 +253,7 @@ export class AuthService {
     if (user.passwordChangedAt) {
       const convertedTimestamp = parseInt(
         String(new Date(user.passwordChangedAt).getTime() / 1000),
-        10
+        10,
       );
 
       return JWTTimestamp < convertedTimestamp;
@@ -248,7 +271,7 @@ export class AuthService {
    */
   async verifyJwtToken(
     token: string,
-    secret?: string
+    secret?: string,
   ): Promise<AuthJwtPayload> {
     const { authentication: configs } = getArkosConfig();
 
@@ -260,7 +283,7 @@ export class AuthService {
       throw new AppError(
         "Missing JWT secret in production",
         500,
-        "MissingJWTSecretInProduction"
+        "MissingJWTSecretInProduction",
       );
 
     secret =
@@ -294,7 +317,7 @@ export class AuthService {
   }
 
   private isAccessRules(
-    config: AccessControlConfig
+    config: AccessControlConfig,
   ): config is Partial<AccessControlRules> {
     return (
       typeof config === "object" && config !== null && !Array.isArray(config)
@@ -302,7 +325,7 @@ export class AuthService {
   }
 
   private normalizeRuleToRoles(
-    rule: string[] | DetailedAccessControlRule | "*" | undefined
+    rule: string[] | DetailedAccessControlRule | "*" | undefined,
   ): string[] {
     if (!rule) return [];
     if (rule === "*") return ["*"];
@@ -312,7 +335,7 @@ export class AuthService {
 
   private resolveAuthorizedRoles(
     action: AccessAction,
-    accessControl: AccessControlConfig
+    accessControl: AccessControlConfig,
   ): string[] {
     if (this.isWildcardAccess(accessControl)) return ["*"];
     if (this.isRoleList(accessControl)) return accessControl;
@@ -334,11 +357,11 @@ export class AuthService {
   checkStaticAccessControl(
     user: User,
     action: string,
-    accessControl: AccessControlConfig
+    accessControl: AccessControlConfig,
   ) {
     if (!user?.role && !user.roles)
       throw Error(
-        "Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles."
+        "Validation Error: In order to use static authentication user needs at least role field or roles for multiple roles.",
       );
 
     let authorizedRoles = this.resolveAuthorizedRoles(action, accessControl);
@@ -363,16 +386,16 @@ export class AuthService {
   async checkDynamicAccessControl(
     userId: string,
     action: string,
-    resource: string
+    resource: string,
   ) {
     const prisma = getPrismaInstance();
 
     const [userPermission, hasRolePermission] = await Promise.all([
       prisma.userPermission
         ? prisma.userPermission.findFirst({
-          where: { userId, permission: { resource, action } },
-          select: { effect: true },
-        })
+            where: { userId, permission: { resource, action } },
+            select: { effect: true },
+          })
         : Promise.resolve(null),
 
       prisma.userRole.findFirst({
@@ -392,6 +415,224 @@ export class AuthService {
     return !!hasRolePermission;
   }
 
+  private sanitizeUser(user: Record<string, any>): AuthUser {
+    const { password: _password, ...sanitized } = user;
+    return sanitized as AuthUser;
+  }
+
+  private withPasswordIncluded<T extends Record<string, any>>(
+    queryOptions?: T,
+  ): Record<string, any> {
+    const options: Record<string, any> = { ...(queryOptions || {}) };
+
+    if (options.select) options.select = { ...options.select, password: true };
+
+    if (options.omit) {
+      const { password: _password, ...omit } = options.omit;
+      options.omit = omit;
+    }
+
+    return options;
+  }
+
+  /**
+   * Retrieves the authenticated user by id without the password field.
+   *
+   * Can be overridden through `RouteHook<"auth">.service`.
+   *
+   * @param userId - The id of the authenticated user
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   */
+  async getMe(
+    userId: User["id"],
+    queryOptions?: GetMeOptions,
+  ): Promise<AuthUser | null> {
+    const user = await this.userService.findOne(
+      { id: userId },
+      queryOptions || {},
+    );
+
+    return user ? this.sanitizeUser(user) : null;
+  }
+
+  /**
+   * Updates the authenticated user without the password field in the result.
+   * Password changes are rejected, use `updatePassword` instead.
+   *
+   * Can be overridden through `RouteHook<"auth">.service`.
+   *
+   * @param userId - The id of the authenticated user
+   * @param data - The fields to update
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   */
+  async updateMe(
+    userId: User["id"],
+    data: UpdateMeDto,
+    queryOptions?: UpdateMeOptions,
+  ): Promise<AuthUser> {
+    if ("password" in (data as Record<string, any>))
+      throw new BadRequestError(
+        "In order to update password use the update-password endpoint.",
+        "InvalidFieldPassword",
+      );
+
+    const user = await this.userService.updateOne(
+      { id: userId },
+      data,
+      queryOptions || {},
+    );
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * Creates a new user account without the password field in the result.
+   *
+   * Can be overridden through `RouteHook<"auth">.service`.
+   *
+   * @param data - The user data, the password is hashed automatically
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   */
+  async signup(
+    data: SignupDto,
+    queryOptions?: SignupOptions,
+  ): Promise<AuthUser> {
+    const user = await this.userService.createOne(data, queryOptions || {});
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * Marks the authenticated user's account as self-deleted by setting
+   * `deletedSelfAccountAt`, the result never includes the password field.
+   *
+   * Can be overridden through `RouteHook<"auth">.service`.
+   *
+   * @param userId - The id of the authenticated user
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   */
+  async deleteMe(
+    userId: User["id"],
+    queryOptions?: DeleteMeOptions,
+  ): Promise<AuthUser> {
+    const user = await this.userService.updateOne(
+      { id: userId },
+      { deletedSelfAccountAt: new Date().toISOString() },
+      queryOptions || {},
+    );
+
+    return this.sanitizeUser(user);
+  }
+
+  /**
+   * Authenticates a user with the given username field and password.
+   *
+   * The username is read from the key named after the last segment of
+   * `usernameField`, so `"profile.nickname"` expects `nickname`. The password
+   * is always loaded for the comparison and never returned.
+   *
+   * Can be overridden through `RouteHook<"auth">.service`.
+   *
+   * @param input - The username field, its value and the password
+   * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @returns The sanitized user and a signed access token
+   */
+  async login<F extends LoginUsernameField>(
+    input: LoginInput<F>,
+    queryOptions?: LoginOptions,
+  ): Promise<{ user: AuthUser; accessToken: string }> {
+    const { usernameField, password } = input as {
+      usernameField: string;
+      password: string;
+    };
+    const lastField = usernameField.split(".").pop()!;
+    const username = (input as Record<string, any>)[lastField];
+
+    if (!username || !password)
+      throw new BadRequestError(
+        `Please provide both ${lastField} and password`,
+        `MissingCredentialFields`,
+      );
+
+    const user = (await this.userService.findOne(
+      createPrismaWhereClause(usernameField, username),
+      this.withPasswordIncluded(queryOptions),
+    )) as Record<string, any> | null;
+
+    if (!user || !(await this.isCorrectPassword(password, user.password)))
+      throw new BadRequestError(
+        `Incorrect ${lastField} or password`,
+        `IncorrectCredentials`,
+      );
+
+    return {
+      user: this.sanitizeUser(user),
+      accessToken: this.signJwtToken(user.id),
+    };
+  }
+
+  /**
+   * Updates the password of the given user after validating the current one.
+   *
+   * Can be overridden through `RouteHook<"auth">.service`.
+   *
+   * @param userId - The id of the authenticated user
+   * @param input - The current and the new password
+   * @returns A fresh access token valid after the password change
+   */
+  async updatePassword(
+    userId: User["id"],
+    input: UpdatePasswordInput,
+  ): Promise<{ accessToken: string }> {
+    const { currentPassword, newPassword } = input;
+
+    if (!currentPassword || !newPassword)
+      throw new AppError(
+        "currentPassword and newPassword are required",
+        400,
+        "SameCurrentAndNewPassword",
+      );
+
+    const user = (await this.userService.findOne(
+      { id: userId },
+      this.withPasswordIncluded(),
+    )) as Record<string, any> | null;
+
+    if (!user || user.isActive === false || user.deletedSelfAccountAt)
+      throw new AppError("User not found!", 404);
+
+    if (
+      !(await this.isCorrectPassword(
+        String(currentPassword),
+        String(user.password),
+      ))
+    )
+      throw new AppError(
+        "Current password is incorrect",
+        400,
+        "IncorrentCurrentPassword",
+      );
+
+    const configs = getArkosConfig();
+
+    if (!this.isPasswordStrong(String(newPassword)) && !configs?.validation)
+      throw new BadRequestError(
+        configs?.authentication?.passwordValidation?.message ||
+          "The new password must contain at least one uppercase letter, one lowercase letter, and one number",
+        "PasswordDoesNotMeetRequirements",
+      );
+
+    await this.userService.updateOne(
+      { id: userId },
+      {
+        password: await this.hashPassword(String(newPassword)),
+        passwordChangedAt: new Date(Date.now()).toISOString(),
+      },
+    );
+
+    return { accessToken: this.signJwtToken(userId) };
+  }
+
   /**
    * Middleware function to handle access control based on user roles and permissions.
    *
@@ -405,12 +646,12 @@ export class AuthService {
   handleAccessControl(
     action: AccessAction,
     resource: string,
-    accessControl?: AccessControlConfig
+    accessControl?: AccessControlConfig,
   ): ArkosRequestHandler {
     if (
       !accessControl &&
       appModules.some(
-        (appModule) => kebabCase(appModule) === kebabCase(resource)
+        (appModule) => kebabCase(appModule) === kebabCase(resource),
       )
     )
       accessControl = getModuleComponents(resource)?.authConfigs?.accessControl;
@@ -431,14 +672,14 @@ export class AuthService {
           const notEnoughPermissionsError = new AppError(
             authAction.errorMessage,
             403,
-            "NotEnoughPermissions"
+            "NotEnoughPermissions",
           );
 
           if (configs?.authentication?.mode === "dynamic") {
             const hasPermission = await this.checkDynamicAccessControl(
               user.id,
               action,
-              resource
+              resource,
             );
 
             if (!hasPermission) return next(notEnoughPermissionsError);
@@ -448,7 +689,7 @@ export class AuthService {
             const hasPermission = this.checkStaticAccessControl(
               user,
               action,
-              accessControl
+              accessControl,
             );
 
             if (!hasPermission) return next(notEnoughPermissionsError);
@@ -456,13 +697,13 @@ export class AuthService {
         }
 
         next();
-      }
+      },
     );
   }
 
   private extractRequestToken(
     req: ArkosRequest,
-    cookie: "arkos_access_token" = "arkos_access_token"
+    cookie: "arkos_access_token" = "arkos_access_token",
   ) {
     let token: string | null = null;
 
@@ -492,10 +733,10 @@ export class AuthService {
 
   async validateDecodedUser(
     decoded: AuthJwtPayload,
-    action: "logout" | "default" = "default"
+    action: "logout" | "default" = "default",
   ): Promise<User> {
     const prisma = getPrismaInstance();
-    const user = await (prisma as any).user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: decoded.id },
     });
 
@@ -503,7 +744,7 @@ export class AuthService {
       throw new AppError(
         "The user belonging to this token no longer exists",
         401,
-        "UserNoLongerExists"
+        "UserNoLongerExists",
       );
 
     if (
@@ -513,7 +754,7 @@ export class AuthService {
       throw new AppError(
         "User recently changed password! Please log in again.",
         401,
-        "PasswordChanged"
+        "PasswordChanged",
       );
 
     return user;
@@ -528,11 +769,11 @@ export class AuthService {
    */
   async getAuthenticatedUser(
     ctx: ArkosRequest | ArkosSocket,
-    action: "logout" | "default" = "default"
+    action: "logout" | "default" = "default",
   ): Promise<User | null> {
     if (!isAuthenticationEnabled())
       throw Error(
-        `Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.${getUserFileExtension()}, see ${authenticationDocsLinks.setup}`
+        `Trying to call authService.getAuthenticatedUser without setting up authentication in arkos.config.${getUserFileExtension()}, see ${authenticationDocsLinks.setup}`,
       );
 
     let token: string | null = null;
@@ -588,13 +829,13 @@ export class AuthService {
           if (!isAuthenticationEnabled()) return null;
           const user = (await this.getAuthenticatedUser(
             req,
-            req.path.includes("logout") ? "logout" : "default"
+            req.path.includes("logout") ? "logout" : "default",
           )) as User;
           if (!user) throw loginRequiredError;
           return user;
-        }
+        },
       );
-    }
+    },
   );
 
   /**
@@ -638,7 +879,7 @@ export class AuthService {
   authorize(
     action: AccessAction,
     resource: string,
-    rule?: string[] | DetailedAccessControlRule | "*"
+    rule?: string[] | DetailedAccessControlRule | "*",
   ): ArkosRequestHandler {
     const authAction = authActionService.add(action, resource, {
       [action]: rule,
@@ -648,9 +889,9 @@ export class AuthService {
       async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
         await authHookManager.runAuthorize(
           { context: req, done: next },
-          authAction
+          authAction,
         );
-      }
+      },
     );
   }
 
@@ -665,7 +906,7 @@ export class AuthService {
    */
   handleAuthenticationControl(
     action: AccessAction,
-    authenticationControl?: AuthenticationControlConfig | undefined
+    authenticationControl?: AuthenticationControlConfig | undefined,
   ): ArkosRequestHandler {
     if (authenticationControl && typeof authenticationControl === "object") {
       if (authenticationControl[action] === false) return callNext;
@@ -701,14 +942,14 @@ export class AuthService {
   permission(
     action: string,
     resource: string,
-    accessControl?: AccessControlConfig
+    accessControl?: AccessControlConfig,
   ) {
     // Check if called during request handling (deep call stack indicates handler execution)
     const stack = new Error().stack;
 
     if (stack?.includes("node_modules/express/lib/router/index.js"))
       throw new Error(
-        "authService.permission() should be called during application initialization level."
+        "authService.permission() should be called during application initialization level.",
       );
 
     authActionService.add(action, resource, accessControl);
@@ -719,7 +960,7 @@ export class AuthService {
 
       if (!isUsingAuthentication())
         throw Error(
-          "Validation Error: Trying to use authService.permission without setting up authentication."
+          "Validation Error: Trying to use authService.permission without setting up authentication.",
         );
 
       if (!isAuthenticationEnabled()) return false;
@@ -735,7 +976,7 @@ export class AuthService {
 
         return (
           !!accessControl &&
-          this.checkStaticAccessControl(user as any, action, accessControl)
+          this.checkStaticAccessControl(user, action, accessControl)
         );
       }
       return false;
@@ -749,3 +990,4 @@ export class AuthService {
 const authService = new AuthService();
 
 export default authService;
+

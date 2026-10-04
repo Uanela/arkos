@@ -45,16 +45,19 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
       router.use({ path: "/auth" }, customRouter);
     else
       throw Error(
-        `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express or arkos Router.`
+        `ValidationError: The exported router from auth.router.${getUserFileExtension()} is not a valid express or arkos Router.`,
       );
   }
 
-  const authController = authControllerFactory(interceptors);
+  const authController = authControllerFactory(
+    interceptors,
+    (customRouterModule?.config as any)?.service,
+  );
 
   if (routerConfig?.disable === true) return router;
 
   const getValidationSchemaOrDto = (
-    key: "updateMe" | "updatePassword" | "login" | "signup"
+    key: "updateMe" | "updatePassword" | "login" | "signup",
   ) => {
     const validationConfigs = arkosConfig?.validation;
     if (validationConfigs?.resolver === "class-validator") return dtos?.[key];
@@ -99,7 +102,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
           ...(endpointConfig?.experimental || {}),
           openapi: authOpenAPIGenerator.getOpenApiConfig(
             endpointConfig,
-            endpoint
+            endpoint,
           ),
         },
       };
@@ -117,17 +120,17 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/me",
         routerConfig,
         "auth",
-        true
+        true,
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
-        "getMe"
+        "getMe",
       ),
       ...processMiddleware(interceptors?.beforeGetMe),
       authController.getMe,
       ...processMiddleware(interceptors?.afterGetMe),
       sendResponse,
-      ...processMiddleware(interceptors?.onGetMeError, { type: "error" })
+      ...processMiddleware(interceptors?.onGetMeError, { type: "error" }),
     );
   }
 
@@ -141,17 +144,17 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/me",
         routerConfig,
         "auth",
-        true
+        true,
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
-        "updateMe"
+        "updateMe",
       ),
       ...processMiddleware(interceptors?.beforeUpdateMe),
       authController.updateMe,
       ...processMiddleware(interceptors?.afterUpdateMe),
       sendResponse,
-      ...processMiddleware(interceptors?.onUpdateMeError, { type: "error" })
+      ...processMiddleware(interceptors?.onUpdateMeError, { type: "error" }),
     );
   }
 
@@ -165,17 +168,17 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/me",
         routerConfig,
         "auth",
-        true
+        true,
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
-        "deleteMe"
+        "deleteMe",
       ),
       ...processMiddleware(interceptors?.beforeDeleteMe),
       authController.deleteMe,
       ...processMiddleware(interceptors?.afterDeleteMe),
       sendResponse,
-      ...processMiddleware(interceptors?.onDeleteMeError, { type: "error" })
+      ...processMiddleware(interceptors?.onDeleteMeError, { type: "error" }),
     );
   }
 
@@ -201,9 +204,9 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
               });
             },
           },
-          arkosConfig?.authentication?.rateLimit || {}
-        )
-      )
+          arkosConfig?.authentication?.rateLimit || {},
+        ),
+      ),
     );
   }
 
@@ -217,17 +220,17 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/login",
         routerConfig,
         "auth",
-        false
+        false,
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
-        "login"
+        "login",
       ),
       ...processMiddleware(interceptors?.beforeLogin),
       authController.login,
       ...processMiddleware(interceptors?.afterLogin),
       sendResponse,
-      ...processMiddleware(interceptors?.onLoginError, { type: "error" })
+      ...processMiddleware(interceptors?.onLoginError, { type: "error" }),
     );
   }
 
@@ -241,13 +244,13 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/logout",
         routerConfig,
         "auth",
-        true
+        true,
       ),
       ...processMiddleware(interceptors?.beforeLogout),
       authController.logout,
       ...processMiddleware(interceptors?.afterLogout),
       sendResponse,
-      ...processMiddleware(interceptors?.onLogoutError, { type: "error" })
+      ...processMiddleware(interceptors?.onLogoutError, { type: "error" }),
     );
   }
 
@@ -261,17 +264,17 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/signup",
         routerConfig,
         "auth",
-        false
+        false,
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
-        "signup"
+        "signup",
       ),
       ...processMiddleware(interceptors?.beforeSignup),
       authController.signup,
       ...processMiddleware(interceptors?.afterSignup),
       sendResponse,
-      ...processMiddleware(interceptors?.onSignupError, { type: "error" })
+      ...processMiddleware(interceptors?.onSignupError, { type: "error" }),
     );
   }
 
@@ -285,11 +288,11 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/update-password",
         routerConfig,
         "auth",
-        true
+        true,
       ),
       addPrismaQueryOptionsToRequest<any>(
         prismaQueryOptions as AuthPrismaQueryOptions<any>,
-        "updatePassword"
+        "updatePassword",
       ),
       ...processMiddleware(interceptors?.beforeUpdatePassword),
       authController.updatePassword,
@@ -297,7 +300,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
       sendResponse,
       ...processMiddleware(interceptors?.onUpdatePasswordError, {
         type: "error",
-      })
+      }),
     );
   }
 
@@ -311,7 +314,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "",
         routerConfig,
         "auth",
-        authConfigs
+        authConfigs,
       ),
       ...processMiddleware(interceptors?.beforeFindManyAuthAction),
       authController.findManyAuthAction,
@@ -319,7 +322,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
       sendResponse,
       ...processMiddleware(interceptors?.onFindManyAuthActionError, {
         type: "error",
-      })
+      }),
     );
   }
 
@@ -333,7 +336,7 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
         "/:resourceName",
         routerConfig,
         "auth",
-        authConfigs
+        authConfigs,
       ),
       ...processMiddleware(interceptors?.beforeFindOneAuthAction),
       authController.findOneAuthAction,
@@ -341,10 +344,11 @@ export function getAuthRouter(arkosConfig: UserArkosConfig) {
       sendResponse,
       ...processMiddleware(interceptors?.onFindOneAuthActionError, {
         type: "error",
-      })
+      }),
     );
   }
 
   debuggerService.logModuleFinalRouter("auth", router as any);
   return router;
 }
+

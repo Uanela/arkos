@@ -1,5 +1,5 @@
 import { ArkosRouteConfig } from "../exports";
-import { BaseService } from '../exports/services';
+import { AuthService, BaseService } from "../exports/services";
 
 export type RouterEndpoint =
   | "createOne"
@@ -23,15 +23,12 @@ export type AuthRouterEndpoint =
   | "findOneAuthAction";
 
 export type FileUploadRouterEndpoint =
-  | "findFile"
-  | "uploadFile"
-  | "updateFile"
-  | "deleteFile";
+  "findFile" | "uploadFile" | "updateFile" | "deleteFile";
 
 export type BaseRouteHook = {
   /**
    *
-   * 
+   *
    * @since 1.8.0-canary.1
    */
   service?: BaseService<any>;
@@ -49,16 +46,19 @@ export type BaseRouteHook = {
    * ```
    */
   disable?:
-  | boolean
-  | {
-    [K in RouterEndpoint]?: boolean;
-  };
+    | boolean
+    | {
+        [K in RouterEndpoint]?: boolean;
+      };
 } & {
   [K in RouterEndpoint]?: Omit<ArkosRouteConfig, "path">;
-
 };
 
 type AuthRouterConfig = {
+  /**
+   * Custom override AuthService methods
+   */
+  service?: AuthService;
   /**
    * Backward compatibility (prior 1.4.0-beta) - disables/enables endpoints
    *
@@ -73,10 +73,10 @@ type AuthRouterConfig = {
    * ```
    */
   disable?:
-  | boolean
-  | {
-    [K in AuthRouterEndpoint]?: boolean;
-  };
+    | boolean
+    | {
+        [K in AuthRouterEndpoint]?: boolean;
+      };
 } & {
   [K in AuthRouterEndpoint]?: Omit<ArkosRouteConfig, "path">;
 };
@@ -96,10 +96,10 @@ type FileUploadRouterConfig = {
    * ```
    */
   disable?:
-  | boolean
-  | {
-    [K in FileUploadRouterEndpoint]?: boolean;
-  };
+    | boolean
+    | {
+        [K in FileUploadRouterEndpoint]?: boolean;
+      };
 } & {
   [K in FileUploadRouterEndpoint]?: Omit<ArkosRouteConfig, "path" | "uploads">;
 };
@@ -110,8 +110,8 @@ type FileUploadRouterConfig = {
 export type RouterConfig<T extends string = string> = T extends "auth"
   ? AuthRouterConfig
   : T extends "file-upload"
-  ? FileUploadRouterConfig
-  : BaseRouteHook;
+    ? FileUploadRouterConfig
+    : BaseRouteHook;
 
 /**
  * Represents a Route Hook configuration for Arkos auto-generated routes.
@@ -160,5 +160,6 @@ export type RouterConfig<T extends string = string> = T extends "auth"
 export type RouteHook<T extends string = string> = T extends "auth"
   ? AuthRouterConfig
   : T extends "file-upload"
-  ? FileUploadRouterConfig
-  : BaseRouteHook;
+    ? FileUploadRouterConfig
+    : BaseRouteHook;
+
