@@ -17,6 +17,7 @@ import {
   Last,
   ///@ts-ignore
 } from "socket.io/dist/typed-events";
+import { InferValidationType } from "../../utils/arkos-router/types";
 
 export interface EventsMap {
   [event: string]: any;
@@ -39,7 +40,7 @@ export interface ArkosSocket<
    * Populated by Arkos after successful validation.
    * Typed to the event's validation schema when using TypeScript.
    */
-  data: SocketData;
+  data: InferValidationType<SocketData, any>;
 
   /** User access token. */
   accessToken?: string;
@@ -111,7 +112,7 @@ export interface ArkosSocket<
   retry(
     times: number,
     initialDelay?: number,
-    multiplier?: number
+    multiplier?: number,
   ): ArkosRetryTarget;
 
   /**
@@ -154,7 +155,7 @@ export interface ArkosSocket<
    * @since 1.7.0-canary.29
    */
   to(
-    room: string | string[]
+    room: string | string[],
   ): ArkosBroadcastOperator<
     DecorateAcknowledgementsWithMultipleResponses<EmitEvents>,
     SocketData
@@ -201,7 +202,7 @@ export interface ArkosBroadcastOperator<
    * socket.broadcast.except({ user: [userId1, userId2] }).emit("foo", data)
    */
   except(
-    room: string | string[] | { user: string | string[] }
+    room: string | string[] | { user: string | string[] },
   ): ArkosBroadcastOperator<EmitEvents, SocketData>;
 
   /**
@@ -238,7 +239,7 @@ export interface ArkosBroadcastOperator<
 
   /** Chain timeout for `emitWithAck`. */
   timeout(
-    ms: number
+    ms: number,
   ): ArkosBroadcastOperator<DecorateAcknowledgements<EmitEvents>, SocketData>;
 
   /**
@@ -322,7 +323,7 @@ export interface ArkosUserTarget extends ArkosBroadcastOperator {
 
 export type ArkosGatewayPipe = (
   socket: ArkosSocket,
-  data: any
+  data: any,
 ) => void | Promise<void>;
 
 export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
@@ -363,21 +364,21 @@ export type ArkosGatewayEventConfig<TSchema extends Validator = any> = {
 
   /** Per-event deduplication. Overrides gateway-level `dedup`. */
   dedup?:
-  | {
-    /** @default true */
-    enabled?: boolean;
-    /** Time-to-live in seconds for the dedup key. @default 3600 */
-    ttl?: number;
-  }
-  | false;
+    | {
+        /** @default true */
+        enabled?: boolean;
+        /** Time-to-live in seconds for the dedup key. @default 3600 */
+        ttl?: number;
+      }
+    | false;
 };
 
 export type ArkosGatewayAckFn = (response: any) => void;
 
-export type ArkosGatewayHandler<TData = any> = (
+export type ArkosGatewayHandler<TData extends Validator = any> = (
   socket: ArkosSocket,
-  data: TData,
-  ack?: ArkosGatewayAckFn
+  data: InferValidationType<TData, any>,
+  ack?: ArkosGatewayAckFn,
 ) => void | Promise<void>;
 
 export type ArkosGatewayEventEntry = {
@@ -387,16 +388,15 @@ export type ArkosGatewayEventEntry = {
 };
 
 export type ArkosGatewayConnectionHandler = (
-  socket: ArkosSocket
+  socket: ArkosSocket,
 ) => void | Promise<void>;
 
 export type ArkosGatewayHookHandler =
-  | ArkosGatewayConnectionHandler
-  | ArkosGatewayErrorHandler;
+  ArkosGatewayConnectionHandler | ArkosGatewayErrorHandler;
 
 export type ArkosGatewayErrorHandler = (
   error: any,
-  socket: ArkosSocket
+  socket: ArkosSocket,
 ) => void | Promise<void>;
 
 export type ArkosGatewayHookType = "connection" | "disconnect" | "error";
@@ -426,13 +426,13 @@ export type ArkosGatewayConfig = {
    * per child or per event listener.
    */
   dedup?:
-  | {
-    /** @default true */
-    enabled?: boolean;
-    /** @default 3600 */
-    ttl?: number;
-  }
-  | false;
+    | {
+        /** @default true */
+        enabled?: boolean;
+        /** @default 3600 */
+        ttl?: number;
+      }
+    | false;
 
   /**
    * Maximum age in milliseconds for incoming messages.
@@ -474,7 +474,7 @@ export interface ArkosGatewayStore {
   /** Increment a rate limit counter. Key format: `arkos::rl:{socketId}:{event}` */
   increment(
     key: string,
-    windowMs: number
+    windowMs: number,
   ): Promise<{ count: number; resetAt: number }>;
 
   /** Clear all rate limit entries matching a prefix. Key format: `arkos::rl:{socketId}` */
@@ -501,7 +501,9 @@ export interface ArkosGatewayStore {
  *
  * @since 1.7.1-canary.3
  */
-export interface ArkosEmitTarget<EmitEvents extends EventsMap = DefaultEventsMap> {
+export interface ArkosEmitTarget<
+  EmitEvents extends EventsMap = DefaultEventsMap,
+> {
   /**
    * Emits an event to the target. `_meta` (`mid` + `timestamp`) is injected automatically.
    *
@@ -549,7 +551,7 @@ export interface ArkosEmitTarget<EmitEvents extends EventsMap = DefaultEventsMap
    * @example
    * socket.to("room-101").timeout(3000).emitWithAck("confirm", data)
    */
-  timeout(ms: number): ArkosEmitTarget
+  timeout(ms: number): ArkosEmitTarget;
 
   /**
    * Returns all sockets currently matched by this target.
@@ -559,7 +561,7 @@ export interface ArkosEmitTarget<EmitEvents extends EventsMap = DefaultEventsMap
    */
   fetchSockets(): Promise<any[]>;
 
-  to(room: string | string[]): ArkosEmitTarget
+  to(room: string | string[]): ArkosEmitTarget;
 
   /**
    * Sets the volatile flag — the event may be dropped if the client is not ready.
@@ -570,4 +572,5 @@ export interface ArkosEmitTarget<EmitEvents extends EventsMap = DefaultEventsMap
    */
   readonly volatile: ArkosEmitTarget<EmitEvents>;
 }
-export class ArkosGatewayController { }
+export class ArkosGatewayController {}
+

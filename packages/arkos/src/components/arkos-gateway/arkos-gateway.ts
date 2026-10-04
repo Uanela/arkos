@@ -30,7 +30,10 @@ import { loginRequiredError } from "../../modules/auth/utils/auth-error-objects"
 import errorPrettifier from "../../modules/base/utils/error-prettifier";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
 import { defaultGatewayStore } from "./utils/memory-gateway-store";
-import { ArkosBroadcastOperatorImpl, mountArkosSocketExtensions } from "./socket-extensions";
+import {
+  ArkosBroadcastOperatorImpl,
+  mountArkosSocketExtensions,
+} from "./socket-extensions";
 import {
   isAuthenticationEnabled,
   isUsingAuthentication,
@@ -51,14 +54,18 @@ export class IArkosGateway {
     type: ArkosGatewayHookType;
     handler: ArkosGatewayHookHandler;
   }[] = [];
-  private _nsp!: Namespace
+  private _nsp!: Namespace;
 
   constructor(config: ArkosGatewayConfig) {
     this.config = config;
     this.config.name = config.name ?? "web-socket";
   }
 
-  get nsp(): Omit<Namespace, keyof ArkosEmitTarget | keyof BroadcastOperator<any, any>> & ArkosBroadcastOperator {
+  get nsp(): Omit<
+    Namespace,
+    keyof ArkosEmitTarget | keyof BroadcastOperator<any, any>
+  > &
+    ArkosBroadcastOperator {
     if (!this._nsp) throw new Error(`gateway.nsp accessed before register()`);
     return new ArkosBroadcastOperatorImpl(this._nsp.sockets, this._nsp) as any;
   }
@@ -85,7 +92,7 @@ export class IArkosGateway {
         this.pipes.push(item as ArkosGatewayPipe);
       } else {
         throw new Error(
-          `Invalid value for gateway.use() — expected an ArkosGateway instance or a middleware function but received "${typeof item}".`
+          `Invalid value for gateway.use() — expected an ArkosGateway instance or a middleware function but received "${typeof item}".`,
         );
       }
     }
@@ -113,17 +120,17 @@ export class IArkosGateway {
   pipe(fn: ArkosGatewayPipe): this;
   pipe<TSchema extends Validator = any>(
     eventConfig: { event: string },
-    fn: ArkosGatewayPipe
+    fn: ArkosGatewayPipe,
   ): this;
   pipe<TSchema extends Validator = any>(
     fnOrConfig: ArkosGatewayPipe | ArkosGatewayEventConfig<TSchema>,
-    fn?: ArkosGatewayPipe
+    fn?: ArkosGatewayPipe,
   ): this {
     if (typeof fnOrConfig === "function") {
       this.pipes.push(fnOrConfig);
     } else if (fnOrConfig && typeof fnOrConfig === "object" && fn) {
       const entry = this.events.find(
-        (e) => e.config.event === fnOrConfig.event
+        (e) => e.config.event === fnOrConfig.event,
       );
       if (entry) {
         entry.pipes = entry.pipes ?? [];
@@ -137,7 +144,7 @@ export class IArkosGateway {
       }
     } else {
       throw new Error(
-        `Invalid arguments for gateway.pipe() — pass a middleware function, or an event config object followed by a middleware function.`
+        `Invalid arguments for gateway.pipe() — pass a middleware function, or an event config object followed by a middleware function.`,
       );
     }
     return this;
@@ -157,19 +164,20 @@ export class IArkosGateway {
    */
   on<TSchema extends Validator = any>(
     eventConfig: ArkosGatewayEventConfig<TSchema>,
-    handler: ArkosGatewayHandler
+    handler: ArkosGatewayHandler<TSchema>,
   ): this {
     if (eventConfig.disabled) return this;
 
     if (eventConfig.authorization && this.config.authentication === false) {
       throw new Error(
         `Event "${eventConfig.event}" on "${this.config.name}" gateway defines authorization rules ` +
-        `but the gateway has authentication: false. Enable authentication on the gateway to use per-event authentication.`
+          `but the gateway has authentication: false. Enable authentication on the gateway to use per-event authentication.`,
       );
     }
 
     const deferred = this.events.find(
-      (e) => (e.config as any)._pipeOnly && e.config.event === eventConfig.event
+      (e) =>
+        (e.config as any)._pipeOnly && e.config.event === eventConfig.event,
     );
 
     const entry: ArkosGatewayEventEntry = {
@@ -192,7 +200,7 @@ export class IArkosGateway {
         eventConfig.authorization!.resource,
         {
           [eventConfig.authorization!.action]: eventConfig.authorization?.rule,
-        }
+        },
       );
 
     return this;
@@ -220,7 +228,7 @@ export class IArkosGateway {
   hook(type: "error", handler: ArkosGatewayErrorHandler): this;
   hook(
     type: ArkosGatewayHookType,
-    handler: ArkosGatewayConnectionHandler | ArkosGatewayErrorHandler
+    handler: ArkosGatewayConnectionHandler | ArkosGatewayErrorHandler,
   ): this {
     this.hooks.push({ type, handler });
     return this;
@@ -238,7 +246,7 @@ export class IArkosGateway {
   register(io: Server, options: ArkosGatewayRegisterOptions = {}): void {
     if ((io as any)._arkosGatewayRegistered)
       throw new Error(
-        `The method gateway.register() can only be called once per io server instance. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/guides/web-sockets/setup.`
+        `The method gateway.register() can only be called once per io server instance. Use gateway.use() to compose gateways, see https://www.arkosjs.com/docs/guides/web-sockets/setup.`,
       );
     (io as any)._arkosGatewayRegistered = true;
     this._register(io, undefined, this.hooks || [], this.pipes || [], options);
@@ -252,7 +260,7 @@ export class IArkosGateway {
       handler: ArkosGatewayHookHandler;
     }[] = [],
     inheritedPipes: ArkosGatewayPipe[] = [],
-    options: ArkosGatewayRegisterOptions = {}
+    options: ArkosGatewayRegisterOptions = {},
   ): void {
     options.store = options.store ?? defaultGatewayStore;
     const { store } = options;
@@ -309,7 +317,7 @@ export class IArkosGateway {
               if (!user) throw loginRequiredError;
               return user;
             },
-            "currentUser"
+            "currentUser",
           );
         } catch (err: any) {
           handleArkosGatewayErrors(err, socket, errorHandlers, {
@@ -327,7 +335,7 @@ export class IArkosGateway {
       throw ExitError(
         `Trying to authenticate gateway ${this.config.name ? `${this.config.name}` : ""} without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
 
-For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`,
       );
 
     ns.on("connection", async (s) => {
@@ -381,7 +389,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           throw ExitError(
             `Trying to use authorization gateway.on("${eventConfig.event}") without choosing an authentication mode under arkos.config.${getUserFileExtension()}.
 
-For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`
+For further help see https://www.arkosjs.com/docs/core-concepts/authentication/setup.`,
           );
 
         socket.on(eventConfig.event, async (...args: any[]) => {
@@ -397,9 +405,9 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
           let ackCalled = false;
           const wrappedAck = ack
             ? (...response: any) => {
-              ackCalled = true;
-              ack(...response);
-            }
+                ackCalled = true;
+                ack(...response);
+              }
             : undefined;
 
           function resolveDedup() {
@@ -428,7 +436,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
 
             if (resolvedMaxAge && !meta.timestamp)
               throw new BadRequestError(
-                "Missing _meta.timestamp for maxAge deduplication"
+                "Missing _meta.timestamp for maxAge deduplication",
               );
 
             if (meta.timestamp !== undefined) {
@@ -437,7 +445,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               if (isNaN(timestamp.getTime())) {
                 throw new BadRequestError(
                   "Invalid data._meta.timestamp",
-                  "InvalidTimestamp"
+                  "InvalidTimestamp",
                 );
               }
 
@@ -446,7 +454,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               if (age + 1000 < 0)
                 throw new BadRequestError(
                   "Timestamp is in the future",
-                  "FutureTimestamp"
+                  "FutureTimestamp",
                 );
 
               if (resolvedMaxAge && age > resolvedMaxAge) {
@@ -459,13 +467,13 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
                 throw new BadRequestError(
                   "Missing data._meta.mid in your payload for deduplication",
                   "MissingDedupMessageId",
-                  { data }
+                  { data },
                 );
 
               if (typeof meta.mid !== "string" || meta.mid.trim() === "")
                 throw new BadRequestError(
                   "Invalid data._meta.mid, it must be a non-empty string",
-                  "InvalidMessageId"
+                  "InvalidMessageId",
                 );
 
               const key = `arkos::dedup:${eventConfig.event}:${meta.mid}`;
@@ -491,7 +499,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
                 socket.id,
                 eventConfig.event,
                 rateLimitOptions || {},
-                options.store!
+                options.store!,
               );
               if (!allowed) {
                 throw new TooManyRequestsError(undefined, undefined, {
@@ -506,9 +514,9 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               isAuthenticationEnabled()
             ) {
               await authHookManager.runAuthorize(
-                { context: socket, done: () => { } },
+                { context: socket, done: () => {} },
                 (eventConfig?.authorization as any)?._authAction,
-                "currentUser"
+                "currentUser",
               );
             }
 
@@ -524,27 +532,27 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               if (!isValidValidator(eventConfig.validation))
                 throw new Error(
                   `Your validation resolver is set to ${arkosConfig.validation!.resolver}, ` +
-                  `please provide a valid ${validatorName} in order to use { validation: ${validatorNameType} } ` +
-                  `under event handler "${eventConfig.event}" in "${this.config.name}" gateway.`
+                    `please provide a valid ${validatorName} in order to use { validation: ${validatorNameType} } ` +
+                    `under event handler "${eventConfig.event}" in "${this.config.name}" gateway.`,
                 );
 
               const shouldValidate = validationManager.shouldValidate(
                 eventConfig.validation,
-                data
+                data,
               );
 
               if (shouldValidate === "prohibit")
                 throw new BadRequestError(
                   "Event data is not allowed for this event.",
                   "EventDataNotAllowed",
-                  { data }
+                  { data },
                 );
               else if (shouldValidate === "passthrough") data = data;
               else {
                 try {
                   data = await (validationFn as any)(
                     eventConfig.validation,
-                    data
+                    data,
                   );
                 } catch (err: any) {
                   const { validationConfig } = validationManager;
@@ -554,14 +562,14 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
 
                   const prettifiedError = errorPrettifier.prettify(
                     resolver as any,
-                    err
+                    err,
                   );
                   const error = prettifiedError[0];
 
                   throw new BadRequestError(
                     error.message,
                     `InvalidData`,
-                    isZod ? err.format() : err
+                    isZod ? err.format() : err,
                   );
                 }
               }
@@ -572,7 +580,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
             await runArkosGatewayPipes(
               [...inheritedPipes, ...eventPipes],
               socket,
-              data
+              data,
             );
 
             await handler(socket, data, wrappedAck);
@@ -581,7 +589,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
               this.config.name,
               eventConfig.event,
               200,
-              startTime
+              startTime,
             );
 
             if (eventConfig.ack && ack && !ackCalled) {
@@ -597,7 +605,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
                 namespace: this.config.name,
                 event: eventConfig.event,
               },
-              ack
+              ack,
             );
           }
         });
@@ -614,7 +622,7 @@ For further help see https://www.arkosjs.com/docs/core-concepts/authentication/s
         },
         resolvedHooks,
         inheritedPipes,
-        options
+        options,
       );
     }
   }
@@ -652,3 +660,4 @@ function ArkosGateway(config: ArkosGatewayConfig) {
 }
 
 export default ArkosGateway;
+
