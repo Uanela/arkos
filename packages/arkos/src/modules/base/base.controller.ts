@@ -9,14 +9,14 @@ import sheu from "../../utils/sheu";
 import prismaSchemaParser from "../../utils/prisma/prisma-schema-parser";
 import { APIFeatures } from "../../exports/utils";
 import deepmerge from "../../utils/helpers/deepmerge.helper";
-import { BaseRouteHook } from '../../types/router-config';
-import ExitError from '../../utils/helpers/exit-error';
+import { BaseRouteHook } from "../../types/router-config";
+import ExitError from "../../utils/helpers/exit-error";
 
 export interface OperationHooks {
   beforeQuery?: (req: ArkosRequest) => void | Promise<void>;
   afterQuery?: (
-    queryData: { where: any; queryOptions: any; },
-    req: ArkosRequest
+    queryData: { where: any; queryOptions: any },
+    req: ArkosRequest,
   ) => void | Promise<void>;
   beforeService?: (args: any[], req: ArkosRequest) => any[] | Promise<any[]>;
   afterService?: (data: any, req: ArkosRequest) => any | Promise<any>;
@@ -34,7 +34,7 @@ interface OperationConfig {
   errorHandler?: (
     data: any,
     req: ArkosRequest,
-    modelName: string
+    modelName: string,
   ) => AppError | null;
   usesRequestParams?: boolean;
   usesRequestBody?: boolean;
@@ -72,7 +72,7 @@ export class BaseController {
    * @private
    */
   private service: BaseService<any>;
-
+  private hasCustomService: boolean;
   /**
    * Name of the model this controller handles
    * @private
@@ -91,8 +91,10 @@ export class BaseController {
    */
   constructor(modelName: string) {
     const components = getModuleComponents(modelName);
-    const configuredService = (components?.router?.config as BaseRouteHook | undefined)?.service;
-
+    const configuredService = (
+      components?.router?.config as BaseRouteHook | undefined
+    )?.service;
+    this.hasCustomService = !!configuredService;
     if (configuredService && !(configuredService instanceof BaseService))
       throw ExitError(
         `Invalid service configured for model "${modelName}": expected an instance of BaseService, please make your service object extend the BaseService class see https://www.arkosjs.com/docs/reference/base-service`,
@@ -107,14 +109,14 @@ export class BaseController {
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
         if (config.hooks?.beforeQuery) await config.hooks.beforeQuery(req);
 
         if (config.requiresQueryForBulk) {
           if (
             Object.keys(req.query).every((key) =>
-              ["filterMode", "prismaQueryOptions"].includes(key)
+              ["filterMode", "prismaQueryOptions"].includes(key),
             )
           ) {
             return next(
@@ -122,8 +124,8 @@ export class BaseController {
                 `Filter criteria not provided for bulk ${config.operationType.replace(/Many$/, "")}.`,
                 400,
                 {},
-                "MissingRequestQueryParameters"
-              )
+                "MissingRequestQueryParameters",
+              ),
             );
           }
         }
@@ -131,7 +133,7 @@ export class BaseController {
         if (config.preventORFilter && req.query.filterMode === "OR") {
           throw new AppError(
             `req.query.filterMode === OR is not valid for ${config.operationType} operation`,
-            400
+            400,
           );
         }
 
@@ -165,7 +167,7 @@ export class BaseController {
           config,
           req,
           where,
-          queryOptions
+          queryOptions,
         );
 
         if (config.hooks?.beforeService)
@@ -175,6 +177,11 @@ export class BaseController {
           config.serviceMethod as keyof BaseService<any>
         ] as Function;
         let result = await serviceMethod.apply(this.service, serviceArgs);
+
+        if (this.hasCustomService && result === undefined)
+          throw new Error(
+            `Custom auth service method ${config.serviceMethod} didn't return the required data`,
+          );
 
         if (config.hooks?.afterService)
           result = await config.hooks.afterService(result, req);
@@ -219,10 +226,10 @@ export class BaseController {
         let responseData = config.responseBuilder
           ? config.responseBuilder(data, additionalData)
           : this.defaultResponseBuilder(
-            data,
-            additionalData,
-            config.operationType
-          );
+              data,
+              additionalData,
+              config.operationType,
+            );
 
         if (config.hooks?.beforeResponse) {
           responseData = await config.hooks.beforeResponse(responseData, req);
@@ -242,7 +249,7 @@ export class BaseController {
         }
 
         res.status(config.successStatus).json(responseData);
-      }
+      },
     );
   };
 
@@ -253,7 +260,7 @@ export class BaseController {
     req: ArkosRequest,
     res: ArkosResponse,
     data: any,
-    status: number
+    status: number,
   ): void {
     (res as any).originalData = data;
     req.responseData = data;
@@ -277,7 +284,7 @@ export class BaseController {
     config: OperationConfig,
     req: ArkosRequest,
     where: any,
-    queryOptions: any
+    queryOptions: any,
   ): any[] {
     const context = { user: req?.user, accessToken: req?.accessToken };
     const mergedOptions = deepmerge(req.prismaQueryOptions || {}, queryOptions);
@@ -324,7 +331,7 @@ export class BaseController {
   private defaultErrorHandler(
     data: any,
     req: ArkosRequest,
-    operationType: string
+    operationType: string,
   ): AppError | null {
     if (!data || (Array.isArray(data) && data.length === 0)) {
       // Handle different error scenarios
@@ -332,7 +339,7 @@ export class BaseController {
         return new AppError(
           "Failed to create the resources. Please check your input.",
           400,
-          { body: req.body }
+          { body: req.body },
         );
       }
 
@@ -350,14 +357,14 @@ export class BaseController {
             `${pascalCase(String(this.modelName))} with ID ${req.params?.id} not found`,
             404,
             {},
-            "NotFound"
+            "NotFound",
           );
         } else {
           return new AppError(
             `${pascalCase(String(this.modelName))} not found`,
             404,
             {},
-            "NotFound"
+            "NotFound",
           );
         }
       }
@@ -370,7 +377,7 @@ export class BaseController {
             : `No records found to delete`,
           404,
           {},
-          "NotFound"
+          "NotFound",
         );
       }
     }
@@ -388,7 +395,7 @@ export class BaseController {
           : `No records found to delete`,
         404,
         {},
-        "NotFound"
+        "NotFound",
       );
     }
 
@@ -401,7 +408,7 @@ export class BaseController {
   private defaultResponseBuilder(
     data: any,
     additionalData: any,
-    operationType: string
+    operationType: string,
   ): any {
     if (operationType === "findMany" && additionalData)
       return {
@@ -450,7 +457,7 @@ export class BaseController {
             "Expected request body array to contain at least on item but received none",
             400,
             { body: req.body },
-            "MissingArrayRequestBody"
+            "MissingArrayRequestBody",
           );
       },
     },
@@ -561,7 +568,7 @@ export class BaseController {
 export const getAvailableResources = catchAsync(
   async (_: any, res: ArkosResponse) => {
     sheu.warn(
-      "This route `/api/available-resources` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead."
+      "This route `/api/available-resources` will be deprecated from 1.4.0-beta, consider using /api/auth-actions instead.",
     );
 
     res.status(200).json({
@@ -572,5 +579,6 @@ export const getAvailableResources = catchAsync(
         "file-upload",
       ],
     });
-  }
+  },
 );
+
