@@ -15,12 +15,12 @@ import AppError from "../../../error-handler/utils/app-error";
 export function adjustRequestUrl(
   req: ArkosRequest,
   _: ArkosResponse,
-  next: ArkosNextFunction
+  next: ArkosNextFunction,
 ) {
   const { fileUpload } = getArkosConfig();
   req.url = req.url.replace(
     fileUpload?.baseRoute + "/" || "/api/uploads/",
-    "/"
+    "/",
   );
   req.url = req.url.replace(fileUpload?.baseRoute || "/api/uploads/", "/");
   next();
@@ -64,13 +64,13 @@ export function generateRelativePath(filePath: string, uploadDir: string) {
  */
 export const processFile = async (
   req: ArkosRequest,
-  filePath: string
+  filePath: string,
 ): Promise<string> => {
   const { baseURL, baseRoute } = extractRequestInfo(req);
 
   const relativePath = generateRelativePath(
     filePath,
-    req.params!.fileType
+    req.params!.fileType,
   ).replace(/\\/g, "/");
 
   return `${baseURL}${baseRoute === "/" ? "" : baseRoute}${
@@ -85,16 +85,15 @@ export const processImage = async (
   req: ArkosRequest,
   next: ArkosNextFunction,
   filePath: string,
-  options: Record<string, any>
+  options: Record<string, any>,
 ): Promise<string | null> => {
   const ext = path.extname(filePath).toLowerCase();
-  const originalFormat = ext.replace(".", "");
-  const outputFormat = options.format || originalFormat;
+  const outputFormat = options.format || "webp";
 
   if (!mimetype.lookup(ext)?.includes?.("image"))
     return processFile(req, filePath);
 
-  const tempName = `${path.basename(filePath, ext)}_${Date.now()}${ext}`;
+  const tempName = `${path.basename(filePath, ext)}.${outputFormat}`;
   const tempPath = path.join(path.dirname(filePath), tempName);
 
   try {
@@ -114,7 +113,7 @@ export const processImage = async (
         options.height || null,
         {
           fit: "inside",
-        }
+        },
       );
     }
 
@@ -123,17 +122,14 @@ export const processImage = async (
       transformer = transformer.toFormat("jpeg");
 
     await transformer.toFile(tempPath);
+    await promisify(fs.unlink)(filePath);
 
-    await promisify(fs.rename)(tempPath, filePath);
-
-    return processFile(req, filePath);
+    return processFile(req, tempPath);
   } catch (error: any) {
     try {
       await promisify(fs.stat)(tempPath);
       await promisify(fs.unlink)(tempPath);
-    } catch (err) {
-      // If temp file doesn't exist, no need to clean up
-    }
+    } catch (err) {}
 
     if (error.message === "Input file contains unsupported image format")
       return processFile(req, filePath);
@@ -141,3 +137,4 @@ export const processImage = async (
     return null;
   }
 };
+
