@@ -6,7 +6,7 @@ import {
   IRouterMatcher,
   Locals,
 } from "express";
-import { ZodType } from "zod";
+import z, { ZodType } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
 import { DetailedAccessControlRule } from "../../../types/auth";
@@ -31,14 +31,18 @@ export type ArkosUseConfig = Pick<
   | "bodyParser"
   | "disabled"
 > & {
-  path?: PathParams; // optional unlike ArkosRouteConfig where path is required
+  path?: PathParams;
 };
 
-type InferValidationType<T, Fallback> = T extends ZodType
-  ? T
+export type InferValidationType<T, Fallback> = T extends ZodType
+  ? unknown extends z.infer<T>
+    ? Fallback
+    : z.infer<T>
   : T extends new (...args: any[]) => infer I
-  ? I
-  : Fallback;
+    ? unknown extends I
+      ? Fallback
+      : I
+    : Fallback;
 
 export type PathParams = string | RegExp | Array<string | RegExp>;
 
@@ -70,21 +74,21 @@ type IArkosRouterMethodHandler<T> = IRouterHandler<T> &
       config: ArkosRouteConfig<TQuery, TBody, TParams>,
       ...handlers: Array<
         | ArkosRequestHandler<
-          InferValidationType<TParams, Record<string, string>>,
-          any,
-          InferValidationType<TBody, any>,
-          InferValidationType<TQuery, qs.ParsedQs>,
-          any
-        >
-        | Array<
-          ArkosRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
             any,
             InferValidationType<TBody, any>,
             InferValidationType<TQuery, qs.ParsedQs>,
             any
           >
-        >
+        | Array<
+            ArkosRequestHandler<
+              InferValidationType<TParams, Record<string, string>>,
+              any,
+              InferValidationType<TBody, any>,
+              InferValidationType<TQuery, qs.ParsedQs>,
+              any
+            >
+          >
       >
     ): T;
     <
@@ -95,30 +99,30 @@ type IArkosRouterMethodHandler<T> = IRouterHandler<T> &
       config: ArkosRouteConfig<TQuery, TBody, TParams> | PathParams,
       ...handlers: Array<
         | ArkosAnyRequestHandler<
-          InferValidationType<TParams, Record<string, string>>,
-          any,
-          InferValidationType<TBody, any>,
-          InferValidationType<TQuery, qs.ParsedQs>,
-          any
-        >
-        | Array<
-          | ArkosAnyRequestHandler<
             InferValidationType<TParams, Record<string, string>>,
             any,
             InferValidationType<TBody, any>,
             InferValidationType<TQuery, qs.ParsedQs>,
             any
           >
-          | Array<
-            ArkosErrorRequestHandler<
-              InferValidationType<TParams, Record<string, string>>,
-              any,
-              InferValidationType<TBody, any>,
-              InferValidationType<TQuery, qs.ParsedQs>,
-              any
-            >
+        | Array<
+            | ArkosAnyRequestHandler<
+                InferValidationType<TParams, Record<string, string>>,
+                any,
+                InferValidationType<TBody, any>,
+                InferValidationType<TQuery, qs.ParsedQs>,
+                any
+              >
+            | Array<
+                ArkosErrorRequestHandler<
+                  InferValidationType<TParams, Record<string, string>>,
+                  any,
+                  InferValidationType<TBody, any>,
+                  InferValidationType<TQuery, qs.ParsedQs>,
+                  any
+                >
+              >
           >
-        >
       >
     ): T;
 
@@ -128,7 +132,7 @@ type IArkosRouterMethodHandler<T> = IRouterHandler<T> &
       TParams extends Validator = any,
     >(
       config: ArkosRouteConfig<TQuery, TBody, TParams>,
-      subApplication: Application
+      subApplication: Application,
     ): T;
   };
 
@@ -157,21 +161,21 @@ export type ArkosRouteMethodHandler<T> = {
     config: Omit<ArkosRouteConfig<TQuery, TBody, TParams>, "path">,
     ...handlers: Array<
       | ArkosAnyRequestHandler<
-        InferValidationType<TParams, Record<string, string>>,
-        any,
-        InferValidationType<TBody, any>,
-        InferValidationType<TQuery, qs.ParsedQs>,
-        Locals
-      >
-      | Array<
-        ArkosRequestHandler<
           InferValidationType<TParams, Record<string, string>>,
           any,
           InferValidationType<TBody, any>,
           InferValidationType<TQuery, qs.ParsedQs>,
           Locals
         >
-      >
+      | Array<
+          ArkosRequestHandler<
+            InferValidationType<TParams, Record<string, string>>,
+            any,
+            InferValidationType<TBody, any>,
+            InferValidationType<TQuery, qs.ParsedQs>,
+            Locals
+          >
+        >
     >
   ): T;
   <
@@ -182,21 +186,21 @@ export type ArkosRouteMethodHandler<T> = {
     config: Omit<ArkosRouteConfig<TQuery, TBody, TParams>, "path">,
     ...handlers: Array<
       | ArkosAnyRequestHandler<
-        InferValidationType<TParams, Record<string, string>>,
-        any,
-        InferValidationType<TBody, any>,
-        InferValidationType<TQuery, qs.ParsedQs>,
-        Locals
-      >
-      | Array<
-        ArkosAnyRequestHandler<
           InferValidationType<TParams, Record<string, string>>,
           any,
           InferValidationType<TBody, any>,
           InferValidationType<TQuery, qs.ParsedQs>,
           Locals
         >
-      >
+      | Array<
+          ArkosAnyRequestHandler<
+            InferValidationType<TParams, Record<string, string>>,
+            any,
+            InferValidationType<TBody, any>,
+            InferValidationType<TQuery, qs.ParsedQs>,
+            Locals
+          >
+        >
     >
   ): T;
 };
@@ -334,12 +338,12 @@ export type ArkosRouteConfig<
    * - Provide an object to specify resource-based access control with resource name, action, and optional custom rules.
    */
   authentication?:
-  | boolean
-  | {
-    resource: string;
-    action: string;
-    rule?: DetailedAccessControlRule | string[] | "*";
-  };
+    | boolean
+    | {
+        resource: string;
+        action: string;
+        rule?: DetailedAccessControlRule | string[] | "*";
+      };
   /**
    * Request validation configuration using Zod schemas or class constructors.
    *
@@ -350,13 +354,13 @@ export type ArkosRouteConfig<
    * - Each property accepts a Zod schema, a class constructor, or `false` to disable validation for that part.
    */
   validation?:
-  | false
-  | null
-  | {
-    query?: TQuery;
-    body?: TBody;
-    params?: TParams;
-  };
+    | false
+    | null
+    | {
+        query?: TQuery;
+        body?: TBody;
+        params?: TParams;
+      };
   /**
    * Rate limiting configuration for this route.
    *
@@ -435,3 +439,4 @@ export type ArkosRouteConfig<
     uploads?: UploadConfig;
   };
 };
+
