@@ -442,6 +442,7 @@ export class AuthService {
    *
    * @param userId - The id of the authenticated user
    * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @since 1.8.0-rc
    */
   async getMe(
     userId: User["id"],
@@ -464,6 +465,7 @@ export class AuthService {
    * @param userId - The id of the authenticated user
    * @param data - The fields to update
    * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @since 1.8.0-rc
    */
   async updateMe(
     userId: User["id"],
@@ -492,6 +494,7 @@ export class AuthService {
    *
    * @param data - The user data, the password is hashed automatically
    * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @since 1.8.0-rc
    */
   async signup(
     data: SignupDto,
@@ -510,6 +513,7 @@ export class AuthService {
    *
    * @param userId - The id of the authenticated user
    * @param queryOptions - Optional Prisma query options (select, include, etc.)
+   * @since 1.8.0-rc
    */
   async deleteMe(
     userId: User["id"],
@@ -536,6 +540,7 @@ export class AuthService {
    * @param input - The username field, its value and the password
    * @param queryOptions - Optional Prisma query options (select, include, etc.)
    * @returns The sanitized user and a signed access token
+   * @since 1.8.0-rc
    */
   async login<F extends LoginUsernameField>(
     input: LoginInput<F>,
@@ -579,6 +584,7 @@ export class AuthService {
    * @param userId - The id of the authenticated user
    * @param input - The current and the new password
    * @returns A fresh access token valid after the password change
+   * @since 1.8.0-rc
    */
   async updatePassword(
     userId: User["id"],
@@ -635,6 +641,8 @@ export class AuthService {
 
   /**
    * Runs on logout. Override through `RouteHook<"auth">.service`.
+   *
+   * @since 1.8.0-rc
    */
   async logout(_userId: User["id"], _accessToken: string): Promise<void> {}
 
