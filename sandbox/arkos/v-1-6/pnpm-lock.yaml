@@ -798,8 +798,8 @@ packages:
   '@types/web-bluetooth@0.0.21':
     resolution: {integrity: sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA==}
 
-  '@types/ws@8.5.12':
-    resolution: {integrity: sha512-3tPRkv1EtkDpzlgyKyI8pGsGZAGPEaXeu0DOj5DI25Ja91bdAYddYHbADRYVrZMRbfW+1l5YwXVDKohDJNQxkQ==}
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
   '@ungap/structured-clone@1.4.0':
     resolution: {integrity: sha512-1mEZtMKPM09vDmQt5y7YvmN2+DFTP7Tg0EWXdic8/C6VRnpb33e4ghisCIE3WZjsE2N8mf+QV1Zqh7ZFYLWInQ==}
@@ -954,7 +954,7 @@ packages:
     engines: {node: '>=22.9'}
     hasBin: true
     peerDependencies:
-      '@prisma/client': 6.19.3
+      '@prisma/client': 7.9.1
       '@scalar/api-reference': 1.55.3
       '@scalar/express-api-reference': 0.10.12
       bcryptjs: 3.0.2
@@ -2249,8 +2249,8 @@ packages:
     resolution: {integrity: sha512-9ZV9zg8vN8hO3Y25DhR7nUkJ1VDnBhq5O/JrXhFT9s6+F0gqytSASTHVfCFc2mJXaTfARroErplXlzFWwETZqQ==}
     engines: {node: '>=10.2.0'}
 
-  source-map-js@1.2.1:
-    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
+  source-map-js@1.2.2:
+    resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
 
   space-separated-tokens@2.0.2:
@@ -3595,7 +3595,7 @@ snapshots:
 
   '@types/web-bluetooth@0.0.21': {}
 
-  '@types/ws@8.5.12':
+  '@types/ws@8.18.2':
     dependencies:
       '@types/node': 24.12.2
 
@@ -3625,7 +3625,7 @@ snapshots:
       '@vue/shared': 3.5.33
       entities: 7.0.1
       estree-walker: 2.0.2
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   '@vue/compiler-dom@3.5.33':
     dependencies:
@@ -3642,7 +3642,7 @@ snapshots:
       estree-walker: 2.0.2
       magic-string: 0.30.21
       postcss: 8.5.12
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   '@vue/compiler-ssr@3.5.33':
     dependencies:
@@ -4089,7 +4089,7 @@ snapshots:
     dependencies:
       '@types/cors': 2.8.19
       '@types/node': 24.12.2
-      '@types/ws': 8.5.12
+      '@types/ws': 8.18.2
       accepts: 1.3.8
       cookie: 0.7.2
       cors: 2.8.6
@@ -5124,7 +5124,7 @@ snapshots:
     dependencies:
       nanoid: 3.3.19
       picocolors: 1.1.1
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   prettier@3.9.9: {}
 
@@ -5419,7 +5419,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  source-map-js@1.2.1: {}
+  source-map-js@1.2.2: {}
 
   space-separated-tokens@2.0.2: {}
 

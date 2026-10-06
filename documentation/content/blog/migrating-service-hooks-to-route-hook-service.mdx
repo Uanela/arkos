@@ -1,12 +1,12 @@
 ---
-title: "Migrating From .hooks.ts To The Route Hook Service Approach"
+title: "Migrating From .hooks.ts To Service Override"
 authors: [uanela]
 tags: [arkosjs, migration, routehook, baseservice, dx]
 date: 2026-08-06
-description: Arkos.js v1.8.0-canary introduces a `service` field on the RouteHook exported from your model's router file, replacing *.hooks.ts entirely. Here's exactly how to move a module over, with a simple worked example.
+description: Arkos.js v1.8.0-canary introduces a `service` field on the RouteHook exported from your model's router file, replacing *.hooks.ts entirely. Here's exactly how to move a module over to a Service Override, with a simple worked example.
 ---
 
-# Migrating From `.hooks.ts` To The Service Approach
+# Migrating From `.hooks.ts` To Service Override
 
 Starting with `v1.8.0-canary.1`, a module's `model.router.ts` can export a `RouteHook` that supplies a custom service instance:
 
@@ -20,7 +20,7 @@ export const hook: RouteHook = {
 
 When `service` is provided, Arkos uses that instance to run the module's operations instead of the default `BaseService` it would otherwise construct for the model. Anything you override on it runs in place of the default; anything you don't override falls through to `BaseService`, since your class extends it.
 
-This post walks through migrating a module from the old `.hooks.ts` convention to this approach, using a simple `Post` model — for the reasoning behind the change, see [Why We Decided To Kill Service Hooks](/blog/why-we-decided-to-kill-service-hooks).
+This post walks through migrating a module from the old `.hooks.ts` convention to a [Service Override](/docs/core-concepts/components/service-override), using a simple `Post` model — for the reasoning behind the change, see [Why We Decided To Kill Service Hooks](/blog/why-we-decided-to-kill-service-hooks).
 
 ## The old way
 
@@ -115,6 +115,8 @@ Once the logic lives on the subclass and the subclass is registered through `hoo
 Type `data` as strictly as you need. The example above passes your own `CreatePostSchema` — that's the point: `data` no longer has to be a raw Prisma input type, it can be whatever DTO or schema your validation layer already defines. The auto-generated route validates against the same schema and calls this same method, so there's one contract instead of two.
 
 Leave `queryOptions` (and `where`, for update methods) typed the way the base method types them: `Omit<Prisma.<Model><Method>Args, "data">` for create methods, with `"where"` added to the omit for updates. Don't narrow or replace this type. It keeps your override structurally compatible with the method it's overriding, and it means callers passing extra Prisma options (`include`, `select`, and so on) keep working exactly as they did against the default service.
+
+Because the base methods are generic, TypeScript can still flag a concrete override as not structurally assignable. Add `// @ts-expect-error` directly above the method declaration as a temporary workaround. You can even use a completely different signature and reorganize the arguments yourself, as long as you respect the order Arkos fills them in — see [Service Override — Parameter Order](/docs/core-concepts/components/service-override#parameter-order).
 
 ## What about hooks that only needed `req.user`?
 

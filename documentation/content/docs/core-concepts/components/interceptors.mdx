@@ -7,13 +7,19 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
 Interceptors let you run custom logic before, after, or on error of any auto-generated endpoint — Prisma model routes, authentication routes, and file upload routes — without replacing the built-in behavior.
 
+<Callout type="warn">
+  **Interceptors are the HTTP layer.** Historically they were the main place people put business logic, often alongside `.hooks.ts`. Since `v1.8.0`, business logic belongs in a [Service Override](/docs/core-concepts/components/service-override). Service Hooks was the earlier service-layer attempt; it is now [deprecated](/docs/core-concepts/components/service-hooks) because its TypeScript experience pushed developers away, while Service Override lets you write domain code as plain service methods. Keep interceptors for request/response handling: normalizing payloads, shaping responses, setting headers, logging, and translating errors.
+</Callout>
+
 <Callout type="info">
   Interceptors work alongside [Route Hook](/docs/core-concepts/components/route-hooks) for customizing built-in routes (just like `ArkosRouter`) and give a complete experience when interacting with them.
 </Callout>
 
 ## Why Interceptors?
 
-Arkos auto-generates routes for your Prisma models, authentication, and file uploads. But most applications need custom business logic — setting default values, logging activity, sending notifications, cleaning up resources on failure. Interceptors are the answer. They let you inject your own logic into the auto-generated flow without rewriting the built-in handlers.
+Arkos auto-generates routes for your Prisma models, authentication, and file uploads. Interceptors let you attach HTTP-level behavior around those endpoints — reshaping what comes in, adjusting what goes out, adding headers, logging requests, and translating errors — without rewriting the built-in handlers.
+
+For business logic tied to a domain operation (defaults, slugs, related writes, notifications), use [Service Override](/docs/core-concepts/components/service-override) instead. It runs on every service call, not just HTTP requests, and keeps that logic in one typed method.
 
 ## The Three Hook Types
 
@@ -21,15 +27,18 @@ Arkos auto-generates routes for your Prisma models, authentication, and file upl
 
 Run **before** the main operation. Use them to:
 
-- Modify request data (`req.body`, `req.query`, `req.params`)
-- Validate business rules
-- Check permissions beyond role-based access
-- Add default values
+- Normalize or transform the incoming request (`req.body`, `req.query`, `req.params`)
+- Accept alternate payload shapes and reshape them for the controller
+- Attach request-scoped data (correlation ids, timers) for later interceptors
+- Enforce HTTP-level rules that don't depend on the domain
 
 ```ts
 export const beforeCreateOne = [
   async (req, res, next) => {
-    req.body.authorId = req.user.id;
+    // Unwrap a wrapper object the client sends before the controller builds
+    // the service arguments.
+    if (req.body?.post) req.body = req.body.post;
+    res.locals.startedAt = Date.now();
     next();
   },
 ];
@@ -40,15 +49,16 @@ export const beforeCreateOne = [
 Run **after** the main operation succeeds. Use them to:
 
 - Access the result via `res.locals.data.data`
-- Send notifications, emails, or webhooks
+- Shape the outgoing payload (strip fields, wrap envelopes)
+- Set response headers (caching, timing, pagination links)
 - Log successful operations
-- Transform response data
 
 ```ts
 export const afterCreateOne = [
   async (req, res, next) => {
     const record = res.locals.data.data;
-    await emailService.sendWelcome(record.email);
+    res.set("X-Request-Duration", `${Date.now() - res.locals.startedAt}ms`);
+    console.log("Created record:", record.id);
     next();
   },
 ];
@@ -58,9 +68,9 @@ export const afterCreateOne = [
 
 Run **when** the main operation fails. Use them to:
 
-- Clean up uploaded files
-- Rollback database transactions
+- Clean up temporary files created for the request
 - Log errors for monitoring
+- Translate or enrich errors before they reach the error handler
 - Send failure alerts
 
 ```ts
@@ -117,26 +127,27 @@ export const afterCreateOne = [logCreation];
 
 ## Prisma Model Interceptors
 
-Intercept any CRUD operation for prisma model request  — add default values before create, log activity after update, or clean up files when creation fails.
+Intercept any CRUD operation for a Prisma model request — normalize the payload before create, shape the response after update, or clean up files when creation fails.
 
 ```ts title="src/modules/post/post.interceptors.ts"
-import { setAuthor, logCreation, cleanupImage } from "@/src/modules/post/post.middlewares";
+import { normalizeTags, logCreation, cleanupImage } from "@/src/modules/post/post.middlewares";
 
-export const beforeCreateOne = [setAuthor];
+export const beforeCreateOne = [normalizeTags];
 export const afterCreateOne = [logCreation];
 export const onCreateOneError = [cleanupImage];
 ```
 
 ```ts title="src/modules/post/post.middlewares.ts"
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
-import { AppError } from "arkos/error-handler";
 
-export const setAuthor = async (
+export const normalizeTags = async (
   req: ArkosRequest,
-  res: ArkosResponse,
+  _res: ArkosResponse,
   next: ArkosNextFunction
 ) => {
-  req.body.authorId = req.user.id;
+  // Accept "a,b,c" and turn it into an array before the controller calls the service
+  if (typeof req.body?.tags === "string")
+    req.body.tags = req.body.tags.split(",").map((tag: string) => tag.trim());
   next();
 };
 
@@ -216,13 +227,13 @@ export const afterCreateOne = [
 
 ## Authentication Interceptors
 
-Intercept login to rate-limit attempts, send welcome emails after signup, or log failed logins for security monitoring.
+Intercept login to count attempts, log auth events, or observe failed logins for security monitoring.
 
 ```ts title="src/modules/auth/auth.interceptors.ts"
-import { trackLoginAttempt, sendWelcomeEmail, logFailedLogin } from "./auth.middlewares";
+import { trackLoginAttempt, logSignup, logFailedLogin } from "./auth.middlewares";
 
 export const beforeLogin = [trackLoginAttempt];
-export const afterSignup = [sendWelcomeEmail];
+export const afterSignup = [logSignup];
 export const onLoginError = [logFailedLogin];
 ```
 
@@ -238,13 +249,13 @@ export const trackLoginAttempt = async (
   next();
 };
 
-export const sendWelcomeEmail = async (
+export const logSignup = async (
   req: ArkosRequest,
   res: ArkosResponse,
   next: ArkosNextFunction
 ) => {
   const user = res.locals.data.data;
-  await emailService.sendWelcome(user.email);
+  console.log("New signup:", user.id);
   next();
 };
 
@@ -345,35 +356,30 @@ Use `res.locals` to pass data between interceptors in the same request:
 ```ts title="src/modules/post/post.middlewares.ts"
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
 
-export const loadOriginal = async (
-  req: ArkosRequest,
+export const startTimer = async (
+  _req: ArkosRequest,
   res: ArkosResponse,
   next: ArkosNextFunction
 ) => {
-  const post = await postService.findOne({ id: req.params.id });
-  res.locals.originalPost = post;
+  res.locals.startedAt = Date.now();
   next();
 };
 
-export const notifyChanges = async (
-  req: ArkosRequest,
+export const reportTiming = async (
+  _req: ArkosRequest,
   res: ArkosResponse,
   next: ArkosNextFunction
 ) => {
-  const original = res.locals.originalPost;
-  const updated = res.locals.data.data;
-  if (original.title !== updated.title) {
-    await emailService.notify(original.authorId, "title changed");
-  }
+  res.set("X-Response-Time", `${Date.now() - res.locals.startedAt}ms`);
   next();
 };
 ```
 
 ```ts title="src/modules/post/post.interceptors.ts"
-import { loadOriginal, notifyChanges } from "./post.middlewares";
+import { startTimer, reportTiming } from "./post.middlewares";
 
-export const beforeUpdateOne = [loadOriginal];
-export const afterUpdateOne = [notifyChanges];
+export const beforeUpdateOne = [startTimer];
+export const afterUpdateOne = [reportTiming];
 ```
 
 ## Type Safety
@@ -401,6 +407,7 @@ export const addDefaults = async (
 
 ## Related
 
+- **[Service Override](/docs/core-concepts/components/service-override)** — Put business logic at the service layer
 - **[Route Hook](/docs/core-concepts/components/route-hooks)** — Configure auto-generated routes
 - **[ArkosRouter](/docs/core-concepts/components/routers)** — Full configuration object reference
-- **[Service Hooks](/docs/core-concepts/components/service-hooks)** — Run logic at the service layer
+- **[Service Hooks (Deprecated)](/docs/core-concepts/components/service-hooks)** — The old service-layer hook approach

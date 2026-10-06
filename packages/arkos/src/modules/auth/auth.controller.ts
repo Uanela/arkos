@@ -26,6 +26,7 @@ const hasRequiredData: Record<OverridableAuthMethod, (result: any) => boolean> =
     deleteMe: (result) => !!result,
     login: (result) => !!result?.user && !!result?.accessToken,
     updatePassword: (result) => !!result?.accessToken,
+    logout: () => true,
   };
 
 const resolveTokenDelivery = () => {
@@ -153,6 +154,16 @@ export const authControllerFactory = (
         res: ArkosResponse,
         next: ArkosNextFunction,
       ) => {
+        if (!req.user?.id || !req.accessToken)
+          throw new AppError(
+            "Logout requires an authenticated user and an access token",
+            401,
+            {},
+            "UnauthenticatedLogout",
+          );
+
+        await callService("logout", req.user.id, req.accessToken);
+
         res.cookie("arkos_access_token", "no-token", {
           expires: new Date(Date.now() + 10 * 1000),
           httpOnly: true,

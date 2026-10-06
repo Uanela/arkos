@@ -1,0 +1,215 @@
+---
+title: Service Override (New)
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A Service Override is a [`BaseService`](/docs/reference/base-service) subclass you hand to Arkos through the `service` field of your module's [`RouteHook`](/docs/core-concepts/components/route-hooks). Arkos runs your instance's methods in place of the default `BaseService` for the model's auto-generated routes. Anything you don't override falls through to `BaseService`, because your class extends it.
+
+It is the recommended place to put **business logic** since `v1.8.0`. It replaces [Service Hooks](/docs/core-concepts/components/service-hooks) (now deprecated) and keeps domain logic out of the HTTP layer, where [Interceptors](/docs/core-concepts/components/interceptors) belong.
+
+<Callout type="info">
+  Service Override lets you write business logic exactly as you would if you were building a custom service outside Arkos: plain classes, plain methods, `super.<method>()` when you want the default behavior. One method, one contract — the same one your auto-generated routes and your own code call.
+</Callout>
+
+## Registering a Service Override
+
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
+
+class PostService extends BaseService<"post"> {}
+
+export default new PostService("post");
+```
+
+```ts title="src/modules/post/post.router.ts"
+import { RouteHook } from "arkos";
+import postService from "./post.service";
+
+export const hook: RouteHook = {
+  service: postService,
+};
+```
+
+When `service` is provided, Arkos uses that instance to run the module's operations instead of the default `BaseService` it would otherwise construct for the model.
+
+<Callout type="warn">
+  The `service` value must be an instance of a class that extends `BaseService` (or `AuthService`, see [Authentication Service Override](#authentication-service-override)). Arkos throws at startup otherwise.
+</Callout>
+
+## Overriding a Method
+
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
+import { Prisma } from "@prisma/client";
+import CreatePostSchema from "./schemas/create-post.schema";
+
+type RequestContext = { user?: { id: string }; accessToken?: string };
+
+export class PostService extends BaseService<"post"> {
+  // @ts-expect-error See "TypeScript note" below
+  async createOne(
+    data: CreatePostSchema,
+    queryOptions?: Omit<Prisma.PostCreateArgs, "data">,
+    context?: RequestContext
+  ) {
+    const slug = data.title.toLowerCase().replace(/\s+/g, "-");
+    return super.createOne({ ...data, slug }, queryOptions, context);
+  }
+}
+
+export default new PostService("post");
+```
+
+Two things that used to require separate `beforeCreateOne`/`afterCreateOne` hooks are now two calls inside a single method, in the order they actually happen: build the slug, then write the record via `super.createOne(...)`.
+
+Type `data` as your own DTO/schema if you have one. If you'd rather derive it from Prisma, `ArkosPrismaInput` (from `arkos/prisma`) is available to services since `v1.8.0`, so you can write `data: ArkosPrismaInput<Prisma.PostCreateInput>` without hand-writing the input type.
+
+### TypeScript note
+
+Base `BaseService` methods are generic over their Prisma options (`TOptions extends ...`). When you override one with a concrete signature, TypeScript can flag the override as not structurally assignable to the base method. Add `// @ts-expect-error` directly above the method declaration to silence that specific check while keeping the override typed the way you want:
+
+```ts
+export class PostService extends BaseService<"post"> {
+  // @ts-expect-error
+  async updateOne(
+    filters: Prisma.PostWhereUniqueInput,
+    data: Prisma.PostUpdateInput
+  ) {
+    // ...
+  }
+}
+```
+
+This is a temporary workaround until the base method generics are relaxed. If the signature is already compatible, TypeScript will instead complain that the `@ts-expect-error` is unused — remove it in that case.
+
+## Parameter Order
+
+Auto-generated routes call your methods positionally, exactly like the default `BaseService` methods. You are free to use a **completely different signature**, as long as you account for the order in which Arkos fills the arguments. The values map to the request like this:
+
+| Operation | Arguments (in order) | Filled from |
+|-----------|----------------------|-------------|
+| `createOne` | `data`, `queryOptions?`, `context?` | `req.body`, query-derived options, context |
+| `createMany` | `data[]`, `queryOptions?`, `context?` | `req.body` (array), query-derived options, context |
+| `findMany` | `filters?`, `queryOptions?`, `context?` | `where` from `req.query`, query-derived options, context |
+| `findOne` | `filters`, `queryOptions?`, `context?` | `{ ...req.params, ...where }`, query-derived options, context |
+| `updateOne` | `filters`, `data`, `queryOptions?`, `context?` | `{ ...req.params, ...where }`, `req.body`, query-derived options, context |
+| `updateMany` | `filters`, `data`, `queryOptions?`, `context?` | `where` from `req.query`, `req.body`, query-derived options, context |
+| `deleteOne` | `filters`, `context?` | `{ ...req.params, ...where }`, context |
+| `deleteMany` | `filters`, `context?` | `where` from `req.query`, context |
+| `batchUpdate` | `data[]`, `queryOptions?`, `context?` | `req.body` (array), query-derived options, context |
+| `batchDelete` | `filters[]`, `context?` | `req.body` (array), context |
+
+- **`data`** comes straight from `req.body` after validation and transformation.
+- **`filters`** is the Prisma `where` built by `APIFeatures` from the request. For single-record routes (`findOne`, `updateOne`, `deleteOne`) the route params are merged in as well, so `updateOne` receives `{ ...req.params, ...where }`.
+- **`queryOptions`** is everything else the request asks for at the Prisma query level (sorting, field selection, pagination), derived from `req.query`.
+- **`context`** is `{ user, accessToken }` from the request.
+
+If you reorganize a signature, remember that the auto-generated route has no idea about your names — it only knows positions.
+
+### How `req.query` becomes `where` and `queryOptions`
+
+The values above don't arrive raw. `APIFeatures` reads `req.query` and translates it into Prisma arguments before your method is called:
+
+- Filter query params become the `where` conditions, combined according to `filterMode` (`OR` by default, `AND` when set).
+- `?sort=-createdAt,title` becomes `orderBy: [{ createdAt: "desc" }, { title: "asc" }]`.
+- `?fields=title,author` becomes a `select` (or `include`/`omit` for the `+`/`-` prefixes).
+- `?page=3&limit=20` becomes `{ skip: 40, take: 20 }`. With no pagination params the default is `page=1` and `limit=30`; `?limit=all` sends no `skip`/`take` at all.
+
+So a request like `GET /api/posts?published=true&sort=-createdAt&page=2` reaches `findMany` roughly as:
+
+```ts
+postService.findMany(
+  { published: true },                                      // where
+  { orderBy: [{ createdAt: "desc" }], skip: 30, take: 30 }, // queryOptions
+  { user: req.user, accessToken: req.accessToken }          // context
+);
+```
+
+### Changing what reaches the service
+
+If the client sends data in a shape your override doesn't want, reshape it at the HTTP layer with a [`before` interceptor](/docs/core-concepts/components/interceptors) rather than weakening the service contract. Interceptors run before the controller builds the service arguments, so mutating `req.body`, `req.query`, or `req.params` changes what your override receives:
+
+```ts title="src/modules/post/post.middlewares.ts"
+import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "arkos";
+
+export const unwrapPost = async (
+  req: ArkosRequest,
+  _res: ArkosResponse,
+  next: ArkosNextFunction
+) => {
+  if (req.body?.post) req.body = req.body.post;
+  next();
+};
+```
+
+```ts title="src/modules/post/post.interceptors.ts"
+import { unwrapPost } from "./post.middlewares";
+
+export const beforeCreateOne = [unwrapPost];
+```
+
+Alternatively, if you own the method signature, accept the incoming shape and reorganize inside the override before calling `super.*`.
+
+### Returning data
+
+The controller uses the value your method returns. If you provide a custom service and a method resolves to `undefined` where the operation expects a result, Arkos throws. Always `return` the value (typically the result of `super.<method>()`) unless the operation genuinely has no result, like `deleteMany`'s cleanup flows.
+
+## Authentication Service Override
+
+The `auth` module supports the same pattern through `RouteHook<"auth">.service`. The value must be an instance of a class that extends `AuthService`.
+
+```ts title="src/modules/auth/auth.service.ts"
+import { AuthService } from "arkos/services";
+
+class MyAuthService extends AuthService {
+  async signup(data: any, queryOptions?: any) {
+    // ...
+    return super.signup(data, queryOptions);
+  }
+}
+
+export default new MyAuthService();
+```
+
+```ts title="src/modules/auth/auth.router.ts"
+import { RouteHook } from "arkos";
+import authService from "./auth.service";
+
+export const hook: RouteHook<"auth"> = {
+  service: authService,
+};
+```
+
+Only these methods are overridable. As with model services, argument order is fixed by the controller:
+
+| Method | Arguments (in order) | Filled from | Required return |
+|--------|----------------------|-------------|-----------------|
+| `getMe` | `userId`, `queryOptions?` | `req.user.id`, query-derived options | truthy user |
+| `updateMe` | `userId`, `data`, `queryOptions?` | `req.user.id`, `req.body`, query-derived options | truthy user |
+| `signup` | `data`, `queryOptions?` | `req.body`, query-derived options | truthy user |
+| `login` | `input`, `queryOptions?` | `{ ...req.body, usernameField }`, query-derived options | `{ user, accessToken }` |
+| `deleteMe` | `userId`, `queryOptions?` | `req.user.id`, query-derived options | truthy user |
+| `updatePassword` | `userId`, `input` | `req.user.id`, `req.body` | `{ accessToken }` |
+| `logout` | `userId`, `accessToken` | `req.user.id`, `req.accessToken` | none (`void`) |
+
+`logout` runs before Arkos clears the access-token cookie. Both arguments are required: if the request has no authenticated user and access token (for example, when authentication is disabled on the route), logout throws. Override it for token revocation, server-side session invalidation, or audit logging. Clearing the cookie itself stays in the controller.
+
+If an overridden auth method returns no required data, Arkos throws a `Custom auth service method <method> didn't return the required data` error.
+
+## Service Utilities Without Routes
+
+`batchUpdate` and `batchDelete` can also be overridden, but they are service-level utilities — they have no dedicated auto-generated route. They're called programmatically, so the argument contract is entirely yours to define:
+
+```ts
+await postService.batchUpdate([...]);
+await postService.batchDelete([...]);
+```
+
+## Related
+
+- **[Services](/docs/core-concepts/components/services)** — The service layer and `BaseService`
+- **[Interceptors](/docs/core-concepts/components/interceptors)** — HTTP-layer logic around auto-generated routes
+- **[Service Hooks (Deprecated)](/docs/core-concepts/components/service-hooks)** — The old `*.hooks.ts` approach
+- **[Route Hook](/docs/core-concepts/components/route-hooks)** — Configure auto-generated routes
+- **[BaseService](/docs/reference/base-service)** — Full service API reference

@@ -1,15 +1,21 @@
 ---
-title: Service Hooks
+title: Service Hooks (Deprecated)
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
+<Callout type="warn">
+  **Deprecated since `v1.8.0`.** Service Hooks still work, but Arkos logs a deprecation warning for every `*.hooks.ts` file and they will stop being auto-loaded in `v2.0`. Use [Service Override](/docs/core-concepts/components/service-override) instead — it lets you write business logic exactly as you would in a plain service, with full TypeScript support.
+</Callout>
+
 Service Hooks run logic at the service layer — every time a `BaseService` method is called, whether from an HTTP endpoint or programmatically. Unlike interceptors (HTTP layer), hooks fire for all service calls across your entire application.
 
 ## Why Service Hooks?
 
-Interceptors run at the HTTP layer — they only fire when an API endpoint is called. But what about when you call the same service method from a background job, a CLI command, or another service? Those calls would bypass your interceptor logic. Service Hooks solve this. They run at the service layer, every time a `BaseService` method is called — regardless of where the call comes from.
+Service Hooks were the first attempt at running business logic at the service layer. They worked, but the TypeScript experience wasn't great: your logic ended up spread across up to 27 `before`/`after`/`onError` arrays connected only by convention. [Service Override](/docs/core-concepts/components/service-override) keeps the same "runs on every service call" guarantee while letting you write plain methods instead. This page is kept for projects still on `.hooks.ts`.
+
+If you are choosing an approach today, use [Service Override](/docs/core-concepts/components/service-override) for business logic and [Interceptors](/docs/core-concepts/components/interceptors) for HTTP-layer logic.
 
 ## The Three Hook Types
 
@@ -266,6 +272,7 @@ export const afterCreateOne = [
 
 ## Related
 
+- **[Service Override](/docs/core-concepts/components/service-override)** — The recommended replacement for Service Hooks
 - **[Interceptors](/docs/core-concepts/components/interceptors)** — Run logic at the HTTP layer
 - **[BaseService](/docs/reference/base-service)** — Full service API reference
 - **[Route Hook](/docs/core-concepts/components/route-hooks)** — Configure auto-generated routes

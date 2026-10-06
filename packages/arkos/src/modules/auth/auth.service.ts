@@ -634,6 +634,11 @@ export class AuthService {
   }
 
   /**
+   * Runs on logout. Override through `RouteHook<"auth">.service`.
+   */
+  async logout(_userId: User["id"], _accessToken: string): Promise<void> {}
+
+  /**
    * Middleware function to handle access control based on user roles and permissions.
    *
    * @param {AccessAction} action - The action being performed (e.g., create, update, delete, view).

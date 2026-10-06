@@ -26,6 +26,7 @@ jest.mock("../auth.service", () => {
       deleteMe: jest.fn(),
       login: jest.fn(),
       updatePassword: jest.fn(),
+      logout: jest.fn(),
       getJwtCookieOptions: jest.fn(),
     },
   };
@@ -87,6 +88,7 @@ describe("Auth Controller Factory", () => {
 
     req = {
       user: { ...publicUser, password: "hashedPassword" },
+      accessToken: "jwt-token",
       body: {},
       query: {},
       params: {},
@@ -149,6 +151,23 @@ describe("Auth Controller Factory", () => {
 
       expect(res.json).toHaveBeenCalledWith({ accessToken: "custom-token" });
       expect(mockedAuthService.login).not.toHaveBeenCalled();
+    });
+
+    it("should call the custom logout service and clear the cookie", async () => {
+      const custom = Object.assign(new AuthService(), {
+        logout: jest.fn().mockResolvedValue(undefined),
+      });
+      const controller = authControllerFactory({}, custom);
+
+      await controller.logout(req, res, next);
+
+      expect(custom.logout).toHaveBeenCalledWith("user-id-123", "jwt-token");
+      expect(res.cookie).toHaveBeenCalledWith(
+        "arkos_access_token",
+        "no-token",
+        expect.objectContaining({ httpOnly: true }),
+      );
+      expect(res.status).toHaveBeenCalledWith(204);
     });
 
     it.each([
@@ -261,6 +280,30 @@ describe("Auth Controller Factory", () => {
       );
       expect(res.status).toHaveBeenCalledWith(204);
       expect(res.json).toHaveBeenCalled();
+    });
+
+    it("should call the service with the user id and access token", async () => {
+      await authController.logout(req, res, next);
+
+      expect(mockedAuthService.logout).toHaveBeenCalledWith(
+        "user-id-123",
+        "jwt-token",
+      );
+    });
+
+    it("should forward an error when the user or access token is missing", async () => {
+      req.user = undefined;
+      req.accessToken = undefined;
+
+      await authController.logout(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Logout requires an authenticated user and an access token",
+        }),
+      );
+      expect(mockedAuthService.logout).not.toHaveBeenCalled();
+      expect(res.cookie).not.toHaveBeenCalled();
     });
 
     it("should call next middleware when afterLogout is provided", async () => {

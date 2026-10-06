@@ -258,30 +258,25 @@ export default postPolicy;
 
 See [Static Mode](/docs/core-concepts/authentication/permissions/static) for full details. For projects using the older `.auth.ts` approach, see [Auth Config Files](/docs/core-concepts/authentication/permissions/static#auth-config-files).
 
-### Service Hooks (`*.hooks.ts`)
+### Service Override (`*.service.ts`)
 
-Run logic at the service layer — fires on every `BaseService` call, whether from an HTTP endpoint or programmatically:
+Extend `BaseService` and register it through `hook.service` to run your own business logic for a model's auto-generated routes, whether they come from an HTTP endpoint or a programmatic call:
 
-```ts title="src/modules/post/post.hooks.ts"
-import { BeforeCreateOneHookArgs, AfterCreateOneHookArgs } from "arkos/services";
-import { Prisma } from "@prisma/client";
+```ts title="src/modules/post/post.service.ts"
+import { BaseService } from "arkos/services";
 
-export const beforeCreateOne = [
-  async ({ data }: BeforeCreateOneHookArgs<Prisma.PostDelegate>) => {
-    if (!data.slug && data.title) {
+class PostService extends BaseService<"post"> {
+  async createOne(data: any, queryOptions?: any) {
+    if (!data.slug && data.title)
       data.slug = data.title.toLowerCase().replace(/\s+/g, "-");
-    }
-  },
-];
+    return super.createOne(data, queryOptions);
+  }
+}
 
-export const afterCreateOne = [
-  async ({ result }: AfterCreateOneHookArgs<Prisma.PostDelegate>) => {
-    console.log("Post created via service:", result.id);
-  },
-];
+export default new PostService("post");
 ```
 
-See [Service Hooks](/docs/core-concepts/components/service-hooks) for the full list of available hooks and how they differ from interceptors.
+See [Service Override](/docs/core-concepts/components/service-override) for the full contract. The older `*.hooks.ts` approach is deprecated and kept for reference in [Service Hooks](/docs/core-concepts/components/service-hooks).
 
 ### Prisma Query Options (`*.query.ts`)
 

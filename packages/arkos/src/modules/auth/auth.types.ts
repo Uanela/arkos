@@ -35,7 +35,13 @@ export type UpdateMeDto =
   | ArkosPrismaInput<ExtractPrismaData<UserModel["UpdateArgs"]>>;
 
 export type OverridableAuthMethod =
-  "getMe" | "updateMe" | "signup" | "deleteMe" | "login" | "updatePassword";
+  | "getMe"
+  | "updateMe"
+  | "signup"
+  | "deleteMe"
+  | "login"
+  | "updatePassword"
+  | "logout";
 
 export interface UpdatePasswordInput {
   currentPassword: string;
