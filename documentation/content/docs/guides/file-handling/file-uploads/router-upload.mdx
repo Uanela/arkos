@@ -27,21 +27,21 @@ import reportsController from "../controllers/reports.controller";
 const reportsRouter = ArkosRouter();
 
 reportsRouter.post(
-    {
-        path: "/api/reports/upload",
-        authentication: true,
-        experimental: {
-            uploads: {
-                type: "single",
-                field: "reportFile",
-                uploadDir: "reports",
-                maxSize: 50 * 1024 * 1024,
-                allowedFileTypes: [".xlsx", ".csv", ".pdf"],
-                deleteOnError: true,
-            },
-        },
+  {
+    path: "/api/reports/upload",
+    authentication: true,
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "reportFile",
+        uploadDir: "reports",
+        maxSize: 50 * 1024 * 1024,
+        allowedFileTypes: [".xlsx", ".csv", ".pdf"],
+        deleteOnError: true,
+      },
     },
-    reportsController.processUploadedReport
+  },
+  reportsController.processUploadedReport,
 );
 
 export default reportsRouter;
@@ -57,28 +57,28 @@ export default reportsRouter;
 import { ArkosRouter, RouteHook } from "arkos";
 
 export const hook: RouteHook = {
-    createOne: {
-        experimental: {
-            uploads: {
-                type: "single",
-                field: "profilePhoto",
-                uploadDir: "user-profiles",
-                maxSize: 5 * 1024 * 1024,
-                allowedFileTypes: [".jpg", ".jpeg", ".png", ".webp"],
-                deleteOnError: true,
-            },
-        },
+  createOne: {
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "profilePhoto",
+        uploadDir: "user-profiles",
+        maxSize: 5 * 1024 * 1024,
+        allowedFileTypes: [".jpg", ".jpeg", ".png", ".webp"],
+        deleteOnError: true,
+      },
     },
-    updateOne: {
-        experimental: {
-            uploads: {
-                type: "single",
-                field: "profilePhoto",
-                uploadDir: "user-profiles",
-                required: false,
-            },
-        },
+  },
+  updateOne: {
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "profilePhoto",
+        uploadDir: "user-profiles",
+        required: false,
+      },
     },
+  },
 };
 
 const userRouter = ArkosRouter();
@@ -102,20 +102,20 @@ import galleryController from "../controllers/gallery.controller";
 const galleryRouter = ArkosRouter();
 
 galleryRouter.post(
-    {
-        path: "/api/gallery",
-        authentication: true,
-        experimental: {
-            uploads: {
-                type: "array",
-                field: "photos",
-                maxCount: 12,
-                uploadDir: "gallery",
-                deleteOnError: true,
-            },
-        },
+  {
+    path: "/api/gallery",
+    authentication: true,
+    experimental: {
+      uploads: {
+        type: "array",
+        field: "photos",
+        maxCount: 12,
+        uploadDir: "gallery",
+        deleteOnError: true,
+      },
     },
-    galleryController.createAlbum
+  },
+  galleryController.createAlbum,
 );
 
 export default galleryRouter;
@@ -131,17 +131,17 @@ export default galleryRouter;
 import { ArkosRouter, RouteHook } from "arkos";
 
 export const hook: RouteHook = {
-    createOne: {
-        experimental: {
-            uploads: {
-                type: "array",
-                field: "images",
-                maxCount: 8,
-                uploadDir: "product-images",
-                deleteOnError: true,
-            },
-        },
+  createOne: {
+    experimental: {
+      uploads: {
+        type: "array",
+        field: "images",
+        maxCount: 8,
+        uploadDir: "product-images",
+        deleteOnError: true,
+      },
     },
+  },
 };
 
 const productRouter = ArkosRouter();
@@ -165,23 +165,23 @@ import listingsController from "../controllers/listings.controller";
 const listingsRouter = ArkosRouter();
 
 listingsRouter.post(
-    {
-        path: "/api/listings",
-        authentication: true,
-        experimental: {
-            uploads: {
-                type: "fields",
-                fields: [
-                    { name: "thumbnail", maxCount: 1 },
-                    { name: "gallery", maxCount: 6 },
-                    { name: "floorPlan", maxCount: 1 },
-                ],
-                uploadDir: "listings",
-                deleteOnError: true,
-            },
-        },
+  {
+    path: "/api/listings",
+    authentication: true,
+    experimental: {
+      uploads: {
+        type: "fields",
+        fields: [
+          { name: "thumbnail", maxCount: 1 },
+          { name: "gallery", maxCount: 6 },
+          { name: "floorPlan", maxCount: 1 },
+        ],
+        uploadDir: "listings",
+        deleteOnError: true,
+      },
     },
-    listingsController.createListing
+  },
+  listingsController.createListing,
 );
 
 export default listingsRouter;
@@ -239,18 +239,50 @@ The file path lands at `req.body.profile.photo`.
 
 ## `experimental.uploads` reference
 
-| Property           | Type                                        | Required               | Default            | Description                                      |
-| ------------------ | ------------------------------------------- | ---------------------- | ------------------ | ------------------------------------------------ |
-| `type`             | `"single" \| "array" \| "fields"`           | ✓                      | —                  | Upload strategy                                  |
-| `field`            | `string`                                    | For `single` / `array` | —                  | FormData field name. Supports bracket notation.  |
-| `fields`           | `Array<{ name: string; maxCount: number }>` | For `fields`           | —                  | Per-field config                                 |
-| `required`         | `boolean`                                   | —                      | `true`             | Mark file as optional with `false`               |
-| `uploadDir`        | `string`                                    | —                      | Auto by MIME       | Subdirectory inside `baseUploadDir`              |
-| `maxSize`          | `number`                                    | —                      | From global config | Per-file size limit in bytes                     |
-| `maxCount`         | `number`                                    | For `array`            | —                  | Max number of files                              |
-| `allowedFileTypes` | `string[] \| RegExp`                        | —                      | From global config | Allowed extensions or pattern                    |
-| `attachToBody`     | `"pathname" \| "url" \| "file" \| false`    | —                      | `"pathname"`       | How the file reference is attached to `req.body` |
-| `deleteOnError`    | `boolean`                                   | —                      | `true`             | Delete uploaded files if the request fails       |
+| Property           | Type                                        | Required               | Default              | Description                                      |
+| ------------------ | ------------------------------------------- | ---------------------- | -------------------- | ------------------------------------------------ |
+| `type`             | `"single" \| "array" \| "fields"`           | ✓                      | —                    | Upload strategy                                  |
+| `field`            | `string`                                    | For `single` / `array` | —                    | FormData field name. Supports bracket notation.  |
+| `fields`           | `Array<{ name: string; maxCount: number }>` | For `fields`           | —                    | Per-field config                                 |
+| `required`         | `boolean`                                   | —                      | `true`               | Mark file as optional with `false`               |
+| `uploadDir`        | `string`                                    | —                      | Auto by MIME         | Subdirectory inside `baseUploadDir`              |
+| `maxSize`          | `number`                                    | —                      | From global config   | Per-file size limit in bytes                     |
+| `maxCount`         | `number`                                    | For `array`            | —                    | Max number of files                              |
+| `allowedFileTypes` | `string[] \| RegExp`                        | —                      | From global config   | Allowed extensions or pattern                    |
+| `attachToBody`     | `"pathname" \| "url" \| "file" \| false`    | —                      | `"pathname"`         | How the file reference is attached to `req.body` |
+| `deleteOnError`    | `boolean`                                   | —                      | `true`               | Delete uploaded files if the request fails       |
+| `image`            | `object`                                    | —                      | `{ format: "webp" }` | Sharp image optimization (see below)             |
+
+## Image optimization (new)
+
+> Available from v1.8.0-rc
+
+Image uploads are optimized with [Sharp](https://sharp.pixelplumbing.com/) before the file reference is attached to `req.body`. By default, images are converted to `webp`. Tune it per route — or per field on `fields` uploads — with the `image` option:
+
+```ts title="src/modules/user/user.router.ts"
+export const hook: RouteHook = {
+  createOne: {
+    experimental: {
+      uploads: {
+        type: "single",
+        field: "profilePhoto",
+        image: { resizeTo: 800, quality: 80 },
+      },
+    },
+  },
+};
+```
+
+| Option               | Type                                                      | Default               | Description                                     |
+| -------------------- | --------------------------------------------------------- | --------------------- | ----------------------------------------------- |
+| `format`             | `string`                                                  | `"webp"`              | Output format (`webp`, `jpeg`, `png`, `avif`…)  |
+| `quality`            | `number`                                                  | Sharp default         | Output quality (1-100) for lossy formats        |
+| `width` / `height`   | `number`                                                  | —                     | Resize keeping aspect ratio                     |
+| `resizeTo`           | `number`                                                  | —                     | Fit within a square of this size, keeping ratio |
+| `fit`                | `"cover" \| "contain" \| "fill" \| "inside" \| "outside"` | `"inside"`            | Sharp resize strategy                           |
+| `withoutEnlargement` | `boolean`                                                 | `true` for `resizeTo` | Prevent upscaling                               |
+
+For `type: "fields"`, each field entry can define its own `image`; entries without one fall back to the upload-level `image`.
 
 ## Shape of `attachToBody`
 
@@ -262,16 +294,16 @@ The value written to `req.body[field]` (or `req.body.fields[name]`) depends on `
 
 ```ts
 {
-    fieldname: string;
-    originalname: string;
-    encoding: string;
-    mimetype: string;
-    size: number;
-    destination: string;
-    filename: string;
-    path: string;
-    url: string; // added by Arkos
-    pathname: string; // added by Arkos
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  url: string; // added by Arkos
+  pathname: string; // added by Arkos
 }
 ```
 
@@ -284,3 +316,4 @@ For `type: "array"`, this value becomes an array of the shape above. For `type: 
 - [File Upload Setup](/docs/guides/file-handling/file-uploads/setup) — global configuration, `baseUploadDir`, `baseRoute`, restrictions
 - [File Upload Routes](/docs/guides/file-handling/file-uploads/routes) — standalone endpoints and request format
 - [Interceptors](/docs/core-concepts/components/interceptors#file-upload-interceptors) — before/after hooks for file upload operations
+

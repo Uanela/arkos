@@ -136,10 +136,11 @@ POST /api/uploads/images?resizeTo=800&format=webp
 
 | Parameter | Description |
 |-----------|-------------|
-| `?width=500` | Resize to width (may distort ratio) |
-| `?height=300` | Resize to height (may distort ratio) |
-| `?resizeTo=800` | Resize to fit within px, keeps ratio |
-| `?format=webp` | Convert to format |
+| `?width=500` | Resize to width, keeps ratio |
+| `?height=300` | Resize to height, keeps ratio |
+| `?resizeTo=800` | Resize to fit within px, keeps ratio, no upscaling |
+| `?format=webp` | Convert to format (defaults to `webp`) |
+| `?quality=80` | Output quality (1-100) for lossy formats |
 
 ### Replace a file
 

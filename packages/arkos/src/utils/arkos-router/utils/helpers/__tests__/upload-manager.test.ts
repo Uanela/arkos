@@ -3,6 +3,17 @@ import multer from "multer";
 import fs from "fs";
 import { promisify } from "util";
 import { getArkosConfig } from "../../../../../exports";
+import { optimizeImage } from "../../../../../modules/file-upload/utils/helpers/file-upload.helpers";
+
+jest.mock(
+  "../../../../../modules/file-upload/utils/helpers/file-upload.helpers",
+  () => ({
+    ...jest.requireActual(
+      "../../../../../modules/file-upload/utils/helpers/file-upload.helpers"
+    ),
+    optimizeImage: jest.fn(),
+  })
+);
 
 jest.mock("multer");
 jest.mock("fs", () => ({
@@ -10,6 +21,7 @@ jest.mock("fs", () => ({
   mkdirSync: jest.fn(),
   stat: jest.fn(),
   unlink: jest.fn(),
+  rename: jest.fn(),
   promises: {
     unlink: jest.fn(),
   },
@@ -17,8 +29,14 @@ jest.mock("fs", () => ({
 }));
 jest.mock("util");
 jest.mock("../../../../../exports");
+jest.mock("../../../../../server", () => ({
+  getArkosConfig: jest.fn(),
+}));
 jest.mock("../../../../sheu");
 jest.mock("../../../../helpers/deepmerge.helper");
+
+const getServerArkosConfig =
+  require("../../../../../server").getArkosConfig as jest.Mock;
 
 const mockDeepmerge = require("../../../../helpers/deepmerge.helper").default;
 
@@ -49,6 +67,9 @@ describe("UploadManager", () => {
 
     (multer as unknown as jest.Mock).mockReturnValue(mockMulterInstance);
     (getArkosConfig as jest.Mock).mockReturnValue({
+      fileUpload: { baseUploadDir: "/uploads" },
+    });
+    getServerArkosConfig.mockReturnValue({
       fileUpload: { baseUploadDir: "/uploads" },
     });
     (fs.existsSync as jest.Mock).mockReturnValue(true);
@@ -479,6 +500,103 @@ describe("UploadManager", () => {
 
       expect(mockNext).toHaveBeenCalled();
     });
+
+    it("should optimize image uploads with the framework defaults", async () => {
+      (optimizeImage as jest.Mock).mockResolvedValue(
+        "/uploads/images/avatar-1.webp"
+      );
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        attachToBody: "url" as const,
+      };
+      mockReq.file = {
+        path: "/uploads/images/avatar-1.png",
+        mimetype: "image/png",
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(optimizeImage).toHaveBeenCalledWith(
+        "/uploads/images/avatar-1.png",
+        undefined
+      );
+      expect(mockReq.file.path).toBe("/uploads/images/avatar-1.webp");
+      expect(mockReq.file.filename).toBe("avatar-1.webp");
+      expect(mockReq.file.url).toContain("avatar-1.webp");
+    });
+
+    it("should pass the route image options to the optimizer", async () => {
+      (optimizeImage as jest.Mock).mockResolvedValue(
+        "/uploads/images/avatar-1.webp"
+      );
+      const config = {
+        type: "single" as const,
+        field: "avatar",
+        image: { resizeTo: 800, quality: 70 },
+      } as any;
+      mockReq.file = {
+        path: "/uploads/images/avatar-1.png",
+        mimetype: "image/png",
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(optimizeImage).toHaveBeenCalledWith(
+        "/uploads/images/avatar-1.png",
+        { resizeTo: 800, quality: 70 }
+      );
+    });
+
+    it("should use per-field image options for fields uploads", async () => {
+      (optimizeImage as jest.Mock).mockImplementation((filePath: string) =>
+        Promise.resolve(filePath.replace(/\.\w+$/, ".webp"))
+      );
+      const config = {
+        type: "fields" as const,
+        fields: [
+          { name: "avatar", type: "single" as const, image: { quality: 60 } },
+          { name: "banner", type: "single" as const, image: { resizeTo: 400 } },
+        ],
+      } as any;
+      mockReq.files = {
+        avatar: [
+          { path: "/uploads/avatar.png", mimetype: "image/png", fieldname: "avatar" },
+        ],
+        banner: [
+          { path: "/uploads/banner.png", mimetype: "image/png", fieldname: "banner" },
+        ],
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(optimizeImage).toHaveBeenCalledWith("/uploads/avatar.png", {
+        quality: 60,
+      });
+      expect(optimizeImage).toHaveBeenCalledWith("/uploads/banner.png", {
+        resizeTo: 400,
+      });
+    });
+
+    it("should not optimize non-image uploads", async () => {
+      const config = {
+        type: "single" as const,
+        field: "resume",
+        attachToBody: "url" as const,
+      };
+      mockReq.file = {
+        path: "/uploads/documents/resume.pdf",
+        mimetype: "application/pdf",
+      };
+
+      const middleware = uploadManager.handlePostUpload(config);
+      await middleware(mockReq, mockRes, mockNext);
+
+      expect(optimizeImage).not.toHaveBeenCalled();
+    });
   });
 
   describe("getMiddleware", () => {
@@ -655,7 +773,7 @@ describe("UploadManager", () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it("should handle missing config field in handlePostUpload", () => {
+    it("should handle missing config field in handlePostUpload", async () => {
       const config = {
         type: "single" as const,
         field: undefined as any,
@@ -664,7 +782,7 @@ describe("UploadManager", () => {
       mockReq.file = { path: "/uploads/file.jpg" };
 
       const middleware = uploadManager.handlePostUpload(config);
-      middleware(mockReq, mockRes, mockNext);
+      await middleware(mockReq, mockRes, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
     });
@@ -1418,7 +1536,7 @@ describe("UploadManager", () => {
       expect(mockNext).toHaveBeenCalled();
     });
 
-    it("should throw AppError when post-upload processing fails", () => {
+    it("should throw AppError when post-upload processing fails", async () => {
       const config = {
         type: "single" as const,
         field: "avatar",
@@ -1432,7 +1550,7 @@ describe("UploadManager", () => {
       });
 
       const middleware = uploadManager.handlePostUpload(config);
-      middleware(mockReq, mockRes, mockNext);
+      await middleware(mockReq, mockRes, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
       const error = mockNext.mock.calls[0][0];

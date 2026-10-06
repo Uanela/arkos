@@ -50,11 +50,11 @@ export function generateRelativePath(filePath: string, uploadDir: string) {
     return path.join(uploadDir, path.basename(filePath));
   } else {
     return fullCleanCwd(filePath)
-      .replace(`${baseUploadDir}/`, "")
-      .replace(`/${baseUploadDir}/`, "")
+      .replaceAll("\\", "/")
+      .replace(`${baseUploadDir}/`, "/")
+      .replace(`/${baseUploadDir}/`, "/")
       .replace(`/${baseUploadDir}`, "")
       .replace(`${baseUploadDir}`, "")
-      .replaceAll("\\", "/")
       .replaceAll("//", "/");
   }
 }
@@ -79,58 +79,124 @@ export const processFile = async (
 };
 
 /**
+ * Options accepted by the image optimizer. Numeric values may arrive as
+ * strings from query parameters and are normalized internally.
+ */
+export interface ImageOptimizationOptions {
+  format?: string;
+  quality?: number | string;
+  width?: number | string;
+  height?: number | string;
+  resizeTo?: number | string;
+  fit?: "cover" | "contain" | "fill" | "inside" | "outside";
+  withoutEnlargement?: boolean;
+}
+
+const SHARP_FORMATS = new Set([
+  "jpeg",
+  "jpg",
+  "png",
+  "webp",
+  "avif",
+  "tiff",
+  "tif",
+  "gif",
+  "heif",
+  "heic",
+]);
+
+const QUALITY_FORMATS = new Set(["jpeg", "webp", "avif"]);
+
+const toPositiveInt = (value?: number | string): number | undefined => {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : undefined;
+};
+
+const removeFile = async (target: string): Promise<void> => {
+  try {
+    await promisify(fs.unlink)(target);
+  } catch {}
+};
+
+/**
+ * Optimizes an image file in place using Sharp. Returns the resulting file
+ * path, which may use a different extension when a format is requested.
+ */
+export const optimizeImage = async (
+  filePath: string,
+  options: ImageOptimizationOptions = {},
+): Promise<string> => {
+  const ext = path.extname(filePath).toLowerCase();
+  const outputFormat = (options.format || "webp").toLowerCase();
+  const sharpFormat = outputFormat === "jpg" ? "jpeg" : outputFormat;
+
+  const directory = path.dirname(filePath);
+  const baseName = path.basename(filePath, ext);
+  const finalPath = path.join(directory, `${baseName}.${outputFormat}`);
+  const tempPath = path.join(
+    directory,
+    `${baseName}.${Date.now()}-${Math.round(Math.random() * 1e9)}.${outputFormat}`,
+  );
+
+  try {
+    const width = toPositiveInt(options.width);
+    const height = toPositiveInt(options.height);
+    const resizeTo = toPositiveInt(options.resizeTo);
+    const quality = toPositiveInt(options.quality);
+
+    let transformer = sharp(filePath).rotate();
+
+    if (resizeTo)
+      transformer = transformer.resize(resizeTo, resizeTo, {
+        fit: options.fit || "inside",
+        withoutEnlargement: options.withoutEnlargement ?? true,
+      });
+    else if (width || height)
+      transformer = transformer.resize(width || null, height || null, {
+        fit: options.fit || "inside",
+        ...(options.withoutEnlargement !== undefined && {
+          withoutEnlargement: options.withoutEnlargement,
+        }),
+      });
+
+    if (SHARP_FORMATS.has(sharpFormat)) {
+      const formatOptions =
+        quality && QUALITY_FORMATS.has(sharpFormat) ? { quality } : {};
+      transformer = transformer.toFormat(sharpFormat as any, formatOptions);
+    }
+
+    await transformer.toFile(tempPath);
+
+    await removeFile(filePath);
+    if (tempPath !== finalPath)
+      await promisify(fs.rename)(tempPath, finalPath);
+
+    return finalPath;
+  } catch (error) {
+    await removeFile(tempPath);
+    throw error;
+  }
+};
+
+/**
  * Processes image files using Sharp for resizing and format conversion
  */
 export const processImage = async (
   req: ArkosRequest,
   next: ArkosNextFunction,
   filePath: string,
-  options: Record<string, any>,
+  options: ImageOptimizationOptions = {},
 ): Promise<string | null> => {
   const ext = path.extname(filePath).toLowerCase();
-  const outputFormat = options.format || "webp";
 
   if (!mimetype.lookup(ext)?.includes?.("image"))
     return processFile(req, filePath);
 
-  const tempName = `${path.basename(filePath, ext)}.${outputFormat}`;
-  const tempPath = path.join(path.dirname(filePath), tempName);
-
   try {
-    let transformer = sharp(filePath);
-    const metadata = await transformer.metadata();
-
-    if (options.resizeTo && metadata.width && metadata.height) {
-      const targetSize = options.resizeTo;
-      const scaleFactor =
-        targetSize / Math.min(metadata.width, metadata.height);
-      const newWidth = Math.round(metadata.width * scaleFactor);
-      const newHeight = Math.round(metadata.height * scaleFactor);
-      transformer = transformer.resize(newWidth, newHeight);
-    } else if (options.width || options.height) {
-      transformer = transformer.resize(
-        options.width || null,
-        options.height || null,
-        {
-          fit: "inside",
-        },
-      );
-    }
-
-    if (outputFormat === "webp") transformer = transformer.toFormat("webp");
-    else if (outputFormat === "jpeg" || outputFormat === "jpg")
-      transformer = transformer.toFormat("jpeg");
-
-    await transformer.toFile(tempPath);
-    await promisify(fs.unlink)(filePath);
-
-    return processFile(req, tempPath);
+    const optimizedPath = await optimizeImage(filePath, options);
+    return processFile(req, optimizedPath);
   } catch (error: any) {
-    try {
-      await promisify(fs.stat)(tempPath);
-      await promisify(fs.unlink)(tempPath);
-    } catch (err) {}
-
     if (error.message === "Input file contains unsupported image format")
       return processFile(req, filePath);
     next(new AppError(error.message, 400, "CannotProcessImage", { error }));

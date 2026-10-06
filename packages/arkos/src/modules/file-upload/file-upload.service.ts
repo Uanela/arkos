@@ -12,7 +12,11 @@ import {
   ArkosRequestHandler,
   ArkosResponse,
 } from "../../types";
-import { processFile, processImage } from "./utils/helpers/file-upload.helpers";
+import {
+  ImageOptimizationOptions,
+  processFile,
+  processImage,
+} from "./utils/helpers/file-upload.helpers";
 import { removeBothSlashes } from "../../utils/helpers/text.helpers";
 import { pascalCase } from "../../exports/utils";
 
@@ -301,12 +305,7 @@ export class FileUploadService {
     req: ArkosRequest,
     res: ArkosResponse,
     next: ArkosNextFunction,
-    options: {
-      format?: string;
-      width?: number;
-      height?: number;
-      resizeTo?: number;
-    } = {}
+    options: ImageOptimizationOptions = {}
   ): Promise<string | string[] | null> {
     const { fileUpload } = getArkosConfig();
     fileUpload?.baseRoute || "/api/uploads";
