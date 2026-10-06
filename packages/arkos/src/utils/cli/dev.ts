@@ -7,6 +7,7 @@ import sheu from "../sheu";
 import portAndHostAllocator from "../features/port-and-host-allocator";
 import watermarkStamper from "./utils/watermark-stamper";
 import { getArkosConfig } from "../helpers/arkos-config.helpers";
+import { assertRequiredPackageVersion } from "./utils/dependency-version-check";
 
 interface DevOptions {
   port?: string;
@@ -26,6 +27,8 @@ export async function devCommand(options: DevOptions = {}) {
   let restartTimeout: NodeJS.Timeout | null = null;
 
   try {
+    assertRequiredPackageVersion();
+
     const { port, host } = options;
 
     const config = getArkosConfig();
