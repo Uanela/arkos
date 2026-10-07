@@ -11,6 +11,7 @@ import AppError from "../../error-handler/utils/app-error";
 import { getModuleComponents } from "../../../utils/dynamic-loader";
 import { BaseService } from "../../base/base.service";
 import { createPrismaWhereClause } from "../utils/helpers/auth.controller.helpers";
+import { getArkosConfig as getServerArkosConfig } from "../../../server";
 
 const authService: any = authServiceImport;
 
@@ -112,6 +113,8 @@ describe("AuthService", () => {
     };
 
     (getArkosConfig as jest.Mock).mockReturnValue(mockConfig);
+    // `getDefaultUsernameField` (used by `login`) reads config from `src/server`
+    (getServerArkosConfig as jest.Mock).mockReturnValue(mockConfig);
   });
 
   describe("userService getter", () => {
@@ -418,6 +421,35 @@ describe("AuthService", () => {
           createPrismaWhereClause("profile.nickname", "nick"),
           {},
         );
+      });
+
+      it("should infer the username field from the provided key", async () => {
+        userService.findOne.mockResolvedValue({
+          ...storedUser,
+          email: "john@example.com",
+        });
+        jest.spyOn(authService, "isCorrectPassword").mockResolvedValue(true);
+
+        await authService.login({
+          email: "john@example.com",
+          password: "Password123",
+        });
+
+        expect(userService.findOne).toHaveBeenCalledWith(
+          createPrismaWhereClause("email", "john@example.com"),
+          {},
+        );
+      });
+
+      it("should fall back to the configured default field when no username key is given", async () => {
+        mockConfig.authentication.login = { allowedUsernames: ["email"] };
+
+        await expect(
+          authService.login({ password: "Password123" }),
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          message: "Please provide both email and password",
+        });
       });
 
       it("should force the password into select query options", async () => {

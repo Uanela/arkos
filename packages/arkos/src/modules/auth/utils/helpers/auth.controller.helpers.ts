@@ -2,6 +2,9 @@ import { getArkosConfig } from "../../../../server";
 import { ArkosRequest } from "../../../../types";
 import AppError from "../../../error-handler/utils/app-error";
 
+export const getDefaultUsernameField = (): string =>
+  getArkosConfig()?.authentication?.login?.allowedUsernames?.[0] || "username";
+
 /**
  * Determines the username field to use for authentication and supports nested paths
  * Priority:
@@ -29,7 +32,7 @@ export const determineUsernameField = (req: ArkosRequest): string => {
       400
     );
 
-  return authConfigs?.login?.allowedUsernames?.[0] || "username";
+  return getDefaultUsernameField();
 };
 
 /**

@@ -108,7 +108,11 @@ export type LoginUsernameField = WherePaths<
  */
 export type LoginInput<F extends LoginUsernameField = LoginUsernameField> =
   F extends F
-    ? { usernameField: F; password: string } & {
+    ? {
+        password: string;
+        /** Only needed for nested paths; otherwise inferred from the username key. */
+        usernameField?: LoginUsernameField;
+      } & {
         [K in LastSegment<F>]: NonNullable<
           PathValue<
             PrismaModels<{ select: PathSelect<F> }>["user"]["GetPayload"],

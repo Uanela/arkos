@@ -24,6 +24,7 @@ import {
   MsDuration,
   toMs,
   createPrismaWhereClause,
+  getDefaultUsernameField,
 } from "./utils/helpers/auth.controller.helpers";
 import { BaseService } from "../base/base.service";
 import {
@@ -531,13 +532,15 @@ export class AuthService {
   /**
    * Authenticates a user with the given username field and password.
    *
-   * The username is read from the key named after the last segment of
-   * `usernameField`, so `"profile.nickname"` expects `nickname`. The password
-   * is always loaded for the comparison and never returned.
+   * The username field is inferred from the username key present in `input`
+   * (the only key besides `password`), can be overridden explicitly with
+   * `usernameField` for nested paths such as `"profile.nickname"`, and falls
+   * back to `authentication.login.allowedUsernames[0] || "username"`. The
+   * password is always loaded for the comparison and never returned.
    *
    * Can be overridden through `RouteHook<"auth">.service`.
    *
-   * @param input - The username field, its value and the password
+   * @param input - Its username key and the password
    * @param queryOptions - Optional Prisma query options (select, include, etc.)
    * @returns The sanitized user and a signed access token
    * @since 1.8.0-rc
@@ -546,10 +549,14 @@ export class AuthService {
     input: LoginInput<F>,
     queryOptions?: LoginOptions,
   ): Promise<{ user: AuthUser; accessToken: string }> {
-    const { usernameField, password } = input as {
-      usernameField: string;
-      password: string;
-    };
+    const { password } = input as { password: string };
+    const usernameField =
+      (input as { usernameField?: string }).usernameField ||
+      Object.keys(input).find(
+        (key) => key !== "password" && key !== "usernameField",
+      ) ||
+      getDefaultUsernameField();
+
     const lastField = usernameField.split(".").pop()!;
     const username = (input as Record<string, any>)[lastField];
 

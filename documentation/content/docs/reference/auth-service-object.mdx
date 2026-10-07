@@ -13,6 +13,8 @@ The `authService` is automatically available in your Arkos application and can b
 import { authService } from "arkos/services";
 ```
 
+For a guided, example-first walkthrough of calling these methods outside the router — in services, jobs, scripts and tests — see [Manual Usage](/docs/core-concepts/authentication/advanced/manual-usage).
+
 <Callout type="warn">
 On the following section you will various examples on how you can use the authService, you ain't restricted to those but also in the same time bear in mind that **Arkos** handles many of auth relate scenarios, such as authentication, authorization, password hashing, password checks and many others.
 </Callout>
@@ -494,11 +496,11 @@ Marks the authenticated user's account as self-deleted by setting `deletedSelfAc
 
 Authenticates a user from a username field and password.
 
-The username is read from the key named after the last segment of `usernameField`, so `"profile.nickname"` expects an input with a `nickname` key. The password is always loaded for the comparison and never returned.
+The username field is inferred from the username key present in `input` (the only key besides `password`), so `{ email, password }` queries the `email` field. Pass `usernameField` explicitly for nested paths such as `"profile.nickname"` — whose key is `nickname` — since the inference only sees the key. When no username key is present, it falls back to `authentication.login.allowedUsernames[0] || "username"`. The password is always loaded for the comparison and never returned.
 
 **Parameters:**
 
-- `input` (LoginInput): `{ usernameField, password, [username]: value }`
+- `input` (LoginInput): `{ password, [username]: value, usernameField? }`
 - `queryOptions` (optional, LoginOptions): Prisma query options
 
 **Returns:**

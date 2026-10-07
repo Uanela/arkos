@@ -237,3 +237,7 @@ For role-based or permission-based access control, pick a permission mode:
 → [Static Mode](/docs/core-concepts/authentication/permissions/static) — define permissions in code via `ArkosPolicy` or `.auth.ts` files
 
 → [Dynamic Mode](/docs/core-concepts/authentication/permissions/dynamic) — manage permissions at runtime via database
+
+## Using Authentication in Your Code
+
+Everything above is configured for the HTTP layer. When you need to authenticate, sign up or fetch users **programmatically** — from a service, background job, CLI command or test — call the [`authService`](/docs/reference/auth-service-object) methods directly. See [Manual Usage](/docs/core-concepts/authentication/advanced/manual-usage) for examples and for what does (and does not) run on a direct call.
