@@ -23,8 +23,7 @@ export function generateRouterTemplate(options: TemplateOptions): string {
     ext === "ts" ? "import { RouteHook } from 'arkos'" : "";
   const routeConfig = isNormalModule
     ? `
-export const hook${routerConfigTsType} = { }
-`
+export const hook${routerConfigTsType} = { }`
     : "";
 
   return `import { ArkosRouter } from 'arkos';${modelName.kebab === "file-upload" ? "\nimport config from '../../arkos.config'" : ""}
