@@ -11,7 +11,7 @@ export function generateRouterTemplate(options: TemplateOptions): string {
     throw new Error("Module name is required for router template");
 
   const isNormalModule = [...kebabPrismaModels, "file-upload", "auth"].includes(
-    modelName.kebab
+    modelName.kebab,
   );
   const ext = getUserFileExtension();
 
@@ -23,8 +23,7 @@ export function generateRouterTemplate(options: TemplateOptions): string {
     ext === "ts" ? "import { RouteHook } from 'arkos'" : "";
   const routeConfig = isNormalModule
     ? `
-export const hook${routerConfigTsType} = { }
-`
+export const hook${routerConfigTsType} = { }`
     : "";
 
   return `import { ArkosRouter } from 'arkos';${modelName.kebab === "file-upload" ? "\nimport config from '../../arkos.config'" : ""}
@@ -32,9 +31,10 @@ ${routerConfigTsTypeImport}
 ${routeConfig}
 
 const ${modelName.camel}Router = ArkosRouter({ 
-  openapi: { tags: ["${pluralize(capitalize(modelName.kebab.replaceAll("-", " ")))}"] }
+  openapi: { tags: ["${modelName.kebab === "auth" ? "Authentication" : pluralize(capitalize(modelName.kebab.replaceAll("-", " ")))}"] }
 })
 
 export default ${modelName.camel}Router
 `;
 }
+

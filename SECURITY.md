@@ -6,9 +6,9 @@ We take security seriously in Arkos.js. The following versions are currently sup
 
 | Version             | Supported          | Status                               |
 | ------------------- | ------------------ | ------------------------------------ |
-| 1.6.x (latest beta) | :white_check_mark: | Active development                   |
-| 1.5.x               | :white_check_mark: | Patch updates until 10/07/26         |
-| < 1.5.x             | :x:                | Please upgrade to supported versions |
+| 1.7.x (latest beta) | :white_check_mark: | Active development                   |
+| 1.6.x               | :white_check_mark: | Patch updates until 10/07/26         |
+| < 1.6.x             | :x:                | Please upgrade to supported versions |
 
 **Post-2.0 Stable Release Policy:**
 
