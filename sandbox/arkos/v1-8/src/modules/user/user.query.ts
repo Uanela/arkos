@@ -8,26 +8,8 @@ const userQueryOptions: PrismaQueryOptions<Prisma.UserDelegate> = {
     omit: {
       password: true,
     }, 
-    include: {
-      roles: {
-        include: {
-          role: true,
-        }
-      },
-    },
   },
   findOne: {
-    include: {
-      roles: {
-        include: {
-          role: {
-            include: {
-              permissions: true
-            }
-          }
-        }
-      },
-    },
   },
   findMany: {},
   update: {},

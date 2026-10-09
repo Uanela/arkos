@@ -170,7 +170,7 @@ class ProjectConfigInquirer {
         break;
       case "sqlite":
         idDatabaseType = "@id @default(cuid())";
-        defaultDatabaseUrl = "file:../../file.db";
+        defaultDatabaseUrl = "file:./file.db";
         break;
       case "mysql":
         idDatabaseType = "@id @default(uuid())";

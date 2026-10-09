@@ -57,7 +57,10 @@ import { getUserFileExtension } from "../../utils/helpers/fs.helpers";
 import { authenticationDocsLinks } from "./utils/docs-links";
 import authHookManager from "./utils/auth-hooks-manager";
 import { ArkosSocket } from "../../components/arkos-gateway/types";
-import { BadRequestError } from "../error-handler/utils/errors";
+import {
+  BadRequestError,
+  UnauthorizedError,
+} from "../error-handler/utils/errors";
 
 /**
  * Handles various authentication-related tasks such as JWT signing, password hashing, and verifying user credentials.
@@ -572,7 +575,7 @@ export class AuthService {
     )) as Record<string, any> | null;
 
     if (!user || !(await this.isCorrectPassword(password, user.password)))
-      throw new BadRequestError(
+      throw new UnauthorizedError(
         `Incorrect ${lastField} or password`,
         `IncorrectCredentials`,
       );

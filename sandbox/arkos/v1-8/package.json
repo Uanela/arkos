@@ -21,16 +21,15 @@
     "typescript": "5.8.2"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "7.9.1",
+    "@prisma/adapter-better-sqlite3": "7.9.1",
     "@prisma/client": "7.9.1",
-    "@scalar/api-reference": "1.55.3",
+    "@scalar/api-reference": "1.73.0",
     "@scalar/express-api-reference": "0.10.12",
-    "arkos": "link:../../../packages/arkos",
+    "arkos": "file:../../../packages/arkos",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
     "express": "4.22.2",
     "reflect-metadata": "0.2.2",
-    "socket.io": "4.8.3",
     "zod": "4.4.3"
   }
 }
