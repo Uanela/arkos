@@ -9,7 +9,7 @@ const arkosConfig = defineConfig({
     login: {
       allowedUsernames: ["email"],
     },
-    enabled: false,
+    enabled: true,
   },
   routers: {
     strict: "no-bulk",
