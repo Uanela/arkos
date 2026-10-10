@@ -4,6 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "{{prisma.provider}}"
+  provider = "{{prisma.provider}}"{{#if (eq prisma.provider "mongodb")}}
+  url      = env("DATABASE_URL"){{/if}}
 }
 
