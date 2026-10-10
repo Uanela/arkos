@@ -44,6 +44,11 @@ import { PrismaMssql } from "@prisma/adapter-mssql";
 const adapter = new PrismaMssql(process.env.DATABASE_URL{{#if typescript}} as string{{/if}});
 export const prisma = new PrismaClient({ adapter });
 {{/if}}
+{{#if (eq prisma.provider "mongodb")}}
+import { PrismaClient } from "@/src/generated/prisma/client";
+
+export const prisma = new PrismaClient();
+{{/if}}
 {{#if (eq prisma.provider "none")}}
 export const prisma = null;
 {{/if}}
