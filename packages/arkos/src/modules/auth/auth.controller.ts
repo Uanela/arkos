@@ -1,16 +1,15 @@
 import catchAsync from "../error-handler/utils/catch-async";
 import AppError from "../error-handler/utils/app-error";
 import { ArkosRequest, ArkosResponse, ArkosNextFunction } from "../../types";
-import authService from "./auth.service";
-import { BaseService } from "../base/base.service";
-import { User } from "../../types";
+import authService, { AuthService } from "./auth.service";
 import { getArkosConfig } from "../../server";
-import {
-  createPrismaWhereClause,
-  determineUsernameField,
-  getNestedValue,
-} from "./utils/helpers/auth.controller.helpers";
+import { determineUsernameField } from "./utils/helpers/auth.controller.helpers";
 import authActionService from "./utils/services/auth-action.service";
+import {
+  LoginInput,
+  LoginUsernameField,
+  OverridableAuthMethod,
+} from "./auth.types";
 
 /**
  * Default fields to exclude from user object when returning to client
@@ -19,14 +18,82 @@ export const defaultExcludedUserFields = {
   password: false,
 };
 
+const hasRequiredData: Record<OverridableAuthMethod, (result: any) => boolean> =
+  {
+    getMe: (result) => !!result,
+    updateMe: (result) => !!result,
+    signup: (result) => !!result,
+    deleteMe: (result) => !!result,
+    login: (result) => !!result?.user && !!result?.accessToken,
+    updatePassword: (result) => !!result?.accessToken,
+    logout: () => true,
+  };
+
+const resolveTokenDelivery = () => {
+  const sendAccessTokenThrough =
+    getArkosConfig()?.authentication?.login?.sendAccessTokenThrough;
+
+  return {
+    inResponse:
+      !sendAccessTokenThrough ||
+      sendAccessTokenThrough === "both" ||
+      sendAccessTokenThrough === "response-only",
+    inCookie:
+      !sendAccessTokenThrough ||
+      sendAccessTokenThrough === "both" ||
+      sendAccessTokenThrough === "cookie-only",
+  };
+};
+
+const setInterceptorState = (
+  req: ArkosRequest,
+  res: ArkosResponse,
+  data: any,
+  status: number,
+) => {
+  (res as any).originalData = data;
+  req.responseData = data;
+  res.locals.data = data;
+  (res as any).originalStatus = status;
+  req.responseStatus = status;
+  res.locals.status = status;
+};
+
 /**
  * Factory function to create authentication controller with configurable interceptors
  *
  * @param interceptors - Optional middleware functions to execute after controller actions
+ * @param service - Optional `AuthService` subclass instance from `RouteHook<"auth">.service`,
+ * overriding `getMe`, `updateMe`, `signup`, `deleteMe`, `login` and `updatePassword`
  * @returns An object containing all authentication controller methods
  */
-export const authControllerFactory = (interceptors: any = {}) => {
-  const userService = new BaseService("user");
+export const authControllerFactory = (
+  interceptors: any = {},
+  service?: AuthService,
+) => {
+  if (service && !(service instanceof AuthService))
+    throw new Error(
+      "ValidationError: The `service` exported on the auth route hook must be an instance of a class that extends AuthService.",
+    );
+
+  const auth = service ?? authService;
+
+  const callService = async <M extends OverridableAuthMethod>(
+    method: M,
+    ...args: Parameters<AuthService[M]>
+  ): Promise<Awaited<ReturnType<AuthService[M]>>> => {
+    const result = await (auth[method] as (...params: any[]) => any).apply(
+      auth,
+      args,
+    );
+
+    if (service && !hasRequiredData[method](result))
+      throw new Error(
+        `Custom auth service method ${method} didn't return the required data`,
+      );
+
+    return result;
+  };
 
   return {
     /**
@@ -36,29 +103,21 @@ export const authControllerFactory = (interceptors: any = {}) => {
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
-        const user = (await userService.findOne(
-          { id: req.user!.id },
-          req.prismaQueryOptions || {}
-        )) as Record<string, any>;
-
-        Object.keys(defaultExcludedUserFields).forEach((key) => {
-          if (user) delete user[key as keyof User];
-        });
+        const user = await callService(
+          "getMe",
+          req.user!.id,
+          req.prismaQueryOptions,
+        );
 
         if (interceptors?.afterGetMe) {
-          (res as any).originalData = { data: user };
-          req.responseData = { data: user };
-          res.locals.data = { data: user };
-          (res as any).originalStatus = 200;
-          req.responseStatus = 200;
-          res.locals.status = 200;
+          setInterceptorState(req, res, { data: user }, 200);
           return next();
         }
 
         res.status(200).json({ data: user });
-      }
+      },
     ),
 
     /**
@@ -68,38 +127,22 @@ export const authControllerFactory = (interceptors: any = {}) => {
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
-        if ("password" in req.body)
-          throw new AppError(
-            "In order to update password use the update-password endpoint.",
-            400,
-            {},
-            "InvalidFieldPassword"
-          );
-
-        const user = (await userService.updateOne(
-          { id: req.user!.id },
+        const user = await callService(
+          "updateMe",
+          req.user!.id,
           req.body,
-          req.prismaQueryOptions || {}
-        )) as Record<string, any>;
-
-        Object.keys(defaultExcludedUserFields).forEach((key) => {
-          if (user) delete user[key as keyof User];
-        });
+          req.prismaQueryOptions,
+        );
 
         if (interceptors?.afterUpdateMe) {
-          (res as any).originalData = { data: user };
-          req.responseData = { data: user };
-          res.locals.data = { data: user };
-          (res as any).originalStatus = 200;
-          req.responseStatus = 200;
-          res.locals.status = 200;
+          setInterceptorState(req, res, { data: user }, 200);
           return next();
         }
 
         res.status(200).json({ data: user });
-      }
+      },
     ),
 
     /**
@@ -109,25 +152,30 @@ export const authControllerFactory = (interceptors: any = {}) => {
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
+        if (!req.user?.id || !req.accessToken)
+          throw new AppError(
+            "Logout requires an authenticated user and an access token",
+            401,
+            {},
+            "UnauthenticatedLogout",
+          );
+
+        await callService("logout", req.user.id, req.accessToken);
+
         res.cookie("arkos_access_token", "no-token", {
           expires: new Date(Date.now() + 10 * 1000),
           httpOnly: true,
         });
 
         if (interceptors?.afterLogout) {
-          (res as any).originalData = null;
-          req.responseData = null;
-          res.locals.data = null;
-          (res as any).originalStatus = 204;
-          req.responseStatus = 204;
-          res.locals.status = 204;
+          setInterceptorState(req, res, null, 204);
           return next();
         }
 
         res.status(204).json();
-      }
+      },
     ),
 
     /**
@@ -140,80 +188,31 @@ export const authControllerFactory = (interceptors: any = {}) => {
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
-        const authConfigs = getArkosConfig()?.authentication;
+        const usernameField = determineUsernameField(req) as LoginUsernameField;
 
-        const usernameField = determineUsernameField(req);
+        const { user, accessToken } = await callService(
+          "login",
+          { ...req.body, usernameField } as LoginInput,
+          req.prismaQueryOptions,
+        );
 
-        // For the error message, we only care about the top-level field name
-        const lastField =
-          usernameField.split(".")[usernameField.split(".").length - 1];
+        const delivery = resolveTokenDelivery();
 
-        const usernameValue = req.body[lastField];
+        if (delivery.inResponse) {
+          req.responseData = { accessToken };
+          res.locals.data = { accessToken };
+        }
 
-        const { password } = req.body;
-
-        if (!usernameValue || !password)
-          return next(
-            new AppError(
-              `Please provide both ${lastField} and password`,
-              400,
-              `MissingCredentialFields`
-            )
+        if (delivery.inCookie)
+          res.cookie(
+            "arkos_access_token",
+            accessToken,
+            authService.getJwtCookieOptions(req),
           );
 
-        let whereClause: Record<string, any>;
-
-        if (usernameField?.includes?.(".")) {
-          const valueToFind = getNestedValue(req.body, usernameField);
-          if (valueToFind === undefined) {
-            return next(new AppError(`Invalid ${usernameField} provided`, 400));
-          }
-          whereClause = createPrismaWhereClause(usernameField, valueToFind);
-        } else {
-          whereClause = { [usernameField]: usernameValue };
-        }
-
-        const user = (await userService.findOne(
-          whereClause,
-          req.prismaQueryOptions || {}
-        )) as Record<string, any>;
-
-        if (
-          !user ||
-          !(await authService.isCorrectPassword(password, user.password))
-        ) {
-          return next(
-            new AppError(
-              `Incorrect ${lastField} or password`,
-              401,
-              `IncorrectCredentials`
-            )
-          );
-        }
-
-        const token = authService.signJwtToken(user.id!);
-
-        const cookieOptions = authService.getJwtCookieOptions(req);
-
-        if (
-          authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both" ||
-          !authConfigs?.login?.sendAccessTokenThrough
-        ) {
-          req.responseData = { accessToken: token };
-          res.locals.data = { accessToken: token };
-        }
-
-        if (
-          authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both" ||
-          !authConfigs?.login?.sendAccessTokenThrough
-        )
-          res.cookie("arkos_access_token", token, cookieOptions);
-
-        req.accessToken = token;
+        req.accessToken = accessToken;
 
         if (interceptors?.afterLogin) {
           (res as any).originalData = req.responseData;
@@ -225,52 +224,35 @@ export const authControllerFactory = (interceptors: any = {}) => {
           return next();
         }
 
-        if (
-          authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both" ||
-          !authConfigs?.login?.sendAccessTokenThrough
-        ) {
-          res.status(200).json(req.responseData);
-        } else if (
-          authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both" ||
-          !authConfigs?.login?.sendAccessTokenThrough
-        )
-          res.status(200).send();
-      }
+        if (delivery.inResponse) res.status(200).json(req.responseData);
+        else res.status(200).send();
+      },
     ),
 
     /**
-     * Creates a new user account using the userService
+     * Creates a new user account
      */
     signup: catchAsync(
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
-        const user = (await userService.createOne(
+        const user = await callService(
+          "signup",
           req.body,
-          req.prismaQueryOptions || {}
-        )) as Record<string, any>;
+          req.prismaQueryOptions,
+        );
 
         if (interceptors?.afterSignup) {
-          (res as any).originalData = { data: user };
-          req.responseData = { data: user };
-          res.locals.data = { data: user };
-          (res as any).originalStatus = 201;
-          req.responseStatus = 201;
-          res.locals.status = 201;
+          setInterceptorState(req, res, { data: user }, 201);
           return next();
         }
 
-        Object.keys(defaultExcludedUserFields).forEach((key) => {
-          delete user[key as keyof User];
-        });
-
         res.status(201).json({ data: user });
-      }
+      },
     ),
+
     /**
      * Marks user account as self-deleted by setting deletedSelfAccountAt timestamp
      */
@@ -278,36 +260,23 @@ export const authControllerFactory = (interceptors: any = {}) => {
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
-        const userId = req.user!.id;
-
-        const updatedUser = (await userService.updateOne(
-          { id: userId },
-          {
-            deletedSelfAccountAt: new Date().toISOString(),
-          },
-          req.prismaQueryOptions || {}
-        )) as Record<string, any>;
+        const user = await callService(
+          "deleteMe",
+          req.user!.id,
+          req.prismaQueryOptions,
+        );
 
         if (interceptors?.afterDeleteMe) {
-          (res as any).originalData = { data: updatedUser };
-          req.responseData = { data: updatedUser };
-          res.locals.data = { data: updatedUser };
-          (res as any).originalStatus = 200;
-          req.responseStatus = 200;
-          res.locals.status = 200;
+          setInterceptorState(req, res, { data: user }, 200);
           return next();
         }
-
-        Object.keys(defaultExcludedUserFields).forEach((key) => {
-          delete updatedUser[key as keyof User];
-        });
 
         res.status(200).json({
           message: "Account deleted successfully",
         });
-      }
+      },
     ),
 
     /**
@@ -317,104 +286,40 @@ export const authControllerFactory = (interceptors: any = {}) => {
       async (
         req: ArkosRequest,
         res: ArkosResponse,
-        next: ArkosNextFunction
+        next: ArkosNextFunction,
       ) => {
-        const { currentPassword, newPassword } = req.body;
-
-        if (!currentPassword || !newPassword)
-          return next(
-            new AppError(
-              "currentPassword and newPassword are required",
-              400,
-              "SameCurrentAndNewPassword"
-            )
-          );
-
-        const user = req.user;
-
-        if (!user || user?.isActive === false || user?.deletedSelfAccountAt)
-          return next(new AppError("User not found!", 404));
-
-        const isPasswordCorrect = await authService.isCorrectPassword(
-          String(currentPassword),
-          String(user.password)
+        const { accessToken } = await callService(
+          "updatePassword",
+          req.user!.id,
+          req.body,
         );
 
-        const configs = getArkosConfig();
-        const initAuthConfigs = configs?.authentication;
-
-        if (!isPasswordCorrect)
-          return next(
-            new AppError(
-              "Current password is incorrect",
-              400,
-              "IncorrentCurrentPassword"
-            )
-          );
-
-        if (
-          !authService.isPasswordStrong(String(newPassword)) &&
-          !configs?.validation
-        ) {
-          return next(
-            new AppError(
-              initAuthConfigs?.passwordValidation?.message ||
-                "The new password must contain at least one uppercase letter, one lowercase letter, and one number",
-              400,
-              "PasswordDoesNotMeetRequirements"
-            )
-          );
-        }
-
-        await userService.updateOne(
-          { id: user.id },
-          {
-            password: await authService.hashPassword(newPassword),
-            passwordChangedAt: new Date(Date.now()).toISOString(),
-          }
-        );
-
-        const token = authService.signJwtToken(user.id!);
-
-        const cookieOptions = authService.getJwtCookieOptions(req);
-
-        const authConfigs = getArkosConfig()?.authentication;
+        const delivery = resolveTokenDelivery();
 
         const responseData: Record<string, string> = {
           status: "success",
           message: "Password updated successfully!",
         };
 
-        if (
-          authConfigs?.login?.sendAccessTokenThrough === "response-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both" ||
-          !authConfigs?.login?.sendAccessTokenThrough
-        ) {
-          responseData.accessToken = token;
-        }
+        if (delivery.inResponse) responseData.accessToken = accessToken;
 
-        if (
-          authConfigs?.login?.sendAccessTokenThrough === "cookie-only" ||
-          authConfigs?.login?.sendAccessTokenThrough === "both" ||
-          !authConfigs?.login?.sendAccessTokenThrough
-        )
-          res.cookie("arkos_access_token", token, cookieOptions);
+        if (delivery.inCookie)
+          res.cookie(
+            "arkos_access_token",
+            accessToken,
+            authService.getJwtCookieOptions(req),
+          );
 
-        req.accessToken = token;
+        req.accessToken = accessToken;
 
         if (interceptors?.afterUpdatePassword) {
-          (res as any).originalData = responseData;
-          req.additionalData = { user };
-          req.responseData = responseData;
-          res.locals.data = responseData;
-          (res as any).originalStatus = 200;
-          req.responseStatus = 200;
-          res.locals.status = 200;
+          req.additionalData = { user: req.user };
+          setInterceptorState(req, res, responseData, 200);
           return next();
         }
 
         res.status(200).json(responseData);
-      }
+      },
     ),
 
     findManyAuthAction: catchAsync(
@@ -431,7 +336,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
           results: authActions.length,
           data: authActions,
         });
-      }
+      },
     ),
 
     findOneAuthAction: catchAsync(
@@ -443,7 +348,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
           throw new AppError(
             `Please provide a resoureName`,
             400,
-            "MissiongResourseName"
+            "MissiongResourseName",
           );
 
         const authActions = authActionService
@@ -458,7 +363,7 @@ export const authControllerFactory = (interceptors: any = {}) => {
           throw new AppError(
             `No auth action with resource name ${resourceName}`,
             404,
-            "AuthActionNotFound"
+            "AuthActionNotFound",
           );
 
         res.json({
@@ -466,7 +371,8 @@ export const authControllerFactory = (interceptors: any = {}) => {
           results: authActions.length,
           data: authActions,
         });
-      }
+      },
     ),
   };
 };
+

@@ -3,109 +3,92 @@ import { renderTemplate } from "../../../../../src/utils/helpers/templates.helpe
 
 describe("Schema Prisma template rendering", () => {
   const templatePath = "basic/prisma/schema/schema.prisma.hbs";
+  const providers = [
+    "postgresql",
+    "mysql",
+    "sqlite",
+    "sqlserver",
+    "cockroachdb",
+    "mongodb",
+  ];
+
+  const render = (provider: string) =>
+    renderTemplate(templatePath, { prisma: { provider } });
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should render the client generator and datasource with the correct provider", () => {
-    const providers = ["postgresql", "mysql", "sqlite", "mongodb"];
-
+  it("should render the prisma-client generator with generated output", () => {
     providers.forEach((provider) => {
-      const context = {
-        prisma: {
-          provider,
-        },
-      };
-
-      const result = renderTemplate(templatePath, context);
+      const result = render(provider);
 
       expect(result).toContain("generator client {");
-      expect(result).toContain('provider = "prisma-client-js"');
-      expect(result).toContain("datasource db {");
-      expect(result).toContain(`provider = "${provider}"`);
-      expect(result).toContain('url      = env("DATABASE_URL")');
-      expect(result).toContain("}");
+      expect(result).toContain('provider = "prisma-client"');
+      expect(result).toContain('output   = "../../src/generated/prisma"');
     });
   });
 
-  it("should handle different database providers correctly", () => {
-    // Test PostgreSQL
-    const context1 = {
-      prisma: {
-        provider: "postgresql",
-      },
-    };
+  it("should render the datasource with the correct provider", () => {
+    providers.forEach((provider) => {
+      const result = render(provider);
 
-    const result1 = renderTemplate(templatePath, context1);
-    expect(result1).toContain('provider = "postgresql"');
-
-    // Test MySQL
-    const context2 = {
-      prisma: {
-        provider: "mysql",
-      },
-    };
-
-    const result2 = renderTemplate(templatePath, context2);
-    expect(result2).toContain('provider = "mysql"');
-
-    // Test SQLite
-    const context3 = {
-      prisma: {
-        provider: "sqlite",
-      },
-    };
-
-    const result3 = renderTemplate(templatePath, context3);
-    expect(result3).toContain('provider = "sqlite"');
-
-    // Test MongoDB
-    const context4 = {
-      prisma: {
-        provider: "mongodb",
-      },
-    };
-
-    const result4 = renderTemplate(templatePath, context4);
-    expect(result4).toContain('provider = "mongodb"');
+      expect(result).toContain("datasource db {");
+      expect(result).toContain(`provider = "${provider}"`);
+    });
   });
 
-  it("should render the complete template structure", () => {
-    const context = {
-      prisma: {
-        provider: "postgresql",
-      },
-    };
+  it("should add the datasource url to the schema for mongodb (prisma 6 fallback)", () => {
+    const result = render("mongodb");
 
-    const result = renderTemplate(templatePath, context);
+    expect(result).toContain('url      = env("DATABASE_URL")');
+  });
 
-    // Check for exact expected structure
-    const expected = `generator client {
-  provider = "prisma-client-js"
+  it("should not add the datasource url for relational providers", () => {
+    providers
+      .filter((provider) => provider !== "mongodb")
+      .forEach((provider) => {
+        const result = render(provider);
+
+        expect(result).not.toContain('url      = env("DATABASE_URL")');
+      });
+  });
+
+  it("should render the complete structure for mongodb", () => {
+    const result = render("mongodb");
+
+    expect(result.trim()).toBe(`generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}`);
+  });
+
+  it("should render the complete structure for a relational provider", () => {
+    const result = render("postgresql");
+
+    expect(result.trim()).toBe(`generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-}`;
-
-    expect(result.trim()).toBe(expected);
+}`);
   });
 
   it("should not contain any unresolved template variables", () => {
-    const context = {
-      prisma: {
-        provider: "postgresql",
-      },
-    };
+    providers.forEach((provider) => {
+      const result = render(provider);
 
-    const result = renderTemplate(templatePath, context);
-
-    // Ensure no Handlebars variables are left in the output
-    expect(result).not.toContain("{{");
-    expect(result).not.toContain("}}");
-    expect(result).not.toContain("#if");
-    expect(result).not.toContain("#unless");
+      expect(result).not.toContain("{{");
+      expect(result).not.toContain("}}");
+      expect(result).not.toContain("#if");
+      expect(result).not.toContain("#unless");
+    });
   });
 });

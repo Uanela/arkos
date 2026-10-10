@@ -74,7 +74,7 @@ export type UploadConfig =
       type: "fields";
       /** Array of field configurations describing multipart form fields to process */
       fields: UploadConfigFieldEntry[];
-    } & Pick<ArkosRouterBaseUploadConfig, "deleteOnError">)
+    } & Pick<ArkosRouterBaseUploadConfig, "deleteOnError" | "image">)
   | ({
       type: "fields";
       /** Array of field configurations describing multipart form fields to process */
@@ -205,6 +205,30 @@ export type ArkosRouterBaseUploadConfig = {
    * @default true
    */
   required?: boolean;
+  /**
+   * Image optimization options applied through Sharp for image uploads.
+   * When omitted, images fall back to the framework defaults (webp conversion).
+   *
+   * @example
+   * image: { resizeTo: 1200, quality: 80 }
+   * image: { format: "png", width: 800 }
+   */
+  image?: {
+    /** Output format, defaults to `webp` */
+    format?: string;
+    /** Output quality (1-100) for lossy formats (webp, jpeg, avif) */
+    quality?: number;
+    /** Target width, keeping aspect ratio */
+    width?: number;
+    /** Target height, keeping aspect ratio */
+    height?: number;
+    /** Target size to fit within, keeping aspect ratio */
+    resizeTo?: number;
+    /** Resize strategy, defaults to `inside` */
+    fit?: "cover" | "contain" | "fill" | "inside" | "outside";
+    /** Prevent upscaling images smaller than the requested dimensions */
+    withoutEnlargement?: boolean;
+  };
   /**
    * Open API field description
    */

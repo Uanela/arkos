@@ -973,6 +973,66 @@ describe("Express Middleware Functions", () => {
       });
     });
 
+    describe("Hybrid Configuration", () => {
+      beforeEach(() => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: {
+            resolver: "hybrid",
+          },
+        });
+      });
+
+      it("should validate with zod when a zod schema is provided", async () => {
+        const mockZodSchema = z.object({ name: z.string() });
+        const requestBody = { name: "test", email: "test@example.com" };
+        mockRequest.body = requestBody;
+        const validatedData = { name: "test" };
+        (validateSchema as jest.Mock).mockResolvedValue(validatedData);
+
+        const middleware =
+          handleRequestBodyValidationAndTransformation(mockZodSchema);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateSchema).toHaveBeenCalledWith(mockZodSchema, requestBody);
+        expect(validateDto).not.toHaveBeenCalled();
+        expect(mockRequest.body).toEqual(validatedData);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+
+      it("should validate with class-validator when a DTO class is provided", async () => {
+        const mockDtoClass = class TestDto {
+          name!: string;
+          email!: string;
+        };
+        const validatedData = { name: "test", email: "test@example.com" };
+        (validateDto as jest.Mock).mockResolvedValue(validatedData);
+
+        const middleware =
+          handleRequestBodyValidationAndTransformation(mockDtoClass);
+        await middleware(
+          mockRequest as ArkosRequest,
+          mockResponse as ArkosResponse,
+          nextFunction
+        );
+
+        expect(validateDto).toHaveBeenCalledWith(
+          mockDtoClass,
+          mockRequest.body,
+          {
+            whitelist: true,
+            forbidNonWhitelisted: true,
+          }
+        );
+        expect(validateSchema).not.toHaveBeenCalled();
+        expect(mockRequest.body).toEqual(validatedData);
+        expect(nextFunction).toHaveBeenCalledTimes(1);
+      });
+    });
+
     describe("No Validation Configuration", () => {
       beforeEach(() => {
         // Mock config to return no validation config
@@ -2130,6 +2190,153 @@ describe("Express Middleware Functions", () => {
           ).rejects.toThrow("Request params is not allowed on this route");
           expect(nextFunction).not.toHaveBeenCalled();
         });
+      });
+    });
+
+    describe("Error Handling", () => {
+      it("should prettify a real ZodError as a 400 AppError instead of crashing", async () => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: { resolver: "zod" },
+        });
+
+        const mockSchema = z.object({ name: z.string() });
+        const zodError = mockSchema.safeParse({ name: 123 }).error!;
+
+        mockRequest.body = { name: 123 };
+        (validateSchema as jest.Mock).mockRejectedValue(zodError);
+
+        const middleware = validateRequestInputs({
+          validation: { body: mockSchema },
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          code: "InvalidRequestBody",
+          message: "'name' must be valid: expected string, received number",
+        });
+        expect(nextFunction).not.toHaveBeenCalled();
+      });
+
+      it("should map Zod 4 invalid_format issues (email) into the error message", async () => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: { resolver: "zod" },
+        });
+
+        const mockSchema = z.object({ email: z.string().email() });
+        const zodError = mockSchema.safeParse({ email: "not-an-email" }).error!;
+
+        mockRequest.body = { email: "not-an-email" };
+        (validateSchema as jest.Mock).mockRejectedValue(zodError);
+
+        const middleware = validateRequestInputs({
+          validation: { body: mockSchema },
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          code: "InvalidRequestBody",
+          message: "'email' must be a valid email address",
+        });
+      });
+
+      it("should prettify class-validator failures with the class-validator prettifier", async () => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: { resolver: "class-validator" },
+        });
+
+        class BodyDto {
+          name!: string;
+        }
+        const errors = [
+          {
+            property: "name",
+            constraints: { isString: "name must be a string" },
+            children: [],
+          },
+        ];
+
+        mockRequest.body = { name: 123 };
+        (validateDto as jest.Mock).mockRejectedValue(errors);
+
+        const middleware = validateRequestInputs({
+          validation: { body: BodyDto },
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          code: "InvalidRequestBody",
+          message: "name must be a string",
+        });
+      });
+
+      it("should propagate unexpected validator errors so they surface as 500", async () => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: { resolver: "zod" },
+        });
+
+        const mockSchema = z.object({ name: z.string() });
+        mockRequest.body = { name: "test" };
+        (validateSchema as jest.Mock).mockRejectedValue(new Error("boom"));
+
+        const middleware = validateRequestInputs({
+          validation: { body: mockSchema },
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toBeInstanceOf(TypeError);
+        expect(nextFunction).not.toHaveBeenCalled();
+      });
+
+      it("should infer the validator library under hybrid resolver", async () => {
+        jest.requireMock("../../../server").getArkosConfig.mockReturnValue({
+          validation: { resolver: "hybrid" },
+        });
+
+        const mockSchema = z.object({ name: z.string() });
+        const zodError = mockSchema.safeParse({ name: 123 }).error!;
+        mockRequest.body = { name: 123 };
+        (validateSchema as jest.Mock).mockRejectedValue(zodError);
+
+        const middleware = validateRequestInputs({
+          validation: { body: mockSchema },
+        } as any);
+
+        await expect(
+          middleware(
+            mockRequest as ArkosRequest,
+            mockResponse as ArkosResponse,
+            nextFunction
+          )
+        ).rejects.toMatchObject({
+          statusCode: 400,
+          code: "InvalidRequestBody",
+          message: "'name' must be valid: expected string, received number",
+        });
+        expect(validateSchema).toHaveBeenCalled();
+        expect(validateDto).not.toHaveBeenCalled();
       });
     });
 

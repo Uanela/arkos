@@ -4,8 +4,9 @@
     "routers",
     "route-hooks",
     "controllers",
-    "interceptors",
     "services",
+    "service-override",
+    "interceptors",
     "service-hooks",
     "validators",
     "gateways"

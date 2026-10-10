@@ -20,24 +20,39 @@
     {{/if}}
     "tsx-strict": "0.7.0",
     "tsx": "4.23.1"{{#if (neq prisma.provider "none")}},
-    "prisma": "6.19.3"
+    "prisma": "{{#if (eq prisma.provider "mongodb")}}6.19.3{{else}}7.9.1{{/if}}"
     {{/if}}
   },
   "dependencies": {
-    "arkos": "1.7.3-rc", 
+    "arkos": "1.8.0-canary.11", 
     "express": "4.22.2",
     "@scalar/express-api-reference": "0.10.12",
     "@scalar/api-reference": "1.55.3"{{#if (or (neq prisma.provider "none") validation.type)}},{{/if}}
     {{#if (neq prisma.provider "none")}}
-    "@prisma/client": "6.19.3"{{#if validation.type}},{{/if}}
+    "@prisma/client": "{{#if (eq prisma.provider "mongodb")}}6.19.3{{else}}7.9.1{{/if}}"{{#if (or validation.type (or (eq prisma.provider "postgresql") (eq prisma.provider "cockroachdb") (eq prisma.provider "mysql") (eq prisma.provider "sqlite") (eq prisma.provider "sqlserver")))}},{{/if}}
     {{/if}}
-    {{#if (eq validation.type "class-validator")}}
+    {{#if (eq prisma.provider "postgresql")}}
+    "@prisma/adapter-pg": "7.9.1"{{#if validation.type}},{{/if}}
+    {{/if}}
+    {{#if (eq prisma.provider "cockroachdb")}}
+    "@prisma/adapter-pg": "7.9.1"{{#if validation.type}},{{/if}}
+    {{/if}}
+    {{#if (eq prisma.provider "mysql")}}
+    "@prisma/adapter-mariadb": "7.9.1"{{#if validation.type}},{{/if}}
+    {{/if}}
+    {{#if (eq prisma.provider "sqlite")}}
+    "@prisma/adapter-better-sqlite3": "7.9.1"{{#if validation.type}},{{/if}}
+    {{/if}}
+    {{#if (eq prisma.provider "sqlserver")}}
+    "@prisma/adapter-mssql": "7.9.1"{{#if validation.type}},{{/if}}
+    {{/if}}
+    {{#if (or (eq validation.type "class-validator") (eq validation.type "hybrid"))}}
     "reflect-metadata": "0.2.2",
     "class-transformer": "0.5.1",
-    "class-validator": "0.15.1"
+    "class-validator": "0.15.1"{{#if (eq validation.type "hybrid")}},{{/if}}
     {{/if}}
-    {{#if (eq validation.type "zod")}}
-    "zod": "3.25.76"
+    {{#if (or (eq validation.type "zod") (eq validation.type "hybrid"))}}
+    "zod": "4.4.3"
     {{/if}}
   }
 }

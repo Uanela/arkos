@@ -68,5 +68,10 @@ export function getHandledError(err: any): any {
       break;
   }
 
+  if (error === err) {
+    const adapterError = errorControllerHelper.handleDriverAdapterError(err);
+    if (adapterError) error = adapterError;
+  }
+
   return error;
 }

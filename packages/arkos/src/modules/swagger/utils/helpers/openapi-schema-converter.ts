@@ -1,8 +1,7 @@
 import { OpenAPIV3 } from "openapi-types";
 import { isClass, isZodSchema } from "../../../../utils/dynamic-loader";
-import zodToJsonSchema from "zod-to-json-schema";
 import classValidatorToJsonSchema from "./class-validator-to-json-schema";
-import { getArkosConfig } from "../../../../server";
+import z from "zod";
 
 /**
  * Singleton class responsible for converting various schema formats (Zod, Class DTOs, JSON Schema)
@@ -10,17 +9,13 @@ import { getArkosConfig } from "../../../../server";
  * and parameters.
  */
 class OpenAPIchemaConverter {
-  private validatorToJsonSchema: (schema: any) => any;
+  validatorToJsonSchema: (schema: any) => any;
 
   constructor() {
     this.validatorToJsonSchema = (schema: any) => {
-      const validationResolver = getArkosConfig()?.validation?.resolver;
-      const fn =
-        validationResolver === "zod"
-          ? zodToJsonSchema
-          : classValidatorToJsonSchema;
-
-      return fn(schema);
+      return isZodSchema(schema)
+        ? z.toJSONSchema(schema, { target: "openapi-3.0" })
+        : classValidatorToJsonSchema(schema);
     };
   }
 
@@ -65,7 +60,7 @@ class OpenAPIchemaConverter {
       return this.validatorToJsonSchema(schema);
 
     throw new Error(
-      `Unsupported schema type. Expected Zod schema, class constructor, or JSON Schema object.`
+      `Unsupported schema type. Expected Zod schema, class constructor, or JSON Schema object.`,
     );
   }
 
@@ -107,7 +102,7 @@ class OpenAPIchemaConverter {
   flattenSchemaCore(
     schema: any,
     prefix = "",
-    visitedRefs = new Set<string>()
+    visitedRefs = new Set<string>(),
   ): Array<{ name: string; schema: any; required: boolean }> {
     const flattened: Array<{ name: string; schema: any; required: boolean }> =
       [];
@@ -120,7 +115,7 @@ class OpenAPIchemaConverter {
       const resolvedSchema = this.resolveRef(schema, refPath);
       if (resolvedSchema) {
         flattened.push(
-          ...this.flattenSchemaCore(resolvedSchema, prefix, visitedRefs)
+          ...this.flattenSchemaCore(resolvedSchema, prefix, visitedRefs),
         );
       }
       visitedRefs.delete(refPath);
@@ -134,11 +129,11 @@ class OpenAPIchemaConverter {
       // Check if items is an array FIRST, before checking for object
       if (schema.items.type === "array") {
         flattened.push(
-          ...this.flattenSchemaCore(schema.items, arrayPrefix, visitedRefs)
+          ...this.flattenSchemaCore(schema.items, arrayPrefix, visitedRefs),
         );
       } else if (schema.items.properties || schema.items.type === "object") {
         flattened.push(
-          ...this.flattenSchemaCore(schema.items, arrayPrefix, visitedRefs)
+          ...this.flattenSchemaCore(schema.items, arrayPrefix, visitedRefs),
         );
       } else if (schema.items.type || schema.items.$ref) {
         flattened.push({
@@ -168,7 +163,7 @@ class OpenAPIchemaConverter {
 
           if (resolvedSchema) {
             flattened.push(
-              ...this.flattenSchemaCore(resolvedSchema, paramName, visitedRefs)
+              ...this.flattenSchemaCore(resolvedSchema, paramName, visitedRefs),
             );
           }
           visitedRefs.delete(refPath);
@@ -180,11 +175,11 @@ class OpenAPIchemaConverter {
 
           if (value.items.type === "array") {
             flattened.push(
-              ...this.flattenSchemaCore(value.items, arrayPrefix, visitedRefs)
+              ...this.flattenSchemaCore(value.items, arrayPrefix, visitedRefs),
             );
           } else if (value.items.type === "object" || value.items.properties) {
             flattened.push(
-              ...this.flattenSchemaCore(value.items, arrayPrefix, visitedRefs)
+              ...this.flattenSchemaCore(value.items, arrayPrefix, visitedRefs),
             );
           } else {
             flattened.push({
@@ -199,7 +194,7 @@ class OpenAPIchemaConverter {
           }
         } else if (value.type === "object" && value.properties) {
           flattened.push(
-            ...this.flattenSchemaCore(value, paramName, visitedRefs)
+            ...this.flattenSchemaCore(value, paramName, visitedRefs),
           );
         } else {
           flattened.push({
@@ -280,7 +275,7 @@ class OpenAPIchemaConverter {
    */
   convertResponseDefinition(
     statusCode: string,
-    definition: any
+    definition: any,
   ): OpenAPIV3.ResponseObject {
     if (!definition.content && this.isSchemaLike(definition)) {
       return {
@@ -315,7 +310,7 @@ class OpenAPIchemaConverter {
       };
 
       for (const [mediaType, mediaObj] of Object.entries(
-        definition.content
+        definition.content,
       ) as any[]) {
         converted.content![mediaType] = {
           ...mediaObj,
@@ -347,7 +342,7 @@ class OpenAPIchemaConverter {
    * @returns A standard OpenAPI RequestBodyObject, or undefined if no definition provided
    */
   convertRequestBodyDefinition(
-    definition: any
+    definition: any,
   ): OpenAPIV3.RequestBodyObject | undefined {
     if (!definition) return undefined;
 
@@ -384,7 +379,7 @@ class OpenAPIchemaConverter {
         converted.description = definition.description;
 
       for (const [mediaType, mediaObj] of Object.entries(
-        definition.content
+        definition.content,
       ) as any[]) {
         const jsonSchema = this.convertToJsonSchema(mediaObj.schema);
 
@@ -417,7 +412,7 @@ class OpenAPIchemaConverter {
    * @returns Array of standard OpenAPI ParameterObjects, or undefined if no parameters provided
    */
   convertParameters(
-    parameters: any[] | undefined
+    parameters: any[] | undefined,
   ): (OpenAPIV3.ParameterObject | OpenAPIV3.ReferenceObject)[] | undefined {
     if (!parameters) return undefined;
 
@@ -441,7 +436,7 @@ class OpenAPIchemaConverter {
    * @returns Object with converted OpenAPI ResponseObjects
    */
   convertResponses(
-    responses: Record<string, any> | undefined
+    responses: Record<string, any> | undefined,
   ): Record<string, OpenAPIV3.ResponseObject> | undefined {
     if (!responses) return undefined;
 
@@ -450,7 +445,7 @@ class OpenAPIchemaConverter {
     for (const [statusCode, definition] of Object.entries(responses)) {
       converted[statusCode] = this.convertResponseDefinition(
         statusCode,
-        definition
+        definition,
       );
     }
 
@@ -474,7 +469,7 @@ class OpenAPIchemaConverter {
 
     if (config.requestBody)
       converted.requestBody = this.convertRequestBodyDefinition(
-        config.requestBody
+        config.requestBody,
       );
 
     if (config.parameters)
@@ -497,7 +492,7 @@ class OpenAPIchemaConverter {
     paramType: string,
     schema: any,
     prefix = "",
-    visitedRefs = new Set<string>()
+    visitedRefs = new Set<string>(),
   ) {
     const flattened = this.flattenSchemaCore(schema, prefix, visitedRefs);
 
@@ -532,3 +527,4 @@ class OpenAPIchemaConverter {
 const openApiSchemaConverter = new OpenAPIchemaConverter();
 
 export default openApiSchemaConverter;
+

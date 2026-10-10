@@ -12,7 +12,9 @@ function getGeneratedPackageDir(): string {
 }
 
 function getPrismaGeneratedPath() {
-  return prismaSchemaParser.config.clientOutput ? path.resolve(path.join(crd(), prismaSchemaParser.config.clientOutput)) : "@prisma/client"
+  return prismaSchemaParser.config.clientOutput
+    ? path.resolve(path.join(crd(), prismaSchemaParser.config.clientOutput))
+    : "@prisma/client";
 }
 
 function buildTypesContent(): string {
@@ -31,7 +33,7 @@ function buildTypesContent(): string {
     DeleteArgs: Prisma.${model.name}DeleteArgs;
     DeleteManyArgs: Prisma.${model.name}DeleteManyArgs;
     CountArgs: Prisma.${model.name}CountArgs;
-  };`
+  };`,
     )
     .join("");
 
@@ -82,7 +84,8 @@ function updateTsConfigPaths(): void {
 
   if (!fs.existsSync(tsconfigPath)) {
     sheu.warn(
-      "tsconfig.json not found, skipping @arkosjs/generated path mapping.", { timestamp: true }
+      "tsconfig.json not found, skipping @arkosjs/generated path mapping.",
+      { timestamp: true },
     );
     return;
   }
@@ -92,8 +95,9 @@ function updateTsConfigPaths(): void {
     tsconfig = bundler.readJsonWithComments(tsconfigPath);
   } catch (err) {
     sheu.warn(
-      `Failed to parse tsconfig.json, skipping @arkosjs/generated path mapping: ${(err as Error).message
-      }`
+      `Failed to parse tsconfig.json, skipping @arkosjs/generated path mapping: ${
+        (err as Error).message
+      }`,
     );
     return;
   }
@@ -104,15 +108,14 @@ function updateTsConfigPaths(): void {
   const generatedDtsPath = "./.arkos/index.d.ts";
   const existing = tsconfig.compilerOptions.paths["@arkosjs/generated"];
 
-  if (Array.isArray(existing) && existing.includes(generatedDtsPath))
-    return
+  if (Array.isArray(existing) && existing.includes(generatedDtsPath)) return;
 
   tsconfig.compilerOptions.paths["@arkosjs/generated"] = [generatedDtsPath];
 
   fs.writeFileSync(
     tsconfigPath,
     JSON.stringify(tsconfig, null, 2) + "\n",
-    "utf8"
+    "utf8",
   );
 
   sheu.done(`@arkosjs/generated path mapping added to tsconfig.json!`);
@@ -122,22 +125,18 @@ function updateGitIgnore(): void {
   const gitignorePath = path.join(crd(), ".gitignore");
 
   if (!fs.existsSync(gitignorePath)) {
-    sheu.warn(
-      ".gitignore not found, skipping .arkos ignore entry.",
-      { timestamp: true }
-    );
+    sheu.warn(".gitignore not found, skipping .arkos ignore entry.", {
+      timestamp: true,
+    });
     return;
   }
 
   const content = fs.readFileSync(gitignorePath, "utf8");
-  const lines = content
-    .split(/\r?\n/)
-    .map((line) => line.trim());
+  const lines = content.split(/\r?\n/).map((line) => line.trim());
 
   if (lines.includes(".arkos")) return;
 
-  const updated =
-    content.replace(/\s*$/, "") + "\n.arkos\n";
+  const updated = content.replace(/\s*$/, "") + "\n.arkos/\n";
 
   fs.writeFileSync(gitignorePath, updated, "utf8");
 
@@ -157,6 +156,7 @@ export default function prismaGenerateCommand() {
   updateTsConfigPaths();
   updateGitIgnore();
   sheu.done(
-    `Types and values for arkos and prisma client generated successfully!`
+    `Types and values for arkos and prisma client generated successfully!`,
   );
 }
+

@@ -6,7 +6,7 @@ import {
   IRouterMatcher,
   Locals,
 } from "express";
-import { z, ZodSchema } from "zod";
+import z, { ZodType } from "zod";
 import { Options as RateLimitOptions } from "express-rate-limit";
 import { Options as QueryParserOptions } from "../../../utils/helpers/query-parser.helpers";
 import { DetailedAccessControlRule } from "../../../types/auth";
@@ -31,13 +31,17 @@ export type ArkosUseConfig = Pick<
   | "bodyParser"
   | "disabled"
 > & {
-  path?: PathParams; // optional unlike ArkosRouteConfig where path is required
+  path?: PathParams;
 };
 
-type InferValidationType<T, Fallback> = T extends ZodSchema
-  ? z.infer<T>
+export type InferValidationType<T, Fallback> = T extends ZodType
+  ? unknown extends z.infer<T>
+    ? Fallback
+    : z.infer<T>
   : T extends new (...args: any[]) => infer I
-    ? I
+    ? unknown extends I
+      ? Fallback
+      : I
     : Fallback;
 
 export type PathParams = string | RegExp | Array<string | RegExp>;
@@ -128,7 +132,7 @@ type IArkosRouterMethodHandler<T> = IRouterHandler<T> &
       TParams extends Validator = any,
     >(
       config: ArkosRouteConfig<TQuery, TBody, TParams>,
-      subApplication: Application
+      subApplication: Application,
     ): T;
   };
 
@@ -435,3 +439,4 @@ export type ArkosRouteConfig<
     uploads?: UploadConfig;
   };
 };
+

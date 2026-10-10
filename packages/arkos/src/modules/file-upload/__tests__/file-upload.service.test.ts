@@ -126,7 +126,8 @@ describe("FileUploadService", () => {
     );
     (path.extname as any as jest.Mock).mockImplementation((filePath) => ".jpg");
     (path.basename as any as jest.Mock).mockImplementation((filePath, ext) => {
-      return ext ? filePath.replace(ext, "") : filePath;
+      const base = filePath.split("/").pop();
+      return ext ? base.replace(ext, "") : base;
     });
     (path.dirname as any as jest.Mock).mockImplementation((filePath) => {
       const parts = filePath.split("/");
@@ -171,6 +172,7 @@ describe("FileUploadService", () => {
     // Setup mock for sharp
     mockSharp = {
       metadata: jest.fn().mockResolvedValue({ width: 800, height: 600 }),
+      rotate: jest.fn().mockReturnThis(),
       resize: jest.fn().mockReturnThis(),
       toFormat: jest.fn().mockReturnThis(),
       toFile: jest.fn().mockResolvedValue({}),
@@ -476,7 +478,7 @@ describe("FileUploadService", () => {
 
       const result = await fileUploadService.upload(mockReq, mockRes, mockNext);
 
-      expect(result).toBe("http://localhost:3000/api/uploads/images/test.jpg");
+      expect(result).toBe("http://localhost:3000/api/uploads/images/test.webp");
     });
 
     it("should handle multiple file uploads successfully", async () => {
@@ -500,10 +502,10 @@ describe("FileUploadService", () => {
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(2);
       expect(result![0]).toBe(
-        "http://localhost:3000/api/uploads/images/test1.jpg"
+        "http://localhost:3000/api/uploads/images/test1.webp"
       );
       expect(result![1]).toBe(
-        "http://localhost:3000/api/uploads/images/test2.jpg"
+        "http://localhost:3000/api/uploads/images/test2.webp"
       );
     });
 
@@ -540,10 +542,10 @@ describe("FileUploadService", () => {
         200,
         expect.any(Object)
       );
-      expect(mockSharp.toFormat).toHaveBeenCalledWith("webp");
+      expect(mockSharp.toFormat).toHaveBeenCalledWith("webp", {});
       expect(mockSharp.toFile).toHaveBeenCalled();
       expect(mockRename).toHaveBeenCalled();
-      expect(result).toBe("http://localhost:3000/api/uploads/images/test.jpg");
+      expect(result).toBe("http://localhost:3000/api/uploads/images/test.webp");
     });
 
     it("should throw AppError if no file is uploaded", async () => {
@@ -869,7 +871,7 @@ describe("FileUploadService", () => {
       );
 
       const result = await fileUploadService.upload(mockReq, mockRes, mockNext);
-      expect(result).toBe("http://example.com/api/uploads/images/test.jpg");
+      expect(result).toBe("http://example.com/api/uploads/images/test.webp");
     });
 
     it("should use HTTP protocol for localhost hosts", async () => {
@@ -890,7 +892,7 @@ describe("FileUploadService", () => {
       );
 
       const result = await fileUploadService.upload(mockReq, mockRes, mockNext);
-      expect(result).toBe("http://localhost:3000/api/uploads/images/test.jpg");
+      expect(result).toBe("http://localhost:3000/api/uploads/images/test.webp");
     });
   });
 
@@ -910,7 +912,7 @@ describe("FileUploadService", () => {
       );
 
       const result = await serviceWithSlash.upload(mockReq, mockRes, mockNext);
-      expect(result).toContain("/api/uploads/images/test.jpg");
+      expect(result).toContain("/api/uploads/images/test.webp");
     });
 
     // it("should handle uploadDir not ending with slash on windows environment", async () => {

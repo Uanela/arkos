@@ -1,0 +1,255 @@
+---
+title: Manual Usage
+description: Use the Arkos authentication system programmatically — from services, background jobs, scripts and anywhere else, without going through the HTTP routes.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+> Available from v1.8.0-rc
+
+Since v1.8.0-rc the whole authentication flow lives in the [`AuthService`](/docs/reference/auth-service-object) as real methods — `login`, `signup`, `getMe`, `updateMe`, `updatePassword`, `deleteMe` and `logout`. The built-in `/api/auth/*` routes are thin controllers that call those methods, so you can call the exact same methods yourself from a service, a background job, a CLI command, a seeder or a test.
+
+This page covers the two ways to do that:
+
+- **Direct service calls** — call a method and use its return value, with no request or response involved.
+- **Auth Service Override** — extend `AuthService`, register it through `RouteHook<"auth">.service`, and call your own instance programmatically.
+
+<Callout type="info">
+If you only want to protect routes at request time, see [Protecting Routes](/docs/core-concepts/authentication/setup#protecting-routes) and the [`authenticate`](/docs/reference/auth-service-object#authenticate) / [`authorize`](/docs/reference/auth-service-object#authorizeaction-resource-rule) reference. This page is about calling the auth flow methods **without** an HTTP request.
+</Callout>
+
+## Accessing the auth service
+
+```ts title="src/modules/billing/billing.service.ts"
+import { authService } from "arkos/services";
+```
+
+The exported `authService` is the default `AuthService` instance. Every method below is available on it.
+
+## What runs — and what does not
+
+Some Arkos features are wired to the HTTP pipeline. A direct method call has no request, so they are simply not part of the call:
+
+| Feature | Direct call | HTTP route |
+|---|---|---|
+| `AuthService` method logic (and `super.*`) | ✅ runs | ✅ runs |
+| [`BaseService`](/docs/reference/base-service) behavior (e.g. password hashing) | ✅ runs | ✅ runs |
+| `authentication.hooks.authenticate` / `authorize` | ❌ skipped | ✅ runs |
+| Auth interceptors (`beforeLogin`, `afterLogin`, `onLoginError`, …) | ❌ skipped | ✅ runs |
+| Rate limiting, request validation, token cookie/response delivery | ❌ skipped | ✅ runs |
+
+The `authenticate`/`authorize` [hooks](/docs/core-concepts/authentication/hooks) belong to the `authService.authenticate` and `authService.authorize` middleware, and the auth [interceptors](/docs/core-concepts/components/interceptors) belong to the controller. Neither is invoked by `authService.login()` or the other flow methods.
+
+<Callout type="warn" title="Hooks and interceptors do not run on direct calls">
+If you rely on an auth interceptor or an `authenticate`/`authorize` hook for cross-cutting logic (audit logs, notifications, session bookkeeping), calling `authService.login()` directly will **not** trigger it. Put that logic inside an [Auth Service Override](#auth-service-override) method instead, so it runs for both the HTTP route and your programmatic calls.
+</Callout>
+
+## Calling the auth methods directly
+
+### Login
+
+`login(input, queryOptions?)` authenticates a user and returns the sanitized user plus a signed access token:
+
+```ts title="src/modules/billing/billing.service.ts"
+import { authService } from "arkos/services";
+
+const { user, accessToken } = await authService.login({
+  username: "john_doe",
+  password: "SecurePassword123!",
+});
+```
+
+The username field is inferred from the username key you pass. See [Is `usernameField` optional?](#is-usernamefield-optional) for logging in with another field or a nested relation.
+
+Unlike the HTTP route, this does **not** set a cookie, apply `login.sendAccessTokenThrough`, or send a response — it just hands you `{ user, accessToken }`. Use the token however you need (return it, forward it, store it) and use `authService.getJwtCookieOptions(req)` if you are the one writing the cookie.
+
+Throws `BadRequestError` with code `MissingCredentialFields` or `IncorrectCredentials`.
+
+### Signup
+
+```ts
+const user = await authService.signup({
+  username: "john_doe",
+  password: "SecurePassword123!",
+  email: "john@example.com",
+});
+```
+
+The result never includes the `password` field. Hashing is handled by the underlying [`BaseService`](/docs/reference/base-service), so pass the plain password.
+
+### Get, update and delete the current user
+
+These take the user id as the first argument instead of reading it from `req.user`:
+
+```ts
+const user = await authService.getMe(userId);
+const updated = await authService.updateMe(userId, { firstName: "John" });
+const deleted = await authService.deleteMe(userId);
+```
+
+`updateMe` rejects a `password` field with `BadRequestError` (`InvalidFieldPassword`) — use `updatePassword` for that.
+
+### Update password
+
+```ts
+const { accessToken } = await authService.updatePassword(userId, {
+  currentPassword: "OldPassword123!",
+  newPassword: "NewSecurePassword123!",
+});
+```
+
+Returns a fresh token valid after the password change.
+
+### Logout
+
+`logout(userId, accessToken)` is a no-op by default; it exists so an override can revoke tokens or clear server-side sessions. Because it has no request, **you** pass both arguments:
+
+```ts
+await authService.logout(userId, accessToken);
+```
+
+### Is `usernameField` optional?
+
+Yes. `login()` infers the field from the username key you pass — the only key besides `password`:
+
+```ts
+// inferred as "username"
+await authService.login({ username: "john_doe", password: "SecurePassword123!" });
+
+// inferred as "email"
+await authService.login({ email: "john@example.com", password: "SecurePassword123!" });
+```
+
+The inference sees only the key, so pass `usernameField` explicitly when the key is ambiguous or the field is nested (e.g. `profile.nickname`, whose key is `nickname`):
+
+```ts
+await authService.login({
+  usernameField: "profile.nickname", // expects a `nickname` key
+  nickname: "jd",
+  password: "SecurePassword123!",
+});
+```
+
+If no username key is provided, `login()` falls back to `authentication.login.allowedUsernames[0] ?? "username"` to build the "please provide both … and password" error. See [Logging in with different fields](/docs/core-concepts/authentication/routes#logging-in-with-different-fields) for the HTTP equivalent.
+
+## Context-free primitives
+
+These methods never touch a request and are safe to call anywhere:
+
+```ts
+// Hash and compare passwords
+const hashed = await authService.hashPassword("SecurePassword123!");
+const ok = await authService.isCorrectPassword("SecurePassword123!", hashed);
+
+// Sign and verify tokens
+const token = authService.signJwtToken(user.id, "4h");
+const decoded = await authService.verifyJwtToken(token); // { id, iat, exp }
+
+// Reuse token validation without a request
+const user = await authService.validateDecodedUser(decoded);
+```
+
+<Callout type="info">
+`getAuthenticatedUser(ctx)`, `getJwtCookieOptions(req)`, `authenticate` and `authorize` are request/socket-bound — they need a `req` (or socket) and are meant for the HTTP pipeline, not for arbitrary code. Use the methods above when you only have a token or a user id.
+</Callout>
+
+## Auth Service Override
+
+If you need to customize the auth flow and have that customization apply everywhere — the HTTP routes **and** your programmatic calls — extend `AuthService` and register it through `RouteHook<"auth">.service`. See [Authentication Service Override](/docs/core-concepts/components/service-override#authentication-service-override) for the full contract and list of overridable methods.
+
+```ts title="src/modules/auth/auth.service.ts"
+import { AuthService } from "arkos/services";
+import { Prisma } from "@prisma/client";
+import { SignupDto } from "@/src/modules/auth/dtos/signup.dto";
+import { LoginDto } from "@/src/modules/auth/dtos/login.dto";
+import { auditLog } from "@/src/lib/audit-log";
+
+type SignupQueryOptions = Omit<Prisma.UserCreateArgs, "data">;
+type LoginQueryOptions = Omit<Prisma.UserFindFirstArgs, "where">;
+
+class MyAuthService extends AuthService {
+  // Runs for POST /api/auth/signup and for every direct myAuthService.signup()
+  async signup(data: SignupDto, queryOptions?: SignupQueryOptions) {
+    const user = await super.signup(data, queryOptions);
+    await auditLog.record("user.signed_up", { userId: user.id });
+    return user;
+  }
+
+  // Same for login — keep the argument order/shape of the base method
+  async login(input: LoginDto, queryOptions?: LoginQueryOptions) {
+    const { user, accessToken } = await super.login(input, queryOptions);
+    await auditLog.record("user.logged_in", { userId: user.id });
+    return { user, accessToken };
+  }
+}
+
+export default new MyAuthService();
+```
+
+If you validate signup with your own schema, type `data` as that DTO instead — `z.infer<typeof CreateUserSchema>` or the matching `class-validator` DTO — and `queryOptions` with the matching `Prisma.UserCreateArgs` (minus `data`), so the override stays in sync with what your route accepts.
+
+```ts title="src/modules/auth/auth.router.ts"
+import { RouteHook } from "arkos";
+import authService from "./auth.service";
+
+export const hook: RouteHook<"auth"> = {
+  service: authService,
+};
+```
+
+<Callout type="warn" title="Import your own instance, not the framework singleton">
+`RouteHook<"auth">.service` is used only by the router. The `authService` exported from `arkos/services` stays the **default** implementation, so it does not run your override. To get the overridden behavior programmatically, import the instance from your module instead:
+
+```ts
+// ✅ your overridden service — audit log runs
+import myAuthService from "@/src/modules/auth/auth.service";
+const { accessToken } = await myAuthService.login({
+  usernameField: "username",
+  username,
+  password,
+});
+
+// ⚠️ framework default — your override does NOT run
+import { authService } from "arkos/services";
+```
+
+Both imports are valid; just be deliberate about which one your code needs.
+</Callout>
+
+## Do Service Overrides replace auth hooks?
+
+No — they cover different layers, and one cannot substitute for the other:
+
+- **Service Override** customizes the auth **flow methods** (`login`, `signup`, `getMe`, `updateMe`, `updatePassword`, `deleteMe`, `logout`). It runs wherever those methods are called, HTTP or not.
+- **Auth hooks** (`authentication.hooks.authenticate` / `authorize`) customize the **request pipeline** — token extraction/verification and permission checks. They run only through the `authService.authenticate` / `authService.authorize` middleware.
+
+`authenticate` and `authorize` are not in the overridable set, and Arkos wires them from the framework `authService` instance rather than from `RouteHook<"auth">.service`. Overriding them in your subclass therefore has no effect on the pipeline — auth hooks remain the supported extension point for request-time behavior (`skip()`, custom token parsing, `onError` handling, custom user resolution).
+
+Rule of thumb: **hooks for how a request is authenticated/authorized, Service Override for what the auth flow methods do.**
+
+## Error handling
+
+Every method throws a typed error (`AppError` or one of its subclasses such as `BadRequestError`) with a stable `code`, exactly as it does on the HTTP route. In a service, wrap the call:
+
+```ts
+import { AppError } from "arkos/error-handler";
+
+try {
+  await authService.login({ usernameField: "username", username, password });
+} catch (err) {
+  if (err instanceof AppError) {
+    // err.status, err.code, err.message
+  }
+  throw err;
+}
+```
+
+Within an HTTP handler you can let it bubble to the [global error handler](/docs/guides/error-handling/overview) instead.
+
+## Related
+
+- **[Auth Service Object](/docs/reference/auth-service-object)** — Full method and type reference
+- **[Service Override](/docs/core-concepts/components/service-override#authentication-service-override)** — Override the auth flow methods
+- **[Authentication Hooks](/docs/core-concepts/authentication/hooks)** — Request-time `authenticate`/`authorize` hooks
+- **[Interceptors](/docs/core-concepts/components/interceptors)** — Run logic around auth HTTP endpoints
+- **[Authentication Routes](/docs/core-concepts/authentication/routes)** — The built-in `/api/auth/*` endpoints

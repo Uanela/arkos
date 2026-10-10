@@ -1,6 +1,19 @@
 import { pascalCase } from "../../../utils/helpers/change-case.helpers";
 import AppError from "./app-error";
 
+function getDriverAdapterCause(err: any): Record<string, any> | null {
+  if (err?.name === "DriverAdapterError") return err?.cause ?? null;
+  return err?.meta?.driverAdapterError?.cause ?? null;
+}
+
+function resolveConstraint(err: any): string | string[] | undefined {
+  const constraint = getDriverAdapterCause(err)?.constraint;
+
+  if (!constraint) return undefined;
+
+  return constraint.fields ?? constraint.index;
+}
+
 export function handleJWTError() {
   return new AppError("Invalid token. Please log in again!", 401);
 }
@@ -44,7 +57,12 @@ export function handleDatabaseNotFoundError(_: AppError) {
 }
 
 export function handleFieldValueTooLargeError(err: AppError) {
-  const message = `The value for the field "${err?.meta?.field_name}" is too large. Please provide a smaller value.`;
+  const fieldName = (err?.meta as any)?.field_name;
+  const field =
+    fieldName !== undefined
+      ? fieldName
+      : getDriverAdapterCause(err)?.column;
+  const message = `The value for the field "${field}" is too large. Please provide a smaller value.`;
   return new AppError(message, 400);
 }
 
@@ -55,7 +73,8 @@ export function handleRecordNotFoundError(_: AppError) {
 }
 
 export function handleUniqueConstraintError(err: any) {
-  const field = err?.meta?.target || "unknown";
+  const field =
+    err?.meta?.target || resolveConstraint(err) || "unknown";
   const message = `Duplicate unique field(s) ${Array.isArray(field) ? field.map((f) => `'${f}'`).join(", ") : `'${field}'`}`;
   return new AppError(message, 409, "DuplicateRecords");
 }
@@ -67,7 +86,8 @@ export function handleForeignKeyConstraintError(_: AppError) {
 }
 
 export function handleConstraintFailedError(err: AppError) {
-  const constraint = err?.meta?.constraint || "unknown constraint";
+  const constraint =
+    err?.meta?.constraint || resolveConstraint(err) || "unknown constraint";
   const message = `A database constraint "${constraint}" failed. Please review your input data.`;
   return new AppError(message, 400);
 }
@@ -99,19 +119,55 @@ export function handleNonExistingRecord(err: {
   meta?: Record<string, any>;
   [x: string]: any;
 }) {
-  const message =
-    err?.meta?.cause ||
-    `Operation could not be completed as some required record was not found`;
+  const cause = err?.meta?.cause;
 
-  const model = err?.meta?.cause
-    ? err?.meta?.cause?.split("No '")?.[1]?.split?.("'")?.[0]
-    : "";
+  const model =
+    (cause ? cause.split("No '")?.[1]?.split?.("'")?.[0] : "") ||
+    err?.meta?.model ||
+    "";
+
+  const message =
+    cause ||
+    (model
+      ? `No '${model}' record was found for the requested operation`
+      : `Operation could not be completed as some required record was not found`);
 
   return new AppError(
     message,
     model ? 400 : 404,
     `${model ? "Inline" : ""}${pascalCase(model || "")}RecordNotFound`
   );
+}
+
+export function handleDriverAdapterError(err: any): AppError | null {
+  const kind = getDriverAdapterCause(err)?.kind;
+
+  switch (kind) {
+    case "UniqueConstraintViolation":
+      return handleUniqueConstraintError(err);
+    case "ForeignKeyConstraintViolation":
+    case "RestrictViolation":
+      return handleForeignKeyConstraintError(err);
+    case "NullConstraintViolation":
+      return handleConstraintFailedError(err);
+    case "LengthMismatch":
+      return handleFieldValueTooLargeError(err);
+    case "AuthenticationFailed":
+      return handleAuthenticationError(err);
+    case "DatabaseNotReachable":
+      return handleServerNotReachableError(err);
+    case "DatabaseDoesNotExist":
+      return handleDatabaseNotFoundError(err);
+    case "SocketTimeout":
+      return handleConnectionTimeoutError(err);
+    case "TransactionWriteConflict":
+      return new AppError(
+        "The transaction failed due to a write conflict or a deadlock. Please retry.",
+        409
+      );
+    default:
+      return null;
+  }
 }
 
 export function handlePrismaClientInitializationError(_: any) {
