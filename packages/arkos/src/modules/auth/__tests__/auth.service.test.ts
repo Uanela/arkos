@@ -361,7 +361,7 @@ describe("AuthService", () => {
             password: "Password123",
           }),
         ).rejects.toMatchObject({
-          statusCode: 400,
+          statusCode: 401,
           message: "Incorrect username or password",
         });
       });
@@ -377,7 +377,7 @@ describe("AuthService", () => {
             password: "Wrong123",
           }),
         ).rejects.toMatchObject({
-          statusCode: 400,
+          statusCode: 401,
           message: "Incorrect username or password",
         });
         expect(authService.signJwtToken).not.toHaveBeenCalled();

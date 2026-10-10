@@ -32,7 +32,7 @@ export const determineUsernameField = (req: ArkosRequest): string => {
       400
     );
 
-  return getDefaultUsernameField();
+  return authConfigs?.login?.allowedUsernames?.[0] || "username";
 };
 
 /**
