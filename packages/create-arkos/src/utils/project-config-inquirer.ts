@@ -217,7 +217,7 @@ class ProjectConfigInquirer {
 
     if (validationType !== "none") {
       this.config.validation = {
-        type: validationType as "zod" | "class-validator",
+        type: validationType as "zod" | "class-validator" | "hybrid",
       };
     }
   }

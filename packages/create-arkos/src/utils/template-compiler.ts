@@ -133,15 +133,20 @@ class TemplateCompiler {
         ...authRoleModuleComponents,
       );
 
-    if (config.validation?.type !== "zod")
+    const validationType = config.validation?.type;
+    const usesZod =
+      validationType === "zod" || validationType === "hybrid";
+    const usesClassValidator =
+      validationType === "class-validator" || validationType === "hybrid";
+
+    if (!usesZod)
       files.push(
         ...sharedAuthZodSchemaFiles,
         ...dynamicAuthZodSchemaFiles,
         ...userZodSchemaFiles,
-        "api-actions.hbs.ts",
       );
 
-    if (config.validation?.type !== "class-validator")
+    if (!usesClassValidator)
       files.push(
         ...sharedAuthClassValidatorDtoFiles,
         ...dynamicAuthClassValidatorDtoFiles,

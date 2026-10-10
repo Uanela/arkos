@@ -232,23 +232,36 @@ export function handleRequestBodyValidationAndTransformation<T extends object>(
   return catchAsync(
     async (req: ArkosRequest, _: ArkosResponse, next: ArkosNextFunction) => {
       const validationConfigs = getArkosConfig()?.validation;
-      let body = req.body;
+      const resolver = validationConfigs?.resolver;
+      const body = req.body;
 
-      if (validationConfigs?.resolver === "class-validator" && schemaOrDtoClass)
-        req.body = await validateDto(
+      const dtoValidationOptions = deepmerge(
+        {
+          whitelist: true,
+          forbidNonWhitelisted: true,
+          ...classValidatorValidationOptions,
+        },
+        validationConfigs?.validationOptions || {},
+      );
+
+      const runDtoValidation = () =>
+        validateDto(
           schemaOrDtoClass as ClassConstructor<T>,
           body,
-          deepmerge(
-            {
-              whitelist: true,
-              forbidNonWhitelisted: true,
-              ...classValidatorValidationOptions,
-            },
-            validationConfigs?.validationOptions || {},
-          ),
+          dtoValidationOptions,
         );
-      else if (validationConfigs?.resolver === "zod" && schemaOrDtoClass)
-        req.body = await validateSchema(schemaOrDtoClass as any, body);
+
+      const runZodValidation = () =>
+        validateSchema(schemaOrDtoClass as any, body);
+
+      if (schemaOrDtoClass) {
+        if (resolver === "class-validator") req.body = await runDtoValidation();
+        else if (resolver === "zod") req.body = await runZodValidation();
+        else if (resolver === "hybrid")
+          req.body = isZodSchema(schemaOrDtoClass)
+            ? await runZodValidation()
+            : await runDtoValidation();
+      }
 
       next();
     },
@@ -356,18 +369,19 @@ Read more about strict validation at https://www.arkosjs.com/docs/guides/validat
               arkosConfig.validation?.validationOptions,
             );
           } catch (err: any) {
-            const isZod = isZodSchema(req[key]);
+            const isZod = isZodSchema(validator);
 
             const prettifiedError = errorPrettifier.prettify(
               isZod ? "zod" : ("class-validator" as any),
               err,
             );
+
             const error = prettifiedError[0];
             throw new AppError(
-              error.message,
+              error?.message || err?.message || `Request ${key} is invalid`,
               400,
               `InvalidRequest${pascalCase(key)}`,
-              isZod ? err.format() : err,
+              isZod && typeof err?.format === "function" ? err.format() : err,
             );
           }
       }
