@@ -7,6 +7,7 @@ import { getVersion } from "./utils/cli.helpers";
 import prismaGenerateCommand from "./prisma-generate";
 import exportAuthActionCommand from "./export-auth-action";
 import { readArkosConfig } from '../helpers/arkos-config.helpers';
+import sheu from "../sheu";
 
 const program = new Command();
 
@@ -35,14 +36,17 @@ program
 const generate = program
   .command("generate")
   .alias("g")
-  .description("Generate arkos components")
+  .description(
+    "Generate your @prisma/client and type definitions, or generate Arkos components via a subcommand"
+  )
   .option(
     "-m, --module <name>",
     "Module name (comma-separated for bulk: post,user,auth)"
   )
   .option("--model <name>", "Module name (alias for --module)")
   .option("-p, --path <path>", "Custom path for the component")
-  .option("-o, --overwrite", "Overwrites all the content on the existing file");
+  .option("-o, --overwrite", "Overwrites all the content on the existing file")
+  .action(prismaGenerateCommand);
 
 generate
   .command("controller")
@@ -298,8 +302,16 @@ generate
 program
   .command("prisma")
   .command("generate")
-  .description("Generate your @prisma/client and BaseService class types")
-  .action(prismaGenerateCommand);
+  .description(
+    "(deprecated) Generate your @prisma/client and type definitions — use `arkos generate`"
+  )
+  .action(() => {
+    sheu.warn(
+      "`arkos prisma generate` is deprecated and will be removed in a future release. Use `arkos generate` instead.",
+      { timestamp: true }
+    );
+    prismaGenerateCommand();
+  });
 
 program
   .command("export")

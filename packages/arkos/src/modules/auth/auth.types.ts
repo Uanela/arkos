@@ -1,8 +1,8 @@
 import {
   ExtractPrismaData,
-  ExtractPrismaFilters,
   ExtractPrismaQueryOptions,
   PrismaModels,
+  RuntimeArkosConfig,
 } from "../../generated";
 import { ArkosPrismaInput } from "../../types/arkos-prisma-input";
 import { User } from "../../types";
@@ -49,9 +49,6 @@ export interface UpdatePasswordInput {
 }
 
 type ListOperator = "some" | "every" | "none";
-type Primitive = string | number | boolean | bigint | Date;
-type LogicalOperator = "AND" | "OR" | "NOT";
-type MaxPathDepth = 3;
 
 type LastSegment<P extends string> = P extends `${string}.${infer R}`
   ? LastSegment<R>
@@ -75,50 +72,56 @@ type PathValue<T, P extends string> = P extends `${infer H}.${infer R}`
     ? T[P]
     : never;
 
-type WhereInputOf<V> = Extract<V, { AND?: any }>;
-
-type WherePaths<W, D extends unknown[] = []> = D["length"] extends MaxPathDepth
-  ? never
-  : {
-      [K in Exclude<keyof W, LogicalOperator> & string]-?: NonNullable<
-        W[K]
-      > extends infer V
-        ? [Extract<V, Primitive>] extends [never]
-          ? V extends { some?: infer S }
-            ? `${K}.some.${WherePaths<NonNullable<S>, [...D, 0]>}`
-            : [WhereInputOf<V>] extends [never]
-              ? never
-              : `${K}.${WherePaths<WhereInputOf<V>, [...D, 0]>}`
-          : K
-        : never;
-    }[Exclude<keyof W, LogicalOperator> & string];
+/**
+ * The username fields accepted by the built-in login, derived from
+ * `authentication.login.allowedUsernames` in the user's `arkos.config`.
+ *
+ * The generated `RuntimeArkosConfig` is a literal-typed view of the config;
+ * when `allowedUsernames` is not configured it falls back to the runtime
+ * default, `"username"` (see `getDefaultUsernameField`).
+ */
+export type LoginUsernames = RuntimeArkosConfig extends {
+  authentication: {
+    login: { allowedUsernames: readonly (infer U extends string)[] };
+  };
+}
+  ? U
+  : "username";
 
 /**
- * Every scalar path reachable from the `User` model, in the same dot notation
- * accepted by `authentication.login.allowedUsernames`
- * (e.g. `"email"`, `"profile.nickname"`, `"phones.some.number"`).
+ * The union of fields accepted as the login username.
+ *
+ * @deprecated Use `LoginUsernames`.
  */
-export type LoginUsernameField = WherePaths<
-  NonNullable<ExtractPrismaFilters<UserModel["FindFirstArgs"]>>
+export type LoginUsernameField = LoginUsernames;
+
+type LoginUsernameValue<F extends string> = NonNullable<
+  PathValue<PrismaModels<{ select: PathSelect<F> }>["user"]["GetPayload"], F>
 >;
 
+type LoginInputFor<F extends string> = {
+  password: string;
+} & (F extends `${string}.${string}`
+  ? {
+      /** Required for nested paths so the full dot-path is queried. */
+      usernameField: F;
+    }
+  : {
+      /** Only needed for nested paths; otherwise inferred from the username key. */
+      usernameField?: F;
+    }) & {
+  [K in LastSegment<F>]: LoginUsernameValue<F>;
+};
+
+type DistributiveLoginInput<F extends string> = F extends any
+  ? LoginInputFor<F>
+  : never;
+
 /**
- * Login payload for a given username field. The key holding the username is the
- * last segment of the field path and its type is read from the Prisma schema.
+ * Login payload for the configured username fields. Every entry in
+ * `authentication.login.allowedUsernames` is accepted as an alternative, and the
+ * key holding the username is the last segment of the field path, typed from the
+ * Prisma schema.
  */
-export type LoginInput<F extends LoginUsernameField = LoginUsernameField> =
-  F extends F
-    ? {
-        password: string;
-        /** Only needed for nested paths; otherwise inferred from the username key. */
-        usernameField?: LoginUsernameField;
-      } & {
-        [K in LastSegment<F>]: NonNullable<
-          PathValue<
-            PrismaModels<{ select: PathSelect<F> }>["user"]["GetPayload"],
-            F
-          >
-        >;
-      }
-    : never;
+export type LoginInput = DistributiveLoginInput<LoginUsernames>;
 

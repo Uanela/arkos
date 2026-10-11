@@ -33,7 +33,6 @@ import {
   GetMeOptions,
   LoginInput,
   LoginOptions,
-  LoginUsernameField,
   SignupDto,
   SignupOptions,
   UpdateMeDto,
@@ -538,8 +537,10 @@ export class AuthService {
    * The username field is inferred from the username key present in `input`
    * (the only key besides `password`), can be overridden explicitly with
    * `usernameField` for nested paths such as `"profile.nickname"`, and falls
-   * back to `authentication.login.allowedUsernames[0] || "username"`. The
-   * password is always loaded for the comparison and never returned.
+   * back to `authentication.login.allowedUsernames[0] || "username"`. When
+   * `authentication.login.allowedUsernames` is configured, the resolved field
+   * must be one of its entries. The password is always loaded for the
+   * comparison and never returned.
    *
    * Can be overridden through `RouteHook<"auth">.service`.
    *
@@ -548,8 +549,8 @@ export class AuthService {
    * @returns The sanitized user and a signed access token
    * @since 1.8.0-rc
    */
-  async login<F extends LoginUsernameField>(
-    input: LoginInput<F>,
+  async login(
+    input: LoginInput,
     queryOptions?: LoginOptions,
   ): Promise<{ user: AuthUser; accessToken: string }> {
     const { password } = input as { password: string };
@@ -559,6 +560,15 @@ export class AuthService {
         (key) => key !== "password" && key !== "usernameField",
       ) ||
       getDefaultUsernameField();
+
+    const allowedUsernames =
+      getArkosConfig()?.authentication?.login?.allowedUsernames;
+
+    if (allowedUsernames?.length && !allowedUsernames.includes(usernameField))
+      throw new BadRequestError(
+        `Invalid username field, expected one of: ${allowedUsernames.join(", ")}`,
+        "InvalidUsernameField",
+      );
 
     const lastField = usernameField.split(".").pop()!;
     const username = (input as Record<string, any>)[lastField];
